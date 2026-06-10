@@ -535,6 +535,7 @@ export default function WidgetPage() {
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
+  const showProfileFields = Boolean(profile || authMode === 'create')
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
@@ -1936,7 +1937,7 @@ export default function WidgetPage() {
             )}
 
             <div className="form-grid profile-form">
-              {(profile || authMode === 'create') && (
+              {showProfileFields && (
                 <div className="profile-photo-panel">
                   <label className="profile-photo-preview">
                     {avatarPreview || profile?.avatar_url ? (
@@ -1952,7 +1953,7 @@ export default function WidgetPage() {
                   </div>
                 </div>
               )}
-              {(profile || authMode === 'create') && (
+              {showProfileFields && (
                 <>
                   <div className="country-field">
                     <label>{text.countryCode} <span className="required">*</span></label>
@@ -2050,7 +2051,7 @@ export default function WidgetPage() {
                   </button>
                 </div>
               )}
-              {(profile || authMode === 'create') && (
+              {showProfileFields && (
                 <div className="nickname-field">
                   <label>{text.nickname}</label>
                   <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
