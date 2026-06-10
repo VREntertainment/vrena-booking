@@ -226,6 +226,7 @@ const uiText = {
     deleteAccountConfirm: 'Delete your account? This removes your profile, sessions you created, and sessions you joined.',
     accountDeleted: 'Your account profile has been deleted.',
     share: 'Share',
+    shareApp: 'Share app',
     shared: 'Shared',
     linkCopied: 'Link copied.',
     loginToContinue: 'Please log in first.',
@@ -354,6 +355,7 @@ const uiText = {
     deleteAccountConfirm: 'Xóa tài khoản? Hồ sơ, phiên bạn đã tạo và các phiên bạn đã tham gia sẽ bị xóa.',
     accountDeleted: 'Hồ sơ tài khoản của bạn đã được xóa.',
     share: 'Chia sẻ',
+    shareApp: 'Chia sẻ app',
     shared: 'Đã chia sẻ',
     linkCopied: 'Đã sao chép liên kết.',
     loginToContinue: 'Vui lòng đăng nhập trước.',
@@ -1267,11 +1269,15 @@ export default function WidgetPage() {
       <aside>
         <div>
           <div className="app-title-row">
-            <h1>VRena Sessions</h1>
-            <button className={sharedKey === 'app' ? 'share-button copied' : 'share-button'} type="button" onClick={() => shareLink('app', 'VRena Sessions')}>
-              {sharedKey === 'app' ? text.shared : text.share}
+            <picture className="brand-logo">
+              <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
+              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
+            </picture>
+            <button className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'} type="button" onClick={() => shareLink('app', 'VRena Sessions')}>
+              {sharedKey === 'app' ? text.shared : text.shareApp}
             </button>
           </div>
+          <h1 className="sr-only">VRena Sessions</h1>
           <p className="muted">{text.tagline}</p>
         </div>
 
@@ -1348,13 +1354,6 @@ export default function WidgetPage() {
                         <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
                           {session.visibility === 'private' ? text.private : text.public}
                         </span>
-                        <button
-                          className={sharedKey === session.id ? 'share-button copied' : 'share-button'}
-                          type="button"
-                          onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
-                        >
-                          {sharedKey === session.id ? text.shared : text.share}
-                        </button>
                       </div>
                     </div>
 
@@ -1565,6 +1564,19 @@ export default function WidgetPage() {
                         onClick={() => joinSession(session)}
                       >
                         {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
+                      </button>
+                      <button
+                        aria-label={text.share}
+                        className={sharedKey === session.id ? 'share-icon-button copied' : 'share-icon-button'}
+                        title={text.share}
+                        type="button"
+                        onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                          <path d="M12 5V16" />
+                          <path d="M8 9L12 5L16 9" />
+                          <path d="M5 13V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V13" />
+                        </svg>
                       </button>
                     </div>
                   </article>
@@ -1942,6 +1954,31 @@ export default function WidgetPage() {
           font-size: 24px;
         }
 
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+
+        .brand-logo {
+          display: block;
+          width: min(156px, 72%);
+          max-width: 156px;
+          line-height: 0;
+        }
+
+        .brand-logo img {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
         h2 {
           font-size: 19px;
           margin-bottom: 8px;
@@ -2051,6 +2088,36 @@ export default function WidgetPage() {
         }
 
         .share-button.copied {
+          border-color: rgba(13, 124, 81, 0.28);
+          background: #e9f8f1;
+          color: #0d7c51;
+        }
+
+        .share-icon-button {
+          display: inline-grid;
+          place-items: center;
+          flex: 0 0 auto;
+          width: 44px;
+          height: 44px;
+          min-height: 44px;
+          border: 1px solid rgba(48, 89, 255, 0.18);
+          border-radius: 8px;
+          background: #f5f8ff;
+          color: #3059ff;
+          padding: 0;
+        }
+
+        .share-icon-button svg {
+          width: 21px;
+          height: 21px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .share-icon-button.copied {
           border-color: rgba(13, 124, 81, 0.28);
           background: #e9f8f1;
           color: #0d7c51;
@@ -2715,6 +2782,11 @@ export default function WidgetPage() {
             font-size: 26px;
           }
 
+          .brand-logo {
+            width: 132px;
+            max-width: 60%;
+          }
+
           h2 {
             font-size: 18px;
           }
@@ -2848,6 +2920,20 @@ export default function WidgetPage() {
             min-height: 48px;
           }
 
+          .join-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: stretch;
+          }
+
+          .join-row input {
+            grid-column: 1 / -1;
+          }
+
+          .join-row .share-icon-button {
+            width: 48px;
+            min-height: 48px;
+          }
+
           .profile-photo-panel {
             grid-template-columns: 70px minmax(0, 1fr);
             padding: 10px;
@@ -2888,6 +2974,11 @@ export default function WidgetPage() {
             font-size: 24px;
           }
 
+          .brand-logo {
+            width: 118px;
+            max-width: 58%;
+          }
+
           .muted {
             font-size: 12px;
           }
@@ -2912,6 +3003,73 @@ export default function WidgetPage() {
 
           .game-card strong {
             font-size: 11px;
+          }
+        }
+
+        @media (prefers-color-scheme: dark) {
+          :global(body) {
+            background: #071112;
+            color: #f6f7f9;
+          }
+
+          aside,
+          .section,
+          .session,
+          .mini-session,
+          .profile-chip,
+          .profile-photo-panel {
+            background: #10191b;
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .muted,
+          .profile-chip span,
+          .row-meta,
+          label,
+          .notes,
+          .field-help,
+          .game-card strong,
+          .stats span {
+            color: #aeb9bd;
+          }
+
+          .tab,
+          .segmented button,
+          button.secondary,
+          input,
+          select,
+          textarea,
+          .country-button,
+          .game-card,
+          .invite-code button {
+            background: #182225;
+            color: #f6f7f9;
+            border-color: rgba(255, 255, 255, 0.14);
+          }
+
+          .tab.active,
+          .segmented button.active,
+          .notice,
+          .row-meta span,
+          .pill {
+            background: #1d2a2e;
+          }
+
+          .invite-code,
+          .share-button {
+            background: #111f31;
+            border-color: rgba(75, 132, 255, 0.25);
+          }
+
+          .invite-code strong,
+          h1,
+          h2,
+          h3,
+          .profile-chip,
+          .game-card,
+          .country-list button,
+          .profile-photo-panel strong {
+            color: #f6f7f9;
           }
         }
       `}</style>
