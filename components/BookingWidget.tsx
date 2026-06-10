@@ -271,12 +271,16 @@ export default function WidgetPage() {
     setUserId(authUser.id)
 
     if (authMode === 'create') {
+      const avatarUrl = await uploadAvatar(authUser.id, null)
+
+      if (avatarUrl === false) return
+
       const { error } = await supabase.from('profiles').upsert({
         id: authUser.id,
         phone: fullPhone,
         nickname: profileNickname.trim() || null,
         email: loginEmail,
-        avatar_url: null,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       })
 
@@ -439,22 +443,9 @@ export default function WidgetPage() {
     setIsSavingProfile(true)
     setProfileStatus('Saving profile...')
 
-    let avatarUrl = profile?.avatar_url || null
+    const avatarUrl = await uploadAvatar(userId, profile?.avatar_url || null)
 
-    if (avatarFile) {
-      const safeName = avatarFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
-      const path = `${userId}/${Date.now()}-${safeName}`
-      const upload = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true })
-
-      if (upload.error) {
-        setProfileStatus(upload.error.message)
-        setIsSavingProfile(false)
-        return
-      }
-
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-      avatarUrl = data.publicUrl
-    }
+    if (avatarUrl === false) return
 
     const row = {
       id: userId,
@@ -484,6 +475,23 @@ export default function WidgetPage() {
     setProfilePhone(localPhone)
     setProfileStatus('Profile saved.')
     setIsSavingProfile(false)
+  }
+
+  async function uploadAvatar(ownerId: string, currentAvatarUrl: string | null) {
+    if (!avatarFile) return currentAvatarUrl
+
+    const safeName = avatarFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
+    const path = `${ownerId}/${Date.now()}-${safeName}`
+    const upload = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true })
+
+    if (upload.error) {
+      setProfileStatus(upload.error.message)
+      setIsSavingProfile(false)
+      return false as const
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    return data.publicUrl
   }
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -906,19 +914,22 @@ export default function WidgetPage() {
 
             <div className="form-grid profile-form">
               <div className="profile-photo-panel">
-                <div className="profile-photo-preview">
+                <label className="profile-photo-preview">
                   {avatarPreview || profile?.avatar_url ? (
                     <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
                   ) : (
                     displayName(profile).slice(0, 1)
                   )}
-                </div>
+                  {(profile || authMode === 'create') && (
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                  )}
+                </label>
                 <div>
                   <strong>{profile ? displayName(profile) : 'Profile photo'}</strong>
-                  <span>Shown beside your name when you join a session.</span>
+                  <span>{profile || authMode === 'create' ? 'Click the circle to upload your photo.' : 'Shown beside your name when you join a session.'}</span>
                 </div>
               </div>
-              <div>
+              <div className="country-field">
                 <label>Country Code <span className="required">*</span></label>
                 <div className="country-picker">
                   <button
@@ -956,16 +967,16 @@ export default function WidgetPage() {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="phone-field">
                 <label>Phone Number <span className="required">*</span></label>
                 <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
               </div>
-              <div>
+              <div className="email-field">
                 <label>Email <span className="required">*</span></label>
                 <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
               </div>
               {!profile && (
-                <div>
+                <div className="password-field">
                   <label>Password <span className="required">*</span></label>
                   <input
                     type="password"
@@ -977,15 +988,9 @@ export default function WidgetPage() {
                 </div>
               )}
               {(profile || authMode === 'create') && (
-                <div>
+                <div className="nickname-field">
                   <label>Nickname</label>
                   <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
-                </div>
-              )}
-              {profile && (
-                <div>
-                  <label>Profile Photo</label>
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} />
                 </div>
               )}
             </div>
@@ -1170,12 +1175,17 @@ export default function WidgetPage() {
           color: #ffffff;
           font-size: 30px;
           font-weight: 900;
+          cursor: pointer;
         }
 
         .profile-photo-preview img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+        }
+
+        .profile-photo-preview input {
+          display: none;
         }
 
         .avatar,
@@ -1342,6 +1352,25 @@ export default function WidgetPage() {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
+        }
+
+        .profile-form {
+          grid-template-columns: 148px minmax(220px, 1fr) minmax(220px, 1fr);
+        }
+
+        .profile-form .profile-photo-panel {
+          grid-column: 1 / -1;
+        }
+
+        .country-field {
+          grid-column: span 1;
+        }
+
+        .phone-field,
+        .email-field,
+        .password-field,
+        .nickname-field {
+          grid-column: span 1;
         }
 
         .full {
