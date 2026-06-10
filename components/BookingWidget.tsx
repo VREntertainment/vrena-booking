@@ -146,23 +146,13 @@ function splitPhoneNumber(phone: string) {
     .find((item) => cleaned.startsWith(item.code))
 
   if (!country) {
-    return { countryInput: '+84 Vietnam', localPhone: cleaned }
+    return { countryInput: '+84', localPhone: cleaned }
   }
 
   return {
-    countryInput: `${country.code} ${country.name}`,
+    countryInput: country.code,
     localPhone: cleaned.slice(country.code.length).trim(),
   }
-}
-
-function normalizePhoneForAuth(countryInput: string, phoneInput: string) {
-  const countryCode = resolveCountryCode(countryInput)
-  const localPhone = phoneInput.replace(/\D/g, '')
-  return `${countryCode}${localPhone}`
-}
-
-function phoneToAuthEmail(phone: string) {
-  return `phone-${phone.replace(/\D/g, '')}@vrena.local`
 }
 
 function displayName(profile: Profile | null) {
@@ -180,7 +170,9 @@ export default function WidgetPage() {
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
   const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
-  const [profileCountryCode, setProfileCountryCode] = useState('+84 Vietnam')
+  const [profileCountryCode, setProfileCountryCode] = useState('+84')
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
@@ -233,10 +225,18 @@ export default function WidgetPage() {
   }
 
   async function handleAuth() {
-    const fullPhone = normalizePhoneForAuth(profileCountryCode, profilePhone)
+    const countryCode = resolveCountryCode(profileCountryCode)
+    const localPhone = profilePhone.replace(/\D/g, '')
+    const fullPhone = `${countryCode}${localPhone}`
+    const loginEmail = profileEmail.trim().toLowerCase()
 
     if (fullPhone.length < 8) {
       setProfileStatus('Phone number is required.')
+      return
+    }
+
+    if (!loginEmail || !loginEmail.includes('@')) {
+      setProfileStatus('Valid email is required.')
       return
     }
 
@@ -248,11 +248,10 @@ export default function WidgetPage() {
     setIsSavingProfile(true)
     setProfileStatus(authMode === 'login' ? 'Logging in...' : 'Creating account...')
 
-    const authEmail = phoneToAuthEmail(fullPhone)
     const authResult =
       authMode === 'login'
-        ? await supabase.auth.signInWithPassword({ email: authEmail, password: profilePassword })
-        : await supabase.auth.signUp({ email: authEmail, password: profilePassword })
+        ? await supabase.auth.signInWithPassword({ email: loginEmail, password: profilePassword })
+        : await supabase.auth.signUp({ email: loginEmail, password: profilePassword })
 
     if (authResult.error) {
       setProfileStatus(authResult.error.message)
@@ -276,7 +275,7 @@ export default function WidgetPage() {
         id: authUser.id,
         phone: fullPhone,
         nickname: profileNickname.trim() || null,
-        email: profileEmail.trim() || null,
+        email: loginEmail,
         avatar_url: null,
         updated_at: new Date().toISOString(),
       })
@@ -413,6 +412,15 @@ export default function WidgetPage() {
       )
     })
   }, [search, sessions])
+
+  const filteredCountries = useMemo(() => {
+    const query = countrySearch.trim().toLowerCase()
+    if (!query) return countries
+
+    return countries.filter((country) =>
+      `${country.code} ${country.name}`.toLowerCase().includes(query)
+    )
+  }, [countrySearch])
 
   async function saveProfile() {
     if (!userId) {
@@ -662,6 +670,13 @@ export default function WidgetPage() {
             Admin
           </button>
         </div>
+
+        <div className="shop-contact">
+          <strong>VRena Vietnam</strong>
+          <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
+          <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
+          <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
+        </div>
       </aside>
 
       <main>
@@ -875,7 +890,7 @@ export default function WidgetPage() {
             <p className="muted">
               {profile
                 ? 'Update your profile details.'
-                : 'Log in or create an account with phone number and password.'}
+                : 'Log in or create an account with email, phone number, and password.'}
             </p>
 
             {!profile && (
@@ -905,21 +920,49 @@ export default function WidgetPage() {
               </div>
               <div>
                 <label>Country Code <span className="required">*</span></label>
-                <input
-                  list="country-codes"
-                  value={profileCountryCode}
-                  onChange={(event) => setProfileCountryCode(event.target.value)}
-                  placeholder="+84 or Vietnam"
-                />
-                <datalist id="country-codes">
-                  {countries.map((country) => (
-                    <option key={`${country.code}-${country.name}`} value={`${country.code} ${country.name}`} />
-                  ))}
-                </datalist>
+                <div className="country-picker">
+                  <button
+                    className="country-button"
+                    onClick={() => setCountryPickerOpen((open) => !open)}
+                    type="button"
+                  >
+                    {profileCountryCode}
+                  </button>
+                  {countryPickerOpen && (
+                    <div className="country-menu">
+                      <input
+                        autoFocus
+                        value={countrySearch}
+                        onChange={(event) => setCountrySearch(event.target.value)}
+                        placeholder="Search country or code"
+                      />
+                      <div className="country-list">
+                        {filteredCountries.map((country) => (
+                          <button
+                            key={`${country.code}-${country.name}`}
+                            onClick={() => {
+                              setProfileCountryCode(country.code)
+                              setCountrySearch('')
+                              setCountryPickerOpen(false)
+                            }}
+                            type="button"
+                          >
+                            <span>{country.code}</span>
+                            <strong>{country.name}</strong>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label>Phone Number <span className="required">*</span></label>
-                <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="707472499" />
+                <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+              </div>
+              <div>
+                <label>Email <span className="required">*</span></label>
+                <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
               </div>
               {!profile && (
                 <div>
@@ -937,12 +980,6 @@ export default function WidgetPage() {
                 <div>
                   <label>Nickname</label>
                   <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
-                </div>
-              )}
-              {(profile || authMode === 'create') && (
-                <div>
-                  <label>Email</label>
-                  <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="Optional" />
                 </div>
               )}
               {profile && (
@@ -1161,6 +1198,29 @@ export default function WidgetPage() {
           object-fit: cover;
         }
 
+        .shop-contact {
+          display: grid;
+          gap: 7px;
+          margin-top: auto;
+          border-top: 1px solid rgba(7, 17, 18, 0.12);
+          padding-top: 16px;
+          font-size: 13px;
+        }
+
+        .shop-contact strong {
+          font-size: 14px;
+        }
+
+        .shop-contact a {
+          color: #3059ff;
+          text-decoration: none;
+          overflow-wrap: anywhere;
+        }
+
+        .shop-contact a:hover {
+          text-decoration: underline;
+        }
+
         .tabs {
           display: grid;
           gap: 8px;
@@ -1313,6 +1373,63 @@ export default function WidgetPage() {
           padding: 10px 11px;
           font: inherit;
           outline: none;
+        }
+
+        .country-picker {
+          position: relative;
+        }
+
+        .country-button {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          background: #f0f4f6;
+          color: #071112;
+          border-radius: 8px;
+          padding: 10px 11px;
+          text-align: left;
+        }
+
+        .country-menu {
+          position: absolute;
+          z-index: 20;
+          top: calc(100% + 6px);
+          left: 0;
+          right: 0;
+          display: grid;
+          gap: 8px;
+          border: 1px solid rgba(7, 17, 18, 0.14);
+          border-radius: 8px;
+          padding: 8px;
+          background: #ffffff;
+          box-shadow: 0 14px 30px rgba(7, 17, 18, 0.16);
+        }
+
+        .country-list {
+          display: grid;
+          max-height: 220px;
+          overflow: auto;
+        }
+
+        .country-list button {
+          display: grid;
+          grid-template-columns: 72px minmax(0, 1fr);
+          gap: 8px;
+          align-items: center;
+          background: transparent;
+          color: #071112;
+          border-radius: 6px;
+          padding: 8px;
+          text-align: left;
+        }
+
+        .country-list button:hover {
+          background: #f0f4f6;
+        }
+
+        .country-list span {
+          color: #3059ff;
+          font-weight: 800;
         }
 
         textarea {
