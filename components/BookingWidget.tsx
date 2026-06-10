@@ -155,6 +155,16 @@ function splitPhoneNumber(phone: string) {
   }
 }
 
+function normalizePhoneForAuth(countryInput: string, phoneInput: string) {
+  const countryCode = resolveCountryCode(countryInput)
+  const localPhone = phoneInput.replace(/\D/g, '')
+  return `${countryCode}${localPhone}`
+}
+
+function phoneToAuthEmail(phone: string) {
+  return `phone-${phone.replace(/\D/g, '')}@vrena.local`
+}
+
 function displayName(profile: Profile | null) {
   if (!profile) return 'Player'
   return profile.nickname || profile.phone
@@ -169,8 +179,10 @@ export default function WidgetPage() {
   const [search, setSearch] = useState('')
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
+  const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
   const [profileCountryCode, setProfileCountryCode] = useState('+84 Vietnam')
   const [profilePhone, setProfilePhone] = useState('')
+  const [profilePassword, setProfilePassword] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -194,18 +206,13 @@ export default function WidgetPage() {
 
   async function loadProfile() {
     const { data: userData } = await supabase.auth.getUser()
-    let authUser = userData.user
+    const authUser = userData.user
 
     if (!authUser) {
-      const { data, error } = await supabase.auth.signInAnonymously()
-      if (error) {
-        setProfileStatus('Profile login is not enabled yet. Enable anonymous sign-ins in Supabase Auth.')
-        return
-      }
-      authUser = data.user
+      setUserId('')
+      setProfile(null)
+      return
     }
-
-    if (!authUser) return
 
     setUserId(authUser.id)
 
@@ -223,6 +230,76 @@ export default function WidgetPage() {
       setProfileNickname(profileRow.nickname || '')
       setProfileEmail(profileRow.email || '')
     }
+  }
+
+  async function handleAuth() {
+    const fullPhone = normalizePhoneForAuth(profileCountryCode, profilePhone)
+
+    if (fullPhone.length < 8) {
+      setProfileStatus('Phone number is required.')
+      return
+    }
+
+    if (profilePassword.length < 6) {
+      setProfileStatus('Password must be at least 6 characters.')
+      return
+    }
+
+    setIsSavingProfile(true)
+    setProfileStatus(authMode === 'login' ? 'Logging in...' : 'Creating account...')
+
+    const authEmail = phoneToAuthEmail(fullPhone)
+    const authResult =
+      authMode === 'login'
+        ? await supabase.auth.signInWithPassword({ email: authEmail, password: profilePassword })
+        : await supabase.auth.signUp({ email: authEmail, password: profilePassword })
+
+    if (authResult.error) {
+      setProfileStatus(authResult.error.message)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const authUser = authResult.data.user
+
+    if (!authUser) {
+      setProfileStatus('Account created. Please log in.')
+      setAuthMode('login')
+      setIsSavingProfile(false)
+      return
+    }
+
+    setUserId(authUser.id)
+
+    if (authMode === 'create') {
+      const { error } = await supabase.from('profiles').upsert({
+        id: authUser.id,
+        phone: fullPhone,
+        nickname: profileNickname.trim() || null,
+        email: profileEmail.trim() || null,
+        avatar_url: null,
+        updated_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        setProfileStatus(error.message)
+        setIsSavingProfile(false)
+        return
+      }
+    }
+
+    setProfilePassword('')
+    await loadProfile()
+    setProfileStatus(authMode === 'login' ? 'Logged in.' : 'Account created.')
+    setIsSavingProfile(false)
+  }
+
+  async function logout() {
+    await supabase.auth.signOut()
+    setUserId('')
+    setProfile(null)
+    setProfilePassword('')
+    setProfileStatus('Logged out.')
   }
 
   async function loadSessions() {
@@ -798,7 +875,22 @@ export default function WidgetPage() {
         {activeView === 'profile' && (
           <section className="section">
             <h2>Profile</h2>
-            <p className="muted">Phone number is mandatory. Nickname and email are optional.</p>
+            <p className="muted">
+              {profile
+                ? 'Update your profile details.'
+                : 'Log in or create an account with phone number and password.'}
+            </p>
+
+            {!profile && (
+              <div className="segmented auth-toggle">
+                <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')} type="button">
+                  Log In
+                </button>
+                <button className={authMode === 'create' ? 'active' : ''} onClick={() => setAuthMode('create')} type="button">
+                  Create Account
+                </button>
+              </div>
+            )}
 
             <div className="form-grid profile-form">
               <div className="profile-photo-panel">
@@ -832,6 +924,17 @@ export default function WidgetPage() {
                 <label>Phone Number <span className="required">*</span></label>
                 <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="707472499" />
               </div>
+              {!profile && (
+                <div>
+                  <label>Password <span className="required">*</span></label>
+                  <input
+                    type="password"
+                    value={profilePassword}
+                    onChange={(event) => setProfilePassword(event.target.value)}
+                    placeholder="Minimum 6 characters"
+                  />
+                </div>
+              )}
               <div>
                 <label>Nickname</label>
                 <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
@@ -840,19 +943,38 @@ export default function WidgetPage() {
                 <label>Email</label>
                 <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="Optional" />
               </div>
-              <div>
-                <label>Profile Photo</label>
-                <input type="file" accept="image/*" onChange={handleAvatarChange} />
-              </div>
+              {profile && (
+                <div>
+                  <label>Profile Photo</label>
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                </div>
+              )}
             </div>
 
-            <button
-              className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
-              disabled={isSavingProfile}
-              onClick={saveProfile}
-            >
-              {isSavingProfile ? 'Saving...' : 'Save Profile'}
-            </button>
+            <div className="action-row">
+              <button
+                className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
+                disabled={isSavingProfile}
+                onClick={profile ? saveProfile : handleAuth}
+              >
+                {isSavingProfile
+                  ? authMode === 'login'
+                    ? 'Logging in...'
+                    : profile
+                      ? 'Saving...'
+                      : 'Creating...'
+                  : profile
+                    ? 'Save Profile'
+                    : authMode === 'login'
+                      ? 'Log In'
+                      : 'Create Account'}
+              </button>
+              {profile && (
+                <button className="secondary create-button" onClick={logout} type="button">
+                  Log Out
+                </button>
+              )}
+            </div>
             {profileStatus && <p className="notice">{profileStatus}</p>}
           </section>
         )}
@@ -1053,6 +1175,10 @@ export default function WidgetPage() {
           padding: 4px;
         }
 
+        .auth-toggle {
+          margin: 14px 0;
+        }
+
         .search {
           max-width: 360px;
         }
@@ -1194,6 +1320,19 @@ export default function WidgetPage() {
 
         button.primary {
           background: linear-gradient(90deg, #00aeb3, #3059ff);
+        }
+
+        button.secondary {
+          background: #f0f4f6;
+          color: #071112;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+        }
+
+        .action-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
         }
 
         .create-button {
