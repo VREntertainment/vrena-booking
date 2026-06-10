@@ -1180,6 +1180,13 @@ export default function WidgetPage() {
       return
     }
 
+    const activeProfile = profile
+
+    if (!activeProfile) {
+      setIsCreating(false)
+      return
+    }
+
     if (!sessionName.trim() || !sessionDate || !sessionTime) {
       setCreateStatus(text.sessionRequired)
       setIsCreating(false)
@@ -1220,8 +1227,8 @@ export default function WidgetPage() {
     await supabase.from('session_participants').insert({
       session_id: created.id,
       profile_id: userId,
-      display_name: displayName(profile),
-      avatar_url: profile.avatar_url,
+      display_name: displayName(activeProfile),
+      avatar_url: activeProfile.avatar_url,
     })
 
     setCreateStatus(
@@ -1246,6 +1253,10 @@ export default function WidgetPage() {
   async function joinSession(session: Session) {
     if (!requireProfile()) return
 
+    const activeProfile = profile
+
+    if (!activeProfile) return
+
     if (session.visibility === 'private') {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
       if (typedCode !== session.invite_code) {
@@ -1267,8 +1278,8 @@ export default function WidgetPage() {
     const { error } = await supabase.from('session_participants').insert({
       session_id: session.id,
       profile_id: userId,
-      display_name: displayName(profile),
-      avatar_url: profile.avatar_url,
+      display_name: displayName(activeProfile),
+      avatar_url: activeProfile.avatar_url,
     })
 
     if (error) {
