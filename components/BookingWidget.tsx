@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase/client'
 
 const ARENA_COUNT = 2
@@ -9,6 +9,25 @@ const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
+const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
+
+declare global {
+  interface Window {
+    hcaptcha?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string
+          callback: (token: string) => void
+          'expired-callback': () => void
+          'error-callback': () => void
+        }
+      ) => string
+      reset: (widgetId?: string) => void
+      remove?: (widgetId: string) => void
+    }
+  }
+}
 
 type GameId =
   | 'laser-tag'
@@ -164,6 +183,9 @@ const uiText = {
     password: 'Password',
     passwordPlaceholder: 'Minimum 6 characters',
     passwordHelp: 'Use at least 6 characters. Keep this password to log in again later.',
+    captchaLabel: 'Human check',
+    captchaHelp: 'One quick bot trap before the account is created.',
+    captchaRequired: 'Please complete the human check first.',
     nickname: 'Nickname',
     optional: 'Optional',
     saveProfile: 'Save Profile',
@@ -297,6 +319,9 @@ const uiText = {
     password: 'Mật khẩu',
     passwordPlaceholder: 'Tối thiểu 6 ký tự',
     passwordHelp: 'Dùng ít nhất 6 ký tự. Giữ mật khẩu này để đăng nhập lại.',
+    captchaLabel: 'Xác minh người dùng',
+    captchaHelp: 'Một bước nhỏ để chặn bot trước khi tạo tài khoản.',
+    captchaRequired: 'Vui lòng hoàn tất bước xác minh trước.',
     nickname: 'Biệt danh',
     optional: 'Không bắt buộc',
     saveProfile: 'Lưu hồ sơ',
@@ -466,6 +491,7 @@ export default function WidgetPage() {
   const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -506,6 +532,8 @@ export default function WidgetPage() {
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [isUpdatingSession, setIsUpdatingSession] = useState(false)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
+  const captchaContainerRef = useRef<HTMLDivElement | null>(null)
+  const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
@@ -541,6 +569,14 @@ export default function WidgetPage() {
     window.setTimeout(() => {
       document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
+  }
+
+  function resetCaptcha() {
+    setCaptchaToken('')
+
+    if (typeof window !== 'undefined' && window.hcaptcha && captchaWidgetId.current) {
+      window.hcaptcha.reset(captchaWidgetId.current)
+    }
   }
 
   async function shareLink(key: string, title: string, path = '') {
@@ -609,6 +645,11 @@ export default function WidgetPage() {
       return
     }
 
+    if (authMode === 'create' && !captchaToken) {
+      setProfileStatus(text.captchaRequired)
+      return
+    }
+
     setIsSavingProfile(true)
     setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
@@ -625,8 +666,11 @@ export default function WidgetPage() {
             nickname: profileNickname.trim() || null,
             phone: fullPhone,
           },
+          captchaToken,
         },
       })
+
+      resetCaptcha()
 
       if (signUpResult.error) {
         setProfileStatus(signUpResult.error.message)
@@ -797,6 +841,54 @@ export default function WidgetPage() {
     loadProfile()
     loadSessions()
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || profile || authMode !== 'create') return
+
+    let cancelled = false
+
+    function renderCaptcha() {
+      if (cancelled || !captchaContainerRef.current || !window.hcaptcha || captchaWidgetId.current) return
+
+      captchaWidgetId.current = window.hcaptcha.render(captchaContainerRef.current, {
+        sitekey: HCAPTCHA_SITE_KEY,
+        callback: (token) => setCaptchaToken(token),
+        'expired-callback': () => setCaptchaToken(''),
+        'error-callback': () => setCaptchaToken(''),
+      })
+    }
+
+    const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+
+    if (window.hcaptcha) {
+      renderCaptcha()
+    } else if (existingScript) {
+      existingScript.addEventListener('load', renderCaptcha, { once: true })
+    } else {
+      const script = document.createElement('script')
+      script.id = 'hcaptcha-script'
+      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit'
+      script.async = true
+      script.defer = true
+      script.addEventListener('load', renderCaptcha, { once: true })
+      document.body.appendChild(script)
+    }
+
+    return () => {
+      cancelled = true
+      setCaptchaToken('')
+
+      if (window.hcaptcha && captchaWidgetId.current) {
+        try {
+          window.hcaptcha.remove?.(captchaWidgetId.current)
+        } catch {
+          window.hcaptcha.reset(captchaWidgetId.current)
+        }
+      }
+
+      captchaWidgetId.current = null
+    }
+  }, [authMode, profile])
 
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
@@ -1901,6 +1993,13 @@ export default function WidgetPage() {
                   )}
                 </div>
               )}
+              {!profile && authMode === 'create' && (
+                <div className="captcha-field">
+                  <label>{text.captchaLabel} <span className="required">*</span></label>
+                  <div className="captcha-box" ref={captchaContainerRef} />
+                  <p className="field-help">{text.captchaHelp}</p>
+                </div>
+              )}
               {isRecoveryMode && (
                 <div className="password-field">
                   <label>{text.newPassword} <span className="required">*</span></label>
@@ -2738,6 +2837,16 @@ export default function WidgetPage() {
           max-width: 520px;
         }
 
+        .captcha-field {
+          grid-column: 1 / -1;
+          display: grid;
+          gap: 6px;
+        }
+
+        .captcha-box {
+          min-height: 78px;
+        }
+
         .full {
           grid-column: 1 / -1;
         }
@@ -3310,7 +3419,8 @@ export default function WidgetPage() {
           .phone-field,
           .email-field,
           .nickname-field,
-          .password-field {
+          .password-field,
+          .captcha-field {
             grid-column: 1;
             max-width: none;
           }
