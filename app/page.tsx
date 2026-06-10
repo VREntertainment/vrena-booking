@@ -1,3 +1,5 @@
+import BookingWidget from '../components/BookingWidget'
+
 export default function Home() {
-  return <main>VRena Booking test</main>
+  return <BookingWidget />
 }
