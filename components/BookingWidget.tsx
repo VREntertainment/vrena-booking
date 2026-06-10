@@ -39,6 +39,7 @@ type GameId =
 type Profile = {
   id: string
   phone: string
+  full_name: string | null
   nickname: string | null
   email: string | null
   avatar_url: string | null
@@ -182,6 +183,8 @@ const uiText = {
     captchaLabel: 'Human check',
     captchaHelp: 'One quick bot trap before the account is created.',
     captchaRequired: 'Please complete the human check first.',
+    name: 'Name',
+    nameRequired: 'Name is required.',
     nickname: 'Nickname',
     optional: 'Optional',
     saveProfile: 'Save Profile',
@@ -318,6 +321,8 @@ const uiText = {
     captchaLabel: 'Xác minh người dùng',
     captchaHelp: 'Một bước nhỏ để chặn bot trước khi tạo tài khoản.',
     captchaRequired: 'Vui lòng hoàn tất bước xác minh trước.',
+    name: 'Tên',
+    nameRequired: 'Vui lòng nhập tên.',
     nickname: 'Biệt danh',
     optional: 'Không bắt buộc',
     saveProfile: 'Lưu hồ sơ',
@@ -456,7 +461,7 @@ function splitPhoneNumber(phone: string) {
 
 function displayName(profile: Profile | null) {
   if (!profile) return 'Player'
-  return profile.nickname || profile.phone
+  return profile.nickname || profile.full_name || profile.phone
 }
 
 function appRedirectUrl() {
@@ -497,6 +502,7 @@ export default function WidgetPage() {
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [profileName, setProfileName] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -615,7 +621,7 @@ export default function WidgetPage() {
 
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('id, phone, nickname, email, avatar_url, role')
+      .select('id, phone, full_name, nickname, email, avatar_url, role')
       .eq('id', authUser.id)
       .maybeSingle()
 
@@ -624,6 +630,7 @@ export default function WidgetPage() {
       setProfile(profileRow)
       setProfileCountryCode(phoneParts.countryInput)
       setProfilePhone(phoneParts.localPhone)
+      setProfileName(profileRow.full_name || '')
       setProfileNickname(profileRow.nickname || '')
       setProfileEmail(profileRow.email || '')
     }
@@ -634,9 +641,15 @@ export default function WidgetPage() {
     const localPhone = profilePhone.replace(/\D/g, '')
     const fullPhone = `${countryCode}${localPhone}`
     const loginEmail = profileEmail.trim().toLowerCase()
+    const fullName = profileName.trim()
 
     if (authMode === 'create' && fullPhone.length < 8) {
       setProfileStatus(text.phoneRequired)
+      return
+    }
+
+    if (authMode === 'create' && !fullName) {
+      setProfileStatus(text.nameRequired)
       return
     }
 
@@ -659,16 +672,17 @@ export default function WidgetPage() {
     setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
     if (authMode === 'create') {
-      const display = profileNickname.trim() || fullPhone
+      const nickname = profileNickname.trim()
+      const display = nickname || fullName
       const signUpResult = await supabase.auth.signUp({
         email: loginEmail,
         password: profilePassword,
         options: {
           data: {
             display_name: display,
-            full_name: display,
+            full_name: fullName,
             name: display,
-            nickname: profileNickname.trim() || null,
+            nickname: nickname || null,
             phone: fullPhone,
           },
           captchaToken,
@@ -709,9 +723,9 @@ export default function WidgetPage() {
 
       const { error } = await supabase.from('profiles').upsert({
         id: authUser.id,
-        full_name: profileNickname.trim() || null,
+        full_name: fullName,
         phone: fullPhone,
-        nickname: profileNickname.trim() || existingProfile?.nickname || null,
+        nickname: nickname || existingProfile?.nickname || null,
         email: loginEmail,
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
@@ -727,9 +741,9 @@ export default function WidgetPage() {
       const metadataUpdate = await supabase.auth.updateUser({
         data: {
           display_name: display,
-          full_name: display,
+          full_name: fullName,
           name: display,
-          nickname: profileNickname.trim() || null,
+          nickname: nickname || null,
           phone: fullPhone,
           avatar_url: avatarUrl,
         },
@@ -1080,9 +1094,16 @@ export default function WidgetPage() {
 
     const countryCode = resolveCountryCode(profileCountryCode)
     const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
+    const fullName = profileName.trim()
+    const nickname = profileNickname.trim()
 
     if (!profilePhone.trim()) {
       setProfileStatus(text.phoneRequired)
+      return
+    }
+
+    if (!fullName) {
+      setProfileStatus(text.nameRequired)
       return
     }
 
@@ -1095,9 +1116,9 @@ export default function WidgetPage() {
 
     const row = {
       id: userId,
-      full_name: profileNickname.trim() || null,
+      full_name: fullName,
       phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
-      nickname: profileNickname.trim() || null,
+      nickname: nickname || null,
       email: profileEmail.trim() || null,
       avatar_url: avatarUrl,
       updated_at: new Date().toISOString(),
@@ -1106,7 +1127,7 @@ export default function WidgetPage() {
     const { data, error } = await supabase
       .from('profiles')
       .upsert(row)
-      .select('id, phone, nickname, email, avatar_url, role')
+      .select('id, phone, full_name, nickname, email, avatar_url, role')
       .single()
 
     if (error) {
@@ -1115,13 +1136,13 @@ export default function WidgetPage() {
       return
     }
 
-    const display = profileNickname.trim() || data.phone
+    const display = nickname || fullName
     const metadataUpdate = await supabase.auth.updateUser({
       data: {
         display_name: display,
-        full_name: display,
+        full_name: fullName,
         name: display,
-        nickname: profileNickname.trim() || null,
+        nickname: nickname || null,
         phone: data.phone,
         avatar_url: data.avatar_url,
       },
@@ -2023,6 +2044,18 @@ export default function WidgetPage() {
                 <label>{text.email} <span className="required">*</span></label>
                 <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
               </div>
+              {showProfileFields && (
+                <div className="name-field">
+                  <label>{text.name} <span className="required">*</span></label>
+                  <input value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Nguyen Van A" />
+                </div>
+              )}
+              {showProfileFields && (
+                <div className="nickname-field">
+                  <label>{text.nickname}</label>
+                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
+                </div>
+              )}
               {!profile && (
                 <div className="password-field">
                   <label>{text.password} <span className="required">*</span></label>
@@ -2069,12 +2102,6 @@ export default function WidgetPage() {
                   <button className="link-button" disabled={isResettingPassword} onClick={updatePasswordFromRecovery} type="button">
                     {isResettingPassword ? text.saving : text.updatePassword}
                   </button>
-                </div>
-              )}
-              {showProfileFields && (
-                <div className="nickname-field">
-                  <label>{text.nickname}</label>
-                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
                 </div>
               )}
             </div>
@@ -2867,7 +2894,8 @@ export default function WidgetPage() {
         }
 
         .profile-form {
-          grid-template-columns: 110px minmax(240px, 1fr) minmax(240px, 1fr);
+          grid-template-columns: 150px minmax(260px, 1fr) minmax(260px, 1fr);
+          align-items: start;
         }
 
         .profile-form .profile-photo-panel {
@@ -2878,19 +2906,29 @@ export default function WidgetPage() {
           grid-column: 1;
         }
 
-        .phone-field,
-        .email-field,
+        .phone-field {
+          grid-column: 2;
+        }
+
+        .email-field {
+          grid-column: 3;
+        }
+
+        .name-field {
+          grid-column: 1 / span 2;
+        }
+
         .nickname-field {
-          grid-column: span 1;
+          grid-column: 3;
         }
 
         .password-field {
           grid-column: 1 / span 2;
-          max-width: 520px;
+          max-width: none;
         }
 
         .captcha-field {
-          grid-column: 1 / -1;
+          grid-column: 1 / span 2;
           display: grid;
           gap: 6px;
         }
@@ -3470,6 +3508,7 @@ export default function WidgetPage() {
           .country-field,
           .phone-field,
           .email-field,
+          .name-field,
           .nickname-field,
           .password-field,
           .captcha-field {
