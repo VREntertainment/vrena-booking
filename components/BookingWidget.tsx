@@ -1831,19 +1831,62 @@ export default function WidgetPage() {
           }
 
           aside {
+            position: sticky;
+            top: 0;
+            z-index: 30;
             border-right: 0;
             border-bottom: 1px solid rgba(7, 17, 18, 0.12);
             height: auto;
             overflow: visible;
+            padding: 14px;
+            gap: 12px;
           }
 
           main {
             height: auto;
             overflow: visible;
+            padding: 12px;
+          }
+
+          h1 {
+            font-size: 26px;
+          }
+
+          h2 {
+            font-size: 18px;
+          }
+
+          h3 {
+            font-size: 20px;
+          }
+
+          .profile-chip {
+            grid-template-columns: 42px minmax(0, 1fr);
+            padding: 9px;
+          }
+
+          .tabs {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .tab {
+            text-align: center;
+            padding: 11px 8px;
+            font-size: 14px;
+          }
+
+          .shop-contact {
+            display: none;
+          }
+
+          .section {
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: none;
           }
 
           .section-head,
-          .session-top,
           .join-row {
             display: grid;
           }
@@ -1852,9 +1895,147 @@ export default function WidgetPage() {
             max-width: none;
           }
 
+          .session {
+            gap: 12px;
+            padding: 12px;
+          }
+
+          .session-top {
+            display: grid;
+            gap: 10px;
+          }
+
+          .row-meta {
+            gap: 6px;
+          }
+
+          .row-meta span {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #f0f4f6;
+            font-size: 12px;
+          }
+
+          .pill {
+            width: fit-content;
+          }
+
+          .players {
+            gap: 8px;
+          }
+
+          .player {
+            grid-template-columns: 30px auto;
+            font-size: 13px;
+          }
+
+          .game-strip {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 2px 2px 8px;
+            margin-inline: -2px;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .game-strip .game-card {
+            flex: 0 0 156px;
+            scroll-snap-align: start;
+          }
+
+          .game-strip .game-card img {
+            aspect-ratio: 1;
+          }
+
+          .game-picker {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .game-picker .game-card {
+            padding: 7px;
+          }
+
+          .game-picker .game-card span,
+          .game-strip .game-card span {
+            font-size: 13px;
+          }
+
+          .join-row input,
+          .join-row button,
+          .action-row button,
+          .create-button {
+            width: 100%;
+            min-height: 48px;
+          }
+
+          .profile-photo-panel {
+            grid-template-columns: 70px minmax(0, 1fr);
+            padding: 10px;
+          }
+
+          .profile-photo-preview {
+            width: 62px;
+            height: 62px;
+            font-size: 24px;
+          }
+
           .form-grid,
+          .profile-form,
           .stats {
             grid-template-columns: 1fr;
+          }
+
+          .country-field,
+          .phone-field,
+          .email-field,
+          .nickname-field,
+          .password-field {
+            grid-column: 1;
+            max-width: none;
+          }
+        }
+
+        @media (max-width: 520px) {
+          aside {
+            padding: 12px;
+          }
+
+          main {
+            padding: 10px;
+          }
+
+          h1 {
+            font-size: 24px;
+          }
+
+          .muted {
+            font-size: 12px;
+          }
+
+          .tabs {
+            position: sticky;
+            top: 0;
+          }
+
+          .tab {
+            font-size: 13px;
+            padding: 10px 6px;
+          }
+
+          .session h3 {
+            font-size: 18px;
+          }
+
+          .game-strip .game-card {
+            flex-basis: 142px;
+          }
+
+          .game-card strong {
+            font-size: 11px;
           }
         }
       `}</style>
