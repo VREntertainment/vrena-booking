@@ -225,6 +225,10 @@ const uiText = {
     deleteAccount: 'Delete my account',
     deleteAccountConfirm: 'Delete your account? This removes your profile, sessions you created, and sessions you joined.',
     accountDeleted: 'Your account profile has been deleted.',
+    share: 'Share',
+    shared: 'Shared',
+    linkCopied: 'Link copied.',
+    loginToContinue: 'Please log in first.',
   },
   vi: {
     tagline: 'Tạo phiên chơi công khai hoặc riêng tư và mời người chơi khác tham gia.',
@@ -349,6 +353,10 @@ const uiText = {
     deleteAccount: 'Xóa tài khoản của tôi',
     deleteAccountConfirm: 'Xóa tài khoản? Hồ sơ, phiên bạn đã tạo và các phiên bạn đã tham gia sẽ bị xóa.',
     accountDeleted: 'Hồ sơ tài khoản của bạn đã được xóa.',
+    share: 'Chia sẻ',
+    shared: 'Đã chia sẻ',
+    linkCopied: 'Đã sao chép liên kết.',
+    loginToContinue: 'Vui lòng đăng nhập trước.',
   },
 }
 
@@ -460,6 +468,7 @@ export default function WidgetPage() {
   const [busySessionId, setBusySessionId] = useState('')
   const [busyVoteKey, setBusyVoteKey] = useState('')
   const [copiedInviteId, setCopiedInviteId] = useState('')
+  const [sharedKey, setSharedKey] = useState('')
   const [editingSessionId, setEditingSessionId] = useState('')
   const [editSessionName, setEditSessionName] = useState('')
   const [editSessionDate, setEditSessionDate] = useState(localDateString())
@@ -480,6 +489,29 @@ export default function WidgetPage() {
     await navigator.clipboard?.writeText(inviteCode)
     setCopiedInviteId(sessionId)
     window.setTimeout(() => setCopiedInviteId((current) => (current === sessionId ? '' : current)), 1400)
+  }
+
+  function goToLogin() {
+    setAuthMode('login')
+    setActiveView('profile')
+    setProfileStatus(text.loginToContinue)
+  }
+
+  async function shareLink(key: string, title: string, path = '') {
+    const url = typeof window === 'undefined' ? '' : `${window.location.origin}${window.location.pathname}${path}`
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: title, url })
+      } else {
+        await navigator.clipboard?.writeText(url)
+      }
+      setSharedKey(key)
+      setCreateStatus(text.linkCopied)
+      window.setTimeout(() => setSharedKey((current) => (current === key ? '' : current)), 1400)
+    } catch {
+      // Native share is often cancelled by users; no error message needed.
+    }
   }
 
   async function loadProfile() {
@@ -902,7 +934,7 @@ export default function WidgetPage() {
   async function createSession() {
     if (!profile) {
       setCreateStatus(text.createProfileFirst)
-      setActiveView('profile')
+      goToLogin()
       setIsCreating(false)
       return
     }
@@ -973,7 +1005,7 @@ export default function WidgetPage() {
   async function joinSession(session: Session) {
     if (!profile) {
       setCreateStatus(text.createProfileFirst)
-      setActiveView('profile')
+      goToLogin()
       return
     }
 
@@ -1015,7 +1047,7 @@ export default function WidgetPage() {
 
   async function leaveSession(session: Session) {
     if (!profile) {
-      setActiveView('profile')
+      goToLogin()
       return
     }
 
@@ -1234,7 +1266,12 @@ export default function WidgetPage() {
     <div className="app">
       <aside>
         <div>
-          <h1>VRena Sessions</h1>
+          <div className="app-title-row">
+            <h1>VRena Sessions</h1>
+            <button className={sharedKey === 'app' ? 'share-button copied' : 'share-button'} type="button" onClick={() => shareLink('app', 'VRena Sessions')}>
+              {sharedKey === 'app' ? text.shared : text.share}
+            </button>
+          </div>
           <p className="muted">{text.tagline}</p>
         </div>
 
@@ -1252,7 +1289,7 @@ export default function WidgetPage() {
           <button className={activeView === 'sessions' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
             {text.sessions}
           </button>
-          <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('create')}>
+          <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('create') : goToLogin())}>
             {text.createSession}
           </button>
         </div>
@@ -1296,7 +1333,7 @@ export default function WidgetPage() {
                 const isEditing = editingSessionId === session.id
 
                 return (
-                  <article className="session" key={session.id}>
+                  <article className="session" id={`session-${session.id}`} key={session.id}>
                     <div className="session-top">
                       <div>
                         <h3>{session.name}</h3>
@@ -1307,9 +1344,18 @@ export default function WidgetPage() {
                           <span>{remaining} {text.seatsLeft}</span>
                         </div>
                       </div>
-                      <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                        {session.visibility === 'private' ? text.private : text.public}
-                      </span>
+                      <div className="session-actions">
+                        <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                          {session.visibility === 'private' ? text.private : text.public}
+                        </span>
+                        <button
+                          className={sharedKey === session.id ? 'share-button copied' : 'share-button'}
+                          type="button"
+                          onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
+                        >
+                          {sharedKey === session.id ? text.shared : text.share}
+                        </button>
+                      </div>
                     </div>
 
                     {session.notes && <p className="notes">{session.notes}</p>}
@@ -1649,22 +1695,22 @@ export default function WidgetPage() {
             )}
 
             <div className="form-grid profile-form">
-              <div className="profile-photo-panel">
-                <label className="profile-photo-preview">
-                  {avatarPreview || profile?.avatar_url ? (
-                    <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
-                  ) : (
-                    displayName(profile).slice(0, 1)
-                  )}
-                  {(profile || authMode === 'create') && (
+              {(profile || authMode === 'create') && (
+                <div className="profile-photo-panel">
+                  <label className="profile-photo-preview">
+                    {avatarPreview || profile?.avatar_url ? (
+                      <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
+                    ) : (
+                      displayName(profile).slice(0, 1)
+                    )}
                     <input type="file" accept="image/*" onChange={handleAvatarChange} />
-                  )}
-                </label>
-                <div>
-                  <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
-                  <span>{profile || authMode === 'create' ? text.uploadPhoto : text.photoShown}</span>
+                  </label>
+                  <div>
+                    <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
+                    <span>{text.uploadPhoto}</span>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="country-field">
                 <label>{text.countryCode} <span className="required">*</span></label>
                 <div className="country-picker">
@@ -1927,6 +1973,13 @@ export default function WidgetPage() {
           margin-bottom: 16px;
         }
 
+        .app-title-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
         .profile-chip {
           display: grid;
           grid-template-columns: 44px minmax(0, 1fr);
@@ -1979,6 +2032,28 @@ export default function WidgetPage() {
           font-weight: 800;
           text-align: left;
           text-decoration: underline;
+        }
+
+        .share-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: fit-content;
+          min-height: 30px;
+          border: 1px solid rgba(48, 89, 255, 0.18);
+          border-radius: 999px;
+          background: #f5f8ff;
+          color: #3059ff;
+          padding: 5px 10px;
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .share-button.copied {
+          border-color: rgba(13, 124, 81, 0.28);
+          background: #e9f8f1;
+          color: #0d7c51;
         }
 
         .danger-link {
@@ -2172,6 +2247,14 @@ export default function WidgetPage() {
           justify-content: space-between;
           align-items: flex-start;
           gap: 12px;
+        }
+
+        .session-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
         .manage-row {
