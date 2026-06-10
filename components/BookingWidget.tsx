@@ -10,6 +10,7 @@ const TIME_STEP_MINUTES = 20
 const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
+const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 
 type HCaptchaApi = {
   render: (
@@ -183,6 +184,10 @@ const uiText = {
     captchaLabel: 'Human check',
     captchaHelp: 'One quick bot trap before the account is created.',
     captchaRequired: 'Please complete the human check first.',
+    consentPrefix: 'I agree to the collection and use of my personal data according to the ',
+    privacyPolicy: 'privacy policy',
+    consentSuffix: '.',
+    consentRequired: 'Please accept the personal data consent to create an account.',
     name: 'Name',
     nameRequired: 'Name is required.',
     nickname: 'Nickname',
@@ -321,6 +326,10 @@ const uiText = {
     captchaLabel: 'Xác minh người dùng',
     captchaHelp: 'Một bước nhỏ để chặn bot trước khi tạo tài khoản.',
     captchaRequired: 'Vui lòng hoàn tất bước xác minh trước.',
+    consentPrefix: 'Tôi đồng ý cho VRena thu thập và sử dụng dữ liệu cá nhân của tôi theo ',
+    privacyPolicy: 'chính sách bảo mật',
+    consentSuffix: '.',
+    consentRequired: 'Vui lòng đồng ý với điều khoản dữ liệu cá nhân để tạo tài khoản.',
     name: 'Tên',
     nameRequired: 'Vui lòng nhập tên.',
     nickname: 'Biệt danh',
@@ -505,6 +514,7 @@ export default function WidgetPage() {
   const [profileName, setProfileName] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
+  const [personalDataConsent, setPersonalDataConsent] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
   const [profileStatus, setProfileStatus] = useState('')
@@ -663,6 +673,11 @@ export default function WidgetPage() {
       return
     }
 
+    if (authMode === 'create' && !personalDataConsent) {
+      setProfileStatus(text.consentRequired)
+      return
+    }
+
     if (!captchaToken) {
       setProfileStatus(text.captchaRequired)
       return
@@ -674,6 +689,7 @@ export default function WidgetPage() {
     if (authMode === 'create') {
       const nickname = profileNickname.trim()
       const display = nickname || fullName
+      const consentAt = new Date().toISOString()
       const signUpResult = await supabase.auth.signUp({
         email: loginEmail,
         password: profilePassword,
@@ -684,6 +700,9 @@ export default function WidgetPage() {
             name: display,
             nickname: nickname || null,
             phone: fullPhone,
+            personal_data_consent: personalDataConsent,
+            personal_data_consent_at: consentAt,
+            privacy_policy_url: PRIVACY_POLICY_URL,
           },
           captchaToken,
         },
@@ -728,6 +747,9 @@ export default function WidgetPage() {
         nickname: nickname || existingProfile?.nickname || null,
         email: loginEmail,
         avatar_url: avatarUrl,
+        personal_data_consent: personalDataConsent,
+        personal_data_consent_at: consentAt,
+        privacy_policy_url: PRIVACY_POLICY_URL,
         updated_at: new Date().toISOString(),
       })
 
@@ -746,6 +768,9 @@ export default function WidgetPage() {
           nickname: nickname || null,
           phone: fullPhone,
           avatar_url: avatarUrl,
+          personal_data_consent: personalDataConsent,
+          personal_data_consent_at: consentAt,
+          privacy_policy_url: PRIVACY_POLICY_URL,
         },
       })
 
@@ -758,6 +783,7 @@ export default function WidgetPage() {
 
       resetCaptcha()
       setProfilePassword('')
+      setPersonalDataConsent(false)
       await loadProfile()
       setProfileStatus(text.accountCreated)
       setIsSavingProfile(false)
@@ -2056,6 +2082,22 @@ export default function WidgetPage() {
                   <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
                 </div>
               )}
+              {!profile && authMode === 'create' && (
+                <label className="consent-field">
+                  <input
+                    checked={personalDataConsent}
+                    onChange={(event) => setPersonalDataConsent(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>
+                    {text.consentPrefix}
+                    <a href={PRIVACY_POLICY_URL} rel="noreferrer" target="_blank">
+                      {text.privacyPolicy}
+                    </a>
+                    {text.consentSuffix}
+                  </span>
+                </label>
+              )}
               {!profile && (
                 <div className="password-field">
                   <label>{text.password} <span className="required">*</span></label>
@@ -2927,6 +2969,32 @@ export default function WidgetPage() {
           max-width: none;
         }
 
+        .consent-field {
+          grid-column: 1 / span 2;
+          display: grid;
+          grid-template-columns: 16px minmax(0, 1fr);
+          gap: 8px;
+          align-items: start;
+          max-width: 720px;
+          margin: 0;
+          color: #637075;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.35;
+        }
+
+        .consent-field input {
+          width: 14px;
+          height: 14px;
+          margin: 1px 0 0;
+          padding: 0;
+        }
+
+        .consent-field a {
+          color: #3059ff;
+          font-weight: 800;
+        }
+
         .captcha-field {
           grid-column: 1 / span 2;
           display: grid;
@@ -3510,6 +3578,7 @@ export default function WidgetPage() {
           .email-field,
           .name-field,
           .nickname-field,
+          .consent-field,
           .password-field,
           .captcha-field {
             grid-column: 1;
@@ -3586,6 +3655,7 @@ export default function WidgetPage() {
           .notes,
           .login-modal p,
           .field-help,
+          .consent-field,
           .game-card strong,
           .stats span {
             color: #aeb9bd;
