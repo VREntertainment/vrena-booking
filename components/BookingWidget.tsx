@@ -8,6 +8,7 @@ const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 
 type GameId =
   | 'laser-tag'
@@ -149,7 +150,7 @@ const uiText = {
     createPrivateSession: 'Create Private Session',
     profile: 'Profile',
     profileUpdateHint: 'Update your profile details.',
-    profileLoginHint: 'Log in or create an account with email, phone number, and password.',
+    profileLoginHint: 'Log in with email and password. Phone is only needed to create an account.',
     logIn: 'Log In',
     createAccount: 'Create Account',
     profilePhoto: 'Profile photo',
@@ -278,7 +279,7 @@ const uiText = {
     createPrivateSession: 'Tạo phiên riêng tư',
     profile: 'Hồ sơ',
     profileUpdateHint: 'Cập nhật thông tin hồ sơ.',
-    profileLoginHint: 'Đăng nhập hoặc tạo tài khoản bằng email, số điện thoại và mật khẩu.',
+    profileLoginHint: 'Đăng nhập bằng email và mật khẩu. Số điện thoại chỉ cần khi tạo tài khoản.',
     logIn: 'Đăng nhập',
     createAccount: 'Tạo tài khoản',
     profilePhoto: 'Ảnh hồ sơ',
@@ -429,6 +430,18 @@ function displayName(profile: Profile | null) {
   return profile.nickname || profile.phone
 }
 
+function appRedirectUrl() {
+  if (typeof window === 'undefined') return DEFAULT_APP_URL
+
+  const hostname = window.location.hostname
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+    return DEFAULT_APP_URL
+  }
+
+  return window.location.origin
+}
+
 export default function WidgetPage() {
   const [activeView, setActiveView] = useState<'sessions' | 'create' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
@@ -550,7 +563,7 @@ export default function WidgetPage() {
     const fullPhone = `${countryCode}${localPhone}`
     const loginEmail = profileEmail.trim().toLowerCase()
 
-    if (fullPhone.length < 8) {
+    if (authMode === 'create' && fullPhone.length < 8) {
       setProfileStatus(text.phoneRequired)
       return
     }
@@ -569,7 +582,20 @@ export default function WidgetPage() {
     setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
     if (authMode === 'create') {
-      const signUpResult = await supabase.auth.signUp({ email: loginEmail, password: profilePassword })
+      const display = profileNickname.trim() || fullPhone
+      const signUpResult = await supabase.auth.signUp({
+        email: loginEmail,
+        password: profilePassword,
+        options: {
+          data: {
+            display_name: display,
+            full_name: display,
+            name: display,
+            nickname: profileNickname.trim() || null,
+            phone: fullPhone,
+          },
+        },
+      })
 
       if (signUpResult.error) {
         setProfileStatus(signUpResult.error.message)
@@ -604,12 +630,21 @@ export default function WidgetPage() {
       .eq('id', authUser.id)
       .maybeSingle()
 
+    if (authMode === 'login') {
+      setProfilePassword('')
+      await loadProfile()
+      setProfileStatus(text.loggedIn)
+      setIsSavingProfile(false)
+      return
+    }
+
     const avatarUrl = await uploadAvatar(authUser.id, existingProfile?.avatar_url || null)
 
     if (avatarUrl === false) return
 
     const { error } = await supabase.from('profiles').upsert({
       id: authUser.id,
+      full_name: profileNickname.trim() || null,
       phone: fullPhone,
       nickname: profileNickname.trim() || existingProfile?.nickname || null,
       email: loginEmail,
@@ -619,6 +654,24 @@ export default function WidgetPage() {
 
     if (error) {
       setProfileStatus(error.message)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const display = profileNickname.trim() || fullPhone
+    const metadataUpdate = await supabase.auth.updateUser({
+      data: {
+        display_name: display,
+        full_name: display,
+        name: display,
+        nickname: profileNickname.trim() || null,
+        phone: fullPhone,
+        avatar_url: avatarUrl,
+      },
+    })
+
+    if (metadataUpdate.error) {
+      setProfileStatus(metadataUpdate.error.message)
       setIsSavingProfile(false)
       return
     }
@@ -648,7 +701,7 @@ export default function WidgetPage() {
     }
 
     setIsResettingPassword(true)
-    const redirectTo = typeof window === 'undefined' ? undefined : window.location.origin
+    const redirectTo = appRedirectUrl()
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
     if (error) {
@@ -873,6 +926,7 @@ export default function WidgetPage() {
 
     const row = {
       id: userId,
+      full_name: profileNickname.trim() || null,
       phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
       nickname: profileNickname.trim() || null,
       email: profileEmail.trim() || null,
@@ -888,6 +942,24 @@ export default function WidgetPage() {
 
     if (error) {
       setProfileStatus(error.message)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const display = profileNickname.trim() || data.phone
+    const metadataUpdate = await supabase.auth.updateUser({
+      data: {
+        display_name: display,
+        full_name: display,
+        name: display,
+        nickname: profileNickname.trim() || null,
+        phone: data.phone,
+        avatar_url: data.avatar_url,
+      },
+    })
+
+    if (metadataUpdate.error) {
+      setProfileStatus(metadataUpdate.error.message)
       setIsSavingProfile(false)
       return
     }
@@ -1723,48 +1795,52 @@ export default function WidgetPage() {
                   </div>
                 </div>
               )}
-              <div className="country-field">
-                <label>{text.countryCode} <span className="required">*</span></label>
-                <div className="country-picker">
-                  <button
-                    className="country-button"
-                    onClick={() => setCountryPickerOpen((open) => !open)}
-                    type="button"
-                  >
-                    {profileCountryCode}
-                  </button>
-                  {countryPickerOpen && (
-                    <div className="country-menu">
-                      <input
-                        autoFocus
-                        value={countrySearch}
-                        onChange={(event) => setCountrySearch(event.target.value)}
-                        placeholder={text.searchCountry}
-                      />
-                      <div className="country-list">
-                        {filteredCountries.map((country) => (
-                          <button
-                            key={`${country.code}-${country.name}`}
-                            onClick={() => {
-                              setProfileCountryCode(country.code)
-                              setCountrySearch('')
-                              setCountryPickerOpen(false)
-                            }}
-                            type="button"
-                          >
-                            <span>{country.code}</span>
-                            <strong>{country.name}</strong>
-                          </button>
-                        ))}
-                      </div>
+              {(profile || authMode === 'create') && (
+                <>
+                  <div className="country-field">
+                    <label>{text.countryCode} <span className="required">*</span></label>
+                    <div className="country-picker">
+                      <button
+                        className="country-button"
+                        onClick={() => setCountryPickerOpen((open) => !open)}
+                        type="button"
+                      >
+                        {profileCountryCode}
+                      </button>
+                      {countryPickerOpen && (
+                        <div className="country-menu">
+                          <input
+                            autoFocus
+                            value={countrySearch}
+                            onChange={(event) => setCountrySearch(event.target.value)}
+                            placeholder={text.searchCountry}
+                          />
+                          <div className="country-list">
+                            {filteredCountries.map((country) => (
+                              <button
+                                key={`${country.code}-${country.name}`}
+                                onClick={() => {
+                                  setProfileCountryCode(country.code)
+                                  setCountrySearch('')
+                                  setCountryPickerOpen(false)
+                                }}
+                                type="button"
+                              >
+                                <span>{country.code}</span>
+                                <strong>{country.name}</strong>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="phone-field">
-                <label>{text.phoneNumber} <span className="required">*</span></label>
-                <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
-              </div>
+                  </div>
+                  <div className="phone-field">
+                    <label>{text.phoneNumber} <span className="required">*</span></label>
+                    <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+                  </div>
+                </>
+              )}
               <div className="email-field">
                 <label>{text.email} <span className="required">*</span></label>
                 <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
