@@ -7,6 +7,7 @@ const ARENA_COUNT = 2
 const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
+const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 
 type GameId =
   | 'laser-tag'
@@ -25,6 +26,7 @@ type Profile = {
   nickname: string | null
   email: string | null
   avatar_url: string | null
+  role?: 'player' | 'admin'
 }
 
 type Participant = {
@@ -99,6 +101,235 @@ const countries = [
   { code: '+41', name: 'Switzerland' },
 ]
 
+const uiText = {
+  en: {
+    tagline: 'Create a public or private game session and let other players join.',
+    noProfile: 'No profile yet',
+    clickLogin: 'Click to log in',
+    sessions: 'Sessions',
+    createSession: 'Create Session',
+    availableSessions: 'Available Game Sessions',
+    privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
+    searchPlaceholder: 'Search by session name, game, or private code',
+    noMatchingSessions: 'No matching sessions yet.',
+    private: 'Private',
+    public: 'Public',
+    privateCode: 'Private code',
+    copy: 'Copy',
+    copied: 'Copied',
+    editSession: 'Edit Session',
+    cancelSession: 'Cancel Session',
+    editSessionTitle: 'Edit session',
+    editSessionHint: 'Changes must still match arena availability.',
+    sessionName: 'Session Name',
+    date: 'Date',
+    availableTime: 'Available Time',
+    chooseTime: 'Choose a time',
+    duration: 'Duration',
+    maxPlayers: 'Maximum Players',
+    arenas: 'Arenas',
+    oneArena: '1 arena',
+    twoArenas: '2 arenas - 8 players minimum',
+    gameOptions: 'Game Options',
+    notes: 'Notes',
+    saveChanges: 'Save Changes',
+    saving: 'Saving...',
+    close: 'Close',
+    remove: 'Remove',
+    seatsLeft: 'seats left',
+    joined: 'Joined',
+    full: 'Full',
+    joining: 'Joining...',
+    joinSession: 'Join Session',
+    createSessionTitle: 'Create Session',
+    createSessionHint: 'Duration increases by 20 minutes. Max players is 16.',
+    fridayPlaceholder: 'Friday VR squad',
+    notesPlaceholder: 'Language, skill level, preferred game, special notes',
+    creating: 'Creating...',
+    createPrivateSession: 'Create Private Session',
+    profile: 'Profile',
+    profileUpdateHint: 'Update your profile details.',
+    profileLoginHint: 'Log in or create an account with email, phone number, and password.',
+    logIn: 'Log In',
+    createAccount: 'Create Account',
+    profilePhoto: 'Profile photo',
+    uploadPhoto: 'Click the circle to upload your photo.',
+    photoShown: 'Shown beside your name when you join a session.',
+    countryCode: 'Country Code',
+    searchCountry: 'Search country or code',
+    phoneNumber: 'Phone Number',
+    email: 'Email',
+    password: 'Password',
+    passwordPlaceholder: 'Minimum 6 characters',
+    passwordHelp: 'Use at least 6 characters. Keep this password to log in again later.',
+    nickname: 'Nickname',
+    optional: 'Optional',
+    saveProfile: 'Save Profile',
+    loggingIn: 'Logging in...',
+    loggedIn: 'Logged in.',
+    accountCreated: 'Account created.',
+    savingProfile: 'Saving profile...',
+    profileSaved: 'Profile saved.',
+    logOut: 'Log Out',
+    mySessions: 'My sessions',
+    mySessionsHint: 'Sessions you created or joined.',
+    noSessionsYet: 'No sessions yet.',
+    createdByYou: 'Created by you',
+    playerRemoved: 'Player removed from session.',
+    sessionCancelled: 'Session cancelled.',
+    sessionUpdated: 'Session updated.',
+    sessionCreated: 'Session created.',
+    voteSaved: 'Vote saved.',
+    phoneRequired: 'Phone number is required.',
+    emailRequired: 'Valid email is required.',
+    passwordRequired: 'Password must be at least 6 characters.',
+    loginRequired: 'Please log in to finish your profile.',
+    loggedOut: 'Logged out.',
+    profileLoading: 'Please wait, profile login is still loading.',
+    createProfileFirst: 'Please create your profile first.',
+    sessionRequired: 'Please enter a session name, date, and available time.',
+    privateCreated: 'Private session created. Invite code:',
+    privateIncorrect: 'Private code is incorrect.',
+    sessionFull: 'This session is already full.',
+    joinedSession: 'You joined the session.',
+    creatorOnlyEdit: 'Only the creator can edit this session.',
+    creatorOnlyCancel: 'Only the creator can cancel this session.',
+    creatorOnlyRemove: 'Only the creator can remove players from this session.',
+    creatorCannotRemove: 'The session creator cannot be removed.',
+    savingSession: 'Saving session...',
+    privateUpdated: 'Session updated. Private code:',
+    maxPlayersBelowJoined: 'Maximum players cannot be below the current joined players.',
+    cancelConfirmPrefix: 'Cancel',
+    cancelConfirmSuffix: 'This will remove it from available sessions.',
+    removeConfirmPrefix: 'Remove',
+    removeConfirmFallback: 'this player',
+    fromSession: 'from',
+    player: 'Player',
+    players: 'players',
+    vote: 'vote',
+    votes: 'votes',
+    arenaAvailable: 'arena available',
+    arenasAvailable: 'arenas available',
+    createError: 'Could not create session.',
+  },
+  vi: {
+    tagline: 'Tạo phiên chơi công khai hoặc riêng tư và mời người chơi khác tham gia.',
+    noProfile: 'Chưa có hồ sơ',
+    clickLogin: 'Bấm để đăng nhập',
+    sessions: 'Phiên chơi',
+    createSession: 'Tạo phiên',
+    availableSessions: 'Các phiên chơi hiện có',
+    privateJoinHint: 'Phiên riêng tư vẫn hiển thị, nhưng cần mã 6 ký tự để tham gia.',
+    searchPlaceholder: 'Tìm theo tên phiên, game hoặc mã riêng tư',
+    noMatchingSessions: 'Chưa có phiên phù hợp.',
+    private: 'Riêng tư',
+    public: 'Công khai',
+    privateCode: 'Mã riêng tư',
+    copy: 'Sao chép',
+    copied: 'Đã sao chép',
+    editSession: 'Sửa phiên',
+    cancelSession: 'Hủy phiên',
+    editSessionTitle: 'Sửa phiên chơi',
+    editSessionHint: 'Thay đổi vẫn phải phù hợp với lịch trống của arena.',
+    sessionName: 'Tên phiên',
+    date: 'Ngày',
+    availableTime: 'Giờ còn trống',
+    chooseTime: 'Chọn giờ',
+    duration: 'Thời lượng',
+    maxPlayers: 'Số người tối đa',
+    arenas: 'Arena',
+    oneArena: '1 arena',
+    twoArenas: '2 arena - tối thiểu 8 người',
+    gameOptions: 'Lựa chọn game',
+    notes: 'Ghi chú',
+    saveChanges: 'Lưu thay đổi',
+    saving: 'Đang lưu...',
+    close: 'Đóng',
+    remove: 'Xóa',
+    seatsLeft: 'chỗ còn lại',
+    joined: 'Đã tham gia',
+    full: 'Đã đầy',
+    joining: 'Đang tham gia...',
+    joinSession: 'Tham gia',
+    createSessionTitle: 'Tạo phiên chơi',
+    createSessionHint: 'Thời lượng tăng mỗi 20 phút. Tối đa 16 người chơi.',
+    fridayPlaceholder: 'Nhóm VR tối thứ Sáu',
+    notesPlaceholder: 'Ngôn ngữ, trình độ, game yêu thích, ghi chú đặc biệt',
+    creating: 'Đang tạo...',
+    createPrivateSession: 'Tạo phiên riêng tư',
+    profile: 'Hồ sơ',
+    profileUpdateHint: 'Cập nhật thông tin hồ sơ.',
+    profileLoginHint: 'Đăng nhập hoặc tạo tài khoản bằng email, số điện thoại và mật khẩu.',
+    logIn: 'Đăng nhập',
+    createAccount: 'Tạo tài khoản',
+    profilePhoto: 'Ảnh hồ sơ',
+    uploadPhoto: 'Bấm vào hình tròn để tải ảnh lên.',
+    photoShown: 'Ảnh sẽ hiển thị cạnh tên của bạn khi tham gia phiên.',
+    countryCode: 'Mã quốc gia',
+    searchCountry: 'Tìm quốc gia hoặc mã',
+    phoneNumber: 'Số điện thoại',
+    email: 'Email',
+    password: 'Mật khẩu',
+    passwordPlaceholder: 'Tối thiểu 6 ký tự',
+    passwordHelp: 'Dùng ít nhất 6 ký tự. Giữ mật khẩu này để đăng nhập lại.',
+    nickname: 'Biệt danh',
+    optional: 'Không bắt buộc',
+    saveProfile: 'Lưu hồ sơ',
+    loggingIn: 'Đang đăng nhập...',
+    loggedIn: 'Đã đăng nhập.',
+    accountCreated: 'Đã tạo tài khoản.',
+    savingProfile: 'Đang lưu hồ sơ...',
+    profileSaved: 'Đã lưu hồ sơ.',
+    logOut: 'Đăng xuất',
+    mySessions: 'Phiên của tôi',
+    mySessionsHint: 'Các phiên bạn đã tạo hoặc tham gia.',
+    noSessionsYet: 'Chưa có phiên nào.',
+    createdByYou: 'Bạn đã tạo',
+    playerRemoved: 'Đã xóa người chơi khỏi phiên.',
+    sessionCancelled: 'Đã hủy phiên.',
+    sessionUpdated: 'Đã cập nhật phiên.',
+    sessionCreated: 'Đã tạo phiên.',
+    voteSaved: 'Đã lưu bình chọn.',
+    phoneRequired: 'Vui lòng nhập số điện thoại.',
+    emailRequired: 'Vui lòng nhập email hợp lệ.',
+    passwordRequired: 'Mật khẩu phải có ít nhất 6 ký tự.',
+    loginRequired: 'Vui lòng đăng nhập để hoàn tất hồ sơ.',
+    loggedOut: 'Đã đăng xuất.',
+    profileLoading: 'Vui lòng chờ, hồ sơ đăng nhập vẫn đang tải.',
+    createProfileFirst: 'Vui lòng tạo hồ sơ trước.',
+    sessionRequired: 'Vui lòng nhập tên phiên, ngày và giờ còn trống.',
+    privateCreated: 'Đã tạo phiên riêng tư. Mã mời:',
+    privateIncorrect: 'Mã riêng tư không đúng.',
+    sessionFull: 'Phiên này đã đầy.',
+    joinedSession: 'Bạn đã tham gia phiên.',
+    creatorOnlyEdit: 'Chỉ người tạo phiên mới có thể sửa phiên này.',
+    creatorOnlyCancel: 'Chỉ người tạo phiên mới có thể hủy phiên này.',
+    creatorOnlyRemove: 'Chỉ người tạo phiên mới có thể xóa người chơi khỏi phiên này.',
+    creatorCannotRemove: 'Không thể xóa người tạo phiên.',
+    savingSession: 'Đang lưu phiên...',
+    privateUpdated: 'Đã cập nhật phiên. Mã riêng tư:',
+    maxPlayersBelowJoined: 'Số người tối đa không thể thấp hơn số người đã tham gia.',
+    cancelConfirmPrefix: 'Hủy',
+    cancelConfirmSuffix: 'Phiên này sẽ không còn hiển thị trong danh sách.',
+    removeConfirmPrefix: 'Xóa',
+    removeConfirmFallback: 'người chơi này',
+    fromSession: 'khỏi',
+    player: 'Người chơi',
+    players: 'người chơi',
+    vote: 'bình chọn',
+    votes: 'bình chọn',
+    arenaAvailable: 'arena còn trống',
+    arenasAvailable: 'arena còn trống',
+    createError: 'Không thể tạo phiên.',
+  },
+}
+
+function detectLanguage() {
+  if (typeof navigator === 'undefined') return 'en'
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language]
+  return languages.some((language) => language.toLowerCase().startsWith('vi')) ? 'vi' : 'en'
+}
+
 function minutesToTime(minutes: number) {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
@@ -161,7 +392,7 @@ function displayName(profile: Profile | null) {
 }
 
 export default function WidgetPage() {
-  const [activeView, setActiveView] = useState<'sessions' | 'create' | 'profile' | 'admin'>('sessions')
+  const [activeView, setActiveView] = useState<'sessions' | 'create' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -197,6 +428,19 @@ export default function WidgetPage() {
   const [busySessionId, setBusySessionId] = useState('')
   const [busyVoteKey, setBusyVoteKey] = useState('')
   const [copiedInviteId, setCopiedInviteId] = useState('')
+  const [editingSessionId, setEditingSessionId] = useState('')
+  const [editSessionName, setEditSessionName] = useState('')
+  const [editSessionDate, setEditSessionDate] = useState(localDateString())
+  const [editSessionTime, setEditSessionTime] = useState('')
+  const [editSessionDuration, setEditSessionDuration] = useState(20)
+  const [editSessionMaxPlayers, setEditSessionMaxPlayers] = useState(4)
+  const [editSessionArenaCount, setEditSessionArenaCount] = useState(1)
+  const [editSessionVisibility, setEditSessionVisibility] = useState<'public' | 'private'>('public')
+  const [editSessionNotes, setEditSessionNotes] = useState('')
+  const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
+  const [isUpdatingSession, setIsUpdatingSession] = useState(false)
+  const [language, setLanguage] = useState<'en' | 'vi'>('en')
+  const text = uiText[language]
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
@@ -220,7 +464,7 @@ export default function WidgetPage() {
 
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('id, phone, nickname, email, avatar_url')
+      .select('id, phone, nickname, email, avatar_url, role')
       .eq('id', authUser.id)
       .maybeSingle()
 
@@ -241,22 +485,22 @@ export default function WidgetPage() {
     const loginEmail = profileEmail.trim().toLowerCase()
 
     if (fullPhone.length < 8) {
-      setProfileStatus('Phone number is required.')
+      setProfileStatus(text.phoneRequired)
       return
     }
 
     if (!loginEmail || !loginEmail.includes('@')) {
-      setProfileStatus('Valid email is required.')
+      setProfileStatus(text.emailRequired)
       return
     }
 
     if (profilePassword.length < 6) {
-      setProfileStatus('Password must be at least 6 characters.')
+      setProfileStatus(text.passwordRequired)
       return
     }
 
     setIsSavingProfile(true)
-    setProfileStatus(authMode === 'login' ? 'Logging in...' : 'Creating account...')
+    setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
     if (authMode === 'create') {
       const signUpResult = await supabase.auth.signUp({ email: loginEmail, password: profilePassword })
@@ -280,7 +524,7 @@ export default function WidgetPage() {
     const authUser = verifiedUserData.user
 
     if (!authUser) {
-      setProfileStatus('Please log in to finish your profile.')
+      setProfileStatus(text.loginRequired)
       setAuthMode('login')
       setIsSavingProfile(false)
       return
@@ -315,7 +559,7 @@ export default function WidgetPage() {
 
     setProfilePassword('')
     await loadProfile()
-    setProfileStatus(authMode === 'login' ? 'Logged in.' : 'Account created.')
+    setProfileStatus(authMode === 'login' ? text.loggedIn : text.accountCreated)
     setIsSavingProfile(false)
   }
 
@@ -324,7 +568,7 @@ export default function WidgetPage() {
     setUserId('')
     setProfile(null)
     setProfilePassword('')
-    setProfileStatus('Logged out.')
+    setProfileStatus(text.loggedOut)
   }
 
   async function loadSessions() {
@@ -348,57 +592,18 @@ export default function WidgetPage() {
   }
 
   useEffect(() => {
+    setLanguage(detectLanguage())
     loadProfile()
     loadSessions()
   }, [])
 
   const timeOptions = useMemo(() => {
-    if (!sessionDate) return []
+    return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
+  }, [blockedTimes, language, sessionArenaCount, sessionDate, sessionDuration, sessions])
 
-    const now = new Date()
-    const today = localDateString(now)
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
-
-    const options: Array<{ value: string; label: string; remaining: number }> = []
-    const latestStart = CLOSE_MINUTES - sessionDuration
-
-    for (let start = OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
-      const end = start + sessionDuration
-
-      if (sessionDate === today && start <= nowMinutes) continue
-
-      const activeSessionArenas = sessions
-        .filter((session) => session.status === 'open' && session.date === sessionDate)
-        .filter((session) =>
-          rangesOverlap(
-            start,
-            end,
-            timeToMinutes(session.start_time),
-            timeToMinutes(session.start_time) + session.duration_minutes
-          )
-        )
-        .reduce((total, session) => total + arenasUsedBySession(session), 0)
-
-      const activeBlockedArenas = blockedTimes
-        .filter((blocked) => blocked.date === sessionDate)
-        .filter((blocked) =>
-          rangesOverlap(start, end, timeToMinutes(blocked.start_time), timeToMinutes(blocked.end_time))
-        )
-        .reduce((total, blocked) => total + blocked.arenas_used, 0)
-
-      const remaining = ARENA_COUNT - activeSessionArenas - activeBlockedArenas
-
-      if (remaining >= sessionArenaCount) {
-        options.push({
-          value: minutesToTime(start),
-          label: `${minutesToTime(start)}-${minutesToTime(end)} (${remaining} arena${remaining > 1 ? 's' : ''} available)`,
-          remaining,
-        })
-      }
-    }
-
-    return options
-  }, [blockedTimes, sessionArenaCount, sessionDate, sessionDuration, sessions])
+  const editTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
+  }, [blockedTimes, editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, language, sessions])
 
   function handleSessionDateChange(event: ChangeEvent<HTMLInputElement>) {
     setSessionDate(event.target.value)
@@ -419,6 +624,70 @@ export default function WidgetPage() {
     }
 
     setSessionArenaCount(value)
+  }
+
+  function handleEditMaxPlayersChange(value: number) {
+    setEditSessionMaxPlayers(value)
+
+    if (value < 8) {
+      setEditSessionArenaCount(1)
+    }
+  }
+
+  function handleEditArenaCountChange(value: number) {
+    if (value === 2 && editSessionMaxPlayers < 8) {
+      setEditSessionMaxPlayers(8)
+    }
+
+    setEditSessionArenaCount(value)
+  }
+
+  function getAvailableTimeOptions(date: string, duration: number, arenaCount: number, excludeSessionId = '') {
+    if (!date) return []
+
+    const now = new Date()
+    const today = localDateString(now)
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+    const options: Array<{ value: string; label: string; remaining: number }> = []
+    const latestStart = CLOSE_MINUTES - duration
+
+    for (let start = OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
+      const end = start + duration
+
+      if (date === today && start <= nowMinutes) continue
+
+      const activeSessionArenas = sessions
+        .filter((session) => session.status === 'open' && session.date === date && session.id !== excludeSessionId)
+        .filter((session) =>
+          rangesOverlap(
+            start,
+            end,
+            timeToMinutes(session.start_time),
+            timeToMinutes(session.start_time) + session.duration_minutes
+          )
+        )
+        .reduce((total, session) => total + arenasUsedBySession(session), 0)
+
+      const activeBlockedArenas = blockedTimes
+        .filter((blocked) => blocked.date === date)
+        .filter((blocked) =>
+          rangesOverlap(start, end, timeToMinutes(blocked.start_time), timeToMinutes(blocked.end_time))
+        )
+        .reduce((total, blocked) => total + blocked.arenas_used, 0)
+
+      const remaining = ARENA_COUNT - activeSessionArenas - activeBlockedArenas
+
+      if (remaining >= arenaCount) {
+        options.push({
+          value: minutesToTime(start),
+          label: `${minutesToTime(start)}-${minutesToTime(end)} (${remaining} ${remaining > 1 ? text.arenasAvailable : text.arenaAvailable})`,
+          remaining,
+        })
+      }
+    }
+
+    return options
   }
 
   const filteredSessions = useMemo(() => {
@@ -458,9 +727,15 @@ export default function WidgetPage() {
     )
   }, [countrySearch])
 
+  const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
+
+  function canManageSession(session: Session) {
+    return Boolean(userId && (session.owner_id === userId || isAdmin))
+  }
+
   async function saveProfile() {
     if (!userId) {
-      setProfileStatus('Please wait, profile login is still loading.')
+      setProfileStatus(text.profileLoading)
       return
     }
 
@@ -468,12 +743,12 @@ export default function WidgetPage() {
     const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
 
     if (!profilePhone.trim()) {
-      setProfileStatus('Phone number is required.')
+      setProfileStatus(text.phoneRequired)
       return
     }
 
     setIsSavingProfile(true)
-    setProfileStatus('Saving profile...')
+    setProfileStatus(text.savingProfile)
 
     const avatarUrl = await uploadAvatar(userId, profile?.avatar_url || null)
 
@@ -491,7 +766,7 @@ export default function WidgetPage() {
     const { data, error } = await supabase
       .from('profiles')
       .upsert(row)
-      .select('id, phone, nickname, email, avatar_url')
+      .select('id, phone, nickname, email, avatar_url, role')
       .single()
 
     if (error) {
@@ -505,7 +780,7 @@ export default function WidgetPage() {
     setAvatarPreview('')
     setProfileCountryCode(`${countryCode} ${countries.find((country) => country.code === countryCode)?.name || ''}`.trim())
     setProfilePhone(localPhone)
-    setProfileStatus('Profile saved.')
+    setProfileStatus(text.profileSaved)
     setIsSavingProfile(false)
   }
 
@@ -543,20 +818,20 @@ export default function WidgetPage() {
 
   async function createSession() {
     if (!profile) {
-      setCreateStatus('Please create your profile first.')
+      setCreateStatus(text.createProfileFirst)
       setActiveView('profile')
       setIsCreating(false)
       return
     }
 
     if (!sessionName.trim() || !sessionDate || !sessionTime) {
-      setCreateStatus('Please enter a session name, date, and available time.')
+      setCreateStatus(text.sessionRequired)
       setIsCreating(false)
       return
     }
 
     setIsCreating(true)
-    setCreateStatus('Creating session...')
+    setCreateStatus(text.creating)
 
     const inviteCode = sessionVisibility === 'private' ? generateInviteCode() : null
 
@@ -581,7 +856,7 @@ export default function WidgetPage() {
       .single()
 
     if (error || !created) {
-      setCreateStatus(error?.message || 'Could not create session.')
+      setCreateStatus(error?.message || text.createError)
       setIsCreating(false)
       return
     }
@@ -595,8 +870,8 @@ export default function WidgetPage() {
 
     setCreateStatus(
       sessionVisibility === 'private'
-        ? `Private session created. Invite code: ${inviteCode}`
-        : 'Session created.'
+        ? `${text.privateCreated} ${inviteCode}`
+        : text.sessionCreated
     )
 
     setSessionName('')
@@ -614,7 +889,7 @@ export default function WidgetPage() {
 
   async function joinSession(session: Session) {
     if (!profile) {
-      setCreateStatus('Please create your profile first.')
+      setCreateStatus(text.createProfileFirst)
       setActiveView('profile')
       return
     }
@@ -622,7 +897,7 @@ export default function WidgetPage() {
     if (session.visibility === 'private') {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
       if (typedCode !== session.invite_code) {
-        setCreateStatus('Private code is incorrect.')
+        setCreateStatus(text.privateIncorrect)
         return
       }
     }
@@ -631,7 +906,7 @@ export default function WidgetPage() {
     if (participants.some((participant) => participant.profile_id === userId)) return
 
     if (participants.length >= session.max_players) {
-      setCreateStatus('This session is already full.')
+      setCreateStatus(text.sessionFull)
       return
     }
 
@@ -652,7 +927,7 @@ export default function WidgetPage() {
 
     await loadSessions()
     setBusySessionId('')
-    setCreateStatus('You joined the session.')
+    setCreateStatus(text.joinedSession)
   }
 
   async function voteForGame(session: Session, gameId: GameId) {
@@ -673,8 +948,140 @@ export default function WidgetPage() {
     }
 
     await loadSessions()
-    setCreateStatus('Vote saved.')
+    setCreateStatus(text.voteSaved)
     setBusyVoteKey('')
+  }
+
+  function toggleEditGame(gameId: GameId) {
+    setEditSelectedGames((current) => {
+      if (current.includes(gameId)) {
+        return current.length === 1 ? current : current.filter((id) => id !== gameId)
+      }
+      return [...current, gameId]
+    })
+  }
+
+  function startEditingSession(session: Session) {
+    setEditingSessionId(session.id)
+    setEditSessionName(session.name)
+    setEditSessionDate(session.date)
+    setEditSessionTime(session.start_time.slice(0, 5))
+    setEditSessionDuration(session.duration_minutes)
+    setEditSessionMaxPlayers(session.max_players)
+    setEditSessionArenaCount(arenasUsedBySession(session))
+    setEditSessionVisibility(session.visibility)
+    setEditSessionNotes(session.notes || '')
+    setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
+    setCreateStatus('')
+  }
+
+  function stopEditingSession() {
+    setEditingSessionId('')
+    setIsUpdatingSession(false)
+  }
+
+  async function updateSession(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const participants = session.session_participants ?? []
+
+    if (!editSessionName.trim() || !editSessionDate || !editSessionTime) {
+      setCreateStatus(text.sessionRequired)
+      return
+    }
+
+    if (editSessionMaxPlayers < participants.length) {
+      setCreateStatus(text.maxPlayersBelowJoined)
+      return
+    }
+
+    setIsUpdatingSession(true)
+    setCreateStatus(text.savingSession)
+
+    const inviteCode =
+      editSessionVisibility === 'private'
+        ? session.invite_code || generateInviteCode()
+        : null
+
+    const { error } = await supabase
+      .from('sessions')
+      .update({
+        name: editSessionName.trim(),
+        date: editSessionDate,
+        start_time: `${editSessionTime}:00`,
+        duration_minutes: editSessionDuration,
+        max_players: editSessionMaxPlayers,
+        arena_count: editSessionArenaCount,
+        game_options: editSelectedGames,
+        visibility: editSessionVisibility,
+        invite_code: inviteCode,
+        notes: editSessionNotes.trim() || null,
+      })
+      .eq('id', session.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      setIsUpdatingSession(false)
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(editSessionVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
+    stopEditingSession()
+  }
+
+  async function cancelSession(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyCancel)
+      return
+    }
+
+    const confirmed = window.confirm(`${text.cancelConfirmPrefix} "${session.name}"? ${text.cancelConfirmSuffix}`)
+    if (!confirmed) return
+
+    setBusySessionId(session.id)
+    const { error } = await supabase.from('sessions').update({ status: 'cancelled' }).eq('id', session.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusySessionId('')
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(text.sessionCancelled)
+    setBusySessionId('')
+  }
+
+  async function removeParticipant(session: Session, participant: Participant) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyRemove)
+      return
+    }
+
+    if (participant.profile_id === session.owner_id) {
+      setCreateStatus(text.creatorCannotRemove)
+      return
+    }
+
+    const confirmed = window.confirm(`${text.removeConfirmPrefix} ${participant.display_name || text.removeConfirmFallback} ${text.fromSession} "${session.name}"?`)
+    if (!confirmed) return
+
+    setBusySessionId(session.id)
+    const { error } = await supabase.from('session_participants').delete().eq('id', participant.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusySessionId('')
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(text.playerRemoved)
+    setBusySessionId('')
   }
 
   function voteCount(session: Session, gameId: GameId) {
@@ -686,7 +1093,7 @@ export default function WidgetPage() {
       <aside>
         <div>
           <h1>VRena Sessions</h1>
-          <p className="muted">Create a public or private game session and let other players join.</p>
+          <p className="muted">{text.tagline}</p>
         </div>
 
         <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
@@ -694,20 +1101,17 @@ export default function WidgetPage() {
             {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : displayName(profile).slice(0, 1)}
           </div>
           <div>
-            <strong>{profile ? displayName(profile) : 'No profile yet'}</strong>
-            <span>{profile?.phone || 'Click to log in'}</span>
+            <strong>{profile ? displayName(profile) : text.noProfile}</strong>
+            <span>{profile?.phone || text.clickLogin}</span>
           </div>
         </button>
 
         <div className="tabs">
           <button className={activeView === 'sessions' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
-            Sessions
+            {text.sessions}
           </button>
           <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('create')}>
-            Create Session
-          </button>
-          <button className={activeView === 'admin' ? 'tab active' : 'tab'} onClick={() => setActiveView('admin')}>
-            Admin
+            {text.createSession}
           </button>
         </div>
 
@@ -724,13 +1128,13 @@ export default function WidgetPage() {
           <section className="section">
             <div className="section-head">
               <div>
-                <h2>Available Game Sessions</h2>
-                <p className="muted">Private sessions are listed, but joining requires the 6-character code.</p>
+                <h2>{text.availableSessions}</h2>
+                <p className="muted">{text.privateJoinHint}</p>
               </div>
               <input
                 className="search"
                 type="search"
-                placeholder="Search by session name, game, or private code"
+                placeholder={text.searchPlaceholder}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -738,14 +1142,16 @@ export default function WidgetPage() {
             {createStatus && <p className="notice">{createStatus}</p>}
 
             <div className="list">
-              {filteredSessions.length === 0 && <p className="notice">No matching sessions yet.</p>}
+              {filteredSessions.length === 0 && <p className="notice">{text.noMatchingSessions}</p>}
 
               {filteredSessions.map((session) => {
                 const participants = session.session_participants ?? []
                 const remaining = session.max_players - participants.length
                 const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
                 const isSessionOwner = session.owner_id === userId
-                const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner)
+                const canManage = canManageSession(session)
+                const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
+                const isEditing = editingSessionId === session.id
 
                 return (
                   <article className="session" key={session.id}>
@@ -756,37 +1162,167 @@ export default function WidgetPage() {
                           <span>{session.date}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
-                          <span>{remaining} seats left</span>
+                          <span>{remaining} {text.seatsLeft}</span>
                         </div>
                       </div>
                       <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                        {session.visibility === 'private' ? 'Private' : 'Public'}
+                        {session.visibility === 'private' ? text.private : text.public}
                       </span>
                     </div>
 
                     {session.notes && <p className="notes">{session.notes}</p>}
 
+                    {canManage && (
+                      <div className="manage-row">
+                        <button className="secondary small-button" type="button" onClick={() => startEditingSession(session)}>
+                          {text.editSession}
+                        </button>
+                        <button
+                          className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
+                          disabled={busySessionId === session.id}
+                          type="button"
+                          onClick={() => cancelSession(session)}
+                        >
+                          {text.cancelSession}
+                        </button>
+                      </div>
+                    )}
+
+                    {isEditing && (
+                      <div className="edit-panel">
+                        <div className="section-head compact-head">
+                          <div>
+                            <h3>{text.editSessionTitle}</h3>
+                            <p className="muted">{text.editSessionHint}</p>
+                          </div>
+                          <div className="segmented">
+                            <button className={editSessionVisibility === 'public' ? 'active' : ''} onClick={() => setEditSessionVisibility('public')} type="button">
+                              {text.public}
+                            </button>
+                            <button className={editSessionVisibility === 'private' ? 'active' : ''} onClick={() => setEditSessionVisibility('private')} type="button">
+                              {text.private}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="form-grid">
+                          <div className="full">
+                            <label>{text.sessionName} <span className="required">*</span></label>
+                            <input value={editSessionName} onChange={(event) => setEditSessionName(event.target.value)} />
+                          </div>
+                          <div>
+                            <label>{text.date} <span className="required">*</span></label>
+                            <input type="date" value={editSessionDate} onChange={(event) => setEditSessionDate(event.target.value)} />
+                          </div>
+                          <div>
+                            <label>{text.availableTime} <span className="required">*</span></label>
+                            <select value={editSessionTime} onChange={(event) => setEditSessionTime(event.target.value)}>
+                              <option value="">{text.chooseTime}</option>
+                              {editTimeOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label>{text.duration}</label>
+                            <select value={editSessionDuration} onChange={(event) => setEditSessionDuration(Number(event.target.value))}>
+                              {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
+                                <option value={duration} key={duration}>
+                                  {duration} min
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label>{text.maxPlayers}</label>
+                            <select value={editSessionMaxPlayers} onChange={(event) => handleEditMaxPlayersChange(Number(event.target.value))}>
+                              {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
+                                <option value={count} key={count}>
+                                  {count} player{count === 1 ? '' : 's'}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label>{text.arenas}</label>
+                            <select value={editSessionArenaCount} onChange={(event) => handleEditArenaCountChange(Number(event.target.value))}>
+                              <option value={1}>{text.oneArena}</option>
+                              <option value={2} disabled={editSessionMaxPlayers < 8}>
+                                {text.twoArenas}
+                              </option>
+                            </select>
+                          </div>
+                          <div className="full">
+                            <label>{text.gameOptions} <span className="required">*</span></label>
+                            <div className="game-picker compact-games">
+                              {games.map((game) => (
+                                <button
+                                  className={editSelectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
+                                  key={game.id}
+                                  onClick={() => toggleEditGame(game.id)}
+                                  type="button"
+                                >
+                                  <img src={game.image} alt="" />
+                                  <span>{game.title}</span>
+                                  <strong>{game.category}</strong>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="full">
+                            <label>{text.notes}</label>
+                            <textarea value={editSessionNotes} onChange={(event) => setEditSessionNotes(event.target.value)} />
+                          </div>
+                        </div>
+                        <div className="action-row">
+                          <button
+                            className={isUpdatingSession ? 'primary loading create-button' : 'primary create-button'}
+                            disabled={isUpdatingSession}
+                            type="button"
+                            onClick={() => updateSession(session)}
+                          >
+                            {isUpdatingSession ? text.saving : text.saveChanges}
+                          </button>
+                          <button className="secondary create-button" type="button" onClick={stopEditingSession}>
+                            {text.close}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {canSeeInviteCode && (
                       <div className="invite-code">
-                        <span>Private code</span>
+                        <span>{text.privateCode}</span>
                         <strong>{session.invite_code}</strong>
                         <button
                           className={copiedInviteId === session.id ? 'copied' : ''}
                           type="button"
                           onClick={() => copyInviteCode(session.id, session.invite_code)}
                         >
-                          {copiedInviteId === session.id ? 'Copied' : 'Copy'}
+                          {copiedInviteId === session.id ? text.copied : text.copy}
                         </button>
                       </div>
                     )}
 
                     <div className="players">
                       {participants.map((participant) => (
-                        <div className="player" key={participant.id} title={participant.display_name || 'Player'}>
+                        <div className="player" key={participant.id} title={participant.display_name || text.player}>
                           <div className="player-avatar">
                             {participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (participant.display_name || 'P').slice(0, 1)}
                           </div>
-                          <span>{participant.display_name || 'Player'}</span>
+                          <span>{participant.display_name || text.player}</span>
+                          {canManage && participant.profile_id !== session.owner_id && (
+                            <button
+                              className="remove-player"
+                              disabled={busySessionId === session.id}
+                              type="button"
+                              onClick={() => removeParticipant(session, participant)}
+                              title={text.remove}
+                            >
+                              {text.remove}
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -809,7 +1345,7 @@ export default function WidgetPage() {
                           >
                             <img src={game.image} alt="" />
                             <span>{game.title}</span>
-                            <strong>{voteCount(session, gameId)} vote{voteCount(session, gameId) === 1 ? '' : 's'}</strong>
+                            <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                           </button>
                         )
                       })}
@@ -818,7 +1354,7 @@ export default function WidgetPage() {
                     <div className="join-row">
                       {session.visibility === 'private' && !alreadyJoined && (
                         <input
-                          placeholder="Private code"
+                          placeholder={text.privateCode}
                           value={joinCodes[session.id] || ''}
                           onChange={(event) =>
                             setJoinCodes((current) => ({ ...current, [session.id]: event.target.value.toUpperCase() }))
@@ -830,7 +1366,7 @@ export default function WidgetPage() {
                         disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id}
                         onClick={() => joinSession(session)}
                       >
-                        {alreadyJoined ? 'Joined' : remaining <= 0 ? 'Full' : busySessionId === session.id ? 'Joining...' : 'Join Session'}
+                        {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
                       </button>
                     </div>
                   </article>
@@ -844,32 +1380,32 @@ export default function WidgetPage() {
           <section className="section">
             <div className="section-head">
               <div>
-                <h2>Create Session</h2>
-                <p className="muted">Duration increases by 20 minutes. Max players is 16.</p>
+                <h2>{text.createSessionTitle}</h2>
+                <p className="muted">{text.createSessionHint}</p>
               </div>
               <div className="segmented">
                 <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
-                  Public
+                  {text.public}
                 </button>
                 <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
-                  Private
+                  {text.private}
                 </button>
               </div>
             </div>
 
             <div className="form-grid">
               <div className="full">
-                <label>Session Name <span className="required">*</span></label>
-                <input placeholder="Friday VR squad" value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
+                <label>{text.sessionName} <span className="required">*</span></label>
+                <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
               </div>
               <div>
-                <label>Date <span className="required">*</span></label>
+                <label>{text.date} <span className="required">*</span></label>
                 <input type="date" value={sessionDate} onChange={handleSessionDateChange} />
               </div>
               <div>
-                <label>Available Time <span className="required">*</span></label>
+                <label>{text.availableTime} <span className="required">*</span></label>
                 <select value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
-                  <option value="">Choose a time</option>
+                  <option value="">{text.chooseTime}</option>
                   {timeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -878,7 +1414,7 @@ export default function WidgetPage() {
                 </select>
               </div>
               <div>
-                <label>Duration</label>
+                <label>{text.duration}</label>
                 <select value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
                   {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
                     <option value={duration} key={duration}>
@@ -888,7 +1424,7 @@ export default function WidgetPage() {
                 </select>
               </div>
               <div>
-                <label>Maximum Players</label>
+                <label>{text.maxPlayers}</label>
                 <select value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
                   {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
                     <option value={count} key={count}>
@@ -898,16 +1434,16 @@ export default function WidgetPage() {
                 </select>
               </div>
               <div>
-                <label>Arenas</label>
+                <label>{text.arenas}</label>
                 <select value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
-                  <option value={1}>1 arena</option>
+                  <option value={1}>{text.oneArena}</option>
                   <option value={2} disabled={sessionMaxPlayers < 8}>
-                    2 arenas - 8 players minimum
+                    {text.twoArenas}
                   </option>
                 </select>
               </div>
               <div className="full">
-                <label>Game Options <span className="required">*</span></label>
+                <label>{text.gameOptions} <span className="required">*</span></label>
                 <div className="game-picker">
                   {games.map((game) => (
                     <button
@@ -924,9 +1460,9 @@ export default function WidgetPage() {
                 </div>
               </div>
               <div className="full">
-                <label>Notes</label>
+                <label>{text.notes}</label>
                 <textarea
-                  placeholder="Language, skill level, preferred game, special notes"
+                  placeholder={text.notesPlaceholder}
                   value={sessionNotes}
                   onChange={(event) => setSessionNotes(event.target.value)}
                 />
@@ -934,7 +1470,7 @@ export default function WidgetPage() {
             </div>
 
             <button className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
-              {isCreating ? 'Creating...' : sessionVisibility === 'private' ? 'Create Private Session' : 'Create Session'}
+              {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
             </button>
             {createStatus && <p className="notice">{createStatus}</p>}
           </section>
@@ -942,20 +1478,20 @@ export default function WidgetPage() {
 
         {activeView === 'profile' && (
           <section className="section">
-            <h2>Profile</h2>
+            <h2>{text.profile}</h2>
             <p className="muted">
               {profile
-                ? 'Update your profile details.'
-                : 'Log in or create an account with email, phone number, and password.'}
+                ? text.profileUpdateHint
+                : text.profileLoginHint}
             </p>
 
             {!profile && (
               <div className="segmented auth-toggle">
                 <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')} type="button">
-                  Log In
+                  {text.logIn}
                 </button>
                 <button className={authMode === 'create' ? 'active' : ''} onClick={() => setAuthMode('create')} type="button">
-                  Create Account
+                  {text.createAccount}
                 </button>
               </div>
             )}
@@ -973,12 +1509,12 @@ export default function WidgetPage() {
                   )}
                 </label>
                 <div>
-                  <strong>{profile ? displayName(profile) : 'Profile photo'}</strong>
-                  <span>{profile || authMode === 'create' ? 'Click the circle to upload your photo.' : 'Shown beside your name when you join a session.'}</span>
+                  <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
+                  <span>{profile || authMode === 'create' ? text.uploadPhoto : text.photoShown}</span>
                 </div>
               </div>
               <div className="country-field">
-                <label>Country Code <span className="required">*</span></label>
+                <label>{text.countryCode} <span className="required">*</span></label>
                 <div className="country-picker">
                   <button
                     className="country-button"
@@ -993,7 +1529,7 @@ export default function WidgetPage() {
                         autoFocus
                         value={countrySearch}
                         onChange={(event) => setCountrySearch(event.target.value)}
-                        placeholder="Search country or code"
+                        placeholder={text.searchCountry}
                       />
                       <div className="country-list">
                         {filteredCountries.map((country) => (
@@ -1016,34 +1552,34 @@ export default function WidgetPage() {
                 </div>
               </div>
               <div className="phone-field">
-                <label>Phone Number <span className="required">*</span></label>
+                <label>{text.phoneNumber} <span className="required">*</span></label>
                 <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
               </div>
               <div className="email-field">
-                <label>Email <span className="required">*</span></label>
+                <label>{text.email} <span className="required">*</span></label>
                 <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
               </div>
               {!profile && (
                 <div className="password-field">
-                  <label>Password <span className="required">*</span></label>
+                  <label>{text.password} <span className="required">*</span></label>
                   <div className="password-control">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={profilePassword}
                       onChange={(event) => setProfilePassword(event.target.value)}
-                      placeholder="Minimum 6 characters"
+                      placeholder={text.passwordPlaceholder}
                     />
                     <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
                       {showPassword ? '🙈' : '👁️'}
                     </button>
                   </div>
-                  <p className="field-help">Use at least 6 characters. Keep this password to log in again later.</p>
+                  <p className="field-help">{text.passwordHelp}</p>
                 </div>
               )}
               {(profile || authMode === 'create') && (
                 <div className="nickname-field">
-                  <label>Nickname</label>
-                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
+                  <label>{text.nickname}</label>
+                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
                 </div>
               )}
             </div>
@@ -1056,19 +1592,19 @@ export default function WidgetPage() {
               >
                 {isSavingProfile
                   ? authMode === 'login'
-                    ? 'Logging in...'
+                    ? text.loggingIn
                     : profile
-                      ? 'Saving...'
-                      : 'Creating...'
+                      ? text.saving
+                      : text.creating
                   : profile
-                    ? 'Save Profile'
+                    ? text.saveProfile
                     : authMode === 'login'
-                      ? 'Log In'
-                      : 'Create Account'}
+                      ? text.logIn
+                      : text.createAccount}
               </button>
               {profile && (
                 <button className="secondary create-button" onClick={logout} type="button">
-                  Log Out
+                  {text.logOut}
                 </button>
               )}
             </div>
@@ -1077,12 +1613,12 @@ export default function WidgetPage() {
             {profile && (
               <div className="my-sessions">
                 <div>
-                  <h3>My sessions</h3>
-                  <p className="muted">Sessions you created or joined.</p>
+                  <h3>{text.mySessions}</h3>
+                  <p className="muted">{text.mySessionsHint}</p>
                 </div>
 
                 {mySessions.length === 0 ? (
-                  <p className="notice">No sessions yet.</p>
+                  <p className="notice">{text.noSessionsYet}</p>
                 ) : (
                   <div className="mini-session-list">
                     {mySessions.map((session) => {
@@ -1096,26 +1632,26 @@ export default function WidgetPage() {
                           <div className="mini-session-title">
                             <strong>{session.name}</strong>
                             <span className={createdByMe ? 'pill ok' : 'pill'}>
-                              {createdByMe ? 'Created by you' : 'Joined'}
+                              {createdByMe ? text.createdByYou : text.joined}
                             </span>
                           </div>
                           <div className="row-meta">
                             <span>{session.date}</span>
                             <span>{session.start_time.slice(0, 5)}</span>
                             <span>{session.duration_minutes} min</span>
-                            <span>{participants.length}/{session.max_players} players</span>
+                            <span>{participants.length}/{session.max_players} {text.players}</span>
                             <span>{arenasUsedBySession(session)} arena{arenasUsedBySession(session) === 1 ? '' : 's'}</span>
                           </div>
                           {canSeeInviteCode && (
                             <div className="invite-code compact">
-                              <span>Private code</span>
+                              <span>{text.privateCode}</span>
                               <strong>{session.invite_code}</strong>
                               <button
                                 className={copiedInviteId === session.id ? 'copied' : ''}
                                 type="button"
                                 onClick={() => copyInviteCode(session.id, session.invite_code)}
                               >
-                                {copiedInviteId === session.id ? 'Copied' : 'Copy'}
+                                {copiedInviteId === session.id ? text.copied : text.copy}
                               </button>
                             </div>
                           )}
@@ -1129,17 +1665,6 @@ export default function WidgetPage() {
           </section>
         )}
 
-        {activeView === 'admin' && (
-          <section className="section">
-            <h2>Admin</h2>
-            <p className="muted">This page reads the same Supabase sessions and blocked times used for player availability.</p>
-            <div className="stats">
-              <div><strong>{sessions.length}</strong><span>active sessions</span></div>
-              <div><strong>{blockedTimes.length}</strong><span>blocked time ranges</span></div>
-              <div><strong>{ARENA_COUNT}</strong><span>arenas</span></div>
-            </div>
-          </section>
-        )}
       </main>
 
       <style jsx>{`
@@ -1437,6 +1962,26 @@ export default function WidgetPage() {
           gap: 12px;
         }
 
+        .manage-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .edit-panel {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(48, 89, 255, 0.2);
+          border-radius: 8px;
+          background: #f8fbff;
+          padding: 12px;
+        }
+
+        .compact-head {
+          margin-bottom: 0;
+        }
+
         .row-meta {
           display: flex;
           gap: 10px;
@@ -1521,7 +2066,7 @@ export default function WidgetPage() {
 
         .player {
           display: inline-grid;
-          grid-template-columns: 32px auto;
+          grid-template-columns: 32px auto auto;
           gap: 7px;
           align-items: center;
           font-size: 13px;
@@ -1531,6 +2076,14 @@ export default function WidgetPage() {
         .player-avatar {
           width: 32px;
           height: 32px;
+        }
+
+        .remove-player {
+          background: #fff3f0;
+          color: #b42318;
+          border: 1px solid rgba(180, 35, 24, 0.22);
+          padding: 4px 7px;
+          font-size: 11px;
         }
 
         .form-grid {
@@ -1716,6 +2269,17 @@ export default function WidgetPage() {
           border: 1px solid rgba(7, 17, 18, 0.12);
         }
 
+        button.danger {
+          background: #fff3f0;
+          color: #b42318;
+          border: 1px solid rgba(180, 35, 24, 0.24);
+        }
+
+        .small-button {
+          padding: 7px 10px;
+          font-size: 12px;
+        }
+
         .action-row {
           display: flex;
           gap: 10px;
@@ -1795,6 +2359,10 @@ export default function WidgetPage() {
           font-size: 12px;
         }
 
+        .compact-games {
+          grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        }
+
         .stats {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1866,7 +2434,7 @@ export default function WidgetPage() {
           }
 
           .tabs {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 6px;
           }
 
@@ -1928,8 +2496,21 @@ export default function WidgetPage() {
           }
 
           .player {
-            grid-template-columns: 30px auto;
+            grid-template-columns: 30px minmax(0, auto) auto;
             font-size: 13px;
+          }
+
+          .manage-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .manage-row button {
+            width: 100%;
+          }
+
+          .compact-head {
+            gap: 10px;
           }
 
           .game-strip {
