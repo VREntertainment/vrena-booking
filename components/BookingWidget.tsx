@@ -547,11 +547,7 @@ export default function WidgetPage() {
       avatar_url: profile.avatar_url,
     })
 
-    const notification = await fetch('/api/session-created', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: created.id }),
-    }).catch(() => null)
+   const notification = null
 
     setCreateStatus(
       sessionVisibility === 'private'
