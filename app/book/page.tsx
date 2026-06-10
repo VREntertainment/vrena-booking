@@ -1,5 +1,5 @@
-import BookingWidget from '../../components/BookingWidget'
+import { redirect } from 'next/navigation'
 
-export default function BookPage() {
-  return <BookingWidget />
+export default function LoginPage() {
+  redirect('/')
 }
