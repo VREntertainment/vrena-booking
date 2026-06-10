@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { createSupabaseAdminClient } from '../../../lib/supabase/server'
 
 function formatCurrency(value: number | null, currency = 'VND') {
@@ -24,7 +23,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Missing RESEND_API_KEY.' }, { status: 500 })
   }
 
-  const resend = new Resend(resendApiKey)
   const supabaseAdmin = createSupabaseAdminClient()
 
   const { sessionId } = await request.json()
@@ -87,15 +85,23 @@ export async function POST(request: Request) {
     `Notes: ${session.notes || '-'}`,
   ].join('\n')
 
-  const { error } = await resend.emails.send({
-    from: fromEmail,
-    to: recipients,
-    subject: `New VRena session - ${session.name} - ${session.date}`,
-    text,
+  const emailResponse = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: recipients,
+      subject: `New VRena session - ${session.name} - ${session.date}`,
+      text,
+    }),
   })
 
-  if (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 })
+  if (!emailResponse.ok) {
+    const message = await emailResponse.text()
+    return NextResponse.json({ success: false, message }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
