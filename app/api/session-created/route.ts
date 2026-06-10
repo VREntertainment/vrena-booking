@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseAdminClient } from '../../../lib/supabase/server'
+import { createSupabaseAdminClient } from '../../../../lib/supabase/server'
 
 function formatCurrency(value: number | null, currency = 'VND') {
   if (!value) return '-'
