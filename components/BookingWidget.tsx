@@ -430,6 +430,16 @@ export default function WidgetPage() {
     })
   }, [search, sessions])
 
+  const mySessions = useMemo(() => {
+    if (!userId) return []
+
+    return sessions.filter((session) => {
+      const isOwner = session.owner_id === userId
+      const isParticipant = (session.session_participants ?? []).some((participant) => participant.profile_id === userId)
+      return isOwner || isParticipant
+    })
+  }, [sessions, userId])
+
   const filteredCountries = useMemo(() => {
     const query = countrySearch.trim().toLowerCase()
     if (!query) return countries
@@ -725,6 +735,8 @@ export default function WidgetPage() {
                 const participants = session.session_participants ?? []
                 const remaining = session.max_players - participants.length
                 const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
+                const isSessionOwner = session.owner_id === userId
+                const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner)
 
                 return (
                   <article className="session" key={session.id}>
@@ -744,6 +756,16 @@ export default function WidgetPage() {
                     </div>
 
                     {session.notes && <p className="notes">{session.notes}</p>}
+
+                    {canSeeInviteCode && (
+                      <div className="invite-code">
+                        <span>Private code</span>
+                        <strong>{session.invite_code}</strong>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(session.invite_code || '')}>
+                          Copy
+                        </button>
+                      </div>
+                    )}
 
                     <div className="players">
                       {participants.map((participant) => (
@@ -1038,6 +1060,55 @@ export default function WidgetPage() {
               )}
             </div>
             {profileStatus && <p className="notice">{profileStatus}</p>}
+
+            {profile && (
+              <div className="my-sessions">
+                <div>
+                  <h3>My sessions</h3>
+                  <p className="muted">Sessions you created or joined.</p>
+                </div>
+
+                {mySessions.length === 0 ? (
+                  <p className="notice">No sessions yet.</p>
+                ) : (
+                  <div className="mini-session-list">
+                    {mySessions.map((session) => {
+                      const participants = session.session_participants ?? []
+                      const createdByMe = session.owner_id === userId
+                      const joinedByMe = participants.some((participant) => participant.profile_id === userId)
+                      const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (createdByMe || joinedByMe)
+
+                      return (
+                        <article className="mini-session" key={session.id}>
+                          <div className="mini-session-title">
+                            <strong>{session.name}</strong>
+                            <span className={createdByMe ? 'pill ok' : 'pill'}>
+                              {createdByMe ? 'Created by you' : 'Joined'}
+                            </span>
+                          </div>
+                          <div className="row-meta">
+                            <span>{session.date}</span>
+                            <span>{session.start_time.slice(0, 5)}</span>
+                            <span>{session.duration_minutes} min</span>
+                            <span>{participants.length}/{session.max_players} players</span>
+                            <span>{arenasUsedBySession(session)} arena{arenasUsedBySession(session) === 1 ? '' : 's'}</span>
+                          </div>
+                          {canSeeInviteCode && (
+                            <div className="invite-code compact">
+                              <span>Private code</span>
+                              <strong>{session.invite_code}</strong>
+                              <button type="button" onClick={() => navigator.clipboard?.writeText(session.invite_code || '')}>
+                                Copy
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         )}
 
@@ -1157,6 +1228,36 @@ export default function WidgetPage() {
           font-size: 12px;
           line-height: 1.35;
           margin-top: 6px;
+        }
+
+        .my-sessions {
+          display: grid;
+          gap: 12px;
+          border-top: 1px solid rgba(7, 17, 18, 0.12);
+          margin-top: 18px;
+          padding-top: 18px;
+        }
+
+        .mini-session-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .mini-session {
+          display: grid;
+          gap: 8px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          padding: 12px;
+          background: #ffffff;
+        }
+
+        .mini-session-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         .profile-photo-panel {
@@ -1323,6 +1424,41 @@ export default function WidgetPage() {
         .notes {
           color: #465358;
           font-size: 13px;
+        }
+
+        .invite-code {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          border: 1px solid rgba(48, 89, 255, 0.18);
+          border-radius: 8px;
+          background: #f5f8ff;
+          padding: 9px 10px;
+          color: #465358;
+          font-size: 13px;
+        }
+
+        .invite-code strong {
+          color: #071112;
+          font-size: 15px;
+          letter-spacing: 0.08em;
+        }
+
+        .invite-code button {
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 7px;
+          background: #ffffff;
+          color: #071112;
+          padding: 5px 9px;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .invite-code.compact {
+          padding: 7px 8px;
         }
 
         .pill {
