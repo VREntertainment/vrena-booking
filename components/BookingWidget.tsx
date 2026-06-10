@@ -211,6 +211,20 @@ const uiText = {
     arenaAvailable: 'arena available',
     arenasAvailable: 'arenas available',
     createError: 'Could not create session.',
+    resetPassword: 'Reset password',
+    resetPasswordHelp: 'Enter your email, then tap reset password.',
+    resetPasswordSent: 'Password reset email sent. Please check your inbox.',
+    resetPasswordEmailRequired: 'Enter your email first.',
+    newPassword: 'New password',
+    updatePassword: 'Update password',
+    passwordUpdated: 'Password updated. You can keep using your account.',
+    leaveSession: 'Leave Session',
+    leaveConfirmPrefix: 'Leave',
+    leaveConfirmSuffix: 'You will be removed from this session.',
+    leftSession: 'You left the session.',
+    deleteAccount: 'Delete my account',
+    deleteAccountConfirm: 'Delete your account? This removes your profile, sessions you created, and sessions you joined.',
+    accountDeleted: 'Your account profile has been deleted.',
   },
   vi: {
     tagline: 'Tạo phiên chơi công khai hoặc riêng tư và mời người chơi khác tham gia.',
@@ -321,6 +335,20 @@ const uiText = {
     arenaAvailable: 'arena còn trống',
     arenasAvailable: 'arena còn trống',
     createError: 'Không thể tạo phiên.',
+    resetPassword: 'Đặt lại mật khẩu',
+    resetPasswordHelp: 'Nhập email của bạn, sau đó bấm đặt lại mật khẩu.',
+    resetPasswordSent: 'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.',
+    resetPasswordEmailRequired: 'Vui lòng nhập email trước.',
+    newPassword: 'Mật khẩu mới',
+    updatePassword: 'Cập nhật mật khẩu',
+    passwordUpdated: 'Đã cập nhật mật khẩu. Bạn có thể tiếp tục dùng tài khoản.',
+    leaveSession: 'Rời phiên',
+    leaveConfirmPrefix: 'Rời',
+    leaveConfirmSuffix: 'Bạn sẽ được xóa khỏi phiên này.',
+    leftSession: 'Bạn đã rời phiên.',
+    deleteAccount: 'Xóa tài khoản của tôi',
+    deleteAccountConfirm: 'Xóa tài khoản? Hồ sơ, phiên bạn đã tạo và các phiên bạn đã tham gia sẽ bị xóa.',
+    accountDeleted: 'Hồ sơ tài khoản của bạn đã được xóa.',
   },
 }
 
@@ -406,6 +434,8 @@ export default function WidgetPage() {
   const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
@@ -413,6 +443,8 @@ export default function WidgetPage() {
   const [avatarPreview, setAvatarPreview] = useState('')
   const [profileStatus, setProfileStatus] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
   const [sessionName, setSessionName] = useState('')
@@ -568,7 +600,53 @@ export default function WidgetPage() {
     setUserId('')
     setProfile(null)
     setProfilePassword('')
+    setNewPassword('')
+    setIsRecoveryMode(false)
     setProfileStatus(text.loggedOut)
+  }
+
+  async function sendPasswordReset() {
+    const email = (profile?.email || profileEmail).trim().toLowerCase()
+
+    if (!email || !email.includes('@')) {
+      setProfileStatus(text.resetPasswordEmailRequired)
+      return
+    }
+
+    setIsResettingPassword(true)
+    const redirectTo = typeof window === 'undefined' ? undefined : window.location.origin
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsResettingPassword(false)
+      return
+    }
+
+    setProfileStatus(text.resetPasswordSent)
+    setIsResettingPassword(false)
+  }
+
+  async function updatePasswordFromRecovery() {
+    if (newPassword.length < 6) {
+      setProfileStatus(text.passwordRequired)
+      return
+    }
+
+    setIsResettingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsResettingPassword(false)
+      return
+    }
+
+    setNewPassword('')
+    setProfilePassword('')
+    setIsRecoveryMode(false)
+    setProfileStatus(text.passwordUpdated)
+    setIsResettingPassword(false)
   }
 
   async function loadSessions() {
@@ -593,6 +671,11 @@ export default function WidgetPage() {
 
   useEffect(() => {
     setLanguage(detectLanguage())
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      setIsRecoveryMode(true)
+      setActiveView('profile')
+      window.history.replaceState(null, '', window.location.pathname)
+    }
     loadProfile()
     loadSessions()
   }, [])
@@ -930,6 +1013,38 @@ export default function WidgetPage() {
     setCreateStatus(text.joinedSession)
   }
 
+  async function leaveSession(session: Session) {
+    if (!profile) {
+      setActiveView('profile')
+      return
+    }
+
+    if (session.owner_id === userId) {
+      setCreateStatus(text.creatorCannotRemove)
+      return
+    }
+
+    const confirmed = window.confirm(`${text.leaveConfirmPrefix} "${session.name}"? ${text.leaveConfirmSuffix}`)
+    if (!confirmed) return
+
+    setBusySessionId(session.id)
+    const { error } = await supabase
+      .from('session_participants')
+      .delete()
+      .eq('session_id', session.id)
+      .eq('profile_id', userId)
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusySessionId('')
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(text.leftSession)
+    setBusySessionId('')
+  }
+
   async function voteForGame(session: Session, gameId: GameId) {
     if (!profile) {
       setActiveView('profile')
@@ -1082,6 +1197,33 @@ export default function WidgetPage() {
     await loadSessions()
     setCreateStatus(text.playerRemoved)
     setBusySessionId('')
+  }
+
+  async function deleteMyAccount() {
+    if (!profile || !userId) return
+
+    const confirmed = window.confirm(text.deleteAccountConfirm)
+    if (!confirmed) return
+
+    setIsDeletingAccount(true)
+    setProfileStatus(text.saving)
+
+    const { error } = await supabase.from('profiles').delete().eq('id', userId)
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsDeletingAccount(false)
+      return
+    }
+
+    await supabase.auth.signOut()
+    setUserId('')
+    setProfile(null)
+    setProfilePassword('')
+    setNewPassword('')
+    setProfileStatus(text.accountDeleted)
+    setIsDeletingAccount(false)
+    await loadSessions()
   }
 
   function voteCount(session: Session, gameId: GameId) {
@@ -1361,6 +1503,16 @@ export default function WidgetPage() {
                           }
                         />
                       )}
+                      {alreadyJoined && !isSessionOwner && (
+                        <button
+                          className={busySessionId === session.id ? 'secondary loading' : 'secondary'}
+                          disabled={busySessionId === session.id}
+                          onClick={() => leaveSession(session)}
+                          type="button"
+                        >
+                          {text.leaveSession}
+                        </button>
+                      )}
                       <button
                         className={busySessionId === session.id ? 'primary loading' : 'primary'}
                         disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id}
@@ -1574,6 +1726,30 @@ export default function WidgetPage() {
                     </button>
                   </div>
                   <p className="field-help">{text.passwordHelp}</p>
+                  {authMode === 'login' && (
+                    <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
+                      {isResettingPassword ? text.saving : text.resetPassword}
+                    </button>
+                  )}
+                </div>
+              )}
+              {isRecoveryMode && (
+                <div className="password-field">
+                  <label>{text.newPassword} <span className="required">*</span></label>
+                  <div className="password-control">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      placeholder={text.passwordPlaceholder}
+                    />
+                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                  <button className="link-button" disabled={isResettingPassword} onClick={updatePasswordFromRecovery} type="button">
+                    {isResettingPassword ? text.saving : text.updatePassword}
+                  </button>
                 </div>
               )}
               {(profile || authMode === 'create') && (
@@ -1608,6 +1784,16 @@ export default function WidgetPage() {
                 </button>
               )}
             </div>
+            {profile && (
+              <div className="account-links">
+                <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
+                  {isResettingPassword ? text.saving : text.resetPassword}
+                </button>
+                <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
+                  {isDeletingAccount ? text.saving : text.deleteAccount}
+                </button>
+              </div>
+            )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
 
             {profile && (
@@ -1778,6 +1964,32 @@ export default function WidgetPage() {
           font-size: 12px;
           line-height: 1.35;
           margin-top: 6px;
+        }
+
+        .link-button {
+          display: inline-flex;
+          width: fit-content;
+          min-height: auto;
+          margin-top: 8px;
+          border: 0;
+          background: transparent;
+          color: #3059ff;
+          padding: 0;
+          font-size: 12px;
+          font-weight: 800;
+          text-align: left;
+          text-decoration: underline;
+        }
+
+        .danger-link {
+          color: #b42318;
+        }
+
+        .account-links {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
+          margin-top: 10px;
         }
 
         .my-sessions {
