@@ -1854,6 +1854,13 @@ export default function WidgetPage() {
             )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
 
+            <div className="profile-mobile-contact">
+              <strong>VRena Vietnam</strong>
+              <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
+              <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
+              <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
+            </div>
+
             {profile && (
               <div className="my-sessions">
                 <div>
@@ -1868,8 +1875,9 @@ export default function WidgetPage() {
                     {mySessions.map((session) => {
                       const participants = session.session_participants ?? []
                       const createdByMe = session.owner_id === userId
+                      const canManage = canManageSession(session)
                       const joinedByMe = participants.some((participant) => participant.profile_id === userId)
-                      const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (createdByMe || joinedByMe)
+                      const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
 
                       return (
                         <article className="mini-session" key={session.id}>
@@ -1899,6 +1907,39 @@ export default function WidgetPage() {
                               </button>
                             </div>
                           )}
+                          {canManage ? (
+                            <div className="mini-session-actions">
+                              <button
+                                className="secondary small-button"
+                                type="button"
+                                onClick={() => {
+                                  startEditingSession(session)
+                                  setActiveView('sessions')
+                                }}
+                              >
+                                {text.editSession}
+                              </button>
+                              <button
+                                className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
+                                disabled={busySessionId === session.id}
+                                type="button"
+                                onClick={() => cancelSession(session)}
+                              >
+                                {text.cancelSession}
+                              </button>
+                            </div>
+                          ) : joinedByMe ? (
+                            <div className="mini-session-actions">
+                              <button
+                                className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
+                                disabled={busySessionId === session.id}
+                                type="button"
+                                onClick={() => leaveSession(session)}
+                              >
+                                {text.leaveSession}
+                              </button>
+                            </div>
+                          ) : null}
                         </article>
                       )
                     })}
@@ -2164,6 +2205,12 @@ export default function WidgetPage() {
           flex-wrap: wrap;
         }
 
+        .mini-session-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
         .profile-photo-panel {
           grid-column: 1 / -1;
           display: grid;
@@ -2252,6 +2299,10 @@ export default function WidgetPage() {
 
         .shop-contact a:hover {
           text-decoration: underline;
+        }
+
+        .profile-mobile-contact {
+          display: none;
         }
 
         .tabs {
@@ -2769,7 +2820,22 @@ export default function WidgetPage() {
             height: auto;
             overflow: visible;
             padding: 14px;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: 46px minmax(0, 1fr) auto;
+            grid-template-areas:
+              "profile share logo"
+              "tabs tabs tabs";
+            align-items: center;
+            gap: 10px;
+          }
+
+          aside > div:first-child,
+          .app-title-row {
+            display: contents;
+          }
+
+          aside > div:first-child > .muted {
+            display: none;
           }
 
           main {
@@ -2783,8 +2849,10 @@ export default function WidgetPage() {
           }
 
           .brand-logo {
-            width: 132px;
-            max-width: 60%;
+            grid-area: logo;
+            justify-self: end;
+            width: 104px;
+            max-width: 104px;
           }
 
           h2 {
@@ -2796,13 +2864,37 @@ export default function WidgetPage() {
           }
 
           .profile-chip {
-            grid-template-columns: 42px minmax(0, 1fr);
-            padding: 9px;
+            grid-area: profile;
+            grid-template-columns: 44px;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            overflow: hidden;
+          }
+
+          .profile-chip > div:not(.avatar) {
+            display: none;
+          }
+
+          .profile-chip .avatar {
+            width: 44px;
+            height: 44px;
           }
 
           .tabs {
+            grid-area: tabs;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 6px;
+          }
+
+          .app-share {
+            grid-area: share;
+            justify-self: center;
+            min-height: 38px;
+            padding: 7px 13px;
           }
 
           .tab {
@@ -2813,6 +2905,21 @@ export default function WidgetPage() {
 
           .shop-contact {
             display: none;
+          }
+
+          .profile-mobile-contact {
+            display: grid;
+            gap: 7px;
+            border-top: 1px solid rgba(7, 17, 18, 0.12);
+            margin-top: 16px;
+            padding-top: 14px;
+            font-size: 13px;
+          }
+
+          .profile-mobile-contact a {
+            color: #3059ff;
+            text-decoration: none;
+            overflow-wrap: anywhere;
           }
 
           .section {
@@ -2975,8 +3082,8 @@ export default function WidgetPage() {
           }
 
           .brand-logo {
-            width: 118px;
-            max-width: 58%;
+            width: 92px;
+            max-width: 92px;
           }
 
           .muted {
