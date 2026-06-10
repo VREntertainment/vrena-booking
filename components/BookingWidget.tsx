@@ -175,6 +175,7 @@ export default function WidgetPage() {
   const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -248,21 +249,29 @@ export default function WidgetPage() {
     setIsSavingProfile(true)
     setProfileStatus(authMode === 'login' ? 'Logging in...' : 'Creating account...')
 
-    const authResult =
-      authMode === 'login'
-        ? await supabase.auth.signInWithPassword({ email: loginEmail, password: profilePassword })
-        : await supabase.auth.signUp({ email: loginEmail, password: profilePassword })
+    if (authMode === 'create') {
+      const signUpResult = await supabase.auth.signUp({ email: loginEmail, password: profilePassword })
 
-    if (authResult.error) {
-      setProfileStatus(authResult.error.message)
+      if (signUpResult.error) {
+        setProfileStatus(signUpResult.error.message)
+        setIsSavingProfile(false)
+        return
+      }
+    }
+
+    const signInResult = await supabase.auth.signInWithPassword({ email: loginEmail, password: profilePassword })
+
+    if (signInResult.error) {
+      setProfileStatus(signInResult.error.message)
       setIsSavingProfile(false)
       return
     }
 
-    const authUser = authResult.data.user
+    const { data: verifiedUserData } = await supabase.auth.getUser()
+    const authUser = verifiedUserData.user
 
     if (!authUser) {
-      setProfileStatus('Account created. Please log in.')
+      setProfileStatus('Please log in to finish your profile.')
       setAuthMode('login')
       setIsSavingProfile(false)
       return
@@ -270,25 +279,29 @@ export default function WidgetPage() {
 
     setUserId(authUser.id)
 
-    if (authMode === 'create') {
-      const avatarUrl = await uploadAvatar(authUser.id, null)
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('avatar_url, nickname')
+      .eq('id', authUser.id)
+      .maybeSingle()
 
-      if (avatarUrl === false) return
+    const avatarUrl = await uploadAvatar(authUser.id, existingProfile?.avatar_url || null)
 
-      const { error } = await supabase.from('profiles').upsert({
-        id: authUser.id,
-        phone: fullPhone,
-        nickname: profileNickname.trim() || null,
-        email: loginEmail,
-        avatar_url: avatarUrl,
-        updated_at: new Date().toISOString(),
-      })
+    if (avatarUrl === false) return
 
-      if (error) {
-        setProfileStatus(error.message)
-        setIsSavingProfile(false)
-        return
-      }
+    const { error } = await supabase.from('profiles').upsert({
+      id: authUser.id,
+      phone: fullPhone,
+      nickname: profileNickname.trim() || existingProfile?.nickname || null,
+      email: loginEmail,
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsSavingProfile(false)
+      return
     }
 
     setProfilePassword('')
@@ -978,12 +991,17 @@ export default function WidgetPage() {
               {!profile && (
                 <div className="password-field">
                   <label>Password <span className="required">*</span></label>
-                  <input
-                    type="password"
-                    value={profilePassword}
-                    onChange={(event) => setProfilePassword(event.target.value)}
-                    placeholder="Minimum 6 characters"
-                  />
+                  <div className="password-control">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={profilePassword}
+                      onChange={(event) => setProfilePassword(event.target.value)}
+                      placeholder="Minimum 6 characters"
+                    />
+                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
                   <p className="field-help">Use at least 6 characters. Keep this password to log in again later.</p>
                 </div>
               )}
@@ -1459,6 +1477,25 @@ export default function WidgetPage() {
         .country-list span {
           color: #3059ff;
           font-weight: 800;
+        }
+
+        .password-control {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: stretch;
+        }
+
+        .password-control input {
+          border-radius: 8px 0 0 8px;
+        }
+
+        .password-control button {
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-left: 0;
+          border-radius: 0 8px 8px 0;
+          background: #ffffff;
+          color: #071112;
+          padding: 0 13px;
         }
 
         textarea {
