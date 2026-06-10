@@ -11,22 +11,18 @@ const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 
-declare global {
-  interface Window {
-    hcaptcha?: {
-      render: (
-        container: HTMLElement,
-        options: {
-          sitekey: string
-          callback: (token: string) => void
-          'expired-callback': () => void
-          'error-callback': () => void
-        }
-      ) => string
-      reset: (widgetId?: string) => void
-      remove?: (widgetId: string) => void
+type HCaptchaApi = {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string
+      callback: (token: string) => void
+      'expired-callback': () => void
+      'error-callback': () => void
     }
-  }
+  ) => string
+  reset: (widgetId?: string) => void
+  remove?: (widgetId: string) => void
 }
 
 type GameId =
@@ -475,6 +471,12 @@ function appRedirectUrl() {
   return window.location.origin
 }
 
+function getHCaptcha() {
+  if (typeof window === 'undefined') return undefined
+
+  return (window as unknown as { hcaptcha?: HCaptchaApi }).hcaptcha
+}
+
 export default function WidgetPage() {
   const [activeView, setActiveView] = useState<'sessions' | 'create' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
@@ -575,8 +577,10 @@ export default function WidgetPage() {
   function resetCaptcha() {
     setCaptchaToken('')
 
-    if (typeof window !== 'undefined' && window.hcaptcha && captchaWidgetId.current) {
-      window.hcaptcha.reset(captchaWidgetId.current)
+    const hcaptcha = getHCaptcha()
+
+    if (hcaptcha && captchaWidgetId.current) {
+      hcaptcha.reset(captchaWidgetId.current)
     }
   }
 
@@ -804,10 +808,11 @@ export default function WidgetPage() {
 
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const resetOptions = {
       redirectTo,
       captchaToken: captchaToken || undefined,
-    })
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions)
 
     resetCaptcha()
 
@@ -880,9 +885,11 @@ export default function WidgetPage() {
     let cancelled = false
 
     function renderCaptcha() {
-      if (cancelled || !captchaContainerRef.current || !window.hcaptcha || captchaWidgetId.current) return
+      const hcaptcha = getHCaptcha()
 
-      captchaWidgetId.current = window.hcaptcha.render(captchaContainerRef.current, {
+      if (cancelled || !captchaContainerRef.current || !hcaptcha || captchaWidgetId.current) return
+
+      captchaWidgetId.current = hcaptcha.render(captchaContainerRef.current, {
         sitekey: HCAPTCHA_SITE_KEY,
         callback: (token) => setCaptchaToken(token),
         'expired-callback': () => setCaptchaToken(''),
@@ -892,7 +899,7 @@ export default function WidgetPage() {
 
     const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
 
-    if (window.hcaptcha) {
+    if (getHCaptcha()) {
       renderCaptcha()
     } else if (existingScript) {
       existingScript.addEventListener('load', renderCaptcha, { once: true })
@@ -910,11 +917,13 @@ export default function WidgetPage() {
       cancelled = true
       setCaptchaToken('')
 
-      if (window.hcaptcha && captchaWidgetId.current) {
+      const hcaptcha = getHCaptcha()
+
+      if (hcaptcha && captchaWidgetId.current) {
         try {
-          window.hcaptcha.remove?.(captchaWidgetId.current)
+          hcaptcha.remove?.(captchaWidgetId.current)
         } catch {
-          window.hcaptcha.reset(captchaWidgetId.current)
+          hcaptcha.reset(captchaWidgetId.current)
         }
       }
 
