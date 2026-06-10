@@ -645,7 +645,7 @@ export default function WidgetPage() {
       return
     }
 
-    if (authMode === 'create' && !captchaToken) {
+    if (!captchaToken) {
       setProfileStatus(text.captchaRequired)
       return
     }
@@ -670,16 +670,90 @@ export default function WidgetPage() {
         },
       })
 
-      resetCaptcha()
-
       if (signUpResult.error) {
+        resetCaptcha()
         setProfileStatus(signUpResult.error.message)
         setIsSavingProfile(false)
         return
       }
+
+      const authUser = signUpResult.data.user
+
+      if (!authUser) {
+        resetCaptcha()
+        setProfileStatus(text.loginRequired)
+        setAuthMode('login')
+        setIsSavingProfile(false)
+        return
+      }
+
+      setUserId(authUser.id)
+
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('avatar_url, nickname')
+        .eq('id', authUser.id)
+        .maybeSingle()
+
+      const avatarUrl = await uploadAvatar(authUser.id, existingProfile?.avatar_url || null)
+
+      if (avatarUrl === false) {
+        resetCaptcha()
+        return
+      }
+
+      const { error } = await supabase.from('profiles').upsert({
+        id: authUser.id,
+        full_name: profileNickname.trim() || null,
+        phone: fullPhone,
+        nickname: profileNickname.trim() || existingProfile?.nickname || null,
+        email: loginEmail,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        resetCaptcha()
+        setProfileStatus(error.message)
+        setIsSavingProfile(false)
+        return
+      }
+
+      const metadataUpdate = await supabase.auth.updateUser({
+        data: {
+          display_name: display,
+          full_name: display,
+          name: display,
+          nickname: profileNickname.trim() || null,
+          phone: fullPhone,
+          avatar_url: avatarUrl,
+        },
+      })
+
+      if (metadataUpdate.error) {
+        resetCaptcha()
+        setProfileStatus(metadataUpdate.error.message)
+        setIsSavingProfile(false)
+        return
+      }
+
+      resetCaptcha()
+      setProfilePassword('')
+      await loadProfile()
+      setProfileStatus(text.accountCreated)
+      setIsSavingProfile(false)
+      return
     }
 
-    const signInResult = await supabase.auth.signInWithPassword({ email: loginEmail, password: profilePassword })
+    const signInResult = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: profilePassword,
+      options: {
+        captchaToken,
+      },
+    })
+
+    resetCaptcha()
 
     if (signInResult.error) {
       setProfileStatus(signInResult.error.message)
@@ -698,62 +772,9 @@ export default function WidgetPage() {
     }
 
     setUserId(authUser.id)
-
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('avatar_url, nickname')
-      .eq('id', authUser.id)
-      .maybeSingle()
-
-    if (authMode === 'login') {
-      setProfilePassword('')
-      await loadProfile()
-      setProfileStatus(text.loggedIn)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const avatarUrl = await uploadAvatar(authUser.id, existingProfile?.avatar_url || null)
-
-    if (avatarUrl === false) return
-
-    const { error } = await supabase.from('profiles').upsert({
-      id: authUser.id,
-      full_name: profileNickname.trim() || null,
-      phone: fullPhone,
-      nickname: profileNickname.trim() || existingProfile?.nickname || null,
-      email: loginEmail,
-      avatar_url: avatarUrl,
-      updated_at: new Date().toISOString(),
-    })
-
-    if (error) {
-      setProfileStatus(error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const display = profileNickname.trim() || fullPhone
-    const metadataUpdate = await supabase.auth.updateUser({
-      data: {
-        display_name: display,
-        full_name: display,
-        name: display,
-        nickname: profileNickname.trim() || null,
-        phone: fullPhone,
-        avatar_url: avatarUrl,
-      },
-    })
-
-    if (metadataUpdate.error) {
-      setProfileStatus(metadataUpdate.error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
     setProfilePassword('')
     await loadProfile()
-    setProfileStatus(authMode === 'login' ? text.loggedIn : text.accountCreated)
+    setProfileStatus(text.loggedIn)
     setIsSavingProfile(false)
   }
 
@@ -775,9 +796,19 @@ export default function WidgetPage() {
       return
     }
 
+    if (!profile && !captchaToken) {
+      setProfileStatus(text.captchaRequired)
+      return
+    }
+
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+      captchaToken: captchaToken || undefined,
+    })
+
+    resetCaptcha()
 
     if (error) {
       setProfileStatus(error.message)
@@ -843,7 +874,7 @@ export default function WidgetPage() {
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || authMode !== 'create') return
+    if (typeof window === 'undefined' || profile) return
 
     let cancelled = false
 
@@ -1993,7 +2024,7 @@ export default function WidgetPage() {
                   )}
                 </div>
               )}
-              {!profile && authMode === 'create' && (
+              {!profile && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
