@@ -111,7 +111,8 @@ const uiText = {
     createSession: 'Create Session',
     availableSessions: 'Available Game Sessions',
     privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
-    searchPlaceholder: 'Search by session name, game, or private code',
+    searchPlaceholder: 'Search session name, profile name, game, private code',
+    searchSessions: 'Search sessions',
     noMatchingSessions: 'No matching sessions yet.',
     private: 'Private',
     public: 'Public',
@@ -231,6 +232,9 @@ const uiText = {
     shared: 'Shared',
     linkCopied: 'Link copied.',
     loginToContinue: 'Please log in first.',
+    loginPromptTitle: 'Tiny quest checkpoint',
+    loginPromptMessage: 'You must log in first. Then the session gates open and the fun can continue.',
+    loginPromptButton: 'Log in',
   },
   vi: {
     tagline: 'Tạo phiên chơi công khai hoặc riêng tư và mời người chơi khác tham gia.',
@@ -240,7 +244,8 @@ const uiText = {
     createSession: 'Tạo phiên',
     availableSessions: 'Các phiên chơi hiện có',
     privateJoinHint: 'Phiên riêng tư vẫn hiển thị, nhưng cần mã 6 ký tự để tham gia.',
-    searchPlaceholder: 'Tìm theo tên phiên, game hoặc mã riêng tư',
+    searchPlaceholder: 'Tìm tên phiên, tên hồ sơ, game, mã riêng tư',
+    searchSessions: 'Tìm phiên',
     noMatchingSessions: 'Chưa có phiên phù hợp.',
     private: 'Riêng tư',
     public: 'Công khai',
@@ -360,6 +365,9 @@ const uiText = {
     shared: 'Đã chia sẻ',
     linkCopied: 'Đã sao chép liên kết.',
     loginToContinue: 'Vui lòng đăng nhập trước.',
+    loginPromptTitle: 'Một cửa ải nhỏ',
+    loginPromptMessage: 'Bạn cần đăng nhập trước. Sau đó cánh cổng phiên chơi sẽ mở ra.',
+    loginPromptButton: 'Đăng nhập',
   },
 }
 
@@ -449,6 +457,7 @@ export default function WidgetPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
   const [search, setSearch] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
   const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
@@ -468,6 +477,7 @@ export default function WidgetPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
   const [sessionName, setSessionName] = useState('')
@@ -510,6 +520,27 @@ export default function WidgetPage() {
     setAuthMode('login')
     setActiveView('profile')
     setProfileStatus(text.loginToContinue)
+    setLoginPromptOpen(false)
+  }
+
+  function promptLogin() {
+    setLoginPromptOpen(true)
+    setProfileStatus(text.loginToContinue)
+  }
+
+  function requireProfile() {
+    if (profile) return true
+
+    promptLogin()
+    return false
+  }
+
+  function openSessionFromProfile(sessionId: string) {
+    setSearch('')
+    setActiveView('sessions')
+    window.setTimeout(() => {
+      document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
   }
 
   async function shareLink(key: string, title: string, path = '') {
@@ -869,9 +900,14 @@ export default function WidgetPage() {
         .map((gameId) => games.find((game) => game.id === gameId)?.title || gameId)
         .join(' ')
         .toLowerCase()
+      const profileNames = (session.session_participants ?? [])
+        .map((participant) => participant.display_name || '')
+        .join(' ')
+        .toLowerCase()
 
       return (
         session.name.toLowerCase().includes(query) ||
+        profileNames.includes(query) ||
         selectedGameNames.includes(query) ||
         session.invite_code?.toLowerCase() === query
       )
@@ -1006,9 +1042,7 @@ export default function WidgetPage() {
   }
 
   async function createSession() {
-    if (!profile) {
-      setCreateStatus(text.createProfileFirst)
-      goToLogin()
+    if (!requireProfile()) {
       setIsCreating(false)
       return
     }
@@ -1077,11 +1111,7 @@ export default function WidgetPage() {
   }
 
   async function joinSession(session: Session) {
-    if (!profile) {
-      setCreateStatus(text.createProfileFirst)
-      goToLogin()
-      return
-    }
+    if (!requireProfile()) return
 
     if (session.visibility === 'private') {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
@@ -1120,10 +1150,7 @@ export default function WidgetPage() {
   }
 
   async function leaveSession(session: Session) {
-    if (!profile) {
-      goToLogin()
-      return
-    }
+    if (!requireProfile()) return
 
     if (session.owner_id === userId) {
       setCreateStatus(text.creatorCannotRemove)
@@ -1152,10 +1179,7 @@ export default function WidgetPage() {
   }
 
   async function voteForGame(session: Session, gameId: GameId) {
-    if (!profile) {
-      setActiveView('profile')
-      return
-    }
+    if (!requireProfile()) return
 
     const voteKey = `${session.id}-${gameId}`
     setBusyVoteKey(voteKey)
@@ -1367,7 +1391,7 @@ export default function WidgetPage() {
           <button className={activeView === 'sessions' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
             {text.sessions}
           </button>
-          <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('create') : goToLogin())}>
+          <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('create') : promptLogin())}>
             {text.createSession}
           </button>
         </div>
@@ -1384,17 +1408,27 @@ export default function WidgetPage() {
         {activeView === 'sessions' && (
           <section className="section">
             <div className="section-head">
-              <div>
+              <div className="section-copy">
                 <h2>{text.availableSessions}</h2>
                 <p className="muted">{text.privateJoinHint}</p>
               </div>
-              <input
-                className="search"
-                type="search"
-                placeholder={text.searchPlaceholder}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
+              <div className={isSearchOpen ? 'search-shell open' : 'search-shell'}>
+                <button
+                  aria-label={text.searchSessions}
+                  className="mobile-search-toggle"
+                  type="button"
+                  onClick={() => setIsSearchOpen((open) => !open)}
+                >
+                  🔎
+                </button>
+                <input
+                  className="search"
+                  type="search"
+                  placeholder={text.searchPlaceholder}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
             </div>
             {createStatus && <p className="notice">{createStatus}</p>}
 
@@ -1956,7 +1990,19 @@ export default function WidgetPage() {
                       const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
 
                       return (
-                        <article className="mini-session" key={session.id}>
+                        <article
+                          className="mini-session clickable"
+                          key={session.id}
+                          onClick={() => openSessionFromProfile(session.id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              openSessionFromProfile(session.id)
+                            }
+                          }}
+                        >
                           <div className="mini-session-title">
                             <strong>{session.name}</strong>
                             <span className={createdByMe ? 'pill ok' : 'pill'}>
@@ -1977,7 +2023,10 @@ export default function WidgetPage() {
                               <button
                                 className={copiedInviteId === session.id ? 'copied' : ''}
                                 type="button"
-                                onClick={() => copyInviteCode(session.id, session.invite_code)}
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  copyInviteCode(session.id, session.invite_code)
+                                }}
                               >
                                 {copiedInviteId === session.id ? text.copied : text.copy}
                               </button>
@@ -1988,9 +2037,10 @@ export default function WidgetPage() {
                               <button
                                 className="secondary small-button"
                                 type="button"
-                                onClick={() => {
+                                onClick={(event) => {
+                                  event.stopPropagation()
                                   startEditingSession(session)
-                                  setActiveView('sessions')
+                                  openSessionFromProfile(session.id)
                                 }}
                               >
                                 {text.editSession}
@@ -1999,7 +2049,10 @@ export default function WidgetPage() {
                                 className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
                                 disabled={busySessionId === session.id}
                                 type="button"
-                                onClick={() => cancelSession(session)}
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  cancelSession(session)
+                                }}
                               >
                                 {text.cancelSession}
                               </button>
@@ -2010,7 +2063,10 @@ export default function WidgetPage() {
                                 className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
                                 disabled={busySessionId === session.id}
                                 type="button"
-                                onClick={() => leaveSession(session)}
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  leaveSession(session)
+                                }}
                               >
                                 {text.leaveSession}
                               </button>
@@ -2027,6 +2083,21 @@ export default function WidgetPage() {
         )}
 
       </main>
+
+      {loginPromptOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="login-prompt-title">
+          <div className="login-modal">
+            <button className="modal-close" type="button" onClick={() => setLoginPromptOpen(false)} aria-label={text.close}>
+              ×
+            </button>
+            <h3 id="login-prompt-title">{text.loginPromptTitle}</h3>
+            <p>{text.loginPromptMessage}</p>
+            <button className="primary create-button" type="button" onClick={goToLogin}>
+              {text.loginPromptButton}
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         :global(body) {
@@ -2125,6 +2196,17 @@ export default function WidgetPage() {
           gap: 16px;
           align-items: flex-start;
           margin-bottom: 16px;
+        }
+
+        .search-shell {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .mobile-search-toggle {
+          display: none;
         }
 
         .app-title-row {
@@ -2273,6 +2355,15 @@ export default function WidgetPage() {
           background: #ffffff;
         }
 
+        .mini-session.clickable {
+          cursor: pointer;
+        }
+
+        .mini-session.clickable:hover {
+          border-color: rgba(48, 89, 255, 0.35);
+          box-shadow: 0 10px 26px rgba(11, 21, 24, 0.08);
+        }
+
         .mini-session-title {
           display: flex;
           justify-content: space-between;
@@ -2419,6 +2510,49 @@ export default function WidgetPage() {
 
         .search {
           max-width: 360px;
+        }
+
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          display: grid;
+          place-items: center;
+          padding: 18px;
+          background: rgba(7, 17, 18, 0.32);
+        }
+
+        .login-modal {
+          position: relative;
+          width: min(420px, 100%);
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          padding: 20px;
+          background: #ffffff;
+          box-shadow: 0 28px 80px rgba(11, 21, 24, 0.2);
+        }
+
+        .login-modal p {
+          color: #637075;
+          line-height: 1.45;
+        }
+
+        .modal-close {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 34px;
+          height: 34px;
+          display: inline-grid;
+          place-items: center;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: #637075;
+          font-size: 24px;
+          line-height: 1;
         }
 
         .list {
@@ -3009,8 +3143,46 @@ export default function WidgetPage() {
             display: grid;
           }
 
+          .section-copy {
+            display: none;
+          }
+
+          .search-shell {
+            position: fixed;
+            top: 124px;
+            right: 12px;
+            z-index: 25;
+            justify-content: flex-end;
+            pointer-events: none;
+          }
+
+          .mobile-search-toggle {
+            display: inline-grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            border: 1px solid rgba(48, 89, 255, 0.2);
+            border-radius: 999px;
+            background: #ffffff;
+            box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+            font-size: 20px;
+            pointer-events: auto;
+          }
+
           .search {
+            display: none;
+            width: min(100vw - 76px, 440px);
             max-width: none;
+            box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+            pointer-events: auto;
+          }
+
+          .search-shell.open {
+            left: 12px;
+          }
+
+          .search-shell.open .search {
+            display: block;
           }
 
           .session {
@@ -3200,7 +3372,8 @@ export default function WidgetPage() {
           .session,
           .mini-session,
           .profile-chip,
-          .profile-photo-panel {
+          .profile-photo-panel,
+          .login-modal {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
           }
@@ -3210,6 +3383,7 @@ export default function WidgetPage() {
           .row-meta,
           label,
           .notes,
+          .login-modal p,
           .field-help,
           .game-card strong,
           .stats span {
@@ -3223,6 +3397,7 @@ export default function WidgetPage() {
           select,
           textarea,
           .country-button,
+          .mobile-search-toggle,
           .game-card,
           .invite-code button {
             background: #182225;
@@ -3236,6 +3411,10 @@ export default function WidgetPage() {
           .row-meta span,
           .pill {
             background: #1d2a2e;
+          }
+
+          .modal-backdrop {
+            background: rgba(0, 0, 0, 0.55);
           }
 
           .invite-code,
