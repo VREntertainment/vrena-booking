@@ -641,15 +641,15 @@ export default function WidgetPage() {
           <p className="muted">Create a public or private game session and let other players join.</p>
         </div>
 
-        <div className="profile-chip">
+        <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
           <div className="avatar">
             {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : displayName(profile).slice(0, 1)}
           </div>
           <div>
             <strong>{profile ? displayName(profile) : 'No profile yet'}</strong>
-            <span>{profile?.phone || 'Phone required'}</span>
+            <span>{profile?.phone || 'Click to log in'}</span>
           </div>
-        </div>
+        </button>
 
         <div className="tabs">
           <button className={activeView === 'sessions' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
@@ -657,9 +657,6 @@ export default function WidgetPage() {
           </button>
           <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('create')}>
             Create Session
-          </button>
-          <button className={activeView === 'profile' ? 'tab active' : 'tab'} onClick={() => setActiveView('profile')}>
-            Profile
           </button>
           <button className={activeView === 'admin' ? 'tab active' : 'tab'} onClick={() => setActiveView('admin')}>
             Admin
@@ -933,16 +930,21 @@ export default function WidgetPage() {
                     onChange={(event) => setProfilePassword(event.target.value)}
                     placeholder="Minimum 6 characters"
                   />
+                  <p className="field-help">Use at least 6 characters. Keep this password to log in again later.</p>
                 </div>
               )}
-              <div>
-                <label>Nickname</label>
-                <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
-              </div>
-              <div>
-                <label>Email</label>
-                <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="Optional" />
-              </div>
+              {(profile || authMode === 'create') && (
+                <div>
+                  <label>Nickname</label>
+                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder="Optional" />
+                </div>
+              )}
+              {(profile || authMode === 'create') && (
+                <div>
+                  <label>Email</label>
+                  <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="Optional" />
+                </div>
+              )}
               {profile && (
                 <div>
                   <label>Profile Photo</label>
@@ -1063,9 +1065,18 @@ export default function WidgetPage() {
           grid-template-columns: 44px minmax(0, 1fr);
           gap: 10px;
           align-items: center;
+          width: 100%;
+          text-align: left;
+          color: #071112;
+          background: #ffffff;
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 8px;
           padding: 10px;
+          cursor: pointer;
+        }
+
+        .profile-chip:hover {
+          background: #f0f4f6;
         }
 
         .profile-chip strong,
@@ -1079,6 +1090,13 @@ export default function WidgetPage() {
         .profile-chip span {
           color: #637075;
           font-size: 12px;
+        }
+
+        .field-help {
+          color: #637075;
+          font-size: 12px;
+          line-height: 1.35;
+          margin-top: 6px;
         }
 
         .profile-photo-panel {
