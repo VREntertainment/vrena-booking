@@ -1,5 +1,5 @@
-import BookingWidget from '../components/BookingWidget'
+import BookingWidget from '../../components/BookingWidget'
 
-export default function Home() {
+export default function BookPage() {
   return <BookingWidget />
 }
