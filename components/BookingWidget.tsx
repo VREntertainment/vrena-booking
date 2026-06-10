@@ -196,6 +196,15 @@ export default function WidgetPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [busySessionId, setBusySessionId] = useState('')
   const [busyVoteKey, setBusyVoteKey] = useState('')
+  const [copiedInviteId, setCopiedInviteId] = useState('')
+
+  async function copyInviteCode(sessionId: string, inviteCode: string | null) {
+    if (!inviteCode) return
+
+    await navigator.clipboard?.writeText(inviteCode)
+    setCopiedInviteId(sessionId)
+    window.setTimeout(() => setCopiedInviteId((current) => (current === sessionId ? '' : current)), 1400)
+  }
 
   async function loadProfile() {
     const { data: userData } = await supabase.auth.getUser()
@@ -761,8 +770,12 @@ export default function WidgetPage() {
                       <div className="invite-code">
                         <span>Private code</span>
                         <strong>{session.invite_code}</strong>
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(session.invite_code || '')}>
-                          Copy
+                        <button
+                          className={copiedInviteId === session.id ? 'copied' : ''}
+                          type="button"
+                          onClick={() => copyInviteCode(session.id, session.invite_code)}
+                        >
+                          {copiedInviteId === session.id ? 'Copied' : 'Copy'}
                         </button>
                       </div>
                     )}
@@ -1097,8 +1110,12 @@ export default function WidgetPage() {
                             <div className="invite-code compact">
                               <span>Private code</span>
                               <strong>{session.invite_code}</strong>
-                              <button type="button" onClick={() => navigator.clipboard?.writeText(session.invite_code || '')}>
-                                Copy
+                              <button
+                                className={copiedInviteId === session.id ? 'copied' : ''}
+                                type="button"
+                                onClick={() => copyInviteCode(session.id, session.invite_code)}
+                              >
+                                {copiedInviteId === session.id ? 'Copied' : 'Copy'}
                               </button>
                             </div>
                           )}
@@ -1134,9 +1151,10 @@ export default function WidgetPage() {
         }
 
         .app {
-          min-height: 100vh;
+          height: 100vh;
           display: grid;
           grid-template-columns: 280px minmax(0, 1fr);
+          overflow: hidden;
         }
 
         aside {
@@ -1146,10 +1164,17 @@ export default function WidgetPage() {
           display: flex;
           flex-direction: column;
           gap: 18px;
+          height: 100vh;
+          box-sizing: border-box;
+          overflow-y: auto;
         }
 
         main {
           padding: 22px;
+          height: 100vh;
+          box-sizing: border-box;
+          overflow-y: auto;
+          scroll-behavior: smooth;
         }
 
         h1, h2, h3, p {
@@ -1457,6 +1482,12 @@ export default function WidgetPage() {
           cursor: pointer;
         }
 
+        .invite-code button.copied {
+          border-color: rgba(13, 124, 81, 0.35);
+          background: #e9f8f1;
+          color: #0d7c51;
+        }
+
         .invite-code.compact {
           padding: 7px 8px;
         }
@@ -1655,6 +1686,19 @@ export default function WidgetPage() {
           cursor: pointer;
           background: #071112;
           color: #ffffff;
+          transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease;
+          transform: translateY(0) scale(1);
+          will-change: transform;
+        }
+
+        button:active:not(:disabled) {
+          transform: translateY(1px) scale(0.97);
+          filter: brightness(0.97);
+        }
+
+        button:focus-visible {
+          outline: 3px solid rgba(48, 89, 255, 0.28);
+          outline-offset: 2px;
         }
 
         button:disabled {
@@ -1781,11 +1825,21 @@ export default function WidgetPage() {
         @media (max-width: 960px) {
           .app {
             grid-template-columns: 1fr;
+            height: auto;
+            min-height: 100vh;
+            overflow: visible;
           }
 
           aside {
             border-right: 0;
             border-bottom: 1px solid rgba(7, 17, 18, 0.12);
+            height: auto;
+            overflow: visible;
+          }
+
+          main {
+            height: auto;
+            overflow: visible;
           }
 
           .section-head,
