@@ -999,7 +999,7 @@ export default function WidgetPage() {
                       placeholder="Minimum 6 characters"
                     />
                     <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showPassword ? '🙈' : '👁️'}
                     </button>
                   </div>
                   <p className="field-help">Use at least 6 characters. Keep this password to log in again later.</p>
@@ -1373,7 +1373,7 @@ export default function WidgetPage() {
         }
 
         .profile-form {
-          grid-template-columns: 148px minmax(220px, 1fr) minmax(220px, 1fr);
+          grid-template-columns: 110px minmax(240px, 1fr) minmax(240px, 1fr);
         }
 
         .profile-form .profile-photo-panel {
@@ -1381,14 +1381,18 @@ export default function WidgetPage() {
         }
 
         .country-field {
-          grid-column: span 1;
+          grid-column: 1;
         }
 
         .phone-field,
         .email-field,
-        .password-field,
         .nickname-field {
           grid-column: span 1;
+        }
+
+        .password-field {
+          grid-column: 1 / span 2;
+          max-width: 520px;
         }
 
         .full {
@@ -1435,6 +1439,7 @@ export default function WidgetPage() {
           border-radius: 8px;
           padding: 10px 11px;
           text-align: left;
+          min-height: 46px;
         }
 
         .country-menu {
@@ -1481,7 +1486,7 @@ export default function WidgetPage() {
 
         .password-control {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
+          grid-template-columns: minmax(0, 1fr) 48px;
           align-items: stretch;
         }
 
@@ -1495,7 +1500,9 @@ export default function WidgetPage() {
           border-radius: 0 8px 8px 0;
           background: #ffffff;
           color: #071112;
-          padding: 0 13px;
+          padding: 0;
+          font-size: 18px;
+          line-height: 1;
         }
 
         textarea {
