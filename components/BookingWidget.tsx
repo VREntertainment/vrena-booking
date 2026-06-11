@@ -153,11 +153,13 @@ const uiText = {
     sessions: 'Sessions',
     createSession: 'Create Session',
     clubs: 'Clubs',
+    clubSearchPlaceholder: 'Search club name, member name, description',
     availableSessions: 'Available Game Sessions',
     privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
     searchPlaceholder: 'Search session name, profile name, game, private code',
     searchSessions: 'Search sessions',
     noMatchingSessions: 'No matching sessions yet.',
+    noMatchingClubs: 'No matching clubs yet.',
     allDays: 'All',
     private: 'Private',
     public: 'Public',
@@ -198,7 +200,9 @@ const uiText = {
     clubDescription: 'Club Description',
     clubDescriptionPlaceholder: 'Who is this club for?',
     noClub: 'No club',
-    clubOnly: 'Club crew only',
+    clubOnly: 'Club members only',
+    clubOnlySessionHint: 'Club mischief only: approved members can join this session.',
+    clubOnlyCreateHint: 'This session is for approved club members only.',
     clubSession: 'Club session',
     normalGame: 'Game',
     tournament: 'Tournament',
@@ -350,11 +354,13 @@ const uiText = {
     sessions: 'Phiên chơi',
     createSession: 'Tạo phiên',
     clubs: 'Câu lạc bộ',
+    clubSearchPlaceholder: 'Tìm tên club, thành viên, mô tả',
     availableSessions: 'Các phiên chơi hiện có',
     privateJoinHint: 'Phiên riêng tư vẫn hiển thị, nhưng cần mã 6 ký tự để tham gia.',
     searchPlaceholder: 'Tìm tên phiên, tên hồ sơ, game, mã riêng tư',
     searchSessions: 'Tìm phiên',
     noMatchingSessions: 'Chưa có phiên phù hợp.',
+    noMatchingClubs: 'Chưa có club phù hợp.',
     allDays: 'Tất cả',
     private: 'Riêng tư',
     public: 'Công khai',
@@ -395,7 +401,9 @@ const uiText = {
     clubDescription: 'Mô tả câu lạc bộ',
     clubDescriptionPlaceholder: 'Câu lạc bộ này dành cho ai?',
     noClub: 'Không thuộc club',
-    clubOnly: 'Chỉ hội club',
+    clubOnly: 'Chỉ thành viên club',
+    clubOnlySessionHint: 'Cuộc vui riêng của club: chỉ thành viên đã duyệt mới tham gia.',
+    clubOnlyCreateHint: 'Phiên này chỉ dành cho thành viên đã duyệt của club.',
     clubSession: 'Phiên của club',
     normalGame: 'Game',
     tournament: 'Giải đấu',
@@ -661,6 +669,8 @@ export default function WidgetPage() {
   const [search, setSearch] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [selectedSessionDate, setSelectedSessionDate] = useState('')
+  const [clubSearch, setClubSearch] = useState('')
+  const [isClubSearchOpen, setIsClubSearchOpen] = useState(false)
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
   const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
@@ -726,6 +736,7 @@ export default function WidgetPage() {
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
+  const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
@@ -1164,18 +1175,26 @@ export default function WidgetPage() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    if (!isSearchOpen && !search && !selectedSessionDate) return
+    if (!isSearchOpen && !search && !selectedSessionDate && !isClubSearchOpen && !clubSearch) return
 
     function closeSearchOnOutsideClick(event: PointerEvent) {
       const target = event.target as Node
       const clickedSearch = searchShellRef.current?.contains(target)
       const clickedCalendar = dayStripRef.current?.contains(target)
+      const clickedClubSearch = clubSearchShellRef.current?.contains(target)
 
-      if (clickedSearch || clickedCalendar) return
+      if (clickedSearch || clickedCalendar || clickedClubSearch) return
 
-      setSearch('')
-      setSelectedSessionDate('')
-      setIsSearchOpen(false)
+      if (isSearchOpen || search || selectedSessionDate) {
+        setSearch('')
+        setSelectedSessionDate('')
+        setIsSearchOpen(false)
+      }
+
+      if (isClubSearchOpen || clubSearch) {
+        setClubSearch('')
+        setIsClubSearchOpen(false)
+      }
     }
 
     document.addEventListener('pointerdown', closeSearchOnOutsideClick)
@@ -1183,7 +1202,7 @@ export default function WidgetPage() {
     return () => {
       document.removeEventListener('pointerdown', closeSearchOnOutsideClick)
     }
-  }, [isSearchOpen, search, selectedSessionDate])
+  }, [clubSearch, isClubSearchOpen, isSearchOpen, search, selectedSessionDate])
 
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
@@ -1237,6 +1256,16 @@ export default function WidgetPage() {
     if (maxPlayers > 8 && duration < 60) return text.durationRecommend60
     if (maxPlayers > 4 && duration < 40) return text.durationRecommend40
     return ''
+  }
+
+  function handleSessionClubChange(value: string) {
+    setSessionClubId(value)
+    if (value) {
+      setSessionVisibility('public')
+      setCreateStatus(text.clubOnlyCreateHint)
+    } else if (createStatus === text.clubOnlyCreateHint) {
+      setCreateStatus('')
+    }
   }
 
   function getAvailableTimeOptions(date: string, duration: number, arenaCount: number, excludeSessionId = '') {
@@ -1310,6 +1339,25 @@ export default function WidgetPage() {
       return haystack.includes(query)
     })
   }, [search, selectedSessionDate, sessions])
+
+  const filteredClubs = useMemo(() => {
+    const query = normalizeSearchValue(clubSearch)
+    if (!query) return clubs
+
+    return clubs.filter((club) => {
+      const memberNames = (club.club_members ?? [])
+        .map((member) => member.display_name || '')
+        .join(' ')
+      const haystack = normalizeSearchValue([
+        club.name,
+        club.description || '',
+        club.visibility,
+        memberNames,
+      ].join(' '))
+
+      return haystack.includes(query)
+    })
+  }, [clubSearch, clubs])
 
   const sessionDayOptions = useMemo(() => {
     const today = new Date()
@@ -1750,7 +1798,8 @@ export default function WidgetPage() {
     setIsCreating(true)
     setCreateStatus(text.creating)
 
-    const inviteCode = sessionVisibility === 'private' ? generateInviteCode() : null
+    const effectiveVisibility = selectedSessionClub ? 'public' : sessionVisibility
+    const inviteCode = effectiveVisibility === 'private' ? generateInviteCode() : null
 
     const { data: created, error } = await supabase
       .from('sessions')
@@ -1766,7 +1815,7 @@ export default function WidgetPage() {
         arena_count: sessionArenaCount,
         game_options: selectedGames,
         game_votes: { [userId]: selectedGames[0] },
-        visibility: sessionVisibility,
+        visibility: effectiveVisibility,
         invite_code: inviteCode,
         notes: sessionNotes.trim() || null,
         status: 'open',
@@ -2204,7 +2253,7 @@ export default function WidgetPage() {
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
                           <span>{remaining} {text.seatsLeft}</span>
-                          {sessionClub && <span>{text.clubSession}: {sessionClub.name}</span>}
+                          {sessionClub && <span className="pill">{text.clubSession}: {sessionClub.name}</span>}
                           {session.session_type === 'tournament' && <span className="pill private">{text.tournament}</span>}
                         </div>
                       </div>
@@ -2483,14 +2532,46 @@ export default function WidgetPage() {
                 <h2>{text.clubsTitle}</h2>
                 <p className="muted">{text.clubsHint}</p>
               </div>
-              <div className="segmented">
-                <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
-                  {text.public}
+              <div className={isClubSearchOpen ? 'search-shell open' : 'search-shell'} ref={clubSearchShellRef}>
+                <button
+                  aria-label={text.searchSessions}
+                  className="mobile-search-toggle"
+                  type="button"
+                  onClick={() => setIsClubSearchOpen((open) => !open)}
+                >
+                  🔎
                 </button>
-                <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
-                  {text.private}
-                </button>
+                <input
+                  className="search"
+                  type="search"
+                  placeholder={text.clubSearchPlaceholder}
+                  value={clubSearch}
+                  onFocus={() => setIsClubSearchOpen(true)}
+                  onChange={(event) => setClubSearch(event.target.value)}
+                />
+                {(isClubSearchOpen || clubSearch) && (
+                  <button
+                    aria-label={text.close}
+                    className="search-close"
+                    type="button"
+                    onClick={() => {
+                      setClubSearch('')
+                      setIsClubSearchOpen(false)
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
+            </div>
+
+            <div className="segmented form-segmented">
+              <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
+                {text.public}
+              </button>
+              <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
+                {text.private}
+              </button>
             </div>
 
             <div className="form-grid club-form">
@@ -2510,7 +2591,8 @@ export default function WidgetPage() {
             {clubStatus && <p className="notice">{clubStatus}</p>}
 
             <div className="club-list">
-              {clubs.map((club) => {
+              {filteredClubs.length === 0 && <p className="notice">{text.noMatchingClubs}</p>}
+              {filteredClubs.map((club) => {
                 const members = club.club_members ?? []
                 const approvedMembers = members.filter((member) => member.status === 'approved')
                 const pendingMembers = members.filter((member) => member.status === 'pending')
@@ -2617,14 +2699,16 @@ export default function WidgetPage() {
                 <h2>{text.createSessionTitle}</h2>
                 <p className="muted">{text.createSessionHint}</p>
               </div>
-              <div className="segmented">
-                <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
-                  {text.public}
-                </button>
-                <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
-                  {text.private}
-                </button>
-              </div>
+              {!sessionClubId && (
+                <div className="segmented">
+                  <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
+                    {text.public}
+                  </button>
+                  <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
+                    {text.private}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="form-grid">
@@ -2645,7 +2729,7 @@ export default function WidgetPage() {
               </div>
               <div className="full">
                 <label>{text.clubOnly}</label>
-                <select value={sessionClubId} onChange={(event) => setSessionClubId(event.target.value)}>
+                <select value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
                   <option value="">{text.noClub}</option>
                   {sessionClubOptions.map((club) => (
                     <option key={club.id} value={club.id}>
@@ -2653,7 +2737,7 @@ export default function WidgetPage() {
                     </option>
                   ))}
                 </select>
-                {sessionClubId && <p className="field-help">{text.clubMembersOnly}</p>}
+                {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
               </div>
               <div>
                 <label>{text.date} <span className="required">*</span></label>
@@ -3143,6 +3227,8 @@ export default function WidgetPage() {
                 type="button"
                 onClick={() => {
                   setSessionClubId(selectedClub.id)
+                  setSessionVisibility('public')
+                  setCreateStatus(text.clubOnlyCreateHint)
                   setActiveView('create')
                   setSelectedClubId('')
                 }}
