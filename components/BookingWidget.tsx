@@ -57,6 +57,7 @@ type Participant = {
 type Session = {
   id: string
   owner_id: string
+  club_id: string | null
   name: string
   date: string
   start_time: string
@@ -94,6 +95,7 @@ type Club = {
   name: string
   description: string | null
   visibility: 'public' | 'private'
+  member_count: number | null
   created_at: string
   club_members?: ClubMember[]
 }
@@ -188,6 +190,15 @@ const uiText = {
     clubName: 'Club Name',
     clubDescription: 'Club Description',
     clubDescriptionPlaceholder: 'Who is this club for?',
+    noClub: 'No club',
+    clubOnly: 'Club only',
+    clubSession: 'Club session',
+    chooseClub: 'Choose a club',
+    clubMembersOnly: 'Only approved club members can join this session.',
+    clubMembershipRequired: 'Only approved members of this club can join this session.',
+    openClubDetails: 'Open club details',
+    nextGames: 'Next games',
+    noClubGames: 'No upcoming games for this club yet.',
     createClub: 'Create Club',
     creatingClub: 'Creating club...',
     clubCreated: 'Club created.',
@@ -201,6 +212,7 @@ const uiText = {
     memberRemoved: 'Member removed.',
     pending: 'Pending',
     members: 'members',
+    member: 'member',
     hiddenMembers: 'Members hidden until your request is approved.',
     removeMemberConfirm: 'Remove this member from the club?',
     fridayPlaceholder: 'Friday VR squad',
@@ -352,6 +364,15 @@ const uiText = {
     clubName: 'Tên câu lạc bộ',
     clubDescription: 'Mô tả câu lạc bộ',
     clubDescriptionPlaceholder: 'Câu lạc bộ này dành cho ai?',
+    noClub: 'Không thuộc club',
+    clubOnly: 'Chỉ dành cho club',
+    clubSession: 'Phiên của club',
+    chooseClub: 'Chọn club',
+    clubMembersOnly: 'Chỉ thành viên đã được duyệt của club mới có thể tham gia phiên này.',
+    clubMembershipRequired: 'Chỉ thành viên đã được duyệt của club này mới có thể tham gia phiên.',
+    openClubDetails: 'Mở chi tiết club',
+    nextGames: 'Phiên sắp tới',
+    noClubGames: 'Chưa có phiên sắp tới cho club này.',
     createClub: 'Tạo câu lạc bộ',
     creatingClub: 'Đang tạo câu lạc bộ...',
     clubCreated: 'Đã tạo câu lạc bộ.',
@@ -365,6 +386,7 @@ const uiText = {
     memberRemoved: 'Đã xóa thành viên.',
     pending: 'Đang chờ',
     members: 'thành viên',
+    member: 'thành viên',
     hiddenMembers: 'Thành viên được ẩn cho đến khi yêu cầu của bạn được duyệt.',
     removeMemberConfirm: 'Xóa thành viên này khỏi câu lạc bộ?',
     fridayPlaceholder: 'Nhóm VR tối thứ Sáu',
@@ -620,6 +642,7 @@ export default function WidgetPage() {
   const [sessionMaxPlayers, setSessionMaxPlayers] = useState(4)
   const [sessionArenaCount, setSessionArenaCount] = useState(1)
   const [sessionNotes, setSessionNotes] = useState('')
+  const [sessionClubId, setSessionClubId] = useState('')
   const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [createStatus, setCreateStatus] = useState('')
   const [isCreating, setIsCreating] = useState(false)
@@ -644,6 +667,9 @@ export default function WidgetPage() {
   const [clubStatus, setClubStatus] = useState('')
   const [isCreatingClub, setIsCreatingClub] = useState(false)
   const [busyClubId, setBusyClubId] = useState('')
+  const [selectedClubId, setSelectedClubId] = useState('')
+  const [selectedClubDate, setSelectedClubDate] = useState('')
+  const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
@@ -1030,7 +1056,7 @@ export default function WidgetPage() {
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile) return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile') return
 
     let cancelled = false
 
@@ -1079,7 +1105,7 @@ export default function WidgetPage() {
 
       captchaWidgetId.current = null
     }
-  }, [authMode, profile])
+  }, [activeView, authMode, profile])
 
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
@@ -1223,6 +1249,31 @@ export default function WidgetPage() {
     })
   }, [sessions, userId])
 
+  const sessionClubOptions = useMemo(() => {
+    if (!userId) return []
+
+    return clubs.filter((club) => club.owner_id === userId || (club.club_members ?? []).some((member) => member.profile_id === userId && member.status === 'approved'))
+  }, [clubs, userId])
+
+  const selectedClub = useMemo(() => {
+    return clubs.find((club) => club.id === selectedClubId)
+  }, [clubs, selectedClubId])
+
+  const selectedClubSessions = useMemo(() => {
+    if (!selectedClubId) return []
+    return sessions.filter((session) => session.club_id === selectedClubId)
+  }, [selectedClubId, sessions])
+
+  const selectedClubDayOptions = useMemo(() => {
+    const uniqueDays = Array.from(new Set(selectedClubSessions.map((session) => session.date))).sort()
+    return uniqueDays.map((value) => ({ value, ...formatDayButton(value, language) }))
+  }, [language, selectedClubSessions])
+
+  const filteredSelectedClubSessions = useMemo(() => {
+    if (!selectedClubDate) return selectedClubSessions
+    return selectedClubSessions.filter((session) => session.date === selectedClubDate)
+  }, [selectedClubDate, selectedClubSessions])
+
   const filteredCountries = useMemo(() => {
     const query = countrySearch.trim().toLowerCase()
     if (!query) return countries
@@ -1240,6 +1291,24 @@ export default function WidgetPage() {
 
   function canManageClub(club: Club) {
     return Boolean(userId && (club.owner_id === userId || isAdmin))
+  }
+
+  function approvedClubMember(club: Club, profileId = userId) {
+    return (club.club_members ?? []).some((member) => member.profile_id === profileId && member.status === 'approved')
+  }
+
+  function canSeeClubPrivateData(club: Club | undefined) {
+    if (!club) return true
+    return club.visibility === 'public' || canManageClub(club) || approvedClubMember(club)
+  }
+
+  function canCreateClubSession(club: Club | undefined) {
+    if (!club) return false
+    return canManageClub(club) || approvedClubMember(club)
+  }
+
+  function clubMemberCount(club: Club) {
+    return club.member_count ?? (club.club_members ?? []).filter((member) => member.status === 'approved').length
   }
 
   async function createClub() {
@@ -1488,6 +1557,14 @@ export default function WidgetPage() {
       return
     }
 
+    const selectedSessionClub = sessionClubId ? clubs.find((club) => club.id === sessionClubId) : undefined
+
+    if (selectedSessionClub && !canSeeClubPrivateData(selectedSessionClub)) {
+      setCreateStatus(text.clubMembershipRequired)
+      setIsCreating(false)
+      return
+    }
+
     setIsCreating(true)
     setCreateStatus(text.creating)
 
@@ -1497,6 +1574,7 @@ export default function WidgetPage() {
       .from('sessions')
       .insert({
         owner_id: userId,
+        club_id: sessionClubId || null,
         name: sessionName.trim(),
         date: sessionDate,
         start_time: `${sessionTime}:00`,
@@ -1538,6 +1616,7 @@ export default function WidgetPage() {
     setSessionDuration(20)
     setSessionMaxPlayers(4)
     setSessionArenaCount(1)
+    setSessionClubId('')
     setSelectedGames(['laser-tag'])
     setSessionVisibility('public')
     await loadSessions()
@@ -1551,6 +1630,12 @@ export default function WidgetPage() {
     const activeProfile = profile
 
     if (!activeProfile) return
+
+    const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
+    if (sessionClub && !approvedClubMember(sessionClub)) {
+      setCreateStatus(text.clubMembershipRequired)
+      return
+    }
 
     if (session.visibility === 'private') {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
@@ -1922,6 +2007,8 @@ export default function WidgetPage() {
                 const canManage = canManageSession(session)
                 const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
                 const isEditing = editingSessionId === session.id
+                const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
+                const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
 
                 return (
                   <article className="session" id={`session-${session.id}`} key={session.id}>
@@ -1933,6 +2020,7 @@ export default function WidgetPage() {
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
                           <span>{remaining} {text.seatsLeft}</span>
+                          {sessionClub && <span>{text.clubSession}: {sessionClub.name}</span>}
                         </div>
                       </div>
                       <div className="session-actions">
@@ -2081,9 +2169,9 @@ export default function WidgetPage() {
                       {participants.map((participant) => (
                         <div className="player" key={participant.id} title={participant.display_name || text.player}>
                           <div className="player-avatar">
-                            {participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (participant.display_name || 'P').slice(0, 1)}
+                            {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
                           </div>
-                          <span>{participant.display_name || text.player}</span>
+                          <span>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</span>
                           {canManage && participant.profile_id !== session.owner_id && (
                             <button
                               className="remove-player"
@@ -2214,7 +2302,16 @@ export default function WidgetPage() {
                 const canSeeMembers = club.visibility === 'public' || canManage
 
                 return (
-                  <article className="club-card" key={club.id}>
+                  <article
+                    className="club-card clickable"
+                    key={club.id}
+                    onClick={() => {
+                      setSelectedClubId(club.id)
+                      setSelectedClubDate('')
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="session-top">
                       <div>
                         <h3>{club.name}</h3>
@@ -2222,7 +2319,7 @@ export default function WidgetPage() {
                           <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
                             {club.visibility === 'private' ? text.private : text.public}
                           </span>
-                          {canSeeMembers && <span>{approvedMembers.length} {text.members}</span>}
+                          <span>{clubMemberCount(club)} {text.members}</span>
                           {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
                         </div>
                       </div>
@@ -2230,7 +2327,10 @@ export default function WidgetPage() {
                         <button
                           className={busyClubId === club.id ? 'primary loading' : 'primary'}
                           disabled={busyClubId === club.id}
-                          onClick={() => joinClub(club)}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            joinClub(club)
+                          }}
                           type="button"
                         >
                           {club.visibility === 'private' ? text.requestJoin : text.joinClub}
@@ -2249,7 +2349,10 @@ export default function WidgetPage() {
                             </div>
                             <span>{member.display_name || text.player}</span>
                             {canManage && member.profile_id !== club.owner_id && (
-                              <button className="remove-player" disabled={busyClubId === club.id} onClick={() => removeClubMember(club, member)} type="button">
+                              <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
+                                event.stopPropagation()
+                                removeClubMember(club, member)
+                              }} type="button">
                                 {text.remove}
                               </button>
                             )}
@@ -2266,10 +2369,16 @@ export default function WidgetPage() {
                           <div className="pending-member" key={member.id}>
                             <span>{member.display_name || text.player}</span>
                             <div className="mini-session-actions">
-                              <button className="secondary small-button" disabled={busyClubId === club.id} onClick={() => approveClubMember(member)} type="button">
+                              <button className="secondary small-button" disabled={busyClubId === club.id} onClick={(event) => {
+                                event.stopPropagation()
+                                approveClubMember(member)
+                              }} type="button">
                                 {text.approve}
                               </button>
-                              <button className="danger small-button" disabled={busyClubId === club.id} onClick={() => removeClubMember(club, member)} type="button">
+                              <button className="danger small-button" disabled={busyClubId === club.id} onClick={(event) => {
+                                event.stopPropagation()
+                                removeClubMember(club, member)
+                              }} type="button">
                                 {text.remove}
                               </button>
                             </div>
@@ -2305,6 +2414,18 @@ export default function WidgetPage() {
               <div className="full">
                 <label>{text.sessionName} <span className="required">*</span></label>
                 <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
+              </div>
+              <div className="full">
+                <label>{text.clubOnly}</label>
+                <select value={sessionClubId} onChange={(event) => setSessionClubId(event.target.value)}>
+                  <option value="">{text.noClub}</option>
+                  {sessionClubOptions.map((club) => (
+                    <option key={club.id} value={club.id}>
+                      {club.name}
+                    </option>
+                  ))}
+                </select>
+                {sessionClubId && <p className="field-help">{text.clubMembersOnly}</p>}
               </div>
               <div>
                 <label>{text.date} <span className="required">*</span></label>
@@ -2716,6 +2837,129 @@ export default function WidgetPage() {
             <button className="primary create-button" type="button" onClick={goToLogin}>
               {text.loginPromptButton}
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedClub && (
+        <div className="club-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-drawer-title" onClick={() => setSelectedClubId('')}>
+          <div
+            className="club-drawer"
+            onClick={(event) => event.stopPropagation()}
+            onTouchStart={(event) => setDrawerTouchStart(event.touches[0]?.clientY ?? null)}
+            onTouchEnd={(event) => {
+              if (drawerTouchStart === null) return
+              const endY = event.changedTouches[0]?.clientY ?? drawerTouchStart
+              if (endY - drawerTouchStart > 70) {
+                setSelectedClubId('')
+              }
+              setDrawerTouchStart(null)
+            }}
+          >
+            <div className="drawer-handle" />
+            <div className="session-top">
+              <div>
+                <h2 id="club-drawer-title">{selectedClub.name}</h2>
+                <div className="row-meta">
+                  <span className={selectedClub.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                    {selectedClub.visibility === 'private' ? text.private : text.public}
+                  </span>
+                  <span>{clubMemberCount(selectedClub)} {text.members}</span>
+                </div>
+              </div>
+              <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
+                {text.close}
+              </button>
+            </div>
+
+            {selectedClub.description && <p className="notes">{selectedClub.description}</p>}
+
+            {canCreateClubSession(selectedClub) && (
+              <button
+                className="primary create-button"
+                type="button"
+                onClick={() => {
+                  setSessionClubId(selectedClub.id)
+                  setActiveView('create')
+                  setSelectedClubId('')
+                }}
+              >
+                {text.clubOnly}
+              </button>
+            )}
+
+            <div className="drawer-block">
+              <h3>{text.members}</h3>
+              {canSeeClubPrivateData(selectedClub) ? (
+                <div className="players">
+                  {(selectedClub.club_members ?? [])
+                    .filter((member) => member.status === 'approved')
+                    .map((member) => (
+                      <div className="player" key={member.id}>
+                        <div className="player-avatar">
+                          {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
+                        </div>
+                        <span>{member.display_name || text.player}</span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="notice">{text.hiddenMembers}</p>
+              )}
+            </div>
+
+            <div className="drawer-block">
+              <div className="section-head compact-head">
+                <div>
+                  <h3>{text.nextGames}</h3>
+                </div>
+              </div>
+              {selectedClubDayOptions.length > 0 && (
+                <div className="day-strip drawer-days">
+                  <button
+                    className={!selectedClubDate ? 'day-chip active' : 'day-chip'}
+                    type="button"
+                    onClick={() => setSelectedClubDate('')}
+                  >
+                    <strong>{text.allDays}</strong>
+                  </button>
+                  {selectedClubDayOptions.map((day) => (
+                    <button
+                      className={selectedClubDate === day.value ? 'day-chip active' : 'day-chip'}
+                      key={day.value}
+                      type="button"
+                      onClick={() => setSelectedClubDate(day.value)}
+                    >
+                      <span>{day.weekday}</span>
+                      <strong>{day.day}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filteredSelectedClubSessions.length === 0 ? (
+                <p className="notice">{text.noClubGames}</p>
+              ) : (
+                <div className="mini-session-list">
+                  {filteredSelectedClubSessions.map((session) => (
+                    <article className="mini-session clickable" key={session.id} onClick={() => {
+                      setSelectedClubId('')
+                      openSessionFromProfile(session.id)
+                    }}>
+                      <div className="mini-session-title">
+                        <strong>{session.name}</strong>
+                        <span className="pill ok">{text.clubSession}</span>
+                      </div>
+                      <div className="row-meta">
+                        <span>{session.date}</span>
+                        <span>{session.start_time.slice(0, 5)}</span>
+                        <span>{session.duration_minutes} min</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -3263,6 +3507,64 @@ export default function WidgetPage() {
         .login-modal p {
           color: #637075;
           line-height: 1.45;
+        }
+
+        .club-drawer-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 90;
+          display: grid;
+          place-items: end center;
+          padding: 20px;
+          background: rgba(7, 17, 18, 0.34);
+        }
+
+        .club-drawer {
+          width: min(860px, 100%);
+          max-height: min(78vh, 760px);
+          overflow-y: auto;
+          display: grid;
+          gap: 14px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 14px 14px 8px 8px;
+          background: #ffffff;
+          padding: 16px;
+          box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
+          animation: drawerUp 180ms ease-out;
+        }
+
+        .drawer-handle {
+          justify-self: center;
+          width: 46px;
+          height: 5px;
+          border-radius: 999px;
+          background: rgba(7, 17, 18, 0.18);
+        }
+
+        .drawer-block {
+          display: grid;
+          gap: 10px;
+          border-top: 1px solid rgba(7, 17, 18, 0.08);
+          padding-top: 12px;
+        }
+
+        .drawer-days {
+          position: static;
+          width: 100%;
+          max-width: 100%;
+          border-radius: 999px;
+          box-shadow: none;
+        }
+
+        @keyframes drawerUp {
+          from {
+            transform: translateY(24px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
 
         .modal-close {
@@ -3911,6 +4213,17 @@ export default function WidgetPage() {
             box-shadow: none;
           }
 
+          .club-drawer-backdrop {
+            align-items: end;
+            padding: 0 10px 14px;
+          }
+
+          .club-drawer {
+            max-height: calc(100vh - 86px);
+            border-radius: 18px 18px 10px 10px;
+            padding: 12px;
+          }
+
           .section-head,
           .join-row {
             display: grid;
@@ -3988,6 +4301,14 @@ export default function WidgetPage() {
             min-width: 54px;
             min-height: 44px;
             padding: 6px 9px;
+          }
+
+          .drawer-days {
+            position: static;
+            width: 100%;
+            max-width: 100%;
+            border-width: 1px;
+            border-radius: 999px;
           }
 
           .session {
@@ -4182,7 +4503,8 @@ export default function WidgetPage() {
           .mini-session,
           .profile-chip,
           .profile-photo-panel,
-          .login-modal {
+          .login-modal,
+          .club-drawer {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
           }
@@ -4228,6 +4550,14 @@ export default function WidgetPage() {
 
           .modal-backdrop {
             background: rgba(0, 0, 0, 0.55);
+          }
+
+          .club-drawer-backdrop {
+            background: rgba(0, 0, 0, 0.58);
+          }
+
+          .drawer-handle {
+            background: rgba(255, 255, 255, 0.24);
           }
 
           .invite-code,
