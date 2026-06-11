@@ -687,6 +687,12 @@ function escapeHtml(value: string) {
 }
 
 function formatNotesHtml(value: string) {
+  if (/<\/?(strong|b|em|i|u|s|strike|br|div|p)\b/i.test(value)) {
+    return value
+      .replace(/<(\/?)(strong|b|em|i|u|s|strike|br|div|p)(?:\s[^>]*)?>/gi, '<$1$2>')
+      .replace(/<(?!\/?(strong|b|em|i|u|s|strike|br|div|p)\b)[^>]*>/gi, '')
+  }
+
   return escapeHtml(value)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/__(.+?)__/g, '<u>$1</u>')
@@ -699,6 +705,38 @@ function rankEmoji(placement?: number | null) {
   if (placement === 2) return '🥈'
   if (placement === 3) return '🥉'
   return ''
+}
+
+function RichNotesEditor({
+  value,
+  onChange,
+  placeholder,
+  resetKey,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  resetKey: string
+}) {
+  const editorRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value ? formatNotesHtml(value) : ''
+    }
+  }, [resetKey])
+
+  return (
+    <div
+      className="rich-note-editor"
+      contentEditable
+      data-placeholder={placeholder}
+      onInput={(event) => onChange(event.currentTarget.innerHTML)}
+      ref={editorRef}
+      role="textbox"
+      suppressContentEditableWarning
+    />
+  )
 }
 
 function appRedirectUrl() {
@@ -1996,8 +2034,8 @@ export default function WidgetPage() {
     })
   }
 
-  function wrapTextFormat(value: string, setter: (value: string) => void, markerStart: string, markerEnd = markerStart) {
-    setter(`${value}${value ? '\n' : ''}${markerStart}${text.notes}${markerEnd}`)
+  function applyRichTextCommand(command: 'bold' | 'italic' | 'underline' | 'strikeThrough') {
+    document.execCommand(command, false)
   }
 
   async function createSession() {
@@ -2639,12 +2677,17 @@ export default function WidgetPage() {
                           <div className="full">
                             <label>{text.notes}</label>
                             <div className="format-toolbar">
-                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '**')}>{text.formatBold}</button>
-                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '*')}>{text.formatItalic}</button>
-                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '__')}>{text.formatUnderline}</button>
-                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '~~')}>{text.formatStrike}</button>
+                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}>{text.formatBold}</button>
+                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}>{text.formatItalic}</button>
+                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}>{text.formatUnderline}</button>
+                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}>{text.formatStrike}</button>
                             </div>
-                            <textarea value={editSessionNotes} onChange={(event) => setEditSessionNotes(event.target.value)} />
+                            <RichNotesEditor
+                              value={editSessionNotes}
+                              onChange={setEditSessionNotes}
+                              placeholder={text.notesPlaceholder}
+                              resetKey={`edit-${editingSessionId || session.id}`}
+                            />
                           </div>
                         </div>
                         <div className="action-row">
@@ -2677,27 +2720,32 @@ export default function WidgetPage() {
                       </div>
                     )}
 
-                    {participants.some((participant) => participant.placement && participant.placement <= 3) && (
-                      <div className="podium-row">
-                        {participants
-                          .filter((participant) => participant.placement && participant.placement <= 3)
-                          .sort((a, b) => (a.placement || 9) - (b.placement || 9))
-                          .map((participant) => (
+                    {(() => {
+                      const podiumParticipants = [2, 1, 3]
+                        .map((rank) => participants.find((participant) => participant.placement === rank))
+                        .filter((participant): participant is Participant => Boolean(participant))
+
+                      if (!podiumParticipants.length) return null
+
+                      return (
+                        <div className="podium-row podium-pyramid">
+                          {podiumParticipants.map((participant) => (
                             <button
-                              className={`podium-player place-${participant.placement}`}
+                              className={`podium-player podium-rank-${participant.placement} place-${participant.placement}`}
                               key={`podium-${participant.id}`}
                               onClick={() => setSelectedPlayerId(participant.profile_id)}
                               type="button"
                             >
-                              <span>{rankEmoji(participant.placement)}</span>
+                              <span className="podium-medal">{rankEmoji(participant.placement)}</span>
                               <span className="player-avatar tiny-avatar">
                                 {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
                               </span>
                               <strong>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</strong>
                             </button>
                           ))}
-                      </div>
-                    )}
+                        </div>
+                      )
+                    })()}
 
                     <div className="players">
                       {participants.map((participant) => (
@@ -3132,15 +3180,16 @@ export default function WidgetPage() {
               <div className="full">
                 <label>{text.notes}</label>
                 <div className="format-toolbar">
-                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '**')}>{text.formatBold}</button>
-                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '*')}>{text.formatItalic}</button>
-                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '__')}>{text.formatUnderline}</button>
-                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '~~')}>{text.formatStrike}</button>
+                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}>{text.formatBold}</button>
+                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}>{text.formatItalic}</button>
+                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}>{text.formatUnderline}</button>
+                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}>{text.formatStrike}</button>
                 </div>
-                <textarea
-                  placeholder={text.notesPlaceholder}
+                <RichNotesEditor
                   value={sessionNotes}
-                  onChange={(event) => setSessionNotes(event.target.value)}
+                  onChange={setSessionNotes}
+                  placeholder={text.notesPlaceholder}
+                  resetKey={`create-${activeView}`}
                 />
               </div>
             </div>
@@ -4136,6 +4185,8 @@ export default function WidgetPage() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          border-radius: 50%;
+          clip-path: circle(50% at 50% 50%);
         }
 
         .profile-photo-preview input {
@@ -4178,8 +4229,10 @@ export default function WidgetPage() {
           display: block;
           width: 100%;
           height: 100%;
+          max-width: 100%;
           object-fit: cover;
           border-radius: 50%;
+          clip-path: circle(50% at 50% 50%);
         }
 
         .shop-contact {
@@ -4345,25 +4398,57 @@ export default function WidgetPage() {
         }
 
         .podium-row {
-          display: flex;
+          display: grid;
           gap: 8px;
-          overflow-x: auto;
-          padding: 4px 0;
+          max-width: 100%;
+          padding: 6px 0 2px;
         }
 
         .podium-player {
-          flex: 0 0 auto;
           display: inline-grid;
-          grid-template-columns: auto 30px auto;
-          gap: 6px;
+          gap: 5px;
           align-items: center;
-          min-height: 40px;
+          justify-items: center;
+          min-width: 0;
+          min-height: 72px;
           border: 1px solid rgba(7, 17, 18, 0.12);
-          border-radius: 999px;
+          border-radius: 10px;
           background: #ffffff;
           color: #071112;
-          padding: 5px 9px;
+          padding: 7px;
           font-weight: 900;
+          text-align: center;
+        }
+
+        .podium-player strong {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .podium-pyramid {
+          grid-template-columns: repeat(3, minmax(0, 110px));
+          align-items: end;
+          justify-content: center;
+        }
+
+        .podium-rank-1 {
+          min-height: 92px;
+          transform: translateY(-8px);
+        }
+
+        .podium-rank-2 {
+          min-height: 78px;
+        }
+
+        .podium-rank-3 {
+          min-height: 68px;
+        }
+
+        .podium-medal {
+          font-size: 16px;
+          line-height: 1;
         }
 
         .tiny-avatar {
@@ -4567,6 +4652,31 @@ export default function WidgetPage() {
           font-weight: 900;
         }
 
+        .rich-note-editor {
+          min-height: 86px;
+          width: 100%;
+          border: 1px solid rgba(7, 17, 18, 0.14);
+          border-radius: 8px;
+          background: #eef2f4;
+          color: #071112;
+          padding: 10px 12px;
+          font: inherit;
+          line-height: 1.35;
+          outline: none;
+          overflow-wrap: anywhere;
+          white-space: pre-wrap;
+        }
+
+        .rich-note-editor:focus {
+          border-color: rgba(48, 89, 255, 0.36);
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.1);
+        }
+
+        .rich-note-editor:empty::before {
+          content: attr(data-placeholder);
+          color: #8a9498;
+        }
+
         .invite-code {
           display: flex;
           align-items: center;
@@ -4631,39 +4741,72 @@ export default function WidgetPage() {
 
         .players {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
           gap: 10px;
+          max-width: 100%;
+        }
+
+        .players:has(.result-player) {
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
         .player {
           display: grid;
-          grid-template-columns: 34px minmax(0, 1fr) auto;
+          grid-template-columns: minmax(0, 1fr);
           gap: 7px;
-          align-items: center;
+          align-items: start;
+          justify-items: center;
           font-size: 13px;
           font-weight: 700;
           min-width: 0;
+          max-width: 100%;
           border: 1px solid rgba(7, 17, 18, 0.08);
           border-radius: 8px;
           background: #ffffff;
           padding: 8px;
+          text-align: center;
+        }
+
+        .result-player {
+          align-items: start;
         }
 
         .player > span {
           min-width: 0;
+          max-width: 100%;
           overflow: hidden;
           text-overflow: ellipsis;
-          white-space: nowrap;
+          white-space: normal;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          font-size: 12px;
+          line-height: 1.15;
+        }
+
+        .player > .remove-player,
+        .player > .checkin-mini {
+          grid-column: 1 / -1;
+          justify-self: start;
+          max-width: 100%;
+        }
+
+        .result-player > .remove-player,
+        .result-player > .checkin-mini {
+          width: 100%;
+          justify-self: stretch;
         }
 
         .player-avatar {
           position: relative;
           display: inline-grid;
           place-items: center;
-          width: 34px;
-          height: 34px;
-          min-width: 34px;
-          min-height: 34px;
+          width: 42px;
+          height: 42px;
+          min-width: 42px;
+          min-height: 42px;
+          max-width: 100%;
+          aspect-ratio: 1;
           border-radius: 999px;
           border: 0;
           background: linear-gradient(135deg, #13c9c9, #3059ff);
@@ -4677,13 +4820,15 @@ export default function WidgetPage() {
           display: block;
           width: 100%;
           height: 100%;
+          max-width: 100%;
           object-fit: cover;
           border-radius: 50%;
+          clip-path: circle(50% at 50% 50%);
         }
 
         .player-avatar-button {
           cursor: pointer;
-          min-height: 34px;
+          min-height: 42px;
         }
 
         .player-avatar-button:disabled {
@@ -4699,10 +4844,10 @@ export default function WidgetPage() {
         }
 
         .player-avatar.tiny-avatar {
-          width: 30px;
-          height: 30px;
-          min-width: 30px;
-          min-height: 30px;
+          width: 34px;
+          height: 34px;
+          min-width: 34px;
+          min-height: 34px;
           font-size: 12px;
         }
 
@@ -4749,8 +4894,9 @@ export default function WidgetPage() {
         .score-controls {
           grid-column: 1 / -1;
           display: grid;
-          grid-template-columns: repeat(4, minmax(54px, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 6px;
+          min-width: 0;
         }
 
         .score-controls input,
@@ -5400,12 +5546,42 @@ export default function WidgetPage() {
           }
 
           .players {
+            grid-template-columns: 1fr;
             gap: 8px;
           }
 
+          .players:not(:has(.result-player)) {
+            grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+          }
+
           .player {
-            grid-template-columns: 30px minmax(0, auto) auto;
+            grid-template-columns: minmax(0, 1fr);
             font-size: 13px;
+          }
+
+          .result-player .checkin-mini,
+          .result-player .remove-player {
+            grid-column: 1 / -1;
+            width: 100%;
+          }
+
+          .score-controls {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .podium-pyramid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .podium-player {
+            min-height: 68px;
+            padding: 6px 4px;
+          }
+
+          .podium-rank-1 {
+            min-height: 82px;
+            transform: translateY(-6px);
           }
 
           .manage-row {
