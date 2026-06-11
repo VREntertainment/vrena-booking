@@ -1601,7 +1601,33 @@ export default function WidgetPage() {
   const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
-    if (selectedPlayerStats) return selectedPlayerStats
+
+    let visibleAvatar: string | null = null
+    let visibleName = ''
+
+    for (const session of sessions) {
+      const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
+      if (participant) {
+        visibleAvatar = participant.avatar_url || visibleAvatar
+        visibleName = participant.display_name || visibleName
+      }
+    }
+
+    for (const club of clubs) {
+      const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
+      if (member) {
+        visibleAvatar = member.avatar_url || visibleAvatar
+        visibleName = member.display_name || visibleName
+      }
+    }
+
+    if (selectedPlayerStats) {
+      return {
+        ...selectedPlayerStats,
+        displayName: selectedPlayerStats.displayName || visibleName,
+        avatarUrl: selectedPlayerStats.avatarUrl || visibleAvatar,
+      }
+    }
 
     for (const session of sessions) {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
@@ -4121,13 +4147,16 @@ export default function WidgetPage() {
           position: relative;
           width: 42px;
           height: 42px;
+          min-width: 42px;
+          min-height: 42px;
           border-radius: 50%;
           display: grid;
           place-items: center;
-          overflow: hidden;
+          overflow: visible;
           background: linear-gradient(135deg, #00cbd1, #3059ff);
           color: #ffffff;
           font-weight: 800;
+          padding: 0;
         }
 
         .champion-badge {
@@ -4146,9 +4175,11 @@ export default function WidgetPage() {
 
         .avatar img,
         .player-avatar img {
+          display: block;
           width: 100%;
           height: 100%;
           object-fit: cover;
+          border-radius: 50%;
         }
 
         .shop-contact {
@@ -4599,26 +4630,40 @@ export default function WidgetPage() {
         }
 
         .players {
-          display: flex;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
           gap: 10px;
         }
 
         .player {
-          display: inline-grid;
-          grid-template-columns: 32px auto auto;
+          display: grid;
+          grid-template-columns: 34px minmax(0, 1fr) auto;
           gap: 7px;
           align-items: center;
           font-size: 13px;
           font-weight: 700;
+          min-width: 0;
+          border: 1px solid rgba(7, 17, 18, 0.08);
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 8px;
+        }
+
+        .player > span {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .player-avatar {
           position: relative;
           display: inline-grid;
           place-items: center;
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
+          min-width: 34px;
+          min-height: 34px;
           border-radius: 999px;
           border: 0;
           background: linear-gradient(135deg, #13c9c9, #3059ff);
@@ -4628,12 +4673,37 @@ export default function WidgetPage() {
           overflow: visible;
         }
 
+        .player-avatar img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
+
         .player-avatar-button {
           cursor: pointer;
+          min-height: 34px;
         }
 
         .player-avatar-button:disabled {
           cursor: default;
+        }
+
+        .player-avatar.profile-large {
+          width: 64px;
+          height: 64px;
+          min-width: 64px;
+          min-height: 64px;
+          font-size: 24px;
+        }
+
+        .player-avatar.tiny-avatar {
+          width: 30px;
+          height: 30px;
+          min-width: 30px;
+          min-height: 30px;
+          font-size: 12px;
         }
 
         .place-1 {
@@ -4993,6 +5063,11 @@ export default function WidgetPage() {
           gap: 10px;
         }
 
+        .game-strip {
+          grid-template-columns: repeat(auto-fill, minmax(118px, 150px));
+          align-items: start;
+        }
+
         .game-card {
           display: grid;
           gap: 7px;
@@ -5014,6 +5089,10 @@ export default function WidgetPage() {
           object-fit: cover;
           border-radius: 6px;
           background: #071112;
+        }
+
+        .game-strip .game-card img {
+          aspect-ratio: 1;
         }
 
         .game-card span {
