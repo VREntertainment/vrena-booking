@@ -1868,6 +1868,7 @@ export default function WidgetPage() {
                   type="search"
                   placeholder={text.searchPlaceholder}
                   value={search}
+                  onFocus={() => setIsSearchOpen(true)}
                   onChange={(event) => setSearch(event.target.value)}
                 />
                 {(isSearchOpen || search || selectedSessionDate) && (
@@ -2803,6 +2804,7 @@ export default function WidgetPage() {
         }
 
         .section {
+          position: relative;
           background: #ffffff;
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 8px;
@@ -2841,11 +2843,23 @@ export default function WidgetPage() {
         }
 
         .day-strip {
+          position: absolute;
+          top: 70px;
+          right: 16px;
+          z-index: 35;
           display: flex;
           gap: 8px;
+          width: min(560px, calc(100% - 32px));
+          max-width: calc(100vw - 32px);
           overflow-x: auto;
-          padding: 0 0 12px;
-          margin-top: -6px;
+          overscroll-behavior-x: contain;
+          box-sizing: border-box;
+          padding: 8px;
+          margin: 0;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.96);
+          box-shadow: 0 16px 40px rgba(11, 21, 24, 0.14);
           scrollbar-width: thin;
         }
 
@@ -3955,8 +3969,19 @@ export default function WidgetPage() {
           }
 
           .day-strip {
-            margin: 0 -4px 12px;
-            padding: 0 4px 10px;
+            position: fixed;
+            top: 178px;
+            left: 0;
+            right: 0;
+            z-index: 24;
+            width: 100vw;
+            max-width: 100vw;
+            margin: 0;
+            padding: 8px 12px 10px;
+            border-width: 1px 0;
+            border-radius: 0;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 10px 26px rgba(11, 21, 24, 0.12);
           }
 
           .day-chip {
@@ -4206,6 +4231,7 @@ export default function WidgetPage() {
           }
 
           .invite-code,
+          .day-strip,
           .share-button {
             background: #111f31;
             border-color: rgba(75, 132, 255, 0.25);
