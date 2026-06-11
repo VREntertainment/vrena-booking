@@ -79,6 +79,25 @@ type BlockedTime = {
   arenas_used: number
 }
 
+type ClubMember = {
+  id: string
+  club_id: string
+  profile_id: string
+  display_name: string | null
+  avatar_url: string | null
+  status: 'pending' | 'approved'
+}
+
+type Club = {
+  id: string
+  owner_id: string
+  name: string
+  description: string | null
+  visibility: 'public' | 'private'
+  created_at: string
+  club_members?: ClubMember[]
+}
+
 const games: Array<{
   id: GameId
   title: string
@@ -126,11 +145,13 @@ const uiText = {
     clickLogin: 'Click to log in',
     sessions: 'Sessions',
     createSession: 'Create Session',
+    clubs: 'Clubs',
     availableSessions: 'Available Game Sessions',
     privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
     searchPlaceholder: 'Search session name, profile name, game, private code',
     searchSessions: 'Search sessions',
     noMatchingSessions: 'No matching sessions yet.',
+    allDays: 'All',
     private: 'Private',
     public: 'Public',
     privateCode: 'Private code',
@@ -162,6 +183,26 @@ const uiText = {
     joinSession: 'Join Session',
     createSessionTitle: 'Create Session',
     createSessionHint: 'Duration increases by 20 minutes. Max players is 16.',
+    clubsTitle: 'Clubs',
+    clubsHint: 'Create a public club or a private club with approved members only.',
+    clubName: 'Club Name',
+    clubDescription: 'Club Description',
+    clubDescriptionPlaceholder: 'Who is this club for?',
+    createClub: 'Create Club',
+    creatingClub: 'Creating club...',
+    clubCreated: 'Club created.',
+    clubRequired: 'Please enter a club name.',
+    joinClub: 'Join Club',
+    requestJoin: 'Request to Join',
+    requestSent: 'Request sent.',
+    approve: 'Approve',
+    approved: 'Approved',
+    memberApproved: 'Member approved.',
+    memberRemoved: 'Member removed.',
+    pending: 'Pending',
+    members: 'members',
+    hiddenMembers: 'Members hidden until your request is approved.',
+    removeMemberConfirm: 'Remove this member from the club?',
     fridayPlaceholder: 'Friday VR squad',
     notesPlaceholder: 'Language, skill level, preferred game, special notes',
     creating: 'Creating...',
@@ -268,11 +309,13 @@ const uiText = {
     clickLogin: 'Bấm để đăng nhập',
     sessions: 'Phiên chơi',
     createSession: 'Tạo phiên',
+    clubs: 'Câu lạc bộ',
     availableSessions: 'Các phiên chơi hiện có',
     privateJoinHint: 'Phiên riêng tư vẫn hiển thị, nhưng cần mã 6 ký tự để tham gia.',
     searchPlaceholder: 'Tìm tên phiên, tên hồ sơ, game, mã riêng tư',
     searchSessions: 'Tìm phiên',
     noMatchingSessions: 'Chưa có phiên phù hợp.',
+    allDays: 'Tất cả',
     private: 'Riêng tư',
     public: 'Công khai',
     privateCode: 'Mã riêng tư',
@@ -304,6 +347,26 @@ const uiText = {
     joinSession: 'Tham gia',
     createSessionTitle: 'Tạo phiên chơi',
     createSessionHint: 'Thời lượng tăng mỗi 20 phút. Tối đa 16 người chơi.',
+    clubsTitle: 'Câu lạc bộ',
+    clubsHint: 'Tạo câu lạc bộ công khai hoặc riêng tư với thành viên cần được duyệt.',
+    clubName: 'Tên câu lạc bộ',
+    clubDescription: 'Mô tả câu lạc bộ',
+    clubDescriptionPlaceholder: 'Câu lạc bộ này dành cho ai?',
+    createClub: 'Tạo câu lạc bộ',
+    creatingClub: 'Đang tạo câu lạc bộ...',
+    clubCreated: 'Đã tạo câu lạc bộ.',
+    clubRequired: 'Vui lòng nhập tên câu lạc bộ.',
+    joinClub: 'Tham gia câu lạc bộ',
+    requestJoin: 'Yêu cầu tham gia',
+    requestSent: 'Đã gửi yêu cầu.',
+    approve: 'Duyệt',
+    approved: 'Đã duyệt',
+    memberApproved: 'Đã duyệt thành viên.',
+    memberRemoved: 'Đã xóa thành viên.',
+    pending: 'Đang chờ',
+    members: 'thành viên',
+    hiddenMembers: 'Thành viên được ẩn cho đến khi yêu cầu của bạn được duyệt.',
+    removeMemberConfirm: 'Xóa thành viên này khỏi câu lạc bộ?',
     fridayPlaceholder: 'Nhóm VR tối thứ Sáu',
     notesPlaceholder: 'Ngôn ngữ, trình độ, game yêu thích, ghi chú đặc biệt',
     creating: 'Đang tạo...',
@@ -473,6 +536,30 @@ function displayName(profile: Profile | null) {
   return profile.nickname || profile.full_name || profile.phone
 }
 
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date)
+  nextDate.setDate(nextDate.getDate() + days)
+  return nextDate
+}
+
+function formatDayButton(dateValue: string, language: 'en' | 'vi') {
+  const date = new Date(`${dateValue}T12:00:00`)
+  const locale = language === 'vi' ? 'vi-VN' : 'en-US'
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date),
+    day: new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(date),
+  }
+}
+
 function appRedirectUrl() {
   if (typeof window === 'undefined') return DEFAULT_APP_URL
 
@@ -492,13 +579,15 @@ function getHCaptcha() {
 }
 
 export default function WidgetPage() {
-  const [activeView, setActiveView] = useState<'sessions' | 'create' | 'profile'>('sessions')
+  const [activeView, setActiveView] = useState<'sessions' | 'create' | 'clubs' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
+  const [clubs, setClubs] = useState<Club[]>([])
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
   const [search, setSearch] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [selectedSessionDate, setSelectedSessionDate] = useState('')
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
   const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
@@ -549,6 +638,12 @@ export default function WidgetPage() {
   const [editSessionNotes, setEditSessionNotes] = useState('')
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [isUpdatingSession, setIsUpdatingSession] = useState(false)
+  const [clubVisibility, setClubVisibility] = useState<'public' | 'private'>('public')
+  const [clubName, setClubName] = useState('')
+  const [clubDescription, setClubDescription] = useState('')
+  const [clubStatus, setClubStatus] = useState('')
+  const [isCreatingClub, setIsCreatingClub] = useState(false)
+  const [busyClubId, setBusyClubId] = useState('')
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
@@ -908,6 +1003,20 @@ export default function WidgetPage() {
     setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
   }
 
+  async function loadClubs() {
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, status)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setClubStatus(error.message)
+      return
+    }
+
+    setClubs((data ?? []) as Club[])
+  }
+
   useEffect(() => {
     setLanguage(detectLanguage())
     if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
@@ -917,6 +1026,7 @@ export default function WidgetPage() {
     }
     loadProfile()
     loadSessions()
+    loadClubs()
   }, [])
 
   useEffect(() => {
@@ -1065,27 +1175,43 @@ export default function WidgetPage() {
   }
 
   const filteredSessions = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (!query) return sessions
+    const query = normalizeSearchValue(search)
 
     return sessions.filter((session) => {
+      if (selectedSessionDate && session.date !== selectedSessionDate) return false
+      if (!query) return true
+
       const selectedGameNames = session.game_options
         .map((gameId) => games.find((game) => game.id === gameId)?.title || gameId)
         .join(' ')
-        .toLowerCase()
       const profileNames = (session.session_participants ?? [])
         .map((participant) => participant.display_name || '')
         .join(' ')
-        .toLowerCase()
+      const haystack = normalizeSearchValue([
+        session.name,
+        profileNames,
+        selectedGameNames,
+        session.invite_code || '',
+      ].join(' '))
 
-      return (
-        session.name.toLowerCase().includes(query) ||
-        profileNames.includes(query) ||
-        selectedGameNames.includes(query) ||
-        session.invite_code?.toLowerCase() === query
-      )
+      return haystack.includes(query)
     })
-  }, [search, sessions])
+  }, [search, selectedSessionDate, sessions])
+
+  const sessionDayOptions = useMemo(() => {
+    const today = new Date()
+    const upcomingDays = Array.from({ length: 14 }, (_, index) => {
+      const value = localDateString(addDays(today, index))
+      return { value, ...formatDayButton(value, language) }
+    })
+    const sessionDays = sessions.map((session) => session.date)
+    const uniqueDays = Array.from(new Set([...upcomingDays.map((day) => day.value), ...sessionDays])).sort()
+
+    return uniqueDays.map((value) => {
+      const existing = upcomingDays.find((day) => day.value === value)
+      return existing || { value, ...formatDayButton(value, language) }
+    })
+  }, [language, sessions])
 
   const mySessions = useMemo(() => {
     if (!userId) return []
@@ -1110,6 +1236,128 @@ export default function WidgetPage() {
 
   function canManageSession(session: Session) {
     return Boolean(userId && (session.owner_id === userId || isAdmin))
+  }
+
+  function canManageClub(club: Club) {
+    return Boolean(userId && (club.owner_id === userId || isAdmin))
+  }
+
+  async function createClub() {
+    if (!requireProfile()) return
+
+    const activeProfile = profile
+    const name = clubName.trim()
+
+    if (!activeProfile) return
+
+    if (!name) {
+      setClubStatus(text.clubRequired)
+      return
+    }
+
+    setIsCreatingClub(true)
+    setClubStatus(text.creatingClub)
+
+    const { data: club, error } = await supabase
+      .from('clubs')
+      .insert({
+        owner_id: userId,
+        name,
+        description: clubDescription.trim() || null,
+        visibility: clubVisibility,
+      })
+      .select('id')
+      .single()
+
+    if (error || !club) {
+      setClubStatus(error?.message || text.createError)
+      setIsCreatingClub(false)
+      return
+    }
+
+    const memberResult = await supabase.from('club_members').insert({
+      club_id: club.id,
+      profile_id: userId,
+      display_name: displayName(activeProfile),
+      avatar_url: activeProfile.avatar_url,
+      status: 'approved',
+    })
+
+    if (memberResult.error) {
+      setClubStatus(memberResult.error.message)
+      setIsCreatingClub(false)
+      return
+    }
+
+    setClubName('')
+    setClubDescription('')
+    setClubVisibility('public')
+    await loadClubs()
+    setClubStatus(text.clubCreated)
+    setIsCreatingClub(false)
+  }
+
+  async function joinClub(club: Club) {
+    if (!requireProfile()) return
+
+    const activeProfile = profile
+    if (!activeProfile) return
+
+    const currentMembership = (club.club_members ?? []).find((member) => member.profile_id === userId)
+    if (currentMembership) return
+
+    setBusyClubId(club.id)
+    const { error } = await supabase.from('club_members').insert({
+      club_id: club.id,
+      profile_id: userId,
+      display_name: displayName(activeProfile),
+      avatar_url: activeProfile.avatar_url,
+      status: club.visibility === 'private' ? 'pending' : 'approved',
+    })
+
+    if (error) {
+      setClubStatus(error.message)
+      setBusyClubId('')
+      return
+    }
+
+    await loadClubs()
+    setClubStatus(club.visibility === 'private' ? text.requestSent : text.joinedSession)
+    setBusyClubId('')
+  }
+
+  async function approveClubMember(member: ClubMember) {
+    setBusyClubId(member.club_id)
+    const { error } = await supabase.from('club_members').update({ status: 'approved' }).eq('id', member.id)
+
+    if (error) {
+      setClubStatus(error.message)
+      setBusyClubId('')
+      return
+    }
+
+    await loadClubs()
+    setClubStatus(text.memberApproved)
+    setBusyClubId('')
+  }
+
+  async function removeClubMember(club: Club, member: ClubMember) {
+    if (!canManageClub(club)) return
+
+    if (!window.confirm(text.removeMemberConfirm)) return
+
+    setBusyClubId(club.id)
+    const { error } = await supabase.from('club_members').delete().eq('id', member.id)
+
+    if (error) {
+      setClubStatus(error.message)
+      setBusyClubId('')
+      return
+    }
+
+    await loadClubs()
+    setClubStatus(text.memberRemoved)
+    setBusyClubId('')
   }
 
   async function saveProfile() {
@@ -1585,6 +1833,9 @@ export default function WidgetPage() {
           <button className={activeView === 'create' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('create') : promptLogin())}>
             {text.createSession}
           </button>
+          <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('clubs') : promptLogin())}>
+            {text.clubs}
+          </button>
         </div>
 
         <div className="shop-contact">
@@ -1619,8 +1870,44 @@ export default function WidgetPage() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
+                {(isSearchOpen || search || selectedSessionDate) && (
+                  <button
+                    aria-label={text.close}
+                    className="search-close"
+                    type="button"
+                    onClick={() => {
+                      setSearch('')
+                      setSelectedSessionDate('')
+                      setIsSearchOpen(false)
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
+            {(isSearchOpen || search || selectedSessionDate) && (
+              <div className="day-strip" aria-label={text.date}>
+                <button
+                  className={!selectedSessionDate ? 'day-chip active' : 'day-chip'}
+                  type="button"
+                  onClick={() => setSelectedSessionDate('')}
+                >
+                  <strong>{text.allDays}</strong>
+                </button>
+                {sessionDayOptions.map((day) => (
+                  <button
+                    className={selectedSessionDate === day.value ? 'day-chip active' : 'day-chip'}
+                    key={day.value}
+                    type="button"
+                    onClick={() => setSelectedSessionDate(day.value)}
+                  >
+                    <span>{day.weekday}</span>
+                    <strong>{day.day}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
             {createStatus && <p className="notice">{createStatus}</p>}
 
             <div className="list">
@@ -1876,6 +2163,119 @@ export default function WidgetPage() {
                         </svg>
                       </button>
                     </div>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {activeView === 'clubs' && (
+          <section className="section">
+            <div className="section-head">
+              <div>
+                <h2>{text.clubsTitle}</h2>
+                <p className="muted">{text.clubsHint}</p>
+              </div>
+              <div className="segmented">
+                <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
+                  {text.public}
+                </button>
+                <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
+                  {text.private}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-grid club-form">
+              <div>
+                <label>{text.clubName} <span className="required">*</span></label>
+                <input value={clubName} onChange={(event) => setClubName(event.target.value)} placeholder="VRena Friday Club" />
+              </div>
+              <div>
+                <label>{text.clubDescription}</label>
+                <input value={clubDescription} onChange={(event) => setClubDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
+              </div>
+            </div>
+
+            <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={createClub} type="button">
+              {isCreatingClub ? text.creatingClub : text.createClub}
+            </button>
+            {clubStatus && <p className="notice">{clubStatus}</p>}
+
+            <div className="club-list">
+              {clubs.map((club) => {
+                const members = club.club_members ?? []
+                const approvedMembers = members.filter((member) => member.status === 'approved')
+                const pendingMembers = members.filter((member) => member.status === 'pending')
+                const membership = members.find((member) => member.profile_id === userId)
+                const canManage = canManageClub(club)
+                const canSeeMembers = club.visibility === 'public' || canManage
+
+                return (
+                  <article className="club-card" key={club.id}>
+                    <div className="session-top">
+                      <div>
+                        <h3>{club.name}</h3>
+                        <div className="row-meta">
+                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                            {club.visibility === 'private' ? text.private : text.public}
+                          </span>
+                          {canSeeMembers && <span>{approvedMembers.length} {text.members}</span>}
+                          {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
+                        </div>
+                      </div>
+                      {!membership && !canManage && (
+                        <button
+                          className={busyClubId === club.id ? 'primary loading' : 'primary'}
+                          disabled={busyClubId === club.id}
+                          onClick={() => joinClub(club)}
+                          type="button"
+                        >
+                          {club.visibility === 'private' ? text.requestJoin : text.joinClub}
+                        </button>
+                      )}
+                    </div>
+
+                    {club.description && <p className="notes">{club.description}</p>}
+
+                    {canSeeMembers ? (
+                      <div className="players">
+                        {approvedMembers.map((member) => (
+                          <div className="player" key={member.id}>
+                            <div className="player-avatar">
+                              {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
+                            </div>
+                            <span>{member.display_name || text.player}</span>
+                            {canManage && member.profile_id !== club.owner_id && (
+                              <button className="remove-player" disabled={busyClubId === club.id} onClick={() => removeClubMember(club, member)} type="button">
+                                {text.remove}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="notice">{text.hiddenMembers}</p>
+                    )}
+
+                    {canManage && pendingMembers.length > 0 && (
+                      <div className="pending-list">
+                        {pendingMembers.map((member) => (
+                          <div className="pending-member" key={member.id}>
+                            <span>{member.display_name || text.player}</span>
+                            <div className="mini-session-actions">
+                              <button className="secondary small-button" disabled={busyClubId === club.id} onClick={() => approveClubMember(member)} type="button">
+                                {text.approve}
+                              </button>
+                              <button className="danger small-button" disabled={busyClubId === club.id} onClick={() => removeClubMember(club, member)} type="button">
+                                {text.remove}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </article>
                 )
               })}
@@ -2425,6 +2825,65 @@ export default function WidgetPage() {
           gap: 8px;
         }
 
+        .search-close {
+          display: inline-grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          min-height: 34px;
+          border-radius: 999px;
+          border: 1px solid rgba(7, 17, 18, 0.14);
+          background: #ffffff;
+          color: #071112;
+          font-size: 20px;
+          font-weight: 800;
+          padding: 0;
+        }
+
+        .day-strip {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 0 0 12px;
+          margin-top: -6px;
+          scrollbar-width: thin;
+        }
+
+        .day-chip {
+          flex: 0 0 auto;
+          display: grid;
+          gap: 1px;
+          min-width: 58px;
+          min-height: 48px;
+          padding: 7px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          background: #f0f4f6;
+          color: #071112;
+          text-align: center;
+        }
+
+        .day-chip span {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .day-chip strong {
+          font-size: 13px;
+        }
+
+        .day-chip.active {
+          color: #ffffff;
+          border-color: transparent;
+          background: linear-gradient(135deg, #13c9c9, #3059ff);
+        }
+
+        .day-chip.active span {
+          color: rgba(255, 255, 255, 0.82);
+        }
+
         .mobile-search-toggle {
           display: none;
         }
@@ -2730,6 +3189,39 @@ export default function WidgetPage() {
 
         .search {
           max-width: 360px;
+        }
+
+        .club-list {
+          display: grid;
+          gap: 12px;
+          margin-top: 16px;
+        }
+
+        .club-card {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          padding: 14px;
+          background: #ffffff;
+        }
+
+        .pending-list {
+          display: grid;
+          gap: 8px;
+          border-top: 1px solid rgba(7, 17, 18, 0.08);
+          padding-top: 10px;
+        }
+
+        .pending-member {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          align-items: center;
+          border-radius: 8px;
+          background: #f0f4f6;
+          padding: 8px 10px;
+          font-weight: 800;
         }
 
         .modal-backdrop {
@@ -3363,7 +3855,7 @@ export default function WidgetPage() {
 
           .tabs {
             grid-area: tabs;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
           }
 
@@ -3450,6 +3942,27 @@ export default function WidgetPage() {
 
           .search-shell.open .search {
             display: block;
+          }
+
+          .search-close {
+            display: none;
+            box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+            pointer-events: auto;
+          }
+
+          .search-shell.open .search-close {
+            display: inline-grid;
+          }
+
+          .day-strip {
+            margin: 0 -4px 12px;
+            padding: 0 4px 10px;
+          }
+
+          .day-chip {
+            min-width: 54px;
+            min-height: 44px;
+            padding: 6px 9px;
           }
 
           .session {
@@ -3640,6 +4153,7 @@ export default function WidgetPage() {
           aside,
           .section,
           .session,
+          .club-card,
           .mini-session,
           .profile-chip,
           .profile-photo-panel,
@@ -3668,7 +4182,9 @@ export default function WidgetPage() {
           select,
           textarea,
           .country-button,
+          .search-close,
           .mobile-search-toggle,
+          .day-chip,
           .game-card,
           .invite-code button {
             background: #182225;
@@ -3680,7 +4196,8 @@ export default function WidgetPage() {
           .segmented button.active,
           .notice,
           .row-meta span,
-          .pill {
+          .pill,
+          .pending-member {
             background: #1d2a2e;
           }
 
@@ -3699,6 +4216,7 @@ export default function WidgetPage() {
           h2,
           h3,
           .profile-chip,
+          .club-card,
           .game-card,
           .country-list button,
           .profile-photo-panel strong {
