@@ -52,12 +52,17 @@ type Participant = {
   profile_id: string
   display_name: string | null
   avatar_url: string | null
+  checked_in?: boolean | null
+  payment_status?: 'cash' | 'bank_transfer' | 'free' | null
+  score?: number | null
+  placement?: number | null
 }
 
 type Session = {
   id: string
   owner_id: string
   club_id: string | null
+  session_type: 'game' | 'tournament'
   name: string
   date: string
   start_time: string
@@ -191,8 +196,29 @@ const uiText = {
     clubDescription: 'Club Description',
     clubDescriptionPlaceholder: 'Who is this club for?',
     noClub: 'No club',
-    clubOnly: 'Club only',
+    clubOnly: 'Club crew only',
     clubSession: 'Club session',
+    normalGame: 'Game',
+    tournament: 'Tournament',
+    tournamentSession: 'Tournament',
+    checkIn: 'Check-in',
+    checkedIn: 'Checked in',
+    paymentMethod: 'Payment method',
+    cash: 'Cash',
+    bankTransfer: 'Bank transfer',
+    free: 'Free',
+    clearCheckIn: 'Clear check-in',
+    score: 'Score',
+    place: 'Place',
+    noPlace: 'No place',
+    firstPlace: '1st',
+    secondPlace: '2nd',
+    thirdPlace: '3rd',
+    stats: 'Player stats',
+    gamesCheckedIn: 'games checked in',
+    wins: 'wins',
+    totalScore: 'total score',
+    bestScores: 'Best scores',
     chooseClub: 'Choose a club',
     clubMembersOnly: 'Only approved club members can join this session.',
     clubMembershipRequired: 'Only approved members of this club can join this session.',
@@ -365,8 +391,29 @@ const uiText = {
     clubDescription: 'Mô tả câu lạc bộ',
     clubDescriptionPlaceholder: 'Câu lạc bộ này dành cho ai?',
     noClub: 'Không thuộc club',
-    clubOnly: 'Chỉ dành cho club',
+    clubOnly: 'Chỉ hội club',
     clubSession: 'Phiên của club',
+    normalGame: 'Game',
+    tournament: 'Giải đấu',
+    tournamentSession: 'Giải đấu',
+    checkIn: 'Check-in',
+    checkedIn: 'Đã check-in',
+    paymentMethod: 'Phương thức thanh toán',
+    cash: 'Tiền mặt',
+    bankTransfer: 'Chuyển khoản',
+    free: 'Miễn phí',
+    clearCheckIn: 'Hủy check-in',
+    score: 'Điểm',
+    place: 'Hạng',
+    noPlace: 'Chưa xếp hạng',
+    firstPlace: 'Hạng 1',
+    secondPlace: 'Hạng 2',
+    thirdPlace: 'Hạng 3',
+    stats: 'Thống kê người chơi',
+    gamesCheckedIn: 'phiên đã check-in',
+    wins: 'lần thắng',
+    totalScore: 'tổng điểm',
+    bestScores: 'Thành tích tốt nhất',
     chooseClub: 'Chọn club',
     clubMembersOnly: 'Chỉ thành viên đã được duyệt của club mới có thể tham gia phiên này.',
     clubMembershipRequired: 'Chỉ thành viên đã được duyệt của club này mới có thể tham gia phiên.',
@@ -635,6 +682,7 @@ export default function WidgetPage() {
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
+  const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
   const [sessionName, setSessionName] = useState('')
   const [sessionDate, setSessionDate] = useState(localDateString())
   const [sessionTime, setSessionTime] = useState('')
@@ -670,6 +718,7 @@ export default function WidgetPage() {
   const [selectedClubId, setSelectedClubId] = useState('')
   const [selectedClubDate, setSelectedClubDate] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
+  const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
@@ -1013,7 +1062,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
         .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, checked_in, payment_status, score, placement)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1274,6 +1323,57 @@ export default function WidgetPage() {
     return selectedClubSessions.filter((session) => session.date === selectedClubDate)
   }, [selectedClubDate, selectedClubSessions])
 
+  const checkInSession = useMemo(() => {
+    if (!checkInTarget) return undefined
+    return sessions.find((session) => session.id === checkInTarget.sessionId)
+  }, [checkInTarget, sessions])
+
+  const checkInParticipant = useMemo(() => {
+    if (!checkInTarget || !checkInSession) return undefined
+    return (checkInSession.session_participants ?? []).find((participant) => participant.id === checkInTarget.participantId)
+  }, [checkInSession, checkInTarget])
+
+  const playerStats = useMemo(() => {
+    const checkedInSessions = sessions
+      .map((session) => {
+        const participant = (session.session_participants ?? []).find((item) => item.profile_id === userId && item.checked_in)
+        return participant ? { session, participant } : null
+      })
+      .filter(Boolean) as Array<{ session: Session; participant: Participant }>
+
+    const bestByGame = new Map<string, number>()
+
+    checkedInSessions.forEach(({ session, participant }) => {
+      if (participant.score === null || participant.score === undefined) return
+
+      const numericScore = Number(participant.score)
+      if (!Number.isFinite(numericScore)) return
+
+      session.game_options.forEach((gameId) => {
+        const game = games.find((item) => item.id === gameId)
+        const previous = bestByGame.get(gameId)
+        const isEscape = game?.category === 'Escape'
+
+        if (previous === undefined || (isEscape ? numericScore < previous : numericScore > previous)) {
+          bestByGame.set(gameId, numericScore)
+        }
+      })
+    })
+
+    return {
+      gamesJoined: checkedInSessions.length,
+      wins: checkedInSessions.filter(({ participant }) => participant.placement === 1).length,
+      totalScore: checkedInSessions.reduce((total, { participant }) => {
+        const numericScore = Number(participant.score)
+        return Number.isFinite(numericScore) ? total + numericScore : total
+      }, 0),
+      bestByGame: Array.from(bestByGame.entries()).map(([gameId, score]) => ({
+        game: games.find((item) => item.id === gameId)?.title || gameId,
+        score,
+      })),
+    }
+  }, [sessions, userId])
+
   const filteredCountries = useMemo(() => {
     const query = countrySearch.trim().toLowerCase()
     if (!query) return countries
@@ -1429,6 +1529,45 @@ export default function WidgetPage() {
     setBusyClubId('')
   }
 
+  async function updateParticipantCheckIn(participantId: string, paymentStatus: 'cash' | 'bank_transfer' | 'free' | null) {
+    const { error } = await supabase
+      .from('session_participants')
+      .update({
+        checked_in: Boolean(paymentStatus),
+        payment_status: paymentStatus,
+        checked_in_at: paymentStatus ? new Date().toISOString() : null,
+      })
+      .eq('id', participantId)
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    setCheckInTarget(null)
+    await loadSessions()
+  }
+
+  async function updateParticipantResult(participantId: string, scoreValue: string | number | null, placementValue: string | number | null) {
+    const score = scoreValue === '' || scoreValue === null ? null : Number(scoreValue)
+    const placement = placementValue === '' || placementValue === null ? null : Number(placementValue)
+
+    const { error } = await supabase
+      .from('session_participants')
+      .update({
+        score: Number.isFinite(score as number) ? score : null,
+        placement: Number.isFinite(placement as number) ? placement : null,
+      })
+      .eq('id', participantId)
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadSessions()
+  }
+
   async function saveProfile() {
     if (!userId) {
       setProfileStatus(text.profileLoading)
@@ -1575,6 +1714,7 @@ export default function WidgetPage() {
       .insert({
         owner_id: userId,
         club_id: sessionClubId || null,
+        session_type: sessionType,
         name: sessionName.trim(),
         date: sessionDate,
         start_time: `${sessionTime}:00`,
@@ -1617,6 +1757,7 @@ export default function WidgetPage() {
     setSessionMaxPlayers(4)
     setSessionArenaCount(1)
     setSessionClubId('')
+    setSessionType('game')
     setSelectedGames(['laser-tag'])
     setSessionVisibility('public')
     await loadSessions()
@@ -2021,6 +2162,7 @@ export default function WidgetPage() {
                           <span>{session.duration_minutes} min</span>
                           <span>{remaining} {text.seatsLeft}</span>
                           {sessionClub && <span>{text.clubSession}: {sessionClub.name}</span>}
+                          {session.session_type === 'tournament' && <span className="pill private">{text.tournament}</span>}
                         </div>
                       </div>
                       <div className="session-actions">
@@ -2167,10 +2309,20 @@ export default function WidgetPage() {
 
                     <div className="players">
                       {participants.map((participant) => (
-                        <div className="player" key={participant.id} title={participant.display_name || text.player}>
-                          <div className="player-avatar">
+                        <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
+                          <button
+                            className={[
+                              'player-avatar player-avatar-button',
+                              participant.placement ? `place-${participant.placement}` : '',
+                            ].join(' ').trim()}
+                            disabled={!canManage}
+                            onClick={() => canManage && setCheckInTarget({ sessionId: session.id, participantId: participant.id })}
+                            type="button"
+                          >
                             {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
-                          </div>
+                            {participant.checked_in && <span className="check-badge">✓</span>}
+                            {participant.placement && participant.placement <= 3 && <span className="cup-badge">🏆</span>}
+                          </button>
                           <span>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</span>
                           {canManage && participant.profile_id !== session.owner_id && (
                             <button
@@ -2182,6 +2334,27 @@ export default function WidgetPage() {
                             >
                               {text.remove}
                             </button>
+                          )}
+                          {canManage && (
+                            <div className="score-controls">
+                              <input
+                                aria-label={text.score}
+                                defaultValue={participant.score ?? ''}
+                                inputMode="numeric"
+                                onBlur={(event) => updateParticipantResult(participant.id, event.target.value, participant.placement ?? '')}
+                                placeholder={text.score}
+                              />
+                              <select
+                                aria-label={text.place}
+                                value={participant.placement ?? ''}
+                                onChange={(event) => updateParticipantResult(participant.id, participant.score ?? '', event.target.value)}
+                              >
+                                <option value="">{text.noPlace}</option>
+                                <option value="1">{text.firstPlace}</option>
+                                <option value="2">{text.secondPlace}</option>
+                                <option value="3">{text.thirdPlace}</option>
+                              </select>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -2414,6 +2587,17 @@ export default function WidgetPage() {
               <div className="full">
                 <label>{text.sessionName} <span className="required">*</span></label>
                 <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
+              </div>
+              <div className="full">
+                <label>{text.tournamentSession}</label>
+                <div className="segmented">
+                  <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
+                    {text.normalGame}
+                  </button>
+                  <button className={sessionType === 'tournament' ? 'active' : ''} onClick={() => setSessionType('tournament')} type="button">
+                    {text.tournament}
+                  </button>
+                </div>
               </div>
               <div className="full">
                 <label>{text.clubOnly}</label>
@@ -2714,6 +2898,25 @@ export default function WidgetPage() {
             </div>
 
             {profile && (
+              <div className="player-stats">
+                <h3>{text.stats}</h3>
+                <div className="stats">
+                  <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
+                  <span>{playerStats.wins} {text.wins}</span>
+                  <span>{playerStats.totalScore} {text.totalScore}</span>
+                </div>
+                {playerStats.bestByGame.length > 0 && (
+                  <div className="best-score-list">
+                    <strong>{text.bestScores}</strong>
+                    {playerStats.bestByGame.map((item) => (
+                      <span key={item.game}>{item.game}: {item.score}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {profile && (
               <div className="my-sessions">
                 <div>
                   <h3>{text.mySessions}</h3>
@@ -2958,6 +3161,34 @@ export default function WidgetPage() {
                     </article>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {checkInParticipant && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="checkin-title">
+          <div className="login-modal">
+            <button className="modal-close" type="button" onClick={() => setCheckInTarget(null)} aria-label={text.close}>
+              ×
+            </button>
+            <h3 id="checkin-title">{text.checkIn}</h3>
+            <p>{checkInParticipant.display_name || text.player}</p>
+            <div className="payment-grid">
+              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'cash')}>
+                {text.cash}
+              </button>
+              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'bank_transfer')}>
+                {text.bankTransfer}
+              </button>
+              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'free')}>
+                {text.free}
+              </button>
+              {checkInParticipant.checked_in && (
+                <button className="danger" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, null)}>
+                  {text.clearCheckIn}
+                </button>
               )}
             </div>
           </div>
@@ -3509,6 +3740,24 @@ export default function WidgetPage() {
           line-height: 1.45;
         }
 
+        .payment-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .best-score-list,
+        .player-stats {
+          display: grid;
+          gap: 8px;
+        }
+
+        .best-score-list {
+          margin-top: 8px;
+          color: #637075;
+          font-size: 13px;
+        }
+
         .club-drawer-backdrop {
           position: fixed;
           inset: 0;
@@ -3725,8 +3974,80 @@ export default function WidgetPage() {
         }
 
         .player-avatar {
+          position: relative;
+          display: inline-grid;
+          place-items: center;
           width: 32px;
           height: 32px;
+          border-radius: 999px;
+          border: 0;
+          background: linear-gradient(135deg, #13c9c9, #3059ff);
+          color: #ffffff;
+          font-weight: 900;
+          padding: 0;
+          overflow: visible;
+        }
+
+        .player-avatar-button {
+          cursor: pointer;
+        }
+
+        .player-avatar-button:disabled {
+          cursor: default;
+        }
+
+        .place-1 {
+          box-shadow: 0 0 0 3px #f5c542;
+        }
+
+        .place-2 {
+          box-shadow: 0 0 0 3px #b7c0ca;
+        }
+
+        .place-3 {
+          box-shadow: 0 0 0 3px #c98742;
+        }
+
+        .check-badge,
+        .cup-badge {
+          position: absolute;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          border: 2px solid #ffffff;
+          font-size: 10px;
+          line-height: 1;
+        }
+
+        .check-badge {
+          right: -4px;
+          bottom: -4px;
+          width: 15px;
+          height: 15px;
+          background: #0d7c51;
+          color: #ffffff;
+        }
+
+        .cup-badge {
+          left: -6px;
+          bottom: -6px;
+          width: 17px;
+          height: 17px;
+          background: #fff6c7;
+        }
+
+        .score-controls {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: minmax(76px, 1fr) minmax(96px, 1fr);
+          gap: 6px;
+        }
+
+        .score-controls input,
+        .score-controls select {
+          min-height: 34px;
+          padding: 6px 8px;
+          font-size: 12px;
         }
 
         .remove-player {
