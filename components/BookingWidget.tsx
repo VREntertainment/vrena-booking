@@ -55,6 +55,8 @@ type Participant = {
   checked_in?: boolean | null
   payment_status?: 'cash' | 'bank_transfer' | 'free' | null
   score?: number | null
+  accuracy_percent?: number | null
+  projectiles_fired?: number | null
   placement?: number | null
 }
 
@@ -215,15 +217,28 @@ const uiText = {
     free: 'Free',
     clearCheckIn: 'Clear check-in',
     score: 'Score',
+    accuracy: 'Accuracy %',
+    projectiles: 'Shots',
     place: 'Place',
     noPlace: 'No place',
-    firstPlace: '1st',
-    secondPlace: '2nd',
-    thirdPlace: '3rd',
+    firstPlace: '🥇 1st',
+    secondPlace: '🥈 2nd',
+    thirdPlace: '🥉 3rd',
     stats: 'Player stats',
     gamesCheckedIn: 'games checked in',
     wins: 'wins',
     totalScore: 'total score',
+    bestPlayer: 'Leaderboard jester crowned you: current top scorer in the realm.',
+    topPlayerNotice: 'Heads up: the court champion is in this session. Friendly chaos encouraged.',
+    playerProfile: 'Player profile',
+    bestOverall: 'Best overall',
+    language: 'Language',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    formatBold: 'B',
+    formatItalic: 'I',
+    formatUnderline: 'U',
+    formatStrike: 'S',
     bestScores: 'Best scores',
     chooseClub: 'Choose a club',
     clubMembersOnly: 'Only approved club members can join and create sessions here.',
@@ -416,15 +431,28 @@ const uiText = {
     free: 'Miễn phí',
     clearCheckIn: 'Hủy check-in',
     score: 'Điểm',
+    accuracy: 'Độ chính xác %',
+    projectiles: 'Lượt bắn',
     place: 'Hạng',
     noPlace: 'Chưa xếp hạng',
-    firstPlace: 'Hạng 1',
-    secondPlace: 'Hạng 2',
-    thirdPlace: 'Hạng 3',
+    firstPlace: '🥇 Hạng 1',
+    secondPlace: '🥈 Hạng 2',
+    thirdPlace: '🥉 Hạng 3',
     stats: 'Thống kê người chơi',
     gamesCheckedIn: 'phiên đã check-in',
     wins: 'lần thắng',
     totalScore: 'tổng điểm',
+    bestPlayer: 'Hề triều đình tuyên bố: bạn đang là cao thủ điểm số của vương quốc.',
+    topPlayerNotice: 'Báo nhẹ: cao thủ điểm số đang trong phiên này. Chuẩn bị tranh tài vui nhé.',
+    playerProfile: 'Hồ sơ người chơi',
+    bestOverall: 'Cao nhất',
+    language: 'Ngôn ngữ',
+    expand: 'Mở rộng',
+    collapse: 'Thu gọn',
+    formatBold: 'B',
+    formatItalic: 'I',
+    formatUnderline: 'U',
+    formatStrike: 'S',
     bestScores: 'Thành tích tốt nhất',
     chooseClub: 'Chọn club',
     clubMembersOnly: 'Chỉ thành viên đã được duyệt mới có thể tham gia và tạo phiên tại club này.',
@@ -641,6 +669,38 @@ function formatDayButton(dateValue: string, language: 'en' | 'vi') {
   }
 }
 
+function sessionStartDate(session: Pick<Session, 'date' | 'start_time'>) {
+  return new Date(`${session.date}T${session.start_time}`)
+}
+
+function isUpcomingSession(session: Session) {
+  return sessionStartDate(session).getTime() >= Date.now()
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function formatNotesHtml(value: string) {
+  return escapeHtml(value)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/~~(.+?)~~/g, '<s>$1</s>')
+    .replace(/(^|[^*])\*(?!\*)(.+?)\*/g, '$1<em>$2</em>')
+}
+
+function rankEmoji(placement?: number | null) {
+  if (placement === 1) return '🥇'
+  if (placement === 2) return '🥈'
+  if (placement === 3) return '🥉'
+  return ''
+}
+
 function appRedirectUrl() {
   if (typeof window === 'undefined') return DEFAULT_APP_URL
 
@@ -733,6 +793,10 @@ export default function WidgetPage() {
   const [selectedClubDate, setSelectedClubDate] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
+  const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
+  const [championNoticeSessionId, setChampionNoticeSessionId] = useState('')
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
@@ -973,6 +1037,7 @@ export default function WidgetPage() {
       setPersonalDataConsent(false)
       await loadProfile()
       setProfileStatus(text.accountCreated)
+      setActiveView('sessions')
       setIsSavingProfile(false)
       return
     }
@@ -1007,6 +1072,7 @@ export default function WidgetPage() {
     setProfilePassword('')
     await loadProfile()
     setProfileStatus(text.loggedIn)
+    setActiveView('sessions')
     setIsSavingProfile(false)
   }
 
@@ -1079,7 +1145,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
         .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, checked_in, payment_status, score, placement)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, checked_in, payment_status, score, accuracy_percent, projectiles_fired, placement)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1119,6 +1185,20 @@ export default function WidgetPage() {
     loadProfile()
     loadSessions()
     loadClubs()
+  }, [])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('vrena-live-refresh')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => loadClubs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadClubs())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {
@@ -1320,6 +1400,7 @@ export default function WidgetPage() {
     const query = normalizeSearchValue(search)
 
     return sessions.filter((session) => {
+      if (!isUpcomingSession(session)) return false
       if (selectedSessionDate && session.date !== selectedSessionDate) return false
       if (!query) return true
 
@@ -1365,7 +1446,7 @@ export default function WidgetPage() {
       const value = localDateString(addDays(today, index))
       return { value, ...formatDayButton(value, language) }
     })
-    const sessionDays = sessions.map((session) => session.date)
+    const sessionDays = sessions.filter(isUpcomingSession).map((session) => session.date)
     const uniqueDays = Array.from(new Set([...upcomingDays.map((day) => day.value), ...sessionDays])).sort()
 
     return uniqueDays.map((value) => {
@@ -1401,7 +1482,7 @@ export default function WidgetPage() {
 
   const selectedClubSessions = useMemo(() => {
     if (!selectedClubId) return []
-    return sessions.filter((session) => session.club_id === selectedClubId)
+    return sessions.filter((session) => session.club_id === selectedClubId && isUpcomingSession(session))
   }, [selectedClubId, sessions])
 
   const selectedClubDayOptions = useMemo(() => {
@@ -1424,46 +1505,157 @@ export default function WidgetPage() {
     return (checkInSession.session_participants ?? []).find((participant) => participant.id === checkInTarget.participantId)
   }, [checkInSession, checkInTarget])
 
-  const playerStats = useMemo(() => {
-    const checkedInSessions = sessions
-      .map((session) => {
-        const participant = (session.session_participants ?? []).find((item) => item.profile_id === userId && item.checked_in)
-        return participant ? { session, participant } : null
-      })
-      .filter(Boolean) as Array<{ session: Session; participant: Participant }>
+  const allPlayerStats = useMemo(() => {
+    const stats = new Map<string, {
+      profileId: string
+      displayName: string
+      avatarUrl: string | null
+      gamesJoined: number
+      wins: number
+      totalScore: number
+      totalAccuracy: number
+      accuracyCount: number
+      totalProjectiles: number
+      bestByGame: Map<string, number>
+    }>()
 
-    const bestByGame = new Map<string, number>()
+    sessions.forEach((session) => {
+      ;(session.session_participants ?? []).forEach((participant) => {
+        if (!participant.checked_in) return
 
-    checkedInSessions.forEach(({ session, participant }) => {
-      if (participant.score === null || participant.score === undefined) return
-
-      const numericScore = Number(participant.score)
-      if (!Number.isFinite(numericScore)) return
-
-      session.game_options.forEach((gameId) => {
-        const game = games.find((item) => item.id === gameId)
-        const previous = bestByGame.get(gameId)
-        const isEscape = game?.category === 'Escape'
-
-        if (previous === undefined || (isEscape ? numericScore < previous : numericScore > previous)) {
-          bestByGame.set(gameId, numericScore)
+        const current = stats.get(participant.profile_id) ?? {
+          profileId: participant.profile_id,
+          displayName: participant.display_name || text.player,
+          avatarUrl: participant.avatar_url,
+          gamesJoined: 0,
+          wins: 0,
+          totalScore: 0,
+          totalAccuracy: 0,
+          accuracyCount: 0,
+          totalProjectiles: 0,
+          bestByGame: new Map<string, number>(),
         }
+
+        current.displayName = participant.display_name || current.displayName
+        current.avatarUrl = participant.avatar_url || current.avatarUrl
+        current.gamesJoined += 1
+        if (participant.placement === 1) current.wins += 1
+
+        const numericScore = Number(participant.score)
+        if (Number.isFinite(numericScore)) {
+          current.totalScore += numericScore
+
+          session.game_options.forEach((gameId) => {
+            const game = games.find((item) => item.id === gameId)
+            const previous = current.bestByGame.get(gameId)
+            const isEscape = game?.category === 'Escape'
+
+            if (previous === undefined || (isEscape ? numericScore < previous : numericScore > previous)) {
+              current.bestByGame.set(gameId, numericScore)
+            }
+          })
+        }
+
+        const accuracy = Number(participant.accuracy_percent)
+        if (Number.isFinite(accuracy)) {
+          current.totalAccuracy += accuracy
+          current.accuracyCount += 1
+        }
+
+        const projectiles = Number(participant.projectiles_fired)
+        if (Number.isFinite(projectiles)) {
+          current.totalProjectiles += projectiles
+        }
+
+        stats.set(participant.profile_id, current)
       })
     })
 
-    return {
-      gamesJoined: checkedInSessions.length,
-      wins: checkedInSessions.filter(({ participant }) => participant.placement === 1).length,
-      totalScore: checkedInSessions.reduce((total, { participant }) => {
-        const numericScore = Number(participant.score)
-        return Number.isFinite(numericScore) ? total + numericScore : total
-      }, 0),
-      bestByGame: Array.from(bestByGame.entries()).map(([gameId, score]) => ({
-        game: games.find((item) => item.id === gameId)?.title || gameId,
-        score,
-      })),
+    return Array.from(stats.values())
+      .map((item) => ({
+        ...item,
+        averageAccuracy: item.accuracyCount > 0 ? Math.round(item.totalAccuracy / item.accuracyCount) : null,
+        bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
+          game: games.find((game) => game.id === gameId)?.title || gameId,
+          score,
+        })),
+      }))
+      .sort((a, b) => b.totalScore - a.totalScore)
+  }, [sessions, text.player])
+
+  const playerStats = allPlayerStats.find((item) => item.profileId === userId) ?? {
+    profileId: userId,
+    displayName: displayName(profile),
+    avatarUrl: profile?.avatar_url || null,
+    gamesJoined: 0,
+    wins: 0,
+    totalScore: 0,
+    totalAccuracy: 0,
+    accuracyCount: 0,
+    totalProjectiles: 0,
+    averageAccuracy: null,
+    bestByGame: [],
+  }
+
+  const topPlayer = allPlayerStats[0]
+  const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
+  const selectedPlayerProfile = useMemo(() => {
+    if (!selectedPlayerId) return undefined
+    if (selectedPlayerStats) return selectedPlayerStats
+
+    for (const session of sessions) {
+      const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
+      if (participant) {
+        return {
+          profileId: participant.profile_id,
+          displayName: participant.display_name || text.player,
+          avatarUrl: participant.avatar_url,
+          gamesJoined: 0,
+          wins: 0,
+          totalScore: 0,
+          totalAccuracy: 0,
+          accuracyCount: 0,
+          totalProjectiles: 0,
+          averageAccuracy: null,
+          bestByGame: [],
+        }
+      }
     }
-  }, [sessions, userId])
+
+    for (const club of clubs) {
+      const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
+      if (member) {
+        return {
+          profileId: member.profile_id,
+          displayName: member.display_name || text.player,
+          avatarUrl: member.avatar_url,
+          gamesJoined: 0,
+          wins: 0,
+          totalScore: 0,
+          totalAccuracy: 0,
+          accuracyCount: 0,
+          totalProjectiles: 0,
+          averageAccuracy: null,
+          bestByGame: [],
+        }
+      }
+    }
+
+    return undefined
+  }, [clubs, selectedPlayerId, selectedPlayerStats, sessions, text.player])
+
+  useEffect(() => {
+    if (!profile || !topPlayer || topPlayer.profileId === userId || activeView !== 'sessions') return
+
+    const championSession = filteredSessions.find((session) =>
+      (session.session_participants ?? []).some((participant) => participant.profile_id === topPlayer.profileId)
+    )
+
+    if (!championSession || championNoticeSessionId === championSession.id) return
+
+    setChampionNoticeSessionId(championSession.id)
+    setCreateStatus(text.topPlayerNotice)
+  }, [activeView, championNoticeSessionId, filteredSessions, profile, text.topPlayerNotice, topPlayer, userId])
 
   const filteredCountries = useMemo(() => {
     const query = countrySearch.trim().toLowerCase()
@@ -1639,14 +1831,24 @@ export default function WidgetPage() {
     await loadSessions()
   }
 
-  async function updateParticipantResult(participantId: string, scoreValue: string | number | null, placementValue: string | number | null) {
+  async function updateParticipantResult(
+    participantId: string,
+    scoreValue: string | number | null,
+    placementValue: string | number | null,
+    accuracyValue: string | number | null,
+    projectilesValue: string | number | null
+  ) {
     const score = scoreValue === '' || scoreValue === null ? null : Number(scoreValue)
     const placement = placementValue === '' || placementValue === null ? null : Number(placementValue)
+    const accuracy = accuracyValue === '' || accuracyValue === null ? null : Number(accuracyValue)
+    const projectiles = projectilesValue === '' || projectilesValue === null ? null : Number(projectilesValue)
 
     const { error } = await supabase
       .from('session_participants')
       .update({
         score: Number.isFinite(score as number) ? score : null,
+        accuracy_percent: Number.isFinite(accuracy as number) ? accuracy : null,
+        projectiles_fired: Number.isFinite(projectiles as number) ? projectiles : null,
         placement: Number.isFinite(placement as number) ? placement : null,
       })
       .eq('id', participantId)
@@ -1766,6 +1968,10 @@ export default function WidgetPage() {
       }
       return [...current, gameId]
     })
+  }
+
+  function wrapTextFormat(value: string, setter: (value: string) => void, markerStart: string, markerEnd = markerStart) {
+    setter(`${value}${value ? '\n' : ''}${markerStart}${text.notes}${markerEnd}`)
   }
 
   async function createSession() {
@@ -2003,8 +2209,9 @@ export default function WidgetPage() {
     setIsUpdatingSession(true)
     setCreateStatus(text.savingSession)
 
+    const effectiveEditVisibility = session.club_id ? 'public' : editSessionVisibility
     const inviteCode =
-      editSessionVisibility === 'private'
+      effectiveEditVisibility === 'private'
         ? session.invite_code || generateInviteCode()
         : null
 
@@ -2018,7 +2225,7 @@ export default function WidgetPage() {
         max_players: editSessionMaxPlayers,
         arena_count: editSessionArenaCount,
         game_options: editSelectedGames,
-        visibility: editSessionVisibility,
+        visibility: effectiveEditVisibility,
         invite_code: inviteCode,
         notes: editSessionNotes.trim() || null,
       })
@@ -2031,7 +2238,7 @@ export default function WidgetPage() {
     }
 
     await loadSessions()
-    setCreateStatus(editSessionVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
+    setCreateStatus(effectiveEditVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
     stopEditingSession()
   }
 
@@ -2126,6 +2333,27 @@ export default function WidgetPage() {
               <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
               <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
             </picture>
+            <div className="language-picker">
+              <button type="button" onClick={() => setLanguagePickerOpen((open) => !open)}>
+                {language.toUpperCase()}
+              </button>
+              {languagePickerOpen && (
+                <div className="language-menu">
+                  {(['en', 'vi'] as const).filter((item) => item !== language).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setLanguage(item)
+                        setLanguagePickerOpen(false)
+                      }}
+                    >
+                      {item.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'} type="button" onClick={() => shareLink('app', 'VRena Sessions')}>
               {sharedKey === 'app' ? text.shared : text.shareApp}
             </button>
@@ -2137,6 +2365,7 @@ export default function WidgetPage() {
         <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
           <div className="avatar">
             {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : displayName(profile).slice(0, 1)}
+            {topPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
           </div>
           <div>
             <strong>{profile ? displayName(profile) : text.noProfile}</strong>
@@ -2264,7 +2493,21 @@ export default function WidgetPage() {
                       </div>
                     </div>
 
-                    {session.notes && <p className="notes">{session.notes}</p>}
+                    {session.notes && (
+                      <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
+                        <div
+                          className="notes"
+                          dangerouslySetInnerHTML={{ __html: formatNotesHtml(session.notes) }}
+                        />
+                        <button
+                          className="expand-note"
+                          type="button"
+                          onClick={() => setExpandedNotes((current) => ({ ...current, [session.id]: !current[session.id] }))}
+                        >
+                          {expandedNotes[session.id] ? `⌃ ${text.collapse}` : `⌄ ${text.expand}`}
+                        </button>
+                      </div>
+                    )}
 
                     {canManage && (
                       <div className="manage-row">
@@ -2289,14 +2532,16 @@ export default function WidgetPage() {
                             <h3>{text.editSessionTitle}</h3>
                             <p className="muted">{text.editSessionHint}</p>
                           </div>
-                          <div className="segmented">
-                            <button className={editSessionVisibility === 'public' ? 'active' : ''} onClick={() => setEditSessionVisibility('public')} type="button">
-                              {text.public}
-                            </button>
-                            <button className={editSessionVisibility === 'private' ? 'active' : ''} onClick={() => setEditSessionVisibility('private')} type="button">
-                              {text.private}
-                            </button>
-                          </div>
+                          {!session.club_id && (
+                            <div className="segmented">
+                              <button className={editSessionVisibility === 'public' ? 'active' : ''} onClick={() => setEditSessionVisibility('public')} type="button">
+                                {text.public}
+                              </button>
+                              <button className={editSessionVisibility === 'private' ? 'active' : ''} onClick={() => setEditSessionVisibility('private')} type="button">
+                                {text.private}
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <div className="form-grid">
                           <div className="full">
@@ -2367,6 +2612,12 @@ export default function WidgetPage() {
                           </div>
                           <div className="full">
                             <label>{text.notes}</label>
+                            <div className="format-toolbar">
+                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '**')}>{text.formatBold}</button>
+                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '*')}>{text.formatItalic}</button>
+                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '__')}>{text.formatUnderline}</button>
+                              <button type="button" onClick={() => wrapTextFormat(editSessionNotes, setEditSessionNotes, '~~')}>{text.formatStrike}</button>
+                            </div>
                             <textarea value={editSessionNotes} onChange={(event) => setEditSessionNotes(event.target.value)} />
                           </div>
                         </div>
@@ -2400,6 +2651,28 @@ export default function WidgetPage() {
                       </div>
                     )}
 
+                    {participants.some((participant) => participant.placement && participant.placement <= 3) && (
+                      <div className="podium-row">
+                        {participants
+                          .filter((participant) => participant.placement && participant.placement <= 3)
+                          .sort((a, b) => (a.placement || 9) - (b.placement || 9))
+                          .map((participant) => (
+                            <button
+                              className={`podium-player place-${participant.placement}`}
+                              key={`podium-${participant.id}`}
+                              onClick={() => setSelectedPlayerId(participant.profile_id)}
+                              type="button"
+                            >
+                              <span>{rankEmoji(participant.placement)}</span>
+                              <span className="player-avatar tiny-avatar">
+                                {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
+                              </span>
+                              <strong>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</strong>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+
                     <div className="players">
                       {participants.map((participant) => (
                         <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
@@ -2408,15 +2681,23 @@ export default function WidgetPage() {
                               'player-avatar player-avatar-button',
                               participant.placement ? `place-${participant.placement}` : '',
                             ].join(' ').trim()}
-                            disabled={!canManage}
-                            onClick={() => canManage && setCheckInTarget({ sessionId: session.id, participantId: participant.id })}
+                            onClick={() => setSelectedPlayerId(participant.profile_id)}
                             type="button"
                           >
                             {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
                             {participant.checked_in && <span className="check-badge">✓</span>}
-                            {participant.placement && participant.placement <= 3 && <span className="cup-badge">🏆</span>}
+                            {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
                           </button>
                           <span>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</span>
+                          {canManage && (
+                            <button
+                              className="checkin-mini"
+                              type="button"
+                              onClick={() => setCheckInTarget({ sessionId: session.id, participantId: participant.id })}
+                            >
+                              {participant.checked_in ? '✓' : text.checkIn}
+                            </button>
+                          )}
                           {canManage && participant.profile_id !== session.owner_id && (
                             <button
                               className="remove-player"
@@ -2434,13 +2715,27 @@ export default function WidgetPage() {
                                 aria-label={text.score}
                                 defaultValue={participant.score ?? ''}
                                 inputMode="numeric"
-                                onBlur={(event) => updateParticipantResult(participant.id, event.target.value, participant.placement ?? '')}
+                                onBlur={(event) => updateParticipantResult(participant.id, event.target.value, participant.placement ?? '', participant.accuracy_percent ?? '', participant.projectiles_fired ?? '')}
                                 placeholder={text.score}
+                              />
+                              <input
+                                aria-label={text.accuracy}
+                                defaultValue={participant.accuracy_percent ?? ''}
+                                inputMode="numeric"
+                                onBlur={(event) => updateParticipantResult(participant.id, participant.score ?? '', participant.placement ?? '', event.target.value, participant.projectiles_fired ?? '')}
+                                placeholder="%"
+                              />
+                              <input
+                                aria-label={text.projectiles}
+                                defaultValue={participant.projectiles_fired ?? ''}
+                                inputMode="numeric"
+                                onBlur={(event) => updateParticipantResult(participant.id, participant.score ?? '', participant.placement ?? '', participant.accuracy_percent ?? '', event.target.value)}
+                                placeholder={text.projectiles}
                               />
                               <select
                                 aria-label={text.place}
                                 value={participant.placement ?? ''}
-                                onChange={(event) => updateParticipantResult(participant.id, participant.score ?? '', event.target.value)}
+                                onChange={(event) => updateParticipantResult(participant.id, participant.score ?? '', event.target.value, participant.accuracy_percent ?? '', participant.projectiles_fired ?? '')}
                               >
                                 <option value="">{text.noPlace}</option>
                                 <option value="1">{text.firstPlace}</option>
@@ -2643,9 +2938,16 @@ export default function WidgetPage() {
                       <div className="players">
                         {approvedMembers.map((member) => (
                           <div className="player" key={member.id}>
-                            <div className="player-avatar">
+                            <button
+                              className="player-avatar player-avatar-button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedPlayerId(member.profile_id)
+                              }}
+                              type="button"
+                            >
                               {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
-                            </div>
+                            </button>
                             <span>{member.display_name || text.player}</span>
                             {canManage && member.profile_id !== club.owner_id && (
                               <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
@@ -2803,6 +3105,12 @@ export default function WidgetPage() {
               </div>
               <div className="full">
                 <label>{text.notes}</label>
+                <div className="format-toolbar">
+                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '**')}>{text.formatBold}</button>
+                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '*')}>{text.formatItalic}</button>
+                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '__')}>{text.formatUnderline}</button>
+                  <button type="button" onClick={() => wrapTextFormat(sessionNotes, setSessionNotes, '~~')}>{text.formatStrike}</button>
+                </div>
                 <textarea
                   placeholder={text.notesPlaceholder}
                   value={sessionNotes}
@@ -3028,11 +3336,14 @@ export default function WidgetPage() {
 
             {profile && (
               <div className="player-stats">
-                <h3>{text.stats}</h3>
+                <h3>{text.stats} {topPlayer?.profileId === userId ? '🏆' : ''}</h3>
+                {topPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
                 <div className="stats">
                   <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
                   <span>{playerStats.wins} {text.wins}</span>
                   <span>{playerStats.totalScore} {text.totalScore}</span>
+                  <span>{playerStats.averageAccuracy ?? '-'}% {text.accuracy}</span>
+                  <span>{playerStats.totalProjectiles} {text.projectiles}</span>
                 </div>
                 {playerStats.bestByGame.length > 0 && (
                   <div className="best-score-list">
@@ -3245,9 +3556,9 @@ export default function WidgetPage() {
                     .filter((member) => member.status === 'approved')
                     .map((member) => (
                       <div className="player" key={member.id}>
-                        <div className="player-avatar">
+                        <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} type="button">
                           {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
-                        </div>
+                        </button>
                         <span>{member.display_name || text.player}</span>
                       </div>
                     ))}
@@ -3309,6 +3620,42 @@ export default function WidgetPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {selectedPlayerProfile && (
+        <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={() => setSelectedPlayerId('')}>
+          <div className="player-profile-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="drawer-handle" />
+            <button className="modal-close" type="button" onClick={() => setSelectedPlayerId('')} aria-label={text.close}>
+              ×
+            </button>
+            <div className="player-profile-head">
+              <div className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}>
+                {selectedPlayerProfile.avatarUrl ? <img src={selectedPlayerProfile.avatarUrl} alt="" /> : selectedPlayerProfile.displayName.slice(0, 1)}
+                {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">🏆</span>}
+              </div>
+              <div>
+                <h3 id="player-profile-title">{selectedPlayerProfile.displayName}</h3>
+                {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="pill ok">{text.bestOverall}</span>}
+              </div>
+            </div>
+            <div className="stats">
+              <span>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</span>
+              <span>{selectedPlayerProfile.wins} {text.wins}</span>
+              <span>{selectedPlayerProfile.totalScore} {text.totalScore}</span>
+              <span>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</span>
+              <span>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</span>
+            </div>
+            {selectedPlayerProfile.bestByGame.length > 0 && (
+              <div className="best-score-list">
+                <strong>{text.bestScores}</strong>
+                {selectedPlayerProfile.bestByGame.map((item) => (
+                  <span key={item.game}>{item.game}: {item.score}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3530,6 +3877,36 @@ export default function WidgetPage() {
           gap: 10px;
         }
 
+        .language-picker {
+          position: relative;
+        }
+
+        .language-picker > button,
+        .language-menu button {
+          min-height: 30px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 999px;
+          background: #ffffff;
+          color: #071112;
+          padding: 4px 9px;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .language-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          z-index: 60;
+          display: grid;
+          gap: 4px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 6px;
+          box-shadow: 0 12px 32px rgba(11, 21, 24, 0.14);
+        }
+
         .profile-chip {
           display: grid;
           grid-template-columns: 44px minmax(0, 1fr);
@@ -3741,6 +4118,7 @@ export default function WidgetPage() {
 
         .avatar,
         .player-avatar {
+          position: relative;
           width: 42px;
           height: 42px;
           border-radius: 50%;
@@ -3750,6 +4128,20 @@ export default function WidgetPage() {
           background: linear-gradient(135deg, #00cbd1, #3059ff);
           color: #ffffff;
           font-weight: 800;
+        }
+
+        .champion-badge {
+          position: absolute;
+          right: -3px;
+          bottom: -3px;
+          display: grid;
+          place-items: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #ffffff;
+          font-size: 11px;
+          box-shadow: 0 2px 6px rgba(11, 21, 24, 0.16);
         }
 
         .avatar img,
@@ -3890,6 +4282,63 @@ export default function WidgetPage() {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
+        }
+
+        .player-profile-panel {
+          position: relative;
+          width: min(420px, 100%);
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 12px;
+          background: #ffffff;
+          padding: 18px;
+          box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
+        }
+
+        .player-profile-head {
+          display: grid;
+          grid-template-columns: 64px minmax(0, 1fr);
+          gap: 12px;
+          align-items: center;
+        }
+
+        .profile-large {
+          width: 64px;
+          height: 64px;
+          font-size: 24px;
+        }
+
+        .champion-avatar {
+          box-shadow: 0 0 0 3px #f6c244;
+        }
+
+        .podium-row {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 4px 0;
+        }
+
+        .podium-player {
+          flex: 0 0 auto;
+          display: inline-grid;
+          grid-template-columns: auto 30px auto;
+          gap: 6px;
+          align-items: center;
+          min-height: 40px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 999px;
+          background: #ffffff;
+          color: #071112;
+          padding: 5px 9px;
+          font-weight: 900;
+        }
+
+        .tiny-avatar {
+          width: 30px;
+          height: 30px;
+          font-size: 12px;
         }
 
         .best-score-list,
@@ -4040,6 +4489,51 @@ export default function WidgetPage() {
         .notes {
           color: #465358;
           font-size: 13px;
+          white-space: pre-wrap;
+        }
+
+        .notes-block {
+          display: grid;
+          gap: 4px;
+        }
+
+        .notes-block:not(.expanded) .notes {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .expand-note {
+          width: fit-content;
+          min-height: auto;
+          border: 0;
+          background: transparent;
+          color: #3059ff;
+          padding: 0;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .format-toolbar {
+          display: inline-flex;
+          gap: 4px;
+          margin: 0 0 6px;
+        }
+
+        .format-toolbar button {
+          display: inline-grid;
+          place-items: center;
+          width: 30px;
+          height: 28px;
+          min-height: 28px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 7px;
+          background: #ffffff;
+          color: #071112;
+          padding: 0;
+          font-size: 12px;
+          font-weight: 900;
         }
 
         .invite-code {
@@ -4185,15 +4679,23 @@ export default function WidgetPage() {
         .score-controls {
           grid-column: 1 / -1;
           display: grid;
-          grid-template-columns: minmax(76px, 1fr) minmax(96px, 1fr);
+          grid-template-columns: repeat(4, minmax(54px, 1fr));
           gap: 6px;
         }
 
         .score-controls input,
         .score-controls select {
-          min-height: 34px;
-          padding: 6px 8px;
-          font-size: 12px;
+          min-height: 30px;
+          padding: 5px 6px;
+          font-size: 11px;
+        }
+
+        .checkin-mini {
+          border: 1px solid rgba(13, 124, 81, 0.22);
+          background: #e9f8f1;
+          color: #0d7c51;
+          padding: 4px 7px;
+          font-size: 11px;
         }
 
         .remove-player {
@@ -4535,7 +5037,8 @@ export default function WidgetPage() {
           margin-top: 14px;
         }
 
-        .stats div {
+        .stats div,
+        .stats > span {
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 8px;
           padding: 12px;
@@ -4573,10 +5076,10 @@ export default function WidgetPage() {
             overflow: visible;
             padding: 14px;
             display: grid;
-            grid-template-columns: 46px minmax(0, 1fr) auto;
+            grid-template-columns: 46px auto minmax(0, 1fr) auto;
             grid-template-areas:
-              "profile share logo"
-              "tabs tabs tabs";
+              "profile lang share logo"
+              "tabs tabs tabs tabs";
             align-items: center;
             gap: 10px;
           }
@@ -4605,6 +5108,11 @@ export default function WidgetPage() {
             justify-self: end;
             width: 104px;
             max-width: 104px;
+          }
+
+          .language-picker {
+            grid-area: lang;
+            justify-self: start;
           }
 
           h2 {
@@ -4689,6 +5197,12 @@ export default function WidgetPage() {
             max-height: calc(100vh - 86px);
             border-radius: 18px 18px 10px 10px;
             padding: 12px;
+          }
+
+          .player-profile-panel {
+            width: 100%;
+            border-radius: 18px 18px 10px 10px;
+            align-self: end;
           }
 
           .section-head,
