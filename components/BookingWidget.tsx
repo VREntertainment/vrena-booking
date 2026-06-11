@@ -11,6 +11,7 @@ const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
+const MAX_DISPLAY_NAME_LENGTH = 10
 
 type HCaptchaApi = {
   render: (
@@ -230,7 +231,7 @@ const uiText = {
     oneArena: '1 arena',
     twoArenas: '2 arenas - 8 players minimum',
     gameOptions: 'Game Options',
-    notes: 'Notes',
+    notes: 'Description',
     saveChanges: 'Save Changes',
     saving: 'Saving...',
     close: 'Close',
@@ -323,7 +324,7 @@ const uiText = {
     hiddenMembers: 'Members hidden until your request is approved.',
     removeMemberConfirm: 'Remove this member from the club?',
     fridayPlaceholder: 'Friday VR squad',
-    notesPlaceholder: 'Language, skill level, preferred game, special notes',
+    notesPlaceholder: 'Set the scene: level, vibe, tiny chaos.',
     creating: 'Creating...',
     createPrivateSession: 'Create Private Session',
     profile: 'Profile',
@@ -458,7 +459,7 @@ const uiText = {
     oneArena: '1 arena',
     twoArenas: '2 arena - tối thiểu 8 người',
     gameOptions: 'Lựa chọn game',
-    notes: 'Ghi chú',
+    notes: 'Mô tả',
     saveChanges: 'Lưu thay đổi',
     saving: 'Đang lưu...',
     close: 'Đóng',
@@ -551,7 +552,7 @@ const uiText = {
     hiddenMembers: 'Thành viên được ẩn cho đến khi yêu cầu của bạn được duyệt.',
     removeMemberConfirm: 'Xóa thành viên này khỏi câu lạc bộ?',
     fridayPlaceholder: 'Nhóm VR tối thứ Sáu',
-    notesPlaceholder: 'Ngôn ngữ, trình độ, game yêu thích, ghi chú đặc biệt',
+    notesPlaceholder: 'Bật mí nhanh: trình độ, không khí, chút vui nhộn.',
     creating: 'Đang tạo...',
     createPrivateSession: 'Tạo phiên riêng tư',
     profile: 'Hồ sơ',
@@ -716,7 +717,16 @@ function splitPhoneNumber(phone: string) {
 
 function displayName(profile: Profile | null) {
   if (!profile) return 'Player'
-  return profile.nickname || profile.full_name || profile.phone
+  return compactDisplayName(profile.nickname || profile.full_name || profile.phone)
+}
+
+function limitDisplayName(value: string) {
+  return Array.from(value).slice(0, MAX_DISPLAY_NAME_LENGTH).join('')
+}
+
+function compactDisplayName(value: string | null | undefined, fallback = 'Player') {
+  const cleaned = (value || fallback).trim() || fallback
+  return limitDisplayName(cleaned)
 }
 
 function normalizeSearchValue(value: string) {
@@ -1013,7 +1023,7 @@ export default function WidgetPage() {
       setProfileCountryCode(phoneParts.countryInput)
       setProfilePhone(phoneParts.localPhone)
       setProfileName(profileRow.full_name || '')
-      setProfileNickname(profileRow.nickname || '')
+      setProfileNickname(limitDisplayName(profileRow.nickname || ''))
       setProfileEmail(profileRow.email || '')
     }
   }
@@ -1059,8 +1069,8 @@ export default function WidgetPage() {
     setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
     if (authMode === 'create') {
-      const nickname = profileNickname.trim()
-      const display = nickname || fullName
+      const nickname = limitDisplayName(profileNickname.trim())
+      const display = nickname || compactDisplayName(fullName)
       const consentAt = new Date().toISOString()
       const signUpResult = await supabase.auth.signUp({
         email: loginEmail,
@@ -1677,7 +1687,7 @@ export default function WidgetPage() {
 
         const current = stats.get(participant.profile_id) ?? {
           profileId: participant.profile_id,
-          displayName: participant.display_name || text.player,
+          displayName: compactDisplayName(participant.display_name, text.player),
           avatarUrl: participant.avatar_url,
           gamesJoined: 0,
           wins: 0,
@@ -1688,7 +1698,7 @@ export default function WidgetPage() {
           bestByGame: new Map<string, number>(),
         }
 
-        current.displayName = participant.display_name || current.displayName
+        current.displayName = compactDisplayName(participant.display_name, current.displayName)
         current.avatarUrl = participant.avatar_url || current.avatarUrl
         current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
@@ -1766,7 +1776,7 @@ export default function WidgetPage() {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
       if (participant) {
         visibleAvatar = participant.avatar_url || visibleAvatar
-        visibleName = participant.display_name || visibleName
+        visibleName = compactDisplayName(participant.display_name, visibleName || text.player)
       }
     }
 
@@ -1774,14 +1784,14 @@ export default function WidgetPage() {
       const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
       if (member) {
         visibleAvatar = member.avatar_url || visibleAvatar
-        visibleName = member.display_name || visibleName
+        visibleName = compactDisplayName(member.display_name, visibleName || text.player)
       }
     }
 
     if (selectedPlayerStats) {
       return {
         ...selectedPlayerStats,
-        displayName: selectedPlayerStats.displayName || visibleName,
+        displayName: compactDisplayName(selectedPlayerStats.displayName || visibleName, text.player),
         avatarUrl: selectedPlayerStats.avatarUrl || visibleAvatar,
       }
     }
@@ -1791,7 +1801,7 @@ export default function WidgetPage() {
       if (participant) {
         return {
           profileId: participant.profile_id,
-          displayName: participant.display_name || text.player,
+          displayName: compactDisplayName(participant.display_name, text.player),
           avatarUrl: participant.avatar_url,
           gamesJoined: 0,
           wins: 0,
@@ -1810,7 +1820,7 @@ export default function WidgetPage() {
       if (member) {
         return {
           profileId: member.profile_id,
-          displayName: member.display_name || text.player,
+          displayName: compactDisplayName(member.display_name, text.player),
           avatarUrl: member.avatar_url,
           gamesJoined: 0,
           wins: 0,
@@ -1869,7 +1879,7 @@ export default function WidgetPage() {
   function participantName(session: Session, participantId: string | null) {
     if (!participantId) return '-'
     const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
-    return participant?.display_name || text.player
+    return compactDisplayName(participant?.display_name, text.player)
   }
 
   function participantAvatar(session: Session, participantId: string | null) {
@@ -2087,7 +2097,7 @@ export default function WidgetPage() {
     const countryCode = resolveCountryCode(profileCountryCode)
     const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
     const fullName = profileName.trim()
-    const nickname = profileNickname.trim()
+    const nickname = limitDisplayName(profileNickname.trim())
 
     if (!profilePhone.trim()) {
       setProfileStatus(text.phoneRequired)
@@ -2128,7 +2138,7 @@ export default function WidgetPage() {
       return
     }
 
-    const display = nickname || fullName
+    const display = nickname || compactDisplayName(fullName)
     const metadataUpdate = await supabase.auth.updateUser({
       data: {
         display_name: display,
@@ -2563,7 +2573,7 @@ export default function WidgetPage() {
       return
     }
 
-    const display = editorProfile.nickname || editorProfile.full_name || editorProfile.email || text.player
+    const display = compactDisplayName(editorProfile.nickname || editorProfile.full_name || editorProfile.email, text.player)
     const { error } = await supabase.from('tournament_editors').upsert({
       session_id: session.id,
       profile_id: editorProfile.id,
@@ -3118,9 +3128,9 @@ export default function WidgetPage() {
                             >
                               <span className="podium-medal">{rankEmoji(participant.placement)}</span>
                               <span className="player-avatar tiny-avatar">
-                                {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
+                                {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? compactDisplayName(participant.display_name, 'P').slice(0, 1) : '?')}
                               </span>
-                              <strong>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</strong>
+                              <strong>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</strong>
                             </button>
                           ))}
                         </div>
@@ -3138,11 +3148,11 @@ export default function WidgetPage() {
                             onClick={() => setSelectedPlayerId(participant.profile_id)}
                             type="button"
                           >
-                            {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? (participant.display_name || 'P').slice(0, 1) : '?')}
+                            {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? compactDisplayName(participant.display_name, 'P').slice(0, 1) : '?')}
                             {participant.checked_in && <span className="check-badge">✓</span>}
                             {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
                           </button>
-                          <span>{canSeeSessionPlayers ? participant.display_name || text.player : text.member}</span>
+                          <span>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</span>
                           {canManage && (
                             <button
                               className="checkin-mini"
@@ -3250,9 +3260,9 @@ export default function WidgetPage() {
                               {tournament.editors.map((editor) => (
                                 <div className="player" key={editor.id}>
                                   <span className="player-avatar">
-                                    {editor.avatar_url ? <img src={editor.avatar_url} alt="" /> : (editor.display_name || 'E').slice(0, 1)}
+                                    {editor.avatar_url ? <img src={editor.avatar_url} alt="" /> : compactDisplayName(editor.display_name, 'E').slice(0, 1)}
                                   </span>
-                                  <span>{editor.display_name || text.player}</span>
+                                  <span>{compactDisplayName(editor.display_name, text.player)}</span>
                                 </div>
                               ))}
                             </div>
@@ -3513,9 +3523,9 @@ export default function WidgetPage() {
                               }}
                               type="button"
                             >
-                              {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
+                              {member.avatar_url ? <img src={member.avatar_url} alt="" /> : compactDisplayName(member.display_name, 'P').slice(0, 1)}
                             </button>
-                            <span>{member.display_name || text.player}</span>
+                            <span>{compactDisplayName(member.display_name, text.player)}</span>
                             {canManage && member.profile_id !== club.owner_id && (
                               <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
                                 event.stopPropagation()
@@ -3535,7 +3545,7 @@ export default function WidgetPage() {
                       <div className="pending-list">
                         {pendingMembers.map((member) => (
                           <div className="pending-member" key={member.id}>
-                            <span>{member.display_name || text.player}</span>
+                            <span>{compactDisplayName(member.display_name, text.player)}</span>
                             <div className="mini-session-actions">
                               <button className="secondary small-button" disabled={busyClubId === club.id} onClick={(event) => {
                                 event.stopPropagation()
@@ -3790,7 +3800,12 @@ export default function WidgetPage() {
               {showProfileFields && (
                 <div className="nickname-field">
                   <label>{text.nickname}</label>
-                  <input value={profileNickname} onChange={(event) => setProfileNickname(event.target.value)} placeholder={text.optional} />
+                  <input
+                    maxLength={MAX_DISPLAY_NAME_LENGTH}
+                    value={profileNickname}
+                    onChange={(event) => setProfileNickname(limitDisplayName(event.target.value))}
+                    placeholder={text.optional}
+                  />
                 </div>
               )}
               {!profile && authMode === 'create' && (
@@ -4125,9 +4140,9 @@ export default function WidgetPage() {
                     .map((member) => (
                       <div className="player" key={member.id}>
                         <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} type="button">
-                          {member.avatar_url ? <img src={member.avatar_url} alt="" /> : (member.display_name || 'P').slice(0, 1)}
+                          {member.avatar_url ? <img src={member.avatar_url} alt="" /> : compactDisplayName(member.display_name, 'P').slice(0, 1)}
                         </button>
-                        <span>{member.display_name || text.player}</span>
+                        <span>{compactDisplayName(member.display_name, text.player)}</span>
                       </div>
                     ))}
                 </div>
@@ -4201,11 +4216,11 @@ export default function WidgetPage() {
             </button>
             <div className="player-profile-head">
               <div className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}>
-                {selectedPlayerProfile.avatarUrl ? <img src={selectedPlayerProfile.avatarUrl} alt="" /> : selectedPlayerProfile.displayName.slice(0, 1)}
+                {selectedPlayerProfile.avatarUrl ? <img src={selectedPlayerProfile.avatarUrl} alt="" /> : compactDisplayName(selectedPlayerProfile.displayName, text.player).slice(0, 1)}
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">🏆</span>}
               </div>
               <div>
-                <h3 id="player-profile-title">{selectedPlayerProfile.displayName}</h3>
+                <h3 id="player-profile-title">{compactDisplayName(selectedPlayerProfile.displayName, text.player)}</h3>
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="pill ok">{text.bestOverall}</span>}
               </div>
             </div>
@@ -4235,7 +4250,7 @@ export default function WidgetPage() {
               ×
             </button>
             <h3 id="checkin-title">{text.checkIn}</h3>
-            <p>{checkInParticipant.display_name || text.player}</p>
+            <p>{compactDisplayName(checkInParticipant.display_name, text.player)}</p>
             <div className="payment-grid">
               <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'cash')}>
                 {text.cash}
