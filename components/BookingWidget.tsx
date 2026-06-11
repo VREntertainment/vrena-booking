@@ -4004,6 +4004,8 @@ export default function WidgetPage() {
 
         .profile-chip:hover {
           background: #f0f4f6;
+          color: #071112;
+          box-shadow: 0 12px 26px rgba(11, 21, 24, 0.12);
         }
 
         .profile-chip strong,
@@ -5162,6 +5164,34 @@ export default function WidgetPage() {
           opacity: 0.68;
         }
 
+        @media (hover: hover) and (pointer: fine) {
+          button:not(:disabled),
+          .profile-chip,
+          .session.clickable,
+          .club-card.clickable,
+          .mini-session.clickable,
+          .game-card,
+          .day-chip,
+          .country-list button,
+          .shop-contact a {
+            transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+          }
+
+          button:hover:not(:disabled),
+          .profile-chip:hover,
+          .session.clickable:hover,
+          .club-card.clickable:hover,
+          .mini-session.clickable:hover,
+          .game-card:hover,
+          .day-chip:hover,
+          .country-list button:hover,
+          .shop-contact a:hover {
+            transform: translateY(-1px) scale(1.015);
+            box-shadow: 0 12px 28px rgba(11, 21, 24, 0.14);
+            filter: brightness(1.03);
+          }
+        }
+
         button.primary {
           background: linear-gradient(90deg, #00aeb3, #3059ff);
         }
@@ -5786,6 +5816,8 @@ export default function WidgetPage() {
           input,
           select,
           textarea,
+          .rich-note-editor,
+          .format-toolbar button,
           .country-button,
           .search-close,
           .mobile-search-toggle,
@@ -5795,6 +5827,34 @@ export default function WidgetPage() {
             background: #182225;
             color: #f6f7f9;
             border-color: rgba(255, 255, 255, 0.14);
+          }
+
+          input,
+          select,
+          textarea,
+          .rich-note-editor,
+          .country-button {
+            border-color: rgba(255, 255, 255, 0.26);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+          }
+
+          .rich-note-editor:empty::before {
+            color: #8f9ca1;
+          }
+
+          .format-toolbar button {
+            border-color: rgba(255, 255, 255, 0.24);
+          }
+
+          .profile-chip:hover {
+            background: #182225;
+            color: #f6f7f9;
+            border-color: rgba(255, 255, 255, 0.24);
+          }
+
+          .profile-chip:hover span,
+          .profile-chip:hover strong {
+            color: #f6f7f9;
           }
 
           .tab.active,
