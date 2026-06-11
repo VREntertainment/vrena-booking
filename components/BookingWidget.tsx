@@ -1643,6 +1643,11 @@ export default function WidgetPage() {
     let visibleAvatar: string | null = null
     let visibleName = ''
 
+    if (selectedPlayerId === userId && profile) {
+      visibleAvatar = profile.avatar_url || visibleAvatar
+      visibleName = displayName(profile) || visibleName
+    }
+
     for (const session of sessions) {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
       if (participant) {
@@ -1706,7 +1711,7 @@ export default function WidgetPage() {
     }
 
     return undefined
-  }, [clubs, selectedPlayerId, selectedPlayerStats, sessions, text.player])
+  }, [clubs, profile, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
 
   useEffect(() => {
     if (!profile || !topPlayer || topPlayer.profileId === userId || activeView !== 'sessions') return
@@ -4376,21 +4381,30 @@ export default function WidgetPage() {
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 12px;
           background: #ffffff;
+          color: #071112;
           padding: 18px;
           box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
         }
 
         .player-profile-head {
           display: grid;
-          grid-template-columns: 64px minmax(0, 1fr);
-          gap: 12px;
+          gap: 10px;
           align-items: center;
+          justify-items: center;
+          text-align: center;
+        }
+
+        .player-profile-head h3 {
+          margin: 0;
+          color: inherit;
         }
 
         .profile-large {
-          width: 64px;
-          height: 64px;
-          font-size: 24px;
+          width: 72px;
+          height: 72px;
+          min-width: 72px;
+          min-height: 72px;
+          font-size: 26px;
         }
 
         .champion-avatar {
@@ -5746,9 +5760,11 @@ export default function WidgetPage() {
           .profile-chip,
           .profile-photo-panel,
           .login-modal,
-          .club-drawer {
+          .club-drawer,
+          .player-profile-panel {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
+            color: #f6f7f9;
           }
 
           .muted,
@@ -5786,7 +5802,8 @@ export default function WidgetPage() {
           .notice,
           .row-meta span,
           .pill,
-          .pending-member {
+          .pending-member,
+          .stats span {
             background: #1d2a2e;
           }
 
@@ -5817,7 +5834,9 @@ export default function WidgetPage() {
           .club-card,
           .game-card,
           .country-list button,
-          .profile-photo-panel strong {
+          .profile-photo-panel strong,
+          .player-profile-panel h3,
+          .modal-close {
             color: #f6f7f9;
           }
         }
