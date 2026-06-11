@@ -220,8 +220,8 @@ const uiText = {
     totalScore: 'total score',
     bestScores: 'Best scores',
     chooseClub: 'Choose a club',
-    clubMembersOnly: 'Only approved club members can join this session.',
-    clubMembershipRequired: 'Only approved members of this club can join this session.',
+    clubMembersOnly: 'Only approved club members can join and create sessions here.',
+    clubMembershipRequired: 'Only approved members of this club can create a session here.',
     openClubDetails: 'Open club details',
     nextGames: 'Next games',
     noClubGames: 'No upcoming games for this club yet.',
@@ -415,8 +415,8 @@ const uiText = {
     totalScore: 'tổng điểm',
     bestScores: 'Thành tích tốt nhất',
     chooseClub: 'Chọn club',
-    clubMembersOnly: 'Chỉ thành viên đã được duyệt của club mới có thể tham gia phiên này.',
-    clubMembershipRequired: 'Chỉ thành viên đã được duyệt của club này mới có thể tham gia phiên.',
+    clubMembersOnly: 'Chỉ thành viên đã được duyệt mới có thể tham gia và tạo phiên tại club này.',
+    clubMembershipRequired: 'Chỉ thành viên đã được duyệt của club này mới có thể tạo phiên.',
     openClubDetails: 'Mở chi tiết club',
     nextGames: 'Phiên sắp tới',
     noClubGames: 'Chưa có phiên sắp tới cho club này.',
@@ -1308,6 +1308,11 @@ export default function WidgetPage() {
     return clubs.find((club) => club.id === selectedClubId)
   }, [clubs, selectedClubId])
 
+  const selectedClubMembership = useMemo(() => {
+    if (!selectedClub) return undefined
+    return (selectedClub.club_members ?? []).find((member) => member.profile_id === userId)
+  }, [selectedClub, userId])
+
   const selectedClubSessions = useMemo(() => {
     if (!selectedClubId) return []
     return sessions.filter((session) => session.club_id === selectedClubId)
@@ -1698,7 +1703,7 @@ export default function WidgetPage() {
 
     const selectedSessionClub = sessionClubId ? clubs.find((club) => club.id === sessionClubId) : undefined
 
-    if (selectedSessionClub && !canSeeClubPrivateData(selectedSessionClub)) {
+    if (selectedSessionClub && !canCreateClubSession(selectedSessionClub)) {
       setCreateStatus(text.clubMembershipRequired)
       setIsCreating(false)
       return
@@ -3076,6 +3081,21 @@ export default function WidgetPage() {
             </div>
 
             {selectedClub.description && <p className="notes">{selectedClub.description}</p>}
+
+            {!selectedClubMembership && !canManageClub(selectedClub) && (
+              <button
+                className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
+                disabled={busyClubId === selectedClub.id}
+                onClick={() => joinClub(selectedClub)}
+                type="button"
+              >
+                {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
+              </button>
+            )}
+
+            {selectedClubMembership?.status === 'pending' && (
+              <p className="notice">{text.requestSent}</p>
+            )}
 
             {canCreateClubSession(selectedClub) && (
               <button
