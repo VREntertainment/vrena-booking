@@ -4740,35 +4740,39 @@ export default function WidgetPage() {
         }
 
         .players {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-          gap: 10px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          gap: 14px;
           max-width: 100%;
         }
 
         .players:has(.result-player) {
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
         }
 
         .player {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
-          gap: 7px;
+          gap: 6px;
           align-items: start;
           justify-items: center;
           font-size: 13px;
           font-weight: 700;
           min-width: 0;
-          max-width: 100%;
-          border: 1px solid rgba(7, 17, 18, 0.08);
-          border-radius: 8px;
-          background: #ffffff;
-          padding: 8px;
+          width: 72px;
+          max-width: 72px;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 0;
           text-align: center;
         }
 
         .result-player {
           align-items: start;
+          width: 86px;
+          max-width: 86px;
         }
 
         .player > span {
@@ -4787,7 +4791,8 @@ export default function WidgetPage() {
         .player > .remove-player,
         .player > .checkin-mini {
           grid-column: 1 / -1;
-          justify-self: start;
+          justify-self: stretch;
+          width: 100%;
           max-width: 100%;
         }
 
@@ -4801,10 +4806,10 @@ export default function WidgetPage() {
           position: relative;
           display: inline-grid;
           place-items: center;
-          width: 42px;
-          height: 42px;
-          min-width: 42px;
-          min-height: 42px;
+          width: 58px;
+          height: 58px;
+          min-width: 58px;
+          min-height: 58px;
           max-width: 100%;
           aspect-ratio: 1;
           border-radius: 999px;
@@ -4828,7 +4833,7 @@ export default function WidgetPage() {
 
         .player-avatar-button {
           cursor: pointer;
-          min-height: 42px;
+          min-height: 58px;
         }
 
         .player-avatar-button:disabled {
@@ -4893,7 +4898,7 @@ export default function WidgetPage() {
 
         .score-controls {
           grid-column: 1 / -1;
-          display: grid;
+          display: none;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 6px;
           min-width: 0;
@@ -4910,8 +4915,9 @@ export default function WidgetPage() {
           border: 1px solid rgba(13, 124, 81, 0.22);
           background: #e9f8f1;
           color: #0d7c51;
-          padding: 4px 7px;
-          font-size: 11px;
+          padding: 3px 5px;
+          font-size: 10px;
+          min-height: 24px;
         }
 
         .remove-player {
