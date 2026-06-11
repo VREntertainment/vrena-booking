@@ -107,6 +107,52 @@ type Club = {
   club_members?: ClubMember[]
 }
 
+type TournamentEditor = {
+  id: string
+  session_id: string
+  profile_id: string
+  display_name: string | null
+  avatar_url: string | null
+}
+
+type TournamentPool = {
+  id: string
+  session_id: string
+  name: string
+  sort_order: number
+}
+
+type TournamentPoolEntry = {
+  id: string
+  session_id: string
+  pool_id: string
+  participant_id: string
+  profile_id: string
+  seed: number | null
+}
+
+type TournamentMatch = {
+  id: string
+  session_id: string
+  pool_id: string | null
+  stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'custom'
+  round: number
+  match_number: number
+  participant_a_id: string | null
+  participant_b_id: string | null
+  score_a: number | null
+  score_b: number | null
+  winner_participant_id: string | null
+  status: 'pending' | 'live' | 'completed'
+}
+
+type TournamentData = {
+  editors: TournamentEditor[]
+  pools: TournamentPool[]
+  poolEntries: TournamentPoolEntry[]
+  matches: TournamentMatch[]
+}
+
 const games: Array<{
   id: GameId
   title: string
@@ -209,6 +255,20 @@ const uiText = {
     normalGame: 'Game',
     tournament: 'Tournament',
     tournamentSession: 'Tournament',
+    tournamentDesk: 'Tournament desk',
+    tournamentSetup: 'Setup pools',
+    tournamentGenerateMatches: 'Generate matches',
+    tournamentNextRound: 'Next round',
+    tournamentEditors: 'Editors',
+    addEditor: 'Add editor',
+    editorHint: 'Editors can check in players and record tournament results.',
+    pools: 'Pools',
+    matches: 'Matches',
+    winner: 'Winner',
+    scoreA: 'Score A',
+    scoreB: 'Score B',
+    poolSize: 'Players per pool',
+    noTournamentData: 'No tournament bracket yet. Set the pools and let the games begin.',
     checkIn: 'Check-in',
     checkedIn: 'Checked in',
     paymentMethod: 'Payment method',
@@ -423,6 +483,20 @@ const uiText = {
     normalGame: 'Game',
     tournament: 'Giải đấu',
     tournamentSession: 'Giải đấu',
+    tournamentDesk: 'Bàn điều khiển giải đấu',
+    tournamentSetup: 'Tạo bảng đấu',
+    tournamentGenerateMatches: 'Tạo trận',
+    tournamentNextRound: 'Vòng tiếp theo',
+    tournamentEditors: 'Người hỗ trợ',
+    addEditor: 'Thêm hỗ trợ',
+    editorHint: 'Người hỗ trợ có thể check-in và nhập kết quả giải đấu.',
+    pools: 'Bảng đấu',
+    matches: 'Trận đấu',
+    winner: 'Người thắng',
+    scoreA: 'Điểm A',
+    scoreB: 'Điểm B',
+    poolSize: 'Người mỗi bảng',
+    noTournamentData: 'Chưa có sơ đồ giải đấu. Tạo bảng và bắt đầu cuộc vui.',
     checkIn: 'Check-in',
     checkedIn: 'Đã check-in',
     paymentMethod: 'Phương thức thanh toán',
@@ -761,6 +835,12 @@ export default function WidgetPage() {
   const [activeView, setActiveView] = useState<'sessions' | 'create' | 'clubs' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
+  const [tournamentData, setTournamentData] = useState<TournamentData>({
+    editors: [],
+    pools: [],
+    poolEntries: [],
+    matches: [],
+  })
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
@@ -829,6 +909,9 @@ export default function WidgetPage() {
   const [busyClubId, setBusyClubId] = useState('')
   const [selectedClubId, setSelectedClubId] = useState('')
   const [selectedClubDate, setSelectedClubDate] = useState('')
+  const [tournamentPoolSize, setTournamentPoolSize] = useState(4)
+  const [tournamentEditorEmail, setTournamentEditorEmail] = useState('')
+  const [busyTournamentId, setBusyTournamentId] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
@@ -1213,6 +1296,32 @@ export default function WidgetPage() {
     setClubs((data ?? []) as Club[])
   }
 
+  async function loadTournamentData() {
+    const [editorsResult, poolsResult, entriesResult, matchesResult] = await Promise.all([
+      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url'),
+      supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
+      supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed'),
+      supabase
+        .from('tournament_matches')
+        .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, winner_participant_id, status')
+        .order('round', { ascending: true })
+        .order('match_number', { ascending: true }),
+    ])
+
+    const firstError = editorsResult.error || poolsResult.error || entriesResult.error || matchesResult.error
+    if (firstError) {
+      setCreateStatus(firstError.message)
+      return
+    }
+
+    setTournamentData({
+      editors: (editorsResult.data ?? []) as TournamentEditor[],
+      pools: (poolsResult.data ?? []) as TournamentPool[],
+      poolEntries: (entriesResult.data ?? []) as TournamentPoolEntry[],
+      matches: (matchesResult.data ?? []) as TournamentMatch[],
+    })
+  }
+
   useEffect(() => {
     setLanguage(detectLanguage())
     if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
@@ -1223,6 +1332,7 @@ export default function WidgetPage() {
     loadProfile()
     loadSessions()
     loadClubs()
+    loadTournamentData()
   }, [])
 
   useEffect(() => {
@@ -1232,6 +1342,10 @@ export default function WidgetPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => loadClubs())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadClubs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => loadTournamentData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => loadTournamentData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => loadTournamentData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => loadTournamentData())
       .subscribe()
 
     return () => {
@@ -1738,7 +1852,41 @@ export default function WidgetPage() {
   const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
 
   function canManageSession(session: Session) {
+    return Boolean(
+      userId
+      && (
+        session.owner_id === userId
+        || isAdmin
+        || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
+      )
+    )
+  }
+
+  function isSessionCreator(session: Session) {
     return Boolean(userId && (session.owner_id === userId || isAdmin))
+  }
+
+  function participantName(session: Session, participantId: string | null) {
+    if (!participantId) return '-'
+    const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
+    return participant?.display_name || text.player
+  }
+
+  function participantAvatar(session: Session, participantId: string | null) {
+    if (!participantId) return null
+    const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
+    return participant?.avatar_url || null
+  }
+
+  function tournamentForSession(sessionId: string) {
+    return {
+      editors: tournamentData.editors.filter((editor) => editor.session_id === sessionId),
+      pools: tournamentData.pools.filter((pool) => pool.session_id === sessionId).sort((a, b) => a.sort_order - b.sort_order),
+      poolEntries: tournamentData.poolEntries.filter((entry) => entry.session_id === sessionId),
+      matches: tournamentData.matches
+        .filter((match) => match.session_id === sessionId)
+        .sort((a, b) => a.round - b.round || a.match_number - b.match_number),
+    }
   }
 
   function canManageClub(club: Club) {
@@ -2389,6 +2537,233 @@ export default function WidgetPage() {
     await loadSessions()
   }
 
+  function tournamentStageLabel(stage: TournamentMatch['stage']) {
+    return stage.replace('_', ' ')
+  }
+
+  async function addTournamentEditor(session: Session) {
+    if (!isSessionCreator(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const email = tournamentEditorEmail.trim().toLowerCase()
+    if (!email) return
+
+    setBusyTournamentId(session.id)
+    const { data: editorProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, full_name, nickname, email, avatar_url')
+      .eq('email', email)
+      .single()
+
+    if (profileError || !editorProfile) {
+      setCreateStatus(profileError?.message || 'Editor profile not found.')
+      setBusyTournamentId('')
+      return
+    }
+
+    const display = editorProfile.nickname || editorProfile.full_name || editorProfile.email || text.player
+    const { error } = await supabase.from('tournament_editors').upsert({
+      session_id: session.id,
+      profile_id: editorProfile.id,
+      display_name: display,
+      avatar_url: editorProfile.avatar_url,
+    }, { onConflict: 'session_id,profile_id' })
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusyTournamentId('')
+      return
+    }
+
+    setTournamentEditorEmail('')
+    await loadTournamentData()
+    setCreateStatus(text.profileSaved)
+    setBusyTournamentId('')
+  }
+
+  async function setupTournamentPools(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const participants = session.session_participants ?? []
+    if (participants.length < 2) {
+      setCreateStatus(text.noTournamentData)
+      return
+    }
+
+    setBusyTournamentId(session.id)
+    await supabase.from('tournament_matches').delete().eq('session_id', session.id)
+    await supabase.from('tournament_pool_entries').delete().eq('session_id', session.id)
+    await supabase.from('tournament_pools').delete().eq('session_id', session.id)
+
+    const poolCount = Math.max(1, Math.ceil(participants.length / tournamentPoolSize))
+    const poolRows = Array.from({ length: poolCount }, (_, index) => ({
+      session_id: session.id,
+      name: `Pool ${String.fromCharCode(65 + index)}`,
+      sort_order: index + 1,
+    }))
+
+    const { data: pools, error: poolError } = await supabase
+      .from('tournament_pools')
+      .insert(poolRows)
+      .select('id, session_id, name, sort_order')
+
+    if (poolError || !pools) {
+      setCreateStatus(poolError?.message || text.createError)
+      setBusyTournamentId('')
+      return
+    }
+
+    const entries = participants.map((participant, index) => {
+      const pool = pools[index % pools.length]
+      return {
+        session_id: session.id,
+        pool_id: pool.id,
+        participant_id: participant.id,
+        profile_id: participant.profile_id,
+        seed: index + 1,
+      }
+    })
+
+    const { error } = await supabase.from('tournament_pool_entries').insert(entries)
+    if (error) {
+      setCreateStatus(error.message)
+      setBusyTournamentId('')
+      return
+    }
+
+    await loadTournamentData()
+    setCreateStatus(text.tournamentSetup)
+    setBusyTournamentId('')
+  }
+
+  async function generateTournamentMatches(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const data = tournamentForSession(session.id)
+    if (!data.pools.length || !data.poolEntries.length) {
+      setCreateStatus(text.noTournamentData)
+      return
+    }
+
+    setBusyTournamentId(session.id)
+    await supabase.from('tournament_matches').delete().eq('session_id', session.id)
+
+    const matchRows = data.pools.flatMap((pool) => {
+      const poolEntries = data.poolEntries.filter((entry) => entry.pool_id === pool.id)
+      const rows = []
+      let matchNumber = 1
+
+      for (let i = 0; i < poolEntries.length; i += 1) {
+        for (let j = i + 1; j < poolEntries.length; j += 1) {
+          rows.push({
+            session_id: session.id,
+            pool_id: pool.id,
+            stage: 'pool',
+            round: 1,
+            match_number: matchNumber,
+            participant_a_id: poolEntries[i].participant_id,
+            participant_b_id: poolEntries[j].participant_id,
+            status: 'pending',
+          })
+          matchNumber += 1
+        }
+      }
+
+      return rows
+    })
+
+    if (!matchRows.length) {
+      setCreateStatus(text.noTournamentData)
+      setBusyTournamentId('')
+      return
+    }
+
+    const { error } = await supabase.from('tournament_matches').insert(matchRows)
+    if (error) {
+      setCreateStatus(error.message)
+      setBusyTournamentId('')
+      return
+    }
+
+    await loadTournamentData()
+    setCreateStatus(text.tournamentGenerateMatches)
+    setBusyTournamentId('')
+  }
+
+  async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
+    const scoreA = changes.score_a ?? match.score_a
+    const scoreB = changes.score_b ?? match.score_b
+    const winner = changes.winner_participant_id ?? match.winner_participant_id
+    const { error } = await supabase
+      .from('tournament_matches')
+      .update({
+        score_a: scoreA,
+        score_b: scoreB,
+        winner_participant_id: winner || null,
+        status: winner ? 'completed' : 'pending',
+      })
+      .eq('id', match.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadTournamentData()
+  }
+
+  async function advanceTournamentRound(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const data = tournamentForSession(session.id)
+    const latestRound = Math.max(1, ...data.matches.map((match) => match.round))
+    const winners = data.matches
+      .filter((match) => match.round === latestRound && match.winner_participant_id)
+      .map((match) => match.winner_participant_id as string)
+
+    if (winners.length < 2) {
+      setCreateStatus(text.noTournamentData)
+      return
+    }
+
+    const nextRound = latestRound + 1
+    const stage: TournamentMatch['stage'] = winners.length <= 2 ? 'final' : winners.length <= 4 ? 'semifinal' : winners.length <= 8 ? 'quarterfinal' : 'custom'
+    const matchRows = []
+
+    for (let index = 0; index < winners.length; index += 2) {
+      matchRows.push({
+        session_id: session.id,
+        pool_id: null,
+        stage,
+        round: nextRound,
+        match_number: Math.floor(index / 2) + 1,
+        participant_a_id: winners[index],
+        participant_b_id: winners[index + 1] || null,
+        status: 'pending',
+      })
+    }
+
+    const { error } = await supabase.from('tournament_matches').insert(matchRows)
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadTournamentData()
+    setCreateStatus(text.tournamentNextRound)
+  }
+
   function voteCount(session: Session, gameId: GameId) {
     return Object.values(session.game_votes || {}).filter((vote) => vote === gameId).length
   }
@@ -2826,6 +3201,119 @@ export default function WidgetPage() {
                         </div>
                       ))}
                     </div>
+
+                    {session.session_type === 'tournament' && (() => {
+                      const tournament = tournamentForSession(session.id)
+                      const canEditTournament = canManageSession(session)
+                      const creatorCanAssignEditors = isSessionCreator(session)
+
+                      return (
+                        <div className="tournament-desk">
+                          <div className="section-head compact-head">
+                            <div>
+                              <h3>{text.tournamentDesk}</h3>
+                              <p className="muted">{text.noTournamentData}</p>
+                            </div>
+                            {canEditTournament && (
+                              <div className="manage-row">
+                                <label className="mini-field">
+                                  {text.poolSize}
+                                  <select value={tournamentPoolSize} onChange={(event) => setTournamentPoolSize(Number(event.target.value))}>
+                                    {[2, 3, 4, 5, 6].map((size) => <option key={size} value={size}>{size}</option>)}
+                                  </select>
+                                </label>
+                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => setupTournamentPools(session)}>
+                                  {text.tournamentSetup}
+                                </button>
+                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => generateTournamentMatches(session)}>
+                                  {text.tournamentGenerateMatches}
+                                </button>
+                                <button className="primary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => advanceTournamentRound(session)}>
+                                  {text.tournamentNextRound}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {creatorCanAssignEditors && (
+                            <div className="invite-code compact">
+                              <span>{text.tournamentEditors}</span>
+                              <input value={tournamentEditorEmail} onChange={(event) => setTournamentEditorEmail(event.target.value)} placeholder="helper@email.com" />
+                              <button disabled={busyTournamentId === session.id} type="button" onClick={() => addTournamentEditor(session)}>
+                                {text.addEditor}
+                              </button>
+                            </div>
+                          )}
+
+                          {tournament.editors.length > 0 && (
+                            <div className="players compact-roster">
+                              {tournament.editors.map((editor) => (
+                                <div className="player" key={editor.id}>
+                                  <span className="player-avatar">
+                                    {editor.avatar_url ? <img src={editor.avatar_url} alt="" /> : (editor.display_name || 'E').slice(0, 1)}
+                                  </span>
+                                  <span>{editor.display_name || text.player}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {tournament.pools.length > 0 && (
+                            <div className="tournament-grid">
+                              {tournament.pools.map((pool) => (
+                                <div className="tournament-panel" key={pool.id}>
+                                  <strong>{pool.name}</strong>
+                                  <div className="players compact-roster">
+                                    {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => (
+                                      <div className="player" key={entry.id}>
+                                        <span className="player-avatar">
+                                          {participantAvatar(session, entry.participant_id) ? <img src={participantAvatar(session, entry.participant_id) || ''} alt="" /> : participantName(session, entry.participant_id).slice(0, 1)}
+                                        </span>
+                                        <span>{participantName(session, entry.participant_id)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {tournament.matches.length > 0 && (
+                            <div className="match-list">
+                              {tournament.matches.map((match) => (
+                                <div className={match.status === 'completed' ? 'match-card completed' : 'match-card'} key={match.id}>
+                                  <div className="match-head">
+                                    <span>{tournamentStageLabel(match.stage)} · R{match.round} M{match.match_number}</span>
+                                    <strong>{match.status}</strong>
+                                  </div>
+                                  <div className="match-versus">
+                                    <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
+                                      <span className="player-avatar">
+                                        {participantAvatar(session, match.participant_a_id) ? <img src={participantAvatar(session, match.participant_a_id) || ''} alt="" /> : participantName(session, match.participant_a_id).slice(0, 1)}
+                                      </span>
+                                      <span>{participantName(session, match.participant_a_id)}</span>
+                                    </button>
+                                    <span className="versus">VS</span>
+                                    <button className={match.winner_participant_id === match.participant_b_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_b_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_b_id })}>
+                                      <span className="player-avatar">
+                                        {participantAvatar(session, match.participant_b_id) ? <img src={participantAvatar(session, match.participant_b_id) || ''} alt="" /> : participantName(session, match.participant_b_id).slice(0, 1)}
+                                      </span>
+                                      <span>{participantName(session, match.participant_b_id)}</span>
+                                    </button>
+                                  </div>
+                                  {canEditTournament && (
+                                    <div className="score-row">
+                                      <input aria-label={text.scoreA} defaultValue={match.score_a ?? ''} inputMode="numeric" placeholder={text.scoreA} onBlur={(event) => updateTournamentMatch(match, { score_a: event.target.value === '' ? null : Number(event.target.value) })} />
+                                      <input aria-label={text.scoreB} defaultValue={match.score_b ?? ''} inputMode="numeric" placeholder={text.scoreB} onBlur={(event) => updateTournamentMatch(match, { score_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     <div className="game-strip">
                       {session.game_options.map((gameId) => {
@@ -4927,6 +5415,125 @@ export default function WidgetPage() {
           font-size: 11px;
         }
 
+        .tournament-desk {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 10px;
+          background: rgba(240, 244, 246, 0.56);
+          padding: 12px;
+        }
+
+        .mini-field {
+          display: grid;
+          gap: 4px;
+          min-width: 110px;
+          margin: 0;
+        }
+
+        .mini-field select {
+          min-height: 34px;
+          padding: 6px 8px;
+        }
+
+        .compact-roster {
+          gap: 10px;
+        }
+
+        .compact-roster .player {
+          width: 70px;
+          max-width: 70px;
+        }
+
+        .tournament-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 10px;
+        }
+
+        .tournament-panel,
+        .match-card {
+          display: grid;
+          gap: 10px;
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 10px;
+        }
+
+        .match-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 10px;
+        }
+
+        .match-card.completed {
+          border-color: rgba(13, 124, 81, 0.3);
+          background: #f3fbf7;
+        }
+
+        .match-head,
+        .match-versus,
+        .score-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .match-head {
+          justify-content: space-between;
+          color: #637075;
+          font-size: 12px;
+          text-transform: capitalize;
+        }
+
+        .match-versus {
+          justify-content: center;
+        }
+
+        .match-player {
+          display: grid;
+          justify-items: center;
+          gap: 4px;
+          min-width: 74px;
+          background: transparent;
+          color: #071112;
+          border: 1px solid transparent;
+          padding: 6px;
+          text-align: center;
+        }
+
+        .match-player span:last-child {
+          max-width: 82px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .match-player.winner {
+          border-color: rgba(245, 197, 66, 0.8);
+          background: #fff8dc;
+          box-shadow: 0 0 0 2px rgba(245, 197, 66, 0.2);
+        }
+
+        .versus {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .score-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .score-row input {
+          min-height: 34px;
+          padding: 6px 8px;
+          font-size: 12px;
+        }
+
         .checkin-mini {
           border: 1px solid rgba(13, 124, 81, 0.22);
           background: #e9f8f1;
@@ -5791,10 +6398,17 @@ export default function WidgetPage() {
           .profile-photo-panel,
           .login-modal,
           .club-drawer,
-          .player-profile-panel {
+          .player-profile-panel,
+          .tournament-panel,
+          .match-card {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
+          }
+
+          .tournament-desk {
+            background: rgba(16, 25, 27, 0.62);
+            border-color: rgba(255, 255, 255, 0.14);
           }
 
           .muted,
@@ -5863,8 +6477,18 @@ export default function WidgetPage() {
           .row-meta span,
           .pill,
           .pending-member,
-          .stats span {
+          .stats span,
+          .match-card.completed {
             background: #1d2a2e;
+          }
+
+          .match-player {
+            color: #f6f7f9;
+          }
+
+          .match-player.winner {
+            background: rgba(245, 197, 66, 0.16);
+            border-color: rgba(245, 197, 66, 0.7);
           }
 
           .modal-backdrop {
