@@ -173,6 +173,8 @@ const uiText = {
     availableTime: 'Available Time',
     chooseTime: 'Choose a time',
     duration: 'Duration',
+    durationRecommend40: 'Tiny wisdom from the VR oracle: for more than 4 players, 40 min minimum is recommended so everyone gets a proper run.',
+    durationRecommend60: 'Big squad detected: for more than 8 players, 60 min minimum is recommended so the fun does not get squeezed.',
     maxPlayers: 'Maximum Players',
     arenas: 'Arenas',
     oneArena: '1 arena',
@@ -368,6 +370,8 @@ const uiText = {
     availableTime: 'Giờ còn trống',
     chooseTime: 'Chọn giờ',
     duration: 'Thời lượng',
+    durationRecommend40: 'Lời nhắn nhỏ từ nhà tiên tri VR: trên 4 người nên chọn tối thiểu 40 phút để ai cũng chơi đã.',
+    durationRecommend60: 'Đội hình đông rồi đó: trên 8 người nên chọn tối thiểu 60 phút để cuộc vui không bị vội.',
     maxPlayers: 'Số người tối đa',
     arenas: 'Arena',
     oneArena: '1 arena',
@@ -720,6 +724,8 @@ export default function WidgetPage() {
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
+  const searchShellRef = useRef<HTMLDivElement | null>(null)
+  const dayStripRef = useRef<HTMLDivElement | null>(null)
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
@@ -1156,6 +1162,29 @@ export default function WidgetPage() {
     }
   }, [activeView, authMode, profile])
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (!isSearchOpen && !search && !selectedSessionDate) return
+
+    function closeSearchOnOutsideClick(event: PointerEvent) {
+      const target = event.target as Node
+      const clickedSearch = searchShellRef.current?.contains(target)
+      const clickedCalendar = dayStripRef.current?.contains(target)
+
+      if (clickedSearch || clickedCalendar) return
+
+      setSearch('')
+      setSelectedSessionDate('')
+      setIsSearchOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeSearchOnOutsideClick)
+
+    return () => {
+      document.removeEventListener('pointerdown', closeSearchOnOutsideClick)
+    }
+  }, [isSearchOpen, search, selectedSessionDate])
+
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
   }, [blockedTimes, language, sessionArenaCount, sessionDate, sessionDuration, sessions])
@@ -1163,6 +1192,9 @@ export default function WidgetPage() {
   const editTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
   }, [blockedTimes, editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, language, sessions])
+
+  const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
+  const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
 
   function handleSessionDateChange(event: ChangeEvent<HTMLInputElement>) {
     setSessionDate(event.target.value)
@@ -1199,6 +1231,12 @@ export default function WidgetPage() {
     }
 
     setEditSessionArenaCount(value)
+  }
+
+  function durationRecommendation(maxPlayers: number, duration: number) {
+    if (maxPlayers > 8 && duration < 60) return text.durationRecommend60
+    if (maxPlayers > 4 && duration < 40) return text.durationRecommend40
+    return ''
   }
 
   function getAvailableTimeOptions(date: string, duration: number, arenaCount: number, excludeSessionId = '') {
@@ -2085,7 +2123,7 @@ export default function WidgetPage() {
                 <h2>{text.availableSessions}</h2>
                 <p className="muted">{text.privateJoinHint}</p>
               </div>
-              <div className={isSearchOpen ? 'search-shell open' : 'search-shell'}>
+              <div className={isSearchOpen ? 'search-shell open' : 'search-shell'} ref={searchShellRef}>
                 <button
                   aria-label={text.searchSessions}
                   className="mobile-search-toggle"
@@ -2119,7 +2157,7 @@ export default function WidgetPage() {
               </div>
             </div>
             {(isSearchOpen || search || selectedSessionDate) && (
-              <div className="day-strip" aria-label={text.date}>
+              <div className="day-strip" aria-label={text.date} ref={dayStripRef}>
                 <button
                   className={!selectedSessionDate ? 'day-chip active' : 'day-chip'}
                   type="button"
@@ -2240,6 +2278,7 @@ export default function WidgetPage() {
                                 </option>
                               ))}
                             </select>
+                            {editSessionDurationRecommendation && <p className="field-help">{editSessionDurationRecommendation}</p>}
                           </div>
                           <div>
                             <label>{text.maxPlayers}</label>
@@ -2640,6 +2679,7 @@ export default function WidgetPage() {
                     </option>
                   ))}
                 </select>
+                {sessionDurationRecommendation && <p className="field-help">{sessionDurationRecommendation}</p>}
               </div>
               <div>
                 <label>{text.maxPlayers}</label>
