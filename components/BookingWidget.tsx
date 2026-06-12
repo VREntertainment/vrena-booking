@@ -337,6 +337,22 @@ const uiText = {
     normalGame: 'Game',
     tournament: 'Tournament',
     tournamentSession: 'Tournament',
+    tournamentFormat: 'Tournament format',
+    formatPoolOnly: 'Pool only',
+    formatPoolSemifinal: 'Pools → semifinals',
+    formatPoolFinal: 'Pools → final',
+    formatSingleElimination: 'Single elimination',
+    formatDoubleElimination: 'Double elimination-ready',
+    formatLeaderboard: 'Leaderboard',
+    matchSeries: 'Match series',
+    qualification: 'Qualification',
+    topOnePerPool: 'Top 1 / pool',
+    topTwoPerPool: 'Top 2 / pool',
+    topFourPerPool: 'Top 4 / pool',
+    custom: 'Custom',
+    customQualifiers: 'Custom qualifiers',
+    requirePaymentForBracket: 'Only checked-in and paid players enter the bracket',
+    createBronzeMatch: 'Create bronze match when semifinals are done',
     tournamentDesk: 'Tournament desk',
     tournamentSetup: 'Setup pools',
     tournamentRandomSetup: 'Random pools',
@@ -347,6 +363,42 @@ const uiText = {
     editorSearchPlaceholder: 'Search name or nickname',
     addEditor: 'Add editor',
     editorHint: 'Editors can check in players and record tournament results.',
+    tournamentHostHint: 'You hold the tournament wand: check in, seed, score, crown.',
+    tournamentHelperHint: 'Helper mode: check in players, run scores, keep the chaos tidy.',
+    tournamentPlayerHint: 'You are on the board. Watch the queue, then bring the thunder.',
+    tournamentGuestHint: 'Tournament table is public. Log in only when you want a seat in the chaos.',
+    tournamentLockedHint: 'Tournament locked. The podium is carved in neon.',
+    tournamentEmptyHost: 'No bracket yet. Check in players, then deal the pools.',
+    tournamentEmptyHelper: 'No bracket yet. Waiting for the host to deal the first hand.',
+    tournamentEmptyPlayer: 'Bracket not dealt yet. Stay sharp; your name may be called.',
+    tournamentEmptyGuest: 'Bracket not dealt yet. Spectator mode: popcorn optional.',
+    tournamentControlOnly: 'Host or helper only: the score wand is not for spectators.',
+    tournamentLockedAction: 'Tournament is locked. Results are wearing armor now.',
+    tournamentEligible: 'eligible',
+    tournamentPodiumTitle: 'Hall of bragging rights',
+    tournamentPodiumHint: 'Podium, score and accuracy. Tiny crown politics included.',
+    tournamentQueueEmpty: 'No match queued.',
+    tournamentStandingsHint: 'Tie-break: points → head-to-head → score difference → total score → random draw.',
+    bronzeMatch: 'Bronze match',
+    finishTournament: 'Finish Tournament',
+    tournamentPoolFinal: 'Pool standings are the final ranking for this format.',
+    tournamentFinishNeedsFinal: 'Finish needs a completed final or final ranking.',
+    tournamentFinished: 'Tournament finished. Podium locked.',
+    prizeClaimed: 'Prize claimed ✓',
+    firstPrize: '1st prize',
+    secondPrize: '2nd prize',
+    thirdPrize: '3rd prize',
+    winsA: 'Wins A',
+    winsB: 'Wins B',
+    matchStatus: 'Match status',
+    arena: 'Arena',
+    waiting: 'Waiting',
+    next: 'Next',
+    live: 'Live',
+    completed: 'Completed',
+    auditLog: 'Audit log',
+    editorNotFound: 'Editor profile not found.',
+    duplicateMatchPlayer: 'Same player cannot appear twice in one match.',
     pools: 'Pools',
     matches: 'Matches',
     winner: 'Winner',
@@ -582,6 +634,22 @@ const uiText = {
     normalGame: 'Game',
     tournament: 'Giải đấu',
     tournamentSession: 'Giải đấu',
+    tournamentFormat: 'Thể thức giải',
+    formatPoolOnly: 'Chỉ vòng bảng',
+    formatPoolSemifinal: 'Bảng → bán kết',
+    formatPoolFinal: 'Bảng → chung kết',
+    formatSingleElimination: 'Loại trực tiếp',
+    formatDoubleElimination: 'Sẵn sàng nhánh thua',
+    formatLeaderboard: 'Bảng xếp hạng',
+    matchSeries: 'Loạt trận',
+    qualification: 'Vào vòng sau',
+    topOnePerPool: 'Top 1 / bảng',
+    topTwoPerPool: 'Top 2 / bảng',
+    topFourPerPool: 'Top 4 / bảng',
+    custom: 'Tùy chỉnh',
+    customQualifiers: 'Số người vào vòng sau',
+    requirePaymentForBracket: 'Chỉ người đã check-in và thanh toán mới vào bracket',
+    createBronzeMatch: 'Tạo trận hạng ba khi bán kết xong',
     tournamentDesk: 'Bàn điều khiển giải đấu',
     tournamentSetup: 'Tạo bảng đấu',
     tournamentRandomSetup: 'Chia bảng ngẫu nhiên',
@@ -592,6 +660,42 @@ const uiText = {
     editorSearchPlaceholder: 'Tìm tên hoặc biệt danh',
     addEditor: 'Thêm hỗ trợ',
     editorHint: 'Người hỗ trợ có thể check-in và nhập kết quả giải đấu.',
+    tournamentHostHint: 'Bạn cầm đũa thần giải đấu: check-in, chia bảng, nhập điểm, trao vương miện.',
+    tournamentHelperHint: 'Chế độ phụ tá: check-in, nhập điểm, giữ cuộc vui gọn gàng.',
+    tournamentPlayerHint: 'Bạn đã lên bảng. Nhìn hàng chờ, rồi vào quẩy điểm.',
+    tournamentGuestHint: 'Bàn giải đấu mở cho mọi người xem. Đăng nhập khi muốn nhập cuộc vui.',
+    tournamentLockedHint: 'Giải đấu đã khóa. Bục vinh quang sáng đèn rồi.',
+    tournamentEmptyHost: 'Chưa có bracket. Check-in người chơi, rồi chia bảng thôi.',
+    tournamentEmptyHelper: 'Chưa có bracket. Chờ chủ giải chia lá đầu tiên.',
+    tournamentEmptyPlayer: 'Bracket chưa được chia. Sẵn sàng nhé, tên bạn có thể được gọi.',
+    tournamentEmptyGuest: 'Bracket chưa được chia. Chế độ khán giả: chuẩn bị cổ vũ.',
+    tournamentControlOnly: 'Chỉ chủ giải hoặc phụ tá: cây đũa điểm số không dành cho khán giả.',
+    tournamentLockedAction: 'Giải đấu đã khóa. Kết quả đang mặc giáp rồi.',
+    tournamentEligible: 'đủ điều kiện',
+    tournamentPodiumTitle: 'Sảnh gáy nhẹ',
+    tournamentPodiumHint: 'Bục hạng, điểm và độ chính xác. Vương miện nhỏ, drama vui.',
+    tournamentQueueEmpty: 'Chưa có trận trong hàng chờ.',
+    tournamentStandingsHint: 'Xếp hạng: điểm → đối đầu → hiệu số → tổng điểm → bốc thăm.',
+    bronzeMatch: 'Tranh hạng ba',
+    finishTournament: 'Kết thúc giải',
+    tournamentPoolFinal: 'Bảng xếp hạng là kết quả cuối cho thể thức này.',
+    tournamentFinishNeedsFinal: 'Cần trận chung kết hoàn tất hoặc bảng xếp hạng cuối.',
+    tournamentFinished: 'Đã kết thúc giải. Podium đã khóa.',
+    prizeClaimed: 'Đã nhận giải ✓',
+    firstPrize: 'Giải nhất',
+    secondPrize: 'Giải nhì',
+    thirdPrize: 'Giải ba',
+    winsA: 'Thắng A',
+    winsB: 'Thắng B',
+    matchStatus: 'Trạng thái trận',
+    arena: 'Arena',
+    waiting: 'Đang chờ',
+    next: 'Tiếp theo',
+    live: 'Đang đấu',
+    completed: 'Hoàn tất',
+    auditLog: 'Nhật ký chỉnh sửa',
+    editorNotFound: 'Không tìm thấy hồ sơ phụ tá.',
+    duplicateMatchPlayer: 'Một người chơi không thể xuất hiện hai lần trong cùng trận.',
     pools: 'Bảng đấu',
     matches: 'Trận đấu',
     winner: 'Người thắng',
@@ -2396,8 +2500,20 @@ export default function WidgetPage() {
     return Boolean(userId && (session.owner_id === userId || isAdmin || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)))
   }
 
+  function isTournamentHelper(session: Session) {
+    return Boolean(userId && !isSessionCreator(session) && tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId))
+  }
+
   function tournamentLocked(session: Session) {
     return session.status === 'completed' || Boolean(session.tournament_locked)
+  }
+
+  function tournamentRoleHint(session: Session, hasBracket: boolean) {
+    if (tournamentLocked(session)) return text.tournamentLockedHint
+    if (isSessionCreator(session)) return hasBracket ? text.tournamentHostHint : text.tournamentEmptyHost
+    if (isTournamentHelper(session)) return hasBracket ? text.tournamentHelperHint : text.tournamentEmptyHelper
+    if (!profile) return hasBracket ? text.tournamentGuestHint : text.tournamentEmptyGuest
+    return hasBracket ? text.tournamentPlayerHint : text.tournamentEmptyPlayer
   }
 
   function poolStandingsForSession(session: Session, pool: TournamentPool) {
@@ -3091,7 +3207,7 @@ export default function WidgetPage() {
 
   async function addTournamentEditor(session: Session, selectedEditor?: Profile) {
     if (!isSessionCreator(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
+      setCreateStatus(text.tournamentControlOnly)
       return
     }
 
@@ -3110,7 +3226,7 @@ export default function WidgetPage() {
 
     const editorProfile = profileLookup.data
     if (profileLookup.error || !editorProfile) {
-      setCreateStatus(profileLookup.error?.message || 'Editor profile not found.')
+      setCreateStatus(profileLookup.error?.message || text.editorNotFound)
       setBusyTournamentId('')
       return
     }
@@ -3137,8 +3253,13 @@ export default function WidgetPage() {
   }
 
   async function setupTournamentPools(session: Session) {
-    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
+    if (tournamentLocked(session)) {
+      setCreateStatus(text.tournamentLockedAction)
+      return
+    }
+
+    if (!canEditTournamentSession(session)) {
+      setCreateStatus(text.tournamentControlOnly)
       return
     }
 
@@ -3199,8 +3320,13 @@ export default function WidgetPage() {
   }
 
   async function generateTournamentMatches(session: Session) {
-    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
+    if (tournamentLocked(session)) {
+      setCreateStatus(text.tournamentLockedAction)
+      return
+    }
+
+    if (!canEditTournamentSession(session)) {
+      setCreateStatus(text.tournamentControlOnly)
       return
     }
 
@@ -3285,7 +3411,7 @@ export default function WidgetPage() {
     const nextA = changes.participant_a_id ?? match.participant_a_id
     const nextB = changes.participant_b_id ?? match.participant_b_id
     if (hasDuplicateMatchPlayers({ participant_a_id: nextA, participant_b_id: nextB })) {
-      setCreateStatus('Same player cannot appear twice in one match.')
+      setCreateStatus(text.duplicateMatchPlayer)
       return
     }
 
@@ -3332,8 +3458,13 @@ export default function WidgetPage() {
   }
 
   async function advanceTournamentRound(session: Session) {
-    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
+    if (tournamentLocked(session)) {
+      setCreateStatus(text.tournamentLockedAction)
+      return
+    }
+
+    if (!canEditTournamentSession(session)) {
+      setCreateStatus(text.tournamentControlOnly)
       return
     }
 
@@ -3346,7 +3477,7 @@ export default function WidgetPage() {
       const perPool = qualificationCount(session.qualification_rule, session.custom_qualifiers || 2)
       qualified = data.pools.flatMap((pool) => poolStandingsForSession(session, pool).slice(0, perPool).map((standing) => standing.participantId))
       if (format === 'pool_only' || format === 'leaderboard') {
-        setCreateStatus('Pool standings are the final ranking for this format.')
+        setCreateStatus(text.tournamentPoolFinal)
         return
       }
     } else {
@@ -3382,7 +3513,7 @@ export default function WidgetPage() {
 
   async function finishTournament(session: Session) {
     if (!canEditTournamentSession(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
+      setCreateStatus(text.tournamentControlOnly)
       return
     }
 
@@ -3403,7 +3534,7 @@ export default function WidgetPage() {
     const third = thirdMatch?.winner_participant_id || semifinalLosers.find((id) => id !== second && id !== first) || standingsPodium.find((id) => id !== first && id !== second) || null
 
     if (!first) {
-      setCreateStatus('Finish needs a completed final or final ranking.')
+      setCreateStatus(text.tournamentFinishNeedsFinal)
       return
     }
 
@@ -3415,7 +3546,7 @@ export default function WidgetPage() {
     await logTournamentAudit(session.id, 'Tournament finished', null, { first, second, third })
     await loadSessions()
     await loadTournamentData()
-    setCreateStatus('Tournament finished. Podium locked.')
+    setCreateStatus(text.tournamentFinished)
   }
 
   async function createThirdPlaceMatch(session: Session) {
@@ -3900,6 +4031,7 @@ export default function WidgetPage() {
                       const canEditTournament = canEditTournamentSession(session) && !tournamentLocked(session)
                       const creatorCanAssignEditors = isSessionCreator(session)
                       const eligiblePlayers = eligibleTournamentParticipants(session)
+                      const hasTournamentStructure = tournament.pools.length > 0 || tournament.matches.length > 0
                       const queueMatches = tournament.matches
                         .filter((match) => match.status !== 'completed')
                         .sort((a, b) => (a.queue_position ?? 999) - (b.queue_position ?? 999) || a.round - b.round || a.match_number - b.match_number)
@@ -3913,7 +4045,7 @@ export default function WidgetPage() {
                             <div>
                               <h3>{text.tournamentDesk}</h3>
                               <p className="muted">
-                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {eligiblePlayers.length} eligible
+                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {eligiblePlayers.length} {text.tournamentEligible}
                               </p>
                             </div>
                             {canEditTournament && (
@@ -3934,21 +4066,24 @@ export default function WidgetPage() {
                                   {text.tournamentNextRound}
                                 </button>
                                 <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => createThirdPlaceMatch(session)}>
-                                  Bronze match
+                                  {text.bronzeMatch}
                                 </button>
                                 <button className="danger small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => finishTournament(session)}>
-                                  Finish Tournament
+                                  {text.finishTournament}
                                 </button>
                               </div>
                             )}
                           </div>
+                          <p className={canEditTournament ? 'notice tournament-role-notice manager' : 'notice tournament-role-notice'}>
+                            {tournamentRoleHint(session, hasTournamentStructure)}
+                          </p>
 
                           {podium.length > 0 && (
                             <div className="public-leaderboard">
                               <div className="section-head compact-head">
                                 <div>
-                                  <h3>Public leaderboard</h3>
-                                  <p className="muted">Podium, score and accuracy. Tiny bragging rights included.</p>
+                                  <h3>{text.tournamentPodiumTitle}</h3>
+                                  <p className="muted">{text.tournamentPodiumHint}</p>
                                 </div>
                                 <button className="share-icon-button" type="button" onClick={() => shareTournamentResults(session)}>
                                   ⇧
@@ -3965,7 +4100,7 @@ export default function WidgetPage() {
                                     <small>{participant.score ?? 0} pts · {participant.accuracy_percent ?? '-'}%</small>
                                     {canEditTournament && participant.placement && (
                                       <button className="link-button" type="button" onClick={() => claimPrize(participant, !participant.prize_claimed)}>
-                                        {participant.prize_claimed ? 'Prize claimed ✓' : `${participant.placement === 1 ? session.first_prize || '1st prize' : participant.placement === 2 ? session.second_prize || '2nd prize' : session.third_prize || '3rd prize'}`}
+                                        {participant.prize_claimed ? text.prizeClaimed : `${participant.placement === 1 ? session.first_prize || text.firstPrize : participant.placement === 2 ? session.second_prize || text.secondPrize : session.third_prize || text.thirdPrize}`}
                                       </button>
                                     )}
                                   </div>
@@ -3981,15 +4116,15 @@ export default function WidgetPage() {
                                 return (
                                   <div className="queue-lane" key={`arena-${arenaNumber}`}>
                                     <strong>Arena {arenaNumber}</strong>
-                                    {arenaMatches.length === 0 ? <span className="muted">No match queued.</span> : arenaMatches.map((match, index) => (
+                                    {arenaMatches.length === 0 ? <span className="muted">{text.tournamentQueueEmpty}</span> : arenaMatches.map((match, index) => (
                                       <div className={`queue-match ${match.status}`} key={`queue-${match.id}`}>
                                         <span>{queueLabel(match.status, index)}</span>
                                         <strong>{participantName(session, match.participant_a_id)} vs {participantName(session, match.participant_b_id)}</strong>
                                         <small>{tournamentStageLabel(match.stage)} {match.match_number} · {bestOfLabel(match.best_of || session.best_of)}</small>
                                         {canEditTournament && (
                                           <div className="queue-controls">
-                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'next' })}>Next</button>
-                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'live' })}>Live</button>
+                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'next' })}>{text.next}</button>
+                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'live' })}>{text.live}</button>
                                           </div>
                                         )}
                                       </div>
@@ -4047,7 +4182,7 @@ export default function WidgetPage() {
                                       </div>
                                     ))}
                                   </div>
-                                  <p className="field-help">Tie-break: points → head-to-head → score difference → total score → random draw.</p>
+                                  <p className="field-help">{text.tournamentStandingsHint}</p>
                                   <div className="players compact-roster">
                                     {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => {
                                       const entryParticipant = participantById(session, entry.participant_id)
@@ -4123,16 +4258,16 @@ export default function WidgetPage() {
                                           </select>
                                           <input aria-label={text.scoreA} defaultValue={match.score_a ?? ''} inputMode="numeric" placeholder={text.scoreA} onBlur={(event) => updateTournamentMatch(match, { score_a: event.target.value === '' ? null : Number(event.target.value) })} />
                                           <input aria-label={text.scoreB} defaultValue={match.score_b ?? ''} inputMode="numeric" placeholder={text.scoreB} onBlur={(event) => updateTournamentMatch(match, { score_b: event.target.value === '' ? null : Number(event.target.value) })} />
-                                          <input aria-label="Wins A" defaultValue={match.wins_a ?? ''} inputMode="numeric" placeholder="Wins A" onBlur={(event) => updateTournamentMatch(match, { wins_a: event.target.value === '' ? null : Number(event.target.value) })} />
-                                          <input aria-label="Wins B" defaultValue={match.wins_b ?? ''} inputMode="numeric" placeholder="Wins B" onBlur={(event) => updateTournamentMatch(match, { wins_b: event.target.value === '' ? null : Number(event.target.value) })} />
-                                          <select value={match.status} onChange={(event) => updateTournamentMatch(match, { status: event.target.value as MatchStatus })} aria-label="Match status">
-                                            <option value="waiting">Waiting</option>
-                                            <option value="next">Next</option>
-                                            <option value="live">Live</option>
-                                            <option value="completed">Completed</option>
+                                          <input aria-label={text.winsA} defaultValue={match.wins_a ?? ''} inputMode="numeric" placeholder={text.winsA} onBlur={(event) => updateTournamentMatch(match, { wins_a: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <input aria-label={text.winsB} defaultValue={match.wins_b ?? ''} inputMode="numeric" placeholder={text.winsB} onBlur={(event) => updateTournamentMatch(match, { wins_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <select value={match.status} onChange={(event) => updateTournamentMatch(match, { status: event.target.value as MatchStatus })} aria-label={text.matchStatus}>
+                                            <option value="waiting">{text.waiting}</option>
+                                            <option value="next">{text.next}</option>
+                                            <option value="live">{text.live}</option>
+                                            <option value="completed">{text.completed}</option>
                                           </select>
-                                          <select value={match.arena_number || ''} onChange={(event) => updateTournamentMatch(match, { arena_number: event.target.value ? Number(event.target.value) : null })} aria-label="Arena">
-                                            <option value="">Arena</option>
+                                          <select value={match.arena_number || ''} onChange={(event) => updateTournamentMatch(match, { arena_number: event.target.value ? Number(event.target.value) : null })} aria-label={text.arena}>
+                                            <option value="">{text.arena}</option>
                                             <option value={1}>Arena 1</option>
                                             <option value={2}>Arena 2</option>
                                           </select>
@@ -4147,7 +4282,7 @@ export default function WidgetPage() {
 
                           {tournament.auditLogs.length > 0 && creatorCanAssignEditors && (
                             <details className="audit-log">
-                              <summary>Audit log</summary>
+                              <summary>{text.auditLog}</summary>
                               {tournament.auditLogs.slice(0, 10).map((log) => (
                                 <div className="audit-row" key={log.id}>
                                   <strong>{log.action}</strong>
@@ -4446,18 +4581,18 @@ export default function WidgetPage() {
                 <div className="full tournament-create-box">
                   <div className="form-grid compact-form-grid">
                     <div>
-                      <label>Tournament format</label>
+                      <label>{text.tournamentFormat}</label>
                       <select value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
-                        <option value="pool_only">Pool only</option>
-                        <option value="pool_to_semifinal">Pools → semifinals</option>
-                        <option value="pool_to_final">Pools → final</option>
-                        <option value="single_elimination">Single elimination</option>
-                        <option value="double_elimination">Double elimination-ready</option>
-                        <option value="leaderboard">Leaderboard</option>
+                        <option value="pool_only">{text.formatPoolOnly}</option>
+                        <option value="pool_to_semifinal">{text.formatPoolSemifinal}</option>
+                        <option value="pool_to_final">{text.formatPoolFinal}</option>
+                        <option value="single_elimination">{text.formatSingleElimination}</option>
+                        <option value="double_elimination">{text.formatDoubleElimination}</option>
+                        <option value="leaderboard">{text.formatLeaderboard}</option>
                       </select>
                     </div>
                     <div>
-                      <label>Match series</label>
+                      <label>{text.matchSeries}</label>
                       <select value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
                         <option value={1}>BO1</option>
                         <option value={3}>BO3</option>
@@ -4465,38 +4600,38 @@ export default function WidgetPage() {
                       </select>
                     </div>
                     <div>
-                      <label>Qualification</label>
+                      <label>{text.qualification}</label>
                       <select value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
-                        <option value="top_1">Top 1 / pool</option>
-                        <option value="top_2">Top 2 / pool</option>
-                        <option value="top_4">Top 4 / pool</option>
-                        <option value="custom">Custom</option>
+                        <option value="top_1">{text.topOnePerPool}</option>
+                        <option value="top_2">{text.topTwoPerPool}</option>
+                        <option value="top_4">{text.topFourPerPool}</option>
+                        <option value="custom">{text.custom}</option>
                       </select>
                     </div>
                     {tournamentQualificationRule === 'custom' && (
                       <div>
-                        <label>Custom qualifiers</label>
+                        <label>{text.customQualifiers}</label>
                         <input inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
                       </div>
                     )}
                     <label className="toggle-line">
                       <input checked={tournamentRequirePayment} onChange={(event) => setTournamentRequirePayment(event.target.checked)} type="checkbox" />
-                      <span>Only checked-in and paid players enter the bracket</span>
+                      <span>{text.requirePaymentForBracket}</span>
                     </label>
                     <label className="toggle-line">
                       <input checked={tournamentThirdPlace} onChange={(event) => setTournamentThirdPlace(event.target.checked)} type="checkbox" />
-                      <span>Create bronze match when semifinals are done</span>
+                      <span>{text.createBronzeMatch}</span>
                     </label>
                     <div>
-                      <label>1st prize</label>
+                      <label>{text.firstPrize}</label>
                       <input value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
                     </div>
                     <div>
-                      <label>2nd prize</label>
+                      <label>{text.secondPrize}</label>
                       <input value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
                     </div>
                     <div>
-                      <label>3rd prize</label>
+                      <label>{text.thirdPrize}</label>
                       <input value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
                     </div>
                   </div>
