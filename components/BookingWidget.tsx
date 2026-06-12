@@ -66,7 +66,14 @@ type Participant = {
   accuracy_percent?: number | null
   projectiles_fired?: number | null
   placement?: number | null
+  prize_claimed?: boolean | null
+  prize_claimed_at?: string | null
 }
+
+type TournamentFormat = 'pool_only' | 'pool_to_semifinal' | 'pool_to_final' | 'single_elimination' | 'double_elimination' | 'leaderboard'
+type QualificationRule = 'top_1' | 'top_2' | 'top_4' | 'custom'
+type MatchStage = 'pool' | 'round_of_16' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'leaderboard' | 'custom'
+type MatchStatus = 'waiting' | 'next' | 'live' | 'completed' | 'pending'
 
 type Session = {
   id: string
@@ -85,6 +92,16 @@ type Session = {
   invite_code: string | null
   notes: string | null
   status: 'open' | 'cancelled' | 'completed'
+  tournament_format?: TournamentFormat | null
+  best_of?: 1 | 3 | 5 | null
+  require_payment?: boolean | null
+  qualification_rule?: QualificationRule | null
+  custom_qualifiers?: number | null
+  enable_third_place_match?: boolean | null
+  first_prize?: string | null
+  second_prize?: string | null
+  third_prize?: string | null
+  tournament_locked?: boolean | null
   session_participants?: Participant[]
 }
 
@@ -150,15 +167,21 @@ type TournamentMatch = {
   id: string
   session_id: string
   pool_id: string | null
-  stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'custom'
+  stage: MatchStage
   round: number
   match_number: number
   participant_a_id: string | null
   participant_b_id: string | null
   score_a: number | null
   score_b: number | null
+  wins_a?: number | null
+  wins_b?: number | null
   winner_participant_id: string | null
-  status: 'pending' | 'live' | 'completed'
+  loser_participant_id?: string | null
+  status: MatchStatus
+  arena_number?: number | null
+  queue_position?: number | null
+  best_of?: 1 | 3 | 5 | null
 }
 
 type TournamentData = {
@@ -166,6 +189,31 @@ type TournamentData = {
   pools: TournamentPool[]
   poolEntries: TournamentPoolEntry[]
   matches: TournamentMatch[]
+  auditLogs: TournamentAuditLog[]
+}
+
+type TournamentAuditLog = {
+  id: string
+  session_id: string
+  user_id: string | null
+  action: string
+  old_value: Record<string, unknown> | null
+  new_value: Record<string, unknown> | null
+  created_at: string
+}
+
+type PoolStanding = {
+  participantId: string
+  profileId: string
+  displayName: string
+  matchesPlayed: number
+  wins: number
+  losses: number
+  scoreFor: number
+  scoreAgainst: number
+  scoreDifference: number
+  points: number
+  tieBreakNote: string
 }
 
 const games: Array<{
@@ -846,6 +894,184 @@ function rankEmoji(placement?: number | null) {
   return ''
 }
 
+function bestOfLabel(value?: number | null) {
+  return `BO${value || 1}`
+}
+
+function winsNeeded(bestOf?: number | null) {
+  return Math.floor((bestOf || 1) / 2) + 1
+}
+
+function isPaidParticipant(participant: Participant) {
+  return Boolean(participant.payment_status && participant.payment_status !== null)
+}
+
+function eligibleTournamentParticipants(session: Session) {
+  return (session.session_participants ?? [])
+    .filter((participant) => participant.checked_in)
+    .filter((participant) => !session.require_payment || isPaidParticipant(participant))
+}
+
+function shuffleItems<T>(items: T[]) {
+  return [...items]
+    .map((item) => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ item }) => item)
+}
+
+function matchWinnerFromSeries(match: Pick<TournamentMatch, 'participant_a_id' | 'participant_b_id' | 'wins_a' | 'wins_b' | 'score_a' | 'score_b' | 'best_of'>) {
+  const needed = winsNeeded(match.best_of)
+  const winsA = Number(match.wins_a ?? 0)
+  const winsB = Number(match.wins_b ?? 0)
+
+  if (match.participant_a_id && winsA >= needed && winsA > winsB) return match.participant_a_id
+  if (match.participant_b_id && winsB >= needed && winsB > winsA) return match.participant_b_id
+
+  if ((match.best_of || 1) === 1 && match.score_a !== null && match.score_b !== null && match.score_a !== match.score_b) {
+    return Number(match.score_a) > Number(match.score_b) ? match.participant_a_id : match.participant_b_id
+  }
+
+  return null
+}
+
+function matchLoser(match: Pick<TournamentMatch, 'participant_a_id' | 'participant_b_id'>, winnerId: string | null) {
+  if (!winnerId) return null
+  if (winnerId === match.participant_a_id) return match.participant_b_id
+  if (winnerId === match.participant_b_id) return match.participant_a_id
+  return null
+}
+
+function hasDuplicateMatchPlayers(match: Pick<TournamentMatch, 'participant_a_id' | 'participant_b_id'>) {
+  return Boolean(match.participant_a_id && match.participant_b_id && match.participant_a_id === match.participant_b_id)
+}
+
+function knockoutStageForCount(count: number): MatchStage {
+  if (count <= 2) return 'final'
+  if (count <= 4) return 'semifinal'
+  if (count <= 8) return 'quarterfinal'
+  if (count <= 16) return 'round_of_16'
+  return 'custom'
+}
+
+function qualificationCount(rule?: QualificationRule | null, custom = 2) {
+  if (rule === 'top_1') return 1
+  if (rule === 'top_2') return 2
+  if (rule === 'top_4') return 4
+  return Math.max(1, custom || 1)
+}
+
+function calculatePoolStandings(session: Session, pool: TournamentPool, entries: TournamentPoolEntry[], matches: TournamentMatch[]): PoolStanding[] {
+  const participants = session.session_participants ?? []
+  const standings = new Map<string, PoolStanding>()
+
+  entries
+    .filter((entry) => entry.pool_id === pool.id)
+    .forEach((entry) => {
+      const participant = participants.find((item) => item.id === entry.participant_id)
+      standings.set(entry.participant_id, {
+        participantId: entry.participant_id,
+        profileId: entry.profile_id,
+        displayName: compactDisplayName(participant?.display_name, 'Player'),
+        matchesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        scoreFor: 0,
+        scoreAgainst: 0,
+        scoreDifference: 0,
+        points: 0,
+        tieBreakNote: 'Points, then head-to-head, score difference, total score, random draw.',
+      })
+    })
+
+  matches
+    .filter((match) => match.pool_id === pool.id && match.stage === 'pool' && match.status === 'completed')
+    .forEach((match) => {
+      if (!match.participant_a_id || !match.participant_b_id) return
+      const a = standings.get(match.participant_a_id)
+      const b = standings.get(match.participant_b_id)
+      if (!a || !b) return
+
+      const scoreA = Number(match.score_a ?? match.wins_a ?? 0)
+      const scoreB = Number(match.score_b ?? match.wins_b ?? 0)
+      a.matchesPlayed += 1
+      b.matchesPlayed += 1
+      a.scoreFor += scoreA
+      a.scoreAgainst += scoreB
+      b.scoreFor += scoreB
+      b.scoreAgainst += scoreA
+
+      const winner = match.winner_participant_id || matchWinnerFromSeries(match)
+      if (winner === a.participantId) {
+        a.wins += 1
+        a.points += 3
+        b.losses += 1
+      } else if (winner === b.participantId) {
+        b.wins += 1
+        b.points += 3
+        a.losses += 1
+      }
+    })
+
+  const poolMatches = matches.filter((match) => match.pool_id === pool.id)
+  return Array.from(standings.values())
+    .map((standing) => ({
+      ...standing,
+      scoreDifference: standing.scoreFor - standing.scoreAgainst,
+    }))
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points
+
+      const direct = poolMatches.find((match) =>
+        match.status === 'completed'
+        && ((match.participant_a_id === a.participantId && match.participant_b_id === b.participantId)
+          || (match.participant_a_id === b.participantId && match.participant_b_id === a.participantId))
+      )
+
+      if (direct?.winner_participant_id === a.participantId) return -1
+      if (direct?.winner_participant_id === b.participantId) return 1
+      if (b.scoreDifference !== a.scoreDifference) return b.scoreDifference - a.scoreDifference
+      if (b.scoreFor !== a.scoreFor) return b.scoreFor - a.scoreFor
+      return a.participantId.localeCompare(b.participantId)
+    })
+}
+
+function queueLabel(status: MatchStatus, index: number) {
+  if (status === 'live') return 'LIVE NOW'
+  if (status === 'next') return 'NEXT MATCH'
+  if (index < 4) return 'ON DECK'
+  if (status === 'completed') return 'COMPLETED'
+  return 'WAITING'
+}
+
+function buildKnockoutRows(sessionId: string, participantIds: string[], stage: MatchStage, round: number, bestOf: 1 | 3 | 5 | number) {
+  const uniqueIds = Array.from(new Set(participantIds.filter(Boolean)))
+  const rows = []
+
+  for (let index = 0; index < uniqueIds.length; index += 2) {
+    const participantA = uniqueIds[index] || null
+    const participantB = uniqueIds[index + 1] || null
+    if (participantA && participantB && participantA === participantB) continue
+
+    rows.push({
+      session_id: sessionId,
+      pool_id: null,
+      stage,
+      round,
+      match_number: Math.floor(index / 2) + 1,
+      participant_a_id: participantA,
+      participant_b_id: participantB,
+      status: participantB ? 'waiting' : 'completed',
+      winner_participant_id: participantB ? null : participantA,
+      loser_participant_id: null,
+      arena_number: null,
+      queue_position: Math.floor(index / 2) + 1,
+      best_of: bestOf,
+    })
+  }
+
+  return rows
+}
+
 function RichNotesEditor({
   value,
   onChange,
@@ -905,6 +1131,7 @@ export default function WidgetPage() {
     pools: [],
     poolEntries: [],
     matches: [],
+    auditLogs: [],
   })
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -944,6 +1171,15 @@ export default function WidgetPage() {
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
   const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
+  const [tournamentFormat, setTournamentFormat] = useState<TournamentFormat>('pool_to_final')
+  const [tournamentBestOf, setTournamentBestOf] = useState<1 | 3 | 5>(1)
+  const [tournamentRequirePayment, setTournamentRequirePayment] = useState(false)
+  const [tournamentQualificationRule, setTournamentQualificationRule] = useState<QualificationRule>('top_1')
+  const [tournamentCustomQualifiers, setTournamentCustomQualifiers] = useState(2)
+  const [tournamentThirdPlace, setTournamentThirdPlace] = useState(true)
+  const [tournamentFirstPrize, setTournamentFirstPrize] = useState('')
+  const [tournamentSecondPrize, setTournamentSecondPrize] = useState('')
+  const [tournamentThirdPrize, setTournamentThirdPrize] = useState('')
   const [sessionName, setSessionName] = useState('')
   const [sessionDate, setSessionDate] = useState(localDateString())
   const [sessionTime, setSessionTime] = useState('')
@@ -1413,7 +1649,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
       .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1444,18 +1680,23 @@ export default function WidgetPage() {
   }
 
   async function loadTournamentData() {
-    const [editorsResult, poolsResult, entriesResult, matchesResult] = await Promise.all([
+    const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
       supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color'),
       supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
       supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
       supabase
         .from('tournament_matches')
-        .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, winner_participant_id, status')
+        .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, wins_a, wins_b, winner_participant_id, loser_participant_id, status, arena_number, queue_position, best_of')
         .order('round', { ascending: true })
         .order('match_number', { ascending: true }),
+      supabase
+        .from('tournament_audit_log')
+        .select('id, session_id, user_id, action, old_value, new_value, created_at')
+        .order('created_at', { ascending: false })
+        .limit(80),
     ])
 
-    const firstError = editorsResult.error || poolsResult.error || entriesResult.error || matchesResult.error
+    const firstError = editorsResult.error || poolsResult.error || entriesResult.error || matchesResult.error || auditResult.error
     if (firstError) {
       setCreateStatus(firstError.message)
       return
@@ -1466,6 +1707,7 @@ export default function WidgetPage() {
       pools: (poolsResult.data ?? []) as TournamentPool[],
       poolEntries: (entriesResult.data ?? []) as TournamentPoolEntry[],
       matches: (matchesResult.data ?? []) as TournamentMatch[],
+      auditLogs: (auditResult.data ?? []) as TournamentAuditLog[],
     })
   }
 
@@ -1493,6 +1735,7 @@ export default function WidgetPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => loadTournamentData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => loadTournamentData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => loadTournamentData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => loadTournamentData())
       .subscribe()
 
     return () => {
@@ -2119,7 +2362,31 @@ export default function WidgetPage() {
       matches: tournamentData.matches
         .filter((match) => match.session_id === sessionId)
         .sort((a, b) => a.round - b.round || a.match_number - b.match_number),
+      auditLogs: tournamentData.auditLogs.filter((log) => log.session_id === sessionId),
     }
+  }
+
+  async function logTournamentAudit(sessionId: string, action: string, oldValue: Record<string, unknown> | null, newValue: Record<string, unknown> | null) {
+    await supabase.from('tournament_audit_log').insert({
+      session_id: sessionId,
+      user_id: userId || null,
+      action,
+      old_value: oldValue,
+      new_value: newValue,
+    })
+  }
+
+  function canEditTournamentSession(session: Session) {
+    return Boolean(userId && (session.owner_id === userId || isAdmin || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)))
+  }
+
+  function tournamentLocked(session: Session) {
+    return session.status === 'completed' || Boolean(session.tournament_locked)
+  }
+
+  function poolStandingsForSession(session: Session, pool: TournamentPool) {
+    const data = tournamentForSession(session.id)
+    return calculatePoolStandings(session, pool, data.poolEntries, data.matches)
   }
 
   function canManageClub(club: Club) {
@@ -2488,6 +2755,16 @@ export default function WidgetPage() {
         invite_code: inviteCode,
         notes: sessionNotes.trim() || null,
         status: 'open',
+        tournament_format: sessionType === 'tournament' ? tournamentFormat : null,
+        best_of: sessionType === 'tournament' ? tournamentBestOf : 1,
+        require_payment: sessionType === 'tournament' ? tournamentRequirePayment : false,
+        qualification_rule: sessionType === 'tournament' ? tournamentQualificationRule : null,
+        custom_qualifiers: sessionType === 'tournament' ? tournamentCustomQualifiers : null,
+        enable_third_place_match: sessionType === 'tournament' ? tournamentThirdPlace : false,
+        first_prize: sessionType === 'tournament' ? tournamentFirstPrize.trim() || null : null,
+        second_prize: sessionType === 'tournament' ? tournamentSecondPrize.trim() || null : null,
+        third_prize: sessionType === 'tournament' ? tournamentThirdPrize.trim() || null : null,
+        tournament_locked: false,
       })
       .select('id')
       .single()
@@ -2519,6 +2796,15 @@ export default function WidgetPage() {
     setSessionArenaCount(1)
     setSessionClubId('')
     setSessionType('game')
+    setTournamentFormat('pool_to_final')
+    setTournamentBestOf(1)
+    setTournamentRequirePayment(false)
+    setTournamentQualificationRule('top_1')
+    setTournamentCustomQualifiers(2)
+    setTournamentThirdPlace(true)
+    setTournamentFirstPrize('')
+    setTournamentSecondPrize('')
+    setTournamentThirdPrize('')
     setSelectedGames(['laser-tag'])
     setSessionVisibility('public')
     await loadSessions()
@@ -2835,12 +3121,12 @@ export default function WidgetPage() {
   }
 
   async function setupTournamentPools(session: Session) {
-    if (!canManageSession(session)) {
+    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
       setCreateStatus(text.creatorOnlyEdit)
       return
     }
 
-    const participants = session.session_participants ?? []
+    const participants = eligibleTournamentParticipants(session)
     if (participants.length < 2) {
       setCreateStatus(text.noTournamentData)
       return
@@ -2851,10 +3137,14 @@ export default function WidgetPage() {
     await supabase.from('tournament_pool_entries').delete().eq('session_id', session.id)
     await supabase.from('tournament_pools').delete().eq('session_id', session.id)
 
-    const poolCount = Math.max(1, Math.ceil(participants.length / tournamentPoolSize))
+    const format = session.tournament_format || 'pool_to_final'
+    const seededParticipants = shuffleItems(participants)
+    const poolCount = format === 'single_elimination'
+      ? 1
+      : Math.max(1, Math.ceil(seededParticipants.length / tournamentPoolSize))
     const poolRows = Array.from({ length: poolCount }, (_, index) => ({
       session_id: session.id,
-      name: `Pool ${String.fromCharCode(65 + index)}`,
+      name: format === 'single_elimination' ? 'Knockout' : `Pool ${String.fromCharCode(65 + index)}`,
       sort_order: index + 1,
     }))
 
@@ -2869,7 +3159,7 @@ export default function WidgetPage() {
       return
     }
 
-    const entries = participants.map((participant, index) => {
+    const entries = seededParticipants.map((participant, index) => {
       const pool = pools[index % pools.length]
       return {
         session_id: session.id,
@@ -2893,7 +3183,7 @@ export default function WidgetPage() {
   }
 
   async function generateTournamentMatches(session: Session) {
-    if (!canManageSession(session)) {
+    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
       setCreateStatus(text.creatorOnlyEdit)
       return
     }
@@ -2907,7 +3197,11 @@ export default function WidgetPage() {
     setBusyTournamentId(session.id)
     await supabase.from('tournament_matches').delete().eq('session_id', session.id)
 
-    const matchRows = data.pools.flatMap((pool) => {
+    const bestOf = session.best_of || 1
+    const format = session.tournament_format || 'pool_to_final'
+    const matchRows = format === 'single_elimination'
+      ? buildKnockoutRows(session.id, data.poolEntries.map((entry) => entry.participant_id), 'custom', 1, bestOf)
+      : data.pools.flatMap((pool) => {
       const poolEntries = data.poolEntries.filter((entry) => entry.pool_id === pool.id)
       const rows = []
       let matchNumber = 1
@@ -2922,7 +3216,10 @@ export default function WidgetPage() {
             match_number: matchNumber,
             participant_a_id: poolEntries[i].participant_id,
             participant_b_id: poolEntries[j].participant_id,
-            status: 'pending',
+            status: 'waiting',
+            arena_number: null,
+            queue_position: matchNumber,
+            best_of: bestOf,
           })
           matchNumber += 1
         }
@@ -2944,6 +3241,7 @@ export default function WidgetPage() {
       return
     }
 
+    await logTournamentAudit(session.id, 'Tournament matches generated', null, { format, bestOf, matchCount: matchRows.length })
     await loadTournamentData()
     setCreateStatus(text.tournamentGenerateMatches)
     setBusyTournamentId('')
@@ -2963,22 +3261,48 @@ export default function WidgetPage() {
       return
     }
 
+    await logTournamentAudit(entry.session_id, 'Pool entry edited', entry as unknown as Record<string, unknown>, changes as Record<string, unknown>)
     await loadTournamentData()
   }
 
   async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
+    const nextA = changes.participant_a_id ?? match.participant_a_id
+    const nextB = changes.participant_b_id ?? match.participant_b_id
+    if (nextA && nextB && nextA === nextB) {
+      setCreateStatus('Same player cannot appear twice in one match.')
+      return
+    }
+
     const scoreA = changes.score_a ?? match.score_a
     const scoreB = changes.score_b ?? match.score_b
-    const winner = changes.winner_participant_id ?? match.winner_participant_id
+    const draft = {
+      ...match,
+      ...changes,
+      participant_a_id: nextA,
+      participant_b_id: nextB,
+      score_a: scoreA,
+      score_b: scoreB,
+      wins_a: changes.wins_a ?? match.wins_a,
+      wins_b: changes.wins_b ?? match.wins_b,
+      best_of: changes.best_of ?? match.best_of,
+    }
+    const autoWinner = matchWinnerFromSeries(draft)
+    const winner = changes.winner_participant_id ?? autoWinner ?? match.winner_participant_id
+    const loser = matchLoser(draft, winner || null)
     const { error } = await supabase
       .from('tournament_matches')
       .update({
-        participant_a_id: changes.participant_a_id ?? match.participant_a_id,
-        participant_b_id: changes.participant_b_id ?? match.participant_b_id,
+        participant_a_id: nextA,
+        participant_b_id: nextB,
         score_a: scoreA,
         score_b: scoreB,
+        wins_a: changes.wins_a ?? match.wins_a ?? null,
+        wins_b: changes.wins_b ?? match.wins_b ?? null,
         winner_participant_id: winner || null,
-        status: winner ? 'completed' : 'pending',
+        loser_participant_id: loser || null,
+        status: changes.status ?? (winner ? 'completed' : match.status === 'completed' ? 'waiting' : match.status),
+        arena_number: changes.arena_number ?? match.arena_number ?? null,
+        queue_position: changes.queue_position ?? match.queue_position ?? null,
       })
       .eq('id', match.id)
 
@@ -2987,42 +3311,47 @@ export default function WidgetPage() {
       return
     }
 
+    await logTournamentAudit(match.session_id, 'Match edited', match as unknown as Record<string, unknown>, changes as Record<string, unknown>)
     await loadTournamentData()
   }
 
   async function advanceTournamentRound(session: Session) {
-    if (!canManageSession(session)) {
+    if (!canEditTournamentSession(session) || tournamentLocked(session)) {
       setCreateStatus(text.creatorOnlyEdit)
       return
     }
 
     const data = tournamentForSession(session.id)
-    const latestRound = Math.max(1, ...data.matches.map((match) => match.round))
-    const winners = data.matches
-      .filter((match) => match.round === latestRound && match.winner_participant_id)
-      .map((match) => match.winner_participant_id as string)
+    const format = session.tournament_format || 'pool_to_final'
+    const bestOf = session.best_of || 1
+    let qualified: string[] = []
 
-    if (winners.length < 2) {
+    if (format === 'pool_to_final' || format === 'pool_to_semifinal' || format === 'pool_only' || format === 'leaderboard') {
+      const perPool = qualificationCount(session.qualification_rule, session.custom_qualifiers || 2)
+      qualified = data.pools.flatMap((pool) => poolStandingsForSession(session, pool).slice(0, perPool).map((standing) => standing.participantId))
+      if (format === 'pool_only' || format === 'leaderboard') {
+        setCreateStatus('Pool standings are the final ranking for this format.')
+        return
+      }
+    } else {
+      const latestRound = Math.max(1, ...data.matches.map((match) => match.round))
+      qualified = data.matches
+        .filter((match) => match.round === latestRound && match.winner_participant_id)
+        .map((match) => match.winner_participant_id as string)
+    }
+
+    qualified = Array.from(new Set(qualified)).filter(Boolean)
+
+    if (qualified.length < 2) {
       setCreateStatus(text.noTournamentData)
       return
     }
 
-    const nextRound = latestRound + 1
-    const stage: TournamentMatch['stage'] = winners.length <= 2 ? 'final' : winners.length <= 4 ? 'semifinal' : winners.length <= 8 ? 'quarterfinal' : 'custom'
-    const matchRows = []
-
-    for (let index = 0; index < winners.length; index += 2) {
-      matchRows.push({
-        session_id: session.id,
-        pool_id: null,
-        stage,
-        round: nextRound,
-        match_number: Math.floor(index / 2) + 1,
-        participant_a_id: winners[index],
-        participant_b_id: winners[index + 1] || null,
-        status: 'pending',
-      })
-    }
+    const existingKnockout = data.matches.some((match) => match.stage !== 'pool')
+    const nextRound = existingKnockout ? Math.max(1, ...data.matches.map((match) => match.round)) + 1 : 2
+    const desired = format === 'pool_to_final' ? qualified.slice(0, 2) : qualified
+    const stage = format === 'pool_to_final' ? 'final' : knockoutStageForCount(desired.length)
+    const matchRows = buildKnockoutRows(session.id, desired, stage, nextRound, bestOf)
 
     const { error } = await supabase.from('tournament_matches').insert(matchRows)
     if (error) {
@@ -3030,8 +3359,115 @@ export default function WidgetPage() {
       return
     }
 
+    await logTournamentAudit(session.id, 'Round advanced', null, { qualified: desired, stage, round: nextRound })
     await loadTournamentData()
     setCreateStatus(text.tournamentNextRound)
+  }
+
+  async function finishTournament(session: Session) {
+    if (!canEditTournamentSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const data = tournamentForSession(session.id)
+    const finalMatch = [...data.matches].reverse().find((match) => match.stage === 'final' && match.winner_participant_id)
+    const thirdMatch = [...data.matches].reverse().find((match) => match.stage === 'third_place' && match.winner_participant_id)
+    const semifinalLosers = data.matches
+      .filter((match) => match.stage === 'semifinal' && match.loser_participant_id)
+      .map((match) => match.loser_participant_id as string)
+
+    const standingsPodium = data.pools
+      .flatMap((pool) => poolStandingsForSession(session, pool))
+      .sort((a, b) => b.points - a.points || b.scoreDifference - a.scoreDifference || b.scoreFor - a.scoreFor)
+      .map((standing) => standing.participantId)
+
+    const first = finalMatch?.winner_participant_id || standingsPodium[0] || null
+    const second = finalMatch ? matchLoser(finalMatch, first) : standingsPodium.find((id) => id !== first) || null
+    const third = thirdMatch?.winner_participant_id || semifinalLosers.find((id) => id !== second && id !== first) || standingsPodium.find((id) => id !== first && id !== second) || null
+
+    if (!first) {
+      setCreateStatus('Finish needs a completed final or final ranking.')
+      return
+    }
+
+    const updates: Array<PromiseLike<unknown>> = []
+    if (first) updates.push(supabase.from('session_participants').update({ placement: 1 }).eq('id', first))
+    if (second) updates.push(supabase.from('session_participants').update({ placement: 2 }).eq('id', second))
+    if (third) updates.push(supabase.from('session_participants').update({ placement: 3 }).eq('id', third))
+    updates.push(supabase.from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id))
+
+    await Promise.all(updates)
+    await logTournamentAudit(session.id, 'Tournament finished', null, { first, second, third })
+    await loadSessions()
+    await loadTournamentData()
+    setCreateStatus('Tournament finished. Podium locked.')
+  }
+
+  async function createThirdPlaceMatch(session: Session) {
+    if (!canEditTournamentSession(session) || !session.enable_third_place_match) return
+    const data = tournamentForSession(session.id)
+    if (data.matches.some((match) => match.stage === 'third_place')) return
+
+    const losers = data.matches
+      .filter((match) => match.stage === 'semifinal' && match.loser_participant_id)
+      .map((match) => match.loser_participant_id as string)
+
+    if (losers.length < 2 || new Set(losers).size < 2) return
+
+    const { error } = await supabase.from('tournament_matches').insert({
+      session_id: session.id,
+      pool_id: null,
+      stage: 'third_place',
+      round: Math.max(1, ...data.matches.map((match) => match.round)) + 1,
+      match_number: 1,
+      participant_a_id: losers[0],
+      participant_b_id: losers[1],
+      status: 'waiting',
+      queue_position: 99,
+      best_of: session.best_of || 1,
+    })
+
+    if (!error) {
+      await logTournamentAudit(session.id, 'Bronze match created', null, { participants: losers.slice(0, 2) })
+      await loadTournamentData()
+    }
+  }
+
+  async function claimPrize(participant: Participant, claimed: boolean) {
+    const { error } = await supabase
+      .from('session_participants')
+      .update({
+        prize_claimed: claimed,
+        prize_claimed_at: claimed ? new Date().toISOString() : null,
+      })
+      .eq('id', participant.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadSessions()
+  }
+
+  async function shareTournamentResults(session: Session) {
+    const podium = [1, 2, 3]
+      .map((placement) => (session.session_participants ?? []).find((participant) => participant.placement === placement))
+      .filter(Boolean) as Participant[]
+    const summary = [
+      `🏆 ${session.name}`,
+      ...podium.map((participant) => `${rankEmoji(participant.placement)} ${compactDisplayName(participant.display_name, text.player)}${participant.score ? ` · ${participant.score}` : ''}`),
+      DEFAULT_APP_URL,
+    ].join('\n')
+
+    if (navigator.share) {
+      await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
+      return
+    }
+
+    await navigator.clipboard?.writeText(summary)
+    setSharedKey(`results-${session.id}`)
   }
 
   function voteCount(session: Session, gameId: GameId) {
@@ -3447,15 +3883,24 @@ export default function WidgetPage() {
 
                     {session.session_type === 'tournament' && (() => {
                       const tournament = tournamentForSession(session.id)
-                      const canEditTournament = canManageSession(session)
+                      const canEditTournament = canEditTournamentSession(session) && !tournamentLocked(session)
                       const creatorCanAssignEditors = isSessionCreator(session)
+                      const eligiblePlayers = eligibleTournamentParticipants(session)
+                      const queueMatches = tournament.matches
+                        .filter((match) => match.status !== 'completed')
+                        .sort((a, b) => (a.queue_position ?? 999) - (b.queue_position ?? 999) || a.round - b.round || a.match_number - b.match_number)
+                      const podium = [1, 2, 3]
+                        .map((rank) => participants.find((participant) => participant.placement === rank))
+                        .filter(Boolean) as Participant[]
 
                       return (
                         <div className="tournament-desk">
                           <div className="section-head compact-head">
                             <div>
                               <h3>{text.tournamentDesk}</h3>
-                              <p className="muted">{text.noTournamentData}</p>
+                              <p className="muted">
+                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {eligiblePlayers.length} eligible
+                              </p>
                             </div>
                             {canEditTournament && (
                               <div className="manage-row">
@@ -3474,9 +3919,72 @@ export default function WidgetPage() {
                                 <button className="primary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => advanceTournamentRound(session)}>
                                   {text.tournamentNextRound}
                                 </button>
+                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => createThirdPlaceMatch(session)}>
+                                  Bronze match
+                                </button>
+                                <button className="danger small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => finishTournament(session)}>
+                                  Finish Tournament
+                                </button>
                               </div>
                             )}
                           </div>
+
+                          {podium.length > 0 && (
+                            <div className="public-leaderboard">
+                              <div className="section-head compact-head">
+                                <div>
+                                  <h3>Public leaderboard</h3>
+                                  <p className="muted">Podium, score and accuracy. Tiny bragging rights included.</p>
+                                </div>
+                                <button className="share-icon-button" type="button" onClick={() => shareTournamentResults(session)}>
+                                  ⇧
+                                </button>
+                              </div>
+                              <div className="podium-row">
+                                {podium.map((participant) => (
+                                  <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
+                                    <span className="podium-medal">{rankEmoji(participant.placement)}</span>
+                                    <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(participant.profile_id)} style={avatarStyle(participant)} type="button">
+                                      {avatarNode(participant, 'P')}
+                                    </button>
+                                    <strong>{compactDisplayName(participant.display_name, text.player)}</strong>
+                                    <small>{participant.score ?? 0} pts · {participant.accuracy_percent ?? '-'}%</small>
+                                    {canEditTournament && participant.placement && (
+                                      <button className="link-button" type="button" onClick={() => claimPrize(participant, !participant.prize_claimed)}>
+                                        {participant.prize_claimed ? 'Prize claimed ✓' : `${participant.placement === 1 ? session.first_prize || '1st prize' : participant.placement === 2 ? session.second_prize || '2nd prize' : session.third_prize || '3rd prize'}`}
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {queueMatches.length > 0 && (
+                            <div className="queue-board">
+                              {[1, 2].map((arenaNumber) => {
+                                const arenaMatches = queueMatches.filter((match) => (match.arena_number || arenaNumber) === arenaNumber).slice(0, 4)
+                                return (
+                                  <div className="queue-lane" key={`arena-${arenaNumber}`}>
+                                    <strong>Arena {arenaNumber}</strong>
+                                    {arenaMatches.length === 0 ? <span className="muted">No match queued.</span> : arenaMatches.map((match, index) => (
+                                      <div className={`queue-match ${match.status}`} key={`queue-${match.id}`}>
+                                        <span>{queueLabel(match.status, index)}</span>
+                                        <strong>{participantName(session, match.participant_a_id)} vs {participantName(session, match.participant_b_id)}</strong>
+                                        <small>{tournamentStageLabel(match.stage)} {match.match_number} · {bestOfLabel(match.best_of || session.best_of)}</small>
+                                        {canEditTournament && (
+                                          <div className="queue-controls">
+                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'next' })}>Next</button>
+                                            <button type="button" onClick={() => updateTournamentMatch(match, { arena_number: arenaNumber, status: 'live' })}>Live</button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
 
                           {creatorCanAssignEditors && (
                             <div className="invite-code compact">
@@ -3516,6 +4024,16 @@ export default function WidgetPage() {
                               {tournament.pools.map((pool) => (
                                 <div className="tournament-panel" key={pool.id}>
                                   <strong>{pool.name}</strong>
+                                  <div className="standings-table">
+                                    {poolStandingsForSession(session, pool).map((standing, index) => (
+                                      <div className="standing-row" key={standing.participantId} title={standing.tieBreakNote}>
+                                        <span>{index + 1}</span>
+                                        <strong>{standing.displayName}</strong>
+                                        <small>{standing.points} pts · {standing.wins}-{standing.losses} · Δ{standing.scoreDifference}</small>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <p className="field-help">Tie-break: points → head-to-head → score difference → total score → random draw.</p>
                                   <div className="players compact-roster">
                                     {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => {
                                       const entryParticipant = participantById(session, entry.participant_id)
@@ -3555,8 +4073,8 @@ export default function WidgetPage() {
                                   return (
                                     <div className={match.status === 'completed' ? 'match-card completed' : 'match-card'} key={match.id}>
                                       <div className="match-head">
-                                        <span>{tournamentStageLabel(match.stage)} · R{match.round} M{match.match_number}</span>
-                                        <strong>{match.status}</strong>
+                                        <span>{tournamentStageLabel(match.stage)} {match.stage !== 'pool' ? match.match_number : `· R${match.round} M${match.match_number}`}</span>
+                                        <strong>{bestOfLabel(match.best_of || session.best_of)} · {match.status}</strong>
                                       </div>
                                       <div className="match-versus">
                                         <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_a_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
@@ -3591,6 +4109,19 @@ export default function WidgetPage() {
                                           </select>
                                           <input aria-label={text.scoreA} defaultValue={match.score_a ?? ''} inputMode="numeric" placeholder={text.scoreA} onBlur={(event) => updateTournamentMatch(match, { score_a: event.target.value === '' ? null : Number(event.target.value) })} />
                                           <input aria-label={text.scoreB} defaultValue={match.score_b ?? ''} inputMode="numeric" placeholder={text.scoreB} onBlur={(event) => updateTournamentMatch(match, { score_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <input aria-label="Wins A" defaultValue={match.wins_a ?? ''} inputMode="numeric" placeholder="Wins A" onBlur={(event) => updateTournamentMatch(match, { wins_a: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <input aria-label="Wins B" defaultValue={match.wins_b ?? ''} inputMode="numeric" placeholder="Wins B" onBlur={(event) => updateTournamentMatch(match, { wins_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <select value={match.status} onChange={(event) => updateTournamentMatch(match, { status: event.target.value as MatchStatus })} aria-label="Match status">
+                                            <option value="waiting">Waiting</option>
+                                            <option value="next">Next</option>
+                                            <option value="live">Live</option>
+                                            <option value="completed">Completed</option>
+                                          </select>
+                                          <select value={match.arena_number || ''} onChange={(event) => updateTournamentMatch(match, { arena_number: event.target.value ? Number(event.target.value) : null })} aria-label="Arena">
+                                            <option value="">Arena</option>
+                                            <option value={1}>Arena 1</option>
+                                            <option value={2}>Arena 2</option>
+                                          </select>
                                         </div>
                                       )}
                                     </div>
@@ -3598,6 +4129,18 @@ export default function WidgetPage() {
                                 })()
                               ))}
                             </div>
+                          )}
+
+                          {tournament.auditLogs.length > 0 && creatorCanAssignEditors && (
+                            <details className="audit-log">
+                              <summary>Audit log</summary>
+                              {tournament.auditLogs.slice(0, 10).map((log) => (
+                                <div className="audit-row" key={log.id}>
+                                  <strong>{log.action}</strong>
+                                  <span>{new Date(log.created_at).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </details>
                           )}
                         </div>
                       )
@@ -3885,6 +4428,66 @@ export default function WidgetPage() {
                   </button>
                 </div>
               </div>
+              {sessionType === 'tournament' && (
+                <div className="full tournament-create-box">
+                  <div className="form-grid compact-form-grid">
+                    <div>
+                      <label>Tournament format</label>
+                      <select value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
+                        <option value="pool_only">Pool only</option>
+                        <option value="pool_to_semifinal">Pools → semifinals</option>
+                        <option value="pool_to_final">Pools → final</option>
+                        <option value="single_elimination">Single elimination</option>
+                        <option value="double_elimination">Double elimination-ready</option>
+                        <option value="leaderboard">Leaderboard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label>Match series</label>
+                      <select value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
+                        <option value={1}>BO1</option>
+                        <option value={3}>BO3</option>
+                        <option value={5}>BO5</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label>Qualification</label>
+                      <select value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
+                        <option value="top_1">Top 1 / pool</option>
+                        <option value="top_2">Top 2 / pool</option>
+                        <option value="top_4">Top 4 / pool</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                    {tournamentQualificationRule === 'custom' && (
+                      <div>
+                        <label>Custom qualifiers</label>
+                        <input inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
+                      </div>
+                    )}
+                    <label className="toggle-line">
+                      <input checked={tournamentRequirePayment} onChange={(event) => setTournamentRequirePayment(event.target.checked)} type="checkbox" />
+                      <span>Only checked-in and paid players enter the bracket</span>
+                    </label>
+                    <label className="toggle-line">
+                      <input checked={tournamentThirdPlace} onChange={(event) => setTournamentThirdPlace(event.target.checked)} type="checkbox" />
+                      <span>Create bronze match when semifinals are done</span>
+                    </label>
+                    <div>
+                      <label>1st prize</label>
+                      <input value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
+                    </div>
+                    <div>
+                      <label>2nd prize</label>
+                      <input value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
+                    </div>
+                    <div>
+                      <label>3rd prize</label>
+                      <input value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="full">
                 <label>{text.clubOnly}</label>
                 <select value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
@@ -6133,6 +6736,128 @@ export default function WidgetPage() {
           font-weight: 800;
         }
 
+        .tournament-create-box,
+        .public-leaderboard,
+        .queue-board,
+        .audit-log {
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 10px;
+        }
+
+        .compact-form-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .toggle-line {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          min-height: 38px;
+        }
+
+        .toggle-line input {
+          width: 16px;
+          height: 16px;
+          min-height: 16px;
+        }
+
+        .queue-board {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .queue-lane {
+          display: grid;
+          gap: 8px;
+        }
+
+        .queue-match {
+          display: grid;
+          gap: 3px;
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 8px;
+          padding: 8px;
+          background: #f6f7f9;
+        }
+
+        .queue-match span {
+          color: #3059ff;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.03em;
+        }
+
+        .queue-match.live {
+          border-color: rgba(180, 35, 24, 0.35);
+          background: #fff3f0;
+        }
+
+        .queue-match.live span {
+          color: #b42318;
+        }
+
+        .queue-match.next {
+          border-color: rgba(13, 124, 81, 0.3);
+          background: #e9f8f1;
+        }
+
+        .queue-controls {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .queue-controls button {
+          min-height: 28px;
+          padding: 4px 8px;
+          font-size: 11px;
+        }
+
+        .standings-table {
+          display: grid;
+          gap: 4px;
+          border: 1px solid rgba(7, 17, 18, 0.08);
+          border-radius: 8px;
+          padding: 6px;
+          background: #f8fafb;
+        }
+
+        .standing-row {
+          display: grid;
+          grid-template-columns: 24px minmax(0, 1fr) auto;
+          gap: 6px;
+          align-items: center;
+          font-size: 12px;
+        }
+
+        .standing-row span {
+          color: #637075;
+          font-weight: 900;
+        }
+
+        .standing-row small {
+          color: #637075;
+          font-weight: 800;
+        }
+
+        .audit-log summary {
+          cursor: pointer;
+          font-weight: 900;
+        }
+
+        .audit-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          border-top: 1px solid rgba(7, 17, 18, 0.08);
+          padding: 7px 0;
+          color: #637075;
+          font-size: 12px;
+        }
+
         .entry-controls,
         .match-edit-row {
           display: grid;
@@ -6970,6 +7695,21 @@ export default function WidgetPage() {
             grid-template-columns: 1fr;
           }
 
+          .compact-form-grid,
+          .queue-board,
+          .match-list,
+          .tournament-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .standing-row {
+            grid-template-columns: 20px minmax(0, 1fr);
+          }
+
+          .standing-row small {
+            grid-column: 2;
+          }
+
           .country-field,
           .phone-field,
           .email-field,
@@ -7045,7 +7785,11 @@ export default function WidgetPage() {
           .club-drawer,
           .player-profile-panel,
           .tournament-panel,
-          .match-card {
+          .match-card,
+          .tournament-create-box,
+          .public-leaderboard,
+          .queue-board,
+          .audit-log {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
@@ -7067,6 +7811,12 @@ export default function WidgetPage() {
           .game-card strong,
           .stats span {
             color: #aeb9bd;
+          }
+
+          .standings-table,
+          .queue-match {
+            background: #182225;
+            border-color: rgba(255, 255, 255, 0.12);
           }
 
           .tab,
