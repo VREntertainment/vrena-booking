@@ -3647,12 +3647,186 @@ export default function WidgetPage() {
       DEFAULT_APP_URL,
     ].join('\n')
 
-    if (navigator.share) {
-      await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200
+    canvas.height = 900
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx || podium.length === 0) {
+      if (navigator.share) {
+        await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
+        return
+      }
+
+      await navigator.clipboard?.writeText(summary)
+      setSharedKey(`results-${session.id}`)
       return
     }
 
-    await navigator.clipboard?.writeText(summary)
+    const drawRoundAvatar = async (participant: Participant, x: number, y: number, size: number) => {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2)
+      ctx.clip()
+
+      let drewPhoto = false
+      if (participant.avatar_url) {
+        try {
+          const image = new Image()
+          image.crossOrigin = 'anonymous'
+          await new Promise<void>((resolve, reject) => {
+            image.onload = () => resolve()
+            image.onerror = () => reject(new Error('avatar failed'))
+            image.src = participant.avatar_url || ''
+          })
+          ctx.drawImage(image, x, y, size, size)
+          drewPhoto = true
+        } catch {
+          drewPhoto = false
+        }
+      }
+
+      if (!drewPhoto) {
+        const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
+        avatarGradient.addColorStop(0, participant.avatar_color || '#00b6c6')
+        avatarGradient.addColorStop(1, '#3059ff')
+        ctx.fillStyle = avatarGradient
+        ctx.fillRect(x, y, size, size)
+        ctx.fillStyle = '#ffffff'
+        ctx.font = `800 ${participant.avatar_emoji ? size * 0.48 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(participant.avatar_emoji || compactInitials(participant.avatar_initials || participant.display_name || text.player).slice(0, 2), x + size / 2, y + size / 2)
+      }
+
+      ctx.restore()
+    }
+
+    const roundedRect = (x: number, y: number, width: number, height: number, radius: number) => {
+      const safeRadius = Math.min(radius, width / 2, height / 2)
+      ctx.beginPath()
+      ctx.moveTo(x + safeRadius, y)
+      ctx.lineTo(x + width - safeRadius, y)
+      ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius)
+      ctx.lineTo(x + width, y + height - safeRadius)
+      ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height)
+      ctx.lineTo(x + safeRadius, y + height)
+      ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius)
+      ctx.lineTo(x, y + safeRadius)
+      ctx.quadraticCurveTo(x, y, x + safeRadius, y)
+      ctx.closePath()
+    }
+
+    const drawPodiumCard = async () => {
+      const background = ctx.createLinearGradient(0, 0, 1200, 900)
+      background.addColorStop(0, '#071112')
+      background.addColorStop(0.52, '#10262a')
+      background.addColorStop(1, '#182b48')
+      ctx.fillStyle = background
+      ctx.fillRect(0, 0, 1200, 900)
+
+      ctx.fillStyle = 'rgba(0, 174, 179, 0.22)'
+      ctx.beginPath()
+      ctx.arc(140, 140, 210, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = 'rgba(245, 197, 66, 0.18)'
+      ctx.beginPath()
+      ctx.arc(1060, 160, 250, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '800 54px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'alphabetic'
+      ctx.fillText('VRena Tournament', 72, 104)
+
+      ctx.fillStyle = '#aeb9bd'
+      ctx.font = '700 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText(`${session.name} · ${session.date} ${session.start_time.slice(0, 5)}`, 72, 150)
+
+      const orderedPodium = [2, 1, 3]
+        .map((placement) => podium.find((participant) => participant.placement === placement))
+        .filter(Boolean) as Participant[]
+      const slots = [
+        { placement: 2, x: 112, y: 390, w: 300, h: 260, color: '#b7c0ca' },
+        { placement: 1, x: 450, y: 280, w: 300, h: 370, color: '#f5c542' },
+        { placement: 3, x: 788, y: 450, w: 300, h: 200, color: '#c98742' },
+      ]
+
+      for (const participant of orderedPodium) {
+        const slot = slots.find((item) => item.placement === participant.placement)
+        if (!slot) continue
+
+        ctx.fillStyle = slot.color
+        roundedRect(slot.x, slot.y, slot.w, slot.h, 28)
+        ctx.fill()
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
+        roundedRect(slot.x + 10, slot.y + 10, slot.w - 20, slot.h - 20, 22)
+        ctx.fill()
+
+        await drawRoundAvatar(participant, slot.x + slot.w / 2 - 62, slot.y - 72, 124)
+
+        ctx.fillStyle = slot.color
+        ctx.beginPath()
+        ctx.arc(slot.x + slot.w / 2 + 64, slot.y - 54, 28, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#071112'
+        ctx.font = '800 30px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(String(participant.placement), slot.x + slot.w / 2 + 64, slot.y - 54)
+
+        ctx.fillStyle = '#071112'
+        ctx.font = '800 34px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText(compactDisplayName(participant.display_name, text.player), slot.x + slot.w / 2, slot.y + slot.h - 82)
+
+        ctx.fillStyle = '#39464b'
+        ctx.font = '800 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText(`${participant.score ?? 0} pts · ${participant.accuracy_percent ?? '-'}%`, slot.x + slot.w / 2, slot.y + slot.h - 42)
+      }
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('Tiny bragging rights. Big headset energy.', 600, 806)
+      ctx.fillStyle = '#aeb9bd'
+      ctx.font = '700 22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText(DEFAULT_APP_URL, 600, 842)
+    }
+
+    await drawPodiumCard()
+
+    let blob: Blob | null = null
+    try {
+      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+    } catch {
+      blob = null
+    }
+
+    if (!blob) {
+      if (navigator.share) {
+        await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
+        return
+      }
+      await navigator.clipboard?.writeText(summary)
+      setSharedKey(`results-${session.id}`)
+      return
+    }
+
+    const file = new File([blob], `${session.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'vrena-tournament'}-results.jpg`, { type: 'image/jpeg' })
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: session.name, text: summary })
+      return
+    }
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.name
+    link.click()
+    URL.revokeObjectURL(url)
     setSharedKey(`results-${session.id}`)
   }
 
@@ -3731,7 +3905,7 @@ export default function WidgetPage() {
 
       <main>
         {activeView === 'sessions' && (
-          <section className="section">
+          <section className="section sessions-section">
             <div className="section-head">
               <div className="section-copy">
                 <h2>{text.availableSessions}</h2>
@@ -4118,7 +4292,7 @@ export default function WidgetPage() {
                       const queueMatches = tournament.matches
                         .filter((match) => match.status !== 'completed')
                         .sort((a, b) => (a.queue_position ?? 999) - (b.queue_position ?? 999) || a.round - b.round || a.match_number - b.match_number)
-                      const podium = [1, 2, 3]
+                      const podium = [2, 1, 3]
                         .map((rank) => participants.find((participant) => participant.placement === rank))
                         .filter(Boolean) as Participant[]
 
@@ -5600,6 +5774,13 @@ export default function WidgetPage() {
           box-shadow: 0 10px 22px rgba(7, 17, 18, 0.08);
         }
 
+        .sessions-section {
+          border: 0;
+          background: transparent;
+          padding: 0;
+          box-shadow: none;
+        }
+
         .section-head {
           display: flex;
           justify-content: space-between;
@@ -6474,10 +6655,15 @@ export default function WidgetPage() {
         .session {
           display: grid;
           gap: 13px;
-          border: 1px solid rgba(7, 17, 18, 0.12);
-          border-radius: 8px;
-          padding: 14px;
-          background: #ffffff;
+          border: 0;
+          border-bottom: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 0;
+          padding: 14px 0 18px;
+          background: transparent;
+        }
+
+        .session:last-child {
+          border-bottom: 0;
         }
 
         .session-top,
@@ -6845,10 +7031,10 @@ export default function WidgetPage() {
         .tournament-desk {
           display: grid;
           gap: 12px;
-          border: 1px solid rgba(7, 17, 18, 0.1);
-          border-radius: 10px;
-          background: rgba(240, 244, 246, 0.56);
-          padding: 12px;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 6px 0 0;
         }
 
         .mini-field {
@@ -6882,9 +7068,9 @@ export default function WidgetPage() {
         .match-card {
           display: grid;
           gap: 10px;
-          border: 1px solid rgba(7, 17, 18, 0.1);
+          border: 0;
           border-radius: 10px;
-          background: #ffffff;
+          background: rgba(240, 244, 246, 0.72);
           padding: 10px;
         }
 
@@ -7017,7 +7203,7 @@ export default function WidgetPage() {
 
         .public-leaderboard {
           display: grid;
-          gap: 8px;
+          gap: 10px;
           overflow: hidden;
           background:
             radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.16), transparent 34%),
@@ -7049,57 +7235,62 @@ export default function WidgetPage() {
         .public-leaderboard .podium-row {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: end;
           gap: 8px;
         }
 
         .public-leaderboard .podium-player {
           position: relative;
           display: grid;
-          grid-template-columns: 42px minmax(0, 1fr);
-          gap: 8px;
-          align-items: center;
-          min-height: 58px;
+          justify-items: center;
+          align-content: end;
+          gap: 6px;
+          min-height: 98px;
           padding: 8px;
           border: 1px solid rgba(7, 17, 18, 0.1);
           border-radius: 10px;
           background: rgba(255, 255, 255, 0.78);
           color: #071112;
-          text-align: left;
+          text-align: center;
           box-shadow: 0 10px 24px rgba(11, 21, 24, 0.06);
         }
 
         .public-leaderboard .podium-player.place-1 {
+          min-height: 132px;
+          transform: translateY(-5px);
           border-color: rgba(245, 197, 66, 0.7);
           background: linear-gradient(135deg, rgba(255, 248, 220, 0.95), rgba(255, 255, 255, 0.82));
         }
 
         .public-leaderboard .podium-player.place-2 {
+          min-height: 112px;
           border-color: rgba(183, 192, 202, 0.75);
         }
 
         .public-leaderboard .podium-player.place-3 {
+          min-height: 94px;
           border-color: rgba(201, 135, 66, 0.75);
         }
 
         .public-leaderboard .podium-player .player-avatar {
-          grid-row: 1 / span 3;
-          width: 42px;
-          height: 42px;
-          min-width: 42px;
-          min-height: 42px;
+          width: 46px;
+          height: 46px;
+          min-width: 46px;
+          min-height: 46px;
         }
 
         .public-leaderboard .podium-medal {
           position: absolute;
-          right: 7px;
-          top: 6px;
+          right: 8px;
+          top: 7px;
           font-size: 14px;
           line-height: 1;
         }
 
         .public-leaderboard .podium-player strong {
           min-width: 0;
-          padding-right: 20px;
+          max-width: 100%;
+          padding-right: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -7114,7 +7305,7 @@ export default function WidgetPage() {
         }
 
         .public-leaderboard .podium-player .link-button {
-          justify-self: start;
+          justify-self: center;
           min-height: auto;
           padding: 0;
           font-size: 11px;
@@ -7814,6 +8005,10 @@ export default function WidgetPage() {
             box-shadow: none;
           }
 
+          .sessions-section {
+            padding: 0;
+          }
+
           .club-drawer-backdrop {
             align-items: end;
             padding: 0 10px 14px;
@@ -7920,7 +8115,7 @@ export default function WidgetPage() {
 
           .session {
             gap: 12px;
-            padding: 12px;
+            padding: 12px 0 16px;
           }
 
           .session-top {
@@ -8142,11 +8337,40 @@ export default function WidgetPage() {
           }
 
           .public-leaderboard .podium-row {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
           }
 
           .public-leaderboard .podium-player {
-            min-height: 54px;
+            min-height: 84px;
+            padding: 6px 4px;
+          }
+
+          .public-leaderboard .podium-player.place-1 {
+            min-height: 108px;
+          }
+
+          .public-leaderboard .podium-player.place-2 {
+            min-height: 94px;
+          }
+
+          .public-leaderboard .podium-player.place-3 {
+            min-height: 82px;
+          }
+
+          .public-leaderboard .podium-player .player-avatar {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            min-height: 38px;
+          }
+
+          .public-leaderboard .podium-player strong {
+            font-size: 11px;
+          }
+
+          .public-leaderboard .podium-player small {
+            font-size: 10px;
           }
         }
 
@@ -8178,8 +8402,25 @@ export default function WidgetPage() {
           }
 
           .tournament-desk {
-            background: rgba(16, 25, 27, 0.62);
-            border-color: rgba(255, 255, 255, 0.14);
+            background: transparent;
+            border-color: transparent;
+          }
+
+          .sessions-section {
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+          }
+
+          .sessions-section .session {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #f6f7f9;
+          }
+
+          .tournament-panel,
+          .match-card {
+            background: rgba(24, 34, 37, 0.72);
           }
 
           .muted,
