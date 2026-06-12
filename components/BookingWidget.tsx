@@ -1011,7 +1011,37 @@ export default function WidgetPage() {
   } | null | undefined, fallback = 'P') {
     const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
 
-    if (source?.avatar_url) return <span className="avatar-photo"><img src={source.avatar_url} alt="" /></span>
+    if (source?.avatar_url) {
+      return (
+        <span
+          className="avatar-photo"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            borderRadius: 999,
+          }}
+        >
+          <img
+            src={source.avatar_url}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              borderRadius: 999,
+            }}
+          />
+        </span>
+      )
+    }
     if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
     if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
     return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
@@ -5146,10 +5176,17 @@ export default function WidgetPage() {
         .avatar-photo {
           position: absolute;
           inset: 0;
+          display: block;
+          width: 100% !important;
+          height: 100% !important;
+          min-width: 100%;
+          min-height: 100%;
           z-index: 0;
-          overflow: hidden;
-          border-radius: inherit;
-          clip-path: inset(0 round 999px);
+          overflow: hidden !important;
+          border-radius: 999px !important;
+          clip-path: circle(50% at 50% 50%);
+          -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+          mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
         }
 
         .avatar-photo img {
@@ -5158,11 +5195,16 @@ export default function WidgetPage() {
           display: block;
           width: 100% !important;
           height: 100% !important;
+          min-width: 100%;
+          min-height: 100%;
           max-width: none;
-          object-fit: cover;
-          object-position: center center;
+          object-fit: cover !important;
+          object-position: center center !important;
           border: 0;
-          border-radius: inherit;
+          border-radius: 999px !important;
+          clip-path: circle(50% at 50% 50%);
+          -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+          mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
         }
 
         .champion-badge {
@@ -5194,10 +5236,12 @@ export default function WidgetPage() {
           width: 100% !important;
           height: 100% !important;
           max-width: none;
-          object-fit: cover;
-          object-position: center center;
-          border-radius: inherit;
-          clip-path: inset(0 round 999px);
+          object-fit: cover !important;
+          object-position: center center !important;
+          border-radius: 999px !important;
+          clip-path: circle(50% at 50% 50%);
+          -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+          mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
           z-index: 0;
         }
 
@@ -5837,9 +5881,12 @@ export default function WidgetPage() {
           width: 100% !important;
           height: 100% !important;
           max-width: none;
-          object-fit: cover;
-          border-radius: inherit;
-          clip-path: inset(0 round 999px);
+          object-fit: cover !important;
+          object-position: center center !important;
+          border-radius: 999px !important;
+          clip-path: circle(50% at 50% 50%);
+          -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+          mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
           z-index: 0;
         }
 
