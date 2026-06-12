@@ -216,6 +216,22 @@ type PoolStanding = {
   tieBreakNote: string
 }
 
+type TournamentMatchInsert = {
+  session_id: string
+  pool_id: string | null
+  stage: MatchStage
+  round: number
+  match_number: number
+  participant_a_id: string | null
+  participant_b_id: string | null
+  status: MatchStatus
+  winner_participant_id?: string | null
+  loser_participant_id?: string | null
+  arena_number?: number | null
+  queue_position?: number | null
+  best_of?: 1 | 3 | 5 | number | null
+}
+
 const games: Array<{
   id: GameId
   title: string
@@ -1043,9 +1059,9 @@ function queueLabel(status: MatchStatus, index: number) {
   return 'WAITING'
 }
 
-function buildKnockoutRows(sessionId: string, participantIds: string[], stage: MatchStage, round: number, bestOf: 1 | 3 | 5 | number) {
+function buildKnockoutRows(sessionId: string, participantIds: string[], stage: MatchStage, round: number, bestOf: 1 | 3 | 5 | number): TournamentMatchInsert[] {
   const uniqueIds = Array.from(new Set(participantIds.filter(Boolean)))
-  const rows = []
+  const rows: TournamentMatchInsert[] = []
 
   for (let index = 0; index < uniqueIds.length; index += 2) {
     const participantA = uniqueIds[index] || null
@@ -3199,11 +3215,11 @@ export default function WidgetPage() {
 
     const bestOf = session.best_of || 1
     const format = session.tournament_format || 'pool_to_final'
-    const matchRows = format === 'single_elimination'
+    const matchRows: TournamentMatchInsert[] = format === 'single_elimination'
       ? buildKnockoutRows(session.id, data.poolEntries.map((entry) => entry.participant_id), 'custom', 1, bestOf)
       : data.pools.flatMap((pool) => {
       const poolEntries = data.poolEntries.filter((entry) => entry.pool_id === pool.id)
-      const rows = []
+      const rows: TournamentMatchInsert[] = []
       let matchNumber = 1
 
       for (let i = 0; i < poolEntries.length; i += 1) {
@@ -3268,7 +3284,7 @@ export default function WidgetPage() {
   async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
     const nextA = changes.participant_a_id ?? match.participant_a_id
     const nextB = changes.participant_b_id ?? match.participant_b_id
-    if (nextA && nextB && nextA === nextB) {
+    if (hasDuplicateMatchPlayers({ participant_a_id: nextA, participant_b_id: nextB })) {
       setCreateStatus('Same player cannot appear twice in one match.')
       return
     }
@@ -3350,7 +3366,7 @@ export default function WidgetPage() {
     const existingKnockout = data.matches.some((match) => match.stage !== 'pool')
     const nextRound = existingKnockout ? Math.max(1, ...data.matches.map((match) => match.round)) + 1 : 2
     const desired = format === 'pool_to_final' ? qualified.slice(0, 2) : qualified
-    const stage = format === 'pool_to_final' ? 'final' : knockoutStageForCount(desired.length)
+    const stage: MatchStage = format === 'pool_to_final' ? 'final' : knockoutStageForCount(desired.length)
     const matchRows = buildKnockoutRows(session.id, desired, stage, nextRound, bestOf)
 
     const { error } = await supabase.from('tournament_matches').insert(matchRows)
@@ -3391,13 +3407,11 @@ export default function WidgetPage() {
       return
     }
 
-    const updates: Array<PromiseLike<unknown>> = []
-    if (first) updates.push(supabase.from('session_participants').update({ placement: 1 }).eq('id', first))
-    if (second) updates.push(supabase.from('session_participants').update({ placement: 2 }).eq('id', second))
-    if (third) updates.push(supabase.from('session_participants').update({ placement: 3 }).eq('id', third))
-    updates.push(supabase.from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id))
+    if (first) await supabase.from('session_participants').update({ placement: 1 }).eq('id', first)
+    if (second) await supabase.from('session_participants').update({ placement: 2 }).eq('id', second)
+    if (third) await supabase.from('session_participants').update({ placement: 3 }).eq('id', third)
+    await supabase.from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id)
 
-    await Promise.all(updates)
     await logTournamentAudit(session.id, 'Tournament finished', null, { first, second, third })
     await loadSessions()
     await loadTournamentData()
