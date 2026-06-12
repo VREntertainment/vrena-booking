@@ -4003,7 +4003,11 @@ export default function WidgetPage() {
               </div>
             )}
 
-            <div className="form-grid profile-form">
+            <div className={[
+              'form-grid profile-form',
+              !profile && authMode === 'login' ? 'login-profile-form' : '',
+              !profile && authMode === 'create' ? 'create-profile-form' : '',
+            ].join(' ').trim()}>
               {showProfileFields && (
                 <div className="profile-photo-panel">
                   <label className="profile-photo-preview" style={{ background: avatarColor }}>
@@ -5085,6 +5089,14 @@ export default function WidgetPage() {
           cursor: pointer;
         }
 
+        .profile-photo-preview .avatar-emoji {
+          color: #ffffff;
+          font-size: 56px;
+          line-height: 1;
+          margin: 0;
+          transform: translateY(1px);
+        }
+
         .profile-photo-preview img {
           width: 100%;
           height: 100%;
@@ -5171,6 +5183,26 @@ export default function WidgetPage() {
 
         .avatar-emoji {
           font-size: 1.25em;
+        }
+
+        .avatar .avatar-emoji {
+          font-size: 25px;
+          line-height: 1;
+          margin: 0;
+        }
+
+        .player-avatar .avatar-emoji {
+          font-size: 34px;
+          line-height: 1;
+          margin: 0;
+        }
+
+        .player-avatar.tiny-avatar .avatar-emoji {
+          font-size: 22px;
+        }
+
+        .player-avatar.profile-large .avatar-emoji {
+          font-size: 42px;
         }
 
         .avatar-photo {
@@ -6161,6 +6193,18 @@ export default function WidgetPage() {
         .profile-form {
           grid-template-columns: 150px minmax(260px, 1fr) minmax(260px, 1fr);
           align-items: start;
+        }
+
+        .profile-form.login-profile-form {
+          grid-template-columns: minmax(320px, 560px);
+          max-width: 620px;
+        }
+
+        .profile-form.login-profile-form .email-field,
+        .profile-form.login-profile-form .password-field,
+        .profile-form.login-profile-form .captcha-field {
+          grid-column: 1;
+          max-width: 560px;
         }
 
         .profile-form .profile-photo-panel {
