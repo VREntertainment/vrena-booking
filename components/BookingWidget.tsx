@@ -324,6 +324,7 @@ const uiText = {
     joinSession: 'Join Session',
     createSessionTitle: 'Create Session',
     createSessionHint: 'Duration increases by 20 minutes. Max players is 16.',
+    sessionType: 'Session type',
     clubsTitle: 'Clubs',
     clubsHint: 'Create a public club or a private club with approved members only.',
     clubName: 'Club Name',
@@ -336,6 +337,9 @@ const uiText = {
     clubSession: 'Club session',
     normalGame: 'Game',
     tournament: 'Tournament',
+    tournamentRules: 'Tournament rules',
+    tournamentRulesHint: 'Pick the bracket spell before players start swinging.',
+    tournamentRulesLockedHint: 'Bracket already exists. Format is locked; scores can still dance.',
     tournamentSession: 'Tournament',
     tournamentFormat: 'Tournament format',
     formatPoolOnly: 'Pool only',
@@ -621,6 +625,7 @@ const uiText = {
     joinSession: 'Tham gia',
     createSessionTitle: 'Tạo phiên chơi',
     createSessionHint: 'Thời lượng tăng mỗi 20 phút. Tối đa 16 người chơi.',
+    sessionType: 'Loại phiên',
     clubsTitle: 'Câu lạc bộ',
     clubsHint: 'Tạo câu lạc bộ công khai hoặc riêng tư với thành viên cần được duyệt.',
     clubName: 'Tên câu lạc bộ',
@@ -633,6 +638,9 @@ const uiText = {
     clubSession: 'Phiên của club',
     normalGame: 'Game',
     tournament: 'Giải đấu',
+    tournamentRules: 'Luật giải đấu',
+    tournamentRulesHint: 'Chọn phép bracket trước khi người chơi vào trận.',
+    tournamentRulesLockedHint: 'Bracket đã được tạo. Thể thức đã khóa; điểm số vẫn còn nhảy múa.',
     tournamentSession: 'Giải đấu',
     tournamentFormat: 'Thể thức giải',
     formatPoolOnly: 'Chỉ vòng bảng',
@@ -1325,6 +1333,15 @@ export default function WidgetPage() {
   const [editSessionVisibility, setEditSessionVisibility] = useState<'public' | 'private'>('public')
   const [editSessionNotes, setEditSessionNotes] = useState('')
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
+  const [editTournamentFormat, setEditTournamentFormat] = useState<TournamentFormat>('pool_to_final')
+  const [editTournamentBestOf, setEditTournamentBestOf] = useState<1 | 3 | 5>(1)
+  const [editTournamentRequirePayment, setEditTournamentRequirePayment] = useState(false)
+  const [editTournamentQualificationRule, setEditTournamentQualificationRule] = useState<QualificationRule>('top_1')
+  const [editTournamentCustomQualifiers, setEditTournamentCustomQualifiers] = useState(2)
+  const [editTournamentThirdPlace, setEditTournamentThirdPlace] = useState(true)
+  const [editTournamentFirstPrize, setEditTournamentFirstPrize] = useState('')
+  const [editTournamentSecondPrize, setEditTournamentSecondPrize] = useState('')
+  const [editTournamentThirdPrize, setEditTournamentThirdPrize] = useState('')
   const [isUpdatingSession, setIsUpdatingSession] = useState(false)
   const [clubVisibility, setClubVisibility] = useState<'public' | 'private'>('public')
   const [clubName, setClubName] = useState('')
@@ -3061,6 +3078,15 @@ export default function WidgetPage() {
     setEditSessionVisibility(session.visibility)
     setEditSessionNotes(session.notes || '')
     setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
+    setEditTournamentFormat(session.tournament_format || 'pool_to_final')
+    setEditTournamentBestOf((session.best_of || 1) as 1 | 3 | 5)
+    setEditTournamentRequirePayment(Boolean(session.require_payment))
+    setEditTournamentQualificationRule(session.qualification_rule || 'top_1')
+    setEditTournamentCustomQualifiers(session.custom_qualifiers || 2)
+    setEditTournamentThirdPlace(Boolean(session.enable_third_place_match))
+    setEditTournamentFirstPrize(session.first_prize || '')
+    setEditTournamentSecondPrize(session.second_prize || '')
+    setEditTournamentThirdPrize(session.third_prize || '')
     setCreateStatus('')
   }
 
@@ -3095,6 +3121,8 @@ export default function WidgetPage() {
       effectiveEditVisibility === 'private'
         ? session.invite_code || generateInviteCode()
         : null
+    const tournament = tournamentForSession(session.id)
+    const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
 
     const { error } = await supabase
       .from('sessions')
@@ -3109,6 +3137,19 @@ export default function WidgetPage() {
         visibility: effectiveEditVisibility,
         invite_code: inviteCode,
         notes: editSessionNotes.trim() || null,
+        ...(session.session_type === 'tournament'
+          ? {
+            tournament_format: hasTournamentBracket ? session.tournament_format : editTournamentFormat,
+            best_of: hasTournamentBracket ? session.best_of : editTournamentBestOf,
+            require_payment: editTournamentRequirePayment,
+            qualification_rule: hasTournamentBracket ? session.qualification_rule : editTournamentQualificationRule,
+            custom_qualifiers: hasTournamentBracket ? session.custom_qualifiers : editTournamentCustomQualifiers,
+            enable_third_place_match: editTournamentThirdPlace,
+            first_prize: editTournamentFirstPrize.trim() || null,
+            second_prize: editTournamentSecondPrize.trim() || null,
+            third_prize: editTournamentThirdPrize.trim() || null,
+          }
+          : {}),
       })
       .eq('id', session.id)
 
@@ -3843,6 +3884,75 @@ export default function WidgetPage() {
                             <label>{text.sessionName} <span className="required">*</span></label>
                             <input value={editSessionName} onChange={(event) => setEditSessionName(event.target.value)} />
                           </div>
+                          {session.session_type === 'tournament' && (() => {
+                            const tournament = tournamentForSession(session.id)
+                            const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
+
+                            return (
+                              <div className="full tournament-create-box tournament-settings-box">
+                                <div className="tournament-settings-head">
+                                  <strong>{text.tournamentRules}</strong>
+                                  <span>{hasTournamentBracket ? text.tournamentRulesLockedHint : text.tournamentRulesHint}</span>
+                                </div>
+                                <div className="form-grid compact-form-grid">
+                                  <div>
+                                    <label>{text.tournamentFormat}</label>
+                                    <select disabled={hasTournamentBracket} value={editTournamentFormat} onChange={(event) => setEditTournamentFormat(event.target.value as TournamentFormat)}>
+                                      <option value="pool_only">{text.formatPoolOnly}</option>
+                                      <option value="pool_to_semifinal">{text.formatPoolSemifinal}</option>
+                                      <option value="pool_to_final">{text.formatPoolFinal}</option>
+                                      <option value="single_elimination">{text.formatSingleElimination}</option>
+                                      <option value="double_elimination">{text.formatDoubleElimination}</option>
+                                      <option value="leaderboard">{text.formatLeaderboard}</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label>{text.matchSeries}</label>
+                                    <select disabled={hasTournamentBracket} value={editTournamentBestOf} onChange={(event) => setEditTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
+                                      <option value={1}>BO1</option>
+                                      <option value={3}>BO3</option>
+                                      <option value={5}>BO5</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label>{text.qualification}</label>
+                                    <select disabled={hasTournamentBracket} value={editTournamentQualificationRule} onChange={(event) => setEditTournamentQualificationRule(event.target.value as QualificationRule)}>
+                                      <option value="top_1">{text.topOnePerPool}</option>
+                                      <option value="top_2">{text.topTwoPerPool}</option>
+                                      <option value="top_4">{text.topFourPerPool}</option>
+                                      <option value="custom">{text.custom}</option>
+                                    </select>
+                                  </div>
+                                  {editTournamentQualificationRule === 'custom' && (
+                                    <div>
+                                      <label>{text.customQualifiers}</label>
+                                      <input disabled={hasTournamentBracket} inputMode="numeric" min={1} max={16} type="number" value={editTournamentCustomQualifiers} onChange={(event) => setEditTournamentCustomQualifiers(Number(event.target.value) || 1)} />
+                                    </div>
+                                  )}
+                                  <label className="toggle-line">
+                                    <input checked={editTournamentRequirePayment} onChange={(event) => setEditTournamentRequirePayment(event.target.checked)} type="checkbox" />
+                                    <span>{text.requirePaymentForBracket}</span>
+                                  </label>
+                                  <label className="toggle-line">
+                                    <input checked={editTournamentThirdPlace} onChange={(event) => setEditTournamentThirdPlace(event.target.checked)} type="checkbox" />
+                                    <span>{text.createBronzeMatch}</span>
+                                  </label>
+                                  <div>
+                                    <label>{text.firstPrize}</label>
+                                    <input value={editTournamentFirstPrize} onChange={(event) => setEditTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
+                                  </div>
+                                  <div>
+                                    <label>{text.secondPrize}</label>
+                                    <input value={editTournamentSecondPrize} onChange={(event) => setEditTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
+                                  </div>
+                                  <div>
+                                    <label>{text.thirdPrize}</label>
+                                    <input value={editTournamentThirdPrize} onChange={(event) => setEditTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })()}
                           <div>
                             <label>{text.date} <span className="required">*</span></label>
                             <input type="date" value={editSessionDate} onChange={(event) => setEditSessionDate(event.target.value)} />
@@ -4540,8 +4650,8 @@ export default function WidgetPage() {
                 <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
               </div>
               <div className="full">
-                <label>{text.tournamentSession}</label>
-                <div className="segmented">
+                <label>{text.sessionType}</label>
+                <div className="segmented session-type-toggle">
                   <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
                     {text.normalGame}
                   </button>
@@ -4551,7 +4661,11 @@ export default function WidgetPage() {
                 </div>
               </div>
               {sessionType === 'tournament' && (
-                <div className="full tournament-create-box">
+                <div className="full tournament-create-box tournament-settings-box">
+                  <div className="tournament-settings-head">
+                    <strong>{text.tournamentRules}</strong>
+                    <span>{text.tournamentRulesHint}</span>
+                  </div>
                   <div className="form-grid compact-form-grid">
                     <div>
                       <label>{text.tournamentFormat}</label>
@@ -6868,6 +6982,39 @@ export default function WidgetPage() {
           padding: 10px;
         }
 
+        .tournament-settings-box {
+          display: grid;
+          gap: 10px;
+          border-color: rgba(48, 89, 255, 0.2);
+          background:
+            linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.08)),
+            #ffffff;
+        }
+
+        .tournament-settings-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .tournament-settings-head strong {
+          font-size: 15px;
+          line-height: 1.1;
+        }
+
+        .tournament-settings-head span {
+          color: #637075;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .session-type-toggle button.active {
+          border-color: rgba(48, 89, 255, 0.28);
+          box-shadow: 0 0 0 2px rgba(48, 89, 255, 0.1);
+        }
+
         .public-leaderboard {
           display: grid;
           gap: 8px;
@@ -8155,6 +8302,17 @@ export default function WidgetPage() {
           }
 
           .public-leaderboard .podium-player small {
+            color: #aeb9bd;
+          }
+
+          .tournament-settings-box {
+            background:
+              linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(48, 89, 255, 0.12)),
+              #10191b;
+            border-color: rgba(75, 132, 255, 0.24);
+          }
+
+          .tournament-settings-head span {
             color: #aeb9bd;
           }
 
