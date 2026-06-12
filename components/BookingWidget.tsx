@@ -1601,7 +1601,7 @@ export default function WidgetPage() {
       return
     }
 
-    if (authMode === 'create' && !captchaToken) {
+    if (!captchaToken) {
       setProfileStatus(text.captchaRequired)
       return
     }
@@ -1727,6 +1727,9 @@ export default function WidgetPage() {
     const signInResult = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: profilePassword,
+      options: {
+        captchaToken,
+      },
     })
 
     resetCaptcha()
@@ -1773,10 +1776,16 @@ export default function WidgetPage() {
       return
     }
 
+    if (!profile && !captchaToken) {
+      setProfileStatus(text.captchaRequired)
+      return
+    }
+
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
     const resetOptions = {
       redirectTo,
+      captchaToken: captchaToken || undefined,
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions)
 
@@ -1913,7 +1922,7 @@ export default function WidgetPage() {
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile' || authMode !== 'create') return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile') return
 
     let cancelled = false
 
@@ -3736,40 +3745,86 @@ export default function WidgetPage() {
       ctx.closePath()
     }
 
+    const loadCanvasImage = async (src: string) => {
+      const image = new Image()
+      image.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = () => reject(new Error('image failed'))
+        image.src = src
+      })
+      return image
+    }
+
+    const drawRainbowCorner = (x: number, y: number, radius: number, start: number, end: number) => {
+      const colors = ['#ffc928', '#ff7a1a', '#e8475c', '#4d62b8', '#65d1d5']
+      colors.forEach((color, index) => {
+        ctx.beginPath()
+        ctx.strokeStyle = color
+        ctx.lineWidth = 18
+        ctx.arc(x, y, radius - index * 22, start, end)
+        ctx.stroke()
+      })
+    }
+
+    const drawSmallMark = (x: number, y: number, scale: number) => {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      const colors = ['#ffc928', '#ff7a1a', '#e8475c', '#4d62b8', '#65d1d5']
+      colors.forEach((color, index) => {
+        ctx.strokeStyle = color
+        ctx.lineWidth = 7 * scale
+        ctx.beginPath()
+        ctx.moveTo(0, 32 * scale - index * 2)
+        ctx.lineTo(0, 10 * scale - index * 2)
+        ctx.quadraticCurveTo(0, 0 - index * 2, 10 * scale, 0 - index * 2)
+        ctx.lineTo(31 * scale, 0 - index * 2)
+        ctx.stroke()
+      })
+      ctx.restore()
+    }
+
     const drawPodiumCard = async () => {
-      const background = ctx.createLinearGradient(0, 0, 1200, 900)
-      background.addColorStop(0, '#071112')
-      background.addColorStop(0.52, '#10262a')
-      background.addColorStop(1, '#182b48')
-      ctx.fillStyle = background
+      ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, 1200, 900)
 
-      ctx.fillStyle = 'rgba(0, 174, 179, 0.22)'
-      ctx.beginPath()
-      ctx.arc(140, 140, 210, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = 'rgba(245, 197, 66, 0.18)'
-      ctx.beginPath()
-      ctx.arc(1060, 160, 250, 0, Math.PI * 2)
-      ctx.fill()
+      drawRainbowCorner(1215, 175, 132, Math.PI * 0.5, Math.PI * 1.5)
+      drawRainbowCorner(-12, 630, 118, Math.PI * 1.5, Math.PI * 2.5)
+      drawRainbowCorner(1110, 918, 210, Math.PI, Math.PI * 1.5)
+      drawSmallMark(96, 270, 1.05)
+      drawSmallMark(1064, 514, 0.8)
+      drawSmallMark(110, 784, 0.62)
 
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '800 54px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'left'
+      try {
+        const logo = await loadCanvasImage(`${window.location.origin}/brand/vrena-logo-full-light.svg`)
+        ctx.drawImage(logo, 390, 40, 420, 112)
+      } catch {
+        ctx.fillStyle = '#071112'
+        ctx.font = '800 72px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillText('VRena', 600, 114)
+      }
+
+      ctx.fillStyle = '#071112'
+      ctx.font = '800 38px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
-      ctx.fillText('VRena Tournament', 72, 104)
+      ctx.fillText('Tournament Leaderboard', 600, 210)
 
-      ctx.fillStyle = '#aeb9bd'
-      ctx.font = '700 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText(`${session.name} · ${session.date} ${session.start_time.slice(0, 5)}`, 72, 150)
+      ctx.fillStyle = '#4a5a60'
+      ctx.font = '700 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText(`${session.name} · ${session.date} ${session.start_time.slice(0, 5)}`, 600, 248)
 
       const orderedPodium = [2, 1, 3]
         .map((placement) => podium.find((participant) => participant.placement === placement))
         .filter(Boolean) as Participant[]
       const slots = [
-        { placement: 2, x: 112, y: 390, w: 300, h: 260, color: '#b7c0ca' },
-        { placement: 1, x: 450, y: 280, w: 300, h: 370, color: '#f5c542' },
-        { placement: 3, x: 788, y: 450, w: 300, h: 200, color: '#c98742' },
+        { placement: 2, x: 122, y: 455, w: 290, h: 205, avatar: 154, color: '#b7c0ca', emoji: '🥈' },
+        { placement: 1, x: 455, y: 360, w: 290, h: 300, avatar: 188, color: '#f5c542', emoji: '🏆' },
+        { placement: 3, x: 788, y: 500, w: 290, h: 160, avatar: 154, color: '#c98742', emoji: '🥉' },
       ]
 
       for (const participant of orderedPodium) {
@@ -3777,27 +3832,23 @@ export default function WidgetPage() {
         if (!slot) continue
 
         ctx.fillStyle = slot.color
-        roundedRect(slot.x, slot.y, slot.w, slot.h, 28)
+        roundedRect(slot.x, slot.y, slot.w, slot.h, 26)
         ctx.fill()
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
-        roundedRect(slot.x + 10, slot.y + 10, slot.w - 20, slot.h - 20, 22)
+        ctx.fillStyle = '#ffffff'
+        roundedRect(slot.x + 8, slot.y + 8, slot.w - 16, slot.h - 16, 20)
         ctx.fill()
 
-        await drawRoundAvatar(participant, slot.x + slot.w / 2 - 62, slot.y - 72, 124)
+        await drawRoundAvatar(participant, slot.x + slot.w / 2 - slot.avatar / 2, slot.y - slot.avatar / 2 - 18, slot.avatar)
 
-        ctx.fillStyle = slot.color
-        ctx.beginPath()
-        ctx.arc(slot.x + slot.w / 2 + 64, slot.y - 54, 28, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.fillStyle = '#071112'
-        ctx.font = '800 30px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.font = `800 ${slot.placement === 1 ? 40 : 34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(String(participant.placement), slot.x + slot.w / 2 + 64, slot.y - 54)
+        ctx.fillText(slot.emoji, slot.x + slot.w / 2 + slot.avatar / 2 - 8, slot.y - slot.avatar / 2 - 2)
 
         ctx.fillStyle = '#071112'
         ctx.font = '800 34px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.textBaseline = 'alphabetic'
         ctx.fillText(compactDisplayName(participant.display_name, text.player), slot.x + slot.w / 2, slot.y + slot.h - 82)
 
         ctx.fillStyle = '#39464b'
@@ -3805,11 +3856,11 @@ export default function WidgetPage() {
         ctx.fillText(`${participant.score ?? 0} pts · ${participant.accuracy_percent ?? '-'}%`, slot.x + slot.w / 2, slot.y + slot.h - 42)
       }
 
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = '#071112'
       ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('Tiny bragging rights. Big headset energy.', 600, 806)
-      ctx.fillStyle = '#aeb9bd'
+      ctx.fillText('Tiny bragging rights. Big headset energy.', 600, 802)
+      ctx.fillStyle = '#4a5a60'
       ctx.font = '700 22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.fillText(DEFAULT_APP_URL, 600, 842)
     }
@@ -5204,7 +5255,7 @@ export default function WidgetPage() {
                   )}
                 </div>
               )}
-              {!profile && authMode === 'create' && (
+              {!profile && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
