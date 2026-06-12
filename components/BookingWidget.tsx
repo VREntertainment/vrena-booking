@@ -1011,7 +1011,7 @@ export default function WidgetPage() {
   } | null | undefined, fallback = 'P') {
     const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
 
-    if (source?.avatar_url) return <img src={source.avatar_url} alt="" />
+    if (source?.avatar_url) return <span className="avatar-image"><img src={source.avatar_url} alt="" /></span>
     if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
     if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
     return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
@@ -5126,7 +5126,8 @@ export default function WidgetPage() {
         }
 
         .avatar-text,
-        .avatar-emoji {
+        .avatar-emoji,
+        .avatar-image {
           display: grid;
           place-items: center;
           width: 100%;
@@ -5137,6 +5138,21 @@ export default function WidgetPage() {
 
         .avatar-emoji {
           font-size: 1.25em;
+        }
+
+        .avatar-image {
+          overflow: hidden;
+          border-radius: 50%;
+          clip-path: circle(50% at 50% 50%);
+        }
+
+        .avatar-image img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          max-width: none;
+          object-fit: cover;
+          border-radius: 50%;
         }
 
         .champion-badge {
@@ -5159,8 +5175,8 @@ export default function WidgetPage() {
           50% { transform: rotate(8deg) translateY(-2px); }
         }
 
-        .avatar img,
-        .player-avatar img {
+        .avatar > img,
+        .player-avatar > img {
           display: block;
           width: 100%;
           height: 100%;
@@ -5798,7 +5814,7 @@ export default function WidgetPage() {
           overflow: visible;
         }
 
-        .player-avatar img {
+        .player-avatar > img {
           display: block;
           width: 100%;
           height: 100%;
