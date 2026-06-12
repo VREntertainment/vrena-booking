@@ -45,6 +45,9 @@ type Profile = {
   nickname: string | null
   email: string | null
   avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
   role?: 'player' | 'admin'
 }
 
@@ -53,8 +56,12 @@ type Participant = {
   profile_id: string
   display_name: string | null
   avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
   checked_in?: boolean | null
   payment_status?: 'cash' | 'bank_transfer' | 'free' | null
+  payment_amount?: number | null
   score?: number | null
   accuracy_percent?: number | null
   projectiles_fired?: number | null
@@ -94,6 +101,9 @@ type ClubMember = {
   profile_id: string
   display_name: string | null
   avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
   status: 'pending' | 'approved'
 }
 
@@ -114,6 +124,9 @@ type TournamentEditor = {
   profile_id: string
   display_name: string | null
   avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
 }
 
 type TournamentPool = {
@@ -130,6 +143,7 @@ type TournamentPoolEntry = {
   participant_id: string
   profile_id: string
   seed: number | null
+  team_label?: string | null
 }
 
 type TournamentMatch = {
@@ -193,6 +207,9 @@ const countries = [
   { code: '+31', name: 'Netherlands' },
   { code: '+41', name: 'Switzerland' },
 ]
+
+const avatarColors = ['#3059ff', '#00b5b8', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e', '#111827']
+const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '👑', '🚀', '🌀', '🎯']
 
 const uiText = {
   en: {
@@ -258,9 +275,12 @@ const uiText = {
     tournamentSession: 'Tournament',
     tournamentDesk: 'Tournament desk',
     tournamentSetup: 'Setup pools',
+    tournamentRandomSetup: 'Random pools',
+    tournamentManualSetup: 'Manual setup',
     tournamentGenerateMatches: 'Generate matches',
     tournamentNextRound: 'Next round',
     tournamentEditors: 'Editors',
+    editorSearchPlaceholder: 'Search name or nickname',
     addEditor: 'Add editor',
     editorHint: 'Editors can check in players and record tournament results.',
     pools: 'Pools',
@@ -269,10 +289,16 @@ const uiText = {
     scoreA: 'Score A',
     scoreB: 'Score B',
     poolSize: 'Players per pool',
+    pool: 'Pool',
+    team: 'Team',
+    match: 'Match',
+    assign: 'Assign',
+    noMatch: 'No match',
     noTournamentData: 'No tournament bracket yet. Set the pools and let the games begin.',
     checkIn: 'Check-in',
     checkedIn: 'Checked in',
     paymentMethod: 'Payment method',
+    paymentAmount: 'Amount paid',
     cash: 'Cash',
     bankTransfer: 'Bank transfer',
     free: 'Free',
@@ -289,10 +315,18 @@ const uiText = {
     gamesCheckedIn: 'games checked in',
     wins: 'wins',
     totalScore: 'total score',
-    bestPlayer: 'Leaderboard jester crowned you: current top scorer in the realm.',
+    bestPlayer: 'Crowned chaos-maker: keep the throne warm.',
+    bestPlayerLogin: 'Crown check: still on top. Come defend the throne.',
     topPlayerNotice: 'Heads up: the court champion is in this session. Friendly chaos encouraged.',
     playerProfile: 'Player profile',
-    bestOverall: 'Best overall',
+    bestOverall: 'Crown holder',
+    avatarStyle: 'Avatar style',
+    usePhoto: 'Photo',
+    useEmoji: 'Emoji',
+    useInitials: '2 marks',
+    avatarEmoji: 'Emoji',
+    avatarInitials: 'Letters/symbols',
+    avatarColor: 'Color',
     language: 'Language',
     expand: 'Expand',
     collapse: 'Collapse',
@@ -486,9 +520,12 @@ const uiText = {
     tournamentSession: 'Giải đấu',
     tournamentDesk: 'Bàn điều khiển giải đấu',
     tournamentSetup: 'Tạo bảng đấu',
+    tournamentRandomSetup: 'Chia bảng ngẫu nhiên',
+    tournamentManualSetup: 'Tự xếp bảng',
     tournamentGenerateMatches: 'Tạo trận',
     tournamentNextRound: 'Vòng tiếp theo',
     tournamentEditors: 'Người hỗ trợ',
+    editorSearchPlaceholder: 'Tìm tên hoặc biệt danh',
     addEditor: 'Thêm hỗ trợ',
     editorHint: 'Người hỗ trợ có thể check-in và nhập kết quả giải đấu.',
     pools: 'Bảng đấu',
@@ -497,10 +534,16 @@ const uiText = {
     scoreA: 'Điểm A',
     scoreB: 'Điểm B',
     poolSize: 'Người mỗi bảng',
+    pool: 'Bảng',
+    team: 'Đội',
+    match: 'Trận',
+    assign: 'Xếp',
+    noMatch: 'Chưa có trận',
     noTournamentData: 'Chưa có sơ đồ giải đấu. Tạo bảng và bắt đầu cuộc vui.',
     checkIn: 'Check-in',
     checkedIn: 'Đã check-in',
     paymentMethod: 'Phương thức thanh toán',
+    paymentAmount: 'Số tiền đã trả',
     cash: 'Tiền mặt',
     bankTransfer: 'Chuyển khoản',
     free: 'Miễn phí',
@@ -517,10 +560,18 @@ const uiText = {
     gamesCheckedIn: 'phiên đã check-in',
     wins: 'lần thắng',
     totalScore: 'tổng điểm',
-    bestPlayer: 'Hề triều đình tuyên bố: bạn đang là cao thủ điểm số của vương quốc.',
+    bestPlayer: 'Đội vương miện rồi: giữ ngai cho chắc nhé.',
+    bestPlayerLogin: 'Kiểm tra vương miện: bạn vẫn đang dẫn đầu. Vào giữ ngai thôi.',
     topPlayerNotice: 'Báo nhẹ: cao thủ điểm số đang trong phiên này. Chuẩn bị tranh tài vui nhé.',
     playerProfile: 'Hồ sơ người chơi',
-    bestOverall: 'Cao nhất',
+    bestOverall: 'Chủ vương miện',
+    avatarStyle: 'Kiểu avatar',
+    usePhoto: 'Ảnh',
+    useEmoji: 'Emoji',
+    useInitials: '2 ký tự',
+    avatarEmoji: 'Emoji',
+    avatarInitials: 'Chữ/ký hiệu',
+    avatarColor: 'Màu',
     language: 'Ngôn ngữ',
     expand: 'Mở rộng',
     collapse: 'Thu gọn',
@@ -729,6 +780,10 @@ function compactDisplayName(value: string | null | undefined, fallback = 'Player
   return limitDisplayName(cleaned)
 }
 
+function compactInitials(value: string) {
+  return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
+}
+
 function normalizeSearchValue(value: string) {
   return value
     .normalize('NFD')
@@ -877,6 +932,10 @@ export default function WidgetPage() {
   const [personalDataConsent, setPersonalDataConsent] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
+  const [avatarMode, setAvatarMode] = useState<'photo' | 'emoji' | 'initials'>('photo')
+  const [avatarEmoji, setAvatarEmoji] = useState('😎')
+  const [avatarInitials, setAvatarInitials] = useState('')
+  const [avatarColor, setAvatarColor] = useState(avatarColors[0])
   const [profileStatus, setProfileStatus] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
@@ -921,13 +980,17 @@ export default function WidgetPage() {
   const [selectedClubDate, setSelectedClubDate] = useState('')
   const [tournamentPoolSize, setTournamentPoolSize] = useState(4)
   const [tournamentEditorEmail, setTournamentEditorEmail] = useState('')
+  const [tournamentEditorResults, setTournamentEditorResults] = useState<Profile[]>([])
   const [busyTournamentId, setBusyTournamentId] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
+  const [checkInPaymentStatus, setCheckInPaymentStatus] = useState<'cash' | 'bank_transfer' | 'free' | ''>('')
+  const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championNoticeSessionId, setChampionNoticeSessionId] = useState('')
+  const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
@@ -936,6 +999,36 @@ export default function WidgetPage() {
   const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
   const showProfileFields = Boolean(profile || authMode === 'create')
+
+  function avatarNode(source: {
+    avatar_url?: string | null
+    avatar_emoji?: string | null
+    avatar_initials?: string | null
+    avatar_color?: string | null
+    display_name?: string | null
+    full_name?: string | null
+    nickname?: string | null
+  } | null | undefined, fallback = 'P') {
+    const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
+
+    if (source?.avatar_url) return <img src={source.avatar_url} alt="" />
+    if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
+    if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
+    return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
+  }
+
+  function avatarStyle(source: { avatar_color?: string | null } | null | undefined) {
+    return source?.avatar_color ? { background: source.avatar_color } : undefined
+  }
+
+  function avatarFields(source: Profile) {
+    return {
+      avatar_url: source.avatar_url || null,
+      avatar_emoji: source.avatar_emoji || null,
+      avatar_initials: source.avatar_initials || null,
+      avatar_color: source.avatar_color || null,
+    }
+  }
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
@@ -1013,7 +1106,7 @@ export default function WidgetPage() {
 
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('id, phone, full_name, nickname, email, avatar_url, role')
+      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
       .eq('id', authUser.id)
       .maybeSingle()
 
@@ -1025,6 +1118,10 @@ export default function WidgetPage() {
       setProfileName(profileRow.full_name || '')
       setProfileNickname(limitDisplayName(profileRow.nickname || ''))
       setProfileEmail(profileRow.email || '')
+      setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
+      setAvatarEmoji(profileRow.avatar_emoji || '😎')
+      setAvatarInitials(profileRow.avatar_initials || '')
+      setAvatarColor(profileRow.avatar_color || avatarColors[0])
     }
   }
 
@@ -1115,11 +1212,18 @@ export default function WidgetPage() {
         .eq('id', authUser.id)
         .maybeSingle()
 
-      const avatarUrl = await uploadAvatar(authUser.id, existingProfile?.avatar_url || null)
+      const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(authUser.id, existingProfile?.avatar_url || null) : null
 
       if (avatarUrl === false) {
         resetCaptcha()
         return
+      }
+
+      const avatarPayload = {
+        avatar_url: avatarMode === 'photo' ? avatarUrl : null,
+        avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
+        avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
+        avatar_color: avatarColor,
       }
 
       const { error } = await supabase.from('profiles').upsert({
@@ -1128,7 +1232,7 @@ export default function WidgetPage() {
         phone: fullPhone,
         nickname: nickname || existingProfile?.nickname || null,
         email: loginEmail,
-        avatar_url: avatarUrl,
+        ...avatarPayload,
         personal_data_consent: personalDataConsent,
         personal_data_consent_at: consentAt,
         privacy_policy_url: PRIVACY_POLICY_URL,
@@ -1149,7 +1253,10 @@ export default function WidgetPage() {
           name: display,
           nickname: nickname || null,
           phone: fullPhone,
-          avatar_url: avatarUrl,
+          avatar_url: avatarPayload.avatar_url,
+          avatar_emoji: avatarPayload.avatar_emoji,
+          avatar_initials: avatarPayload.avatar_initials,
+          avatar_color: avatarPayload.avatar_color,
           personal_data_consent: personalDataConsent,
           personal_data_consent_at: consentAt,
           privacy_policy_url: PRIVACY_POLICY_URL,
@@ -1275,8 +1382,8 @@ export default function WidgetPage() {
   async function loadSessions() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
-        .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, checked_in, payment_status, score, accuracy_percent, projectiles_fired, placement)')
+      .from('sessions')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1295,7 +1402,7 @@ export default function WidgetPage() {
   async function loadClubs() {
     const { data, error } = await supabase
       .from('clubs')
-      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, status)')
+      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, status)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1308,9 +1415,9 @@ export default function WidgetPage() {
 
   async function loadTournamentData() {
     const [editorsResult, poolsResult, entriesResult, matchesResult] = await Promise.all([
-      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url'),
+      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color'),
       supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
-      supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed'),
+      supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
       supabase
         .from('tournament_matches')
         .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, winner_participant_id, status')
@@ -1672,6 +1779,9 @@ export default function WidgetPage() {
       profileId: string
       displayName: string
       avatarUrl: string | null
+      avatarEmoji: string | null
+      avatarInitials: string | null
+      avatarColor: string | null
       gamesJoined: number
       wins: number
       totalScore: number
@@ -1689,6 +1799,9 @@ export default function WidgetPage() {
           profileId: participant.profile_id,
           displayName: compactDisplayName(participant.display_name, text.player),
           avatarUrl: participant.avatar_url,
+          avatarEmoji: participant.avatar_emoji || null,
+          avatarInitials: participant.avatar_initials || null,
+          avatarColor: participant.avatar_color || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -1700,6 +1813,9 @@ export default function WidgetPage() {
 
         current.displayName = compactDisplayName(participant.display_name, current.displayName)
         current.avatarUrl = participant.avatar_url || current.avatarUrl
+        current.avatarEmoji = participant.avatar_emoji || current.avatarEmoji
+        current.avatarInitials = participant.avatar_initials || current.avatarInitials
+        current.avatarColor = participant.avatar_color || current.avatarColor
         current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
 
@@ -1749,6 +1865,9 @@ export default function WidgetPage() {
     profileId: userId,
     displayName: displayName(profile),
     avatarUrl: profile?.avatar_url || null,
+    avatarEmoji: profile?.avatar_emoji || null,
+    avatarInitials: profile?.avatar_initials || null,
+    avatarColor: profile?.avatar_color || null,
     gamesJoined: 0,
     wins: 0,
     totalScore: 0,
@@ -1759,16 +1878,34 @@ export default function WidgetPage() {
     bestByGame: [],
   }
 
+  const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
   const topPlayer = allPlayerStats[0]
   const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
+  const selectedPlayerManageContext = useMemo(() => {
+    if (!selectedPlayerId) return null
+
+    for (const session of sessions) {
+      if (!canManageSession(session)) continue
+      const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
+      if (participant) return { session, participant }
+    }
+
+    return null
+  }, [selectedPlayerId, sessions, userId, isAdmin, tournamentData.editors])
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
 
     let visibleAvatar: string | null = null
+    let visibleEmoji: string | null = null
+    let visibleInitials: string | null = null
+    let visibleColor: string | null = null
     let visibleName = ''
 
     if (selectedPlayerId === userId && profile) {
       visibleAvatar = profile.avatar_url || visibleAvatar
+      visibleEmoji = profile.avatar_emoji || visibleEmoji
+      visibleInitials = profile.avatar_initials || visibleInitials
+      visibleColor = profile.avatar_color || visibleColor
       visibleName = displayName(profile) || visibleName
     }
 
@@ -1776,6 +1913,9 @@ export default function WidgetPage() {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
       if (participant) {
         visibleAvatar = participant.avatar_url || visibleAvatar
+        visibleEmoji = participant.avatar_emoji || visibleEmoji
+        visibleInitials = participant.avatar_initials || visibleInitials
+        visibleColor = participant.avatar_color || visibleColor
         visibleName = compactDisplayName(participant.display_name, visibleName || text.player)
       }
     }
@@ -1784,6 +1924,9 @@ export default function WidgetPage() {
       const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
       if (member) {
         visibleAvatar = member.avatar_url || visibleAvatar
+        visibleEmoji = member.avatar_emoji || visibleEmoji
+        visibleInitials = member.avatar_initials || visibleInitials
+        visibleColor = member.avatar_color || visibleColor
         visibleName = compactDisplayName(member.display_name, visibleName || text.player)
       }
     }
@@ -1793,6 +1936,9 @@ export default function WidgetPage() {
         ...selectedPlayerStats,
         displayName: compactDisplayName(selectedPlayerStats.displayName || visibleName, text.player),
         avatarUrl: selectedPlayerStats.avatarUrl || visibleAvatar,
+        avatarEmoji: selectedPlayerStats.avatarEmoji || visibleEmoji,
+        avatarInitials: selectedPlayerStats.avatarInitials || visibleInitials,
+        avatarColor: selectedPlayerStats.avatarColor || visibleColor,
       }
     }
 
@@ -1803,6 +1949,9 @@ export default function WidgetPage() {
           profileId: participant.profile_id,
           displayName: compactDisplayName(participant.display_name, text.player),
           avatarUrl: participant.avatar_url,
+          avatarEmoji: participant.avatar_emoji || null,
+          avatarInitials: participant.avatar_initials || null,
+          avatarColor: participant.avatar_color || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -1822,6 +1971,9 @@ export default function WidgetPage() {
           profileId: member.profile_id,
           displayName: compactDisplayName(member.display_name, text.player),
           avatarUrl: member.avatar_url,
+          avatarEmoji: member.avatar_emoji || null,
+          avatarInitials: member.avatar_initials || null,
+          avatarColor: member.avatar_color || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -1850,6 +2002,50 @@ export default function WidgetPage() {
     setCreateStatus(text.topPlayerNotice)
   }, [activeView, championNoticeSessionId, filteredSessions, profile, text.topPlayerNotice, topPlayer, userId])
 
+  useEffect(() => {
+    if (!checkInParticipant) {
+      setCheckInPaymentStatus('')
+      setCheckInPaymentAmount('')
+      return
+    }
+
+    setCheckInPaymentStatus(checkInParticipant.payment_status || '')
+    setCheckInPaymentAmount(checkInParticipant.payment_amount ? String(checkInParticipant.payment_amount) : '')
+  }, [checkInParticipant])
+
+  useEffect(() => {
+    if (!profile || !topPlayer || topPlayer.profileId !== userId) return
+    const alreadyShown = window.sessionStorage.getItem('vrena-crown-login')
+    if (alreadyShown === userId) return
+    window.sessionStorage.setItem('vrena-crown-login', userId)
+    setChampionLoginOpen(true)
+  }, [profile, topPlayer, userId])
+
+  useEffect(() => {
+    const query = tournamentEditorEmail.trim()
+    if (query.length < 2) {
+      setTournamentEditorResults([])
+      return
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      const safe = query.replace(/[%_,]/g, '')
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .or(`full_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
+        .limit(6)
+
+      if (!cancelled) setTournamentEditorResults((data ?? []) as Profile[])
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [tournamentEditorEmail])
+
   const filteredCountries = useMemo(() => {
     const query = countrySearch.trim().toLowerCase()
     if (!query) return countries
@@ -1858,8 +2054,6 @@ export default function WidgetPage() {
       `${country.code} ${country.name}`.toLowerCase().includes(query)
     )
   }, [countrySearch])
-
-  const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
 
   function canManageSession(session: Session) {
     return Boolean(
@@ -1882,10 +2076,9 @@ export default function WidgetPage() {
     return compactDisplayName(participant?.display_name, text.player)
   }
 
-  function participantAvatar(session: Session, participantId: string | null) {
+  function participantById(session: Session, participantId: string | null) {
     if (!participantId) return null
-    const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
-    return participant?.avatar_url || null
+    return (session.session_participants ?? []).find((item) => item.id === participantId) || null
   }
 
   function tournamentForSession(sessionId: string) {
@@ -1958,7 +2151,7 @@ export default function WidgetPage() {
       club_id: club.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
-      avatar_url: activeProfile.avatar_url,
+      ...avatarFields(activeProfile),
       status: 'approved',
     })
 
@@ -1990,7 +2183,7 @@ export default function WidgetPage() {
       club_id: club.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
-      avatar_url: activeProfile.avatar_url,
+      ...avatarFields(activeProfile),
       status: club.visibility === 'private' ? 'pending' : 'approved',
     })
 
@@ -2039,12 +2232,14 @@ export default function WidgetPage() {
     setBusyClubId('')
   }
 
-  async function updateParticipantCheckIn(participantId: string, paymentStatus: 'cash' | 'bank_transfer' | 'free' | null) {
+  async function updateParticipantCheckIn(participantId: string, paymentStatus: 'cash' | 'bank_transfer' | 'free' | null, amountValue = '') {
+    const normalizedAmount = paymentStatus && paymentStatus !== 'free' ? Number(amountValue.replace(/[^\d]/g, '')) : null
     const { error } = await supabase
       .from('session_participants')
       .update({
         checked_in: Boolean(paymentStatus),
         payment_status: paymentStatus,
+        payment_amount: Number.isFinite(normalizedAmount as number) ? normalizedAmount : null,
         checked_in_at: paymentStatus ? new Date().toISOString() : null,
       })
       .eq('id', participantId)
@@ -2112,9 +2307,16 @@ export default function WidgetPage() {
     setIsSavingProfile(true)
     setProfileStatus(text.savingProfile)
 
-    const avatarUrl = await uploadAvatar(userId, profile?.avatar_url || null)
+    const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(userId, profile?.avatar_url || null) : null
 
     if (avatarUrl === false) return
+
+    const avatarPayload = {
+      avatar_url: avatarMode === 'photo' ? avatarUrl : null,
+      avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
+      avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || displayName(profile) || fullName) : null,
+      avatar_color: avatarColor,
+    }
 
     const row = {
       id: userId,
@@ -2122,14 +2324,14 @@ export default function WidgetPage() {
       phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
       nickname: nickname || null,
       email: profileEmail.trim() || null,
-      avatar_url: avatarUrl,
+      ...avatarPayload,
       updated_at: new Date().toISOString(),
     }
 
     const { data, error } = await supabase
       .from('profiles')
       .upsert(row)
-      .select('id, phone, full_name, nickname, email, avatar_url, role')
+      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
       .single()
 
     if (error) {
@@ -2147,6 +2349,9 @@ export default function WidgetPage() {
         nickname: nickname || null,
         phone: data.phone,
         avatar_url: data.avatar_url,
+        avatar_emoji: data.avatar_emoji,
+        avatar_initials: data.avatar_initials,
+        avatar_color: data.avatar_color,
       },
     })
 
@@ -2186,6 +2391,7 @@ export default function WidgetPage() {
     const file = event.target.files?.[0] || null
     setAvatarFile(file)
     setAvatarPreview(file ? URL.createObjectURL(file) : '')
+    if (file) setAvatarMode('photo')
   }
 
   function toggleGame(gameId: GameId) {
@@ -2266,7 +2472,7 @@ export default function WidgetPage() {
       session_id: created.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
-      avatar_url: activeProfile.avatar_url,
+      ...avatarFields(activeProfile),
     })
 
     setCreateStatus(
@@ -2325,7 +2531,7 @@ export default function WidgetPage() {
       session_id: session.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
-      avatar_url: activeProfile.avatar_url,
+      ...avatarFields(activeProfile),
     })
 
     if (error) {
@@ -2551,24 +2757,28 @@ export default function WidgetPage() {
     return stage.replace('_', ' ')
   }
 
-  async function addTournamentEditor(session: Session) {
+  async function addTournamentEditor(session: Session, selectedEditor?: Profile) {
     if (!isSessionCreator(session)) {
       setCreateStatus(text.creatorOnlyEdit)
       return
     }
 
     const email = tournamentEditorEmail.trim().toLowerCase()
-    if (!email) return
+    if (!email && !selectedEditor) return
 
     setBusyTournamentId(session.id)
-    const { data: editorProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, full_name, nickname, email, avatar_url')
-      .eq('email', email)
-      .single()
+    const profileLookup = selectedEditor
+      ? { data: selectedEditor, error: null }
+      : await supabase
+        .from('profiles')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .or(`email.eq.${email},nickname.ilike.%${email}%,full_name.ilike.%${email}%`)
+        .limit(1)
+        .maybeSingle()
 
-    if (profileError || !editorProfile) {
-      setCreateStatus(profileError?.message || 'Editor profile not found.')
+    const editorProfile = profileLookup.data
+    if (profileLookup.error || !editorProfile) {
+      setCreateStatus(profileLookup.error?.message || 'Editor profile not found.')
       setBusyTournamentId('')
       return
     }
@@ -2578,7 +2788,7 @@ export default function WidgetPage() {
       session_id: session.id,
       profile_id: editorProfile.id,
       display_name: display,
-      avatar_url: editorProfile.avatar_url,
+      ...avatarFields(editorProfile),
     }, { onConflict: 'session_id,profile_id' })
 
     if (error) {
@@ -2588,6 +2798,7 @@ export default function WidgetPage() {
     }
 
     setTournamentEditorEmail('')
+    setTournamentEditorResults([])
     await loadTournamentData()
     setCreateStatus(text.profileSaved)
     setBusyTournamentId('')
@@ -2708,6 +2919,23 @@ export default function WidgetPage() {
     setBusyTournamentId('')
   }
 
+  async function updateTournamentPoolEntry(entry: TournamentPoolEntry, changes: Partial<TournamentPoolEntry>) {
+    const { error } = await supabase
+      .from('tournament_pool_entries')
+      .update({
+        pool_id: changes.pool_id ?? entry.pool_id,
+        team_label: changes.team_label ?? entry.team_label ?? null,
+      })
+      .eq('id', entry.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadTournamentData()
+  }
+
   async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
     const scoreA = changes.score_a ?? match.score_a
     const scoreB = changes.score_b ?? match.score_b
@@ -2715,6 +2943,8 @@ export default function WidgetPage() {
     const { error } = await supabase
       .from('tournament_matches')
       .update({
+        participant_a_id: changes.participant_a_id ?? match.participant_a_id,
+        participant_b_id: changes.participant_b_id ?? match.participant_b_id,
         score_a: scoreA,
         score_b: scoreB,
         winner_participant_id: winner || null,
@@ -2818,7 +3048,7 @@ export default function WidgetPage() {
 
         <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
           <div className="avatar">
-            {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : displayName(profile).slice(0, 1)}
+            {avatarNode(profile, 'P')}
             {topPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
           </div>
           <div>
@@ -3127,8 +3357,8 @@ export default function WidgetPage() {
                               type="button"
                             >
                               <span className="podium-medal">{rankEmoji(participant.placement)}</span>
-                              <span className="player-avatar tiny-avatar">
-                                {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? compactDisplayName(participant.display_name, 'P').slice(0, 1) : '?')}
+                              <span className="player-avatar tiny-avatar" style={canSeeSessionPlayers ? avatarStyle(participant) : undefined}>
+                                {canSeeSessionPlayers ? avatarNode(participant, 'P') : '?'}
                               </span>
                               <strong>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</strong>
                             </button>
@@ -3146,13 +3376,21 @@ export default function WidgetPage() {
                               participant.placement ? `place-${participant.placement}` : '',
                             ].join(' ').trim()}
                             onClick={() => setSelectedPlayerId(participant.profile_id)}
+                            style={canSeeSessionPlayers ? avatarStyle(participant) : undefined}
                             type="button"
                           >
-                            {canSeeSessionPlayers && participant.avatar_url ? <img src={participant.avatar_url} alt="" /> : (canSeeSessionPlayers ? compactDisplayName(participant.display_name, 'P').slice(0, 1) : '?')}
+                            {canSeeSessionPlayers ? avatarNode(participant, 'P') : '?'}
+                            {topPlayer?.profileId === participant.profile_id && <span className="champion-badge">👑</span>}
                             {participant.checked_in && <span className="check-badge">✓</span>}
                             {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
                           </button>
                           <span>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</span>
+                          {(canManage || participant.profile_id === userId) && participant.payment_status && (
+                            <small className="private-payment">
+                              {participant.payment_status === 'cash' ? text.cash : participant.payment_status === 'bank_transfer' ? text.bankTransfer : text.free}
+                              {participant.payment_amount ? ` · ${participant.payment_amount.toLocaleString('vi-VN')} đ` : ''}
+                            </small>
+                          )}
                           {canManage && (
                             <button
                               className="checkin-mini"
@@ -3172,41 +3410,6 @@ export default function WidgetPage() {
                             >
                               {text.remove}
                             </button>
-                          )}
-                          {canManage && (
-                            <div className="score-controls">
-                              <input
-                                aria-label={text.score}
-                                defaultValue={participant.score ?? ''}
-                                inputMode="numeric"
-                                onBlur={(event) => updateParticipantResult(participant.id, event.target.value, participant.placement ?? '', participant.accuracy_percent ?? '', participant.projectiles_fired ?? '')}
-                                placeholder={text.score}
-                              />
-                              <input
-                                aria-label={text.accuracy}
-                                defaultValue={participant.accuracy_percent ?? ''}
-                                inputMode="numeric"
-                                onBlur={(event) => updateParticipantResult(participant.id, participant.score ?? '', participant.placement ?? '', event.target.value, participant.projectiles_fired ?? '')}
-                                placeholder="%"
-                              />
-                              <input
-                                aria-label={text.projectiles}
-                                defaultValue={participant.projectiles_fired ?? ''}
-                                inputMode="numeric"
-                                onBlur={(event) => updateParticipantResult(participant.id, participant.score ?? '', participant.placement ?? '', participant.accuracy_percent ?? '', event.target.value)}
-                                placeholder={text.projectiles}
-                              />
-                              <select
-                                aria-label={text.place}
-                                value={participant.placement ?? ''}
-                                onChange={(event) => updateParticipantResult(participant.id, participant.score ?? '', event.target.value, participant.accuracy_percent ?? '', participant.projectiles_fired ?? '')}
-                              >
-                                <option value="">{text.noPlace}</option>
-                                <option value="1">{text.firstPlace}</option>
-                                <option value="2">{text.secondPlace}</option>
-                                <option value="3">{text.thirdPlace}</option>
-                              </select>
-                            </div>
                           )}
                         </div>
                       ))}
@@ -3233,7 +3436,7 @@ export default function WidgetPage() {
                                   </select>
                                 </label>
                                 <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => setupTournamentPools(session)}>
-                                  {text.tournamentSetup}
+                                  {text.tournamentRandomSetup}
                                 </button>
                                 <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => generateTournamentMatches(session)}>
                                   {text.tournamentGenerateMatches}
@@ -3248,10 +3451,20 @@ export default function WidgetPage() {
                           {creatorCanAssignEditors && (
                             <div className="invite-code compact">
                               <span>{text.tournamentEditors}</span>
-                              <input value={tournamentEditorEmail} onChange={(event) => setTournamentEditorEmail(event.target.value)} placeholder="helper@email.com" />
+                              <input value={tournamentEditorEmail} onChange={(event) => setTournamentEditorEmail(event.target.value)} placeholder={text.editorSearchPlaceholder} />
                               <button disabled={busyTournamentId === session.id} type="button" onClick={() => addTournamentEditor(session)}>
                                 {text.addEditor}
                               </button>
+                              {tournamentEditorResults.length > 0 && (
+                                <div className="editor-results">
+                                  {tournamentEditorResults.map((editorProfile) => (
+                                    <button key={editorProfile.id} onClick={() => addTournamentEditor(session, editorProfile)} type="button">
+                                      <span className="player-avatar tiny-avatar" style={avatarStyle(editorProfile)}>{avatarNode(editorProfile, 'E')}</span>
+                                      <span>{compactDisplayName(editorProfile.nickname || editorProfile.full_name || editorProfile.email, text.player)}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -3259,8 +3472,8 @@ export default function WidgetPage() {
                             <div className="players compact-roster">
                               {tournament.editors.map((editor) => (
                                 <div className="player" key={editor.id}>
-                                  <span className="player-avatar">
-                                    {editor.avatar_url ? <img src={editor.avatar_url} alt="" /> : compactDisplayName(editor.display_name, 'E').slice(0, 1)}
+                                  <span className="player-avatar" style={avatarStyle(editor)}>
+                                    {avatarNode(editor, 'E')}
                                   </span>
                                   <span>{compactDisplayName(editor.display_name, text.player)}</span>
                                 </div>
@@ -3274,14 +3487,29 @@ export default function WidgetPage() {
                                 <div className="tournament-panel" key={pool.id}>
                                   <strong>{pool.name}</strong>
                                   <div className="players compact-roster">
-                                    {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => (
-                                      <div className="player" key={entry.id}>
-                                        <span className="player-avatar">
-                                          {participantAvatar(session, entry.participant_id) ? <img src={participantAvatar(session, entry.participant_id) || ''} alt="" /> : participantName(session, entry.participant_id).slice(0, 1)}
-                                        </span>
-                                        <span>{participantName(session, entry.participant_id)}</span>
-                                      </div>
-                                    ))}
+                                    {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => {
+                                      const entryParticipant = participantById(session, entry.participant_id)
+                                      return (
+                                        <div className="player tournament-entry" key={entry.id}>
+                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && setSelectedPlayerId(entryParticipant.profile_id)} style={avatarStyle(entryParticipant)} type="button">
+                                            {avatarNode(entryParticipant, 'P')}
+                                            {topPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
+                                          </button>
+                                          <span>{participantName(session, entry.participant_id)}</span>
+                                          {entry.team_label && <small>{entry.team_label}</small>}
+                                          {canEditTournament && (
+                                            <div className="entry-controls">
+                                              <select value={entry.pool_id} onChange={(event) => updateTournamentPoolEntry(entry, { pool_id: event.target.value })} aria-label={text.pool}>
+                                                {tournament.pools.map((optionPool) => (
+                                                  <option key={optionPool.id} value={optionPool.id}>{optionPool.name}</option>
+                                                ))}
+                                              </select>
+                                              <input defaultValue={entry.team_label || ''} onBlur={(event) => updateTournamentPoolEntry(entry, { team_label: event.target.value.trim() || null })} placeholder={text.team} />
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               ))}
@@ -3291,33 +3519,53 @@ export default function WidgetPage() {
                           {tournament.matches.length > 0 && (
                             <div className="match-list">
                               {tournament.matches.map((match) => (
-                                <div className={match.status === 'completed' ? 'match-card completed' : 'match-card'} key={match.id}>
-                                  <div className="match-head">
-                                    <span>{tournamentStageLabel(match.stage)} · R{match.round} M{match.match_number}</span>
-                                    <strong>{match.status}</strong>
-                                  </div>
-                                  <div className="match-versus">
-                                    <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
-                                      <span className="player-avatar">
-                                        {participantAvatar(session, match.participant_a_id) ? <img src={participantAvatar(session, match.participant_a_id) || ''} alt="" /> : participantName(session, match.participant_a_id).slice(0, 1)}
-                                      </span>
-                                      <span>{participantName(session, match.participant_a_id)}</span>
-                                    </button>
-                                    <span className="versus">VS</span>
-                                    <button className={match.winner_participant_id === match.participant_b_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_b_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_b_id })}>
-                                      <span className="player-avatar">
-                                        {participantAvatar(session, match.participant_b_id) ? <img src={participantAvatar(session, match.participant_b_id) || ''} alt="" /> : participantName(session, match.participant_b_id).slice(0, 1)}
-                                      </span>
-                                      <span>{participantName(session, match.participant_b_id)}</span>
-                                    </button>
-                                  </div>
-                                  {canEditTournament && (
-                                    <div className="score-row">
-                                      <input aria-label={text.scoreA} defaultValue={match.score_a ?? ''} inputMode="numeric" placeholder={text.scoreA} onBlur={(event) => updateTournamentMatch(match, { score_a: event.target.value === '' ? null : Number(event.target.value) })} />
-                                      <input aria-label={text.scoreB} defaultValue={match.score_b ?? ''} inputMode="numeric" placeholder={text.scoreB} onBlur={(event) => updateTournamentMatch(match, { score_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                (() => {
+                                  const playerA = participantById(session, match.participant_a_id)
+                                  const playerB = participantById(session, match.participant_b_id)
+                                  return (
+                                    <div className={match.status === 'completed' ? 'match-card completed' : 'match-card'} key={match.id}>
+                                      <div className="match-head">
+                                        <span>{tournamentStageLabel(match.stage)} · R{match.round} M{match.match_number}</span>
+                                        <strong>{match.status}</strong>
+                                      </div>
+                                      <div className="match-versus">
+                                        <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_a_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
+                                          <span className="player-avatar" style={avatarStyle(playerA)}>
+                                            {avatarNode(playerA, 'P')}
+                                            {topPlayer?.profileId === playerA?.profile_id && <span className="champion-badge">👑</span>}
+                                          </span>
+                                          <span>{participantName(session, match.participant_a_id)}</span>
+                                        </button>
+                                        <span className="versus">VS</span>
+                                        <button className={match.winner_participant_id === match.participant_b_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_b_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_b_id })}>
+                                          <span className="player-avatar" style={avatarStyle(playerB)}>
+                                            {avatarNode(playerB, 'P')}
+                                            {topPlayer?.profileId === playerB?.profile_id && <span className="champion-badge">👑</span>}
+                                          </span>
+                                          <span>{participantName(session, match.participant_b_id)}</span>
+                                        </button>
+                                      </div>
+                                      {canEditTournament && (
+                                        <div className="score-row match-edit-row">
+                                          <select value={match.participant_a_id || ''} onChange={(event) => updateTournamentMatch(match, { participant_a_id: event.target.value || null })} aria-label={`${text.match} A`}>
+                                            <option value="">{text.noMatch}</option>
+                                            {participants.map((participant) => (
+                                              <option key={participant.id} value={participant.id}>{compactDisplayName(participant.display_name, text.player)}</option>
+                                            ))}
+                                          </select>
+                                          <select value={match.participant_b_id || ''} onChange={(event) => updateTournamentMatch(match, { participant_b_id: event.target.value || null })} aria-label={`${text.match} B`}>
+                                            <option value="">{text.noMatch}</option>
+                                            {participants.map((participant) => (
+                                              <option key={participant.id} value={participant.id}>{compactDisplayName(participant.display_name, text.player)}</option>
+                                            ))}
+                                          </select>
+                                          <input aria-label={text.scoreA} defaultValue={match.score_a ?? ''} inputMode="numeric" placeholder={text.scoreA} onBlur={(event) => updateTournamentMatch(match, { score_a: event.target.value === '' ? null : Number(event.target.value) })} />
+                                          <input aria-label={text.scoreB} defaultValue={match.score_b ?? ''} inputMode="numeric" placeholder={text.scoreB} onBlur={(event) => updateTournamentMatch(match, { score_b: event.target.value === '' ? null : Number(event.target.value) })} />
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
+                                  )
+                                })()
                               ))}
                             </div>
                           )}
@@ -3521,9 +3769,10 @@ export default function WidgetPage() {
                                 event.stopPropagation()
                                 setSelectedPlayerId(member.profile_id)
                               }}
+                              style={avatarStyle(member)}
                               type="button"
                             >
-                              {member.avatar_url ? <img src={member.avatar_url} alt="" /> : compactDisplayName(member.display_name, 'P').slice(0, 1)}
+                              {avatarNode(member, 'P')}
                             </button>
                             <span>{compactDisplayName(member.display_name, text.player)}</span>
                             {canManage && member.profile_id !== club.owner_id && (
@@ -3727,17 +3976,53 @@ export default function WidgetPage() {
             <div className="form-grid profile-form">
               {showProfileFields && (
                 <div className="profile-photo-panel">
-                  <label className="profile-photo-preview">
-                    {avatarPreview || profile?.avatar_url ? (
+                  <label className="profile-photo-preview" style={{ background: avatarColor }}>
+                    {avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
                       <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
+                    ) : avatarMode === 'emoji' ? (
+                      <span className="avatar-emoji">{avatarEmoji}</span>
+                    ) : avatarMode === 'initials' ? (
+                      <span className="avatar-text">{compactInitials(avatarInitials || displayName(profile))}</span>
                     ) : (
-                      displayName(profile).slice(0, 1)
+                      <span className="avatar-text">{displayName(profile).slice(0, 1)}</span>
                     )}
                     <input type="file" accept="image/*" onChange={handleAvatarChange} />
                   </label>
                   <div>
                     <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
                     <span>{text.uploadPhoto}</span>
+                  </div>
+                  <div className="avatar-options">
+                    <span>{text.avatarStyle}</span>
+                    <div className="segmented compact-segmented">
+                      <button className={avatarMode === 'photo' ? 'active' : ''} onClick={() => setAvatarMode('photo')} type="button">{text.usePhoto}</button>
+                      <button className={avatarMode === 'emoji' ? 'active' : ''} onClick={() => setAvatarMode('emoji')} type="button">{text.useEmoji}</button>
+                      <button className={avatarMode === 'initials' ? 'active' : ''} onClick={() => setAvatarMode('initials')} type="button">{text.useInitials}</button>
+                    </div>
+                    {avatarMode === 'emoji' && (
+                      <div className="emoji-row">
+                        {avatarEmojis.map((emoji) => (
+                          <button className={avatarEmoji === emoji ? 'active' : ''} key={emoji} onClick={() => setAvatarEmoji(emoji)} type="button">{emoji}</button>
+                        ))}
+                        <input maxLength={2} value={avatarEmoji} onChange={(event) => setAvatarEmoji(Array.from(event.target.value).slice(0, 2).join(''))} aria-label={text.avatarEmoji} />
+                      </div>
+                    )}
+                    {avatarMode === 'initials' && (
+                      <input maxLength={2} value={avatarInitials} onChange={(event) => setAvatarInitials(compactInitials(event.target.value))} placeholder="VR" aria-label={text.avatarInitials} />
+                    )}
+                    {avatarMode !== 'photo' && (
+                      <div className="color-row" aria-label={text.avatarColor}>
+                        {avatarColors.map((color) => (
+                          <button
+                            className={avatarColor === color ? 'active' : ''}
+                            key={color}
+                            onClick={() => setAvatarColor(color)}
+                            style={{ background: color }}
+                            type="button"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -4139,8 +4424,8 @@ export default function WidgetPage() {
                     .filter((member) => member.status === 'approved')
                     .map((member) => (
                       <div className="player" key={member.id}>
-                        <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} type="button">
-                          {member.avatar_url ? <img src={member.avatar_url} alt="" /> : compactDisplayName(member.display_name, 'P').slice(0, 1)}
+                        <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} style={avatarStyle(member)} type="button">
+                          {avatarNode(member, 'P')}
                         </button>
                         <span>{compactDisplayName(member.display_name, text.player)}</span>
                       </div>
@@ -4215,9 +4500,18 @@ export default function WidgetPage() {
               ×
             </button>
             <div className="player-profile-head">
-              <div className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}>
-                {selectedPlayerProfile.avatarUrl ? <img src={selectedPlayerProfile.avatarUrl} alt="" /> : compactDisplayName(selectedPlayerProfile.displayName, text.player).slice(0, 1)}
-                {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">🏆</span>}
+              <div
+                className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}
+                style={avatarStyle({ avatar_color: selectedPlayerProfile.avatarColor })}
+              >
+                {avatarNode({
+                  avatar_url: selectedPlayerProfile.avatarUrl,
+                  avatar_emoji: selectedPlayerProfile.avatarEmoji,
+                  avatar_initials: selectedPlayerProfile.avatarInitials,
+                  avatar_color: selectedPlayerProfile.avatarColor,
+                  display_name: selectedPlayerProfile.displayName,
+                }, 'P')}
+                {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">👑</span>}
               </div>
               <div>
                 <h3 id="player-profile-title">{compactDisplayName(selectedPlayerProfile.displayName, text.player)}</h3>
@@ -4239,6 +4533,57 @@ export default function WidgetPage() {
                 ))}
               </div>
             )}
+            {selectedPlayerManageContext && (
+              <div className="score-controls profile-score-controls">
+                <input
+                  aria-label={text.score}
+                  defaultValue={selectedPlayerManageContext.participant.score ?? ''}
+                  inputMode="numeric"
+                  onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                  placeholder={text.score}
+                />
+                <input
+                  aria-label={text.accuracy}
+                  defaultValue={selectedPlayerManageContext.participant.accuracy_percent ?? ''}
+                  inputMode="numeric"
+                  onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', event.target.value, selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                  placeholder="%"
+                />
+                <input
+                  aria-label={text.projectiles}
+                  defaultValue={selectedPlayerManageContext.participant.projectiles_fired ?? ''}
+                  inputMode="numeric"
+                  onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
+                  placeholder={text.projectiles}
+                />
+                <select
+                  aria-label={text.place}
+                  value={selectedPlayerManageContext.participant.placement ?? ''}
+                  onChange={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', event.target.value, selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                >
+                  <option value="">{text.noPlace}</option>
+                  <option value="1">{text.firstPlace}</option>
+                  <option value="2">{text.secondPlace}</option>
+                  <option value="3">{text.thirdPlace}</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {championLoginOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="champion-title">
+          <div className="login-modal champion-modal">
+            <button className="modal-close" type="button" onClick={() => setChampionLoginOpen(false)} aria-label={text.close}>
+              ×
+            </button>
+            <div className="champion-spark">👑</div>
+            <h3 id="champion-title">{text.bestOverall}</h3>
+            <p>{text.bestPlayerLogin}</p>
+            <button className="primary" type="button" onClick={() => setChampionLoginOpen(false)}>
+              {text.close}
+            </button>
           </div>
         </div>
       )}
@@ -4252,15 +4597,34 @@ export default function WidgetPage() {
             <h3 id="checkin-title">{text.checkIn}</h3>
             <p>{compactDisplayName(checkInParticipant.display_name, text.player)}</p>
             <div className="payment-grid">
-              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'cash')}>
+              <button className={checkInPaymentStatus === 'cash' ? 'secondary active' : 'secondary'} type="button" onClick={() => setCheckInPaymentStatus('cash')}>
                 {text.cash}
               </button>
-              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'bank_transfer')}>
+              <button className={checkInPaymentStatus === 'bank_transfer' ? 'secondary active' : 'secondary'} type="button" onClick={() => setCheckInPaymentStatus('bank_transfer')}>
                 {text.bankTransfer}
               </button>
-              <button className="secondary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'free')}>
+              <button className={checkInPaymentStatus === 'free' ? 'secondary active' : 'secondary'} type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, 'free')}>
                 {text.free}
               </button>
+              {(checkInPaymentStatus === 'cash' || checkInPaymentStatus === 'bank_transfer') && (
+                <label className="amount-field">
+                  <span>{text.paymentAmount}</span>
+                  <div>
+                    <input
+                      inputMode="numeric"
+                      value={checkInPaymentAmount}
+                      onChange={(event) => setCheckInPaymentAmount(event.target.value.replace(/[^\d]/g, ''))}
+                      placeholder="0"
+                    />
+                    <strong>đ</strong>
+                  </div>
+                </label>
+              )}
+              {(checkInPaymentStatus === 'cash' || checkInPaymentStatus === 'bank_transfer') && (
+                <button className="primary" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, checkInPaymentStatus, checkInPaymentAmount)}>
+                  {text.saveChanges}
+                </button>
+              )}
               {checkInParticipant.checked_in && (
                 <button className="danger" type="button" onClick={() => updateParticipantCheckIn(checkInParticipant.id, null)}>
                   {text.clearCheckIn}
@@ -4703,6 +5067,46 @@ export default function WidgetPage() {
           display: none;
         }
 
+        .avatar-options {
+          grid-column: 1 / -1;
+          display: grid;
+          gap: 8px;
+        }
+
+        .compact-segmented {
+          width: fit-content;
+        }
+
+        .emoji-row,
+        .color-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .emoji-row button,
+        .color-row button {
+          width: 36px;
+          height: 36px;
+          min-height: 36px;
+          border-radius: 999px;
+          padding: 0;
+          border: 1px solid rgba(7, 17, 18, 0.14);
+          background: #ffffff;
+        }
+
+        .emoji-row button.active,
+        .color-row button.active {
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.22);
+          border-color: #3059ff;
+        }
+
+        .emoji-row input,
+        .avatar-options input {
+          max-width: 150px;
+        }
+
         .avatar,
         .player-avatar {
           position: relative;
@@ -4717,21 +5121,42 @@ export default function WidgetPage() {
           background: linear-gradient(135deg, #00cbd1, #3059ff);
           color: #ffffff;
           font-weight: 800;
+          line-height: 1;
           padding: 0;
+        }
+
+        .avatar-text,
+        .avatar-emoji {
+          display: grid;
+          place-items: center;
+          width: 100%;
+          height: 100%;
+          line-height: 1;
+          text-align: center;
+        }
+
+        .avatar-emoji {
+          font-size: 1.25em;
         }
 
         .champion-badge {
           position: absolute;
-          right: -3px;
-          bottom: -3px;
+          right: -5px;
+          top: -7px;
           display: grid;
           place-items: center;
-          width: 18px;
-          height: 18px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           background: #ffffff;
-          font-size: 11px;
+          font-size: 12px;
           box-shadow: 0 2px 6px rgba(11, 21, 24, 0.16);
+          animation: crownBob 1.8s ease-in-out infinite;
+        }
+
+        @keyframes crownBob {
+          0%, 100% { transform: rotate(-8deg) translateY(0); }
+          50% { transform: rotate(8deg) translateY(-2px); }
         }
 
         .avatar img,
@@ -4878,6 +5303,30 @@ export default function WidgetPage() {
           gap: 8px;
         }
 
+        .payment-grid .active {
+          border-color: #3059ff;
+          box-shadow: 0 0 0 2px rgba(48, 89, 255, 0.14);
+        }
+
+        .amount-field {
+          grid-column: 1 / -1;
+          display: grid;
+          gap: 6px;
+        }
+
+        .amount-field div {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .private-payment {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
         .player-profile-panel {
           position: relative;
           width: min(420px, 100%);
@@ -4902,6 +5351,15 @@ export default function WidgetPage() {
         .player-profile-head h3 {
           margin: 0;
           color: inherit;
+        }
+
+        .champion-modal {
+          text-align: center;
+        }
+
+        .champion-spark {
+          font-size: 44px;
+          animation: crownBob 1.1s ease-in-out infinite;
         }
 
         .profile-large {
@@ -5530,6 +5988,51 @@ export default function WidgetPage() {
           border-color: rgba(245, 197, 66, 0.8);
           background: #fff8dc;
           box-shadow: 0 0 0 2px rgba(245, 197, 66, 0.2);
+        }
+
+        .editor-results {
+          grid-column: 1 / -1;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .editor-results button {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 36px;
+          padding: 5px 8px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 999px;
+          background: #ffffff;
+        }
+
+        .tournament-entry {
+          align-content: start;
+        }
+
+        .tournament-entry small {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .entry-controls,
+        .match-edit-row {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 6px;
+          width: min(240px, 100%);
+        }
+
+        .entry-controls select,
+        .entry-controls input,
+        .match-edit-row select,
+        .match-edit-row input {
+          min-height: 36px;
+          font-size: 12px;
+          padding: 6px 8px;
         }
 
         .versus {
@@ -6452,6 +6955,8 @@ export default function WidgetPage() {
           .mobile-search-toggle,
           .day-chip,
           .game-card,
+          .editor-results button,
+          .emoji-row button,
           .invite-code button {
             background: #182225;
             color: #f6f7f9;
@@ -6473,6 +6978,10 @@ export default function WidgetPage() {
 
           .format-toolbar button {
             border-color: rgba(255, 255, 255, 0.24);
+          }
+
+          .champion-badge {
+            background: #f6f7f9;
           }
 
           .profile-chip:hover {
