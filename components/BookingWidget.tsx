@@ -437,7 +437,7 @@ const uiText = {
     totalScore: 'total score',
     bestPlayer: 'Crowned chaos-maker: keep the throne warm.',
     bestPlayerLogin: 'Crown check: still on top. Come defend the throne.',
-    topPlayerNotice: 'Heads up: the court champion is in this session. Friendly chaos encouraged.',
+    topPlayerNotice: 'Heads up: Crown spotted !!! Think you can steal the crown? 👑',
     playerProfile: 'Player profile',
     bestOverall: 'Crown holder',
     avatarStyle: 'Avatar style',
@@ -738,7 +738,7 @@ const uiText = {
     totalScore: 'tổng điểm',
     bestPlayer: 'Đội vương miện rồi: giữ ngai cho chắc nhé.',
     bestPlayerLogin: 'Kiểm tra vương miện: bạn vẫn đang dẫn đầu. Vào giữ ngai thôi.',
-    topPlayerNotice: 'Báo nhẹ: cao thủ điểm số đang trong phiên này. Chuẩn bị tranh tài vui nhé.',
+    topPlayerNotice: 'Coi chừng: Vương miện đã xuất hiện!!! Nghĩ mình cướp được không? 👑',
     playerProfile: 'Hồ sơ người chơi',
     bestOverall: 'Chủ vương miện',
     avatarStyle: 'Kiểu avatar',
@@ -1362,7 +1362,6 @@ export default function WidgetPage() {
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
-  const [championNoticeSessionId, setChampionNoticeSessionId] = useState('')
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
   const searchShellRef = useRef<HTMLDivElement | null>(null)
@@ -1525,7 +1524,49 @@ export default function WidgetPage() {
       setAvatarEmoji(profileRow.avatar_emoji || '😎')
       setAvatarInitials(profileRow.avatar_initials || '')
       setAvatarColor(profileRow.avatar_color || avatarColors[0])
+      return
     }
+
+    const email = authUser.email?.toLowerCase() || ''
+    const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
+    const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
+    const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
+    const fallbackProfile: Profile = {
+      id: authUser.id,
+      phone,
+      full_name: fullName || null,
+      nickname: nickname || null,
+      email,
+      avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
+      avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
+      avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
+      avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
+      role: ADMIN_EMAILS.includes(email) ? 'admin' : 'player',
+    }
+
+    setProfile(fallbackProfile)
+    setProfileCountryCode('+84')
+    setProfilePhone(phone.replace(/^\+?84/, ''))
+    setProfileName(fullName)
+    setProfileNickname(nickname)
+    setProfileEmail(email)
+    setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
+    setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
+    setAvatarInitials(fallbackProfile.avatar_initials || '')
+    setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
+
+    await supabase.from('profiles').upsert({
+      id: authUser.id,
+      phone,
+      full_name: fullName || null,
+      nickname: nickname || null,
+      email,
+      avatar_url: fallbackProfile.avatar_url,
+      avatar_emoji: fallbackProfile.avatar_emoji,
+      avatar_initials: fallbackProfile.avatar_initials,
+      avatar_color: fallbackProfile.avatar_color,
+      updated_at: new Date().toISOString(),
+    })
   }
 
   async function handleAuth() {
@@ -1560,7 +1601,7 @@ export default function WidgetPage() {
       return
     }
 
-    if (!captchaToken) {
+    if (authMode === 'create' && !captchaToken) {
       setProfileStatus(text.captchaRequired)
       return
     }
@@ -1686,9 +1727,6 @@ export default function WidgetPage() {
     const signInResult = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: profilePassword,
-      options: {
-        captchaToken,
-      },
     })
 
     resetCaptcha()
@@ -1735,16 +1773,10 @@ export default function WidgetPage() {
       return
     }
 
-    if (!profile && !captchaToken) {
-      setProfileStatus(text.captchaRequired)
-      return
-    }
-
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
     const resetOptions = {
       redirectTo,
-      captchaToken: captchaToken || undefined,
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions)
 
@@ -1881,7 +1913,7 @@ export default function WidgetPage() {
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile') return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile' || authMode !== 'create') return
 
     let cancelled = false
 
@@ -2398,19 +2430,6 @@ export default function WidgetPage() {
 
     return undefined
   }, [clubs, profile, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
-
-  useEffect(() => {
-    if (!profile || !topPlayer || topPlayer.profileId === userId || activeView !== 'sessions') return
-
-    const championSession = filteredSessions.find((session) =>
-      (session.session_participants ?? []).some((participant) => participant.profile_id === topPlayer.profileId)
-    )
-
-    if (!championSession || championNoticeSessionId === championSession.id) return
-
-    setChampionNoticeSessionId(championSession.id)
-    setCreateStatus(text.topPlayerNotice)
-  }, [activeView, championNoticeSessionId, filteredSessions, profile, text.topPlayerNotice, topPlayer, userId])
 
   useEffect(() => {
     if (!checkInParticipant) {
@@ -3981,6 +4000,11 @@ export default function WidgetPage() {
                 const isEditing = editingSessionId === session.id
                 const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
+                const hasCrownHolder = Boolean(
+                  topPlayer?.profileId
+                  && topPlayer.profileId !== userId
+                  && participants.some((participant) => participant.profile_id === topPlayer.profileId)
+                )
 
                 return (
                   <article className="session" id={`session-${session.id}`} key={session.id}>
@@ -4002,6 +4026,8 @@ export default function WidgetPage() {
                         </span>
                       </div>
                     </div>
+
+                    {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
 
                     {session.notes && (
                       <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
@@ -5178,7 +5204,7 @@ export default function WidgetPage() {
                   )}
                 </div>
               )}
-              {!profile && (
+              {!profile && authMode === 'create' && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
@@ -7794,6 +7820,16 @@ export default function WidgetPage() {
           margin-top: 12px;
         }
 
+        .crown-session-notice {
+          width: fit-content;
+          max-width: 100%;
+          border-left-color: #f5c542;
+          background: rgba(245, 197, 66, 0.14);
+          color: #4b3a05;
+          font-weight: 800;
+          margin-top: 0;
+        }
+
         .game-picker,
         .game-strip {
           display: grid;
@@ -8504,6 +8540,11 @@ export default function WidgetPage() {
           .stats span,
           .match-card.completed {
             background: #1d2a2e;
+          }
+
+          .crown-session-notice {
+            background: rgba(245, 197, 66, 0.16);
+            color: #ffe28a;
           }
 
           .match-player {
