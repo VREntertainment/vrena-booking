@@ -1011,7 +1011,7 @@ export default function WidgetPage() {
   } | null | undefined, fallback = 'P') {
     const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
 
-    if (source?.avatar_url) return <span className="avatar-image"><img src={source.avatar_url} alt="" /></span>
+    if (source?.avatar_url) return <img src={source.avatar_url} alt="" />
     if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
     if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
     return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
@@ -5117,17 +5117,19 @@ export default function WidgetPage() {
           border-radius: 50%;
           display: grid;
           place-items: center;
-          overflow: visible;
+          overflow: hidden;
           background: linear-gradient(135deg, #00cbd1, #3059ff);
           color: #ffffff;
           font-weight: 800;
           line-height: 1;
           padding: 0;
+          isolation: isolate;
         }
 
         .avatar-text,
-        .avatar-emoji,
-        .avatar-image {
+        .avatar-emoji {
+          position: relative;
+          z-index: 1;
           display: grid;
           place-items: center;
           width: 100%;
@@ -5140,25 +5142,10 @@ export default function WidgetPage() {
           font-size: 1.25em;
         }
 
-        .avatar-image {
-          overflow: hidden;
-          border-radius: 50%;
-          clip-path: circle(50% at 50% 50%);
-        }
-
-        .avatar-image img {
-          display: block;
-          width: 100%;
-          height: 100%;
-          max-width: none;
-          object-fit: cover;
-          border-radius: 50%;
-        }
-
         .champion-badge {
           position: absolute;
-          right: -5px;
-          top: -7px;
+          right: 0;
+          top: 0;
           display: grid;
           place-items: center;
           width: 20px;
@@ -5168,6 +5155,7 @@ export default function WidgetPage() {
           font-size: 12px;
           box-shadow: 0 2px 6px rgba(11, 21, 24, 0.16);
           animation: crownBob 1.8s ease-in-out infinite;
+          z-index: 3;
         }
 
         @keyframes crownBob {
@@ -5177,13 +5165,16 @@ export default function WidgetPage() {
 
         .avatar > img,
         .player-avatar > img {
+          position: absolute;
+          inset: 0;
           display: block;
-          width: 100%;
-          height: 100%;
-          max-width: 100%;
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none;
           object-fit: cover;
-          border-radius: 50%;
-          clip-path: circle(50% at 50% 50%);
+          border-radius: inherit;
+          clip-path: inset(0 round 999px);
+          z-index: 0;
         }
 
         .shop-contact {
@@ -5811,17 +5802,21 @@ export default function WidgetPage() {
           color: #ffffff;
           font-weight: 900;
           padding: 0;
-          overflow: visible;
+          overflow: hidden;
+          isolation: isolate;
         }
 
         .player-avatar > img {
+          position: absolute;
+          inset: 0;
           display: block;
-          width: 100%;
-          height: 100%;
-          max-width: 100%;
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none;
           object-fit: cover;
-          border-radius: 50%;
-          clip-path: circle(50% at 50% 50%);
+          border-radius: inherit;
+          clip-path: inset(0 round 999px);
+          z-index: 0;
         }
 
         .player-avatar-button {
@@ -5870,11 +5865,12 @@ export default function WidgetPage() {
           border: 2px solid #ffffff;
           font-size: 10px;
           line-height: 1;
+          z-index: 3;
         }
 
         .check-badge {
-          right: -4px;
-          bottom: -4px;
+          right: 0;
+          bottom: 0;
           width: 15px;
           height: 15px;
           background: #0d7c51;
@@ -5882,8 +5878,8 @@ export default function WidgetPage() {
         }
 
         .cup-badge {
-          left: -6px;
-          bottom: -6px;
+          left: 0;
+          bottom: 0;
           width: 17px;
           height: 17px;
           background: #fff6c7;
