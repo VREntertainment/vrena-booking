@@ -3951,33 +3951,6 @@ export default function WidgetPage() {
                       </div>
                     )}
 
-                    {(() => {
-                      const podiumParticipants = [2, 1, 3]
-                        .map((rank) => participants.find((participant) => participant.placement === rank))
-                        .filter((participant): participant is Participant => Boolean(participant))
-
-                      if (!podiumParticipants.length) return null
-
-                      return (
-                        <div className="podium-row podium-pyramid">
-                          {podiumParticipants.map((participant) => (
-                            <button
-                              className={`podium-player podium-rank-${participant.placement} place-${participant.placement}`}
-                              key={`podium-${participant.id}`}
-                              onClick={() => setSelectedPlayerId(participant.profile_id)}
-                              type="button"
-                            >
-                              <span className="podium-medal">{rankEmoji(participant.placement)}</span>
-                              <span className="player-avatar tiny-avatar" style={canSeeSessionPlayers ? avatarStyle(participant) : undefined}>
-                                {canSeeSessionPlayers ? avatarNode(participant, 'P') : '?'}
-                              </span>
-                              <strong>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</strong>
-                            </button>
-                          ))}
-                        </div>
-                      )
-                    })()}
-
                     <div className="players">
                       {participants.map((participant) => (
                         <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
@@ -6895,6 +6868,111 @@ export default function WidgetPage() {
           padding: 10px;
         }
 
+        .public-leaderboard {
+          display: grid;
+          gap: 8px;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.16), transparent 34%),
+            radial-gradient(circle at 100% 100%, rgba(48, 89, 255, 0.14), transparent 38%),
+            #ffffff;
+        }
+
+        .public-leaderboard .section-head {
+          gap: 8px;
+          align-items: center;
+        }
+
+        .public-leaderboard h3 {
+          font-size: 18px;
+          line-height: 1.1;
+        }
+
+        .public-leaderboard .muted {
+          font-size: 12px;
+        }
+
+        .public-leaderboard .share-icon-button {
+          width: 38px;
+          height: 38px;
+          min-height: 38px;
+          border-radius: 999px;
+        }
+
+        .public-leaderboard .podium-row {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .public-leaderboard .podium-player {
+          position: relative;
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr);
+          gap: 8px;
+          align-items: center;
+          min-height: 58px;
+          padding: 8px;
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.78);
+          color: #071112;
+          text-align: left;
+          box-shadow: 0 10px 24px rgba(11, 21, 24, 0.06);
+        }
+
+        .public-leaderboard .podium-player.place-1 {
+          border-color: rgba(245, 197, 66, 0.7);
+          background: linear-gradient(135deg, rgba(255, 248, 220, 0.95), rgba(255, 255, 255, 0.82));
+        }
+
+        .public-leaderboard .podium-player.place-2 {
+          border-color: rgba(183, 192, 202, 0.75);
+        }
+
+        .public-leaderboard .podium-player.place-3 {
+          border-color: rgba(201, 135, 66, 0.75);
+        }
+
+        .public-leaderboard .podium-player .player-avatar {
+          grid-row: 1 / span 3;
+          width: 42px;
+          height: 42px;
+          min-width: 42px;
+          min-height: 42px;
+        }
+
+        .public-leaderboard .podium-medal {
+          position: absolute;
+          right: 7px;
+          top: 6px;
+          font-size: 14px;
+          line-height: 1;
+        }
+
+        .public-leaderboard .podium-player strong {
+          min-width: 0;
+          padding-right: 20px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 14px;
+          line-height: 1.1;
+        }
+
+        .public-leaderboard .podium-player small {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .public-leaderboard .podium-player .link-button {
+          justify-self: start;
+          min-height: auto;
+          padding: 0;
+          font-size: 11px;
+        }
+
         .compact-form-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
@@ -7915,6 +7993,14 @@ export default function WidgetPage() {
           .game-card strong {
             font-size: 11px;
           }
+
+          .public-leaderboard .podium-row {
+            grid-template-columns: 1fr;
+          }
+
+          .public-leaderboard .podium-player {
+            min-height: 54px;
+          }
         }
 
         @media (prefers-color-scheme: dark) {
@@ -8039,6 +8125,37 @@ export default function WidgetPage() {
           .match-player.winner {
             background: rgba(245, 197, 66, 0.16);
             border-color: rgba(245, 197, 66, 0.7);
+          }
+
+          .public-leaderboard {
+            background:
+              radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.18), transparent 34%),
+              radial-gradient(circle at 100% 100%, rgba(48, 89, 255, 0.18), transparent 38%),
+              #10191b;
+          }
+
+          .public-leaderboard .podium-player {
+            background: rgba(24, 34, 37, 0.92);
+            color: #f6f7f9;
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: none;
+          }
+
+          .public-leaderboard .podium-player.place-1 {
+            background: linear-gradient(135deg, rgba(245, 197, 66, 0.22), rgba(24, 34, 37, 0.94));
+            border-color: rgba(245, 197, 66, 0.62);
+          }
+
+          .public-leaderboard .podium-player.place-2 {
+            border-color: rgba(183, 192, 202, 0.46);
+          }
+
+          .public-leaderboard .podium-player.place-3 {
+            border-color: rgba(201, 135, 66, 0.56);
+          }
+
+          .public-leaderboard .podium-player small {
+            color: #aeb9bd;
           }
 
           .modal-backdrop {
