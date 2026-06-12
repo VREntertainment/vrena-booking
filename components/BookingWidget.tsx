@@ -2840,9 +2840,12 @@ export default function WidgetPage() {
       return
     }
 
-    const participants = session.session_participants ?? []
-    if (participants.length < 2) {
-      setCreateStatus(text.noTournamentData)
+    // Tournament pools should be created only with players who are present.
+    // This prevents no-show / unpaid players from entering the bracket.
+    const checkedInParticipants = (session.session_participants ?? []).filter((participant) => participant.checked_in)
+
+    if (checkedInParticipants.length < 2) {
+      setCreateStatus('Check in at least 2 players before creating tournament pools.')
       return
     }
 
@@ -2851,7 +2854,8 @@ export default function WidgetPage() {
     await supabase.from('tournament_pool_entries').delete().eq('session_id', session.id)
     await supabase.from('tournament_pools').delete().eq('session_id', session.id)
 
-    const poolCount = Math.max(1, Math.ceil(participants.length / tournamentPoolSize))
+    const shuffledParticipants = [...checkedInParticipants].sort(() => Math.random() - 0.5)
+    const poolCount = Math.max(1, Math.ceil(shuffledParticipants.length / tournamentPoolSize))
     const poolRows = Array.from({ length: poolCount }, (_, index) => ({
       session_id: session.id,
       name: `Pool ${String.fromCharCode(65 + index)}`,
@@ -2869,7 +2873,7 @@ export default function WidgetPage() {
       return
     }
 
-    const entries = participants.map((participant, index) => {
+    const entries = shuffledParticipants.map((participant, index) => {
       const pool = pools[index % pools.length]
       return {
         session_id: session.id,
@@ -2908,7 +2912,9 @@ export default function WidgetPage() {
     await supabase.from('tournament_matches').delete().eq('session_id', session.id)
 
     const matchRows = data.pools.flatMap((pool) => {
-      const poolEntries = data.poolEntries.filter((entry) => entry.pool_id === pool.id)
+      const poolEntries = data.poolEntries
+        .filter((entry) => entry.pool_id === pool.id)
+        .sort((a, b) => (a.seed ?? 0) - (b.seed ?? 0))
       const rows = []
       let matchNumber = 1
 
@@ -2922,6 +2928,9 @@ export default function WidgetPage() {
             match_number: matchNumber,
             participant_a_id: poolEntries[i].participant_id,
             participant_b_id: poolEntries[j].participant_id,
+            score_a: null,
+            score_b: null,
+            winner_participant_id: null,
             status: 'pending',
           })
           matchNumber += 1
@@ -2967,17 +2976,38 @@ export default function WidgetPage() {
   }
 
   async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
-    const scoreA = changes.score_a ?? match.score_a
-    const scoreB = changes.score_b ?? match.score_b
-    const winner = changes.winner_participant_id ?? match.winner_participant_id
+    const hasParticipantAChange = Object.prototype.hasOwnProperty.call(changes, 'participant_a_id')
+    const hasParticipantBChange = Object.prototype.hasOwnProperty.call(changes, 'participant_b_id')
+    const hasWinnerChange = Object.prototype.hasOwnProperty.call(changes, 'winner_participant_id')
+    const hasScoreAChange = Object.prototype.hasOwnProperty.call(changes, 'score_a')
+    const hasScoreBChange = Object.prototype.hasOwnProperty.call(changes, 'score_b')
+
+    const participantA = hasParticipantAChange ? changes.participant_a_id ?? null : match.participant_a_id
+    const participantB = hasParticipantBChange ? changes.participant_b_id ?? null : match.participant_b_id
+    const scoreA = hasScoreAChange ? changes.score_a ?? null : match.score_a
+    const scoreB = hasScoreBChange ? changes.score_b ?? null : match.score_b
+    let winner = hasWinnerChange ? changes.winner_participant_id ?? null : match.winner_participant_id
+
+    // If the host/helper changes a player after the match was completed,
+    // remove an invalid old winner instead of carrying it silently into the next round.
+    if (winner && winner !== participantA && winner !== participantB) {
+      winner = null
+    }
+
+    // Do not allow a player to be against themselves.
+    if (participantA && participantB && participantA === participantB) {
+      setCreateStatus('A player cannot be on both sides of the same match.')
+      return
+    }
+
     const { error } = await supabase
       .from('tournament_matches')
       .update({
-        participant_a_id: changes.participant_a_id ?? match.participant_a_id,
-        participant_b_id: changes.participant_b_id ?? match.participant_b_id,
+        participant_a_id: participantA,
+        participant_b_id: participantB,
         score_a: scoreA,
         score_b: scoreB,
-        winner_participant_id: winner || null,
+        winner_participant_id: winner,
         status: winner ? 'completed' : 'pending',
       })
       .eq('id', match.id)
@@ -2997,41 +3027,95 @@ export default function WidgetPage() {
     }
 
     const data = tournamentForSession(session.id)
-    const latestRound = Math.max(1, ...data.matches.map((match) => match.round))
-    const winners = data.matches
-      .filter((match) => match.round === latestRound && match.winner_participant_id)
-      .map((match) => match.winner_participant_id as string)
-
-    if (winners.length < 2) {
+    if (!data.matches.length) {
       setCreateStatus(text.noTournamentData)
       return
     }
 
+    const latestRound = Math.max(...data.matches.map((match) => match.round))
+    const currentRoundMatches = data.matches
+      .filter((match) => match.round === latestRound)
+      .sort((a, b) => a.match_number - b.match_number)
+
+    const incompleteMatch = currentRoundMatches.find((match) => !match.winner_participant_id)
+    if (incompleteMatch) {
+      setCreateStatus('Complete all matches in this round before generating the next round.')
+      return
+    }
+
+    const winners = currentRoundMatches.map((match) => match.winner_participant_id as string)
+    const uniqueWinners = Array.from(new Set(winners))
+
+    if (uniqueWinners.length !== winners.length) {
+      setCreateStatus('The same player cannot qualify twice in the same round. Please check the winners.')
+      return
+    }
+
+    if (uniqueWinners.length < 2) {
+      setCreateStatus(text.noTournamentData)
+      return
+    }
+
+    if (uniqueWinners.length === 2 && currentRoundMatches.some((match) => match.stage === 'final')) {
+      setCreateStatus('The final is already completed.')
+      return
+    }
+
     const nextRound = latestRound + 1
-    const stage: TournamentMatch['stage'] = winners.length <= 2 ? 'final' : winners.length <= 4 ? 'semifinal' : winners.length <= 8 ? 'quarterfinal' : 'custom'
+    const stage: TournamentMatch['stage'] = uniqueWinners.length <= 2 ? 'final' : uniqueWinners.length <= 4 ? 'semifinal' : uniqueWinners.length <= 8 ? 'quarterfinal' : 'custom'
+
+    // Important: delete old future rounds before inserting the corrected next round.
+    // Without this, changing semifinal winners can leave an old final on screen.
+    setBusyTournamentId(session.id)
+    const deleteFutureRounds = await supabase
+      .from('tournament_matches')
+      .delete()
+      .eq('session_id', session.id)
+      .gt('round', latestRound)
+
+    if (deleteFutureRounds.error) {
+      setCreateStatus(deleteFutureRounds.error.message)
+      setBusyTournamentId('')
+      return
+    }
+
     const matchRows = []
 
-    for (let index = 0; index < winners.length; index += 2) {
+    for (let index = 0; index < uniqueWinners.length; index += 2) {
+      const participantA = uniqueWinners[index]
+      const participantB = uniqueWinners[index + 1] || null
+
+      if (participantA && participantB && participantA === participantB) {
+        setCreateStatus('A player cannot be on both sides of the same match.')
+        setBusyTournamentId('')
+        return
+      }
+
       matchRows.push({
         session_id: session.id,
         pool_id: null,
         stage,
         round: nextRound,
         match_number: Math.floor(index / 2) + 1,
-        participant_a_id: winners[index],
-        participant_b_id: winners[index + 1] || null,
-        status: 'pending',
+        participant_a_id: participantA,
+        participant_b_id: participantB,
+        score_a: null,
+        score_b: null,
+        winner_participant_id: participantB ? null : participantA,
+        status: participantB ? 'pending' : 'completed',
       })
     }
 
     const { error } = await supabase.from('tournament_matches').insert(matchRows)
     if (error) {
       setCreateStatus(error.message)
+      setBusyTournamentId('')
       return
     }
 
     await loadTournamentData()
     setCreateStatus(text.tournamentNextRound)
+    setBusyTournamentId('')
   }
 
   function voteCount(session: Session, gameId: GameId) {
