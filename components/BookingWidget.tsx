@@ -3719,9 +3719,6 @@ export default function WidgetPage() {
           <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('clubs') : promptLogin())}>
             {text.clubs}
           </button>
-          <button className={activeView === 'profile' ? 'tab active' : 'tab'} onClick={() => setActiveView('profile')}>
-            {text.profile}
-          </button>
         </div>
 
         <div className="shop-contact">
@@ -3847,13 +3844,14 @@ export default function WidgetPage() {
                 return (
                   <article className="session" id={`session-${session.id}`} key={session.id}>
                     <div
-                      className="compact-session-card"
+                      className={isExpanded ? 'compact-session-card compact-session-card-hidden' : 'compact-session-card'}
+                      aria-hidden={isExpanded}
                       onClick={(event) => {
                         if (isInteractiveClickTarget(event.target)) return
                         setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
                       }}
                       role="button"
-                      tabIndex={0}
+                      tabIndex={isExpanded ? -1 : 0}
                       onKeyDown={(event) => {
                         if (isInteractiveClickTarget(event.target)) return
                         if (event.key === 'Enter' || event.key === ' ') {
@@ -5967,8 +5965,8 @@ export default function WidgetPage() {
           z-index: 60;
           display: flex;
           gap: 6px;
-          width: max-content;
-          max-width: min(420px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+          width: min(236px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+          max-width: min(236px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
           overflow-x: auto;
           overscroll-behavior-x: contain;
           -webkit-overflow-scrolling: touch;
@@ -6875,6 +6873,23 @@ export default function WidgetPage() {
           cursor: pointer;
           border-radius: 8px;
           touch-action: manipulation;
+          max-height: 220px;
+          opacity: 1;
+          overflow: hidden;
+          transform: translateY(0) scale(1);
+          transition:
+            max-height 220ms ease,
+            opacity 160ms ease,
+            transform 220ms ease,
+            margin 220ms ease;
+        }
+
+        .compact-session-card-hidden {
+          max-height: 0;
+          margin: -4px 0;
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(-6px) scale(0.985);
         }
 
         .compact-session-card:focus-visible {
@@ -6937,6 +6952,22 @@ export default function WidgetPage() {
           min-height: 34px;
           padding: 6px 8px;
           font-size: 13px;
+        }
+
+        .session-expanded {
+          animation: sessionExpandIn 220ms ease-out;
+        }
+
+        @keyframes sessionExpandIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .confirm-game-panel {
@@ -8222,7 +8253,7 @@ export default function WidgetPage() {
             height: auto;
             min-height: 100vh;
             overflow: visible;
-            --mobile-header-height: 106px;
+            --mobile-header-height: 108px;
           }
 
           aside {
@@ -8231,16 +8262,19 @@ export default function WidgetPage() {
             z-index: 30;
             border-right: 0;
             border-bottom: 1px solid rgba(7, 17, 18, 0.12);
-            height: auto;
+            height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
             min-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
+            max-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
             overflow: visible;
             padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
             display: grid;
             grid-template-columns: 44px auto auto minmax(0, 1fr) auto;
+            grid-template-rows: 42px 42px;
             grid-template-areas:
               "profile lang share . logo"
               "tabs tabs tabs tabs tabs";
             align-items: center;
+            align-content: start;
             gap: 8px;
           }
 
@@ -8273,6 +8307,11 @@ export default function WidgetPage() {
           .language-picker {
             grid-area: lang;
             justify-self: start;
+          }
+
+          .language-menu {
+            width: max-content;
+            max-width: min(420px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
           }
 
           .language-picker > button {
@@ -8314,10 +8353,6 @@ export default function WidgetPage() {
             grid-area: tabs;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
-          }
-
-          .tabs .tab:nth-child(4) {
-            display: none;
           }
 
           .app-share {
@@ -8693,7 +8728,7 @@ export default function WidgetPage() {
 
         @media (max-width: 520px) {
           .app {
-            --mobile-header-height: 106px;
+            --mobile-header-height: 108px;
           }
 
           aside {
