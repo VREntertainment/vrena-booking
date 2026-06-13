@@ -3734,7 +3734,7 @@ export default function WidgetPage() {
       <main>
         {activeView === 'sessions' && (
           <section className="section sessions-section">
-            <div className="section-head">
+            <div className="section-head sessions-filter-head">
               <div className="section-copy">
                 <h2>{text.availableSessions}</h2>
                 <p className="muted">{text.privateJoinHint}</p>
@@ -8469,15 +8469,16 @@ export default function WidgetPage() {
             display: none;
           }
 
-          .sessions-section .section-head {
+          .sessions-filter-head {
+            display: contents;
             height: 0;
             min-height: 0;
-            margin-bottom: 0;
-            overflow: visible;
+            margin: 0;
+            padding: 0;
           }
 
           .sessions-section .sub-tabs {
-            margin-top: 42px;
+            margin-top: 16px;
           }
 
           .search-shell {
