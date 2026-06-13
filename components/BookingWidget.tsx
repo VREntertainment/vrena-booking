@@ -3423,12 +3423,41 @@ export default function WidgetPage() {
       DEFAULT_APP_URL,
     ].join('\n')
 
+    if (podium.length === 0) {
+      if (navigator.share) {
+        await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
+        return
+      }
+
+      await navigator.clipboard?.writeText(summary)
+      setSharedKey(`results-${session.id}`)
+      return
+    }
+
+    const loadCanvasImage = async (src: string) => {
+      const image = new Image()
+      image.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = () => reject(new Error('image failed'))
+        image.src = src
+      })
+      return image
+    }
+
+    let templateImage: HTMLImageElement | null = null
+    try {
+      templateImage = await loadCanvasImage(`${window.location.origin}/brand/tournament-leaderboard-template.jpg`)
+    } catch {
+      templateImage = null
+    }
+
     const canvas = document.createElement('canvas')
-    canvas.width = 1200
-    canvas.height = 900
+    canvas.width = templateImage?.naturalWidth || 1080
+    canvas.height = templateImage?.naturalHeight || 1350
     const ctx = canvas.getContext('2d')
 
-    if (!ctx || podium.length === 0) {
+    if (!ctx) {
       if (navigator.share) {
         await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
         return
@@ -3455,7 +3484,12 @@ export default function WidgetPage() {
             image.onerror = () => reject(new Error('avatar failed'))
             image.src = participant.avatar_url || ''
           })
-          ctx.drawImage(image, x, y, size, size)
+          const imageWidth = image.naturalWidth || image.width
+          const imageHeight = image.naturalHeight || image.height
+          const scale = Math.max(size / imageWidth, size / imageHeight)
+          const drawWidth = imageWidth * scale
+          const drawHeight = imageHeight * scale
+          ctx.drawImage(image, x + (size - drawWidth) / 2, y + (size - drawHeight) / 2, drawWidth, drawHeight)
           drewPhoto = true
         } catch {
           drewPhoto = false
@@ -3493,124 +3527,81 @@ export default function WidgetPage() {
       ctx.closePath()
     }
 
-    const loadCanvasImage = async (src: string) => {
-      const image = new Image()
-      image.crossOrigin = 'anonymous'
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve()
-        image.onerror = () => reject(new Error('image failed'))
-        image.src = src
-      })
-      return image
-    }
-
-    const drawRainbowCorner = (x: number, y: number, radius: number, start: number, end: number) => {
-      const colors = ['#ffc928', '#ff7a1a', '#e8475c', '#4d62b8', '#65d1d5']
-      colors.forEach((color, index) => {
-        ctx.beginPath()
-        ctx.strokeStyle = color
-        ctx.lineWidth = 18
-        ctx.arc(x, y, radius - index * 22, start, end)
-        ctx.stroke()
-      })
-    }
-
-    const drawSmallMark = (x: number, y: number, scale: number) => {
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      const colors = ['#ffc928', '#ff7a1a', '#e8475c', '#4d62b8', '#65d1d5']
-      colors.forEach((color, index) => {
-        ctx.strokeStyle = color
-        ctx.lineWidth = 7 * scale
-        ctx.beginPath()
-        ctx.moveTo(0, 32 * scale - index * 2)
-        ctx.lineTo(0, 10 * scale - index * 2)
-        ctx.quadraticCurveTo(0, 0 - index * 2, 10 * scale, 0 - index * 2)
-        ctx.lineTo(31 * scale, 0 - index * 2)
-        ctx.stroke()
-      })
-      ctx.restore()
-    }
-
     const drawPodiumCard = async () => {
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, 1200, 900)
-
-      drawRainbowCorner(1215, 175, 132, Math.PI * 0.5, Math.PI * 1.5)
-      drawRainbowCorner(-12, 630, 118, Math.PI * 1.5, Math.PI * 2.5)
-      drawRainbowCorner(1110, 918, 210, Math.PI, Math.PI * 1.5)
-      drawSmallMark(96, 270, 1.05)
-      drawSmallMark(1064, 514, 0.8)
-      drawSmallMark(110, 784, 0.62)
-
-      try {
-        const logo = await loadCanvasImage(`${window.location.origin}/brand/vrena-logo-full-light.svg`)
-        ctx.drawImage(logo, 390, 40, 420, 112)
-      } catch {
-        ctx.fillStyle = '#071112'
-        ctx.font = '800 72px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'alphabetic'
-        ctx.fillText('VRena', 600, 114)
+      if (templateImage) {
+        ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
+      } else {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
 
       ctx.fillStyle = '#071112'
-      ctx.font = '800 38px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
-      ctx.fillText('Tournament Leaderboard', 600, 210)
+
+      const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900) => {
+        let fontSize = size
+        ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+        while (ctx.measureText(value).width > maxWidth && fontSize > 22) {
+          fontSize -= 2
+          ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+        }
+        ctx.fillStyle = color
+        ctx.fillText(value, x, y)
+      }
+
+      fitText(session.name, canvas.width / 2, 300, 820, 46, '#071112', 900)
 
       ctx.fillStyle = '#4a5a60'
-      ctx.font = '700 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText(`${session.name} · ${session.date} ${session.start_time.slice(0, 5)}`, 600, 248)
+      ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText(`${session.date} · ${session.start_time.slice(0, 5)}`, canvas.width / 2, 338)
 
       const orderedPodium = [2, 1, 3]
         .map((placement) => podium.find((participant) => participant.placement === placement))
         .filter(Boolean) as Participant[]
       const slots = [
-        { placement: 2, x: 122, y: 455, w: 290, h: 205, avatar: 154, color: '#b7c0ca', emoji: '🥈' },
-        { placement: 1, x: 455, y: 360, w: 290, h: 300, avatar: 188, color: '#f5c542', emoji: '🏆' },
-        { placement: 3, x: 788, y: 500, w: 290, h: 160, avatar: 154, color: '#c98742', emoji: '🥉' },
+        { placement: 2, x: 125, y: 790, w: 285, h: 172, avatar: 178, avatarY: 580, accent: '#b7c0ca', fill: '#f4f6f8', emoji: '🥈' },
+        { placement: 1, x: 388, y: 672, w: 304, h: 290, avatar: 232, avatarY: 405, accent: '#ffc928', fill: '#fff6cf', emoji: '🏆' },
+        { placement: 3, x: 670, y: 820, w: 285, h: 142, avatar: 178, avatarY: 610, accent: '#c98742', fill: '#fff0df', emoji: '🥉' },
       ]
 
       for (const participant of orderedPodium) {
         const slot = slots.find((item) => item.placement === participant.placement)
         if (!slot) continue
 
-        ctx.fillStyle = slot.color
+        ctx.save()
+        ctx.shadowColor = 'rgba(7, 17, 18, 0.12)'
+        ctx.shadowBlur = 22
+        ctx.shadowOffsetY = 12
+        ctx.fillStyle = slot.accent
         roundedRect(slot.x, slot.y, slot.w, slot.h, 26)
         ctx.fill()
+        ctx.restore()
 
-        ctx.fillStyle = '#ffffff'
+        ctx.fillStyle = slot.fill
         roundedRect(slot.x + 8, slot.y + 8, slot.w - 16, slot.h - 16, 20)
         ctx.fill()
 
-        await drawRoundAvatar(participant, slot.x + slot.w / 2 - slot.avatar / 2, slot.y - slot.avatar / 2 - 18, slot.avatar)
+        await drawRoundAvatar(participant, slot.x + slot.w / 2 - slot.avatar / 2, slot.avatarY, slot.avatar)
 
-        ctx.font = `800 ${slot.placement === 1 ? 40 : 34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
+        ctx.strokeStyle = slot.accent
+        ctx.lineWidth = slot.placement === 1 ? 8 : 6
+        ctx.beginPath()
+        ctx.arc(slot.x + slot.w / 2, slot.avatarY + slot.avatar / 2, slot.avatar / 2 + 4, 0, Math.PI * 2)
+        ctx.stroke()
+
+        ctx.font = `900 ${slot.placement === 1 ? 58 : 46}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(slot.emoji, slot.x + slot.w / 2 + slot.avatar / 2 - 8, slot.y - slot.avatar / 2 - 2)
+        ctx.fillText(slot.emoji, slot.x + slot.w / 2 + slot.avatar / 2 - 8, slot.avatarY + 18)
 
-        ctx.fillStyle = '#071112'
-        ctx.font = '800 34px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
         ctx.textBaseline = 'alphabetic'
-        ctx.fillText(compactDisplayName(participant.display_name, text.player), slot.x + slot.w / 2, slot.y + slot.h - 82)
+        fitText(compactDisplayName(participant.display_name, text.player), slot.x + slot.w / 2, slot.y + slot.h - 78, slot.w - 34, slot.placement === 1 ? 38 : 32)
 
         ctx.fillStyle = '#39464b'
-        ctx.font = '800 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.fillText(`${participant.score ?? 0} pts · ${participant.accuracy_percent ?? '-'}%`, slot.x + slot.w / 2, slot.y + slot.h - 42)
+        ctx.font = `800 ${slot.placement === 1 ? 26 : 23}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+        ctx.fillText(`${participant.score ?? 0} pts · ${participant.accuracy_percent ?? '-'}%`, slot.x + slot.w / 2, slot.y + slot.h - 38)
       }
-
-      ctx.fillStyle = '#071112'
-      ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText('Tiny bragging rights. Big headset energy.', 600, 802)
-      ctx.fillStyle = '#4a5a60'
-      ctx.font = '700 22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText(DEFAULT_APP_URL, 600, 842)
     }
 
     await drawPodiumCard()
