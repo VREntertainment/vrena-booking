@@ -405,8 +405,17 @@ function formatDayButton(dateValue: string, language: LanguageCode) {
   const locale = dateLocales[language]
   return {
     weekday: new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date),
-    day: new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(date),
+    day: formatShortDate(dateValue, language),
   }
+}
+
+function formatShortDate(dateValue: string, language: LanguageCode) {
+  if (!dateValue) return ''
+  const date = new Date(`${dateValue}T12:00:00`)
+  const locale = dateLocales[language]
+  const day = new Intl.DateTimeFormat(locale, { day: '2-digit' }).format(date)
+  const month = new Intl.DateTimeFormat(locale, { month: 'short' }).format(date).replace(/\.$/, '')
+  return [day, month].filter(Boolean).join(' ')
 }
 
 function sessionStartDate(session: Pick<Session, 'date' | 'start_time'>) {
@@ -3859,10 +3868,13 @@ export default function WidgetPage() {
                           <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
                             {session.session_type === 'tournament' ? text.tournament : text.normalGame}
                           </span>
+                          <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                            {session.visibility === 'private' ? text.private : text.public}
+                          </span>
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
                         </div>
                         <div className="row-meta compact-meta">
-                          <span>{session.date}</span>
+                          <span>{formatShortDate(session.date, language)}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
                           {!isPast && <span>{remaining} {text.seatsLeft}</span>}
@@ -3910,28 +3922,27 @@ export default function WidgetPage() {
                     {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
                     {isExpanded && (
                       <div className="session-expanded">
-                      <div className="expanded-session-flags">
-                        <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                          {session.visibility === 'private' ? text.private : text.public}
-                        </span>
-                        {sessionClub && <span className="pill">{text.clubSession}: {sessionClub.name}</span>}
-                    </div>
+                        {sessionClub && (
+                          <div className="expanded-session-flags">
+                            <span className="pill">{text.clubSession}: {sessionClub.name}</span>
+                          </div>
+                        )}
 
-                    {session.notes && (
-                      <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
-                        <div
-                          className="notes"
-                          dangerouslySetInnerHTML={{ __html: formatNotesHtml(session.notes) }}
-                        />
-                        <button
-                          className="expand-note"
-                          type="button"
-                          onClick={() => setExpandedNotes((current) => ({ ...current, [session.id]: !current[session.id] }))}
-                        >
-                          {expandedNotes[session.id] ? `⌃ ${text.collapse}` : `⌄ ${text.expand}`}
-                        </button>
-                      </div>
-                    )}
+                        {session.notes && (
+                          <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
+                            <div
+                              className="notes"
+                              dangerouslySetInnerHTML={{ __html: formatNotesHtml(session.notes) }}
+                            />
+                            <button
+                              className="expand-note"
+                              type="button"
+                              onClick={() => setExpandedNotes((current) => ({ ...current, [session.id]: !current[session.id] }))}
+                            >
+                              {expandedNotes[session.id] ? `⌃ ${text.collapse}` : `⌄ ${text.expand}`}
+                            </button>
+                          </div>
+                        )}
 
                     {canManage && (
                       <div className="manage-row">
@@ -4080,6 +4091,7 @@ export default function WidgetPage() {
                           <div>
                             <label>{text.date} <span className="required">*</span></label>
                             <input type="date" value={editSessionDate} onChange={(event) => setEditSessionDate(event.target.value)} />
+                            {editSessionDate && <p className="field-help selected-date-preview">{formatShortDate(editSessionDate, language)}</p>}
                           </div>
                           <div>
                             <label>{text.availableTime} <span className="required">*</span></label>
@@ -4860,6 +4872,7 @@ export default function WidgetPage() {
               <div>
                 <label>{text.date} <span className="required">*</span></label>
                 <input type="date" value={sessionDate} onChange={handleSessionDateChange} />
+                {sessionDate && <p className="field-help selected-date-preview">{formatShortDate(sessionDate, language)}</p>}
               </div>
               <div>
                 <label>{text.availableTime} <span className="required">*</span></label>
@@ -5320,7 +5333,7 @@ export default function WidgetPage() {
                             </span>
                           </div>
                           <div className="row-meta">
-                            <span>{session.date}</span>
+                            <span>{formatShortDate(session.date, language)}</span>
                             <span>{session.start_time.slice(0, 5)}</span>
                             <span>{session.duration_minutes} min</span>
                             <span>{participants.length}/{session.max_players} {text.players}</span>
@@ -5540,7 +5553,7 @@ export default function WidgetPage() {
                           <span className="pill ok">{text.clubSession}</span>
                         </div>
                         <div className="row-meta">
-                          <span>{session.date}</span>
+                          <span>{formatShortDate(session.date, language)}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
                         </div>
@@ -6017,6 +6030,11 @@ export default function WidgetPage() {
           font-size: 12px;
           line-height: 1.35;
           margin-top: 6px;
+        }
+
+        .selected-date-preview {
+          font-weight: 800;
+          color: #768287;
         }
 
         .link-button {
@@ -6904,6 +6922,7 @@ export default function WidgetPage() {
         }
 
         .compact-session-title-row h3 {
+          min-width: 0;
           margin: 0;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -7133,7 +7152,7 @@ export default function WidgetPage() {
         .rich-note-editor {
           min-height: 86px;
           width: 100%;
-          border: 1px solid rgba(7, 17, 18, 0.24);
+          border: 1px solid rgba(7, 17, 18, 0.34);
           border-radius: 8px;
           background: #f8fafb;
           color: #071112;
@@ -7143,12 +7162,12 @@ export default function WidgetPage() {
           outline: none;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+          box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.04);
         }
 
         .rich-note-editor:focus {
-          border-color: rgba(48, 89, 255, 0.36);
-          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.1);
+          border-color: rgba(48, 89, 255, 0.58);
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12), inset 0 0 0 1px rgba(48, 89, 255, 0.08);
         }
 
         .rich-note-editor:empty::before {
@@ -7200,6 +7219,7 @@ export default function WidgetPage() {
         .pill {
           display: inline-flex;
           align-items: center;
+          flex: 0 0 auto;
           min-height: 26px;
           padding: 4px 8px;
           border-radius: 999px;
@@ -8982,6 +9002,20 @@ export default function WidgetPage() {
           .country-button {
             border-color: rgba(255, 255, 255, 0.26);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+          }
+
+          .rich-note-editor {
+            border-color: rgba(255, 255, 255, 0.38);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+          }
+
+          .rich-note-editor:focus {
+            border-color: rgba(98, 211, 255, 0.68);
+            box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+          }
+
+          .selected-date-preview {
+            color: #a8b6bc;
           }
 
           .rich-note-editor:empty::before {
