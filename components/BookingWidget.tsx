@@ -368,9 +368,19 @@ function addDays(date: Date, days: number) {
   return nextDate
 }
 
-function formatDayButton(dateValue: string, language: 'en' | 'vi') {
+const dateLocales: Record<LanguageCode, string> = {
+  en: 'en-US',
+  vi: 'vi-VN',
+  ko: 'ko-KR',
+  ja: 'ja-JP',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  it: 'it-IT',
+}
+
+function formatDayButton(dateValue: string, language: LanguageCode) {
   const date = new Date(`${dateValue}T12:00:00`)
-  const locale = language === 'vi' ? 'vi-VN' : 'en-US'
+  const locale = dateLocales[language]
   return {
     weekday: new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date),
     day: new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(date),
