@@ -9,7 +9,7 @@ export const en = {
   clubs: 'Clubs',
   clubSearchPlaceholder: 'Search club name, member name, description',
   availableSessions: 'Available Game Sessions',
-  privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
+  privateJoinHint: 'Private sessions requires their secret code.',
   searchPlaceholder: 'Search session name, profile name, game, private code',
   searchSessions: 'Search sessions',
   noMatchingSessions: 'No matching sessions yet.',
