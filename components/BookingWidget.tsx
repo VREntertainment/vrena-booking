@@ -3837,14 +3837,13 @@ export default function WidgetPage() {
                 return (
                   <article className={isExpanded ? 'session expanded-session' : 'session'} id={`session-${session.id}`} key={session.id}>
                     <div
-                      className={isExpanded ? 'compact-session-card compact-session-card-hidden' : 'compact-session-card'}
-                      aria-hidden={isExpanded}
+                      className={isExpanded ? 'compact-session-card compact-session-card-expanded' : 'compact-session-card'}
                       onClick={(event) => {
                         if (isInteractiveClickTarget(event.target)) return
                         setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
                       }}
                       role="button"
-                      tabIndex={isExpanded ? -1 : 0}
+                      tabIndex={0}
                       onKeyDown={(event) => {
                         if (isInteractiveClickTarget(event.target)) return
                         if (event.key === 'Enter' || event.key === ' ') {
@@ -3860,6 +3859,7 @@ export default function WidgetPage() {
                           <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
                             {session.session_type === 'tournament' ? text.tournament : text.normalGame}
                           </span>
+                          {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
                         </div>
                         <div className="row-meta compact-meta">
                           <span>{session.date}</span>
@@ -3910,31 +3910,11 @@ export default function WidgetPage() {
                     {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
                     {isExpanded && (
                       <div className="session-expanded">
-                      <div className="session-top">
-                      <div>
-                        <h3>{session.name}</h3>
-                        <div className="row-meta">
-                          <span>{session.date}</span>
-                          <span>{session.start_time.slice(0, 5)}</span>
-                          <span>{session.duration_minutes} min</span>
-                          {!isPast && <span>{remaining} {text.seatsLeft}</span>}
-                          <span>{text.finalGame}: {coverGame.title}</span>
-                          {sessionClub && <span className="pill">{text.clubSession}: {sessionClub.name}</span>}
-                          {session.session_type === 'tournament' && <span className="pill private">{text.tournament}</span>}
-                        </div>
-                      </div>
-                      <div className="session-actions">
+                      <div className="expanded-session-flags">
                         <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
                           {session.visibility === 'private' ? text.private : text.public}
                         </span>
-                        <button
-                          className="secondary small-button hide-expanded-button"
-                          type="button"
-                          onClick={() => setExpandedSessions((current) => ({ ...current, [session.id]: false }))}
-                        >
-                          {text.hideDetails}
-                        </button>
-                      </div>
+                        {sessionClub && <span className="pill">{text.clubSession}: {sessionClub.name}</span>}
                     </div>
 
                     {session.notes && (
@@ -4548,15 +4528,6 @@ export default function WidgetPage() {
 
                     {!isPast && (
                     <div className="join-row">
-                      {session.visibility === 'private' && !alreadyJoined && (
-                        <input
-                          placeholder={text.privateCode}
-                          value={joinCodes[session.id] || ''}
-                          onChange={(event) =>
-                            setJoinCodes((current) => ({ ...current, [session.id]: event.target.value.toUpperCase() }))
-                          }
-                        />
-                      )}
                       {alreadyJoined && !isSessionOwner && canMutatePastSession && (
                         <button
                           className={busySessionId === session.id ? 'secondary loading' : 'secondary'}
@@ -4567,13 +4538,6 @@ export default function WidgetPage() {
                           {text.leaveSession}
                         </button>
                       )}
-                      <button
-                        className={busySessionId === session.id ? 'primary loading' : 'primary'}
-                        disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
-                        onClick={() => joinSession(session)}
-                      >
-                        {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
-                      </button>
                       <button
                         aria-label={text.share}
                         className={sharedKey === session.id ? 'share-icon-button copied' : 'share-icon-button'}
@@ -6908,6 +6872,11 @@ export default function WidgetPage() {
           transform: translateY(-8px) scale(0.975);
         }
 
+        .compact-session-card-expanded {
+          padding-bottom: 8px;
+          border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+        }
+
         .compact-session-card:focus-visible {
           outline: 3px solid rgba(48, 89, 255, 0.35);
           outline-offset: 4px;
@@ -7020,7 +6989,18 @@ export default function WidgetPage() {
           display: grid;
           gap: 12px;
           padding-top: 8px;
-          border-top: 1px solid rgba(7, 17, 18, 0.08);
+        }
+
+        .expanded-session-flags {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .host-pill {
+          background: rgba(48, 89, 255, 0.1);
+          color: #3059ff;
         }
 
         .hide-expanded-button {
@@ -9041,6 +9021,11 @@ export default function WidgetPage() {
           .stats span,
           .match-card.completed {
             background: #1d2a2e;
+          }
+
+          .host-pill {
+            background: rgba(98, 211, 255, 0.16);
+            color: #8ee7ff;
           }
 
           .crown-session-notice {
