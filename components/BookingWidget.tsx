@@ -94,6 +94,7 @@ type Session = {
   status: 'open' | 'cancelled' | 'completed'
   tournament_format?: TournamentFormat | null
   best_of?: 1 | 3 | 5 | null
+  rounds_per_match?: number | null
   require_payment?: boolean | null
   qualification_rule?: QualificationRule | null
   custom_qualifiers?: number | null
@@ -322,6 +323,10 @@ const uiText = {
     full: 'Full',
     joining: 'Joining...',
     joinSession: 'Join Session',
+    upcoming: 'Upcoming',
+    past: 'Past',
+    expandDetails: 'Expand',
+    hideDetails: 'Hide',
     createSessionTitle: 'Create Session',
     createSessionHint: 'Duration increases by 20 minutes. Max players is 16.',
     sessionType: 'Session type',
@@ -349,6 +354,8 @@ const uiText = {
     formatDoubleElimination: 'Double elimination-ready',
     formatLeaderboard: 'Leaderboard',
     matchSeries: 'Match series',
+    roundsPerMatch: 'Rounds per match',
+    roundsPerMatchHint: 'Host picks 1-5 rounds. Tiny duel, big drama.',
     qualification: 'Qualification',
     topOnePerPool: 'Top 1 / pool',
     topTwoPerPool: 'Top 2 / pool',
@@ -623,6 +630,10 @@ const uiText = {
     full: 'Đã đầy',
     joining: 'Đang tham gia...',
     joinSession: 'Tham gia',
+    upcoming: 'Sắp tới',
+    past: 'Đã qua',
+    expandDetails: 'Mở rộng',
+    hideDetails: 'Thu gọn',
     createSessionTitle: 'Tạo phiên chơi',
     createSessionHint: 'Thời lượng tăng mỗi 20 phút. Tối đa 16 người chơi.',
     sessionType: 'Loại phiên',
@@ -650,6 +661,8 @@ const uiText = {
     formatDoubleElimination: 'Sẵn sàng nhánh thua',
     formatLeaderboard: 'Bảng xếp hạng',
     matchSeries: 'Loạt trận',
+    roundsPerMatch: 'Số ván mỗi trận',
+    roundsPerMatchHint: 'Chủ giải chọn 1-5 ván. Trận nhỏ, drama lớn.',
     qualification: 'Vào vòng sau',
     topOnePerPool: 'Top 1 / bảng',
     topTwoPerPool: 'Top 2 / bảng',
@@ -988,8 +1001,24 @@ function sessionStartDate(session: Pick<Session, 'date' | 'start_time'>) {
   return new Date(`${session.date}T${session.start_time}`)
 }
 
+function sessionEndDate(session: Pick<Session, 'date' | 'start_time' | 'duration_minutes'>) {
+  return new Date(sessionStartDate(session).getTime() + session.duration_minutes * 60 * 1000)
+}
+
+function isPastSession(session: Session) {
+  return session.status === 'completed' || sessionEndDate(session).getTime() < Date.now()
+}
+
 function isUpcomingSession(session: Session) {
-  return sessionStartDate(session).getTime() >= Date.now()
+  return !isPastSession(session)
+}
+
+function seatsLeft(session: Pick<Session, 'max_players' | 'session_participants'>) {
+  return Math.max(0, session.max_players - (session.session_participants ?? []).length)
+}
+
+function sessionCoverGame(session: Pick<Session, 'game_options'>) {
+  return games.find((game) => game.id === session.game_options?.[0]) || games[0]
 }
 
 function escapeHtml(value: string) {
@@ -1024,6 +1053,13 @@ function rankEmoji(placement?: number | null) {
 
 function bestOfLabel(value?: number | null) {
   return `BO${value || 1}`
+}
+
+function authDebug(label: string, payload?: unknown) {
+  if (typeof console === 'undefined') return
+  console.groupCollapsed(`[VRena auth] ${label}`)
+  if (payload !== undefined) console.log(payload)
+  console.groupEnd()
 }
 
 function winsNeeded(bestOf?: number | null) {
@@ -1301,6 +1337,7 @@ export default function WidgetPage() {
   const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
   const [tournamentFormat, setTournamentFormat] = useState<TournamentFormat>('pool_to_final')
   const [tournamentBestOf, setTournamentBestOf] = useState<1 | 3 | 5>(1)
+  const [tournamentRoundsPerMatch, setTournamentRoundsPerMatch] = useState(1)
   const [tournamentRequirePayment, setTournamentRequirePayment] = useState(false)
   const [tournamentQualificationRule, setTournamentQualificationRule] = useState<QualificationRule>('top_1')
   const [tournamentCustomQualifiers, setTournamentCustomQualifiers] = useState(2)
@@ -1335,6 +1372,7 @@ export default function WidgetPage() {
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [editTournamentFormat, setEditTournamentFormat] = useState<TournamentFormat>('pool_to_final')
   const [editTournamentBestOf, setEditTournamentBestOf] = useState<1 | 3 | 5>(1)
+  const [editTournamentRoundsPerMatch, setEditTournamentRoundsPerMatch] = useState(1)
   const [editTournamentRequirePayment, setEditTournamentRequirePayment] = useState(false)
   const [editTournamentQualificationRule, setEditTournamentQualificationRule] = useState<QualificationRule>('top_1')
   const [editTournamentCustomQualifiers, setEditTournamentCustomQualifiers] = useState(2)
@@ -1361,6 +1399,8 @@ export default function WidgetPage() {
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
+  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
+  const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
@@ -1495,153 +1535,369 @@ export default function WidgetPage() {
   }
 
   async function loadProfile() {
-    const { data: userData } = await supabase.auth.getUser()
-    const authUser = userData.user
+    try {
+      authDebug('loadProfile:start')
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      const authUser = userData.user
+      authDebug('loadProfile:getUser', {
+        error: userError,
+        user: authUser ? {
+          id: authUser.id,
+          email: authUser.email,
+          emailConfirmedAt: authUser.email_confirmed_at,
+          lastSignInAt: authUser.last_sign_in_at,
+          appMetadata: authUser.app_metadata,
+          userMetadata: authUser.user_metadata,
+        } : null,
+      })
 
-    if (!authUser) {
-      setUserId('')
-      setProfile(null)
-      return
+      if (userError) {
+        setUserId('')
+        setProfile(null)
+        setProfileStatus(userError.message)
+        return
+      }
+
+      if (!authUser) {
+        setUserId('')
+        setProfile(null)
+        return
+      }
+
+      setUserId(authUser.id)
+
+      const { data: profileRow, error: profileError, status: profileStatusCode } = await supabase
+        .from('profiles')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .eq('id', authUser.id)
+        .maybeSingle()
+
+      authDebug('loadProfile:profileQuery', {
+        status: profileStatusCode,
+        error: profileError,
+        profile: profileRow,
+        role: profileRow?.role,
+        isAdminEmail: Boolean(authUser.email && ADMIN_EMAILS.includes(authUser.email.toLowerCase())),
+      })
+
+      if (profileError) {
+        setProfileStatus(profileError.message)
+        return
+      }
+
+      if (profileRow) {
+        const phoneParts = splitPhoneNumber(profileRow.phone || '')
+        setProfile(profileRow)
+        setProfileCountryCode(phoneParts.countryInput)
+        setProfilePhone(phoneParts.localPhone)
+        setProfileName(profileRow.full_name || '')
+        setProfileNickname(limitDisplayName(profileRow.nickname || ''))
+        setProfileEmail(profileRow.email || '')
+        setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
+        setAvatarEmoji(profileRow.avatar_emoji || '😎')
+        setAvatarInitials(profileRow.avatar_initials || '')
+        setAvatarColor(profileRow.avatar_color || avatarColors[0])
+        return
+      }
+
+      const email = authUser.email?.toLowerCase() || ''
+      const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
+      const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
+      const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
+      const fallbackProfile: Profile = {
+        id: authUser.id,
+        phone,
+        full_name: fullName || null,
+        nickname: nickname || null,
+        email,
+        avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
+        avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
+        avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
+        avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
+        role: ADMIN_EMAILS.includes(email) ? 'admin' : 'player',
+      }
+
+      authDebug('loadProfile:missingProfileFallback', fallbackProfile)
+      setProfile(fallbackProfile)
+      setProfileCountryCode('+84')
+      setProfilePhone(phone.replace(/^\+?84/, ''))
+      setProfileName(fullName)
+      setProfileNickname(nickname)
+      setProfileEmail(email)
+      setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
+      setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
+      setAvatarInitials(fallbackProfile.avatar_initials || '')
+      setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
+
+      const repairResult = await supabase.from('profiles').upsert({
+        id: authUser.id,
+        phone: phone || '+84000000000',
+        full_name: fullName || null,
+        nickname: nickname || null,
+        email,
+        avatar_url: fallbackProfile.avatar_url,
+        avatar_emoji: fallbackProfile.avatar_emoji,
+        avatar_initials: fallbackProfile.avatar_initials,
+        avatar_color: fallbackProfile.avatar_color,
+        updated_at: new Date().toISOString(),
+      })
+
+      authDebug('loadProfile:profileRepairUpsert', repairResult)
+    } catch (error) {
+      authDebug('loadProfile:thrown', error)
+      setProfileStatus(error instanceof Error ? error.message : String(error))
     }
-
-    setUserId(authUser.id)
-
-    const { data: profileRow } = await supabase
-      .from('profiles')
-      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
-      .eq('id', authUser.id)
-      .maybeSingle()
-
-    if (profileRow) {
-      const phoneParts = splitPhoneNumber(profileRow.phone || '')
-      setProfile(profileRow)
-      setProfileCountryCode(phoneParts.countryInput)
-      setProfilePhone(phoneParts.localPhone)
-      setProfileName(profileRow.full_name || '')
-      setProfileNickname(limitDisplayName(profileRow.nickname || ''))
-      setProfileEmail(profileRow.email || '')
-      setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
-      setAvatarEmoji(profileRow.avatar_emoji || '😎')
-      setAvatarInitials(profileRow.avatar_initials || '')
-      setAvatarColor(profileRow.avatar_color || avatarColors[0])
-      return
-    }
-
-    const email = authUser.email?.toLowerCase() || ''
-    const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
-    const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
-    const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
-    const fallbackProfile: Profile = {
-      id: authUser.id,
-      phone,
-      full_name: fullName || null,
-      nickname: nickname || null,
-      email,
-      avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
-      avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
-      avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
-      avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
-      role: ADMIN_EMAILS.includes(email) ? 'admin' : 'player',
-    }
-
-    setProfile(fallbackProfile)
-    setProfileCountryCode('+84')
-    setProfilePhone(phone.replace(/^\+?84/, ''))
-    setProfileName(fullName)
-    setProfileNickname(nickname)
-    setProfileEmail(email)
-    setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
-    setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
-    setAvatarInitials(fallbackProfile.avatar_initials || '')
-    setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
-
-    await supabase.from('profiles').upsert({
-      id: authUser.id,
-      phone,
-      full_name: fullName || null,
-      nickname: nickname || null,
-      email,
-      avatar_url: fallbackProfile.avatar_url,
-      avatar_emoji: fallbackProfile.avatar_emoji,
-      avatar_initials: fallbackProfile.avatar_initials,
-      avatar_color: fallbackProfile.avatar_color,
-      updated_at: new Date().toISOString(),
-    })
   }
 
   async function handleAuth() {
-    const countryCode = resolveCountryCode(profileCountryCode)
-    const localPhone = profilePhone.replace(/\D/g, '')
-    const fullPhone = `${countryCode}${localPhone}`
-    const loginEmail = profileEmail.trim().toLowerCase()
-    const fullName = profileName.trim()
+    try {
+      const countryCode = resolveCountryCode(profileCountryCode)
+      const localPhone = profilePhone.replace(/\D/g, '')
+      const fullPhone = `${countryCode}${localPhone}`
+      const loginEmail = profileEmail.trim().toLowerCase()
+      const fullName = profileName.trim()
 
-    if (authMode === 'create' && fullPhone.length < 8) {
-      setProfileStatus(text.phoneRequired)
-      return
-    }
-
-    if (authMode === 'create' && !fullName) {
-      setProfileStatus(text.nameRequired)
-      return
-    }
-
-    if (!loginEmail || !loginEmail.includes('@')) {
-      setProfileStatus(text.emailRequired)
-      return
-    }
-
-    if (profilePassword.length < 6) {
-      setProfileStatus(text.passwordRequired)
-      return
-    }
-
-    if (authMode === 'create' && !personalDataConsent) {
-      setProfileStatus(text.consentRequired)
-      return
-    }
-
-    if (!captchaToken) {
-      setProfileStatus(text.captchaRequired)
-      return
-    }
-
-    setIsSavingProfile(true)
-    setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
-
-    if (authMode === 'create') {
-      const nickname = limitDisplayName(profileNickname.trim())
-      const display = nickname || compactDisplayName(fullName)
-      const consentAt = new Date().toISOString()
-      const signUpResult = await supabase.auth.signUp({
+      authDebug('handleAuth:attempt', {
+        mode: authMode,
         email: loginEmail,
-        password: profilePassword,
-        options: {
+        isAdminEmail: ADMIN_EMAILS.includes(loginEmail),
+        hasCaptcha: Boolean(captchaToken),
+        localPhoneLength: localPhone.length,
+        hasFullName: Boolean(fullName),
+      })
+
+      if (authMode === 'create' && fullPhone.length < 8) {
+        setProfileStatus(text.phoneRequired)
+        return
+      }
+
+      if (authMode === 'create' && !fullName) {
+        setProfileStatus(text.nameRequired)
+        return
+      }
+
+      if (!loginEmail || !loginEmail.includes('@')) {
+        setProfileStatus(text.emailRequired)
+        return
+      }
+
+      if (profilePassword.length < 6) {
+        setProfileStatus(text.passwordRequired)
+        return
+      }
+
+      if (authMode === 'create' && !personalDataConsent) {
+        setProfileStatus(text.consentRequired)
+        return
+      }
+
+      if (!captchaToken) {
+        setProfileStatus(text.captchaRequired)
+        return
+      }
+
+      setIsSavingProfile(true)
+      setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
+
+      if (authMode === 'create') {
+        const nickname = limitDisplayName(profileNickname.trim())
+        const display = nickname || compactDisplayName(fullName)
+        const consentAt = new Date().toISOString()
+        const signUpResult = await supabase.auth.signUp({
+          email: loginEmail,
+          password: profilePassword,
+          options: {
+            data: {
+              display_name: display,
+              full_name: fullName,
+              name: display,
+              nickname: nickname || null,
+              phone: fullPhone,
+              personal_data_consent: personalDataConsent,
+              personal_data_consent_at: consentAt,
+              privacy_policy_url: PRIVACY_POLICY_URL,
+            },
+            captchaToken,
+          },
+        })
+
+        authDebug('handleAuth:signUpResponse', {
+          error: signUpResult.error,
+          hasSession: Boolean(signUpResult.data.session),
+          user: signUpResult.data.user ? {
+            id: signUpResult.data.user.id,
+            email: signUpResult.data.user.email,
+            emailConfirmedAt: signUpResult.data.user.email_confirmed_at,
+            appMetadata: signUpResult.data.user.app_metadata,
+            userMetadata: signUpResult.data.user.user_metadata,
+          } : null,
+        })
+
+        if (signUpResult.error) {
+          resetCaptcha()
+          setProfileStatus(signUpResult.error.message)
+          setIsSavingProfile(false)
+          return
+        }
+
+        const authUser = signUpResult.data.user
+
+        if (!authUser) {
+          resetCaptcha()
+          setProfileStatus(text.loginRequired)
+          setAuthMode('login')
+          setIsSavingProfile(false)
+          return
+        }
+
+        setUserId(authUser.id)
+
+        const existingProfileResult = await supabase
+          .from('profiles')
+          .select('avatar_url, nickname')
+          .eq('id', authUser.id)
+          .maybeSingle()
+        const existingProfile = existingProfileResult.data
+
+        authDebug('handleAuth:existingProfileQuery', {
+          error: existingProfileResult.error,
+          profile: existingProfile,
+        })
+
+        const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(authUser.id, existingProfile?.avatar_url || null) : null
+
+        if (avatarUrl === false) {
+          resetCaptcha()
+          setIsSavingProfile(false)
+          return
+        }
+
+        const avatarPayload = {
+          avatar_url: avatarMode === 'photo' ? avatarUrl : null,
+          avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
+          avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
+          avatar_color: avatarColor,
+        }
+
+        const profileUpsert = await supabase.from('profiles').upsert({
+          id: authUser.id,
+          full_name: fullName,
+          phone: fullPhone,
+          nickname: nickname || existingProfile?.nickname || null,
+          email: loginEmail,
+          ...avatarPayload,
+          personal_data_consent: personalDataConsent,
+          personal_data_consent_at: consentAt,
+          privacy_policy_url: PRIVACY_POLICY_URL,
+          updated_at: new Date().toISOString(),
+        })
+
+        authDebug('handleAuth:createProfileUpsert', {
+          error: profileUpsert.error,
+          authUserId: authUser.id,
+          email: loginEmail,
+        })
+
+        if (profileUpsert.error) {
+          resetCaptcha()
+          setProfileStatus(profileUpsert.error.message)
+          setIsSavingProfile(false)
+          return
+        }
+
+        const metadataUpdate = await supabase.auth.updateUser({
           data: {
             display_name: display,
             full_name: fullName,
             name: display,
             nickname: nickname || null,
             phone: fullPhone,
+            avatar_url: avatarPayload.avatar_url,
+            avatar_emoji: avatarPayload.avatar_emoji,
+            avatar_initials: avatarPayload.avatar_initials,
+            avatar_color: avatarPayload.avatar_color,
             personal_data_consent: personalDataConsent,
             personal_data_consent_at: consentAt,
             privacy_policy_url: PRIVACY_POLICY_URL,
           },
-          captchaToken,
-        },
-      })
+        })
 
-      if (signUpResult.error) {
+        authDebug('handleAuth:updateUserMetadata', { error: metadataUpdate.error })
+
+        if (metadataUpdate.error) {
+          resetCaptcha()
+          setProfileStatus(metadataUpdate.error.message)
+          setIsSavingProfile(false)
+          return
+        }
+
         resetCaptcha()
-        setProfileStatus(signUpResult.error.message)
+        setProfilePassword('')
+        setPersonalDataConsent(false)
+        await loadProfile()
+        setProfileStatus(text.accountCreated)
+        setActiveView('sessions')
         setIsSavingProfile(false)
         return
       }
 
-      const authUser = signUpResult.data.user
+      authDebug('handleAuth:signInWithPassword:start', {
+        email: loginEmail,
+        isAdminEmail: ADMIN_EMAILS.includes(loginEmail),
+        hasCaptcha: Boolean(captchaToken),
+      })
+
+      const signInResult = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: profilePassword,
+        options: {
+          captchaToken,
+        },
+      })
+
+      authDebug('handleAuth:signInWithPassword:response', {
+        error: signInResult.error,
+        hasSession: Boolean(signInResult.data.session),
+        user: signInResult.data.user ? {
+          id: signInResult.data.user.id,
+          email: signInResult.data.user.email,
+          emailConfirmedAt: signInResult.data.user.email_confirmed_at,
+          lastSignInAt: signInResult.data.user.last_sign_in_at,
+          appMetadata: signInResult.data.user.app_metadata,
+          userMetadata: signInResult.data.user.user_metadata,
+        } : null,
+      })
+
+      resetCaptcha()
+
+      if (signInResult.error) {
+        setProfileStatus(signInResult.error.message)
+        setIsSavingProfile(false)
+        return
+      }
+
+      const { data: verifiedUserData, error: verifiedUserError } = await supabase.auth.getUser()
+      const authUser = verifiedUserData.user
+
+      authDebug('handleAuth:getUserAfterLogin', {
+        error: verifiedUserError,
+        user: authUser ? {
+          id: authUser.id,
+          email: authUser.email,
+          emailConfirmedAt: authUser.email_confirmed_at,
+          lastSignInAt: authUser.last_sign_in_at,
+          appMetadata: authUser.app_metadata,
+          userMetadata: authUser.user_metadata,
+        } : null,
+      })
+
+      if (verifiedUserError) {
+        setProfileStatus(verifiedUserError.message)
+        setIsSavingProfile(false)
+        return
+      }
 
       if (!authUser) {
-        resetCaptcha()
         setProfileStatus(text.loginRequired)
         setAuthMode('login')
         setIsSavingProfile(false)
@@ -1649,113 +1905,17 @@ export default function WidgetPage() {
       }
 
       setUserId(authUser.id)
-
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('avatar_url, nickname')
-        .eq('id', authUser.id)
-        .maybeSingle()
-
-      const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(authUser.id, existingProfile?.avatar_url || null) : null
-
-      if (avatarUrl === false) {
-        resetCaptcha()
-        return
-      }
-
-      const avatarPayload = {
-        avatar_url: avatarMode === 'photo' ? avatarUrl : null,
-        avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
-        avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
-        avatar_color: avatarColor,
-      }
-
-      const { error } = await supabase.from('profiles').upsert({
-        id: authUser.id,
-        full_name: fullName,
-        phone: fullPhone,
-        nickname: nickname || existingProfile?.nickname || null,
-        email: loginEmail,
-        ...avatarPayload,
-        personal_data_consent: personalDataConsent,
-        personal_data_consent_at: consentAt,
-        privacy_policy_url: PRIVACY_POLICY_URL,
-        updated_at: new Date().toISOString(),
-      })
-
-      if (error) {
-        resetCaptcha()
-        setProfileStatus(error.message)
-        setIsSavingProfile(false)
-        return
-      }
-
-      const metadataUpdate = await supabase.auth.updateUser({
-        data: {
-          display_name: display,
-          full_name: fullName,
-          name: display,
-          nickname: nickname || null,
-          phone: fullPhone,
-          avatar_url: avatarPayload.avatar_url,
-          avatar_emoji: avatarPayload.avatar_emoji,
-          avatar_initials: avatarPayload.avatar_initials,
-          avatar_color: avatarPayload.avatar_color,
-          personal_data_consent: personalDataConsent,
-          personal_data_consent_at: consentAt,
-          privacy_policy_url: PRIVACY_POLICY_URL,
-        },
-      })
-
-      if (metadataUpdate.error) {
-        resetCaptcha()
-        setProfileStatus(metadataUpdate.error.message)
-        setIsSavingProfile(false)
-        return
-      }
-
-      resetCaptcha()
       setProfilePassword('')
-      setPersonalDataConsent(false)
       await loadProfile()
-      setProfileStatus(text.accountCreated)
+      setProfileStatus(text.loggedIn)
       setActiveView('sessions')
       setIsSavingProfile(false)
-      return
-    }
-
-    const signInResult = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: profilePassword,
-      options: {
-        captchaToken,
-      },
-    })
-
-    resetCaptcha()
-
-    if (signInResult.error) {
-      setProfileStatus(signInResult.error.message)
+    } catch (error) {
+      authDebug('handleAuth:thrown', error)
+      resetCaptcha()
+      setProfileStatus(error instanceof Error ? error.message : String(error))
       setIsSavingProfile(false)
-      return
     }
-
-    const { data: verifiedUserData } = await supabase.auth.getUser()
-    const authUser = verifiedUserData.user
-
-    if (!authUser) {
-      setProfileStatus(text.loginRequired)
-      setAuthMode('login')
-      setIsSavingProfile(false)
-      return
-    }
-
-    setUserId(authUser.id)
-    setProfilePassword('')
-    await loadProfile()
-    setProfileStatus(text.loggedIn)
-    setActiveView('sessions')
-    setIsSavingProfile(false)
   }
 
   async function logout() {
@@ -1900,6 +2060,30 @@ export default function WidgetPage() {
     loadSessions()
     loadClubs()
     loadTournamentData()
+  }, [])
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      authDebug('authStateChange', {
+        event,
+        hasSession: Boolean(session),
+        user: session?.user ? {
+          id: session.user.id,
+          email: session.user.email,
+          emailConfirmedAt: session.user.email_confirmed_at,
+          lastSignInAt: session.user.last_sign_in_at,
+          appMetadata: session.user.app_metadata,
+          userMetadata: session.user.user_metadata,
+        } : null,
+      })
+
+      if (event === 'SIGNED_OUT') {
+        setUserId('')
+        setProfile(null)
+      }
+    })
+
+    return () => authListener.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
@@ -2120,7 +2304,8 @@ export default function WidgetPage() {
     const query = normalizeSearchValue(search)
 
     return sessions.filter((session) => {
-      if (!isUpcomingSession(session)) return false
+      if (sessionTimeScope === 'upcoming' && !isUpcomingSession(session)) return false
+      if (sessionTimeScope === 'past' && !isPastSession(session)) return false
       if (selectedSessionDate && session.date !== selectedSessionDate) return false
       if (!query) return true
 
@@ -2139,7 +2324,7 @@ export default function WidgetPage() {
 
       return haystack.includes(query)
     })
-  }, [search, selectedSessionDate, sessions])
+  }, [search, selectedSessionDate, sessionTimeScope, sessions])
 
   const filteredClubs = useMemo(() => {
     const query = normalizeSearchValue(clubSearch)
@@ -2166,14 +2351,20 @@ export default function WidgetPage() {
       const value = localDateString(addDays(today, index))
       return { value, ...formatDayButton(value, language) }
     })
-    const sessionDays = sessions.filter(isUpcomingSession).map((session) => session.date)
-    const uniqueDays = Array.from(new Set([...upcomingDays.map((day) => day.value), ...sessionDays])).sort()
+    const scopedSessions = sessions.filter((session) =>
+      sessionTimeScope === 'past' ? isPastSession(session) : isUpcomingSession(session)
+    )
+    const sessionDays = scopedSessions.map((session) => session.date)
+    const uniqueDays = Array.from(new Set([
+      ...(sessionTimeScope === 'upcoming' ? upcomingDays.map((day) => day.value) : []),
+      ...sessionDays,
+    ])).sort()
 
     return uniqueDays.map((value) => {
       const existing = upcomingDays.find((day) => day.value === value)
       return existing || { value, ...formatDayButton(value, language) }
     })
-  }, [language, sessions])
+  }, [language, sessionTimeScope, sessions])
 
   const mySessions = useMemo(() => {
     if (!userId) return []
@@ -2934,6 +3125,7 @@ export default function WidgetPage() {
         status: 'open',
         tournament_format: sessionType === 'tournament' ? tournamentFormat : null,
         best_of: sessionType === 'tournament' ? tournamentBestOf : 1,
+        rounds_per_match: sessionType === 'tournament' ? tournamentRoundsPerMatch : null,
         require_payment: sessionType === 'tournament' ? tournamentRequirePayment : false,
         qualification_rule: sessionType === 'tournament' ? tournamentQualificationRule : null,
         custom_qualifiers: sessionType === 'tournament' ? tournamentCustomQualifiers : null,
@@ -2975,6 +3167,7 @@ export default function WidgetPage() {
     setSessionType('game')
     setTournamentFormat('pool_to_final')
     setTournamentBestOf(1)
+    setTournamentRoundsPerMatch(1)
     setTournamentRequirePayment(false)
     setTournamentQualificationRule('top_1')
     setTournamentCustomQualifiers(2)
@@ -3108,6 +3301,7 @@ export default function WidgetPage() {
     setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
     setEditTournamentFormat(session.tournament_format || 'pool_to_final')
     setEditTournamentBestOf((session.best_of || 1) as 1 | 3 | 5)
+    setEditTournamentRoundsPerMatch(session.rounds_per_match || 1)
     setEditTournamentRequirePayment(Boolean(session.require_payment))
     setEditTournamentQualificationRule(session.qualification_rule || 'top_1')
     setEditTournamentCustomQualifiers(session.custom_qualifiers || 2)
@@ -3169,6 +3363,7 @@ export default function WidgetPage() {
           ? {
             tournament_format: hasTournamentBracket ? session.tournament_format : editTournamentFormat,
             best_of: hasTournamentBracket ? session.best_of : editTournamentBestOf,
+            rounds_per_match: editTournamentRoundsPerMatch,
             require_payment: editTournamentRequirePayment,
             qualification_rule: hasTournamentBracket ? session.qualification_rule : editTournamentQualificationRule,
             custom_qualifiers: hasTournamentBracket ? session.custom_qualifiers : editTournamentCustomQualifiers,
@@ -4038,12 +4233,35 @@ export default function WidgetPage() {
             )}
             {createStatus && <p className="notice">{createStatus}</p>}
 
+            <div className="sub-tabs">
+              <button
+                className={sessionTimeScope === 'upcoming' ? 'active' : ''}
+                type="button"
+                onClick={() => {
+                  setSessionTimeScope('upcoming')
+                  setSelectedSessionDate('')
+                }}
+              >
+                {text.upcoming}
+              </button>
+              <button
+                className={sessionTimeScope === 'past' ? 'active' : ''}
+                type="button"
+                onClick={() => {
+                  setSessionTimeScope('past')
+                  setSelectedSessionDate('')
+                }}
+              >
+                {text.past}
+              </button>
+            </div>
+
             <div className="list">
               {filteredSessions.length === 0 && <p className="notice">{text.noMatchingSessions}</p>}
 
               {filteredSessions.map((session) => {
                 const participants = session.session_participants ?? []
-                const remaining = session.max_players - participants.length
+                const remaining = seatsLeft(session)
                 const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
                 const isSessionOwner = session.owner_id === userId
                 const canManage = canManageSession(session)
@@ -4051,6 +4269,9 @@ export default function WidgetPage() {
                 const isEditing = editingSessionId === session.id
                 const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
+                const isExpanded = Boolean(expandedSessions[session.id])
+                const canMutatePastSession = !isPastSession(session) || canManage
+                const coverGame = sessionCoverGame(session)
                 const hasCrownHolder = Boolean(
                   topPlayer?.profileId
                   && topPlayer.profileId !== userId
@@ -4059,6 +4280,54 @@ export default function WidgetPage() {
 
                 return (
                   <article className="session" id={`session-${session.id}`} key={session.id}>
+                    <div className="compact-session-card">
+                      <img className="compact-session-image" src={coverGame.image} alt="" />
+                      <div className="compact-session-main">
+                        <div className="compact-session-title-row">
+                          <h3>{session.name}</h3>
+                          <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
+                            {session.session_type === 'tournament' ? text.tournament : text.normalGame}
+                          </span>
+                        </div>
+                        <div className="row-meta compact-meta">
+                          <span>{session.date}</span>
+                          <span>{session.start_time.slice(0, 5)}</span>
+                          <span>{session.duration_minutes} min</span>
+                          <span>{remaining} {text.seatsLeft}</span>
+                          {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
+                        </div>
+                      </div>
+                      <div className="compact-session-actions">
+                        {session.visibility === 'private' && !alreadyJoined && (
+                          <input
+                            className="compact-code"
+                            placeholder={text.privateCode}
+                            value={joinCodes[session.id] || ''}
+                            onChange={(event) =>
+                              setJoinCodes((current) => ({ ...current, [session.id]: event.target.value.toUpperCase() }))
+                            }
+                          />
+                        )}
+                        <button
+                          className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
+                          disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
+                          onClick={() => joinSession(session)}
+                          type="button"
+                        >
+                          {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
+                        </button>
+                        <button
+                          className="secondary compact-expand"
+                          type="button"
+                          onClick={() => setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}
+                        >
+                          {isExpanded ? text.hideDetails : text.expandDetails}
+                        </button>
+                      </div>
+                    </div>
+                    {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
+                    {isExpanded && (
+                      <div className="session-expanded">
                     <div className="session-top">
                       <div>
                         <h3>{session.name}</h3>
@@ -4077,8 +4346,6 @@ export default function WidgetPage() {
                         </span>
                       </div>
                     </div>
-
-                    {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
 
                     {session.notes && (
                       <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
@@ -4164,6 +4431,15 @@ export default function WidgetPage() {
                                       <option value={3}>BO3</option>
                                       <option value={5}>BO5</option>
                                     </select>
+                                  </div>
+                                  <div>
+                                    <label>{text.roundsPerMatch}</label>
+                                    <select value={editTournamentRoundsPerMatch} onChange={(event) => setEditTournamentRoundsPerMatch(Number(event.target.value))}>
+                                      {[1, 2, 3, 4, 5].map((roundCount) => (
+                                        <option key={roundCount} value={roundCount}>{roundCount}</option>
+                                      ))}
+                                    </select>
+                                    <p className="field-help">{text.roundsPerMatchHint}</p>
                                   </div>
                                   <div>
                                     <label>{text.qualification}</label>
@@ -4379,7 +4655,7 @@ export default function WidgetPage() {
                             <div>
                               <h3>{text.tournamentDesk}</h3>
                               <p className="muted">
-                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {eligiblePlayers.length} {text.tournamentEligible}
+                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {text.roundsPerMatch}: {session.rounds_per_match || 1} · {eligiblePlayers.length} {text.tournamentEligible}
                               </p>
                             </div>
                             {canEditTournament && (
@@ -4663,7 +4939,7 @@ export default function WidgetPage() {
                           }
                         />
                       )}
-                      {alreadyJoined && !isSessionOwner && (
+                      {alreadyJoined && !isSessionOwner && canMutatePastSession && (
                         <button
                           className={busySessionId === session.id ? 'secondary loading' : 'secondary'}
                           disabled={busySessionId === session.id}
@@ -4675,7 +4951,7 @@ export default function WidgetPage() {
                       )}
                       <button
                         className={busySessionId === session.id ? 'primary loading' : 'primary'}
-                        disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id}
+                        disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
                         onClick={() => joinSession(session)}
                       >
                         {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
@@ -4694,6 +4970,8 @@ export default function WidgetPage() {
                         </svg>
                       </button>
                     </div>
+                      </div>
+                    )}
                   </article>
                 )
               })}
@@ -4936,6 +5214,15 @@ export default function WidgetPage() {
                         <option value={3}>BO3</option>
                         <option value={5}>BO5</option>
                       </select>
+                    </div>
+                    <div>
+                      <label>{text.roundsPerMatch}</label>
+                      <select value={tournamentRoundsPerMatch} onChange={(event) => setTournamentRoundsPerMatch(Number(event.target.value))}>
+                        {[1, 2, 3, 4, 5].map((roundCount) => (
+                          <option key={roundCount} value={roundCount}>{roundCount}</option>
+                        ))}
+                      </select>
+                      <p className="field-help">{text.roundsPerMatchHint}</p>
                     </div>
                     <div>
                       <label>{text.qualification}</label>
@@ -6726,21 +7013,111 @@ export default function WidgetPage() {
 
         .list {
           display: grid;
-          gap: 12px;
+          gap: 10px;
         }
 
         .session {
           display: grid;
-          gap: 13px;
-          border: 0;
-          border-bottom: 1px solid rgba(7, 17, 18, 0.1);
-          border-radius: 0;
-          padding: 14px 0 18px;
-          background: transparent;
+          gap: 10px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          padding: 10px;
+          background: #ffffff;
         }
 
         .session:last-child {
-          border-bottom: 0;
+          border-bottom: 1px solid rgba(7, 17, 18, 0.12);
+        }
+
+        .sub-tabs {
+          display: inline-flex;
+          width: fit-content;
+          gap: 4px;
+          padding: 4px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 999px;
+          background: #ffffff;
+        }
+
+        .sub-tabs button {
+          min-height: 34px;
+          padding: 6px 12px;
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+        }
+
+        .sub-tabs button.active {
+          background: #eef3f6;
+        }
+
+        .compact-session-card {
+          display: grid;
+          grid-template-columns: 58px minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .compact-session-image {
+          width: 58px;
+          height: 58px;
+          border-radius: 7px;
+          object-fit: cover;
+          background: #071112;
+        }
+
+        .compact-session-main {
+          display: grid;
+          gap: 5px;
+          min-width: 0;
+        }
+
+        .compact-session-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .compact-session-title-row h3 {
+          margin: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 18px;
+        }
+
+        .compact-meta {
+          gap: 5px;
+        }
+
+        .compact-session-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .compact-join,
+        .compact-expand {
+          min-height: 34px;
+          padding: 6px 10px;
+          font-size: 13px;
+        }
+
+        .compact-code {
+          width: 92px;
+          min-height: 34px;
+          padding: 6px 8px;
+          font-size: 13px;
+        }
+
+        .session-expanded {
+          display: grid;
+          gap: 12px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(7, 17, 18, 0.08);
         }
 
         .session-top,
@@ -8202,7 +8579,45 @@ export default function WidgetPage() {
 
           .session {
             gap: 12px;
-            padding: 12px 0 16px;
+            padding: 9px;
+          }
+
+          .sub-tabs {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .compact-session-card {
+            grid-template-columns: 50px minmax(0, 1fr);
+            align-items: start;
+          }
+
+          .compact-session-image {
+            width: 50px;
+            height: 50px;
+          }
+
+          .compact-session-actions {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            justify-content: stretch;
+          }
+
+          .compact-session-actions .compact-code {
+            grid-column: 1 / -1;
+            width: 100%;
+          }
+
+          .compact-session-actions .compact-join,
+          .compact-session-actions .compact-expand {
+            width: 100%;
+            min-height: 38px;
+          }
+
+          .session-expanded {
+            gap: 10px;
           }
 
           .session-top {
@@ -8500,9 +8915,26 @@ export default function WidgetPage() {
           }
 
           .sessions-section .session {
-            background: transparent;
+            background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
+          }
+
+          .sub-tabs {
+            background: #10191b;
+            border-color: rgba(255, 255, 255, 0.14);
+          }
+
+          .sub-tabs button {
+            color: #f6f7f9;
+          }
+
+          .sub-tabs button.active {
+            background: #1d2a2e;
+          }
+
+          .session-expanded {
+            border-top-color: rgba(255, 255, 255, 0.1);
           }
 
           .tournament-panel,
