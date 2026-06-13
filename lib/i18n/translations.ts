@@ -760,7 +760,7 @@ function fallbackTranslation(language: Exclude<LanguageCode, 'en' | 'vi'>, key: 
 
 function makeLanguage(language: Exclude<LanguageCode, 'en' | 'vi'>): TranslationMap {
   const translated = {} as TranslationMap
-  const overrides = keyTranslations[language]
+  const overrides: Partial<TranslationMap> = keyTranslations[language]
 
   ;(Object.keys(en) as TranslationKey[]).forEach((key) => {
     translated[key] = overrides[key] || fallbackTranslation(language, key)
