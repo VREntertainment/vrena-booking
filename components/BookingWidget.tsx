@@ -49,6 +49,8 @@ type Profile = {
   avatar_emoji?: string | null
   avatar_initials?: string | null
   avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
   role?: 'player' | 'admin'
 }
 
@@ -60,6 +62,8 @@ type Participant = {
   avatar_emoji?: string | null
   avatar_initials?: string | null
   avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
   checked_in?: boolean | null
   payment_status?: 'cash' | 'bank_transfer' | 'free' | null
   payment_amount?: number | null
@@ -124,6 +128,8 @@ type ClubMember = {
   avatar_emoji?: string | null
   avatar_initials?: string | null
   avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
   status: 'pending' | 'approved'
 }
 
@@ -147,6 +153,8 @@ type TournamentEditor = {
   avatar_emoji?: string | null
   avatar_initials?: string | null
   avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
 }
 
 type TournamentPool = {
@@ -276,7 +284,8 @@ const countries = [
 ]
 
 const avatarColors = ['#3059ff', '#00b5b8', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e', '#111827']
-const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '👑', '🚀', '🌀', '🎯']
+const avatarTextColors = ['#ffffff', '#071112', '#fef3c7', '#cffafe', '#fce7f3', '#dcfce7']
+const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '🚀', '🌀', '🎯', '🕹️', '👾', '🤖', '🧠', '💥', '🛡️', '🧩', '🏆', '✨']
 
 
 function minutesToTime(minutes: number) {
@@ -351,6 +360,19 @@ function compactDisplayName(value: string | null | undefined, fallback = 'Player
 
 function compactInitials(value: string) {
   return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
+}
+
+function limitMotto(value: string) {
+  return Array.from(value).slice(0, 20).join('')
+}
+
+function isHexColor(value: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(value.trim())
+}
+
+function cleanHexColor(value: string, fallback: string) {
+  const trimmed = value.trim()
+  return isHexColor(trimmed) ? trimmed.toLowerCase() : fallback
 }
 
 function normalizeSearchValue(value: string) {
@@ -739,6 +761,7 @@ export default function WidgetPage() {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [profileName, setProfileName] = useState('')
+  const [profileMotto, setProfileMotto] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
   const [personalDataConsent, setPersonalDataConsent] = useState(false)
@@ -748,6 +771,9 @@ export default function WidgetPage() {
   const [avatarEmoji, setAvatarEmoji] = useState('😎')
   const [avatarInitials, setAvatarInitials] = useState('')
   const [avatarColor, setAvatarColor] = useState(avatarColors[0])
+  const [avatarColorDraft, setAvatarColorDraft] = useState(avatarColors[0])
+  const [avatarTextColor, setAvatarTextColor] = useState(avatarTextColors[0])
+  const [avatarTextColorDraft, setAvatarTextColorDraft] = useState(avatarTextColors[0])
   const [profileStatus, setProfileStatus] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
@@ -834,11 +860,34 @@ export default function WidgetPage() {
   const text = uiText[language]
   const showProfileFields = Boolean(profile || authMode === 'create')
 
+  function updateAvatarColor(value: string) {
+    const normalized = cleanHexColor(value, avatarColor)
+    setAvatarColor(normalized)
+    setAvatarColorDraft(normalized)
+  }
+
+  function updateAvatarColorDraft(value: string) {
+    setAvatarColorDraft(value)
+    if (isHexColor(value)) setAvatarColor(value.toLowerCase())
+  }
+
+  function updateAvatarTextColor(value: string) {
+    const normalized = cleanHexColor(value, avatarTextColor)
+    setAvatarTextColor(normalized)
+    setAvatarTextColorDraft(normalized)
+  }
+
+  function updateAvatarTextColorDraft(value: string) {
+    setAvatarTextColorDraft(value)
+    if (isHexColor(value)) setAvatarTextColor(value.toLowerCase())
+  }
+
   function avatarNode(source: {
     avatar_url?: string | null
     avatar_emoji?: string | null
     avatar_initials?: string | null
     avatar_color?: string | null
+    avatar_text_color?: string | null
     display_name?: string | null
     full_name?: string | null
     nickname?: string | null
@@ -881,8 +930,13 @@ export default function WidgetPage() {
     return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
   }
 
-  function avatarStyle(source: { avatar_color?: string | null } | null | undefined) {
-    return source?.avatar_color ? { background: source.avatar_color } : undefined
+  function avatarStyle(source: { avatar_color?: string | null; avatar_text_color?: string | null } | null | undefined) {
+    if (!source?.avatar_color && !source?.avatar_text_color) return undefined
+
+    return {
+      ...(source.avatar_color ? { background: source.avatar_color } : {}),
+      ...(source.avatar_text_color ? { color: source.avatar_text_color } : {}),
+    }
   }
 
   function avatarFields(source: Profile) {
@@ -891,6 +945,8 @@ export default function WidgetPage() {
       avatar_emoji: source.avatar_emoji || null,
       avatar_initials: source.avatar_initials || null,
       avatar_color: source.avatar_color || null,
+      avatar_text_color: source.avatar_text_color || null,
+      profile_motto: source.profile_motto || null,
     }
   }
 
@@ -990,7 +1046,7 @@ export default function WidgetPage() {
 
       const { data: profileRow, error: profileError, status: profileStatusCode } = await supabase
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .eq('id', authUser.id)
         .maybeSingle()
 
@@ -1013,18 +1069,23 @@ export default function WidgetPage() {
         setProfileCountryCode(phoneParts.countryInput)
         setProfilePhone(phoneParts.localPhone)
         setProfileName(profileRow.full_name || '')
+        setProfileMotto(limitMotto(profileRow.profile_motto || ''))
         setProfileNickname(limitDisplayName(profileRow.nickname || ''))
         setProfileEmail(profileRow.email || '')
         setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
         setAvatarEmoji(profileRow.avatar_emoji || '😎')
         setAvatarInitials(profileRow.avatar_initials || '')
         setAvatarColor(profileRow.avatar_color || avatarColors[0])
+        setAvatarColorDraft(profileRow.avatar_color || avatarColors[0])
+        setAvatarTextColor(profileRow.avatar_text_color || avatarTextColors[0])
+        setAvatarTextColorDraft(profileRow.avatar_text_color || avatarTextColors[0])
         return
       }
 
       const email = authUser.email?.toLowerCase() || ''
       const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
       const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
+      const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
       const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
       const fallbackProfile: Profile = {
         id: authUser.id,
@@ -1036,6 +1097,8 @@ export default function WidgetPage() {
         avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
         avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
         avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
+        avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
+        profile_motto: profileMottoValue || null,
         role: ADMIN_EMAILS.includes(email) ? 'admin' : 'player',
       }
 
@@ -1044,12 +1107,16 @@ export default function WidgetPage() {
       setProfileCountryCode('+84')
       setProfilePhone(phone.replace(/^\+?84/, ''))
       setProfileName(fullName)
+      setProfileMotto(profileMottoValue)
       setProfileNickname(nickname)
       setProfileEmail(email)
       setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
       setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
       setAvatarInitials(fallbackProfile.avatar_initials || '')
       setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
+      setAvatarColorDraft(fallbackProfile.avatar_color || avatarColors[0])
+      setAvatarTextColor(fallbackProfile.avatar_text_color || avatarTextColors[0])
+      setAvatarTextColorDraft(fallbackProfile.avatar_text_color || avatarTextColors[0])
 
       const repairResult = await supabase.from('profiles').upsert({
         id: authUser.id,
@@ -1061,6 +1128,8 @@ export default function WidgetPage() {
         avatar_emoji: fallbackProfile.avatar_emoji,
         avatar_initials: fallbackProfile.avatar_initials,
         avatar_color: fallbackProfile.avatar_color,
+        avatar_text_color: fallbackProfile.avatar_text_color,
+        profile_motto: fallbackProfile.profile_motto,
         updated_at: new Date().toISOString(),
       })
 
@@ -1078,6 +1147,7 @@ export default function WidgetPage() {
       const fullPhone = `${countryCode}${localPhone}`
       const loginEmail = profileEmail.trim().toLowerCase()
       const fullName = profileName.trim()
+      const cleanMotto = limitMotto(profileMotto.trim())
 
       authDebug('handleAuth:attempt', {
         mode: authMode,
@@ -1134,7 +1204,9 @@ export default function WidgetPage() {
               full_name: fullName,
               name: display,
               nickname: nickname || null,
+              profile_motto: cleanMotto || null,
               phone: fullPhone,
+              avatar_text_color: avatarTextColor,
               personal_data_consent: personalDataConsent,
               personal_data_consent_at: consentAt,
               privacy_policy_url: PRIVACY_POLICY_URL,
@@ -1199,6 +1271,7 @@ export default function WidgetPage() {
           avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
           avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
           avatar_color: avatarColor,
+          avatar_text_color: avatarTextColor,
         }
 
         const profileUpsert = await supabase.from('profiles').upsert({
@@ -1207,6 +1280,7 @@ export default function WidgetPage() {
           phone: fullPhone,
           nickname: nickname || existingProfile?.nickname || null,
           email: loginEmail,
+          profile_motto: cleanMotto || null,
           ...avatarPayload,
           personal_data_consent: personalDataConsent,
           personal_data_consent_at: consentAt,
@@ -1238,6 +1312,8 @@ export default function WidgetPage() {
             avatar_emoji: avatarPayload.avatar_emoji,
             avatar_initials: avatarPayload.avatar_initials,
             avatar_color: avatarPayload.avatar_color,
+            avatar_text_color: avatarPayload.avatar_text_color,
+            profile_motto: cleanMotto || null,
             personal_data_consent: personalDataConsent,
             personal_data_consent_at: consentAt,
             privacy_policy_url: PRIVACY_POLICY_URL,
@@ -1409,7 +1485,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
       .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1428,7 +1504,7 @@ export default function WidgetPage() {
   async function loadClubs() {
     const { data, error } = await supabase
       .from('clubs')
-      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, status)')
+      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1441,7 +1517,7 @@ export default function WidgetPage() {
 
   async function loadTournamentData() {
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
-      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color'),
+      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
       supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
       supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
       supabase
@@ -1846,6 +1922,8 @@ export default function WidgetPage() {
       avatarEmoji: string | null
       avatarInitials: string | null
       avatarColor: string | null
+      avatarTextColor: string | null
+      profileMotto: string | null
       gamesJoined: number
       wins: number
       totalScore: number
@@ -1866,6 +1944,8 @@ export default function WidgetPage() {
           avatarEmoji: participant.avatar_emoji || null,
           avatarInitials: participant.avatar_initials || null,
           avatarColor: participant.avatar_color || null,
+          avatarTextColor: participant.avatar_text_color || null,
+          profileMotto: participant.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -1880,6 +1960,8 @@ export default function WidgetPage() {
         current.avatarEmoji = participant.avatar_emoji || current.avatarEmoji
         current.avatarInitials = participant.avatar_initials || current.avatarInitials
         current.avatarColor = participant.avatar_color || current.avatarColor
+        current.avatarTextColor = participant.avatar_text_color || current.avatarTextColor
+        current.profileMotto = participant.profile_motto || current.profileMotto
         current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
 
@@ -1932,6 +2014,8 @@ export default function WidgetPage() {
     avatarEmoji: profile?.avatar_emoji || null,
     avatarInitials: profile?.avatar_initials || null,
     avatarColor: profile?.avatar_color || null,
+    avatarTextColor: profile?.avatar_text_color || null,
+    profileMotto: profile?.profile_motto || null,
     gamesJoined: 0,
     wins: 0,
     totalScore: 0,
@@ -1963,6 +2047,8 @@ export default function WidgetPage() {
     let visibleEmoji: string | null = null
     let visibleInitials: string | null = null
     let visibleColor: string | null = null
+    let visibleTextColor: string | null = null
+    let visibleMotto: string | null = null
     let visibleName = ''
 
     if (selectedPlayerId === userId && profile) {
@@ -1970,6 +2056,8 @@ export default function WidgetPage() {
       visibleEmoji = profile.avatar_emoji || visibleEmoji
       visibleInitials = profile.avatar_initials || visibleInitials
       visibleColor = profile.avatar_color || visibleColor
+      visibleTextColor = profile.avatar_text_color || visibleTextColor
+      visibleMotto = profile.profile_motto || visibleMotto
       visibleName = displayName(profile) || visibleName
     }
 
@@ -1980,6 +2068,8 @@ export default function WidgetPage() {
         visibleEmoji = participant.avatar_emoji || visibleEmoji
         visibleInitials = participant.avatar_initials || visibleInitials
         visibleColor = participant.avatar_color || visibleColor
+        visibleTextColor = participant.avatar_text_color || visibleTextColor
+        visibleMotto = participant.profile_motto || visibleMotto
         visibleName = compactDisplayName(participant.display_name, visibleName || text.player)
       }
     }
@@ -1991,6 +2081,8 @@ export default function WidgetPage() {
         visibleEmoji = member.avatar_emoji || visibleEmoji
         visibleInitials = member.avatar_initials || visibleInitials
         visibleColor = member.avatar_color || visibleColor
+        visibleTextColor = member.avatar_text_color || visibleTextColor
+        visibleMotto = member.profile_motto || visibleMotto
         visibleName = compactDisplayName(member.display_name, visibleName || text.player)
       }
     }
@@ -2003,6 +2095,8 @@ export default function WidgetPage() {
         avatarEmoji: selectedPlayerStats.avatarEmoji || visibleEmoji,
         avatarInitials: selectedPlayerStats.avatarInitials || visibleInitials,
         avatarColor: selectedPlayerStats.avatarColor || visibleColor,
+        avatarTextColor: selectedPlayerStats.avatarTextColor || visibleTextColor,
+        profileMotto: selectedPlayerStats.profileMotto || visibleMotto,
       }
     }
 
@@ -2016,6 +2110,8 @@ export default function WidgetPage() {
           avatarEmoji: participant.avatar_emoji || null,
           avatarInitials: participant.avatar_initials || null,
           avatarColor: participant.avatar_color || null,
+          avatarTextColor: participant.avatar_text_color || null,
+          profileMotto: participant.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -2038,6 +2134,8 @@ export default function WidgetPage() {
           avatarEmoji: member.avatar_emoji || null,
           avatarInitials: member.avatar_initials || null,
           avatarColor: member.avatar_color || null,
+          avatarTextColor: member.avatar_text_color || null,
+          profileMotto: member.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
           totalScore: 0,
@@ -2084,7 +2182,7 @@ export default function WidgetPage() {
       const safe = query.replace(/[%_,]/g, '')
       const { data } = await supabase
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .or(`full_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
         .limit(6)
 
@@ -2379,6 +2477,7 @@ export default function WidgetPage() {
     const countryCode = resolveCountryCode(profileCountryCode)
     const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
     const fullName = profileName.trim()
+    const cleanMotto = limitMotto(profileMotto.trim())
     const nickname = limitDisplayName(profileNickname.trim())
 
     if (!profilePhone.trim()) {
@@ -2403,12 +2502,14 @@ export default function WidgetPage() {
       avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
       avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || displayName(profile) || fullName) : null,
       avatar_color: avatarColor,
+      avatar_text_color: avatarTextColor,
     }
 
     const row = {
       id: userId,
       full_name: fullName,
       phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
+      profile_motto: cleanMotto || null,
       nickname: nickname || null,
       email: profileEmail.trim() || null,
       ...avatarPayload,
@@ -2418,7 +2519,7 @@ export default function WidgetPage() {
     const { data, error } = await supabase
       .from('profiles')
       .upsert(row)
-      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
       .single()
 
     if (error) {
@@ -2439,6 +2540,8 @@ export default function WidgetPage() {
         avatar_emoji: data.avatar_emoji,
         avatar_initials: data.avatar_initials,
         avatar_color: data.avatar_color,
+        avatar_text_color: data.avatar_text_color,
+        profile_motto: data.profile_motto,
       },
     })
 
@@ -2933,7 +3036,7 @@ export default function WidgetPage() {
       ? { data: selectedEditor, error: null }
       : await supabase
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, role')
+        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .or(`email.eq.${email},nickname.ilike.%${email}%,full_name.ilike.%${email}%`)
         .limit(1)
         .maybeSingle()
@@ -3561,7 +3664,7 @@ export default function WidgetPage() {
             <div className="language-picker">
               <button
                 aria-expanded={languagePickerOpen}
-                aria-label="Change language"
+                aria-label={text.language}
                 type="button"
                 onClick={() => setLanguagePickerOpen((open) => !open)}
               >
@@ -3596,13 +3699,13 @@ export default function WidgetPage() {
         </div>
 
         <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
-          <div className="avatar">
+          <div className="avatar" style={avatarStyle(profile)}>
             {avatarNode(profile, 'P')}
             {topPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
           </div>
           <div>
             <strong>{profile ? displayName(profile) : text.noProfile}</strong>
-            <span>{profile?.phone || text.clickLogin}</span>
+            <span>{profile ? profile.profile_motto || text.profileMottoEmpty : text.clickLogin}</span>
           </div>
         </button>
 
@@ -3615,6 +3718,9 @@ export default function WidgetPage() {
           </button>
           <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('clubs') : promptLogin())}>
             {text.clubs}
+          </button>
+          <button className={activeView === 'profile' ? 'tab active' : 'tab'} onClick={() => setActiveView('profile')}>
+            {text.profile}
           </button>
         </div>
 
@@ -4895,7 +5001,7 @@ export default function WidgetPage() {
             ].join(' ').trim()}>
               {showProfileFields && (
                 <div className="profile-photo-panel">
-                  <label className="profile-photo-preview" style={{ background: avatarColor }}>
+                  <label className="profile-photo-preview" style={{ background: avatarColor, color: avatarTextColor }}>
                     {avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
                       <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
                     ) : avatarMode === 'emoji' ? (
@@ -4930,17 +5036,66 @@ export default function WidgetPage() {
                       <input maxLength={2} value={avatarInitials} onChange={(event) => setAvatarInitials(compactInitials(event.target.value))} placeholder="VR" aria-label={text.avatarInitials} />
                     )}
                     {avatarMode !== 'photo' && (
-                      <div className="color-row" aria-label={text.avatarColor}>
-                        {avatarColors.map((color) => (
-                          <button
-                            className={avatarColor === color ? 'active' : ''}
-                            key={color}
-                            onClick={() => setAvatarColor(color)}
-                            style={{ background: color }}
-                            type="button"
-                          />
-                        ))}
-                      </div>
+                      <>
+                        <div className="color-row" aria-label={text.avatarColor}>
+                          {avatarColors.map((color) => (
+                            <button
+                              className={avatarColor === color ? 'active' : ''}
+                              key={color}
+                              onClick={() => updateAvatarColor(color)}
+                              style={{ background: color }}
+                              type="button"
+                            />
+                          ))}
+                        </div>
+                        <div className="custom-color-row">
+                          <label>
+                            <span>{text.customColor}</span>
+                            <input type="color" value={avatarColor} onChange={(event) => updateAvatarColor(event.target.value)} />
+                          </label>
+                          <label className="hex-field">
+                            <span>{text.hexColor}</span>
+                            <input
+                              maxLength={7}
+                              value={avatarColorDraft}
+                              onBlur={() => setAvatarColorDraft(avatarColor)}
+                              onChange={(event) => updateAvatarColorDraft(event.target.value)}
+                              placeholder="#3059ff"
+                            />
+                          </label>
+                        </div>
+                        {avatarMode === 'initials' && (
+                          <>
+                            <div className="color-row" aria-label={text.avatarTextColor}>
+                              {avatarTextColors.map((color) => (
+                                <button
+                                  className={avatarTextColor === color ? 'active' : ''}
+                                  key={color}
+                                  onClick={() => updateAvatarTextColor(color)}
+                                  style={{ background: color }}
+                                  type="button"
+                                />
+                              ))}
+                            </div>
+                            <div className="custom-color-row">
+                              <label>
+                                <span>{text.avatarTextColor}</span>
+                                <input type="color" value={avatarTextColor} onChange={(event) => updateAvatarTextColor(event.target.value)} />
+                              </label>
+                              <label className="hex-field">
+                                <span>{text.hexColor}</span>
+                                <input
+                                  maxLength={7}
+                                  value={avatarTextColorDraft}
+                                  onBlur={() => setAvatarTextColorDraft(avatarTextColor)}
+                                  onChange={(event) => updateAvatarTextColorDraft(event.target.value)}
+                                  placeholder="#ffffff"
+                                />
+                              </label>
+                            </div>
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -5010,6 +5165,18 @@ export default function WidgetPage() {
                     onChange={(event) => setProfileNickname(limitDisplayName(event.target.value))}
                     placeholder={text.optional}
                   />
+                </div>
+              )}
+              {showProfileFields && (
+                <div className="motto-field">
+                  <label>{text.profileMotto}</label>
+                  <input
+                    maxLength={20}
+                    value={profileMotto}
+                    onChange={(event) => setProfileMotto(limitMotto(event.target.value))}
+                    placeholder={text.profileMottoPlaceholder}
+                  />
+                  <p className="field-help">{text.profileMottoHelp}</p>
                 </div>
               )}
               {!profile && authMode === 'create' && (
@@ -5428,19 +5595,21 @@ export default function WidgetPage() {
             <div className="player-profile-head">
               <div
                 className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}
-                style={avatarStyle({ avatar_color: selectedPlayerProfile.avatarColor })}
+                style={avatarStyle({ avatar_color: selectedPlayerProfile.avatarColor, avatar_text_color: selectedPlayerProfile.avatarTextColor })}
               >
                 {avatarNode({
                   avatar_url: selectedPlayerProfile.avatarUrl,
                   avatar_emoji: selectedPlayerProfile.avatarEmoji,
                   avatar_initials: selectedPlayerProfile.avatarInitials,
                   avatar_color: selectedPlayerProfile.avatarColor,
+                  avatar_text_color: selectedPlayerProfile.avatarTextColor,
                   display_name: selectedPlayerProfile.displayName,
                 }, 'P')}
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">👑</span>}
               </div>
               <div>
                 <h3 id="player-profile-title">{compactDisplayName(selectedPlayerProfile.displayName, text.player)}</h3>
+                {selectedPlayerProfile.profileMotto && <p className="player-motto">{selectedPlayerProfile.profileMotto}</p>}
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="pill ok">{text.bestOverall}</span>}
               </div>
             </div>
@@ -5760,6 +5929,8 @@ export default function WidgetPage() {
         .language-picker {
           position: relative;
           z-index: 80;
+          width: fit-content;
+          max-width: 100%;
         }
 
         .language-picker > button,
@@ -5789,7 +5960,8 @@ export default function WidgetPage() {
           z-index: 60;
           display: flex;
           gap: 6px;
-          max-width: min(360px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+          width: max-content;
+          max-width: min(420px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
           overflow-x: auto;
           overscroll-behavior-x: contain;
           -webkit-overflow-scrolling: touch;
@@ -5797,6 +5969,7 @@ export default function WidgetPage() {
           border-radius: 999px;
           background: #ffffff;
           padding: 6px;
+          scroll-padding-inline: 8px;
           box-shadow: 0 12px 32px rgba(11, 21, 24, 0.14);
           animation: languagePickerIn 160ms ease-out;
         }
@@ -6040,18 +6213,17 @@ export default function WidgetPage() {
           place-items: center;
           overflow: hidden;
           background: linear-gradient(135deg, #00cbd1, #3059ff);
-          color: #ffffff;
           font-size: 30px;
           font-weight: 900;
           cursor: pointer;
         }
 
         .profile-photo-preview .avatar-emoji {
-          color: #ffffff;
-          font-size: 56px;
+          color: inherit;
+          font-size: 62px;
           line-height: 1;
           margin: 0;
-          transform: translateY(1px);
+          transform: translateY(0);
         }
 
         .profile-photo-preview img {
@@ -6080,12 +6252,25 @@ export default function WidgetPage() {
         .color-row {
           display: flex;
           gap: 8px;
-          flex-wrap: wrap;
           align-items: center;
+        }
+
+        .emoji-row {
+          max-width: 100%;
+          overflow-x: auto;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          padding: 2px 2px 6px;
+          scrollbar-width: thin;
+        }
+
+        .color-row {
+          flex-wrap: wrap;
         }
 
         .emoji-row button,
         .color-row button {
+          flex: 0 0 auto;
           width: 36px;
           height: 36px;
           min-height: 36px;
@@ -6093,6 +6278,9 @@ export default function WidgetPage() {
           padding: 0;
           border: 1px solid rgba(7, 17, 18, 0.14);
           background: #ffffff;
+          display: grid;
+          place-items: center;
+          font-size: 20px;
         }
 
         .emoji-row button.active,
@@ -6104,6 +6292,38 @@ export default function WidgetPage() {
         .emoji-row input,
         .avatar-options input {
           max-width: 150px;
+        }
+
+        .custom-color-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: end;
+        }
+
+        .custom-color-row label {
+          display: grid;
+          gap: 4px;
+          color: #637075;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .custom-color-row input[type="color"] {
+          width: 42px;
+          height: 36px;
+          min-height: 36px;
+          padding: 3px;
+          border-radius: 8px;
+        }
+
+        .custom-color-row .hex-field input {
+          width: 116px;
+          max-width: 116px;
+          min-height: 36px;
+          padding: 7px 9px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          text-transform: lowercase;
         }
 
         .avatar,
@@ -6198,15 +6418,15 @@ export default function WidgetPage() {
 
         .champion-badge {
           position: absolute;
-          right: -5px;
-          top: -7px;
+          right: -8px;
+          top: -10px;
           display: grid;
           place-items: center;
-          width: 20px;
-          height: 20px;
+          width: 30px;
+          height: 30px;
           border-radius: 50%;
           background: #ffffff;
-          font-size: 12px;
+          font-size: 18px;
           box-shadow: 0 2px 6px rgba(11, 21, 24, 0.16);
           animation: crownBob 1.8s ease-in-out infinite;
           z-index: 3;
@@ -6415,6 +6635,13 @@ export default function WidgetPage() {
         .player-profile-head h3 {
           margin: 0;
           color: inherit;
+        }
+
+        .player-motto {
+          margin: 3px 0 0;
+          color: #637075;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .champion-modal {
@@ -6814,14 +7041,41 @@ export default function WidgetPage() {
           padding: 0;
           font-size: 12px;
           font-weight: 900;
+          box-shadow: 0 1px 0 rgba(7, 17, 18, 0.08);
+        }
+
+        .format-toolbar button:nth-child(2) {
+          font-style: italic;
+        }
+
+        .format-toolbar button:nth-child(3) {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
+        .format-toolbar button:nth-child(4) {
+          text-decoration: line-through;
+        }
+
+        .format-toolbar button:hover,
+        .format-toolbar button:focus-visible {
+          transform: translateY(-1px) scale(1.03);
+          border-color: rgba(48, 89, 255, 0.42);
+        }
+
+        .format-toolbar button:active {
+          background: linear-gradient(135deg, #13c9c9, #3059ff);
+          color: #ffffff;
+          border-color: transparent;
+          transform: translateY(0) scale(0.98);
         }
 
         .rich-note-editor {
           min-height: 86px;
           width: 100%;
-          border: 1px solid rgba(7, 17, 18, 0.14);
+          border: 1px solid rgba(7, 17, 18, 0.24);
           border-radius: 8px;
-          background: #eef2f4;
+          background: #f8fafb;
           color: #071112;
           padding: 10px 12px;
           font: inherit;
@@ -6829,6 +7083,7 @@ export default function WidgetPage() {
           outline: none;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
         }
 
         .rich-note-editor:focus {
@@ -7576,6 +7831,10 @@ export default function WidgetPage() {
           grid-column: 3;
         }
 
+        .motto-field {
+          grid-column: 1 / span 2;
+        }
+
         .password-field {
           grid-column: 1 / span 2;
           max-width: none;
@@ -7948,6 +8207,7 @@ export default function WidgetPage() {
             height: auto;
             min-height: 100vh;
             overflow: visible;
+            --mobile-header-height: 128px;
           }
 
           aside {
@@ -7957,13 +8217,14 @@ export default function WidgetPage() {
             border-right: 0;
             border-bottom: 1px solid rgba(7, 17, 18, 0.12);
             height: auto;
+            min-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
             overflow: visible;
-            padding: 14px;
+            padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
             display: grid;
             grid-template-columns: 46px auto minmax(0, 1fr) auto;
             grid-template-areas:
-              "profile lang share logo"
-              "tabs tabs tabs tabs";
+              "profile tabs tabs tabs"
+              "lang share . logo";
             align-items: center;
             gap: 10px;
           }
@@ -8030,7 +8291,7 @@ export default function WidgetPage() {
 
           .tabs {
             grid-area: tabs;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
           }
 
@@ -8104,7 +8365,7 @@ export default function WidgetPage() {
 
           .search-shell {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 124px);
+            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 8px);
             right: max(12px, env(safe-area-inset-right, 0px));
             z-index: 25;
             justify-content: flex-end;
@@ -8152,7 +8413,7 @@ export default function WidgetPage() {
 
           .day-strip {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 178px);
+            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 62px);
             left: 0;
             right: 0;
             z-index: 24;
@@ -8393,6 +8654,7 @@ export default function WidgetPage() {
           .email-field,
           .name-field,
           .nickname-field,
+          .motto-field,
           .consent-field,
           .password-field,
           .captcha-field {
@@ -8402,8 +8664,12 @@ export default function WidgetPage() {
         }
 
         @media (max-width: 520px) {
+          .app {
+            --mobile-header-height: 124px;
+          }
+
           aside {
-            padding: 12px;
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 9px;
           }
 
           main {
@@ -8426,6 +8692,7 @@ export default function WidgetPage() {
           .tabs {
             position: sticky;
             top: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
           }
 
           .tab {
@@ -8596,6 +8863,8 @@ export default function WidgetPage() {
           .game-card,
           .editor-results button,
           .emoji-row button,
+          .color-row button,
+          .custom-color-row input,
           .invite-code button {
             background: #182225;
             color: #f6f7f9;
@@ -8629,6 +8898,11 @@ export default function WidgetPage() {
 
           .format-toolbar button {
             border-color: rgba(255, 255, 255, 0.24);
+          }
+
+          .custom-color-row label,
+          .player-motto {
+            color: #b9c4c8;
           }
 
           .champion-badge {
