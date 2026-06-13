@@ -3698,7 +3698,7 @@ export default function WidgetPage() {
           <p className="muted">{text.tagline}</p>
         </div>
 
-        <button className="profile-chip" onClick={() => setActiveView('profile')} type="button">
+        <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => setActiveView('profile')} type="button">
           <div className="avatar" style={avatarStyle(profile)}>
             {avatarNode(profile, 'P')}
             {topPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
@@ -3885,6 +3885,7 @@ export default function WidgetPage() {
                             className="compact-code"
                             placeholder={text.privateCode}
                             value={joinCodes[session.id] || ''}
+                            onClick={(event) => event.stopPropagation()}
                             onChange={(event) =>
                               setJoinCodes((current) => ({ ...current, [session.id]: event.target.value.toUpperCase() }))
                             }
@@ -3894,7 +3895,10 @@ export default function WidgetPage() {
                           <button
                             className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
                             disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
-                            onClick={() => joinSession(session)}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              joinSession(session)
+                            }}
                             type="button"
                           >
                             {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
@@ -3903,7 +3907,10 @@ export default function WidgetPage() {
                         <button
                           className="secondary compact-expand"
                           type="button"
-                          onClick={() => setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                          }}
                         >
                           {isExpanded ? text.hideDetails : text.expandDetails}
                         </button>
@@ -6019,6 +6026,11 @@ export default function WidgetPage() {
           box-shadow: 0 12px 26px rgba(11, 21, 24, 0.12);
         }
 
+        .profile-chip.active {
+          border-color: rgba(48, 89, 255, 0.28);
+          box-shadow: inset 0 0 0 1px rgba(48, 89, 255, 0.14);
+        }
+
         .profile-chip strong,
         .profile-chip span {
           display: block;
@@ -6862,6 +6874,7 @@ export default function WidgetPage() {
           align-items: center;
           cursor: pointer;
           border-radius: 8px;
+          touch-action: manipulation;
         }
 
         .compact-session-card:focus-visible {
@@ -6903,6 +6916,8 @@ export default function WidgetPage() {
         }
 
         .compact-session-actions {
+          position: relative;
+          z-index: 2;
           display: flex;
           align-items: center;
           justify-content: flex-end;
@@ -8207,7 +8222,7 @@ export default function WidgetPage() {
             height: auto;
             min-height: 100vh;
             overflow: visible;
-            --mobile-header-height: 128px;
+            --mobile-header-height: 106px;
           }
 
           aside {
@@ -8219,14 +8234,14 @@ export default function WidgetPage() {
             height: auto;
             min-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
             overflow: visible;
-            padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
+            padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
             display: grid;
-            grid-template-columns: 46px auto minmax(0, 1fr) auto;
+            grid-template-columns: 44px auto auto minmax(0, 1fr) auto;
             grid-template-areas:
-              "profile tabs tabs tabs"
-              "lang share . logo";
+              "profile lang share . logo"
+              "tabs tabs tabs tabs tabs";
             align-items: center;
-            gap: 10px;
+            gap: 8px;
           }
 
           aside > div:first-child,
@@ -8251,13 +8266,19 @@ export default function WidgetPage() {
           .brand-logo {
             grid-area: logo;
             justify-self: end;
-            width: 104px;
-            max-width: 104px;
+            width: 92px;
+            max-width: 92px;
           }
 
           .language-picker {
             grid-area: lang;
             justify-self: start;
+          }
+
+          .language-picker > button {
+            min-width: 50px;
+            min-height: 40px;
+            padding: 7px 11px;
           }
 
           h2 {
@@ -8270,9 +8291,9 @@ export default function WidgetPage() {
 
           .profile-chip {
             grid-area: profile;
-            grid-template-columns: 44px;
-            width: 44px;
-            height: 44px;
+            grid-template-columns: 42px;
+            width: 42px;
+            height: 42px;
             padding: 0;
             border: 0;
             border-radius: 50%;
@@ -8285,26 +8306,33 @@ export default function WidgetPage() {
           }
 
           .profile-chip .avatar {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
           }
 
           .tabs {
             grid-area: tabs;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
+          }
+
+          .tabs .tab:nth-child(4) {
+            display: none;
           }
 
           .app-share {
             grid-area: share;
             justify-self: center;
-            min-height: 38px;
-            padding: 7px 13px;
+            min-height: 40px;
+            padding: 7px 11px;
+            font-size: 13px;
+            white-space: nowrap;
           }
 
           .tab {
             text-align: center;
-            padding: 11px 8px;
+            min-height: 42px;
+            padding: 9px 8px;
             font-size: 14px;
           }
 
@@ -8365,7 +8393,7 @@ export default function WidgetPage() {
 
           .search-shell {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 8px);
+            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 6px);
             right: max(12px, env(safe-area-inset-right, 0px));
             z-index: 25;
             justify-content: flex-end;
@@ -8413,7 +8441,7 @@ export default function WidgetPage() {
 
           .day-strip {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 62px);
+            top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 58px);
             left: 0;
             right: 0;
             z-index: 24;
@@ -8665,11 +8693,11 @@ export default function WidgetPage() {
 
         @media (max-width: 520px) {
           .app {
-            --mobile-header-height: 124px;
+            --mobile-header-height: 106px;
           }
 
           aside {
-            padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 9px;
+            padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
           }
 
           main {
@@ -8681,8 +8709,8 @@ export default function WidgetPage() {
           }
 
           .brand-logo {
-            width: 92px;
-            max-width: 92px;
+            width: 86px;
+            max-width: 86px;
           }
 
           .muted {
@@ -8690,14 +8718,13 @@ export default function WidgetPage() {
           }
 
           .tabs {
-            position: sticky;
-            top: 0;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
           }
 
           .tab {
             font-size: 13px;
-            padding: 10px 6px;
+            min-height: 40px;
+            padding: 8px 6px;
           }
 
           .session h3 {
