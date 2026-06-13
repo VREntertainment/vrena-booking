@@ -88,6 +88,7 @@ type Session = {
   arena_count: number | null
   game_options: GameId[]
   game_votes: Record<string, GameId>
+  confirmed_game_id?: GameId | null
   visibility: 'public' | 'private'
   invite_code: string | null
   notes: string | null
@@ -327,6 +328,11 @@ const uiText = {
     past: 'Past',
     expandDetails: 'Expand',
     hideDetails: 'Hide',
+    confirmPlayedGame: 'Confirm Played Game',
+    confirmedPlayedGame: 'Played game saved.',
+    playedGame: 'Played game',
+    notConfirmed: 'Not confirmed',
+    finalGame: 'Final game',
     createSessionTitle: 'Create Session',
     createSessionHint: 'Duration increases by 20 minutes. Max players is 16.',
     sessionType: 'Session type',
@@ -634,6 +640,11 @@ const uiText = {
     past: 'Đã qua',
     expandDetails: 'Mở rộng',
     hideDetails: 'Thu gọn',
+    confirmPlayedGame: 'Xác nhận game đã chơi',
+    confirmedPlayedGame: 'Đã lưu game đã chơi.',
+    playedGame: 'Game đã chơi',
+    notConfirmed: 'Chưa xác nhận',
+    finalGame: 'Game cuối cùng',
     createSessionTitle: 'Tạo phiên chơi',
     createSessionHint: 'Thời lượng tăng mỗi 20 phút. Tối đa 16 người chơi.',
     sessionType: 'Loại phiên',
@@ -1017,8 +1028,39 @@ function seatsLeft(session: Pick<Session, 'max_players' | 'session_participants'
   return Math.max(0, session.max_players - (session.session_participants ?? []).length)
 }
 
-function sessionCoverGame(session: Pick<Session, 'game_options'>) {
+function mostVotedGameId(session: Pick<Session, 'game_options' | 'game_votes'>) {
+  const voteCounts = new Map<GameId, number>()
+  Object.values(session.game_votes || {}).forEach((gameId) => {
+    if (games.some((game) => game.id === gameId)) {
+      voteCounts.set(gameId, (voteCounts.get(gameId) || 0) + 1)
+    }
+  })
+
+  let winner: GameId | null = null
+  let winnerVotes = 0
+  voteCounts.forEach((count, gameId) => {
+    if (count > winnerVotes) {
+      winner = gameId
+      winnerVotes = count
+    }
+  })
+
+  return winner
+}
+
+function sessionCoverGame(session: Pick<Session, 'game_options' | 'game_votes' | 'confirmed_game_id'>) {
+  const confirmedGame = games.find((game) => game.id === session.confirmed_game_id)
+  if (confirmedGame) return confirmedGame
+
+  const votedGameId = mostVotedGameId(session)
+  const votedGame = games.find((game) => game.id === votedGameId)
+  if (votedGame) return votedGame
+
   return games.find((game) => game.id === session.game_options?.[0]) || games[0]
+}
+
+function isInteractiveClickTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest('button, input, select, textarea, a, label, summary, details'))
 }
 
 function escapeHtml(value: string) {
@@ -1401,6 +1443,7 @@ export default function WidgetPage() {
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
+  const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<'en' | 'vi'>('en')
@@ -3119,6 +3162,7 @@ export default function WidgetPage() {
         arena_count: sessionArenaCount,
         game_options: selectedGames,
         game_votes: { [userId]: selectedGames[0] },
+        confirmed_game_id: null,
         visibility: effectiveVisibility,
         invite_code: inviteCode,
         notes: sessionNotes.trim() || null,
@@ -3262,6 +3306,7 @@ export default function WidgetPage() {
 
   async function voteForGame(session: Session, gameId: GameId) {
     if (!requireProfile()) return
+    if (isPastSession(session) && !canManageSession(session)) return
 
     const voteKey = `${session.id}-${gameId}`
     setBusyVoteKey(voteKey)
@@ -3277,6 +3322,32 @@ export default function WidgetPage() {
     await loadSessions()
     setCreateStatus(text.voteSaved)
     setBusyVoteKey('')
+  }
+
+  async function confirmPlayedGame(session: Session) {
+    if (!canManageSession(session)) {
+      setCreateStatus(text.creatorOnlyEdit)
+      return
+    }
+
+    const selectedGameId = confirmedGameDrafts[session.id] || session.confirmed_game_id || ''
+    const validGameId = games.some((game) => game.id === selectedGameId) ? selectedGameId : null
+
+    setBusySessionId(session.id)
+    const { error } = await supabase
+      .from('sessions')
+      .update({ confirmed_game_id: validGameId })
+      .eq('id', session.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusySessionId('')
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(text.confirmedPlayedGame)
+    setBusySessionId('')
   }
 
   function toggleEditGame(gameId: GameId) {
@@ -4270,8 +4341,10 @@ export default function WidgetPage() {
                 const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
                 const isExpanded = Boolean(expandedSessions[session.id])
-                const canMutatePastSession = !isPastSession(session) || canManage
+                const isPast = isPastSession(session)
+                const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
+                const confirmedGameDraft = confirmedGameDrafts[session.id] ?? session.confirmed_game_id ?? ''
                 const hasCrownHolder = Boolean(
                   topPlayer?.profileId
                   && topPlayer.profileId !== userId
@@ -4280,7 +4353,22 @@ export default function WidgetPage() {
 
                 return (
                   <article className="session" id={`session-${session.id}`} key={session.id}>
-                    <div className="compact-session-card">
+                    <div
+                      className="compact-session-card"
+                      onClick={(event) => {
+                        if (isInteractiveClickTarget(event.target)) return
+                        setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (isInteractiveClickTarget(event.target)) return
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                        }
+                      }}
+                    >
                       <img className="compact-session-image" src={coverGame.image} alt="" />
                       <div className="compact-session-main">
                         <div className="compact-session-title-row">
@@ -4293,12 +4381,13 @@ export default function WidgetPage() {
                           <span>{session.date}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
-                          <span>{remaining} {text.seatsLeft}</span>
+                          {!isPast && <span>{remaining} {text.seatsLeft}</span>}
+                          {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                           {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                        {session.visibility === 'private' && !alreadyJoined && (
+                        {!isPast && session.visibility === 'private' && !alreadyJoined && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -4308,14 +4397,16 @@ export default function WidgetPage() {
                             }
                           />
                         )}
-                        <button
-                          className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
-                          disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
-                          onClick={() => joinSession(session)}
-                          type="button"
-                        >
-                          {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
-                        </button>
+                        {!isPast && (
+                          <button
+                            className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
+                            disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
+                            onClick={() => joinSession(session)}
+                            type="button"
+                          >
+                            {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
+                          </button>
+                        )}
                         <button
                           className="secondary compact-expand"
                           type="button"
@@ -4335,7 +4426,8 @@ export default function WidgetPage() {
                           <span>{session.date}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
-                          <span>{remaining} {text.seatsLeft}</span>
+                          {!isPast && <span>{remaining} {text.seatsLeft}</span>}
+                          <span>{text.finalGame}: {coverGame.title}</span>
                           {sessionClub && <span className="pill">{text.clubSession}: {sessionClub.name}</span>}
                           {session.session_type === 'tournament' && <span className="pill private">{text.tournament}</span>}
                         </div>
@@ -4375,6 +4467,33 @@ export default function WidgetPage() {
                           onClick={() => cancelSession(session)}
                         >
                           {text.cancelSession}
+                        </button>
+                      </div>
+                    )}
+
+                    {canManage && (
+                      <div className="confirm-game-panel">
+                        <label>{text.playedGame}</label>
+                        <select
+                          value={confirmedGameDraft}
+                          onChange={(event) => {
+                            setConfirmedGameDrafts((current) => ({ ...current, [session.id]: event.target.value }))
+                          }}
+                        >
+                          <option value="">{text.notConfirmed}</option>
+                          {session.game_options.map((gameId) => {
+                            const game = games.find((item) => item.id === gameId)
+                            if (!game) return null
+                            return <option key={game.id} value={game.id}>{game.title}</option>
+                          })}
+                        </select>
+                        <button
+                          className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
+                          disabled={busySessionId === session.id}
+                          type="button"
+                          onClick={() => confirmPlayedGame(session)}
+                        >
+                          {text.confirmPlayedGame}
                         </button>
                       </div>
                     )}
@@ -4917,7 +5036,7 @@ export default function WidgetPage() {
                               busyVoteKey === `${session.id}-${gameId}` ? 'loading' : '',
                             ].join(' ').trim()}
                             key={gameId}
-                            disabled={busyVoteKey === `${session.id}-${gameId}`}
+                            disabled={busyVoteKey === `${session.id}-${gameId}` || !canMutatePastSession}
                             onClick={() => voteForGame(session, gameId)}
                             type="button"
                           >
@@ -4929,6 +5048,7 @@ export default function WidgetPage() {
                       })}
                     </div>
 
+                    {!isPast && (
                     <div className="join-row">
                       {session.visibility === 'private' && !alreadyJoined && (
                         <input
@@ -4970,6 +5090,7 @@ export default function WidgetPage() {
                         </svg>
                       </button>
                     </div>
+                    )}
                       </div>
                     )}
                   </article>
@@ -5652,6 +5773,7 @@ export default function WidgetPage() {
                       const canManage = canManageSession(session)
                       const joinedByMe = participants.some((participant) => participant.profile_id === userId)
                       const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
+                      const coverGame = sessionCoverGame(session)
 
                       return (
                         <article
@@ -5667,7 +5789,8 @@ export default function WidgetPage() {
                             }
                           }}
                         >
-                          <div className="mini-session-title">
+                          <div className="mini-session-title mini-session-title-with-image">
+                            <img className="mini-session-image" src={coverGame.image} alt="" />
                             <strong>{session.name}</strong>
                             <span className={createdByMe ? 'pill ok' : 'pill'}>
                               {createdByMe ? text.createdByYou : text.joined}
@@ -5880,22 +6003,27 @@ export default function WidgetPage() {
                 <p className="notice">{text.noClubGames}</p>
               ) : (
                 <div className="mini-session-list">
-                  {filteredSelectedClubSessions.map((session) => (
-                    <article className="mini-session clickable" key={session.id} onClick={() => {
-                      setSelectedClubId('')
-                      openSessionFromProfile(session.id)
-                    }}>
-                      <div className="mini-session-title">
-                        <strong>{session.name}</strong>
-                        <span className="pill ok">{text.clubSession}</span>
-                      </div>
-                      <div className="row-meta">
-                        <span>{session.date}</span>
-                        <span>{session.start_time.slice(0, 5)}</span>
-                        <span>{session.duration_minutes} min</span>
-                      </div>
-                    </article>
-                  ))}
+                  {filteredSelectedClubSessions.map((session) => {
+                    const coverGame = sessionCoverGame(session)
+
+                    return (
+                      <article className="mini-session clickable" key={session.id} onClick={() => {
+                        setSelectedClubId('')
+                        openSessionFromProfile(session.id)
+                      }}>
+                        <div className="mini-session-title mini-session-title-with-image">
+                          <img className="mini-session-image" src={coverGame.image} alt="" />
+                          <strong>{session.name}</strong>
+                          <span className="pill ok">{text.clubSession}</span>
+                        </div>
+                        <div className="row-meta">
+                          <span>{session.date}</span>
+                          <span>{session.start_time.slice(0, 5)}</span>
+                          <span>{session.duration_minutes} min</span>
+                        </div>
+                      </article>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -6428,6 +6556,26 @@ export default function WidgetPage() {
           align-items: flex-start;
           gap: 10px;
           flex-wrap: wrap;
+        }
+
+        .mini-session-title-with-image {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) auto;
+          align-items: center;
+        }
+
+        .mini-session-title-with-image strong {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .mini-session-image {
+          width: 42px;
+          height: 42px;
+          border-radius: 7px;
+          object-fit: cover;
+          background: #071112;
         }
 
         .mini-session-actions {
@@ -7045,10 +7193,14 @@ export default function WidgetPage() {
           border: 0;
           border-radius: 999px;
           background: transparent;
+          color: #071112;
+          font-weight: 800;
         }
 
         .sub-tabs button.active {
-          background: #eef3f6;
+          background: #071112;
+          color: #ffffff;
+          box-shadow: 0 8px 20px rgba(11, 21, 24, 0.14);
         }
 
         .compact-session-card {
@@ -7056,6 +7208,13 @@ export default function WidgetPage() {
           grid-template-columns: 58px minmax(0, 1fr) auto;
           gap: 10px;
           align-items: center;
+          cursor: pointer;
+          border-radius: 8px;
+        }
+
+        .compact-session-card:focus-visible {
+          outline: 3px solid rgba(48, 89, 255, 0.35);
+          outline-offset: 4px;
         }
 
         .compact-session-image {
@@ -7111,6 +7270,23 @@ export default function WidgetPage() {
           min-height: 34px;
           padding: 6px 8px;
           font-size: 13px;
+        }
+
+        .confirm-game-panel {
+          display: grid;
+          grid-template-columns: minmax(150px, 220px) minmax(180px, 1fr) auto;
+          gap: 8px;
+          align-items: end;
+          padding: 10px;
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 8px;
+          background: #f8fafb;
+        }
+
+        .confirm-game-panel label {
+          color: #637075;
+          font-size: 13px;
+          font-weight: 900;
         }
 
         .session-expanded {
@@ -8164,6 +8340,7 @@ export default function WidgetPage() {
           button:not(:disabled),
           .profile-chip,
           .session.clickable,
+          .compact-session-card,
           .club-card.clickable,
           .mini-session.clickable,
           .game-card,
@@ -8176,6 +8353,7 @@ export default function WidgetPage() {
           button:hover:not(:disabled),
           .profile-chip:hover,
           .session.clickable:hover,
+          .compact-session-card:hover,
           .club-card.clickable:hover,
           .mini-session.clickable:hover,
           .game-card:hover,
@@ -8501,8 +8679,8 @@ export default function WidgetPage() {
 
           .search-shell {
             position: fixed;
-            top: 124px;
-            right: 12px;
+            top: calc(env(safe-area-inset-top, 0px) + 124px);
+            right: max(12px, env(safe-area-inset-right, 0px));
             z-index: 25;
             justify-content: flex-end;
             pointer-events: none;
@@ -8530,7 +8708,7 @@ export default function WidgetPage() {
           }
 
           .search-shell.open {
-            left: 12px;
+            left: max(12px, env(safe-area-inset-left, 0px));
           }
 
           .search-shell.open .search {
@@ -8549,7 +8727,7 @@ export default function WidgetPage() {
 
           .day-strip {
             position: fixed;
-            top: 178px;
+            top: calc(env(safe-area-inset-top, 0px) + 178px);
             left: 0;
             right: 0;
             z-index: 24;
@@ -8580,6 +8758,10 @@ export default function WidgetPage() {
           .session {
             gap: 12px;
             padding: 9px;
+          }
+
+          .confirm-game-panel {
+            grid-template-columns: 1fr;
           }
 
           .sub-tabs {
@@ -8926,15 +9108,26 @@ export default function WidgetPage() {
           }
 
           .sub-tabs button {
-            color: #f6f7f9;
+            color: #d7e1e4;
           }
 
           .sub-tabs button.active {
-            background: #1d2a2e;
+            background: #f6f7f9;
+            color: #071112;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
           }
 
           .session-expanded {
             border-top-color: rgba(255, 255, 255, 0.1);
+          }
+
+          .confirm-game-panel {
+            background: #122124;
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .confirm-game-panel label {
+            color: #b7c3c7;
           }
 
           .tournament-panel,
