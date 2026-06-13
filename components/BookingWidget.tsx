@@ -3657,10 +3657,12 @@ export default function WidgetPage() {
       <aside>
         <div>
           <div className="app-title-row">
-            <picture className="brand-logo">
-              <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
-              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
-            </picture>
+            <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">
+              <picture>
+                <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
+                <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
+              </picture>
+            </a>
             <div className="language-picker">
               <button
                 aria-expanded={languagePickerOpen}
@@ -3842,7 +3844,7 @@ export default function WidgetPage() {
                 )
 
                 return (
-                  <article className="session" id={`session-${session.id}`} key={session.id}>
+                  <article className={isExpanded ? 'session expanded-session' : 'session'} id={`session-${session.id}`} key={session.id}>
                     <div
                       className={isExpanded ? 'compact-session-card compact-session-card-hidden' : 'compact-session-card'}
                       aria-hidden={isExpanded}
@@ -3917,7 +3919,7 @@ export default function WidgetPage() {
                     {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
                     {isExpanded && (
                       <div className="session-expanded">
-                    <div className="session-top">
+                      <div className="session-top">
                       <div>
                         <h3>{session.name}</h3>
                         <div className="row-meta">
@@ -3934,6 +3936,13 @@ export default function WidgetPage() {
                         <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
                           {session.visibility === 'private' ? text.private : text.public}
                         </span>
+                        <button
+                          className="secondary small-button hide-expanded-button"
+                          type="button"
+                          onClick={() => setExpandedSessions((current) => ({ ...current, [session.id]: false }))}
+                        >
+                          {text.hideDetails}
+                        </button>
                       </div>
                     </div>
 
@@ -5795,6 +5804,12 @@ export default function WidgetPage() {
           width: min(156px, 72%);
           max-width: 156px;
           line-height: 0;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .brand-logo picture {
+          display: block;
         }
 
         .brand-logo img {
@@ -6833,10 +6848,20 @@ export default function WidgetPage() {
           border-radius: 8px;
           padding: 10px;
           background: #ffffff;
+          transform-origin: top center;
+          transition:
+            border-color 180ms ease,
+            box-shadow 220ms ease,
+            transform 260ms cubic-bezier(0.18, 0.82, 0.24, 1);
         }
 
         .session:last-child {
           border-bottom: 1px solid rgba(7, 17, 18, 0.12);
+        }
+
+        .expanded-session {
+          box-shadow: 0 14px 34px rgba(11, 21, 24, 0.08);
+          animation: sessionShellBloom 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
         }
 
         .sub-tabs {
@@ -6878,18 +6903,18 @@ export default function WidgetPage() {
           overflow: hidden;
           transform: translateY(0) scale(1);
           transition:
-            max-height 220ms ease,
-            opacity 160ms ease,
-            transform 220ms ease,
-            margin 220ms ease;
+            max-height 280ms cubic-bezier(0.18, 0.82, 0.24, 1),
+            opacity 180ms ease,
+            transform 280ms cubic-bezier(0.18, 0.82, 0.24, 1),
+            margin 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
         }
 
         .compact-session-card-hidden {
           max-height: 0;
-          margin: -4px 0;
+          margin: -6px 0;
           opacity: 0;
           pointer-events: none;
-          transform: translateY(-6px) scale(0.985);
+          transform: translateY(-8px) scale(0.975);
         }
 
         .compact-session-card:focus-visible {
@@ -6955,18 +6980,31 @@ export default function WidgetPage() {
         }
 
         .session-expanded {
-          animation: sessionExpandIn 220ms ease-out;
+          animation: sessionExpandIn 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
+          transform-origin: top center;
         }
 
         @keyframes sessionExpandIn {
           from {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(10px) scale(0.992);
+            filter: blur(2px);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        @keyframes sessionShellBloom {
+          from {
+            transform: translateY(4px) scale(0.996);
+          }
+
+          to {
+            transform: translateY(0) scale(1);
           }
         }
 
@@ -6992,6 +7030,11 @@ export default function WidgetPage() {
           gap: 12px;
           padding-top: 8px;
           border-top: 1px solid rgba(7, 17, 18, 0.08);
+        }
+
+        .hide-expanded-button {
+          min-height: 30px;
+          padding: 5px 9px;
         }
 
         .session-top,
@@ -8426,6 +8469,17 @@ export default function WidgetPage() {
             display: none;
           }
 
+          .sessions-section .section-head {
+            height: 0;
+            min-height: 0;
+            margin-bottom: 0;
+            overflow: visible;
+          }
+
+          .sessions-section .sub-tabs {
+            margin-top: 42px;
+          }
+
           .search-shell {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 6px);
@@ -8854,6 +8908,10 @@ export default function WidgetPage() {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
+          }
+
+          .expanded-session {
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
           }
 
           .sub-tabs {
