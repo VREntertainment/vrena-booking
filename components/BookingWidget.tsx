@@ -996,21 +996,39 @@ export default function WidgetPage() {
     }
   }
 
+  function profileAvatarSnapshot(source: Profile) {
+    return {
+      display_name: displayName(source),
+      ...avatarFields(source),
+    }
+  }
+
+  function mergeCurrentUserAvatar<T extends {
+    profile_id: string
+    display_name?: string | null
+    avatar_url?: string | null
+    avatar_emoji?: string | null
+    avatar_initials?: string | null
+    avatar_color?: string | null
+    avatar_text_color?: string | null
+    profile_motto?: string | null
+  }>(item: T, snapshot: ReturnType<typeof profileAvatarSnapshot>, profileId: string): T {
+    return item.profile_id === profileId
+      ? {
+        ...item,
+        ...snapshot,
+      }
+      : item
+  }
+
   function syncProfileEverywhere(updatedProfile: Profile) {
-    const nextDisplayName = displayName(updatedProfile)
-    const nextAvatarFields = avatarFields(updatedProfile)
+    const nextProfileSnapshot = profileAvatarSnapshot(updatedProfile)
 
     setSessions((currentSessions) =>
       currentSessions.map((session) => ({
         ...session,
         session_participants: session.session_participants?.map((participant) =>
-          participant.profile_id === updatedProfile.id
-            ? {
-              ...participant,
-              display_name: nextDisplayName,
-              ...nextAvatarFields,
-            }
-            : participant
+          mergeCurrentUserAvatar(participant, nextProfileSnapshot, updatedProfile.id)
         ),
       }))
     )
@@ -1019,13 +1037,7 @@ export default function WidgetPage() {
       currentClubs.map((club) => ({
         ...club,
         club_members: club.club_members?.map((member) =>
-          member.profile_id === updatedProfile.id
-            ? {
-              ...member,
-              display_name: nextDisplayName,
-              ...nextAvatarFields,
-            }
-            : member
+          mergeCurrentUserAvatar(member, nextProfileSnapshot, updatedProfile.id)
         ),
       }))
     )
@@ -1033,13 +1045,7 @@ export default function WidgetPage() {
     setTournamentData((currentData) => ({
       ...currentData,
       editors: currentData.editors.map((editor) =>
-        editor.profile_id === updatedProfile.id
-          ? {
-            ...editor,
-            display_name: nextDisplayName,
-            ...nextAvatarFields,
-          }
-          : editor
+        mergeCurrentUserAvatar(editor, nextProfileSnapshot, updatedProfile.id)
       ),
     }))
   }
@@ -1687,10 +1693,31 @@ export default function WidgetPage() {
   }, [])
 
   useEffect(() => {
+    if (!profile) return
+    syncProfileEverywhere(profile)
+  }, [
+    profile?.id,
+    profile?.nickname,
+    profile?.phone,
+    profile?.avatar_url,
+    profile?.avatar_emoji,
+    profile?.avatar_initials,
+    profile?.avatar_color,
+    profile?.avatar_text_color,
+    profile?.profile_motto,
+  ])
+
+  useEffect(() => {
     const channel = supabase
       .channel('vrena-live-refresh')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        loadProfile()
+        loadSessions()
+        loadClubs()
+        loadTournamentData()
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => loadClubs())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadClubs())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => loadTournamentData())
@@ -2189,6 +2216,19 @@ function handleSessionDateChange(value: string) {
     }
 
     if (selectedPlayerStats) {
+      if (selectedPlayerId === userId && profile) {
+        return {
+          ...selectedPlayerStats,
+          displayName: compactDisplayName(displayName(profile) || selectedPlayerStats.displayName || visibleName, text.player),
+          avatarUrl: profile.avatar_url || null,
+          avatarEmoji: profile.avatar_emoji || null,
+          avatarInitials: profile.avatar_initials || null,
+          avatarColor: profile.avatar_color || null,
+          avatarTextColor: profile.avatar_text_color || null,
+          profileMotto: profile.profile_motto || null,
+        }
+      }
+
       return {
         ...selectedPlayerStats,
         displayName: compactDisplayName(selectedPlayerStats.displayName || visibleName, text.player),
@@ -2198,6 +2238,27 @@ function handleSessionDateChange(value: string) {
         avatarColor: selectedPlayerStats.avatarColor || visibleColor,
         avatarTextColor: selectedPlayerStats.avatarTextColor || visibleTextColor,
         profileMotto: selectedPlayerStats.profileMotto || visibleMotto,
+      }
+    }
+
+    if (selectedPlayerId === userId && profile) {
+      return {
+        profileId: profile.id,
+        displayName: compactDisplayName(displayName(profile), text.player),
+        avatarUrl: profile.avatar_url || null,
+        avatarEmoji: profile.avatar_emoji || null,
+        avatarInitials: profile.avatar_initials || null,
+        avatarColor: profile.avatar_color || null,
+        avatarTextColor: profile.avatar_text_color || null,
+        profileMotto: profile.profile_motto || null,
+        gamesJoined: 0,
+        wins: 0,
+        totalScore: 0,
+        totalAccuracy: 0,
+        accuracyCount: 0,
+        totalProjectiles: 0,
+        averageAccuracy: null,
+        bestByGame: [],
       }
     }
 
@@ -2748,31 +2809,10 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    setProfile(data)
     await loadSessions()
     await loadClubs()
     await loadTournamentData()
-
-    setSessions((currentSessions) =>
-      currentSessions.map((session) => ({
-        ...session,
-          session_participants: session.session_participants?.map((participant) =>
-            participant.profile_id === data.id
-              ? {
-                ...participant,
-                display_name: display,
-                avatar_url: data.avatar_url,
-                avatar_emoji: data.avatar_emoji,
-                avatar_initials: data.avatar_initials,
-                avatar_color: data.avatar_color,
-                avatar_text_color: data.avatar_text_color,
-                profile_motto: data.profile_motto,
-              }
-            : participant
-        ),
-      }))
-    )
-    
-    setProfile(data)
     syncProfileEverywhere(data)
     setAvatarFile(null)
     setAvatarPreview('')
