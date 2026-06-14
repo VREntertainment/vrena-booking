@@ -2613,12 +2613,37 @@ function handleSessionDateChange(value: string) {
         profile_motto: data.profile_motto,
     })
       .eq('profile_id', userId)
+      .select('id')
 
     if (participantProfileUpdate.error) {
       setProfileStatus(participantProfileUpdate.error.message)
       setIsSavingProfile(false)
       return
     }
+
+    console.log('Updated participant rows:', participantProfileUpdate.data)
+
+    await loadSessions()
+
+    setSessions((currentSessions) =>
+      currentSessions.map((session) => ({
+        ...session,
+          session_participants: session.session_participants?.map((participant) =>
+            participant.profile_id === data.id
+              ? {
+                ...participant,
+                display_name: display,
+                avatar_url: data.avatar_url,
+                avatar_emoji: data.avatar_emoji,
+                avatar_initials: data.avatar_initials,
+                avatar_color: data.avatar_color,
+                avatar_text_color: data.avatar_text_color,
+                profile_motto: data.profile_motto,
+              }
+            : participant
+        ),
+      }))
+    )
     
     setProfile(data)
     setAvatarFile(null)
