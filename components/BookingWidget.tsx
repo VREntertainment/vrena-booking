@@ -991,6 +991,54 @@ export default function WidgetPage() {
     }
   }
 
+  function syncProfileEverywhere(updatedProfile: Profile) {
+    const nextDisplayName = displayName(updatedProfile)
+    const nextAvatarFields = avatarFields(updatedProfile)
+
+    setSessions((currentSessions) =>
+      currentSessions.map((session) => ({
+        ...session,
+        session_participants: session.session_participants?.map((participant) =>
+          participant.profile_id === updatedProfile.id
+            ? {
+              ...participant,
+              display_name: nextDisplayName,
+              ...nextAvatarFields,
+            }
+            : participant
+        ),
+      }))
+    )
+
+    setClubs((currentClubs) =>
+      currentClubs.map((club) => ({
+        ...club,
+        club_members: club.club_members?.map((member) =>
+          member.profile_id === updatedProfile.id
+            ? {
+              ...member,
+              display_name: nextDisplayName,
+              ...nextAvatarFields,
+            }
+            : member
+        ),
+      }))
+    )
+
+    setTournamentData((currentData) => ({
+      ...currentData,
+      editors: currentData.editors.map((editor) =>
+        editor.profile_id === updatedProfile.id
+          ? {
+            ...editor,
+            display_name: nextDisplayName,
+            ...nextAvatarFields,
+          }
+          : editor
+      ),
+    }))
+  }
+
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
 
@@ -2343,6 +2391,21 @@ function handleSessionDateChange(value: string) {
     return canManageClub(club) || approvedClubMember(club)
   }
 
+  function sessionClubFor(session: Session) {
+    return session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
+  }
+
+  function clubMembershipFor(club: Club | undefined, profileId = userId) {
+    if (!club || !profileId) return undefined
+    return (club.club_members ?? []).find((member) => member.profile_id === profileId)
+  }
+
+  function canAccessClubSession(session: Session) {
+    const club = sessionClubFor(session)
+    if (!club) return true
+    return canManageClub(club) || approvedClubMember(club)
+  }
+
   function clubMemberCount(club: Club) {
     return club.member_count ?? (club.club_members ?? []).filter((member) => member.status === 'approved').length
   }
@@ -2621,9 +2684,49 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    console.log('Updated participant rows:', participantProfileUpdate.data)
+    const clubMemberProfileUpdate = await supabase
+      .from('club_members')
+      .update({
+        display_name: display,
+        avatar_url: data.avatar_url,
+        avatar_emoji: data.avatar_emoji,
+        avatar_initials: data.avatar_initials,
+        avatar_color: data.avatar_color,
+        avatar_text_color: data.avatar_text_color,
+        profile_motto: data.profile_motto,
+      })
+      .eq('profile_id', userId)
+      .select('id')
+
+    if (clubMemberProfileUpdate.error) {
+      setProfileStatus(clubMemberProfileUpdate.error.message)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const tournamentEditorProfileUpdate = await supabase
+      .from('tournament_editors')
+      .update({
+        display_name: display,
+        avatar_url: data.avatar_url,
+        avatar_emoji: data.avatar_emoji,
+        avatar_initials: data.avatar_initials,
+        avatar_color: data.avatar_color,
+        avatar_text_color: data.avatar_text_color,
+        profile_motto: data.profile_motto,
+      })
+      .eq('profile_id', userId)
+      .select('id')
+
+    if (tournamentEditorProfileUpdate.error) {
+      setProfileStatus(tournamentEditorProfileUpdate.error.message)
+      setIsSavingProfile(false)
+      return
+    }
 
     await loadSessions()
+    await loadClubs()
+    await loadTournamentData()
 
     setSessions((currentSessions) =>
       currentSessions.map((session) => ({
@@ -2646,6 +2749,7 @@ function handleSessionDateChange(value: string) {
     )
     
     setProfile(data)
+    syncProfileEverywhere(data)
     setAvatarFile(null)
     setAvatarPreview('')
     setProfileCountryCode(`${countryCode} ${countries.find((country) => country.code === countryCode)?.name || ''}`.trim())
@@ -2810,8 +2914,8 @@ function handleSessionDateChange(value: string) {
 
     if (!activeProfile) return
 
-    const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
-    if (sessionClub && !approvedClubMember(sessionClub)) {
+    const sessionClub = sessionClubFor(session)
+    if (sessionClub && !canAccessClubSession(session)) {
       setCreateStatus(text.clubMembershipRequired)
       return
     }
@@ -3924,7 +4028,9 @@ function handleSessionDateChange(value: string) {
                 const canManage = canManageSession(session)
                 const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
                 const isEditing = editingSessionId === session.id
-                const sessionClub = session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
+                const sessionClub = sessionClubFor(session)
+                const sessionClubMembership = clubMembershipFor(sessionClub)
+                const canJoinThisSession = canAccessClubSession(session)
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
                 const isExpanded = Boolean(expandedSessions[session.id])
                 const isPast = isPastSession(session)
@@ -3977,7 +4083,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                        {!isPast && session.visibility === 'private' && !alreadyJoined && (
+                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -3988,7 +4094,19 @@ function handleSessionDateChange(value: string) {
                             }
                           />
                         )}
-                        {!isPast && (
+                        {!isPast && sessionClub && !canJoinThisSession ? (
+                          <button
+                            className={busyClubId === sessionClub.id ? 'secondary compact-join loading' : 'secondary compact-join'}
+                            disabled={busyClubId === sessionClub.id || sessionClubMembership?.status === 'pending'}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              joinClub(sessionClub)
+                            }}
+                            type="button"
+                          >
+                            {sessionClubMembership?.status === 'pending' ? text.requestSent : text.joinClub}
+                          </button>
+                        ) : !isPast && (
                           <button
                             className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
                             disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
@@ -4001,6 +4119,22 @@ function handleSessionDateChange(value: string) {
                             {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
                           </button>
                         )}
+                        <button
+                          aria-label={text.share}
+                          className={sharedKey === session.id ? 'share-icon-button compact-share desktop-session-share copied' : 'share-icon-button compact-share desktop-session-share'}
+                          title={text.share}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            shareLink(session.id, session.name, `#session-${session.id}`)
+                          }}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24">
+                            <path d="M12 5V16" />
+                            <path d="M8 9L12 5L16 9" />
+                            <path d="M5 13V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V13" />
+                          </svg>
+                        </button>
                         <button
                           className="secondary compact-expand"
                           type="button"
@@ -4317,7 +4451,10 @@ function handleSessionDateChange(value: string) {
                             {participant.checked_in && <span className="check-badge">✓</span>}
                             {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
                           </button>
-                          <span>{canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}</span>
+                          <span className="player-name-line">
+                            {canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}
+                            {participant.profile_id === session.owner_id && <small>{text.host}</small>}
+                          </span>
                           {(canManage || participant.profile_id === userId) && participant.payment_status && (
                             <small className="private-payment">
                               {participant.payment_status === 'cash' ? text.cash : participant.payment_status === 'bank_transfer' ? text.bankTransfer : text.free}
@@ -4655,7 +4792,7 @@ function handleSessionDateChange(value: string) {
                       )}
                       <button
                         aria-label={text.share}
-                        className={sharedKey === session.id ? 'share-icon-button copied' : 'share-icon-button'}
+                        className={sharedKey === session.id ? 'share-icon-button expanded-mobile-share copied' : 'share-icon-button expanded-mobile-share'}
                         title={text.share}
                         type="button"
                         onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
@@ -5008,7 +5145,6 @@ function handleSessionDateChange(value: string) {
                       </option>
                     ))}
                   </select>
-                  {sessionDurationRecommendation && <p className="field-help">{sessionDurationRecommendation}</p>}
                 </div>
               </div>
               <div className="full session-capacity-row">
@@ -5032,6 +5168,9 @@ function handleSessionDateChange(value: string) {
                   </select>
                 </div>
               </div>
+              {sessionDurationRecommendation && (
+                <p className="full notice duration-recommendation">{sessionDurationRecommendation}</p>
+              )}
               <div className="full">
                 <label>{text.gameOptions} <span className="required">*</span></label>
                 <div className="game-picker">
@@ -5670,21 +5809,58 @@ function handleSessionDateChange(value: string) {
                 <div className="mini-session-list">
                   {filteredSelectedClubSessions.map((session) => {
                     const coverGame = sessionCoverGame(session)
+                    const remaining = seatsLeft(session)
+                    const isPast = isPastSession(session)
 
                     return (
-                      <article className="mini-session clickable" key={session.id} onClick={() => {
-                        setSelectedClubId('')
-                        openSessionFromProfile(session.id)
-                      }}>
-                        <div className="mini-session-title mini-session-title-with-image">
-                          <img className="mini-session-image" src={coverGame.image} alt="" />
-                          <strong>{session.name}</strong>
-                          <span className="pill ok">{text.clubSession}</span>
-                        </div>
-                        <div className="row-meta">
-                          <span>{formatShortDate(session.date, language)}</span>
-                          <span>{session.start_time.slice(0, 5)}</span>
-                          <span>{session.duration_minutes} min</span>
+                      <article
+                        className="club-session-preview"
+                        key={session.id}
+                        onClick={() => {
+                          setSelectedClubId('')
+                          openSessionFromProfile(session.id)
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            setSelectedClubId('')
+                            openSessionFromProfile(session.id)
+                          }
+                        }}
+                      >
+                        <div className="compact-session-card club-session-card">
+                          <img className="compact-session-image" src={coverGame.image} alt="" />
+                          <div className="compact-session-main">
+                            <div className="compact-session-title-row">
+                              <h3>{session.name}</h3>
+                              <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
+                                {session.session_type === 'tournament' ? text.tournament : text.normalGame}
+                              </span>
+                              <span className="pill">{text.clubSession}</span>
+                            </div>
+                            <div className="row-meta compact-meta">
+                              <span>{formatShortDate(session.date, language)}</span>
+                              <span>{session.start_time.slice(0, 5)}</span>
+                              <span>{session.duration_minutes} min</span>
+                              {!isPast && <span>{remaining} {text.seatsLeft}</span>}
+                              {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
+                            </div>
+                          </div>
+                          <div className="compact-session-actions club-session-actions">
+                            <button
+                              className="secondary compact-expand"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setSelectedClubId('')
+                                openSessionFromProfile(session.id)
+                              }}
+                            >
+                              {text.expandDetails}
+                            </button>
+                          </div>
                         </div>
                       </article>
                     )
@@ -5878,6 +6054,10 @@ function handleSessionDateChange(value: string) {
 
         h1, h2, h3, p {
           margin: 0;
+        }
+
+        button {
+          touch-action: manipulation;
         }
 
         h1 {
@@ -6972,6 +7152,28 @@ function handleSessionDateChange(value: string) {
           box-shadow: none;
         }
 
+        .club-session-preview {
+          border: 1px solid rgba(7, 17, 18, 0.1);
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 8px;
+          transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+        }
+
+        .club-session-preview:hover {
+          border-color: rgba(48, 89, 255, 0.22);
+          box-shadow: 0 10px 24px rgba(11, 21, 24, 0.08);
+          transform: translateY(-1px);
+        }
+
+        .club-session-card {
+          grid-template-columns: 50px minmax(0, 1fr) auto;
+        }
+
+        .club-session-actions {
+          align-self: center;
+        }
+
         @keyframes drawerUp {
           from {
             transform: translateY(24px);
@@ -7146,6 +7348,20 @@ function handleSessionDateChange(value: string) {
           min-height: 34px;
           padding: 6px 8px;
           font-size: 13px;
+        }
+
+        .compact-share {
+          width: 34px;
+          height: 34px;
+        }
+
+        .compact-share svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .expanded-mobile-share {
+          display: none;
         }
 
         .session-expanded {
@@ -7456,6 +7672,23 @@ function handleSessionDateChange(value: string) {
           background: transparent;
           padding: 0;
           text-align: center;
+        }
+
+        .player > .player-name-line {
+          display: grid;
+          gap: 2px;
+          justify-items: center;
+          -webkit-line-clamp: unset;
+          -webkit-box-orient: unset;
+          white-space: normal;
+        }
+
+        .player-name-line small {
+          display: block;
+          color: #3059ff;
+          font-size: 10px;
+          font-weight: 900;
+          line-height: 1.1;
         }
 
         .result-player {
@@ -8408,6 +8641,10 @@ function handleSessionDateChange(value: string) {
           margin-top: 12px;
         }
 
+        .duration-recommendation {
+          margin-top: 0;
+        }
+
         .crown-session-notice {
           width: fit-content;
           max-width: 100%;
@@ -8829,6 +9066,22 @@ function handleSessionDateChange(value: string) {
             min-height: 38px;
           }
 
+          .desktop-session-share {
+            display: none;
+          }
+
+          .expanded-mobile-share {
+            display: inline-grid;
+          }
+
+          .club-session-card {
+            grid-template-columns: 50px minmax(0, 1fr);
+          }
+
+          .club-session-actions {
+            grid-column: 1 / -1;
+          }
+
           .session-expanded {
             gap: 10px;
           }
@@ -9125,6 +9378,7 @@ function handleSessionDateChange(value: string) {
           .tournament-panel,
           .match-card,
           .tournament-create-box,
+          .club-session-preview,
           .public-leaderboard,
           .queue-board,
           .audit-log {
@@ -9327,6 +9581,10 @@ function handleSessionDateChange(value: string) {
 
           .host-pill {
             background: rgba(98, 211, 255, 0.16);
+            color: #8ee7ff;
+          }
+
+          .player-name-line small {
             color: #8ee7ff;
           }
 
