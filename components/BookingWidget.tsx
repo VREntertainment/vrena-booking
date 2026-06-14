@@ -76,6 +76,20 @@ type Participant = {
   prize_claimed_at?: string | null
 }
 
+type WaitlistEntry = {
+  id: string
+  session_id: string
+  profile_id: string
+  display_name: string | null
+  avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
+  created_at?: string | null
+}
+
 type TournamentFormat = 'pool_only' | 'pool_to_semifinal' | 'pool_to_final' | 'single_elimination' | 'double_elimination' | 'leaderboard'
 type QualificationRule = 'top_1' | 'top_2' | 'top_4' | 'custom'
 type MatchStage = 'pool' | 'round_of_16' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'leaderboard' | 'custom'
@@ -111,6 +125,7 @@ type Session = {
   third_prize?: string | null
   tournament_locked?: boolean | null
   session_participants?: Participant[]
+  session_waitlist?: WaitlistEntry[]
 }
 
 type BlockedTime = {
@@ -783,6 +798,14 @@ function appRedirectUrl() {
   return window.location.origin
 }
 
+function icsDate(value: Date) {
+  return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+}
+
+function icsText(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
+}
+
 function getHCaptcha() {
   if (typeof window === 'undefined') return undefined
 
@@ -919,6 +942,7 @@ export default function WidgetPage() {
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
+  const notifiedReminderKeys = useRef<Set<string>>(new Set())
   const text = uiText[language]
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
@@ -1071,6 +1095,9 @@ export default function WidgetPage() {
         session_participants: session.session_participants?.map((participant) =>
           mergeCurrentUserAvatar(participant, nextProfileSnapshot, updatedProfile.id)
         ),
+        session_waitlist: session.session_waitlist?.map((entry) =>
+          mergeCurrentUserAvatar(entry, nextProfileSnapshot, updatedProfile.id)
+        ),
       }))
     )
 
@@ -1151,6 +1178,86 @@ export default function WidgetPage() {
     } catch {
       // Native share is often cancelled by users; no error message needed.
     }
+  }
+
+  function waitlistForSession(session: Session) {
+    return [...(session.session_waitlist ?? [])].sort((a, b) => {
+      const left = a.created_at ? new Date(a.created_at).getTime() : 0
+      const right = b.created_at ? new Date(b.created_at).getTime() : 0
+      return left - right || a.id.localeCompare(b.id)
+    })
+  }
+
+  function waitlistPosition(session: Session, profileId: string) {
+    const waitlist = waitlistForSession(session)
+    const index = waitlist.findIndex((entry) => entry.profile_id === profileId)
+    return index >= 0 ? index + 1 : null
+  }
+
+  function notifySession(session: Session, message: string) {
+    if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return
+
+    new Notification('VRena', {
+      body: `${message}: ${session.name} · ${formatShortDate(session.date, language)} ${session.start_time.slice(0, 5)}`,
+      tag: `vrena-${session.id}-${message}`,
+    })
+  }
+
+  async function requestBrowserReminderPermission() {
+    if (typeof window === 'undefined' || !('Notification' in window)) return false
+    if (Notification.permission === 'granted') return true
+    if (Notification.permission === 'denied') return false
+
+    return (await Notification.requestPermission()) === 'granted'
+  }
+
+  function downloadSessionCalendar(session: Session) {
+    if (typeof window === 'undefined') return
+
+    const start = sessionStartDate(session)
+    const end = sessionEndDate(session)
+    const title = icsText(`VRena: ${session.name}`)
+    const description = icsText(session.notes || 'VRena session')
+    const body = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//VRena//Booking//EN',
+      'BEGIN:VEVENT',
+      `UID:vrena-${session.id}@vrena-booking`,
+      `DTSTAMP:${icsDate(new Date())}`,
+      `DTSTART:${icsDate(start)}`,
+      `DTEND:${icsDate(end)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT24H',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${title}`,
+      'END:VALARM',
+      'BEGIN:VALARM',
+      'TRIGGER:-PT2H',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${title}`,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n')
+
+    const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${session.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'vrena-session'}.ics`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  async function prepareJoinedSessionReminders(session: Session) {
+    downloadSessionCalendar(session)
+    const hasPermission = await requestBrowserReminderPermission()
+    if (hasPermission) notifySession(session, text.reminderJoined)
   }
 
   async function loadProfile() {
@@ -1634,7 +1741,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
       .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at), session_waitlist(id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1753,6 +1860,7 @@ export default function WidgetPage() {
       .channel('vrena-live-refresh')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => loadSessions())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         loadProfile()
         loadSessions()
@@ -2042,6 +2150,31 @@ function handleSessionDateChange(value: string) {
       return isOwner || isParticipant
     })
   }, [sessions, userId])
+
+  const joinedUpcomingSessions = useMemo(() => {
+    if (!userId) return []
+
+    return sessions
+      .filter((session) =>
+        isUpcomingSession(session)
+        && (session.session_participants ?? []).some((participant) => participant.profile_id === userId)
+      )
+      .sort((a, b) => sessionStartDate(a).getTime() - sessionStartDate(b).getTime())
+  }, [sessions, userId])
+
+  const sessionReminders = useMemo(() => {
+    const now = new Date()
+
+    return joinedUpcomingSessions.map((session) => {
+      const start = sessionStartDate(session)
+      const diff = start.getTime() - now.getTime()
+      const hours = diff / (60 * 60 * 1000)
+
+      if (hours <= 2) return { session, label: text.reminderSoon }
+      if (hours <= 24) return { session, label: text.reminderTomorrow }
+      return { session, label: text.reminderJoined }
+    })
+  }, [joinedUpcomingSessions, text.reminderJoined, text.reminderSoon, text.reminderTomorrow])
 
   const sessionClubOptions = useMemo(() => {
     if (!userId) return []
@@ -2389,6 +2522,42 @@ function handleSessionDateChange(value: string) {
     setCheckInPaymentStatus(checkInParticipant.payment_status || '')
     setCheckInPaymentAmount(checkInParticipant.payment_amount ? String(checkInParticipant.payment_amount) : '')
   }, [checkInParticipant])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return
+
+    const now = Date.now()
+    const timers: number[] = []
+
+    joinedUpcomingSessions.forEach((session) => {
+      const start = sessionStartDate(session).getTime()
+      ;[
+        { key: '24h', delay: start - 24 * 60 * 60 * 1000 - now, label: text.reminderTomorrow },
+        { key: '2h', delay: start - 2 * 60 * 60 * 1000 - now, label: text.reminderSoon },
+      ].forEach((reminder) => {
+        const reminderKey = `${session.id}-${reminder.key}`
+        if (notifiedReminderKeys.current.has(reminderKey)) return
+
+        if (reminder.delay <= 0 && reminder.delay > -10 * 60 * 1000) {
+          notifiedReminderKeys.current.add(reminderKey)
+          notifySession(session, reminder.label)
+          return
+        }
+
+        if (reminder.delay > 0 && reminder.delay < 24 * 60 * 60 * 1000) {
+          const timer = window.setTimeout(() => {
+            notifiedReminderKeys.current.add(reminderKey)
+            notifySession(session, reminder.label)
+          }, reminder.delay)
+          timers.push(timer)
+        }
+      })
+    })
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [joinedUpcomingSessions, language, text.reminderSoon, text.reminderTomorrow])
 
   useEffect(() => {
     if (!profile || !topPlayer || topPlayer.profileId !== userId) return
@@ -3103,9 +3272,60 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    await supabase
+      .from('session_waitlist')
+      .delete()
+      .eq('session_id', session.id)
+      .eq('profile_id', userId)
+
     await loadSessions()
     setBusySessionId('')
     setCreateStatus(text.joinedSession)
+    await prepareJoinedSessionReminders(session)
+  }
+
+  async function joinWaitlist(session: Session) {
+    if (!requireProfile()) return
+
+    const activeProfile = profile
+    if (!activeProfile) return
+
+    const sessionClub = sessionClubFor(session)
+    if (sessionClub && !canAccessClubSession(session)) {
+      setCreateStatus(text.clubMembershipRequired)
+      return
+    }
+
+    if (session.visibility === 'private') {
+      const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
+      if (typedCode !== session.invite_code) {
+        setCreateStatus(text.privateIncorrect)
+        return
+      }
+    }
+
+    const participants = session.session_participants ?? []
+    if (participants.some((participant) => participant.profile_id === userId)) return
+    if (waitlistPosition(session, userId)) return
+
+    setBusySessionId(session.id)
+
+    const { error } = await supabase.from('session_waitlist').insert({
+      session_id: session.id,
+      profile_id: userId,
+      display_name: displayName(activeProfile),
+      ...avatarFields(activeProfile),
+    })
+
+    if (error) {
+      setCreateStatus(error.message)
+      setBusySessionId('')
+      return
+    }
+
+    await loadSessions()
+    setCreateStatus(text.waitlistJoined)
+    setBusySessionId('')
   }
 
   async function leaveSession(session: Session) {
@@ -3132,6 +3352,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    await supabase.rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.leftSession)
     setBusySessionId('')
@@ -3345,6 +3566,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    await supabase.rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.playerRemoved)
     setBusySessionId('')
@@ -4146,6 +4368,18 @@ function handleSessionDateChange(value: string) {
             )}
             {createStatus && <p className="notice">{createStatus}</p>}
 
+            {sessionReminders.length > 0 && (
+              <div className="reminder-strip" aria-label={text.sessionReminders}>
+                <strong>{text.sessionReminders}</strong>
+                {sessionReminders.slice(0, 3).map(({ session, label }) => (
+                  <button key={session.id} type="button" onClick={() => openSessionFromProfile(session.id)}>
+                    <span>{label}</span>
+                    <small>{session.name} · {formatShortDate(session.date, language)} {session.start_time.slice(0, 5)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="sub-tabs">
               <button
                 className={sessionTimeScope === 'upcoming' ? 'active' : ''}
@@ -4174,8 +4408,10 @@ function handleSessionDateChange(value: string) {
 
               {filteredSessions.map((session) => {
                 const participants = session.session_participants ?? []
+                const waitlist = waitlistForSession(session)
                 const remaining = seatsLeft(session)
                 const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
+                const myWaitlistPosition = userId ? waitlistPosition(session, userId) : null
                 const isSessionOwner = session.owner_id === userId
                 const canManage = canManageSession(session)
                 const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
@@ -4235,7 +4471,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && (
+                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -4261,14 +4497,26 @@ function handleSessionDateChange(value: string) {
                         ) : !isPast && (
                           <button
                             className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
-                            disabled={alreadyJoined || remaining <= 0 || busySessionId === session.id || !canMutatePastSession}
+                            disabled={alreadyJoined || Boolean(myWaitlistPosition) || busySessionId === session.id || !canMutatePastSession}
                             onClick={(event) => {
                               event.stopPropagation()
-                              joinSession(session)
+                              if (remaining <= 0) {
+                                joinWaitlist(session)
+                              } else {
+                                joinSession(session)
+                              }
                             }}
                             type="button"
                           >
-                            {alreadyJoined ? text.joined : remaining <= 0 ? text.full : busySessionId === session.id ? text.joining : text.joinSession}
+                            {alreadyJoined
+                              ? text.joined
+                              : myWaitlistPosition
+                                ? `${text.waitlisted} #${myWaitlistPosition}`
+                                : remaining <= 0
+                                  ? text.joinWaitlist
+                                  : busySessionId === session.id
+                                    ? text.joining
+                                    : text.joinSession}
                           </button>
                         )}
                         <button
@@ -4637,6 +4885,30 @@ function handleSessionDateChange(value: string) {
                         </div>
                       ))}
                     </div>
+
+                    {myWaitlistPosition && (
+                      <p className="notice waitlist-position">{text.waitlistPosition}: #{myWaitlistPosition}</p>
+                    )}
+
+                    {canManage && (
+                      <div className="waitlist-panel">
+                        <strong>{text.waitlist}</strong>
+                        {waitlist.length === 0 ? (
+                          <span className="muted">{text.waitlistEmpty}</span>
+                        ) : (
+                          <div className="players compact-roster">
+                            {waitlist.map((entry, index) => (
+                              <div className="player" key={entry.id}>
+                                <span className="player-avatar tiny-avatar" style={avatarStyle(entry)}>
+                                  {avatarNode(entry, 'P')}
+                                </span>
+                                <span>{index + 1}. {compactDisplayName(entry.display_name, text.player)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {session.session_type === 'tournament' && (() => {
                       const tournament = tournamentForSession(session.id)
@@ -7341,6 +7613,39 @@ function handleSessionDateChange(value: string) {
           background: #f5f9fa;
           color: #091213;
           font-size: 14px;
+        }
+
+        .reminder-strip,
+        .waitlist-panel {
+          display: grid;
+          gap: 8px;
+          padding: 10px 12px;
+          border: 1px solid #dce5e8;
+          border-radius: 8px;
+          background: #f5f9fa;
+        }
+
+        .reminder-strip button {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          width: 100%;
+          min-height: 36px;
+          border: 1px solid #dce5e8;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #071112;
+          text-align: left;
+        }
+
+        .reminder-strip small {
+          color: #637075;
+          font-weight: 700;
+        }
+
+        .waitlist-position {
+          margin: 0;
         }
 
         .club-drawer-backdrop {
@@ -10050,13 +10355,23 @@ function handleSessionDateChange(value: string) {
 
           .standings-table,
           .queue-match,
-          .session-score-summary {
+          .session-score-summary,
+          .reminder-strip,
+          .waitlist-panel,
+          .reminder-strip button {
             background: #182225;
             border-color: rgba(255, 255, 255, 0.12);
           }
 
-          .session-score-summary {
+          .session-score-summary,
+          .reminder-strip,
+          .waitlist-panel,
+          .reminder-strip button {
             color: #f6f7f9;
+          }
+
+          .reminder-strip small {
+            color: #aeb9bd;
           }
 
           .best-performer-label {
