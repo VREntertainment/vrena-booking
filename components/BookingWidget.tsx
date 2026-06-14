@@ -6401,14 +6401,14 @@ function handleSessionDateChange(value: string) {
         }
 
         .profile-chip strong,
-        .profile-chip span {
+        .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo) {
           display: block;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .profile-chip span {
+        .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo) {
           color: #637075;
           font-size: 12px;
         }
@@ -6639,6 +6639,9 @@ function handleSessionDateChange(value: string) {
         }
 
         .profile-photo-preview {
+          --avatar-size: 78px;
+          --avatar-emoji-size: 61px;
+          --avatar-text-size: 36px;
           width: 78px;
           height: 78px;
           border-radius: 50%;
@@ -6651,28 +6654,28 @@ function handleSessionDateChange(value: string) {
           cursor: pointer;
         }
 
-        .profile-photo-preview .avatar-emoji {
+        .profile-photo-preview :global(.avatar-emoji) {
           width: 100%;
           height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           color: inherit;
-          font-size: 46px;
+          font-size: var(--avatar-emoji-size);
           line-height: 1;
           margin: 0;
           transform: translateY(-1px);
           font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
         }
 
-        .profile-photo-preview .avatar-text {
+        .profile-photo-preview :global(.avatar-text) {
           width: 100%;
           height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           color: inherit;
-          font-size: 34px;
+          font-size: var(--avatar-text-size);
           font-weight: 900;
           line-height: 1;
           letter-spacing: -0.04em;
@@ -6782,6 +6785,8 @@ function handleSessionDateChange(value: string) {
 
         .avatar,
         .player-avatar {
+          --avatar-emoji-size: 33px;
+          --avatar-text-size: 18px;
           position: relative;
           width: 42px;
           height: 42px;
@@ -6799,9 +6804,9 @@ function handleSessionDateChange(value: string) {
           isolation: isolate;
         }
 
-        .avatar-text,
-        .avatar-emoji,
-        .avatar-photo {
+        :global(.avatar-text),
+        :global(.avatar-emoji),
+        :global(.avatar-photo) {
           position: relative;
           z-index: 1;
           display: grid;
@@ -6812,28 +6817,42 @@ function handleSessionDateChange(value: string) {
           text-align: center;
         }
 
-        .avatar-emoji {
-          font-size: 1.25em;
+        :global(.avatar-emoji) {
+          font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
+          font-size: var(--avatar-emoji-size);
+          line-height: 1;
+          margin: 0;
+          transform: translateY(-0.02em);
         }
 
-        .avatar .avatar-emoji {
-          font-size: 25px;
+        :global(.avatar-text) {
+          font-size: var(--avatar-text-size);
+          font-weight: 900;
           line-height: 1;
+          letter-spacing: 0;
           margin: 0;
         }
 
-        .player-avatar .avatar-emoji {
-          font-size: 34px;
-          line-height: 1;
-          margin: 0;
+        .avatar {
+          --avatar-size: 42px;
         }
 
-        .player-avatar.tiny-avatar .avatar-emoji {
-          font-size: 22px;
+        .player-avatar {
+          --avatar-size: 58px;
+          --avatar-emoji-size: 45px;
+          --avatar-text-size: 27px;
         }
 
-        .player-avatar.profile-large .avatar-emoji {
-          font-size: 42px;
+        .player-avatar.tiny-avatar {
+          --avatar-size: 34px;
+          --avatar-emoji-size: 26px;
+          --avatar-text-size: 16px;
+        }
+
+        .player-avatar.profile-large {
+          --avatar-size: 64px;
+          --avatar-emoji-size: 50px;
+          --avatar-text-size: 29px;
         }
 
         .avatar-photo {
@@ -7824,6 +7843,9 @@ function handleSessionDateChange(value: string) {
         }
 
         .player-avatar {
+          --avatar-size: 58px;
+          --avatar-emoji-size: 45px;
+          --avatar-text-size: 27px;
           position: relative;
           display: inline-grid;
           place-items: center;
@@ -7869,6 +7891,9 @@ function handleSessionDateChange(value: string) {
         }
 
         .player-avatar.profile-large {
+          --avatar-size: 64px;
+          --avatar-emoji-size: 50px;
+          --avatar-text-size: 29px;
           width: 64px;
           height: 64px;
           min-width: 64px;
@@ -7877,6 +7902,9 @@ function handleSessionDateChange(value: string) {
         }
 
         .player-avatar.tiny-avatar {
+          --avatar-size: 34px;
+          --avatar-emoji-size: 26px;
+          --avatar-text-size: 16px;
           width: 34px;
           height: 34px;
           min-width: 34px;
@@ -8185,6 +8213,9 @@ function handleSessionDateChange(value: string) {
         }
 
         .public-leaderboard .podium-player .player-avatar {
+          --avatar-size: 46px;
+          --avatar-emoji-size: 36px;
+          --avatar-text-size: 21px;
           width: 46px;
           height: 46px;
           min-width: 46px;
@@ -9634,17 +9665,12 @@ function handleSessionDateChange(value: string) {
           }
 
           .profile-photo-preview {
+            --avatar-size: 62px;
+            --avatar-emoji-size: 48px;
+            --avatar-text-size: 29px;
             width: 62px;
             height: 62px;
             font-size: 24px;
-          }
-
-          .profile-photo-preview .avatar-text {
-            font-size: 28px;
-          }
-          
-          .profile-photo-preview .avatar-emoji {
-            font-size: 36px;
           }
 
           .form-grid,
@@ -9775,6 +9801,9 @@ function handleSessionDateChange(value: string) {
           }
 
           .public-leaderboard .podium-player .player-avatar {
+            --avatar-size: 38px;
+            --avatar-emoji-size: 30px;
+            --avatar-text-size: 17px;
             width: 38px;
             height: 38px;
             min-width: 38px;
@@ -9874,7 +9903,7 @@ function handleSessionDateChange(value: string) {
           }
 
           .muted,
-          .profile-chip span,
+          .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo),
           .row-meta,
           label,
           .notes,
