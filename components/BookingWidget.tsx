@@ -899,6 +899,10 @@ export default function WidgetPage() {
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
   const text = uiText[language]
+  const looseText = text as Record<string, string>
+  const leaveClubText = looseText.leaveClub || 'Leave Club'
+  const leaveClubConfirmText = looseText.leaveClubConfirm || 'Leave this club?'
+  const leftClubText = looseText.leftClub || text.memberRemoved
   const showProfileFields = Boolean(profile || authMode === 'create')
 
   function updateAvatarColor(value: string) {
@@ -2525,6 +2529,25 @@ function handleSessionDateChange(value: string) {
 
     await loadClubs()
     setClubStatus(text.memberRemoved)
+    setBusyClubId('')
+  }
+
+  async function leaveClub(club: Club, member: ClubMember) {
+    if (!userId || member.profile_id !== userId || club.owner_id === userId) return
+
+    if (!window.confirm(leaveClubConfirmText)) return
+
+    setBusyClubId(club.id)
+    const { error } = await supabase.from('club_members').delete().eq('id', member.id).eq('profile_id', userId)
+
+    if (error) {
+      setClubStatus(error.message)
+      setBusyClubId('')
+      return
+    }
+
+    await loadClubs()
+    setClubStatus(leftClubText)
     setBusyClubId('')
   }
 
@@ -5723,35 +5746,48 @@ function handleSessionDateChange(value: string) {
 
             {selectedClub.description && <p className="notes">{selectedClub.description}</p>}
 
-            {!selectedClubMembership && !canManageClub(selectedClub) && (
-              <button
-                className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
-                disabled={busyClubId === selectedClub.id}
-                onClick={() => joinClub(selectedClub)}
-                type="button"
-              >
-                {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
-              </button>
-            )}
+            <div className="club-action-row">
+              {!selectedClubMembership && (
+                <button
+                  className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
+                  disabled={busyClubId === selectedClub.id}
+                  onClick={() => joinClub(selectedClub)}
+                  type="button"
+                >
+                  {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
+                </button>
+              )}
+
+              {sessionClubOptions.some((club) => club.id === selectedClub.id) && (
+                <button
+                  className="primary create-button"
+                  type="button"
+                  onClick={() => {
+                    setSessionClubId(selectedClub.id)
+                    setSessionVisibility('public')
+                    setCreateStatus(text.clubOnlyCreateHint)
+                    setActiveView('create')
+                    setSelectedClubId('')
+                  }}
+                >
+                  {text.clubOnly}
+                </button>
+              )}
+
+              {selectedClubMembership?.status === 'approved' && selectedClub.owner_id !== userId && (
+                <button
+                  className={busyClubId === selectedClub.id ? 'secondary loading create-button' : 'secondary create-button'}
+                  disabled={busyClubId === selectedClub.id}
+                  onClick={() => leaveClub(selectedClub, selectedClubMembership)}
+                  type="button"
+                >
+                  {leaveClubText}
+                </button>
+              )}
+            </div>
 
             {selectedClubMembership?.status === 'pending' && (
               <p className="notice">{text.requestSent}</p>
-            )}
-
-            {canCreateClubSession(selectedClub) && (
-              <button
-                className="primary create-button"
-                type="button"
-                onClick={() => {
-                  setSessionClubId(selectedClub.id)
-                  setSessionVisibility('public')
-                  setCreateStatus(text.clubOnlyCreateHint)
-                  setActiveView('create')
-                  setSelectedClubId('')
-                }}
-              >
-                {text.clubOnly}
-              </button>
             )}
 
             <div className="drawer-block">
@@ -7142,6 +7178,19 @@ function handleSessionDateChange(value: string) {
           gap: 10px;
           border-top: 1px solid rgba(7, 17, 18, 0.08);
           padding-top: 12px;
+        }
+
+        .club-action-row {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .club-action-row .create-button {
+          width: auto;
+          min-width: min(220px, 100%);
+          margin-top: 0;
         }
 
         .drawer-days {
