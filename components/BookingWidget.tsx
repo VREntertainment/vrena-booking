@@ -1741,7 +1741,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
       .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at), session_waitlist(id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at)')
+        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -1753,7 +1753,26 @@ export default function WidgetPage() {
       return
     }
 
-    setSessions((sessionResult.data ?? []) as Session[])
+    const sessionRows = (sessionResult.data ?? []) as Session[]
+    const sessionIds = sessionRows.map((session) => session.id)
+    let waitlistRows: WaitlistEntry[] = []
+
+    if (sessionIds.length > 0) {
+      const waitlistResult = await supabase
+        .from('session_waitlist')
+        .select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
+        .in('session_id', sessionIds)
+        .order('created_at', { ascending: true })
+
+      if (!waitlistResult.error) {
+        waitlistRows = (waitlistResult.data ?? []) as WaitlistEntry[]
+      }
+    }
+
+    setSessions(sessionRows.map((session) => ({
+      ...session,
+      session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
+    })))
     setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
   }
 
