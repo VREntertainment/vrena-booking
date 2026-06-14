@@ -505,6 +505,25 @@ function rankEmoji(placement?: number | null) {
   return ''
 }
 
+function participantScore(participant: Participant) {
+  const score = Number(participant.score)
+  return Number.isFinite(score) ? score : null
+}
+
+function sessionBestScore(session: Session) {
+  const scores = (session.session_participants ?? [])
+    .map(participantScore)
+    .filter((score): score is number => score !== null)
+
+  return scores.length > 0 ? Math.max(...scores) : null
+}
+
+function isBestSessionPerformer(session: Session, participant: Participant) {
+  const score = participantScore(participant)
+  const bestScore = sessionBestScore(session)
+  return score !== null && bestScore !== null && score === bestScore
+}
+
 function bestOfLabel(value?: number | null) {
   return `BO${value || 1}`
 }
@@ -887,6 +906,7 @@ export default function WidgetPage() {
   const [checkInPaymentStatus, setCheckInPaymentStatus] = useState<'cash' | 'bank_transfer' | 'free' | ''>('')
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
@@ -904,7 +924,20 @@ export default function WidgetPage() {
   const leaveClubText = looseText.leaveClub || 'Leave Club'
   const leaveClubConfirmText = looseText.leaveClubConfirm || 'Leave this club?'
   const leftClubText = looseText.leftClub || text.memberRemoved
+  const bestPerformerText = looseText.bestPerformer || 'Best Performer'
+  const bestPerformerCountText = looseText.bestPerformerCount || 'Best Performer count'
+  const sessionScoreText = looseText.sessionScore || 'Session score'
   const showProfileFields = Boolean(profile || authMode === 'create')
+
+  function openPlayerProfile(profileId: string, sessionId = '') {
+    setSelectedPlayerId(profileId)
+    setSelectedPlayerSessionId(sessionId)
+  }
+
+  function closePlayerProfile() {
+    setSelectedPlayerId('')
+    setSelectedPlayerSessionId('')
+  }
 
   function updateAvatarColor(value: string) {
     const normalized = cleanHexColor(value, avatarColor)
@@ -2062,6 +2095,7 @@ function handleSessionDateChange(value: string) {
       profileMotto: string | null
       gamesJoined: number
       wins: number
+      bestPerformerCount: number
       totalScore: number
       totalAccuracy: number
       accuracyCount: number
@@ -2070,9 +2104,9 @@ function handleSessionDateChange(value: string) {
     }>()
 
     sessions.forEach((session) => {
-      ;(session.session_participants ?? []).forEach((participant) => {
-        if (!participant.checked_in) return
+      const bestScore = sessionBestScore(session)
 
+      ;(session.session_participants ?? []).forEach((participant) => {
         const current = stats.get(participant.profile_id) ?? {
           profileId: participant.profile_id,
           displayName: compactDisplayName(participant.display_name, text.player),
@@ -2084,6 +2118,7 @@ function handleSessionDateChange(value: string) {
           profileMotto: participant.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
+          bestPerformerCount: 0,
           totalScore: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
@@ -2098,12 +2133,13 @@ function handleSessionDateChange(value: string) {
         current.avatarColor = participant.avatar_color || current.avatarColor
         current.avatarTextColor = participant.avatar_text_color || current.avatarTextColor
         current.profileMotto = participant.profile_motto || current.profileMotto
-        current.gamesJoined += 1
+        if (participant.checked_in) current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
 
         const numericScore = Number(participant.score)
         if (Number.isFinite(numericScore)) {
           current.totalScore += numericScore
+          if (bestScore !== null && numericScore === bestScore) current.bestPerformerCount += 1
 
           session.game_options.forEach((gameId) => {
             const game = games.find((item) => item.id === gameId)
@@ -2154,6 +2190,7 @@ function handleSessionDateChange(value: string) {
     profileMotto: profile?.profile_motto || null,
     gamesJoined: 0,
     wins: 0,
+    bestPerformerCount: 0,
     totalScore: 0,
     totalAccuracy: 0,
     accuracyCount: 0,
@@ -2165,17 +2202,35 @@ function handleSessionDateChange(value: string) {
   const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
   const topPlayer = allPlayerStats[0]
   const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
+  const selectedPlayerSessionContext = useMemo(() => {
+    if (!selectedPlayerId || !selectedPlayerSessionId) return null
+
+    const session = sessions.find((item) => item.id === selectedPlayerSessionId)
+    const participant = session?.session_participants?.find((item) => item.profile_id === selectedPlayerId)
+    if (!session || !participant) return null
+
+    return {
+      session,
+      participant,
+      score: participantScore(participant),
+      isBestPerformer: isBestSessionPerformer(session, participant),
+    }
+  }, [selectedPlayerId, selectedPlayerSessionId, sessions])
+
   const selectedPlayerManageContext = useMemo(() => {
     if (!selectedPlayerId) return null
 
-    for (const session of sessions) {
-      if (!canManageSession(session)) continue
+    const candidateSessions = selectedPlayerSessionId
+      ? sessions.filter((session) => session.id === selectedPlayerSessionId)
+      : sessions
+
+    for (const session of candidateSessions) {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
-      if (participant) return { session, participant }
+      if (participant && canEditParticipantResult(session, participant)) return { session, participant }
     }
 
     return null
-  }, [selectedPlayerId, sessions, userId, isAdmin, tournamentData.editors])
+  }, [selectedPlayerId, selectedPlayerSessionId, sessions, userId, isAdmin, tournamentData.editors])
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
 
@@ -2261,6 +2316,7 @@ function handleSessionDateChange(value: string) {
         profileMotto: profile.profile_motto || null,
         gamesJoined: 0,
         wins: 0,
+        bestPerformerCount: 0,
         totalScore: 0,
         totalAccuracy: 0,
         accuracyCount: 0,
@@ -2284,6 +2340,7 @@ function handleSessionDateChange(value: string) {
           profileMotto: participant.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
+          bestPerformerCount: 0,
           totalScore: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
@@ -2308,6 +2365,7 @@ function handleSessionDateChange(value: string) {
           profileMotto: member.profile_motto || null,
           gamesJoined: 0,
           wins: 0,
+          bestPerformerCount: 0,
           totalScore: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
@@ -2382,6 +2440,16 @@ function handleSessionDateChange(value: string) {
         || isAdmin
         || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
       )
+    )
+  }
+
+  function canEditParticipantResult(session: Session, participant: Participant) {
+    if (!userId) return false
+    if (isAdmin) return true
+
+    return Boolean(
+      session.owner_id === userId
+      || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
     )
   }
 
@@ -2649,6 +2717,18 @@ function handleSessionDateChange(value: string) {
     accuracyValue: string | number | null,
     projectilesValue: string | number | null
   ) {
+    const resultContext = sessions.reduce<{ session: Session; participant: Participant } | null>((match, session) => {
+      if (match) return match
+      const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
+      if (!participant || !canEditParticipantResult(session, participant)) return null
+      return { session, participant }
+    }, null)
+
+    if (!resultContext) {
+      setCreateStatus('Only admins or session managers can edit player scores for this session.')
+      return
+    }
+
     const score = scoreValue === '' || scoreValue === null ? null : Number(scoreValue)
     const placement = placementValue === '' || placementValue === null ? null : Number(placementValue)
     const accuracy = accuracyValue === '' || accuracyValue === null ? null : Number(accuracyValue)
@@ -4514,7 +4594,7 @@ function handleSessionDateChange(value: string) {
                               'player-avatar player-avatar-button',
                               participant.placement ? `place-${participant.placement}` : '',
                             ].join(' ').trim()}
-                            onClick={() => setSelectedPlayerId(participant.profile_id)}
+                            onClick={() => openPlayerProfile(participant.profile_id, session.id)}
                             style={canSeeSessionPlayers ? avatarStyle(participant) : undefined}
                             type="button"
                           >
@@ -4526,6 +4606,7 @@ function handleSessionDateChange(value: string) {
                           <span className="player-name-line">
                             {canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}
                             {participant.profile_id === session.owner_id && <small>{text.host}</small>}
+                            {isBestSessionPerformer(session, participant) && <small className="best-performer-label">{bestPerformerText}</small>}
                           </span>
                           {(canManage || participant.profile_id === userId) && participant.payment_status && (
                             <small className="private-payment">
@@ -4624,7 +4705,7 @@ function handleSessionDateChange(value: string) {
                                 {podium.map((participant) => (
                                   <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
                                     <span className="podium-medal">{rankEmoji(participant.placement)}</span>
-                                    <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(participant.profile_id)} style={avatarStyle(participant)} type="button">
+                                    <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
                                       {avatarNode(participant, 'P')}
                                     </button>
                                     <strong>{compactDisplayName(participant.display_name, text.player)}</strong>
@@ -4719,7 +4800,7 @@ function handleSessionDateChange(value: string) {
                                       const entryParticipant = participantById(session, entry.participant_id)
                                       return (
                                         <div className="player tournament-entry" key={entry.id}>
-                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && setSelectedPlayerId(entryParticipant.profile_id)} style={avatarStyle(entryParticipant)} type="button">
+                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
                                             {avatarNode(entryParticipant, 'P')}
                                             {topPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
                                           </button>
@@ -5010,7 +5091,7 @@ function handleSessionDateChange(value: string) {
                               className="player-avatar player-avatar-button"
                               onClick={(event) => {
                                 event.stopPropagation()
-                                setSelectedPlayerId(member.profile_id)
+                                openPlayerProfile(member.profile_id)
                               }}
                               style={avatarStyle(member)}
                               type="button"
@@ -5619,6 +5700,7 @@ function handleSessionDateChange(value: string) {
                 <div className="stats">
                   <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
                   <span>{playerStats.wins} {text.wins}</span>
+                  <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
                   <span>{playerStats.totalScore} {text.totalScore}</span>
                   <span>{playerStats.averageAccuracy ?? '-'}% {text.accuracy}</span>
                   <span>{playerStats.totalProjectiles} {text.projectiles}</span>
@@ -5849,7 +5931,7 @@ function handleSessionDateChange(value: string) {
                     .filter((member) => member.status === 'approved')
                     .map((member) => (
                       <div className="player" key={member.id}>
-                        <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} style={avatarStyle(member)} type="button">
+                        <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
                           {avatarNode(member, 'P')}
                         </button>
                         <span>{compactDisplayName(member.display_name, text.player)}</span>
@@ -5960,10 +6042,10 @@ function handleSessionDateChange(value: string) {
       )}
 
       {selectedPlayerProfile && (
-        <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={() => setSelectedPlayerId('')}>
+        <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={closePlayerProfile}>
           <div className="player-profile-panel" onClick={(event) => event.stopPropagation()}>
             <div className="drawer-handle" />
-            <button className="modal-close" type="button" onClick={() => setSelectedPlayerId('')} aria-label={text.close}>
+            <button className="modal-close" type="button" onClick={closePlayerProfile} aria-label={text.close}>
               ×
             </button>
             <div className="player-profile-head">
@@ -5990,10 +6072,18 @@ function handleSessionDateChange(value: string) {
             <div className="stats">
               <span>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</span>
               <span>{selectedPlayerProfile.wins} {text.wins}</span>
+              <span>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</span>
               <span>{selectedPlayerProfile.totalScore} {text.totalScore}</span>
               <span>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</span>
               <span>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</span>
             </div>
+            {selectedPlayerSessionContext && (
+              <div className="session-score-summary">
+                <strong>{selectedPlayerSessionContext.session.name}</strong>
+                <span>{sessionScoreText}: {selectedPlayerSessionContext.score ?? '-'}</span>
+                {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
+              </div>
+            )}
             {selectedPlayerProfile.bestByGame.length > 0 && (
               <div className="best-score-list">
                 <strong>{text.bestScores}</strong>
@@ -7228,6 +7318,29 @@ function handleSessionDateChange(value: string) {
           margin-top: 8px;
           color: #637075;
           font-size: 13px;
+        }
+
+        .best-performer-label {
+          width: fit-content;
+          border-radius: 999px;
+          padding: 2px 8px;
+          background: #fff2a8;
+          color: #716000;
+          font-weight: 800;
+        }
+
+        .session-score-summary {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          margin-top: 8px;
+          padding: 10px 12px;
+          border: 1px solid #dce5e8;
+          border-radius: 8px;
+          background: #f5f9fa;
+          color: #091213;
+          font-size: 14px;
         }
 
         .club-drawer-backdrop {
@@ -9936,9 +10049,19 @@ function handleSessionDateChange(value: string) {
           }
 
           .standings-table,
-          .queue-match {
+          .queue-match,
+          .session-score-summary {
             background: #182225;
             border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .session-score-summary {
+            color: #f6f7f9;
+          }
+
+          .best-performer-label {
+            background: rgba(255, 224, 93, 0.18);
+            color: #ffe882;
           }
 
           .tab,
