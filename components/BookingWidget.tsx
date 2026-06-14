@@ -6140,7 +6140,7 @@ function handleSessionDateChange(value: string) {
           position: relative;
           z-index: 3;
           cursor: pointer;
-          opacity: 0.72;
+          opacity: 0;
         }
 
         .date-input-display {
