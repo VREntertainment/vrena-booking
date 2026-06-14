@@ -743,6 +743,9 @@ function ShortDateInput({
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
+      <span className={value ? 'date-input-display' : 'date-input-display placeholder'}>
+        {displayValue}
+      </span>
     </div>
   )
 }
