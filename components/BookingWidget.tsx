@@ -865,6 +865,7 @@ export default function WidgetPage() {
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
+  const [networkTablesReady, setNetworkTablesReady] = useState(true)
   const [tournamentData, setTournamentData] = useState<TournamentData>({
     editors: [],
     pools: [],
@@ -1946,23 +1947,32 @@ export default function WidgetPage() {
   }
 
   async function loadNetworkData() {
-    const [friendsResult, invitesResult, messagesResult] = await Promise.all([
-      supabase
-        .from('user_follows')
-        .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at'),
-      supabase
-        .from('session_invites')
-        .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('session_messages')
-        .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at')
-        .order('created_at', { ascending: true }),
-    ])
+    const friendsResult = await supabase
+      .from('user_follows')
+      .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
 
-    if (!friendsResult.error) setFriendConnections((friendsResult.data ?? []) as FriendConnection[])
-    if (!invitesResult.error) setSessionInvites((invitesResult.data ?? []) as SessionInvite[])
-    if (!messagesResult.error) setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
+    const invitesResult = await supabase
+      .from('session_invites')
+      .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
+      .order('created_at', { ascending: false })
+
+    const messagesResult = await supabase
+      .from('session_messages')
+      .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at')
+      .order('created_at', { ascending: true })
+
+    if (friendsResult.error || invitesResult.error || messagesResult.error) {
+      setNetworkTablesReady(false)
+      setFriendConnections([])
+      setSessionInvites([])
+      setSessionMessages([])
+      return
+    }
+
+    setNetworkTablesReady(true)
+    setFriendConnections((friendsResult.data ?? []) as FriendConnection[])
+    setSessionInvites((invitesResult.data ?? []) as SessionInvite[])
+    setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
   }
 
   useEffect(() => {
@@ -5150,7 +5160,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {(alreadyJoined || canManage) && (
+                    {networkTablesReady && (alreadyJoined || canManage) && (
                       <div className="network-panel">
                         <div className="section-head compact-head">
                           <div>
@@ -5266,6 +5276,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
+                    {networkTablesReady && (
                     <div className="session-comms">
                       <div className="section-head compact-head">
                         <div>
@@ -5333,6 +5344,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                       )}
                     </div>
+                    )}
 
                     {session.session_type === 'tournament' && (() => {
                       const tournament = tournamentForSession(session.id)
@@ -6763,7 +6775,7 @@ function handleSessionDateChange(value: string) {
                 <h3 id="player-profile-title">{compactDisplayName(selectedPlayerProfile.displayName, text.player)}</h3>
                 {selectedPlayerProfile.profileMotto && <p className="player-motto">{selectedPlayerProfile.profileMotto}</p>}
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="pill ok">{text.bestOverall}</span>}
-                {selectedPlayerProfile.profileId !== userId && (
+                {networkTablesReady && selectedPlayerProfile.profileId !== userId && (
                   <button
                     className="secondary small-button follow-button"
                     disabled={busyFriendId === selectedPlayerProfile.profileId}
