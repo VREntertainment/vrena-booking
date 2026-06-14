@@ -7617,9 +7617,9 @@ function handleSessionDateChange(value: string) {
         .rich-note-editor {
           min-height: 86px;
           width: 100%;
-          border: 1px solid rgba(7, 17, 18, 0.34);
+          border: 2px solid rgba(7, 17, 18, 0.22);
           border-radius: 8px;
-          background: #f8fafb;
+          background: #ffffff;
           color: #071112;
           padding: 10px 12px;
           font: inherit;
@@ -7627,12 +7627,12 @@ function handleSessionDateChange(value: string) {
           outline: none;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
-          box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.04);
+          box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.08);
         }
 
         .rich-note-editor:focus {
-          border-color: rgba(48, 89, 255, 0.58);
-          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12), inset 0 0 0 1px rgba(48, 89, 255, 0.08);
+          border-color: #3059ff;
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.14), inset 0 0 0 1px rgba(48, 89, 255, 0.16);
         }
 
         .rich-note-editor:empty::before {
@@ -9919,13 +9919,13 @@ function handleSessionDateChange(value: string) {
           }
 
           .rich-note-editor {
-            border-color: rgba(255, 255, 255, 0.38);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            border-color: rgba(246, 247, 249, 0.5);
+            box-shadow: inset 0 0 0 1px rgba(246, 247, 249, 0.16);
           }
 
           .rich-note-editor:focus {
-            border-color: rgba(98, 211, 255, 0.68);
-            box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border-color: #62d3ff;
+            box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.16), inset 0 0 0 1px rgba(246, 247, 249, 0.2);
           }
 
           .selected-date-preview {
