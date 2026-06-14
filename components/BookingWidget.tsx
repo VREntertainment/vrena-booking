@@ -133,6 +133,12 @@ type SessionMessage = {
   author_profile_motto?: string | null
   message_type: 'announcement' | 'comment'
   body: string
+  moderation_status?: 'approved' | 'pending_review' | 'rejected' | null
+  moderation_reason?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  moderation_categories?: Record<string, unknown> | null
+  moderation_score?: number | null
   created_at?: string | null
 }
 
@@ -1287,9 +1293,19 @@ export default function WidgetPage() {
     return sessionInvites.some((invite) => invite.session_id === sessionId && invite.recipient_id === profileId)
   }
 
-  function messagesForSession(sessionId: string) {
+  function canReviewSessionMessages(session: Session) {
+    return Boolean(userId && (session.owner_id === userId || isAdmin))
+  }
+
+  function canSeeSessionMessage(session: Session, message: SessionMessage) {
+    const status = message.moderation_status || 'approved'
+    if (status === 'approved') return true
+    return Boolean(userId && (message.author_id === userId || canReviewSessionMessages(session)))
+  }
+
+  function messagesForSession(session: Session) {
     return sessionMessages
-      .filter((message) => message.session_id === sessionId)
+      .filter((message) => message.session_id === session.id && canSeeSessionMessage(session, message))
       .sort((a, b) => {
         const left = a.created_at ? new Date(a.created_at).getTime() : 0
         const right = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -1958,7 +1974,7 @@ export default function WidgetPage() {
 
     const messagesResult = await supabase
       .from('session_messages')
-      .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at')
+      .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at')
       .order('created_at', { ascending: true })
 
     if (friendsResult.error || invitesResult.error || messagesResult.error) {
@@ -3596,7 +3612,7 @@ function handleSessionDateChange(value: string) {
 
   async function postSessionMessage(session: Session, messageType: 'announcement' | 'comment') {
     if (!requireProfile() || !profile) return
-    if (messageType === 'announcement' && !canManageSession(session)) return
+    if (messageType === 'announcement' && !canReviewSessionMessages(session)) return
 
     const draft = (messageType === 'announcement' ? announcementDrafts[session.id] : commentDrafts[session.id]) || ''
     const body = draft.trim()
@@ -3605,19 +3621,15 @@ function handleSessionDateChange(value: string) {
     const messageKey = `${session.id}-${messageType}`
     setBusyMessageKey(messageKey)
 
-    const { error } = await supabase.from('session_messages').insert({
-      session_id: session.id,
-      author_id: userId,
-      author_display_name: displayName(profile),
-      author_avatar_url: profile.avatar_url,
-      author_avatar_emoji: profile.avatar_emoji || null,
-      author_avatar_initials: profile.avatar_initials || null,
-      author_avatar_color: profile.avatar_color || null,
-      author_avatar_text_color: profile.avatar_text_color || null,
-      author_profile_motto: profile.profile_motto || null,
-      message_type: messageType,
-      body,
+    const { data, error } = await supabase.functions.invoke('post-session-message', {
+      body: {
+        session_id: session.id,
+        message_type: messageType,
+        body,
+      },
     })
+
+    const message = data?.message as SessionMessage | undefined
 
     if (error) {
       setCreateStatus(error.message)
@@ -3627,7 +3639,30 @@ function handleSessionDateChange(value: string) {
       } else {
         setCommentDrafts((current) => ({ ...current, [session.id]: '' }))
       }
-      setCreateStatus(text.messagePosted)
+      setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
+      await loadNetworkData()
+    }
+
+    setBusyMessageKey('')
+  }
+
+  async function reviewSessionMessage(message: SessionMessage, status: 'approved' | 'rejected') {
+    if (!requireProfile()) return
+
+    setBusyMessageKey(`${message.id}-${status}`)
+    const { error } = await supabase
+      .from('session_messages')
+      .update({
+        moderation_status: status,
+        reviewed_by: userId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', message.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+    } else {
+      setCreateStatus(status === 'approved' ? text.messageApproved : text.messageRejected)
       await loadNetworkData()
     }
 
@@ -4749,7 +4784,7 @@ function handleSessionDateChange(value: string) {
                   .filter((target, index, list) => list.findIndex((item) => item.profile_id === target.profile_id) === index)
                   .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
                   .slice(0, 10)
-                const sessionMessageRows = messagesForSession(session.id)
+                const sessionMessageRows = messagesForSession(session)
                 const hasCrownHolder = Boolean(
                   topPlayer?.profileId
                   && topPlayer.profileId !== userId
@@ -5284,7 +5319,7 @@ function handleSessionDateChange(value: string) {
                           <p className="muted">{text.sessionCommunicationHint}</p>
                         </div>
                       </div>
-                      {canManage && (
+                      {canReviewSessionMessages(session) && (
                         <div className="message-compose">
                           <input
                             value={announcementDrafts[session.id] || ''}
@@ -5305,28 +5340,57 @@ function handleSessionDateChange(value: string) {
                         <p className="notice">{text.noSessionMessages}</p>
                       ) : (
                         <div className="message-list">
-                          {sessionMessageRows.map((message) => (
-                            <div className={message.message_type === 'announcement' ? 'session-message announcement' : 'session-message'} key={message.id}>
-                              <span className="player-avatar tiny-avatar" style={avatarStyle({
-                                avatar_color: message.author_avatar_color,
-                                avatar_text_color: message.author_avatar_text_color,
-                              })}>
-                                {avatarNode({
-                                  avatar_url: message.author_avatar_url,
-                                  avatar_emoji: message.author_avatar_emoji,
-                                  avatar_initials: message.author_avatar_initials,
-                                  display_name: message.author_display_name,
-                                }, 'P')}
-                              </span>
-                              <div>
-                                <strong>{message.message_type === 'announcement' ? text.creatorAnnouncement : compactDisplayName(message.author_display_name, text.player)}</strong>
-                                <p>{message.body}</p>
+                          {sessionMessageRows.map((message) => {
+                            const moderationStatus = message.moderation_status || 'approved'
+                            const canReviewMessage = canReviewSessionMessages(session) && moderationStatus === 'pending_review'
+
+                            return (
+                              <div className={message.message_type === 'announcement' ? 'session-message announcement' : 'session-message'} key={message.id}>
+                                <span className="player-avatar tiny-avatar" style={avatarStyle({
+                                  avatar_color: message.author_avatar_color,
+                                  avatar_text_color: message.author_avatar_text_color,
+                                })}>
+                                  {avatarNode({
+                                    avatar_url: message.author_avatar_url,
+                                    avatar_emoji: message.author_avatar_emoji,
+                                    avatar_initials: message.author_avatar_initials,
+                                    display_name: message.author_display_name,
+                                  }, 'P')}
+                                </span>
+                                <div>
+                                  <div className="message-meta-row">
+                                    <strong>{message.message_type === 'announcement' ? text.creatorAnnouncement : compactDisplayName(message.author_display_name, text.player)}</strong>
+                                    {moderationStatus === 'pending_review' && <small className="moderation-badge pending">{text.pendingReview}</small>}
+                                    {moderationStatus === 'rejected' && <small className="moderation-badge rejected">{text.rejectedMessage}</small>}
+                                  </div>
+                                  <p>{message.body}</p>
+                                  {canReviewMessage && (
+                                    <div className="moderation-actions">
+                                      <button
+                                        className="secondary small-button"
+                                        disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
+                                        type="button"
+                                        onClick={() => reviewSessionMessage(message, 'approved')}
+                                      >
+                                        {text.approveMessage}
+                                      </button>
+                                      <button
+                                        className="danger small-button"
+                                        disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
+                                        type="button"
+                                        onClick={() => reviewSessionMessage(message, 'rejected')}
+                                      >
+                                        {text.rejectMessage}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
-                      {(alreadyJoined || canManage) && (
+                      {(alreadyJoined || canReviewSessionMessages(session)) && (
                         <div className="message-compose">
                           <input
                             value={commentDrafts[session.id] || ''}
@@ -8161,6 +8225,40 @@ function handleSessionDateChange(value: string) {
           color: #4a5a60;
         }
 
+        .message-meta-row {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .moderation-badge {
+          display: inline-flex;
+          align-items: center;
+          min-height: 24px;
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 0.78rem;
+          font-weight: 900;
+        }
+
+        .moderation-badge.pending {
+          background: #fff5d6;
+          color: #805700;
+        }
+
+        .moderation-badge.rejected {
+          background: #ffe8e3;
+          color: #a33323;
+        }
+
+        .moderation-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
         .follow-button {
           margin-top: 8px;
         }
@@ -10899,6 +10997,16 @@ function handleSessionDateChange(value: string) {
           .reminder-strip small,
           .session-message p {
             color: #aeb9bd;
+          }
+
+          .moderation-badge.pending {
+            background: rgba(255, 214, 102, 0.18);
+            color: #ffd666;
+          }
+
+          .moderation-badge.rejected {
+            background: rgba(255, 126, 103, 0.18);
+            color: #ff9b87;
           }
 
           .best-performer-label {
