@@ -928,6 +928,14 @@ export default function WidgetPage() {
     if (isHexColor(value)) setAvatarTextColor(value.toLowerCase())
   }
 
+  function chooseAvatarMode(mode: 'photo' | 'emoji' | 'initials') {
+    setAvatarMode(mode)
+    if (mode !== 'photo') {
+      setAvatarFile(null)
+      setAvatarPreview('')
+    }
+  }
+
   function avatarNode(source: {
     avatar_url?: string | null
     avatar_emoji?: string | null
@@ -5324,9 +5332,9 @@ function handleSessionDateChange(value: string) {
                   <div className="avatar-options">
                     <span>{text.avatarStyle}</span>
                     <div className="segmented compact-segmented">
-                      <button className={avatarMode === 'photo' ? 'active' : ''} onClick={() => setAvatarMode('photo')} type="button">{text.usePhoto}</button>
-                      <button className={avatarMode === 'emoji' ? 'active' : ''} onClick={() => setAvatarMode('emoji')} type="button">{text.useEmoji}</button>
-                      <button className={avatarMode === 'initials' ? 'active' : ''} onClick={() => setAvatarMode('initials')} type="button">{text.useInitials}</button>
+                      <button className={avatarMode === 'photo' ? 'active' : ''} onClick={() => chooseAvatarMode('photo')} type="button">{text.usePhoto}</button>
+                      <button className={avatarMode === 'emoji' ? 'active' : ''} onClick={() => chooseAvatarMode('emoji')} type="button">{text.useEmoji}</button>
+                      <button className={avatarMode === 'initials' ? 'active' : ''} onClick={() => chooseAvatarMode('initials')} type="button">{text.useInitials}</button>
                     </div>
                     {avatarMode === 'emoji' && (
                       <div className="emoji-row">
@@ -6105,6 +6113,18 @@ function handleSessionDateChange(value: string) {
         }
 
         .app {
+          --avatar-xs: 34px;
+          --avatar-xs-emoji: 26px;
+          --avatar-xs-text: 16px;
+          --avatar-sm: 42px;
+          --avatar-sm-emoji: 33px;
+          --avatar-sm-text: 18px;
+          --avatar-md: 58px;
+          --avatar-md-emoji: 45px;
+          --avatar-md-text: 27px;
+          --avatar-lg: 78px;
+          --avatar-lg-emoji: 61px;
+          --avatar-lg-text: 36px;
           height: 100vh;
           display: grid;
           grid-template-columns: 280px minmax(0, 1fr);
@@ -6639,11 +6659,11 @@ function handleSessionDateChange(value: string) {
         }
 
         .profile-photo-preview {
-          --avatar-size: 78px;
-          --avatar-emoji-size: 61px;
-          --avatar-text-size: 36px;
-          width: 78px;
-          height: 78px;
+          --avatar-size: var(--avatar-lg);
+          --avatar-emoji-size: var(--avatar-lg-emoji);
+          --avatar-text-size: var(--avatar-lg-text);
+          width: var(--avatar-size);
+          height: var(--avatar-size);
           border-radius: 50%;
           display: grid;
           place-items: center;
@@ -6785,13 +6805,14 @@ function handleSessionDateChange(value: string) {
 
         .avatar,
         .player-avatar {
-          --avatar-emoji-size: 33px;
-          --avatar-text-size: 18px;
+          --avatar-size: var(--avatar-sm);
+          --avatar-emoji-size: var(--avatar-sm-emoji);
+          --avatar-text-size: var(--avatar-sm-text);
           position: relative;
-          width: 42px;
-          height: 42px;
-          min-width: 42px;
-          min-height: 42px;
+          width: var(--avatar-size);
+          height: var(--avatar-size);
+          min-width: var(--avatar-size);
+          min-height: var(--avatar-size);
           border-radius: 50%;
           display: grid;
           place-items: center;
@@ -6833,26 +6854,22 @@ function handleSessionDateChange(value: string) {
           margin: 0;
         }
 
-        .avatar {
-          --avatar-size: 42px;
-        }
-
         .player-avatar {
-          --avatar-size: 58px;
-          --avatar-emoji-size: 45px;
-          --avatar-text-size: 27px;
+          --avatar-size: var(--avatar-md);
+          --avatar-emoji-size: var(--avatar-md-emoji);
+          --avatar-text-size: var(--avatar-md-text);
         }
 
         .player-avatar.tiny-avatar {
-          --avatar-size: 34px;
-          --avatar-emoji-size: 26px;
-          --avatar-text-size: 16px;
+          --avatar-size: var(--avatar-xs);
+          --avatar-emoji-size: var(--avatar-xs-emoji);
+          --avatar-text-size: var(--avatar-xs-text);
         }
 
         .player-avatar.profile-large {
-          --avatar-size: 64px;
-          --avatar-emoji-size: 50px;
-          --avatar-text-size: 29px;
+          --avatar-size: var(--avatar-lg);
+          --avatar-emoji-size: var(--avatar-lg-emoji);
+          --avatar-text-size: var(--avatar-lg-text);
         }
 
         .avatar-photo {
@@ -7127,10 +7144,10 @@ function handleSessionDateChange(value: string) {
         }
 
         .profile-large {
-          width: 72px;
-          height: 72px;
-          min-width: 72px;
-          min-height: 72px;
+          width: var(--avatar-lg);
+          height: var(--avatar-lg);
+          min-width: var(--avatar-lg);
+          min-height: var(--avatar-lg);
           font-size: 26px;
         }
 
@@ -7193,8 +7210,11 @@ function handleSessionDateChange(value: string) {
         }
 
         .tiny-avatar {
-          width: 30px;
-          height: 30px;
+          --avatar-size: var(--avatar-xs);
+          --avatar-emoji-size: var(--avatar-xs-emoji);
+          --avatar-text-size: var(--avatar-xs-text);
+          width: var(--avatar-xs);
+          height: var(--avatar-xs);
           font-size: 12px;
         }
 
@@ -7843,16 +7863,16 @@ function handleSessionDateChange(value: string) {
         }
 
         .player-avatar {
-          --avatar-size: 58px;
-          --avatar-emoji-size: 45px;
-          --avatar-text-size: 27px;
+          --avatar-size: var(--avatar-md);
+          --avatar-emoji-size: var(--avatar-md-emoji);
+          --avatar-text-size: var(--avatar-md-text);
           position: relative;
           display: inline-grid;
           place-items: center;
-          width: 58px;
-          height: 58px;
-          min-width: 58px;
-          min-height: 58px;
+          width: var(--avatar-size);
+          height: var(--avatar-size);
+          min-width: var(--avatar-size);
+          min-height: var(--avatar-size);
           max-width: 100%;
           aspect-ratio: 1;
           border-radius: 999px;
@@ -7883,7 +7903,7 @@ function handleSessionDateChange(value: string) {
 
         .player-avatar-button {
           cursor: pointer;
-          min-height: 58px;
+          min-height: var(--avatar-md);
         }
 
         .player-avatar-button:disabled {
@@ -7891,24 +7911,24 @@ function handleSessionDateChange(value: string) {
         }
 
         .player-avatar.profile-large {
-          --avatar-size: 64px;
-          --avatar-emoji-size: 50px;
-          --avatar-text-size: 29px;
-          width: 64px;
-          height: 64px;
-          min-width: 64px;
-          min-height: 64px;
+          --avatar-size: var(--avatar-lg);
+          --avatar-emoji-size: var(--avatar-lg-emoji);
+          --avatar-text-size: var(--avatar-lg-text);
+          width: var(--avatar-size);
+          height: var(--avatar-size);
+          min-width: var(--avatar-size);
+          min-height: var(--avatar-size);
           font-size: 24px;
         }
 
         .player-avatar.tiny-avatar {
-          --avatar-size: 34px;
-          --avatar-emoji-size: 26px;
-          --avatar-text-size: 16px;
-          width: 34px;
-          height: 34px;
-          min-width: 34px;
-          min-height: 34px;
+          --avatar-size: var(--avatar-xs);
+          --avatar-emoji-size: var(--avatar-xs-emoji);
+          --avatar-text-size: var(--avatar-xs-text);
+          width: var(--avatar-size);
+          height: var(--avatar-size);
+          min-width: var(--avatar-size);
+          min-height: var(--avatar-size);
           font-size: 12px;
         }
 
@@ -8213,13 +8233,13 @@ function handleSessionDateChange(value: string) {
         }
 
         .public-leaderboard .podium-player .player-avatar {
-          --avatar-size: 46px;
-          --avatar-emoji-size: 36px;
-          --avatar-text-size: 21px;
-          width: 46px;
-          height: 46px;
-          min-width: 46px;
-          min-height: 46px;
+          --avatar-size: var(--avatar-sm);
+          --avatar-emoji-size: var(--avatar-sm-emoji);
+          --avatar-text-size: var(--avatar-sm-text);
+          width: var(--avatar-size);
+          height: var(--avatar-size);
+          min-width: var(--avatar-size);
+          min-height: var(--avatar-size);
         }
 
         .public-leaderboard .podium-medal {
@@ -9236,8 +9256,8 @@ function handleSessionDateChange(value: string) {
           }
 
           .profile-chip .avatar {
-            width: 42px;
-            height: 42px;
+            width: var(--avatar-sm);
+            height: var(--avatar-sm);
           }
 
           .tabs {
@@ -9665,11 +9685,11 @@ function handleSessionDateChange(value: string) {
           }
 
           .profile-photo-preview {
-            --avatar-size: 62px;
-            --avatar-emoji-size: 48px;
-            --avatar-text-size: 29px;
-            width: 62px;
-            height: 62px;
+            --avatar-size: var(--avatar-lg);
+            --avatar-emoji-size: var(--avatar-lg-emoji);
+            --avatar-text-size: var(--avatar-lg-text);
+            width: var(--avatar-size);
+            height: var(--avatar-size);
             font-size: 24px;
           }
 
@@ -9801,13 +9821,13 @@ function handleSessionDateChange(value: string) {
           }
 
           .public-leaderboard .podium-player .player-avatar {
-            --avatar-size: 38px;
-            --avatar-emoji-size: 30px;
-            --avatar-text-size: 17px;
-            width: 38px;
-            height: 38px;
-            min-width: 38px;
-            min-height: 38px;
+            --avatar-size: var(--avatar-sm);
+            --avatar-emoji-size: var(--avatar-sm-emoji);
+            --avatar-text-size: var(--avatar-sm-text);
+            width: var(--avatar-size);
+            height: var(--avatar-size);
+            min-width: var(--avatar-size);
+            min-height: var(--avatar-size);
           }
 
           .public-leaderboard .podium-player strong {
