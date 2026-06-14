@@ -8678,16 +8678,34 @@ function handleSessionDateChange(value: string) {
             display: none;
           }
 
-          .sessions-filter-head {
-            display: contents;
-            height: 0;
+         .sessions-section {
+            display: grid;
+            align-content: start;
+            gap: 8px;
             min-height: 0;
-            margin: 0;
             padding: 0;
           }
 
+          .sessions-filter-head {
+            display: block;
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible;
+          }
+
+          .sessions-filter-head .section-copy {
+            display: none !important;
+          }
+
           .sessions-section .sub-tabs {
-            margin-top: 16px;
+            margin-top: 0 !important;
+          }
+
+          .sessions-section .list {
+            margin-top: 0;
           }
 
           .search-shell {
