@@ -1,7 +1,7 @@
 import type { LanguageCode } from './languages'
 
 export const en = {
-  tagline: 'Create a public or private game session and let other players join.',
+  tagline: 'Create a public or private game session and let others join.',
   noProfile: 'No profile yet',
   clickLogin: 'Click to log in',
   sessions: 'Sessions',
@@ -9,7 +9,7 @@ export const en = {
   clubs: 'Clubs',
   clubSearchPlaceholder: 'Search club name, member name, description',
   availableSessions: 'Available Game Sessions',
-  privateJoinHint: 'Private sessions are listed, but joining requires the 6-character code.',
+  privateJoinHint: 'Private sessions are listed, but joining requires the secret code.',
   searchPlaceholder: 'Search session name, profile name, game, private code',
   searchSessions: 'Search sessions',
   noMatchingSessions: 'No matching sessions yet.',
@@ -63,12 +63,12 @@ export const en = {
   sessionType: 'Session type',
   visibility: 'Visibility',
   clubsTitle: 'Clubs',
-  clubsHint: 'Create a public club or a private club with approved members only.',
+  clubsHint: 'Create a public club or a private club.',
   clubName: 'Club Name',
   clubDescription: 'Club Description',
   clubDescriptionPlaceholder: 'Who is this club for?',
   noClub: 'No club',
-  clubOnly: 'Club members only',
+  clubOnly: 'Create a club exclusive session',
   clubOnlySessionHint: 'Club mischief only: approved members can join this session.',
   clubOnlyCreateHint: 'This session is for approved club members only.',
   clubSession: 'Club session',
