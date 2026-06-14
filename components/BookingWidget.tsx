@@ -6120,26 +6120,21 @@ function handleSessionDateChange(value: string) {
         .date-input-shell {
           position: relative;
           min-height: 46px;
+          display: block;
+          border: 1px solid rgba(7, 17, 18, 0.16);
+          border-radius: 14px;
+          background: #ffffff;
         }
 
         .date-input-native {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           min-height: 46px;
-          color: transparent;
-          -webkit-text-fill-color: transparent !important;
-          caret-color: transparent;
-          cursor: pointer;
-        }
-
-        .date-input-native::-webkit-datetime-edit,
-        .date-input-native::-webkit-date-and-time-value {
-          color: transparent;
-        }
-
-        .date-input-native::-webkit-calendar-picker-indicator {
-          position: relative;
-          z-index: 3;
-          cursor: pointer;
           opacity: 0;
+          z-index: 2;
+          cursor: pointer;
         }
 
         .date-input-display {
@@ -6162,7 +6157,7 @@ function handleSessionDateChange(value: string) {
           font-weight: 700;
         }
 
-        .date-input-shell:focus-within .date-input-native {
+        .date-input-shell:focus-within {
           border-color: rgba(48, 89, 255, 0.58);
           box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12);
         }
