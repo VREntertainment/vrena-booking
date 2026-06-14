@@ -9059,6 +9059,7 @@ function handleSessionDateChange(value: string) {
         @media (max-width: 960px) {
           .app {
             grid-template-columns: 1fr;
+            grid-template-rows: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px)) auto;
             height: auto;
             min-height: 100vh;
             overflow: visible;
