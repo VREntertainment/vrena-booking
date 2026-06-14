@@ -8600,6 +8600,277 @@ function handleSessionDateChange(value: string) {
           opacity: 0.68;
         }
 
+        /* Polish layer: tighter rhythm, consistent control sizing, cleaner cards. */
+        aside {
+          gap: 14px;
+          padding: 20px;
+        }
+
+        main {
+          padding: 20px;
+        }
+
+        .section,
+        .session,
+        .club-card,
+        .mini-session,
+        .profile-chip,
+        .profile-photo-panel,
+        .login-modal,
+        .club-drawer,
+        .player-profile-panel,
+        .tournament-panel,
+        .match-card,
+        .tournament-create-box,
+        .club-session-preview,
+        .public-leaderboard,
+        .queue-board,
+        .audit-log {
+          border-radius: 10px;
+          border-color: rgba(7, 17, 18, 0.1);
+          box-shadow: 0 8px 22px rgba(7, 17, 18, 0.045);
+        }
+
+        .section {
+          padding: 14px;
+        }
+
+        .section-head {
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .section-head h2,
+        .section-head h3,
+        .session h3 {
+          line-height: 1.14;
+        }
+
+        .list {
+          gap: 9px;
+        }
+
+        .session {
+          gap: 8px;
+          padding: 9px 10px;
+        }
+
+        .expanded-session {
+          box-shadow: 0 12px 30px rgba(11, 21, 24, 0.075);
+        }
+
+        .compact-session-card {
+          grid-template-columns: 56px minmax(0, 1fr) auto;
+          gap: 9px;
+          align-items: center;
+        }
+
+        .compact-session-card-expanded {
+          padding-bottom: 7px;
+        }
+
+        .compact-session-image {
+          width: 56px;
+          height: 56px;
+          border-radius: 8px;
+        }
+
+        .compact-session-main {
+          gap: 4px;
+        }
+
+        .compact-session-title-row {
+          gap: 7px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .compact-session-title-row h3 {
+          font-size: 17px;
+          line-height: 1.12;
+        }
+
+        .compact-meta,
+        .row-meta {
+          gap: 6px;
+        }
+
+        .row-meta span,
+        .pill,
+        .status-pill,
+        .host-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 24px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          line-height: 1.12;
+        }
+
+        .compact-session-actions,
+        .action-row,
+        .manage-row,
+        .join-row,
+        .club-action-row {
+          align-items: center;
+          gap: 7px;
+        }
+
+        .compact-join,
+        .compact-expand,
+        .compact-code {
+          min-height: 36px;
+          border-radius: 9px;
+        }
+
+        .compact-share,
+        .share-icon-button {
+          display: inline-grid;
+          place-items: center;
+          border-radius: 10px;
+        }
+
+        .sub-tabs {
+          padding: 3px;
+          gap: 3px;
+        }
+
+        .sub-tabs button {
+          min-height: 36px;
+          padding: 6px 14px;
+        }
+
+        .tab,
+        .segmented button,
+        button.secondary,
+        button.primary,
+        .create-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          line-height: 1.16;
+        }
+
+        .tab,
+        .segmented button {
+          min-height: 38px;
+          padding: 8px 11px;
+          text-align: center;
+        }
+
+        .segmented {
+          gap: 4px;
+          padding: 3px;
+          border-radius: 12px;
+        }
+
+        label {
+          margin-bottom: 5px;
+          line-height: 1.18;
+        }
+
+        input,
+        select,
+        textarea,
+        .country-button,
+        .date-input-shell,
+        .rich-note-editor {
+          min-height: 42px;
+          border-radius: 10px;
+        }
+
+        input,
+        select,
+        textarea,
+        .country-button {
+          padding: 9px 11px;
+        }
+
+        textarea,
+        .rich-note-editor {
+          line-height: 1.35;
+        }
+
+        .form-grid,
+        .profile-form,
+        .compact-form-grid,
+        .session-mode-row,
+        .session-timing-row,
+        .session-capacity-row,
+        .tournament-grid {
+          gap: 10px;
+        }
+
+        .session-mode-row,
+        .session-timing-row,
+        .session-capacity-row {
+          align-items: end;
+        }
+
+        .format-toolbar {
+          gap: 6px;
+          align-items: center;
+        }
+
+        .format-toolbar button {
+          width: 34px;
+          height: 32px;
+          min-height: 32px;
+          border-radius: 9px;
+        }
+
+        .notice {
+          margin-top: 8px;
+          padding: 9px 11px;
+          line-height: 1.35;
+        }
+
+        .profile-chip {
+          min-height: 54px;
+          padding: 8px;
+        }
+
+        .profile-photo-panel,
+        .confirm-game-panel,
+        .tournament-create-box,
+        .club-card,
+        .mini-session,
+        .match-card,
+        .queue-board,
+        .audit-log {
+          padding: 12px;
+        }
+
+        .players {
+          gap: 12px;
+        }
+
+        .player {
+          gap: 5px;
+        }
+
+        .score-controls {
+          gap: 6px;
+        }
+
+        .game-strip,
+        .game-picker,
+        .club-grid {
+          gap: 10px;
+        }
+
+        .game-card {
+          border-radius: 10px;
+          padding: 8px;
+        }
+
+        .game-card strong {
+          line-height: 1.12;
+        }
+
         @media (hover: hover) and (pointer: fine) {
           button:not(:disabled),
           .profile-chip,
@@ -8929,8 +9200,8 @@ function handleSessionDateChange(value: string) {
           }
 
           .section {
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px;
             box-shadow: none;
           }
 
@@ -9073,8 +9344,9 @@ function handleSessionDateChange(value: string) {
           }
 
           .session {
-            gap: 12px;
-            padding: 9px;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 10px;
           }
 
           .confirm-game-panel {
@@ -9089,6 +9361,7 @@ function handleSessionDateChange(value: string) {
 
           .compact-session-card {
             grid-template-columns: 50px minmax(0, 1fr);
+            gap: 8px;
             align-items: start;
           }
 
@@ -9102,6 +9375,7 @@ function handleSessionDateChange(value: string) {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             justify-content: stretch;
+            gap: 7px;
           }
 
           .compact-session-actions .compact-code {
@@ -9112,7 +9386,7 @@ function handleSessionDateChange(value: string) {
           .compact-session-actions .compact-join,
           .compact-session-actions .compact-expand {
             width: 100%;
-            min-height: 38px;
+            min-height: 42px;
           }
 
           .desktop-session-share {
@@ -9137,11 +9411,11 @@ function handleSessionDateChange(value: string) {
 
           .session-top {
             display: grid;
-            gap: 10px;
+            gap: 8px;
           }
 
           .row-meta {
-            gap: 6px;
+            gap: 5px;
           }
 
           .row-meta span {
@@ -9161,6 +9435,45 @@ function handleSessionDateChange(value: string) {
           .players {
             grid-template-columns: 1fr;
             gap: 8px;
+          }
+
+          input,
+          select,
+          textarea,
+          .country-button,
+          .date-input-shell,
+          .rich-note-editor {
+            min-height: 44px;
+          }
+
+          .form-grid,
+          .profile-form,
+          .compact-form-grid,
+          .session-mode-row,
+          .session-timing-row,
+          .session-capacity-row,
+          .tournament-grid,
+          .queue-board,
+          .match-list {
+            gap: 9px;
+          }
+
+          .club-action-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+          }
+
+          .club-action-row .create-button,
+          .club-action-row button {
+            width: 100%;
+            min-width: 0;
+          }
+
+          .club-action-row .create-button:only-child,
+          .club-action-row button:only-child {
+            grid-column: 1 / -1;
           }
 
           .players:not(:has(.result-player)) {
@@ -9362,6 +9675,24 @@ function handleSessionDateChange(value: string) {
             font-size: 18px;
           }
 
+          .compact-session-title-row h3 {
+            font-size: 17px;
+          }
+
+          .compact-session-actions {
+            gap: 6px;
+          }
+
+          .compact-session-actions .compact-join,
+          .compact-session-actions .compact-expand {
+            min-height: 40px;
+            padding-inline: 9px;
+          }
+
+          .club-action-row {
+            grid-template-columns: 1fr;
+          }
+
           .game-strip .game-card {
             flex-basis: 142px;
           }
@@ -9434,6 +9765,7 @@ function handleSessionDateChange(value: string) {
             background: #10191b;
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
           }
 
           .tournament-desk {
@@ -9626,6 +9958,28 @@ function handleSessionDateChange(value: string) {
           .stats span,
           .match-card.completed {
             background: #1d2a2e;
+          }
+
+          .row-meta span,
+          .pill,
+          .status-pill {
+            color: #d7e1e4;
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .compact-session-card-expanded {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+          }
+
+          .game-card,
+          .confirm-game-panel,
+          .profile-photo-panel,
+          .club-card,
+          .mini-session,
+          .tournament-create-box,
+          .queue-board,
+          .audit-log {
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
           }
 
           .host-pill {
