@@ -6342,11 +6342,17 @@ function handleSessionDateChange(value: string) {
         }
 
         .profile-photo-preview .avatar-emoji {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           color: inherit;
-          font-size: 62px;
+          font-size: 46px;
           line-height: 1;
           margin: 0;
-          transform: translateY(0);
+          transform: translateY(-1px);
+          font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
         }
 
         .profile-photo-preview img {
@@ -8888,6 +8894,10 @@ function handleSessionDateChange(value: string) {
             width: 62px;
             height: 62px;
             font-size: 24px;
+          }
+          
+          .profile-photo-preview .avatar-emoji {
+            font-size: 36px;
           }
 
           .form-grid,
