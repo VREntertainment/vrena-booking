@@ -90,6 +90,52 @@ type WaitlistEntry = {
   created_at?: string | null
 }
 
+type FriendConnection = {
+  id: string
+  follower_id: string
+  following_id: string
+  display_name: string | null
+  avatar_url: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
+  avatar_text_color?: string | null
+  profile_motto?: string | null
+  created_at?: string | null
+}
+
+type SessionInvite = {
+  id: string
+  session_id: string
+  inviter_id: string
+  recipient_id: string
+  recipient_display_name: string | null
+  recipient_avatar_url: string | null
+  recipient_avatar_emoji?: string | null
+  recipient_avatar_initials?: string | null
+  recipient_avatar_color?: string | null
+  recipient_avatar_text_color?: string | null
+  recipient_profile_motto?: string | null
+  status: 'pending' | 'accepted' | 'declined'
+  created_at?: string | null
+}
+
+type SessionMessage = {
+  id: string
+  session_id: string
+  author_id: string
+  author_display_name: string | null
+  author_avatar_url: string | null
+  author_avatar_emoji?: string | null
+  author_avatar_initials?: string | null
+  author_avatar_color?: string | null
+  author_avatar_text_color?: string | null
+  author_profile_motto?: string | null
+  message_type: 'announcement' | 'comment'
+  body: string
+  created_at?: string | null
+}
+
 type TournamentFormat = 'pool_only' | 'pool_to_semifinal' | 'pool_to_final' | 'single_elimination' | 'double_elimination' | 'leaderboard'
 type QualificationRule = 'top_1' | 'top_2' | 'top_4' | 'custom'
 type MatchStage = 'pool' | 'round_of_16' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'leaderboard' | 'custom'
@@ -816,6 +862,9 @@ export default function WidgetPage() {
   const [activeView, setActiveView] = useState<'sessions' | 'create' | 'clubs' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
+  const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
+  const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
+  const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
   const [tournamentData, setTournamentData] = useState<TournamentData>({
     editors: [],
     pools: [],
@@ -934,6 +983,11 @@ export default function WidgetPage() {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
+  const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [busyInviteKey, setBusyInviteKey] = useState('')
+  const [busyFriendId, setBusyFriendId] = useState('')
+  const [busyMessageKey, setBusyMessageKey] = useState('')
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<LanguageCode>('en')
@@ -1192,6 +1246,75 @@ export default function WidgetPage() {
     const waitlist = waitlistForSession(session)
     const index = waitlist.findIndex((entry) => entry.profile_id === profileId)
     return index >= 0 ? index + 1 : null
+  }
+
+  function socialAvatarFields(source: {
+    display_name?: string | null
+    avatar_url?: string | null
+    avatar_emoji?: string | null
+    avatar_initials?: string | null
+    avatar_color?: string | null
+    avatar_text_color?: string | null
+    profile_motto?: string | null
+  }) {
+    return {
+      display_name: source.display_name || text.player,
+      avatar_url: source.avatar_url || null,
+      avatar_emoji: source.avatar_emoji || null,
+      avatar_initials: source.avatar_initials || null,
+      avatar_color: source.avatar_color || null,
+      avatar_text_color: source.avatar_text_color || null,
+      profile_motto: source.profile_motto || null,
+    }
+  }
+
+  function friendList() {
+    return friendConnections
+      .filter((connection) => connection.follower_id === userId)
+      .sort((a, b) => compactDisplayName(a.display_name, '').localeCompare(compactDisplayName(b.display_name, '')))
+  }
+
+  function isFollowing(profileId: string) {
+    return friendConnections.some((connection) => connection.follower_id === userId && connection.following_id === profileId)
+  }
+
+  function invitesForSession(sessionId: string) {
+    return sessionInvites.filter((invite) => invite.session_id === sessionId)
+  }
+
+  function hasSessionInvite(sessionId: string, profileId: string) {
+    return sessionInvites.some((invite) => invite.session_id === sessionId && invite.recipient_id === profileId)
+  }
+
+  function messagesForSession(sessionId: string) {
+    return sessionMessages
+      .filter((message) => message.session_id === sessionId)
+      .sort((a, b) => {
+        const left = a.created_at ? new Date(a.created_at).getTime() : 0
+        const right = b.created_at ? new Date(b.created_at).getTime() : 0
+        return left - right || a.id.localeCompare(b.id)
+      })
+  }
+
+  function previousPlayersForSession(session: Session) {
+    const currentIds = new Set((session.session_participants ?? []).map((participant) => participant.profile_id))
+    const people = new Map<string, ReturnType<typeof socialAvatarFields> & { profile_id: string }>()
+
+    sessions.forEach((pastSession) => {
+      const playedWithMe = (pastSession.session_participants ?? []).some((participant) => participant.profile_id === userId)
+      if (!playedWithMe) return
+
+      ;(pastSession.session_participants ?? []).forEach((participant) => {
+        if (participant.profile_id === userId || currentIds.has(participant.profile_id)) return
+        if (people.has(participant.profile_id)) return
+        people.set(participant.profile_id, {
+          profile_id: participant.profile_id,
+          ...socialAvatarFields(participant),
+        })
+      })
+    })
+
+    return Array.from(people.values()).slice(0, 8)
   }
 
   function notifySession(session: Session, message: string) {
@@ -1822,6 +1945,26 @@ export default function WidgetPage() {
     })
   }
 
+  async function loadNetworkData() {
+    const [friendsResult, invitesResult, messagesResult] = await Promise.all([
+      supabase
+        .from('user_follows')
+        .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at'),
+      supabase
+        .from('session_invites')
+        .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('session_messages')
+        .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at')
+        .order('created_at', { ascending: true }),
+    ])
+
+    if (!friendsResult.error) setFriendConnections((friendsResult.data ?? []) as FriendConnection[])
+    if (!invitesResult.error) setSessionInvites((invitesResult.data ?? []) as SessionInvite[])
+    if (!messagesResult.error) setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
+  }
+
   useEffect(() => {
     setLanguage(getInitialLanguage())
     if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
@@ -1833,6 +1976,7 @@ export default function WidgetPage() {
     loadSessions()
     loadClubs()
     loadTournamentData()
+    loadNetworkData()
   }, [])
 
   useEffect(() => {
@@ -1893,6 +2037,9 @@ export default function WidgetPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => loadTournamentData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => loadTournamentData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => loadTournamentData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => loadNetworkData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => loadNetworkData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => loadNetworkData())
       .subscribe()
 
     return () => {
@@ -3260,7 +3407,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (session.visibility === 'private') {
+    if (session.visibility === 'private' && !hasSessionInvite(session.id, userId)) {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
       if (typedCode !== session.invite_code) {
         setCreateStatus(text.privateIncorrect)
@@ -3297,7 +3444,14 @@ function handleSessionDateChange(value: string) {
       .eq('session_id', session.id)
       .eq('profile_id', userId)
 
+    await supabase
+      .from('session_invites')
+      .update({ status: 'accepted' })
+      .eq('session_id', session.id)
+      .eq('recipient_id', userId)
+
     await loadSessions()
+    await loadNetworkData()
     setBusySessionId('')
     setCreateStatus(text.joinedSession)
     await prepareJoinedSessionReminders(session)
@@ -3315,7 +3469,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (session.visibility === 'private') {
+    if (session.visibility === 'private' && !hasSessionInvite(session.id, userId)) {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
       if (typedCode !== session.invite_code) {
         setCreateStatus(text.privateIncorrect)
@@ -3345,6 +3499,129 @@ function handleSessionDateChange(value: string) {
     await loadSessions()
     setCreateStatus(text.waitlistJoined)
     setBusySessionId('')
+  }
+
+  async function toggleFollowPlayer(player: {
+    profileId: string
+    displayName: string
+    avatarUrl: string | null
+    avatarEmoji: string | null
+    avatarInitials: string | null
+    avatarColor: string | null
+    avatarTextColor: string | null
+    profileMotto: string | null
+  }) {
+    if (!requireProfile()) return
+    if (player.profileId === userId) return
+
+    setBusyFriendId(player.profileId)
+
+    if (isFollowing(player.profileId)) {
+      const { error } = await supabase
+        .from('user_follows')
+        .delete()
+        .eq('follower_id', userId)
+        .eq('following_id', player.profileId)
+
+      if (error) setCreateStatus(error.message)
+      else setCreateStatus(text.friendRemoved)
+    } else {
+      const { error } = await supabase.from('user_follows').upsert({
+        follower_id: userId,
+        following_id: player.profileId,
+        display_name: compactDisplayName(player.displayName, text.player),
+        avatar_url: player.avatarUrl,
+        avatar_emoji: player.avatarEmoji,
+        avatar_initials: player.avatarInitials,
+        avatar_color: player.avatarColor,
+        avatar_text_color: player.avatarTextColor,
+        profile_motto: player.profileMotto,
+      }, { onConflict: 'follower_id,following_id' })
+
+      if (error) setCreateStatus(error.message)
+      else setCreateStatus(text.friendAdded)
+    }
+
+    await loadNetworkData()
+    setBusyFriendId('')
+  }
+
+  async function invitePlayerToSession(session: Session, player: {
+    profile_id: string
+    display_name: string | null
+    avatar_url: string | null
+    avatar_emoji?: string | null
+    avatar_initials?: string | null
+    avatar_color?: string | null
+    avatar_text_color?: string | null
+    profile_motto?: string | null
+  }) {
+    if (!requireProfile()) return
+    if (player.profile_id === userId) return
+
+    const inviteKey = `${session.id}-${player.profile_id}`
+    setBusyInviteKey(inviteKey)
+
+    const snapshot = socialAvatarFields(player)
+    const { error } = await supabase.from('session_invites').upsert({
+      session_id: session.id,
+      inviter_id: userId,
+      recipient_id: player.profile_id,
+      recipient_display_name: snapshot.display_name,
+      recipient_avatar_url: snapshot.avatar_url,
+      recipient_avatar_emoji: snapshot.avatar_emoji,
+      recipient_avatar_initials: snapshot.avatar_initials,
+      recipient_avatar_color: snapshot.avatar_color,
+      recipient_avatar_text_color: snapshot.avatar_text_color,
+      recipient_profile_motto: snapshot.profile_motto,
+      status: 'pending',
+    }, { onConflict: 'session_id,recipient_id' })
+
+    if (error) setCreateStatus(error.message)
+    else setCreateStatus(text.inviteSent)
+
+    await loadNetworkData()
+    setBusyInviteKey('')
+  }
+
+  async function postSessionMessage(session: Session, messageType: 'announcement' | 'comment') {
+    if (!requireProfile() || !profile) return
+    if (messageType === 'announcement' && !canManageSession(session)) return
+
+    const draft = (messageType === 'announcement' ? announcementDrafts[session.id] : commentDrafts[session.id]) || ''
+    const body = draft.trim()
+    if (!body) return
+
+    const messageKey = `${session.id}-${messageType}`
+    setBusyMessageKey(messageKey)
+
+    const { error } = await supabase.from('session_messages').insert({
+      session_id: session.id,
+      author_id: userId,
+      author_display_name: displayName(profile),
+      author_avatar_url: profile.avatar_url,
+      author_avatar_emoji: profile.avatar_emoji || null,
+      author_avatar_initials: profile.avatar_initials || null,
+      author_avatar_color: profile.avatar_color || null,
+      author_avatar_text_color: profile.avatar_text_color || null,
+      author_profile_motto: profile.profile_motto || null,
+      message_type: messageType,
+      body,
+    })
+
+    if (error) {
+      setCreateStatus(error.message)
+    } else {
+      if (messageType === 'announcement') {
+        setAnnouncementDrafts((current) => ({ ...current, [session.id]: '' }))
+      } else {
+        setCommentDrafts((current) => ({ ...current, [session.id]: '' }))
+      }
+      setCreateStatus(text.messagePosted)
+      await loadNetworkData()
+    }
+
+    setBusyMessageKey('')
   }
 
   async function leaveSession(session: Session) {
@@ -4444,6 +4721,25 @@ function handleSessionDateChange(value: string) {
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
                 const confirmedGameDraft = confirmedGameDrafts[session.id] ?? session.confirmed_game_id ?? ''
+                const sessionInviteRows = invitesForSession(session.id)
+                const invitedMe = sessionInviteRows.some((invite) => invite.recipient_id === userId)
+                const invitedIds = new Set(sessionInviteRows.map((invite) => invite.recipient_id))
+                const friendInviteTargets = friendList().map((friend) => ({
+                  profile_id: friend.following_id,
+                  display_name: friend.display_name,
+                  avatar_url: friend.avatar_url,
+                  avatar_emoji: friend.avatar_emoji,
+                  avatar_initials: friend.avatar_initials,
+                  avatar_color: friend.avatar_color,
+                  avatar_text_color: friend.avatar_text_color,
+                  profile_motto: friend.profile_motto,
+                }))
+                const previousInviteTargets = previousPlayersForSession(session)
+                const inviteTargets = [...friendInviteTargets, ...previousInviteTargets]
+                  .filter((target, index, list) => list.findIndex((item) => item.profile_id === target.profile_id) === index)
+                  .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
+                  .slice(0, 10)
+                const sessionMessageRows = messagesForSession(session.id)
                 const hasCrownHolder = Boolean(
                   topPlayer?.profileId
                   && topPlayer.profileId !== userId
@@ -4479,6 +4775,7 @@ function handleSessionDateChange(value: string) {
                             {session.visibility === 'private' ? text.private : text.public}
                           </span>
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
+                          {invitedMe && <span className="pill ok">{text.invited}</span>}
                         </div>
                         <div className="row-meta compact-meta">
                           <span>{formatShortDate(session.date, language)}</span>
@@ -4490,7 +4787,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && (
+                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && !invitedMe && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -4853,6 +5150,46 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
+                    {(alreadyJoined || canManage) && (
+                      <div className="network-panel">
+                        <div className="section-head compact-head">
+                          <div>
+                            <h3>{text.sessionNetwork}</h3>
+                            <p className="muted">{text.sessionNetworkHint}</p>
+                          </div>
+                        </div>
+                        {inviteTargets.length === 0 ? (
+                          <p className="notice">{text.noInviteTargets}</p>
+                        ) : (
+                          <div className="invite-scroll">
+                            {inviteTargets.map((target) => {
+                              const inviteKey = `${session.id}-${target.profile_id}`
+                              const isInvited = invitedIds.has(target.profile_id)
+
+                              return (
+                                <button
+                                  className="invite-chip"
+                                  disabled={isInvited || busyInviteKey === inviteKey}
+                                  key={target.profile_id}
+                                  type="button"
+                                  onClick={() => invitePlayerToSession(session, target)}
+                                >
+                                  <span className="player-avatar tiny-avatar" style={avatarStyle(target)}>
+                                    {avatarNode(target, 'P')}
+                                  </span>
+                                  <span>{compactDisplayName(target.display_name, text.player)}</span>
+                                  <small>{isInvited ? text.invited : text.invite}</small>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                        {canManage && sessionInviteRows.length > 0 && (
+                          <p className="muted">{text.sentInvites}: {sessionInviteRows.length}</p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="players">
                       {participants.map((participant) => (
                         <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
@@ -4928,6 +5265,74 @@ function handleSessionDateChange(value: string) {
                         )}
                       </div>
                     )}
+
+                    <div className="session-comms">
+                      <div className="section-head compact-head">
+                        <div>
+                          <h3>{text.sessionCommunication}</h3>
+                          <p className="muted">{text.sessionCommunicationHint}</p>
+                        </div>
+                      </div>
+                      {canManage && (
+                        <div className="message-compose">
+                          <input
+                            value={announcementDrafts[session.id] || ''}
+                            onChange={(event) => setAnnouncementDrafts((current) => ({ ...current, [session.id]: event.target.value }))}
+                            placeholder={text.announcementPlaceholder}
+                          />
+                          <button
+                            className="secondary small-button"
+                            disabled={busyMessageKey === `${session.id}-announcement`}
+                            type="button"
+                            onClick={() => postSessionMessage(session, 'announcement')}
+                          >
+                            {text.postAnnouncement}
+                          </button>
+                        </div>
+                      )}
+                      {sessionMessageRows.length === 0 ? (
+                        <p className="notice">{text.noSessionMessages}</p>
+                      ) : (
+                        <div className="message-list">
+                          {sessionMessageRows.map((message) => (
+                            <div className={message.message_type === 'announcement' ? 'session-message announcement' : 'session-message'} key={message.id}>
+                              <span className="player-avatar tiny-avatar" style={avatarStyle({
+                                avatar_color: message.author_avatar_color,
+                                avatar_text_color: message.author_avatar_text_color,
+                              })}>
+                                {avatarNode({
+                                  avatar_url: message.author_avatar_url,
+                                  avatar_emoji: message.author_avatar_emoji,
+                                  avatar_initials: message.author_avatar_initials,
+                                  display_name: message.author_display_name,
+                                }, 'P')}
+                              </span>
+                              <div>
+                                <strong>{message.message_type === 'announcement' ? text.creatorAnnouncement : compactDisplayName(message.author_display_name, text.player)}</strong>
+                                <p>{message.body}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {(alreadyJoined || canManage) && (
+                        <div className="message-compose">
+                          <input
+                            value={commentDrafts[session.id] || ''}
+                            onChange={(event) => setCommentDrafts((current) => ({ ...current, [session.id]: event.target.value }))}
+                            placeholder={text.commentPlaceholder}
+                          />
+                          <button
+                            className="secondary small-button"
+                            disabled={busyMessageKey === `${session.id}-comment`}
+                            type="button"
+                            onClick={() => postSessionMessage(session, 'comment')}
+                          >
+                            {text.postComment}
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
                     {session.session_type === 'tournament' && (() => {
                       const tournament = tournamentForSession(session.id)
@@ -6358,6 +6763,16 @@ function handleSessionDateChange(value: string) {
                 <h3 id="player-profile-title">{compactDisplayName(selectedPlayerProfile.displayName, text.player)}</h3>
                 {selectedPlayerProfile.profileMotto && <p className="player-motto">{selectedPlayerProfile.profileMotto}</p>}
                 {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="pill ok">{text.bestOverall}</span>}
+                {selectedPlayerProfile.profileId !== userId && (
+                  <button
+                    className="secondary small-button follow-button"
+                    disabled={busyFriendId === selectedPlayerProfile.profileId}
+                    type="button"
+                    onClick={() => toggleFollowPlayer(selectedPlayerProfile)}
+                  >
+                    {isFollowing(selectedPlayerProfile.profileId) ? text.following : text.addFriend}
+                  </button>
+                )}
               </div>
             </div>
             <div className="stats">
@@ -7665,6 +8080,77 @@ function handleSessionDateChange(value: string) {
 
         .waitlist-position {
           margin: 0;
+        }
+
+        .network-panel,
+        .session-comms {
+          display: grid;
+          gap: 10px;
+          padding: 10px 12px;
+          border: 1px solid #dce5e8;
+          border-radius: 8px;
+          background: #f8fbfc;
+        }
+
+        .invite-scroll {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+
+        .invite-chip {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          align-items: center;
+          gap: 4px 8px;
+          min-width: 132px;
+          border: 1px solid #dce5e8;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #071112;
+          text-align: left;
+        }
+
+        .invite-chip small {
+          grid-column: 2;
+          color: #315dff;
+          font-weight: 800;
+        }
+
+        .message-compose {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 8px;
+        }
+
+        .message-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .session-message {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 8px;
+          padding: 8px;
+          border: 1px solid #e4ecef;
+          border-radius: 8px;
+          background: #ffffff;
+        }
+
+        .session-message.announcement {
+          border-color: #c7d5ff;
+          background: #f3f6ff;
+        }
+
+        .session-message p {
+          margin: 2px 0 0;
+          color: #4a5a60;
+        }
+
+        .follow-button {
+          margin-top: 8px;
         }
 
         .club-drawer-backdrop {
@@ -10377,7 +10863,12 @@ function handleSessionDateChange(value: string) {
           .session-score-summary,
           .reminder-strip,
           .waitlist-panel,
-          .reminder-strip button {
+          .network-panel,
+          .session-comms,
+          .reminder-strip button,
+          .invite-chip,
+          .session-message,
+          .session-message.announcement {
             background: #182225;
             border-color: rgba(255, 255, 255, 0.12);
           }
@@ -10385,11 +10876,16 @@ function handleSessionDateChange(value: string) {
           .session-score-summary,
           .reminder-strip,
           .waitlist-panel,
-          .reminder-strip button {
+          .network-panel,
+          .session-comms,
+          .reminder-strip button,
+          .invite-chip,
+          .session-message {
             color: #f6f7f9;
           }
 
-          .reminder-strip small {
+          .reminder-strip small,
+          .session-message p {
             color: #aeb9bd;
           }
 
