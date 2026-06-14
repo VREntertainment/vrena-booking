@@ -401,6 +401,8 @@ const dateLocales: Record<LanguageCode, string> = {
   it: 'it-IT',
 }
 
+const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 function formatDayButton(dateValue: string, language: LanguageCode) {
   const date = new Date(`${dateValue}T12:00:00`)
   const locale = dateLocales[language]
@@ -413,10 +415,9 @@ function formatDayButton(dateValue: string, language: LanguageCode) {
 function formatShortDate(dateValue: string, language: LanguageCode) {
   if (!dateValue) return ''
   const date = new Date(`${dateValue}T12:00:00`)
-  const locale = dateLocales[language]
-  const day = new Intl.DateTimeFormat(locale, { day: '2-digit' }).format(date)
-  const month = new Intl.DateTimeFormat(locale, { month: 'short' }).format(date).replace(/\.$/, '')
-  return [day, month].filter(Boolean).join(' ')
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = monthAbbreviations[date.getMonth()]
+  return `${day} ${month}`
 }
 
 function sessionStartDate(session: Pick<Session, 'date' | 'start_time'>) {
@@ -3784,7 +3785,7 @@ function handleSessionDateChange(value: string) {
 
       ctx.fillStyle = '#4a5a60'
       ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText(`${session.date} · ${session.start_time.slice(0, 5)}`, canvas.width / 2, 338)
+      ctx.fillText(`${formatShortDate(session.date, language)} · ${session.start_time.slice(0, 5)}`, canvas.width / 2, 338)
 
       const orderedPodium = [2, 1, 3]
         .map((placement) => podium.find((participant) => participant.placement === placement))
@@ -4768,7 +4769,9 @@ function handleSessionDateChange(value: string) {
                               {tournament.auditLogs.slice(0, 10).map((log) => (
                                 <div className="audit-row" key={log.id}>
                                   <strong>{log.action}</strong>
-                                  <span>{new Date(log.created_at).toLocaleString()}</span>
+                                  <span>
+                                    {formatShortDate(localDateString(new Date(log.created_at)), language)} {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
                                 </div>
                               ))}
                             </details>
@@ -6393,8 +6396,15 @@ function handleSessionDateChange(value: string) {
           height: 100%;
           min-height: 46px;
           opacity: 0;
+          color: transparent;
+          -webkit-text-fill-color: transparent;
           z-index: 2;
           cursor: pointer;
+        }
+
+        .date-input-native::-webkit-date-and-time-value {
+          color: transparent;
+          -webkit-text-fill-color: transparent;
         }
 
         .date-input-display {
@@ -7607,9 +7617,9 @@ function handleSessionDateChange(value: string) {
         .rich-note-editor {
           min-height: 86px;
           width: 100%;
-          border: 1px solid rgba(7, 17, 18, 0.34);
+          border: 2px solid rgba(7, 17, 18, 0.22);
           border-radius: 8px;
-          background: #f8fafb;
+          background: #ffffff;
           color: #071112;
           padding: 10px 12px;
           font: inherit;
@@ -7617,12 +7627,12 @@ function handleSessionDateChange(value: string) {
           outline: none;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
-          box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.04);
+          box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.08);
         }
 
         .rich-note-editor:focus {
-          border-color: rgba(48, 89, 255, 0.58);
-          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12), inset 0 0 0 1px rgba(48, 89, 255, 0.08);
+          border-color: #3059ff;
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.14), inset 0 0 0 1px rgba(48, 89, 255, 0.16);
         }
 
         .rich-note-editor:empty::before {
@@ -9059,6 +9069,7 @@ function handleSessionDateChange(value: string) {
         @media (max-width: 960px) {
           .app {
             grid-template-columns: 1fr;
+            grid-template-rows: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px)) auto;
             height: auto;
             min-height: 100vh;
             overflow: visible;
@@ -9908,13 +9919,13 @@ function handleSessionDateChange(value: string) {
           }
 
           .rich-note-editor {
-            border-color: rgba(255, 255, 255, 0.38);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            border-color: rgba(246, 247, 249, 0.5);
+            box-shadow: inset 0 0 0 1px rgba(246, 247, 249, 0.16);
           }
 
           .rich-note-editor:focus {
-            border-color: rgba(98, 211, 255, 0.68);
-            box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border-color: #62d3ff;
+            box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.16), inset 0 0 0 1px rgba(246, 247, 249, 0.2);
           }
 
           .selected-date-preview {
