@@ -2601,6 +2601,25 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    const participantProfileUpdate = await supabase
+      .from('session_participants')
+      .update({
+        display_name: display,
+        avatar_url: data.avatar_url,
+        avatar_emoji: data.avatar_emoji,
+        avatar_initials: data.avatar_initials,
+        avatar_color: data.avatar_color,
+        avatar_text_color: data.avatar_text_color,
+        profile_motto: data.profile_motto,
+    })
+      .eq('profile_id', userId)
+
+    if (participantProfileUpdate.error) {
+      setProfileStatus(participantProfileUpdate.error.message)
+      setIsSavingProfile(false)
+      return
+    }
+    
     setProfile(data)
     setAvatarFile(null)
     setAvatarPreview('')
