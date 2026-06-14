@@ -734,8 +734,6 @@ function ShortDateInput({
   placeholder: string
   ariaLabel: string
 }) {
-  const displayValue = value ? formatShortDate(value, language) : placeholder
-
   return (
     <div className="date-input-shell">
       <input
@@ -745,9 +743,6 @@ function ShortDateInput({
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-      <span className={value ? 'date-input-display' : 'date-input-display placeholder'}>
-        {displayValue}
-      </span>
     </div>
   )
 }
