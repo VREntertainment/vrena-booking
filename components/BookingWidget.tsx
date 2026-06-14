@@ -1747,10 +1747,9 @@ export default function WidgetPage() {
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
   const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
 
-  function handleSessionDateChange(event: ChangeEvent<HTMLInputElement>) {
-    setSessionDate(event.target.value)
-    event.currentTarget.blur()
-  }
+function handleSessionDateChange(value: string) {
+  setSessionDate(value)
+}
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
