@@ -734,6 +734,7 @@ function ShortDateInput({
   placeholder: string
   ariaLabel: string
 }) {
+  const displayValue = value ? formatShortDate(value, language) : placeholder
   return (
     <div className="date-input-shell">
       <input
