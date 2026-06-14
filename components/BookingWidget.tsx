@@ -45,6 +45,7 @@ type Profile = {
   full_name: string | null
   nickname: string | null
   email: string | null
+  birthday?: string | null
   avatar_url: string | null
   avatar_emoji?: string | null
   avatar_initials?: string | null
@@ -720,6 +721,37 @@ function RichNotesEditor({
   )
 }
 
+function ShortDateInput({
+  value,
+  onChange,
+  language,
+  placeholder,
+  ariaLabel,
+}: {
+  value: string
+  onChange: (value: string) => void
+  language: LanguageCode
+  placeholder: string
+  ariaLabel: string
+}) {
+  const displayValue = value ? formatShortDate(value, language) : placeholder
+
+  return (
+    <div className="date-input-shell">
+      <input
+        aria-label={ariaLabel}
+        className="date-input-native"
+        type="date"
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
+      <span className={value ? 'date-input-display' : 'date-input-display placeholder'}>
+        {displayValue}
+      </span>
+    </div>
+  )
+}
+
 function appRedirectUrl() {
   if (typeof window === 'undefined') return DEFAULT_APP_URL
 
@@ -773,6 +805,7 @@ export default function WidgetPage() {
   const [profileMotto, setProfileMotto] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
+  const [profileBirthday, setProfileBirthday] = useState('')
   const [personalDataConsent, setPersonalDataConsent] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
@@ -1055,7 +1088,7 @@ export default function WidgetPage() {
 
       const { data: profileRow, error: profileError, status: profileStatusCode } = await supabase
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+        .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .eq('id', authUser.id)
         .maybeSingle()
 
@@ -1081,6 +1114,7 @@ export default function WidgetPage() {
         setProfileMotto(limitMotto(profileRow.profile_motto || ''))
         setProfileNickname(limitDisplayName(profileRow.nickname || ''))
         setProfileEmail(profileRow.email || '')
+        setProfileBirthday(profileRow.birthday || '')
         setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
         setAvatarEmoji(profileRow.avatar_emoji || '😎')
         setAvatarInitials(profileRow.avatar_initials || '')
@@ -1095,6 +1129,7 @@ export default function WidgetPage() {
       const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
       const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
       const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
+      const birthdayValue = typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : ''
       const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
       const fallbackProfile: Profile = {
         id: authUser.id,
@@ -1102,6 +1137,7 @@ export default function WidgetPage() {
         full_name: fullName || null,
         nickname: nickname || null,
         email,
+        birthday: birthdayValue || null,
         avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
         avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
         avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
@@ -1119,6 +1155,7 @@ export default function WidgetPage() {
       setProfileMotto(profileMottoValue)
       setProfileNickname(nickname)
       setProfileEmail(email)
+      setProfileBirthday(birthdayValue)
       setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
       setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
       setAvatarInitials(fallbackProfile.avatar_initials || '')
@@ -1133,6 +1170,7 @@ export default function WidgetPage() {
         full_name: fullName || null,
         nickname: nickname || null,
         email,
+        birthday: fallbackProfile.birthday,
         avatar_url: fallbackProfile.avatar_url,
         avatar_emoji: fallbackProfile.avatar_emoji,
         avatar_initials: fallbackProfile.avatar_initials,
@@ -1214,6 +1252,7 @@ export default function WidgetPage() {
               name: display,
               nickname: nickname || null,
               profile_motto: cleanMotto || null,
+              birthday: profileBirthday || null,
               phone: fullPhone,
               avatar_text_color: avatarTextColor,
               personal_data_consent: personalDataConsent,
@@ -1289,6 +1328,7 @@ export default function WidgetPage() {
           phone: fullPhone,
           nickname: nickname || existingProfile?.nickname || null,
           email: loginEmail,
+          birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
           ...avatarPayload,
           personal_data_consent: personalDataConsent,
@@ -1316,6 +1356,7 @@ export default function WidgetPage() {
             full_name: fullName,
             name: display,
             nickname: nickname || null,
+            birthday: profileBirthday || null,
             phone: fullPhone,
             avatar_url: avatarPayload.avatar_url,
             avatar_emoji: avatarPayload.avatar_emoji,
@@ -2521,6 +2562,7 @@ export default function WidgetPage() {
       profile_motto: cleanMotto || null,
       nickname: nickname || null,
       email: profileEmail.trim() || null,
+      birthday: profileBirthday || null,
       ...avatarPayload,
       updated_at: new Date().toISOString(),
     }
@@ -2528,7 +2570,7 @@ export default function WidgetPage() {
     const { data, error } = await supabase
       .from('profiles')
       .upsert(row)
-      .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+      .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
       .single()
 
     if (error) {
@@ -2544,6 +2586,7 @@ export default function WidgetPage() {
         full_name: fullName,
         name: display,
         nickname: nickname || null,
+        birthday: data.birthday,
         phone: data.phone,
         avatar_url: data.avatar_url,
         avatar_emoji: data.avatar_emoji,
@@ -2565,6 +2608,7 @@ export default function WidgetPage() {
     setAvatarPreview('')
     setProfileCountryCode(`${countryCode} ${countries.find((country) => country.code === countryCode)?.name || ''}`.trim())
     setProfilePhone(localPhone)
+    setProfileBirthday(data.birthday || '')
     setProfileStatus(text.profileSaved)
     setIsSavingProfile(false)
   }
@@ -2836,6 +2880,14 @@ export default function WidgetPage() {
       return
     }
 
+    setSessions((current) =>
+      current.map((item) =>
+        item.id === session.id
+          ? { ...item, confirmed_game_id: validGameId as GameId | null }
+          : item
+      )
+    )
+    setConfirmedGameDrafts((current) => ({ ...current, [session.id]: validGameId || '' }))
     await loadSessions()
     setCreateStatus(text.confirmedPlayedGame)
     setBusySessionId('')
@@ -4088,51 +4140,60 @@ export default function WidgetPage() {
                               </div>
                             )
                           })()}
-                          <div>
-                            <label>{text.date} <span className="required">*</span></label>
-                            <input type="date" value={editSessionDate} onChange={(event) => setEditSessionDate(event.target.value)} />
-                            {editSessionDate && <p className="field-help selected-date-preview">{formatShortDate(editSessionDate, language)}</p>}
+                          <div className="full session-timing-row">
+                            <div>
+                              <label>{text.date} <span className="required">*</span></label>
+                              <ShortDateInput
+                                ariaLabel={text.date}
+                                language={language}
+                                onChange={setEditSessionDate}
+                                placeholder={text.chooseDate}
+                                value={editSessionDate}
+                              />
+                            </div>
+                            <div>
+                              <label>{text.availableTime} <span className="required">*</span></label>
+                              <select value={editSessionTime} onChange={(event) => setEditSessionTime(event.target.value)}>
+                                <option value="">{text.chooseTime}</option>
+                                {editTimeOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label>{text.duration}</label>
+                              <select value={editSessionDuration} onChange={(event) => setEditSessionDuration(Number(event.target.value))}>
+                                {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
+                                  <option value={duration} key={duration}>
+                                    {duration} min
+                                  </option>
+                                ))}
+                              </select>
+                              {editSessionDurationRecommendation && <p className="field-help">{editSessionDurationRecommendation}</p>}
+                            </div>
                           </div>
-                          <div>
-                            <label>{text.availableTime} <span className="required">*</span></label>
-                            <select value={editSessionTime} onChange={(event) => setEditSessionTime(event.target.value)}>
-                              <option value="">{text.chooseTime}</option>
-                              {editTimeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
+                          <div className="full session-capacity-row">
+                            <div>
+                              <label>{text.maxPlayers}</label>
+                              <select value={editSessionMaxPlayers} onChange={(event) => handleEditMaxPlayersChange(Number(event.target.value))}>
+                                {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
+                                  <option value={count} key={count}>
+                                    {count} player{count === 1 ? '' : 's'}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label>{text.arenas}</label>
+                              <select value={editSessionArenaCount} onChange={(event) => handleEditArenaCountChange(Number(event.target.value))}>
+                                <option value={1}>{text.oneArena}</option>
+                                <option value={2} disabled={editSessionMaxPlayers < 8}>
+                                  {text.twoArenas}
                                 </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label>{text.duration}</label>
-                            <select value={editSessionDuration} onChange={(event) => setEditSessionDuration(Number(event.target.value))}>
-                              {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
-                                <option value={duration} key={duration}>
-                                  {duration} min
-                                </option>
-                              ))}
-                            </select>
-                            {editSessionDurationRecommendation && <p className="field-help">{editSessionDurationRecommendation}</p>}
-                          </div>
-                          <div>
-                            <label>{text.maxPlayers}</label>
-                            <select value={editSessionMaxPlayers} onChange={(event) => handleEditMaxPlayersChange(Number(event.target.value))}>
-                              {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
-                                <option value={count} key={count}>
-                                  {count} player{count === 1 ? '' : 's'}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label>{text.arenas}</label>
-                            <select value={editSessionArenaCount} onChange={(event) => handleEditArenaCountChange(Number(event.target.value))}>
-                              <option value={1}>{text.oneArena}</option>
-                              <option value={2} disabled={editSessionMaxPlayers < 8}>
-                                {text.twoArenas}
-                              </option>
-                            </select>
+                              </select>
+                            </div>
                           </div>
                           <div className="full">
                             <label>{text.gameOptions} <span className="required">*</span></label>
@@ -4756,16 +4817,6 @@ export default function WidgetPage() {
                 <h2>{text.createSessionTitle}</h2>
                 <p className="muted">{text.createSessionHint}</p>
               </div>
-              {!sessionClubId && (
-                <div className="segmented">
-                  <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
-                    {text.public}
-                  </button>
-                  <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
-                    {text.private}
-                  </button>
-                </div>
-              )}
             </div>
 
             <div className="form-grid">
@@ -4773,16 +4824,31 @@ export default function WidgetPage() {
                 <label>{text.sessionName} <span className="required">*</span></label>
                 <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
               </div>
-              <div className="full">
-                <label>{text.sessionType}</label>
-                <div className="segmented session-type-toggle">
-                  <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
-                    {text.normalGame}
-                  </button>
-                  <button className={sessionType === 'tournament' ? 'active' : ''} onClick={() => setSessionType('tournament')} type="button">
-                    {text.tournament}
-                  </button>
+              <div className="full session-mode-row">
+                <div>
+                  <label>{text.sessionType}</label>
+                  <div className="segmented session-type-toggle">
+                    <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
+                      {text.normalGame}
+                    </button>
+                    <button className={sessionType === 'tournament' ? 'active' : ''} onClick={() => setSessionType('tournament')} type="button">
+                      {text.tournament}
+                    </button>
+                  </div>
                 </div>
+                {!sessionClubId && (
+                  <div>
+                    <label>{text.visibility}</label>
+                    <div className="segmented visibility-toggle">
+                      <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
+                        {text.public}
+                      </button>
+                      <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
+                        {text.private}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               {sessionType === 'tournament' && (
                 <div className="full tournament-create-box tournament-settings-box">
@@ -4869,51 +4935,60 @@ export default function WidgetPage() {
                 </select>
                 {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
               </div>
-              <div>
-                <label>{text.date} <span className="required">*</span></label>
-                <input type="date" value={sessionDate} onChange={handleSessionDateChange} />
-                {sessionDate && <p className="field-help selected-date-preview">{formatShortDate(sessionDate, language)}</p>}
+              <div className="full session-timing-row">
+                <div>
+                  <label>{text.date} <span className="required">*</span></label>
+                  <ShortDateInput
+                    ariaLabel={text.date}
+                    language={language}
+                    onChange={handleSessionDateChange}
+                    placeholder={text.chooseDate}
+                    value={sessionDate}
+                  />
+                </div>
+                <div>
+                  <label>{text.availableTime} <span className="required">*</span></label>
+                  <select value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
+                    <option value="">{text.chooseTime}</option>
+                    {timeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>{text.duration}</label>
+                  <select value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
+                    {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
+                      <option value={duration} key={duration}>
+                        {duration} min
+                      </option>
+                    ))}
+                  </select>
+                  {sessionDurationRecommendation && <p className="field-help">{sessionDurationRecommendation}</p>}
+                </div>
               </div>
-              <div>
-                <label>{text.availableTime} <span className="required">*</span></label>
-                <select value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
-                  <option value="">{text.chooseTime}</option>
-                  {timeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+              <div className="full session-capacity-row">
+                <div>
+                  <label>{text.maxPlayers}</label>
+                  <select value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
+                    {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
+                      <option value={count} key={count}>
+                        {count} player{count === 1 ? '' : 's'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>{text.arenas}</label>
+                  <select value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
+                    <option value={1}>{text.oneArena}</option>
+                    <option value={2} disabled={sessionMaxPlayers < 8}>
+                      {text.twoArenas}
                     </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label>{text.duration}</label>
-                <select value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
-                  {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
-                    <option value={duration} key={duration}>
-                      {duration} min
-                    </option>
-                  ))}
-                </select>
-                {sessionDurationRecommendation && <p className="field-help">{sessionDurationRecommendation}</p>}
-              </div>
-              <div>
-                <label>{text.maxPlayers}</label>
-                <select value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
-                  {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
-                    <option value={count} key={count}>
-                      {count} player{count === 1 ? '' : 's'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label>{text.arenas}</label>
-                <select value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
-                  <option value={1}>{text.oneArena}</option>
-                  <option value={2} disabled={sessionMaxPlayers < 8}>
-                    {text.twoArenas}
-                  </option>
-                </select>
+                  </select>
+                </div>
               </div>
               <div className="full">
                 <label>{text.gameOptions} <span className="required">*</span></label>
@@ -5136,6 +5211,18 @@ export default function WidgetPage() {
                 <div className="name-field">
                   <label>{text.name} <span className="required">*</span></label>
                   <input value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Nguyen Van A" />
+                </div>
+              )}
+              {showProfileFields && (
+                <div className="birthday-field">
+                  <label>{text.birthday}</label>
+                  <ShortDateInput
+                    ariaLabel={text.birthday}
+                    language={language}
+                    onChange={setProfileBirthday}
+                    placeholder={text.chooseDate}
+                    value={profileBirthday}
+                  />
                 </div>
               )}
               {showProfileFields && (
@@ -6032,9 +6119,52 @@ export default function WidgetPage() {
           margin-top: 6px;
         }
 
-        .selected-date-preview {
+        .date-input-shell {
+          position: relative;
+          min-height: 46px;
+        }
+
+        .date-input-native {
+          min-height: 46px;
+          color: transparent;
+          caret-color: transparent;
+          cursor: pointer;
+        }
+
+        .date-input-native::-webkit-datetime-edit,
+        .date-input-native::-webkit-date-and-time-value {
+          color: transparent;
+        }
+
+        .date-input-native::-webkit-calendar-picker-indicator {
+          position: relative;
+          z-index: 3;
+          cursor: pointer;
+          opacity: 0.72;
+        }
+
+        .date-input-display {
+          position: absolute;
+          top: 50%;
+          left: 11px;
+          right: 42px;
+          transform: translateY(-50%);
+          pointer-events: none;
+          overflow: hidden;
+          color: #071112;
           font-weight: 800;
-          color: #768287;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .date-input-display.placeholder {
+          color: #8a9498;
+          font-weight: 700;
+        }
+
+        .date-input-shell:focus-within .date-input-native {
+          border-color: rgba(48, 89, 255, 0.58);
+          box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12);
         }
 
         .link-button {
@@ -7870,6 +8000,30 @@ export default function WidgetPage() {
           gap: 12px;
         }
 
+        .session-mode-row,
+        .session-timing-row,
+        .session-capacity-row {
+          display: grid;
+          gap: 12px;
+          align-items: start;
+        }
+
+        .session-mode-row {
+          grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+        }
+
+        .session-timing-row {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .session-capacity-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .session-mode-row .segmented {
+          width: 100%;
+        }
+
         .profile-form {
           grid-template-columns: 150px minmax(260px, 1fr) minmax(260px, 1fr);
           align-items: start;
@@ -7905,6 +8059,10 @@ export default function WidgetPage() {
 
         .name-field {
           grid-column: 1 / span 2;
+        }
+
+        .birthday-field {
+          grid-column: 3;
         }
 
         .nickname-field {
@@ -8744,6 +8902,9 @@ export default function WidgetPage() {
           }
 
           .compact-form-grid,
+          .session-mode-row,
+          .session-timing-row,
+          .session-capacity-row,
           .queue-board,
           .match-list,
           .tournament-grid {
@@ -8762,6 +8923,7 @@ export default function WidgetPage() {
           .phone-field,
           .email-field,
           .name-field,
+          .birthday-field,
           .nickname-field,
           .motto-field,
           .consent-field,
@@ -8966,6 +9128,7 @@ export default function WidgetPage() {
           input,
           select,
           textarea,
+          .date-input-native,
           .rich-note-editor,
           .format-toolbar button,
           .country-button,
@@ -8998,10 +9161,29 @@ export default function WidgetPage() {
           input,
           select,
           textarea,
+          .date-input-native,
           .rich-note-editor,
           .country-button {
             border-color: rgba(255, 255, 255, 0.26);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+          }
+
+          .date-input-native {
+            color: transparent;
+            caret-color: transparent;
+          }
+
+          .date-input-display {
+            color: #f6f7f9;
+          }
+
+          .date-input-display.placeholder {
+            color: #8f9ca1;
+          }
+
+          .date-input-native::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.75;
           }
 
           .rich-note-editor {
