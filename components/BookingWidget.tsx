@@ -6155,6 +6155,7 @@ function handleSessionDateChange(value: string) {
           font-weight: 800;
           text-overflow: ellipsis;
           white-space: nowrap;
+          z-index: 1;
         }
 
         .date-input-display.placeholder {
