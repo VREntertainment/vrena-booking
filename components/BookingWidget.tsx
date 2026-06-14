@@ -887,6 +887,7 @@ export default function WidgetPage() {
   const [checkInPaymentStatus, setCheckInPaymentStatus] = useState<'cash' | 'bank_transfer' | 'free' | ''>('')
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
@@ -905,6 +906,16 @@ export default function WidgetPage() {
   const leaveClubConfirmText = looseText.leaveClubConfirm || 'Leave this club?'
   const leftClubText = looseText.leftClub || text.memberRemoved
   const showProfileFields = Boolean(profile || authMode === 'create')
+
+  function openPlayerProfile(profileId: string, sessionId = '') {
+    setSelectedPlayerId(profileId)
+    setSelectedPlayerSessionId(sessionId)
+  }
+
+  function closePlayerProfile() {
+    setSelectedPlayerId('')
+    setSelectedPlayerSessionId('')
+  }
 
   function updateAvatarColor(value: string) {
     const normalized = cleanHexColor(value, avatarColor)
@@ -2168,14 +2179,17 @@ function handleSessionDateChange(value: string) {
   const selectedPlayerManageContext = useMemo(() => {
     if (!selectedPlayerId) return null
 
-    for (const session of sessions) {
-      if (!canManageSession(session)) continue
+    const candidateSessions = selectedPlayerSessionId
+      ? sessions.filter((session) => session.id === selectedPlayerSessionId)
+      : sessions
+
+    for (const session of candidateSessions) {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
-      if (participant) return { session, participant }
+      if (participant && canEditParticipantResult(session, participant)) return { session, participant }
     }
 
     return null
-  }, [selectedPlayerId, sessions, userId, isAdmin, tournamentData.editors])
+  }, [selectedPlayerId, selectedPlayerSessionId, sessions, userId, isAdmin, tournamentData.editors])
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
 
@@ -2382,6 +2396,17 @@ function handleSessionDateChange(value: string) {
         || isAdmin
         || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
       )
+    )
+  }
+
+  function canEditParticipantResult(session: Session, participant: Participant) {
+    if (!userId) return false
+    if (isAdmin) return true
+    if (!participant.checked_in) return false
+
+    return Boolean(
+      session.owner_id === userId
+      || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
     )
   }
 
@@ -2649,6 +2674,18 @@ function handleSessionDateChange(value: string) {
     accuracyValue: string | number | null,
     projectilesValue: string | number | null
   ) {
+    const resultContext = sessions.reduce<{ session: Session; participant: Participant } | null>((match, session) => {
+      if (match) return match
+      const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
+      if (!participant || !canEditParticipantResult(session, participant)) return null
+      return { session, participant }
+    }, null)
+
+    if (!resultContext) {
+      setCreateStatus('Only admins or session managers can edit checked-in player scores.')
+      return
+    }
+
     const score = scoreValue === '' || scoreValue === null ? null : Number(scoreValue)
     const placement = placementValue === '' || placementValue === null ? null : Number(placementValue)
     const accuracy = accuracyValue === '' || accuracyValue === null ? null : Number(accuracyValue)
@@ -4514,7 +4551,7 @@ function handleSessionDateChange(value: string) {
                               'player-avatar player-avatar-button',
                               participant.placement ? `place-${participant.placement}` : '',
                             ].join(' ').trim()}
-                            onClick={() => setSelectedPlayerId(participant.profile_id)}
+                            onClick={() => openPlayerProfile(participant.profile_id, session.id)}
                             style={canSeeSessionPlayers ? avatarStyle(participant) : undefined}
                             type="button"
                           >
@@ -4624,7 +4661,7 @@ function handleSessionDateChange(value: string) {
                                 {podium.map((participant) => (
                                   <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
                                     <span className="podium-medal">{rankEmoji(participant.placement)}</span>
-                                    <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(participant.profile_id)} style={avatarStyle(participant)} type="button">
+                                    <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
                                       {avatarNode(participant, 'P')}
                                     </button>
                                     <strong>{compactDisplayName(participant.display_name, text.player)}</strong>
@@ -4719,7 +4756,7 @@ function handleSessionDateChange(value: string) {
                                       const entryParticipant = participantById(session, entry.participant_id)
                                       return (
                                         <div className="player tournament-entry" key={entry.id}>
-                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && setSelectedPlayerId(entryParticipant.profile_id)} style={avatarStyle(entryParticipant)} type="button">
+                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
                                             {avatarNode(entryParticipant, 'P')}
                                             {topPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
                                           </button>
@@ -5010,7 +5047,7 @@ function handleSessionDateChange(value: string) {
                               className="player-avatar player-avatar-button"
                               onClick={(event) => {
                                 event.stopPropagation()
-                                setSelectedPlayerId(member.profile_id)
+                                openPlayerProfile(member.profile_id)
                               }}
                               style={avatarStyle(member)}
                               type="button"
@@ -5849,7 +5886,7 @@ function handleSessionDateChange(value: string) {
                     .filter((member) => member.status === 'approved')
                     .map((member) => (
                       <div className="player" key={member.id}>
-                        <button className="player-avatar player-avatar-button" onClick={() => setSelectedPlayerId(member.profile_id)} style={avatarStyle(member)} type="button">
+                        <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
                           {avatarNode(member, 'P')}
                         </button>
                         <span>{compactDisplayName(member.display_name, text.player)}</span>
@@ -5960,10 +5997,10 @@ function handleSessionDateChange(value: string) {
       )}
 
       {selectedPlayerProfile && (
-        <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={() => setSelectedPlayerId('')}>
+        <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={closePlayerProfile}>
           <div className="player-profile-panel" onClick={(event) => event.stopPropagation()}>
             <div className="drawer-handle" />
-            <button className="modal-close" type="button" onClick={() => setSelectedPlayerId('')} aria-label={text.close}>
+            <button className="modal-close" type="button" onClick={closePlayerProfile} aria-label={text.close}>
               ×
             </button>
             <div className="player-profile-head">
