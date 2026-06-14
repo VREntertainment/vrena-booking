@@ -6126,6 +6126,7 @@ function handleSessionDateChange(value: string) {
         .date-input-native {
           min-height: 46px;
           color: transparent;
+          -webkit-text-fill-color: transparent !important;
           caret-color: transparent;
           cursor: pointer;
         }
