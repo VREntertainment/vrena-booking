@@ -979,7 +979,7 @@ export default function WidgetPage() {
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
-  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | null>(null)
+  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
@@ -2928,6 +2928,151 @@ function handleSessionDateChange(value: string) {
 
     return undefined
   }, [clubs, profile, profileScoreAdjustments, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
+
+  const selectedSessionParticipant = selectedPlayerSessionContext?.participant ?? null
+  const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
+    ? selectedPlayerManageContext.participant
+    : null
+
+  async function updateSelectedSessionMetric(metric: 'session' | 'accuracy' | 'projectiles', value: string) {
+    const participant = selectedSessionEditableParticipant
+    if (!participant) return
+
+    await updateParticipantResult(
+      participant.id,
+      metric === 'session' ? value : participant.score ?? '',
+      participant.placement ?? '',
+      metric === 'accuracy' ? value : participant.accuracy_percent ?? '',
+      metric === 'projectiles' ? value : participant.projectiles_fired ?? ''
+    )
+    setSelectedPlayerScoreEdit(null)
+  }
+
+  function renderTotalScoreControl(playerStats: NonNullable<typeof selectedPlayerProfile>) {
+    if (selectedPlayerScoreEdit === 'total' && isAdmin) {
+      return (
+        <input
+          aria-label={text.adminTotalScore}
+          autoFocus
+          className="inline-score-input compact-stat-input"
+          defaultValue={playerStats.totalScore}
+          inputMode="numeric"
+          onBlur={async (event) => {
+            await updateProfileTotalScore(playerStats.profileId, event.target.value, playerStats.baseTotalScore)
+            setSelectedPlayerScoreEdit(null)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+          }}
+        />
+      )
+    }
+
+    return (
+      <button
+        aria-label={text.adminTotalScore}
+        className={isAdmin ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+        disabled={!isAdmin}
+        type="button"
+        onClick={() => setSelectedPlayerScoreEdit('total')}
+      >
+        {playerStats.totalScore}
+      </button>
+    )
+  }
+
+  function renderSessionMetricControl(metric: 'session' | 'accuracy' | 'projectiles', value: number | null | undefined, ariaLabel: string, suffix = '') {
+    const editable = Boolean(selectedSessionEditableParticipant)
+    const displayValue = value === null || value === undefined ? '-' : `${value}${suffix}`
+
+    if (selectedPlayerScoreEdit === metric && selectedSessionEditableParticipant) {
+      return (
+        <input
+          aria-label={ariaLabel}
+          autoFocus
+          className="inline-score-input compact-stat-input"
+          defaultValue={value ?? ''}
+          inputMode="numeric"
+          onBlur={async (event) => {
+            await updateSelectedSessionMetric(metric, event.target.value)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+          }}
+        />
+      )
+    }
+
+    return (
+      <button
+        aria-label={ariaLabel}
+        className={editable ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+        disabled={!editable}
+        type="button"
+        onClick={() => setSelectedPlayerScoreEdit(metric)}
+      >
+        {displayValue}
+      </button>
+    )
+  }
+
+  const playerProfileStats = selectedPlayerProfile ? [
+    selectedPlayerSessionContext
+      ? {
+          key: 'score',
+          className: 'score-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{sessionScoreText}</span>
+              {renderSessionMetricControl('session', selectedPlayerSessionContext.score, text.score)}
+              <span className="stat-subline">
+                <span>{text.totalScore}</span>
+                {renderTotalScoreControl(selectedPlayerProfile)}
+              </span>
+              {selectedPlayerSessionContext.isBestPerformer && <small className="best-performer-label compact-best-label">{bestPerformerText}</small>}
+            </>
+          ),
+        }
+      : {
+          key: 'score',
+          className: 'score-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{text.totalScore}</span>
+              {renderTotalScoreControl(selectedPlayerProfile)}
+            </>
+          ),
+        },
+    selectedPlayerSessionContext
+      ? {
+          key: 'accuracy',
+          className: 'editable-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{text.accuracy}</span>
+              {renderSessionMetricControl('accuracy', selectedSessionParticipant?.accuracy_percent, text.accuracy, '%')}
+            </>
+          ),
+        }
+      : { key: 'accuracy', value: <><span className="stat-label">{text.accuracy}</span><strong>{selectedPlayerProfile.averageAccuracy ?? '-'}%</strong></> },
+    selectedPlayerSessionContext
+      ? {
+          key: 'projectiles',
+          className: 'editable-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{text.projectiles}</span>
+              {renderSessionMetricControl('projectiles', selectedSessionParticipant?.projectiles_fired, text.projectiles)}
+            </>
+          ),
+        }
+      : { key: 'projectiles', value: <><span className="stat-label">{text.projectiles}</span><strong>{selectedPlayerProfile.totalProjectiles}</strong></> },
+    { key: 'games', value: <>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</> },
+    { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
+    { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
+  ] : []
 
   useEffect(() => {
     if (!checkInParticipant) {
@@ -7277,118 +7422,8 @@ function handleSessionDateChange(value: string) {
           followText={isFollowing(selectedPlayerProfile.profileId) ? text.following : text.addFriend}
           onFollow={() => toggleFollowPlayer(selectedPlayerProfile)}
           onClose={closePlayerProfile}
-          stats={[
-            { key: 'games', value: <>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</> },
-            { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
-            { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
-            { key: 'accuracy', value: <>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</> },
-            { key: 'projectiles', value: <>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</> },
-          ]}
-          scoreSummary={
-            <>
-              {!selectedPlayerSessionContext && (
-                <div className="session-score-summary total-score-summary">
-                  <div className="score-stack">
-                    <div className="score-line total-line">
-                      <span>{text.totalScore}</span>
-                      {selectedPlayerScoreEdit === 'total' && isAdmin ? (
-                        <input
-                          aria-label={text.adminTotalScore}
-                          autoFocus
-                          className="inline-score-input"
-                          defaultValue={selectedPlayerProfile.totalScore}
-                          inputMode="numeric"
-                          onBlur={async (event) => {
-                            await updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)
-                            setSelectedPlayerScoreEdit(null)
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') event.currentTarget.blur()
-                            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className={isAdmin ? 'score-value editable' : 'score-value'}
-                          disabled={!isAdmin}
-                          type="button"
-                          onClick={() => setSelectedPlayerScoreEdit('total')}
-                        >
-                          {selectedPlayerProfile.totalScore}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {selectedPlayerSessionContext && (
-                <div className="session-score-summary">
-                  <strong className="score-session-name">{selectedPlayerSessionContext.session.name}</strong>
-                  <div className="score-stack">
-                    <div className="score-line">
-                      <span>{sessionScoreText}</span>
-                      {selectedPlayerScoreEdit === 'session' && selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id ? (
-                        <input
-                          aria-label={text.score}
-                          autoFocus
-                          className="inline-score-input"
-                          defaultValue={selectedPlayerManageContext.participant.score ?? ''}
-                          inputMode="numeric"
-                          onBlur={async (event) => {
-                            await updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')
-                            setSelectedPlayerScoreEdit(null)
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') event.currentTarget.blur()
-                            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className={selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id ? 'score-value editable' : 'score-value'}
-                          disabled={!selectedPlayerManageContext || selectedPlayerManageContext.session.id !== selectedPlayerSessionContext.session.id}
-                          type="button"
-                          onClick={() => setSelectedPlayerScoreEdit('session')}
-                        >
-                          {selectedPlayerSessionContext.score ?? '-'}
-                        </button>
-                      )}
-                    </div>
-                    <div className="score-line total-line">
-                      <span>{text.totalScore}</span>
-                      {selectedPlayerScoreEdit === 'total' && isAdmin ? (
-                        <input
-                          aria-label={text.adminTotalScore}
-                          autoFocus
-                          className="inline-score-input"
-                          defaultValue={selectedPlayerProfile.totalScore}
-                          inputMode="numeric"
-                          onBlur={async (event) => {
-                            await updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)
-                            setSelectedPlayerScoreEdit(null)
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') event.currentTarget.blur()
-                            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className={isAdmin ? 'score-value editable' : 'score-value'}
-                          disabled={!isAdmin}
-                          type="button"
-                          onClick={() => setSelectedPlayerScoreEdit('total')}
-                        >
-                          {selectedPlayerProfile.totalScore}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
-                </div>
-              )}
-            </>
-          }
+          stats={playerProfileStats}
+          scoreSummary={null}
           bestScoresTitle={text.bestScores}
           bestScores={selectedPlayerProfile.bestByGame}
           adminControls={selectedPlayerManageContext && !selectedPlayerSessionContext && isAdmin ? (
