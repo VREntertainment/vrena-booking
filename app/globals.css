@@ -863,12 +863,15 @@ body {
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 50%;
-  background: #ffffff;
+  border-radius: 0;
+  background: transparent;
   font-size: 18px;
-  box-shadow: 0 2px 6px rgba(11, 21, 24, 0.16);
+  line-height: 1;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 4px rgba(11, 21, 24, 0.26));
   animation: crownBob 1.8s ease-in-out infinite;
   z-index: 3;
+  pointer-events: none;
 }
 
 @keyframes crownBob {
@@ -4635,7 +4638,9 @@ body {
   }
 
   .app .champion-badge {
-    background: #f6f7f9;
+    background: transparent;
+    box-shadow: none;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.44));
   }
 
   .app .profile-chip:hover {
