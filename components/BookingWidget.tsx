@@ -9404,6 +9404,20 @@ function handleSessionDateChange(value: string) {
           font-size: 11px;
         }
 
+        .profile-score-controls {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .profile-score-controls input,
+        .profile-score-controls select {
+          min-height: 42px;
+          padding: 8px 10px;
+          font-size: 15px;
+        }
+
         .tournament-desk {
           display: grid;
           gap: 12px;
