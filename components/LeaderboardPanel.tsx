@@ -112,7 +112,7 @@ function rankTierEmoji(tier: RankTier, criterion: LeaderboardCriterion) {
 }
 
 function rankTierName(tier: RankTier, text: TranslationMap) {
-  return tier.name === 'None' ? text.rankNone : tier.name
+  return tier.name === 'None' ? text.rankJesterMessage : tier.name
 }
 
 function rankTierLabel(tier: RankTier, criterion: LeaderboardCriterion, text: TranslationMap) {
