@@ -1339,14 +1339,25 @@ export default function WidgetPage() {
     return Boolean(userId && (message.author_id === userId || canReviewSessionMessages(session)))
   }
 
+  function sortSessionMessages(messages: SessionMessage[]) {
+    return [...messages].sort((a, b) => {
+      const left = a.created_at ? new Date(a.created_at).getTime() : 0
+      const right = b.created_at ? new Date(b.created_at).getTime() : 0
+      return left - right || a.id.localeCompare(b.id)
+    })
+  }
+
+  function mergeSessionMessage(message: SessionMessage) {
+    setSessionMessages((current) => sortSessionMessages([
+      ...current.filter((item) => item.id !== message.id),
+      message,
+    ]))
+  }
+
   function messagesForSession(session: Session) {
-    return sessionMessages
+    return sortSessionMessages(sessionMessages
       .filter((message) => message.session_id === session.id && canSeeSessionMessage(session, message))
-      .sort((a, b) => {
-        const left = a.created_at ? new Date(a.created_at).getTime() : 0
-        const right = b.created_at ? new Date(b.created_at).getTime() : 0
-        return left - right || a.id.localeCompare(b.id)
-      })
+    )
   }
 
   function previousPlayersForSession(session: Session) {
@@ -2061,21 +2072,14 @@ export default function WidgetPage() {
         : Promise.resolve({ data: [], error: null }),
     ])
 
-    if (friendsResult.error || invitesResult.error || messagesResult.error) {
-      setNetworkTablesReady(false)
-      setFriendConnections([])
-      setSessionInvites([])
-      setSessionMessages([])
-      networkDataLoadingRef.current = false
-      return
-    }
-
-    networkDataLoadedRef.current = true
+    const networkReady = !friendsResult.error && !invitesResult.error
+    const messagesReady = !messagesResult.error
+    networkDataLoadedRef.current = networkReady || messagesReady
     networkDataLoadingRef.current = false
-    setNetworkTablesReady(true)
-    setFriendConnections((friendsResult.data ?? []) as FriendConnection[])
-    setSessionInvites((invitesResult.data ?? []) as SessionInvite[])
-    setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
+    setNetworkTablesReady(networkReady)
+    setFriendConnections(friendsResult.error ? [] : (friendsResult.data ?? []) as FriendConnection[])
+    setSessionInvites(invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[])
+    if (!messagesResult.error) setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
   }
 
   useEffect(() => {
@@ -4075,6 +4079,7 @@ function handleSessionDateChange(value: string) {
       } else {
         setCommentDrafts((current) => ({ ...current, [session.id]: '' }))
       }
+      if (message) mergeSessionMessage(message)
       setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
       await loadNetworkData()
     }
@@ -5901,7 +5906,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {networkTablesReady && (
+                    {Boolean(userId) && (
                     <div className="session-comms">
                       <div className="section-head compact-head">
                         <div>
