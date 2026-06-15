@@ -2713,6 +2713,7 @@ body {
 }
 
 .app .session-timing-row {
+  --session-timing-control-height: 42px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -2722,6 +2723,16 @@ body {
 
 .app .session-timing-row select, .app .session-timing-row .date-input-shell {
   width: 100%;
+}
+
+.app .session-timing-row .date-input-shell {
+  height: var(--session-timing-control-height);
+  min-height: var(--session-timing-control-height);
+  max-height: var(--session-timing-control-height);
+}
+
+.app .session-timing-row .date-input-native {
+  min-height: 0;
 }
 
 .app .session-capacity-row {
@@ -4084,6 +4095,10 @@ body {
 
   .app input, .app select, .app textarea, .app .country-button, .app .date-input-shell, .app .rich-note-editor {
     min-height: 44px;
+  }
+
+  .app .session-timing-row {
+    --session-timing-control-height: 44px;
   }
 
   .app .form-grid, .app .profile-form, .app .compact-form-grid, .app .session-mode-row, .app .session-timing-row, .app .session-capacity-row, .app .tournament-grid, .app .queue-board, .app .match-list {
