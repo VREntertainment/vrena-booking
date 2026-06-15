@@ -56,9 +56,11 @@ const rankTiers = [
   { name: 'Platinum', emoji: '💠', minScore: 500 },
   { name: 'Diamond', emoji: '💎', minScore: 900 },
   { name: 'Master', emoji: '⭐', minScore: 1400 },
-  { name: 'Grandmaster', emoji: '🌟', minScore: 2000 },
+  { name: 'Grand Master', emoji: '🌟', minScore: 2000 },
   { name: 'Champion', emoji: '🏆', minScore: 3000 },
 ] as const
+
+type RankTier = typeof rankTiers[number]
 
 function normalizeSearchValue(value: string) {
   return value
@@ -86,6 +88,11 @@ function rankTierForScore(totalScore: number) {
     : 100
 
   return { tier, nextTier, progress }
+}
+
+function rankTierEmoji(tier: RankTier, criterion: LeaderboardCriterion) {
+  if (criterion === 'totalScore' && tier.name === 'Grand Master') return '👑'
+  return tier.emoji
 }
 
 function leaderboardMetricValue(player: LeaderboardPlayer, criterion: LeaderboardCriterion) {
@@ -172,6 +179,8 @@ export default function LeaderboardPanel({
 
   const currentUserLeaderboardRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
+  const isScoreRanking = leaderboardCriterion === 'totalScore'
+  const currentRankTierEmoji = currentUserLeaderboardRow ? rankTierEmoji(currentUserLeaderboardRow.rankInfo.tier, leaderboardCriterion) : ''
 
   return (
     <section className="section leaderboard-section">
@@ -221,7 +230,7 @@ export default function LeaderboardPanel({
           <strong>#{currentUserLeaderboardRow.rank}</strong>
           <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
           <div className="rank-mini">
-            <span>{currentUserLeaderboardRow.rankInfo.tier.emoji} {currentUserLeaderboardRow.rankInfo.tier.name}</span>
+            <span>{currentRankTierEmoji} {currentUserLeaderboardRow.rankInfo.tier.name}</span>
             <span>
               {currentUserLeaderboardRow.rankInfo.nextTier
                 ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
@@ -235,17 +244,25 @@ export default function LeaderboardPanel({
         {visibleLeaderboardRows.length === 0 && <p className="notice">{text.noLeaderboardPlayers}</p>}
         {visibleLeaderboardRows.map(({ player, rank, rankInfo }) => {
           const isCurrentUser = player.profileId === userId
+          const tierEmoji = rankTierEmoji(rankInfo.tier, leaderboardCriterion)
+          const nextTierEmoji = rankInfo.nextTier ? rankTierEmoji(rankInfo.nextTier, leaderboardCriterion) : ''
+          const isAnimatedCrown = isScoreRanking && tierEmoji === '👑'
 
           return (
             <article className={isCurrentUser ? 'leaderboard-row current-user' : 'leaderboard-row'} key={player.profileId}>
               <div className="leaderboard-rank">#{rank}</div>
               <button
-                className="player-avatar player-avatar-button"
+                className="player-avatar player-avatar-button leaderboard-avatar-button"
                 onClick={() => onOpenPlayerProfile(player.profileId)}
                 style={avatarStyleFor(player)}
                 type="button"
               >
                 {renderAvatar(player)}
+                {isScoreRanking && (
+                  <span className={isAnimatedCrown ? 'leaderboard-tier-badge crown' : 'leaderboard-tier-badge'}>
+                    {tierEmoji}
+                  </span>
+                )}
               </button>
               <div className="leaderboard-player-main">
                 <div className="leaderboard-player-title">
@@ -254,7 +271,7 @@ export default function LeaderboardPanel({
                 </div>
                 <div className="rank-progress">
                   <div className="rank-progress-label">
-                    <span>{rankInfo.tier.emoji} {rankInfo.tier.name}</span>
+                    <span>{rankInfo.tier.name}</span>
                     <span>{rankInfo.nextTier ? `${rankInfo.progress}%` : 'MAX'}</span>
                   </div>
                   <div className="rank-progress-track">
@@ -262,7 +279,7 @@ export default function LeaderboardPanel({
                   </div>
                   <small>
                     {rankInfo.nextTier
-                      ? `${text.nextRank}: ${rankInfo.nextTier.emoji} ${rankInfo.nextTier.name}`
+                      ? `${text.nextRank}: ${nextTierEmoji} ${rankInfo.nextTier.name}`
                       : 'Champion'}
                   </small>
                 </div>

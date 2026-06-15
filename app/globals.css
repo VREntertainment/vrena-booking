@@ -3164,6 +3164,31 @@ body {
   background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.1)), #ffffff;
 }
 
+.app .leaderboard-avatar-button {
+  z-index: 1;
+}
+
+.app .leaderboard-tier-badge {
+  position: absolute;
+  right: -13px;
+  top: -14px;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 25px;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(11, 21, 24, 0.2);
+  pointer-events: none;
+}
+
+.app .leaderboard-tier-badge.crown {
+  animation: crownBob 1.4s ease-in-out infinite;
+}
+
 .app .leaderboard-rank {
   color: #657278;
   font-size: 18px;
@@ -4405,6 +4430,11 @@ body {
   .app .leaderboard-row.current-user {
     background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(48, 89, 255, 0.14)), #10191b;
     border-color: rgba(98, 211, 255, 0.28);
+  }
+
+  .app .leaderboard-tier-badge {
+    background: #f6f7f9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.34);
   }
 
   .app .rank-mini span,

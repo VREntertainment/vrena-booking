@@ -2806,6 +2806,9 @@ function handleSessionDateChange(value: string) {
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
   const topPlayer = allPlayerStats[0]
+  const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
+  const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
+  const crownedTopPlayerScore = crownedTopPlayer?.totalScore ?? 0
   const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
@@ -3219,12 +3222,16 @@ function handleSessionDateChange(value: string) {
   }, [language, pendingSessionInvites, userId])
 
   useEffect(() => {
-    if (!profile || !topPlayer || topPlayer.profileId !== userId) return
-    const alreadyShown = window.sessionStorage.getItem('vrena-crown-login')
-    if (alreadyShown === userId) return
-    window.sessionStorage.setItem('vrena-crown-login', userId)
+    if (!profile || !crownedTopPlayerId || crownedTopPlayerId !== userId) {
+      setChampionLoginOpen(false)
+      return
+    }
+    const storageKey = `vrena-crown-login:${userId}:${crownedTopPlayerScore}`
+    const alreadyShown = window.sessionStorage.getItem(storageKey)
+    if (alreadyShown === 'shown') return
+    window.sessionStorage.setItem(storageKey, 'shown')
     setChampionLoginOpen(true)
-  }, [profile, topPlayer, userId])
+  }, [crownedTopPlayerId, crownedTopPlayerScore, profile, userId])
 
   useEffect(() => {
     const query = tournamentEditorEmail.trim()
@@ -5274,7 +5281,7 @@ function handleSessionDateChange(value: string) {
         <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => setActiveView('profile')} type="button">
           <div className="avatar" style={avatarStyle(profile)}>
             {avatarNode(profile, 'P')}
-            {topPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
+            {crownedTopPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
           </div>
           <div>
             <strong>{profile ? displayName(profile) : text.noProfile}</strong>
@@ -5451,9 +5458,9 @@ function handleSessionDateChange(value: string) {
                   .slice(0, 10)
                 const sessionMessageRows = messagesForSession(session)
                 const hasCrownHolder = Boolean(
-                  topPlayer?.profileId
-                  && topPlayer.profileId !== userId
-                  && participants.some((participant) => participant.profile_id === topPlayer.profileId)
+                  crownedTopPlayer?.profileId
+                  && crownedTopPlayer.profileId !== userId
+                  && participants.some((participant) => participant.profile_id === crownedTopPlayer.profileId)
                 )
 
                 return (
@@ -5913,7 +5920,7 @@ function handleSessionDateChange(value: string) {
                             type="button"
                           >
                             {canSeeSessionPlayers ? avatarNode(participant, 'P') : '?'}
-                            {topPlayer?.profileId === participant.profile_id && <span className="champion-badge">👑</span>}
+                            {crownedTopPlayer?.profileId === participant.profile_id && <span className="champion-badge">👑</span>}
                             {participant.checked_in && <span className="check-badge">✓</span>}
                             {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
                           </button>
@@ -6259,7 +6266,7 @@ function handleSessionDateChange(value: string) {
                                         <div className="player tournament-entry" key={entry.id}>
                                           <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
                                             {avatarNode(entryParticipant, 'P')}
-                                            {topPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
+                                            {crownedTopPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
                                           </button>
                                           <span>{participantName(session, entry.participant_id)}</span>
                                           {entry.team_label && <small>{entry.team_label}</small>}
@@ -6298,7 +6305,7 @@ function handleSessionDateChange(value: string) {
                                         <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_a_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
                                           <span className="player-avatar" style={avatarStyle(playerA)}>
                                             {avatarNode(playerA, 'P')}
-                                            {topPlayer?.profileId === playerA?.profile_id && <span className="champion-badge">👑</span>}
+                                            {crownedTopPlayer?.profileId === playerA?.profile_id && <span className="champion-badge">👑</span>}
                                           </span>
                                           <span>{participantName(session, match.participant_a_id)}</span>
                                         </button>
@@ -6306,7 +6313,7 @@ function handleSessionDateChange(value: string) {
                                         <button className={match.winner_participant_id === match.participant_b_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_b_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_b_id })}>
                                           <span className="player-avatar" style={avatarStyle(playerB)}>
                                             {avatarNode(playerB, 'P')}
-                                            {topPlayer?.profileId === playerB?.profile_id && <span className="champion-badge">👑</span>}
+                                            {crownedTopPlayer?.profileId === playerB?.profile_id && <span className="champion-badge">👑</span>}
                                           </span>
                                           <span>{participantName(session, match.participant_b_id)}</span>
                                         </button>
@@ -7174,8 +7181,8 @@ function handleSessionDateChange(value: string) {
 
             {profile && (
               <div className="player-stats">
-                <h3>{text.stats} {topPlayer?.profileId === userId ? '🏆' : ''}</h3>
-                {topPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
+                <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
+                {crownedTopPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
                 <div className="stats">
                   <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
                   <span>{playerStats.wins} {text.wins}</span>
@@ -7503,7 +7510,7 @@ function handleSessionDateChange(value: string) {
           playerTitle={compactDisplayName(selectedPlayerProfile.displayName, text.player)}
           avatar={
             <div
-              className={topPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}
+              className={crownedTopPlayer?.profileId === selectedPlayerProfile.profileId ? 'player-avatar profile-large champion-avatar' : 'player-avatar profile-large'}
               style={avatarStyle({ avatar_color: selectedPlayerProfile.avatarColor, avatar_text_color: selectedPlayerProfile.avatarTextColor })}
             >
               {avatarNode({
@@ -7514,11 +7521,11 @@ function handleSessionDateChange(value: string) {
                 avatar_text_color: selectedPlayerProfile.avatarTextColor,
                 display_name: selectedPlayerProfile.displayName,
               }, 'P')}
-              {topPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">👑</span>}
+              {crownedTopPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">👑</span>}
             </div>
           }
           motto={selectedPlayerProfile.profileMotto}
-          isTopPlayer={topPlayer?.profileId === selectedPlayerProfile.profileId}
+          isTopPlayer={crownedTopPlayer?.profileId === selectedPlayerProfile.profileId}
           bestOverallText={text.bestOverall}
           canFollow={networkTablesReady && selectedPlayerProfile.profileId !== userId}
           followBusy={busyFriendId === selectedPlayerProfile.profileId}
