@@ -3,7 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
 }
 
 const ADMIN_EMAILS = ['emile@vre-vietnam.com']
@@ -105,7 +107,7 @@ async function moderateText(input: string, trustedAuthor: boolean): Promise<Mode
   }
 }
 
-serve(async (request) => {
+async function handleRequest(request: Request) {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -224,4 +226,13 @@ serve(async (request) => {
   }
 
   return jsonResponse({ message })
+}
+
+serve(async (request) => {
+  try {
+    return await handleRequest(request)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected function error.'
+    return jsonResponse({ error: message }, 500)
+  }
 })

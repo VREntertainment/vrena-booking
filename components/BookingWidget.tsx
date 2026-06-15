@@ -3063,7 +3063,7 @@ function handleSessionDateChange(value: string) {
       .eq('id', participantId)
 
     if (error) {
-      setCreateStatus(error.message)
+      setCreateStatus(error.message === 'Failed to send a request to the Edge Function' ? text.messageFunctionFailed : error.message)
       return
     }
 
