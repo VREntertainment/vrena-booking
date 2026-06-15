@@ -602,25 +602,30 @@ function rankEmoji(placement?: number | null) {
 }
 
 function participantScore(participant: Participant) {
+  if (participant.score === null || participant.score === undefined) return null
+
   const score = Number(participant.score)
   return Number.isFinite(score) ? score : null
 }
 
-function sessionBestScore(session: Session) {
+function sessionBestPerformer(session: Session) {
   const participants = session.session_participants ?? []
-  const scores = participants
-    .map(participantScore)
-    .filter((score): score is number => score !== null)
+  const scoredParticipants = participants
+    .map((participant) => ({ participant, score: participantScore(participant) }))
+    .filter((item): item is { participant: Participant; score: number } => item.score !== null)
 
-  if (participants.length < 2 || scores.length !== participants.length) return null
+  if (participants.length < 2 || scoredParticipants.length !== participants.length) return null
 
-  return Math.max(...scores)
+  const bestScore = Math.max(...scoredParticipants.map((item) => item.score))
+  const leaders = scoredParticipants.filter((item) => item.score === bestScore)
+
+  if (leaders.length !== 1) return null
+
+  return leaders[0]
 }
 
 function isBestSessionPerformer(session: Session, participant: Participant) {
-  const score = participantScore(participant)
-  const bestScore = sessionBestScore(session)
-  return score !== null && bestScore !== null && score === bestScore
+  return sessionBestPerformer(session)?.participant.id === participant.id
 }
 
 function bestOfLabel(value?: number | null) {
@@ -2637,7 +2642,7 @@ function handleSessionDateChange(value: string) {
     }>()
 
     sessions.forEach((session) => {
-      const bestScore = sessionBestScore(session)
+      const bestPerformer = sessionBestPerformer(session)
 
       ;(session.session_participants ?? []).forEach((participant) => {
         const current = stats.get(participant.profile_id) ?? {
@@ -2671,10 +2676,10 @@ function handleSessionDateChange(value: string) {
         if (participant.checked_in) current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
 
-        const numericScore = Number(participant.score)
-        if (Number.isFinite(numericScore)) {
+        const numericScore = participantScore(participant)
+        if (numericScore !== null) {
           current.baseTotalScore += numericScore
-          if (bestScore !== null && numericScore === bestScore) current.bestPerformerCount += 1
+          if (bestPerformer?.participant.id === participant.id) current.bestPerformerCount += 1
 
           session.game_options.forEach((gameId) => {
             const game = games.find((item) => item.id === gameId)
