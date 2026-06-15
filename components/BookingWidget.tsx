@@ -1,7 +1,6 @@
 'use client'
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase/client'
 import { getInitialLanguage, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 
 const ARENA_COUNT = 2
@@ -18,6 +17,13 @@ const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_t
 const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
 const CLUB_SELECT = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
+
+let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
+
+function getSupabase() {
+  supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
+  return supabaseClientPromise
+}
 
 type HCaptchaApi = {
   render: (
@@ -1490,7 +1496,7 @@ export default function WidgetPage() {
   async function loadProfile() {
     try {
       authDebug('loadProfile:start')
-      const { data: userData, error: userError } = await supabase.auth.getUser()
+      const { data: userData, error: userError } = await (await getSupabase()).auth.getUser()
       const authUser = userData.user
       authDebug('loadProfile:getUser', {
         error: userError,
@@ -1522,7 +1528,7 @@ export default function WidgetPage() {
       setUserId(authUser.id)
       setAuthEmail(authUser.email?.toLowerCase() || '')
 
-      const { data: profileRow, error: profileError, status: profileStatusCode } = await supabase
+      const { data: profileRow, error: profileError, status: profileStatusCode } = await (await getSupabase())
         .from('profiles')
         .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .eq('id', authUser.id)
@@ -1600,7 +1606,7 @@ export default function WidgetPage() {
       setAvatarTextColor(fallbackProfile.avatar_text_color || avatarTextColors[0])
       setAvatarTextColorDraft(fallbackProfile.avatar_text_color || avatarTextColors[0])
 
-      const repairResult = await supabase.from('profiles').upsert({
+      const repairResult = await (await getSupabase()).from('profiles').upsert({
         id: authUser.id,
         phone: phone || '+84000000000',
         full_name: fullName || null,
@@ -1678,7 +1684,7 @@ export default function WidgetPage() {
         const nickname = limitDisplayName(profileNickname.trim())
         const display = nickname || compactDisplayName(fullName)
         const consentAt = new Date().toISOString()
-        const signUpResult = await supabase.auth.signUp({
+        const signUpResult = await (await getSupabase()).auth.signUp({
           email: loginEmail,
           password: profilePassword,
           options: {
@@ -1730,7 +1736,7 @@ export default function WidgetPage() {
 
         setUserId(authUser.id)
 
-        const existingProfileResult = await supabase
+        const existingProfileResult = await (await getSupabase())
           .from('profiles')
           .select('avatar_url, nickname')
           .eq('id', authUser.id)
@@ -1758,7 +1764,7 @@ export default function WidgetPage() {
           avatar_text_color: avatarTextColor,
         }
 
-        const profileUpsert = await supabase.from('profiles').upsert({
+        const profileUpsert = await (await getSupabase()).from('profiles').upsert({
           id: authUser.id,
           full_name: fullName,
           phone: fullPhone,
@@ -1786,7 +1792,7 @@ export default function WidgetPage() {
           return
         }
 
-        const metadataUpdate = await supabase.auth.updateUser({
+        const metadataUpdate = await (await getSupabase()).auth.updateUser({
           data: {
             display_name: display,
             full_name: fullName,
@@ -1831,7 +1837,7 @@ export default function WidgetPage() {
         hasCaptcha: Boolean(captchaToken),
       })
 
-      const signInResult = await supabase.auth.signInWithPassword({
+      const signInResult = await (await getSupabase()).auth.signInWithPassword({
         email: loginEmail,
         password: profilePassword,
         options: {
@@ -1860,7 +1866,7 @@ export default function WidgetPage() {
         return
       }
 
-      const { data: verifiedUserData, error: verifiedUserError } = await supabase.auth.getUser()
+      const { data: verifiedUserData, error: verifiedUserError } = await (await getSupabase()).auth.getUser()
       const authUser = verifiedUserData.user
 
       authDebug('handleAuth:getUserAfterLogin', {
@@ -1903,7 +1909,7 @@ export default function WidgetPage() {
   }
 
   async function logout() {
-    await supabase.auth.signOut()
+    await (await getSupabase()).auth.signOut()
     setUserId('')
     setAuthEmail('')
     setProfile(null)
@@ -1932,7 +1938,7 @@ export default function WidgetPage() {
       redirectTo,
       captchaToken: captchaToken || undefined,
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions)
+    const { error } = await (await getSupabase()).auth.resetPasswordForEmail(email, resetOptions)
 
     resetCaptcha()
 
@@ -1953,7 +1959,7 @@ export default function WidgetPage() {
     }
 
     setIsResettingPassword(true)
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    const { error } = await (await getSupabase()).auth.updateUser({ password: newPassword })
 
     if (error) {
       setProfileStatus(error.message)
@@ -1970,13 +1976,13 @@ export default function WidgetPage() {
 
   async function loadSessions() {
     const [sessionResult, blockedResult] = await Promise.all([
-      supabase
-      .from('sessions')
+      (await getSupabase())
+        .from('sessions')
         .select(SESSION_SELECT)
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
-      supabase.from('blocked_times').select('date, start_time, end_time, arenas_used'),
+      (await getSupabase()).from('blocked_times').select('date, start_time, end_time, arenas_used'),
     ])
 
     if (sessionResult.error) {
@@ -1989,14 +1995,14 @@ export default function WidgetPage() {
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
     const [waitlistResult, adjustmentResult] = await Promise.all([
       sessionIds.length > 0
-        ? supabase
+        ? (await getSupabase())
         .from('session_waitlist')
         .select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
         .in('session_id', sessionIds)
         .order('created_at', { ascending: true })
         : Promise.resolve({ data: [], error: null }),
       profileIds.length > 0
-        ? supabase
+        ? (await getSupabase())
         .from('profiles')
         .select('id, score_adjustment')
         .in('id', profileIds)
@@ -2019,7 +2025,7 @@ export default function WidgetPage() {
 
   async function loadClubs() {
     clubsLoadingRef.current = true
-    const { data, error } = await supabase
+    const { data, error } = await (await getSupabase())
       .from('clubs')
       .select(CLUB_SELECT)
       .order('created_at', { ascending: false })
@@ -2038,15 +2044,15 @@ export default function WidgetPage() {
   async function loadTournamentData() {
     tournamentDataLoadingRef.current = true
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
-      supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
-      supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
-      supabase.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
-      supabase
+      (await getSupabase()).from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
+      (await getSupabase()).from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
+      (await getSupabase()).from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
+      (await getSupabase())
         .from('tournament_matches')
         .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, wins_a, wins_b, winner_participant_id, loser_participant_id, status, arena_number, queue_position, best_of')
         .order('round', { ascending: true })
         .order('match_number', { ascending: true }),
-      supabase
+      (await getSupabase())
         .from('tournament_audit_log')
         .select('id, session_id, user_id, action, old_value, new_value, created_at')
         .order('created_at', { ascending: false })
@@ -2085,17 +2091,17 @@ export default function WidgetPage() {
     networkDataLoadingRef.current = true
     const sessionIds = sessions.map((session) => session.id)
     const [friendsResult, invitesResult, messagesResult] = await Promise.all([
-      supabase
+      (await getSupabase())
         .from('user_follows')
         .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
         .eq('follower_id', userId),
-      supabase
+      (await getSupabase())
         .from('session_invites')
         .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
         .or(`recipient_id.eq.${userId},inviter_id.eq.${userId}`)
         .order('created_at', { ascending: false }),
       sessionIds.length > 0
-        ? supabase
+        ? (await getSupabase())
           .from('session_messages')
           .select(SESSION_MESSAGE_SELECT)
           .in('session_id', sessionIds)
@@ -2183,28 +2189,40 @@ export default function WidgetPage() {
   }, [expandedSessions])
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      authDebug('authStateChange', {
-        event,
-        hasSession: Boolean(session),
-        user: session?.user ? {
-          id: session.user.id,
-          email: session.user.email,
-          emailConfirmedAt: session.user.email_confirmed_at,
-          lastSignInAt: session.user.last_sign_in_at,
-          appMetadata: session.user.app_metadata,
-          userMetadata: session.user.user_metadata,
-        } : null,
+    let active = true
+    let unsubscribe: (() => void) | null = null
+
+    void getSupabase().then((client) => {
+      if (!active) return
+
+      const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
+        authDebug('authStateChange', {
+          event,
+          hasSession: Boolean(session),
+          user: session?.user ? {
+            id: session.user.id,
+            email: session.user.email,
+            emailConfirmedAt: session.user.email_confirmed_at,
+            lastSignInAt: session.user.last_sign_in_at,
+            appMetadata: session.user.app_metadata,
+            userMetadata: session.user.user_metadata,
+          } : null,
+        })
+
+        if (event === 'SIGNED_OUT') {
+          setUserId('')
+          setAuthEmail('')
+          setProfile(null)
+        }
       })
 
-      if (event === 'SIGNED_OUT') {
-        setUserId('')
-        setAuthEmail('')
-        setProfile(null)
-      }
+      unsubscribe = () => authListener.subscription.unsubscribe()
     })
 
-    return () => authListener.subscription.unsubscribe()
+    return () => {
+      active = false
+      unsubscribe?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -2223,51 +2241,63 @@ export default function WidgetPage() {
   ])
 
   useEffect(() => {
-    const channel = supabase
-      .channel('vrena-live-refresh')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => loadSessions())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        loadProfile()
-        loadSessions()
-        if (clubsLoadedRef.current) loadClubs()
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
-        if (clubsLoadedRef.current) loadClubs()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
-        if (clubsLoadedRef.current) loadClubs()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => {
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => {
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => {
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => {
-        if (tournamentDataLoadedRef.current) loadTournamentData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => {
-        if (networkDataLoadedRef.current) loadNetworkData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
-        if (networkDataLoadedRef.current) loadNetworkData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
-        if (networkDataLoadedRef.current) loadNetworkData()
-      })
-      .subscribe()
+    let active = true
+    let cleanup: (() => void) | null = null
+
+    void getSupabase().then((client) => {
+      if (!active) return
+
+      const channel = client
+        .channel('vrena-live-refresh')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => loadSessions())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          loadProfile()
+          loadSessions()
+          if (clubsLoadedRef.current) loadClubs()
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
+          if (clubsLoadedRef.current) loadClubs()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
+          if (clubsLoadedRef.current) loadClubs()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => {
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => {
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => {
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => {
+          if (tournamentDataLoadedRef.current) loadTournamentData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => {
+          if (networkDataLoadedRef.current) loadNetworkData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
+          if (networkDataLoadedRef.current) loadNetworkData()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
+          if (networkDataLoadedRef.current) loadNetworkData()
+        })
+        .subscribe()
+
+      cleanup = () => {
+        client.removeChannel(channel)
+      }
+    })
 
     return () => {
-      supabase.removeChannel(channel)
+      active = false
+      cleanup?.()
     }
   }, [])
 
@@ -3042,7 +3072,7 @@ function handleSessionDateChange(value: string) {
     let cancelled = false
     const timer = window.setTimeout(async () => {
       const safe = query.replace(/[%_,]/g, '')
-      const { data } = await supabase
+      const { data } = await (await getSupabase())
         .from('profiles')
         .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .or(`full_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
@@ -3115,7 +3145,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function logTournamentAudit(sessionId: string, action: string, oldValue: Record<string, unknown> | null, newValue: Record<string, unknown> | null) {
-    await supabase.from('tournament_audit_log').insert({
+    await (await getSupabase()).from('tournament_audit_log').insert({
       session_id: sessionId,
       user_id: userId || null,
       action,
@@ -3202,7 +3232,7 @@ function handleSessionDateChange(value: string) {
     setIsCreatingClub(true)
     setClubStatus(text.creatingClub)
 
-    const { data: club, error } = await supabase
+    const { data: club, error } = await (await getSupabase())
       .from('clubs')
       .insert({
         owner_id: userId,
@@ -3219,7 +3249,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const memberResult = await supabase.from('club_members').insert({
+    const memberResult = await (await getSupabase()).from('club_members').insert({
       club_id: club.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
@@ -3251,7 +3281,7 @@ function handleSessionDateChange(value: string) {
     if (currentMembership) return
 
     setBusyClubId(club.id)
-    const { error } = await supabase.from('club_members').insert({
+    const { error } = await (await getSupabase()).from('club_members').insert({
       club_id: club.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
@@ -3272,7 +3302,7 @@ function handleSessionDateChange(value: string) {
 
   async function approveClubMember(member: ClubMember) {
     setBusyClubId(member.club_id)
-    const { error } = await supabase.from('club_members').update({ status: 'approved' }).eq('id', member.id)
+    const { error } = await (await getSupabase()).from('club_members').update({ status: 'approved' }).eq('id', member.id)
 
     if (error) {
       setClubStatus(error.message)
@@ -3291,7 +3321,7 @@ function handleSessionDateChange(value: string) {
     if (!window.confirm(text.removeMemberConfirm)) return
 
     setBusyClubId(club.id)
-    const { error } = await supabase.from('club_members').delete().eq('id', member.id)
+    const { error } = await (await getSupabase()).from('club_members').delete().eq('id', member.id)
 
     if (error) {
       setClubStatus(error.message)
@@ -3310,7 +3340,7 @@ function handleSessionDateChange(value: string) {
     if (!window.confirm(leaveClubConfirmText)) return
 
     setBusyClubId(club.id)
-    const { error } = await supabase.from('club_members').delete().eq('id', member.id).eq('profile_id', userId)
+    const { error } = await (await getSupabase()).from('club_members').delete().eq('id', member.id).eq('profile_id', userId)
 
     if (error) {
       setClubStatus(error.message)
@@ -3325,7 +3355,7 @@ function handleSessionDateChange(value: string) {
 
   async function updateParticipantCheckIn(participantId: string, paymentStatus: 'cash' | 'bank_transfer' | 'free' | null, amountValue = '') {
     const normalizedAmount = paymentStatus && paymentStatus !== 'free' ? Number(amountValue.replace(/[^\d]/g, '')) : null
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_participants')
       .update({
         checked_in: Boolean(paymentStatus),
@@ -3368,7 +3398,7 @@ function handleSessionDateChange(value: string) {
     const accuracy = accuracyValue === '' || accuracyValue === null ? null : Number(accuracyValue)
     const projectiles = projectilesValue === '' || projectilesValue === null ? null : Number(projectilesValue)
 
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_participants')
       .update({
         score: Number.isFinite(score as number) ? score : null,
@@ -3399,7 +3429,7 @@ function handleSessionDateChange(value: string) {
     }
 
     const scoreAdjustment = totalScore - baseTotalScore
-    const { data, error } = await supabase
+    const { data, error } = await (await getSupabase())
       .from('profiles')
       .update({ score_adjustment: scoreAdjustment })
       .eq('id', profileId)
@@ -3471,7 +3501,7 @@ function handleSessionDateChange(value: string) {
       updated_at: new Date().toISOString(),
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (await getSupabase())
       .from('profiles')
       .upsert(row)
       .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
@@ -3484,7 +3514,7 @@ function handleSessionDateChange(value: string) {
     }
 
     const display = nickname || compactDisplayName(fullName)
-    const metadataUpdate = await supabase.auth.updateUser({
+    const metadataUpdate = await (await getSupabase()).auth.updateUser({
       data: {
         display_name: display,
         full_name: fullName,
@@ -3507,7 +3537,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const participantProfileUpdate = await supabase
+    const participantProfileUpdate = await (await getSupabase())
       .from('session_participants')
       .update({
         display_name: display,
@@ -3527,7 +3557,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const clubMemberProfileUpdate = await supabase
+    const clubMemberProfileUpdate = await (await getSupabase())
       .from('club_members')
       .update({
         display_name: display,
@@ -3547,7 +3577,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const tournamentEditorProfileUpdate = await supabase
+    const tournamentEditorProfileUpdate = await (await getSupabase())
       .from('tournament_editors')
       .update({
         display_name: display,
@@ -3586,7 +3616,7 @@ function handleSessionDateChange(value: string) {
 
     const safeName = avatarFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
     const path = `${ownerId}/${Date.now()}-${safeName}`
-    const upload = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true })
+    const upload = await (await getSupabase()).storage.from('avatars').upload(path, avatarFile, { upsert: true })
 
     if (upload.error) {
       setProfileStatus(upload.error.message)
@@ -3594,7 +3624,7 @@ function handleSessionDateChange(value: string) {
       return false as const
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    const { data } = (await getSupabase()).storage.from('avatars').getPublicUrl(path)
     return data.publicUrl
   }
 
@@ -3651,7 +3681,7 @@ function handleSessionDateChange(value: string) {
     const effectiveVisibility = selectedSessionClub ? 'public' : sessionVisibility
     const inviteCode = effectiveVisibility === 'private' ? generateInviteCode() : null
 
-    const { data: created, error } = await supabase
+    const { data: created, error } = await (await getSupabase())
       .from('sessions')
       .insert({
         owner_id: userId,
@@ -3691,7 +3721,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await supabase.from('session_participants').insert({
+    await (await getSupabase()).from('session_participants').insert({
       session_id: created.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
@@ -3760,7 +3790,7 @@ function handleSessionDateChange(value: string) {
 
     setBusySessionId(session.id)
 
-    const { error } = await supabase.from('session_participants').insert({
+    const { error } = await (await getSupabase()).from('session_participants').insert({
       session_id: session.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
@@ -3773,13 +3803,13 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await supabase
+    await (await getSupabase())
       .from('session_waitlist')
       .delete()
       .eq('session_id', session.id)
       .eq('profile_id', userId)
 
-    await supabase
+    await (await getSupabase())
       .from('session_invites')
       .update({ status: 'accepted' })
       .eq('session_id', session.id)
@@ -3818,7 +3848,7 @@ function handleSessionDateChange(value: string) {
 
     setBusySessionId(session.id)
 
-    const { error } = await supabase.from('session_waitlist').insert({
+    const { error } = await (await getSupabase()).from('session_waitlist').insert({
       session_id: session.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
@@ -3852,7 +3882,7 @@ function handleSessionDateChange(value: string) {
     setBusyFriendId(player.profileId)
 
     if (isFollowing(player.profileId)) {
-      const { error } = await supabase
+      const { error } = await (await getSupabase())
         .from('user_follows')
         .delete()
         .eq('follower_id', userId)
@@ -3861,7 +3891,7 @@ function handleSessionDateChange(value: string) {
       if (error) setCreateStatus(error.message)
       else setCreateStatus(text.friendRemoved)
     } else {
-      const { error } = await supabase.from('user_follows').upsert({
+      const { error } = await (await getSupabase()).from('user_follows').upsert({
         follower_id: userId,
         following_id: player.profileId,
         display_name: compactDisplayName(player.displayName, text.player),
@@ -3898,7 +3928,7 @@ function handleSessionDateChange(value: string) {
     setBusyInviteKey(inviteKey)
 
     const snapshot = socialAvatarFields(player)
-    const { error } = await supabase.from('session_invites').upsert({
+    const { error } = await (await getSupabase()).from('session_invites').upsert({
       session_id: session.id,
       inviter_id: userId,
       recipient_id: player.profile_id,
@@ -3930,7 +3960,7 @@ function handleSessionDateChange(value: string) {
     const messageKey = `${session.id}-${messageType}`
     setBusyMessageKey(messageKey)
 
-    const { data, error } = await supabase.functions.invoke('post-session-message', {
+    const { data, error } = await (await getSupabase()).functions.invoke('post-session-message', {
       body: {
         session_id: session.id,
         message_type: messageType,
@@ -3959,7 +3989,7 @@ function handleSessionDateChange(value: string) {
     if (!requireProfile()) return
 
     setBusyMessageKey(`${message.id}-${status}`)
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_messages')
       .update({
         moderation_status: status,
@@ -3989,7 +4019,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusyMessageKey(`${message.id}-delete`)
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_messages')
       .delete()
       .eq('id', message.id)
@@ -4016,7 +4046,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusySessionId(session.id)
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_participants')
       .delete()
       .eq('session_id', session.id)
@@ -4028,7 +4058,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await supabase.rpc('promote_session_waitlist', { p_session_id: session.id })
+    await (await getSupabase()).rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.leftSession)
     setBusySessionId('')
@@ -4041,7 +4071,7 @@ function handleSessionDateChange(value: string) {
     const voteKey = `${session.id}-${gameId}`
     setBusyVoteKey(voteKey)
     const votes = { ...(session.game_votes || {}), [userId]: gameId }
-    const { error } = await supabase.from('sessions').update({ game_votes: votes }).eq('id', session.id)
+    const { error } = await (await getSupabase()).from('sessions').update({ game_votes: votes }).eq('id', session.id)
 
     if (error) {
       setCreateStatus(error.message)
@@ -4064,7 +4094,7 @@ function handleSessionDateChange(value: string) {
     const validGameId = games.some((game) => game.id === selectedGameId) ? selectedGameId : null
 
     setBusySessionId(session.id)
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('sessions')
       .update({ confirmed_game_id: validGameId })
       .eq('id', session.id)
@@ -4155,7 +4185,7 @@ function handleSessionDateChange(value: string) {
     const tournament = tournamentForSession(session.id)
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
 
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('sessions')
       .update({
         name: editSessionName.trim(),
@@ -4206,7 +4236,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusySessionId(session.id)
-    const { error } = await supabase.from('sessions').update({ status: 'cancelled' }).eq('id', session.id)
+    const { error } = await (await getSupabase()).from('sessions').update({ status: 'cancelled' }).eq('id', session.id)
 
     if (error) {
       setCreateStatus(error.message)
@@ -4234,7 +4264,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusySessionId(session.id)
-    const { error } = await supabase.from('session_participants').delete().eq('id', participant.id)
+    const { error } = await (await getSupabase()).from('session_participants').delete().eq('id', participant.id)
 
     if (error) {
       setCreateStatus(error.message)
@@ -4242,7 +4272,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await supabase.rpc('promote_session_waitlist', { p_session_id: session.id })
+    await (await getSupabase()).rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.playerRemoved)
     setBusySessionId('')
@@ -4257,7 +4287,7 @@ function handleSessionDateChange(value: string) {
     setIsDeletingAccount(true)
     setProfileStatus(text.saving)
 
-    const { error } = await supabase.from('profiles').delete().eq('id', userId)
+    const { error } = await (await getSupabase()).from('profiles').delete().eq('id', userId)
 
     if (error) {
       setProfileStatus(error.message)
@@ -4265,7 +4295,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await supabase.auth.signOut()
+    await (await getSupabase()).auth.signOut()
     setUserId('')
     setAuthEmail('')
     setProfile(null)
@@ -4292,7 +4322,7 @@ function handleSessionDateChange(value: string) {
     setBusyTournamentId(session.id)
     const profileLookup = selectedEditor
       ? { data: selectedEditor, error: null }
-      : await supabase
+      : await (await getSupabase())
         .from('profiles')
         .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
         .or(`email.eq.${email},nickname.ilike.%${email}%,full_name.ilike.%${email}%`)
@@ -4307,7 +4337,7 @@ function handleSessionDateChange(value: string) {
     }
 
     const display = compactDisplayName(editorProfile.nickname || editorProfile.full_name || editorProfile.email, text.player)
-    const { error } = await supabase.from('tournament_editors').upsert({
+    const { error } = await (await getSupabase()).from('tournament_editors').upsert({
       session_id: session.id,
       profile_id: editorProfile.id,
       display_name: display,
@@ -4345,9 +4375,9 @@ function handleSessionDateChange(value: string) {
     }
 
     setBusyTournamentId(session.id)
-    await supabase.from('tournament_matches').delete().eq('session_id', session.id)
-    await supabase.from('tournament_pool_entries').delete().eq('session_id', session.id)
-    await supabase.from('tournament_pools').delete().eq('session_id', session.id)
+    await (await getSupabase()).from('tournament_matches').delete().eq('session_id', session.id)
+    await (await getSupabase()).from('tournament_pool_entries').delete().eq('session_id', session.id)
+    await (await getSupabase()).from('tournament_pools').delete().eq('session_id', session.id)
 
     const format = session.tournament_format || 'pool_to_final'
     const seededParticipants = shuffleItems(participants)
@@ -4360,7 +4390,7 @@ function handleSessionDateChange(value: string) {
       sort_order: index + 1,
     }))
 
-    const { data: pools, error: poolError } = await supabase
+    const { data: pools, error: poolError } = await (await getSupabase())
       .from('tournament_pools')
       .insert(poolRows)
       .select('id, session_id, name, sort_order')
@@ -4382,7 +4412,7 @@ function handleSessionDateChange(value: string) {
       }
     })
 
-    const { error } = await supabase.from('tournament_pool_entries').insert(entries)
+    const { error } = await (await getSupabase()).from('tournament_pool_entries').insert(entries)
     if (error) {
       setCreateStatus(error.message)
       setBusyTournamentId('')
@@ -4412,7 +4442,7 @@ function handleSessionDateChange(value: string) {
     }
 
     setBusyTournamentId(session.id)
-    await supabase.from('tournament_matches').delete().eq('session_id', session.id)
+    await (await getSupabase()).from('tournament_matches').delete().eq('session_id', session.id)
 
     const bestOf = session.best_of || 1
     const format = session.tournament_format || 'pool_to_final'
@@ -4451,7 +4481,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const { error } = await supabase.from('tournament_matches').insert(matchRows)
+    const { error } = await (await getSupabase()).from('tournament_matches').insert(matchRows)
     if (error) {
       setCreateStatus(error.message)
       setBusyTournamentId('')
@@ -4465,7 +4495,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function updateTournamentPoolEntry(entry: TournamentPoolEntry, changes: Partial<TournamentPoolEntry>) {
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('tournament_pool_entries')
       .update({
         pool_id: changes.pool_id ?? entry.pool_id,
@@ -4506,7 +4536,7 @@ function handleSessionDateChange(value: string) {
     const autoWinner = matchWinnerFromSeries(draft)
     const winner = changes.winner_participant_id ?? autoWinner ?? match.winner_participant_id
     const loser = matchLoser(draft, winner || null)
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('tournament_matches')
       .update({
         participant_a_id: nextA,
@@ -4575,7 +4605,7 @@ function handleSessionDateChange(value: string) {
     const stage: MatchStage = format === 'pool_to_final' ? 'final' : knockoutStageForCount(desired.length)
     const matchRows = buildKnockoutRows(session.id, desired, stage, nextRound, bestOf)
 
-    const { error } = await supabase.from('tournament_matches').insert(matchRows)
+    const { error } = await (await getSupabase()).from('tournament_matches').insert(matchRows)
     if (error) {
       setCreateStatus(error.message)
       return
@@ -4613,10 +4643,10 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (first) await supabase.from('session_participants').update({ placement: 1 }).eq('id', first)
-    if (second) await supabase.from('session_participants').update({ placement: 2 }).eq('id', second)
-    if (third) await supabase.from('session_participants').update({ placement: 3 }).eq('id', third)
-    await supabase.from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id)
+    if (first) await (await getSupabase()).from('session_participants').update({ placement: 1 }).eq('id', first)
+    if (second) await (await getSupabase()).from('session_participants').update({ placement: 2 }).eq('id', second)
+    if (third) await (await getSupabase()).from('session_participants').update({ placement: 3 }).eq('id', third)
+    await (await getSupabase()).from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id)
 
     await logTournamentAudit(session.id, 'Tournament finished', null, { first, second, third })
     await loadSessions()
@@ -4635,7 +4665,7 @@ function handleSessionDateChange(value: string) {
 
     if (losers.length < 2 || new Set(losers).size < 2) return
 
-    const { error } = await supabase.from('tournament_matches').insert({
+    const { error } = await (await getSupabase()).from('tournament_matches').insert({
       session_id: session.id,
       pool_id: null,
       stage: 'third_place',
@@ -4655,7 +4685,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function claimPrize(participant: Participant, claimed: boolean) {
-    const { error } = await supabase
+    const { error } = await (await getSupabase())
       .from('session_participants')
       .update({
         prize_claimed: claimed,
