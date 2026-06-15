@@ -227,7 +227,7 @@ export type PlayerProfileModalProps = {
   followText: string
   onFollow: () => void
   onClose: () => void
-  stats: Array<{ key: string; value: ReactNode }>
+  stats: Array<{ key: string; value: ReactNode; className?: string }>
   scoreSummary: ReactNode
   bestScoresTitle: string
   bestScores: Array<{ game: string; score: number }>
@@ -274,7 +274,7 @@ export function PlayerProfileModal({
         </div>
         <div className="stats">
           {stats.map((item) => (
-            <span key={item.key}>{item.value}</span>
+            <span className={item.className ? `stat-card ${item.className}` : 'stat-card'} key={item.key}>{item.value}</span>
           ))}
         </div>
         {scoreSummary}
