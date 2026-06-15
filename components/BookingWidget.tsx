@@ -5933,10 +5933,16 @@ function handleSessionDateChange(value: string) {
                           {sessionMessageRows.map((message) => {
                             const moderationStatus = message.moderation_status || 'approved'
                             const canReviewMessage = canReviewSessionMessages(session) && moderationStatus === 'pending_review'
+                            const isOwnMessage = message.author_id === userId
+                            const messageClassName = [
+                              'session-message',
+                              message.message_type === 'announcement' ? 'announcement' : '',
+                              isOwnMessage ? 'own-message' : '',
+                            ].filter(Boolean).join(' ')
 
                             return (
-                              <div className={message.message_type === 'announcement' ? 'session-message announcement' : 'session-message'} key={message.id}>
-                                <span className="player-avatar tiny-avatar" style={avatarStyle({
+                              <div className={messageClassName} key={message.id}>
+                                <span className="player-avatar tiny-avatar message-avatar" style={avatarStyle({
                                   avatar_color: message.author_avatar_color,
                                   avatar_text_color: message.author_avatar_text_color,
                                 })}>
@@ -5947,7 +5953,7 @@ function handleSessionDateChange(value: string) {
                                     display_name: message.author_display_name,
                                   }, 'P')}
                                 </span>
-                                <div>
+                                <div className="message-body">
                                   <div className="message-meta-row">
                                     <strong>{message.message_type === 'announcement' ? text.creatorAnnouncement : compactDisplayName(message.author_display_name, text.player)}</strong>
                                     {moderationStatus === 'pending_review' && <small className="moderation-badge pending">{text.pendingReview}</small>}
