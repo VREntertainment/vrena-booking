@@ -587,11 +587,14 @@ function participantScore(participant: Participant) {
 }
 
 function sessionBestScore(session: Session) {
-  const scores = (session.session_participants ?? [])
+  const participants = session.session_participants ?? []
+  const scores = participants
     .map(participantScore)
     .filter((score): score is number => score !== null)
 
-  return scores.length > 0 ? Math.max(...scores) : null
+  if (participants.length < 2 || scores.length !== participants.length) return null
+
+  return Math.max(...scores)
 }
 
 function isBestSessionPerformer(session: Session, participant: Participant) {
@@ -7209,6 +7212,41 @@ function handleSessionDateChange(value: string) {
                 <strong>{selectedPlayerSessionContext.session.name}</strong>
                 <span>{sessionScoreText}: {selectedPlayerSessionContext.score ?? '-'}</span>
                 {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
+                {selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id && (
+                  <div className="score-controls profile-score-controls session-profile-score-controls">
+                    <input
+                      aria-label={text.score}
+                      defaultValue={selectedPlayerManageContext.participant.score ?? ''}
+                      inputMode="numeric"
+                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                      placeholder={text.score}
+                    />
+                    <input
+                      aria-label={text.accuracy}
+                      defaultValue={selectedPlayerManageContext.participant.accuracy_percent ?? ''}
+                      inputMode="numeric"
+                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', event.target.value, selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                      placeholder="%"
+                    />
+                    <input
+                      aria-label={text.projectiles}
+                      defaultValue={selectedPlayerManageContext.participant.projectiles_fired ?? ''}
+                      inputMode="numeric"
+                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
+                      placeholder={text.projectiles}
+                    />
+                    <select
+                      aria-label={text.place}
+                      value={selectedPlayerManageContext.participant.placement ?? ''}
+                      onChange={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', event.target.value, selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+                    >
+                      <option value="">{text.noPlace}</option>
+                      <option value="1">{text.firstPlace}</option>
+                      <option value="2">{text.secondPlace}</option>
+                      <option value="3">{text.thirdPlace}</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
             {selectedPlayerProfile.bestByGame.length > 0 && (
@@ -7219,7 +7257,7 @@ function handleSessionDateChange(value: string) {
                 ))}
               </div>
             )}
-            {selectedPlayerManageContext && (
+            {selectedPlayerManageContext && !selectedPlayerSessionContext && (
               <div className="score-controls profile-score-controls">
                 <input
                   aria-label={text.score}
@@ -8359,6 +8397,10 @@ function handleSessionDateChange(value: string) {
         .player-profile-panel {
           position: relative;
           width: min(420px, 100%);
+          max-height: min(82vh, 760px);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
           display: grid;
           gap: 12px;
           border: 1px solid rgba(7, 17, 18, 0.12);
@@ -9416,6 +9458,12 @@ function handleSessionDateChange(value: string) {
           min-height: 42px;
           padding: 8px 10px;
           font-size: 15px;
+        }
+
+        .session-profile-score-controls {
+          width: 100%;
+          grid-column: 1 / -1;
+          margin-top: 4px;
         }
 
         .tournament-desk {
@@ -10754,6 +10802,7 @@ function handleSessionDateChange(value: string) {
 
           .player-profile-panel {
             width: 100%;
+            max-height: calc(100vh - 86px);
             border-radius: 18px 18px 10px 10px;
             align-self: end;
           }
