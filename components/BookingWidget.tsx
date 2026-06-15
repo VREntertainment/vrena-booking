@@ -56,6 +56,14 @@ type Profile = {
   score_adjustment?: number | null
 }
 
+function isAdminEmail(email?: string | null) {
+  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
+function isAdminRole(role?: string | null) {
+  return role?.toLowerCase() === 'admin'
+}
+
 type Participant = {
   id: string
   profile_id: string
@@ -883,6 +891,7 @@ export default function WidgetPage() {
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
+  const [authEmail, setAuthEmail] = useState('')
   const [search, setSearch] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [selectedSessionDate, setSelectedSessionDate] = useState('')
@@ -1445,6 +1454,7 @@ export default function WidgetPage() {
 
       if (userError) {
         setUserId('')
+        setAuthEmail('')
         setProfile(null)
         setProfileStatus(userError.message)
         return
@@ -1452,11 +1462,13 @@ export default function WidgetPage() {
 
       if (!authUser) {
         setUserId('')
+        setAuthEmail('')
         setProfile(null)
         return
       }
 
       setUserId(authUser.id)
+      setAuthEmail(authUser.email?.toLowerCase() || '')
 
       const { data: profileRow, error: profileError, status: profileStatusCode } = await supabase
         .from('profiles')
@@ -1469,7 +1481,7 @@ export default function WidgetPage() {
         error: profileError,
         profile: profileRow,
         role: profileRow?.role,
-        isAdminEmail: Boolean(authUser.email && ADMIN_EMAILS.includes(authUser.email.toLowerCase())),
+        isAdminEmail: isAdminEmail(authUser.email),
       })
 
       if (profileError) {
@@ -1516,7 +1528,7 @@ export default function WidgetPage() {
         avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
         avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
         profile_motto: profileMottoValue || null,
-        role: ADMIN_EMAILS.includes(email) ? 'admin' : 'player',
+        role: isAdminEmail(email) ? 'admin' : 'player',
       }
 
       authDebug('loadProfile:missingProfileFallback', fallbackProfile)
@@ -1571,7 +1583,7 @@ export default function WidgetPage() {
       authDebug('handleAuth:attempt', {
         mode: authMode,
         email: loginEmail,
-        isAdminEmail: ADMIN_EMAILS.includes(loginEmail),
+        isAdminEmail: isAdminEmail(loginEmail),
         hasCaptcha: Boolean(captchaToken),
         localPhoneLength: localPhone.length,
         hasFullName: Boolean(fullName),
@@ -1763,7 +1775,7 @@ export default function WidgetPage() {
 
       authDebug('handleAuth:signInWithPassword:start', {
         email: loginEmail,
-        isAdminEmail: ADMIN_EMAILS.includes(loginEmail),
+        isAdminEmail: isAdminEmail(loginEmail),
         hasCaptcha: Boolean(captchaToken),
       })
 
@@ -1841,6 +1853,7 @@ export default function WidgetPage() {
   async function logout() {
     await supabase.auth.signOut()
     setUserId('')
+    setAuthEmail('')
     setProfile(null)
     setProfilePassword('')
     setNewPassword('')
@@ -2065,6 +2078,7 @@ export default function WidgetPage() {
 
       if (event === 'SIGNED_OUT') {
         setUserId('')
+        setAuthEmail('')
         setProfile(null)
       }
     })
@@ -2606,7 +2620,7 @@ function handleSessionDateChange(value: string) {
     bestByGame: [],
   }
 
-  const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
+  const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
   const topPlayer = allPlayerStats[0]
   const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
   const selectedPlayerSessionContext = useMemo(() => {
@@ -4112,6 +4126,7 @@ function handleSessionDateChange(value: string) {
 
     await supabase.auth.signOut()
     setUserId('')
+    setAuthEmail('')
     setProfile(null)
     setProfilePassword('')
     setNewPassword('')
