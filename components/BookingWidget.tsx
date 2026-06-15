@@ -1012,6 +1012,15 @@ export default function WidgetPage() {
   const bestPerformerText = looseText.bestPerformer || 'Best Performer'
   const bestPerformerCountText = looseText.bestPerformerCount || 'Best Performer count'
   const sessionScoreText = looseText.sessionScore || 'Session score'
+  const reliabilityScoreText = looseText.reliabilityScore || 'Reliability'
+  const sessionsJoinedText = looseText.sessionsJoined || 'Sessions joined'
+  const gamesPlayedText = looseText.gamesPlayed || 'Games played'
+  const bestGameScoreText = looseText.bestGameScore || 'Best game score'
+  const favoriteGameText = looseText.favoriteGame || 'Favorite game'
+  const playerRankText = looseText.playerRank || 'Rank'
+  const playerLeaderboardText = looseText.playerLeaderboard || 'Player leaderboard'
+  const playerLeaderboardHintText = looseText.playerLeaderboardHint || 'Ranked by total score, then best performer count.'
+  const noLeaderboardText = looseText.noLeaderboard || 'No ranked players yet.'
   const showProfileFields = Boolean(profile || authMode === 'create')
 
   function openPlayerProfile(profileId: string, sessionId = '') {
@@ -2418,6 +2427,7 @@ function handleSessionDateChange(value: string) {
       avatarColor: string | null
       avatarTextColor: string | null
       profileMotto: string | null
+      sessionsJoined: number
       gamesJoined: number
       wins: number
       bestPerformerCount: number
@@ -2426,6 +2436,7 @@ function handleSessionDateChange(value: string) {
       accuracyCount: number
       totalProjectiles: number
       bestByGame: Map<string, number>
+      gameCounts: Map<string, number>
     }>()
 
     sessions.forEach((session) => {
@@ -2441,6 +2452,7 @@ function handleSessionDateChange(value: string) {
           avatarColor: participant.avatar_color || null,
           avatarTextColor: participant.avatar_text_color || null,
           profileMotto: participant.profile_motto || null,
+          sessionsJoined: 0,
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
@@ -2449,6 +2461,7 @@ function handleSessionDateChange(value: string) {
           accuracyCount: 0,
           totalProjectiles: 0,
           bestByGame: new Map<string, number>(),
+          gameCounts: new Map<string, number>(),
         }
 
         current.displayName = compactDisplayName(participant.display_name, current.displayName)
@@ -2458,8 +2471,15 @@ function handleSessionDateChange(value: string) {
         current.avatarColor = participant.avatar_color || current.avatarColor
         current.avatarTextColor = participant.avatar_text_color || current.avatarTextColor
         current.profileMotto = participant.profile_motto || current.profileMotto
+        current.sessionsJoined += 1
         if (participant.checked_in) current.gamesJoined += 1
         if (participant.placement === 1) current.wins += 1
+
+        if (participant.checked_in) {
+          session.game_options.forEach((gameId) => {
+            current.gameCounts.set(gameId, (current.gameCounts.get(gameId) ?? 0) + 1)
+          })
+        }
 
         const numericScore = Number(participant.score)
         if (Number.isFinite(numericScore)) {
@@ -2493,15 +2513,33 @@ function handleSessionDateChange(value: string) {
     })
 
     return Array.from(stats.values())
-      .map((item) => ({
-        ...item,
-        averageAccuracy: item.accuracyCount > 0 ? Math.round(item.totalAccuracy / item.accuracyCount) : null,
-        bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
+      .map((item) => {
+        const bestByGame = Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
           game: games.find((game) => game.id === gameId)?.title || gameId,
           score,
-        })),
-      }))
-      .sort((a, b) => b.totalScore - a.totalScore)
+        }))
+        const favoriteGameEntry = Array.from(item.gameCounts.entries())
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
+        const favoriteGame = favoriteGameEntry
+          ? games.find((game) => game.id === favoriteGameEntry[0])?.title || favoriteGameEntry[0]
+          : null
+        const favoriteGameCount = favoriteGameEntry?.[1] ?? 0
+        const bestGameScore = bestByGame.length > 0
+          ? bestByGame.reduce((best, current) => (current.score > best.score ? current : best), bestByGame[0])
+          : null
+
+        return {
+          ...item,
+          averageAccuracy: item.accuracyCount > 0 ? Math.round(item.totalAccuracy / item.accuracyCount) : null,
+          reliabilityRate: item.sessionsJoined > 0 ? Math.round((item.gamesJoined / item.sessionsJoined) * 100) : null,
+          favoriteGame,
+          favoriteGameCount,
+          bestGameScore,
+          bestByGame,
+        }
+      })
+      .sort((a, b) => b.totalScore - a.totalScore || b.bestPerformerCount - a.bestPerformerCount || b.gamesJoined - a.gamesJoined)
+      .map((item, index) => ({ ...item, rank: index + 1 }))
   }, [sessions, text.player])
 
   const playerStats = allPlayerStats.find((item) => item.profileId === userId) ?? {
@@ -2513,6 +2551,7 @@ function handleSessionDateChange(value: string) {
     avatarColor: profile?.avatar_color || null,
     avatarTextColor: profile?.avatar_text_color || null,
     profileMotto: profile?.profile_motto || null,
+    sessionsJoined: 0,
     gamesJoined: 0,
     wins: 0,
     bestPerformerCount: 0,
@@ -2521,7 +2560,12 @@ function handleSessionDateChange(value: string) {
     accuracyCount: 0,
     totalProjectiles: 0,
     averageAccuracy: null,
+    reliabilityRate: null,
+    favoriteGame: null,
+    favoriteGameCount: 0,
+    bestGameScore: null,
     bestByGame: [],
+    rank: null,
   }
 
   const isAdmin = Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
@@ -2639,6 +2683,7 @@ function handleSessionDateChange(value: string) {
         avatarColor: profile.avatar_color || null,
         avatarTextColor: profile.avatar_text_color || null,
         profileMotto: profile.profile_motto || null,
+        sessionsJoined: 0,
         gamesJoined: 0,
         wins: 0,
         bestPerformerCount: 0,
@@ -2647,7 +2692,12 @@ function handleSessionDateChange(value: string) {
         accuracyCount: 0,
         totalProjectiles: 0,
         averageAccuracy: null,
+        reliabilityRate: null,
+        favoriteGame: null,
+        favoriteGameCount: 0,
+        bestGameScore: null,
         bestByGame: [],
+        rank: null,
       }
     }
 
@@ -2663,6 +2713,7 @@ function handleSessionDateChange(value: string) {
           avatarColor: participant.avatar_color || null,
           avatarTextColor: participant.avatar_text_color || null,
           profileMotto: participant.profile_motto || null,
+          sessionsJoined: 1,
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
@@ -2671,7 +2722,12 @@ function handleSessionDateChange(value: string) {
           accuracyCount: 0,
           totalProjectiles: 0,
           averageAccuracy: null,
+          reliabilityRate: null,
+          favoriteGame: null,
+          favoriteGameCount: 0,
+          bestGameScore: null,
           bestByGame: [],
+          rank: null,
         }
       }
     }
@@ -2688,6 +2744,7 @@ function handleSessionDateChange(value: string) {
           avatarColor: member.avatar_color || null,
           avatarTextColor: member.avatar_text_color || null,
           profileMotto: member.profile_motto || null,
+          sessionsJoined: 0,
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
@@ -2696,7 +2753,12 @@ function handleSessionDateChange(value: string) {
           accuracyCount: 0,
           totalProjectiles: 0,
           averageAccuracy: null,
+          reliabilityRate: null,
+          favoriteGame: null,
+          favoriteGameCount: 0,
+          bestGameScore: null,
           bestByGame: [],
+          rank: null,
         }
       }
     }
@@ -6470,18 +6532,50 @@ function handleSessionDateChange(value: string) {
                 <h3>{text.stats} {topPlayer?.profileId === userId ? '🏆' : ''}</h3>
                 {topPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
                 <div className="stats">
-                  <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
-                  <span>{playerStats.wins} {text.wins}</span>
-                  <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
-                  <span>{playerStats.totalScore} {text.totalScore}</span>
-                  <span>{playerStats.averageAccuracy ?? '-'}% {text.accuracy}</span>
-                  <span>{playerStats.totalProjectiles} {text.projectiles}</span>
+                  <span><small>{playerRankText}</small>#{playerStats.rank ?? '-'}</span>
+                  <span><small>{text.totalScore}</small>{playerStats.totalScore}</span>
+                  <span><small>{gamesPlayedText}</small>{playerStats.gamesJoined}</span>
+                  <span><small>{reliabilityScoreText}</small>{playerStats.reliabilityRate ?? '-'}%</span>
+                  <span><small>{text.wins}</small>{playerStats.wins}</span>
+                  <span><small>{bestPerformerCountText}</small>{playerStats.bestPerformerCount}</span>
                 </div>
                 {playerStats.bestByGame.length > 0 && (
                   <div className="best-score-list">
                     <strong>{text.bestScores}</strong>
                     {playerStats.bestByGame.map((item) => (
                       <span key={item.game}>{item.game}: {item.score}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {profile && (
+              <div className="player-leaderboard-card">
+                <div className="section-head compact-head">
+                  <div>
+                    <h3>{playerLeaderboardText}</h3>
+                    <p className="muted">{playerLeaderboardHintText}</p>
+                  </div>
+                </div>
+                {allPlayerStats.length === 0 ? (
+                  <p className="notice">{noLeaderboardText}</p>
+                ) : (
+                  <div className="leaderboard-list">
+                    {allPlayerStats.slice(0, 10).map((player) => (
+                      <button className="leaderboard-row" key={player.profileId} type="button" onClick={() => openPlayerProfile(player.profileId)}>
+                        <strong>#{player.rank}</strong>
+                        <span className="player-avatar tiny-avatar" style={avatarStyle({ avatar_color: player.avatarColor, avatar_text_color: player.avatarTextColor })}>
+                          {avatarNode({
+                            avatar_url: player.avatarUrl,
+                            avatar_emoji: player.avatarEmoji,
+                            avatar_initials: player.avatarInitials,
+                            display_name: player.displayName,
+                          }, 'P')}
+                        </span>
+                        <span>{compactDisplayName(player.displayName, text.player)}</span>
+                        <small>{player.totalScore} {text.totalScore} · {player.bestPerformerCount} {bestPerformerText}</small>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -6852,12 +6946,15 @@ function handleSessionDateChange(value: string) {
               </div>
             </div>
             <div className="stats">
-              <span>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</span>
-              <span>{selectedPlayerProfile.wins} {text.wins}</span>
-              <span>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</span>
-              <span>{selectedPlayerProfile.totalScore} {text.totalScore}</span>
-              <span>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</span>
-              <span>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</span>
+              <span><small>{playerRankText}</small>#{selectedPlayerProfile.rank ?? '-'}</span>
+              <span><small>{text.totalScore}</small>{selectedPlayerProfile.totalScore}</span>
+              <span><small>{gamesPlayedText}</small>{selectedPlayerProfile.gamesJoined}</span>
+              <span><small>{sessionsJoinedText}</small>{selectedPlayerProfile.sessionsJoined}</span>
+              <span><small>{reliabilityScoreText}</small>{selectedPlayerProfile.reliabilityRate ?? '-'}%</span>
+              <span><small>{text.wins}</small>{selectedPlayerProfile.wins}</span>
+              <span><small>{bestPerformerCountText}</small>{selectedPlayerProfile.bestPerformerCount}</span>
+              <span><small>{text.accuracy}</small>{selectedPlayerProfile.averageAccuracy ?? '-'}%</span>
+              <span><small>{text.projectiles}</small>{selectedPlayerProfile.totalProjectiles}</span>
             </div>
             {selectedPlayerSessionContext && (
               <div className="session-score-summary">
@@ -6866,6 +6963,16 @@ function handleSessionDateChange(value: string) {
                 {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
               </div>
             )}
+            <div className="player-card-highlights">
+              <span>
+                <small>{bestGameScoreText}</small>
+                {selectedPlayerProfile.bestGameScore ? `${selectedPlayerProfile.bestGameScore.game}: ${selectedPlayerProfile.bestGameScore.score}` : '-'}
+              </span>
+              <span>
+                <small>{favoriteGameText}</small>
+                {selectedPlayerProfile.favoriteGame ? `${selectedPlayerProfile.favoriteGame} (${selectedPlayerProfile.favoriteGameCount})` : '-'}
+              </span>
+            </div>
             {selectedPlayerProfile.bestByGame.length > 0 && (
               <div className="best-score-list">
                 <strong>{text.bestScores}</strong>
@@ -10174,6 +10281,10 @@ function handleSessionDateChange(value: string) {
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 8px;
           padding: 12px;
+          color: #071112;
+          font-size: 20px;
+          font-weight: 900;
+          line-height: 1.1;
         }
 
         .stats strong,
@@ -10188,6 +10299,86 @@ function handleSessionDateChange(value: string) {
         .stats span {
           color: #637075;
           font-size: 13px;
+        }
+
+        .stats > span {
+          color: #071112;
+          font-size: 20px;
+        }
+
+        .stats > span small {
+          display: block;
+          margin-bottom: 4px;
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .player-card-highlights {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .player-card-highlights span {
+          display: grid;
+          gap: 4px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          padding: 12px;
+          background: #f8fbfc;
+          color: #071112;
+          font-weight: 900;
+        }
+
+        .player-card-highlights small {
+          color: #637075;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .player-leaderboard-card {
+          display: grid;
+          gap: 10px;
+          border-top: 1px solid rgba(7, 17, 18, 0.12);
+          margin-top: 18px;
+          padding-top: 18px;
+        }
+
+        .leaderboard-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .leaderboard-row {
+          display: grid;
+          grid-template-columns: 44px auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 10px;
+          min-height: 58px;
+          border: 1px solid rgba(7, 17, 18, 0.12);
+          border-radius: 8px;
+          background: #ffffff;
+          color: #071112;
+          text-align: left;
+        }
+
+        .leaderboard-row > strong {
+          color: #3059ff;
+          font-size: 16px;
+        }
+
+        .leaderboard-row > span:not(.player-avatar) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-weight: 900;
+        }
+
+        .leaderboard-row small {
+          color: #637075;
+          font-size: 12px;
+          font-weight: 800;
         }
 
         @media (max-width: 960px) {
@@ -10732,6 +10923,14 @@ function handleSessionDateChange(value: string) {
             grid-template-columns: 1fr;
           }
 
+          .leaderboard-row {
+            grid-template-columns: 36px auto minmax(0, 1fr);
+          }
+
+          .leaderboard-row small {
+            grid-column: 3;
+          }
+
           .compact-form-grid,
           .session-mode-row,
           .session-timing-row,
@@ -10996,6 +11195,35 @@ function handleSessionDateChange(value: string) {
 
           .reminder-strip small,
           .session-message p {
+            color: #aeb9bd;
+          }
+
+          .stats > span,
+          .player-card-highlights span {
+            color: #f6f7f9;
+          }
+
+          .stats > span small,
+          .player-card-highlights small {
+            color: #aeb9bd;
+          }
+
+          .player-card-highlights span {
+            background: #182225;
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .player-leaderboard-card {
+            border-top-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .leaderboard-row {
+            background: #10191b;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #f6f7f9;
+          }
+
+          .leaderboard-row small {
             color: #aeb9bd;
           }
 
