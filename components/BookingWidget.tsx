@@ -53,6 +53,7 @@ type Profile = {
   avatar_text_color?: string | null
   profile_motto?: string | null
   role?: 'player' | 'admin'
+  score_adjustment?: number | null
 }
 
 type Participant = {
@@ -996,6 +997,7 @@ export default function WidgetPage() {
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [profileScoreAdjustments, setProfileScoreAdjustments] = useState<Record<string, number>>({})
   const [busyInviteKey, setBusyInviteKey] = useState('')
   const [busyFriendId, setBusyFriendId] = useState('')
   const [busyMessageKey, setBusyMessageKey] = useState('')
@@ -1919,7 +1921,9 @@ export default function WidgetPage() {
 
     const sessionRows = (sessionResult.data ?? []) as Session[]
     const sessionIds = sessionRows.map((session) => session.id)
+    const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
     let waitlistRows: WaitlistEntry[] = []
+    let scoreAdjustments: Record<string, number> = {}
 
     if (sessionIds.length > 0) {
       const waitlistResult = await supabase
@@ -1933,6 +1937,21 @@ export default function WidgetPage() {
       }
     }
 
+    if (profileIds.length > 0) {
+      const adjustmentResult = await supabase
+        .from('profiles')
+        .select('id, score_adjustment')
+        .in('id', profileIds)
+
+      if (!adjustmentResult.error) {
+        scoreAdjustments = Object.fromEntries((adjustmentResult.data ?? []).map((row) => {
+          const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
+          return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
+        }))
+      }
+    }
+
+    setProfileScoreAdjustments(scoreAdjustments)
     setSessions(sessionRows.map((session) => ({
       ...session,
       session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
@@ -2476,7 +2495,9 @@ function handleSessionDateChange(value: string) {
       gamesJoined: number
       wins: number
       bestPerformerCount: number
+      baseTotalScore: number
       totalScore: number
+      scoreAdjustment: number
       totalAccuracy: number
       accuracyCount: number
       totalProjectiles: number
@@ -2499,7 +2520,9 @@ function handleSessionDateChange(value: string) {
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
+          baseTotalScore: 0,
           totalScore: 0,
+          scoreAdjustment: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -2518,7 +2541,7 @@ function handleSessionDateChange(value: string) {
 
         const numericScore = Number(participant.score)
         if (Number.isFinite(numericScore)) {
-          current.totalScore += numericScore
+          current.baseTotalScore += numericScore
           if (bestScore !== null && numericScore === bestScore) current.bestPerformerCount += 1
 
           session.game_options.forEach((gameId) => {
@@ -2550,6 +2573,8 @@ function handleSessionDateChange(value: string) {
     return Array.from(stats.values())
       .map((item) => ({
         ...item,
+        scoreAdjustment: profileScoreAdjustments[item.profileId] ?? 0,
+        totalScore: item.baseTotalScore + (profileScoreAdjustments[item.profileId] ?? 0),
         averageAccuracy: item.accuracyCount > 0 ? Math.round(item.totalAccuracy / item.accuracyCount) : null,
         bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
           game: games.find((game) => game.id === gameId)?.title || gameId,
@@ -2557,7 +2582,7 @@ function handleSessionDateChange(value: string) {
         })),
       }))
       .sort((a, b) => b.totalScore - a.totalScore)
-  }, [sessions, text.player])
+  }, [profileScoreAdjustments, sessions, text.player])
 
   const playerStats = allPlayerStats.find((item) => item.profileId === userId) ?? {
     profileId: userId,
@@ -2571,7 +2596,9 @@ function handleSessionDateChange(value: string) {
     gamesJoined: 0,
     wins: 0,
     bestPerformerCount: 0,
-    totalScore: 0,
+    baseTotalScore: 0,
+    totalScore: profileScoreAdjustments[userId] ?? 0,
+    scoreAdjustment: profileScoreAdjustments[userId] ?? 0,
     totalAccuracy: 0,
     accuracyCount: 0,
     totalProjectiles: 0,
@@ -2697,7 +2724,9 @@ function handleSessionDateChange(value: string) {
         gamesJoined: 0,
         wins: 0,
         bestPerformerCount: 0,
-        totalScore: 0,
+        baseTotalScore: 0,
+        totalScore: profileScoreAdjustments[profile.id] ?? 0,
+        scoreAdjustment: profileScoreAdjustments[profile.id] ?? 0,
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
@@ -2721,7 +2750,9 @@ function handleSessionDateChange(value: string) {
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
-          totalScore: 0,
+          baseTotalScore: 0,
+          totalScore: profileScoreAdjustments[participant.profile_id] ?? 0,
+          scoreAdjustment: profileScoreAdjustments[participant.profile_id] ?? 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -2746,7 +2777,9 @@ function handleSessionDateChange(value: string) {
           gamesJoined: 0,
           wins: 0,
           bestPerformerCount: 0,
-          totalScore: 0,
+          baseTotalScore: 0,
+          totalScore: profileScoreAdjustments[member.profile_id] ?? 0,
+          scoreAdjustment: profileScoreAdjustments[member.profile_id] ?? 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -2757,7 +2790,7 @@ function handleSessionDateChange(value: string) {
     }
 
     return undefined
-  }, [clubs, profile, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
+  }, [clubs, profile, profileScoreAdjustments, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
 
   useEffect(() => {
     if (!checkInParticipant) {
@@ -3196,6 +3229,42 @@ function handleSessionDateChange(value: string) {
     }
 
     await loadSessions()
+  }
+
+  async function updateProfileTotalScore(profileId: string, totalScoreValue: string | number | null, baseTotalScore: number) {
+    if (!isAdmin) {
+      setCreateStatus(text.adminOnlyAction)
+      return
+    }
+
+    const totalScore = totalScoreValue === '' || totalScoreValue === null ? null : Number(totalScoreValue)
+    if (totalScore === null || !Number.isFinite(totalScore)) {
+      setCreateStatus(text.invalidScore)
+      return
+    }
+
+    const scoreAdjustment = totalScore - baseTotalScore
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ score_adjustment: scoreAdjustment })
+      .eq('id', profileId)
+      .select('id, score_adjustment')
+      .single()
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    const savedAdjustment = Number((data as Pick<Profile, 'score_adjustment'>).score_adjustment ?? scoreAdjustment)
+    setProfileScoreAdjustments((current) => ({
+      ...current,
+      [profileId]: Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment,
+    }))
+    if (profile?.id === profileId) {
+      setProfile({ ...profile, score_adjustment: Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment })
+    }
+    setCreateStatus(text.scoreSaved)
   }
 
   async function saveProfile() {
@@ -7109,6 +7178,17 @@ function handleSessionDateChange(value: string) {
               <span>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</span>
               <span>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</span>
             </div>
+            {isAdmin && (
+              <div className="score-controls profile-score-controls">
+                <input
+                  aria-label={text.adminTotalScore}
+                  defaultValue={selectedPlayerProfile.totalScore}
+                  inputMode="numeric"
+                  onBlur={(event) => updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)}
+                  placeholder={text.adminTotalScore}
+                />
+              </div>
+            )}
             {selectedPlayerSessionContext && (
               <div className="session-score-summary">
                 <strong>{selectedPlayerSessionContext.session.name}</strong>
