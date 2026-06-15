@@ -3754,6 +3754,32 @@ function handleSessionDateChange(value: string) {
     setBusyMessageKey('')
   }
 
+  async function deleteSessionMessage(message: SessionMessage) {
+    if (!requireProfile()) return
+    if (!isAdmin) {
+      setCreateStatus(text.adminOnlyAction)
+      return
+    }
+
+    const confirmed = window.confirm(text.deleteMessageConfirm)
+    if (!confirmed) return
+
+    setBusyMessageKey(`${message.id}-delete`)
+    const { error } = await supabase
+      .from('session_messages')
+      .delete()
+      .eq('id', message.id)
+
+    if (error) {
+      setCreateStatus(error.message)
+    } else {
+      setCreateStatus(text.messageDeleted)
+      await loadNetworkData()
+    }
+
+    setBusyMessageKey('')
+  }
+
   async function leaveSession(session: Session) {
     if (!requireProfile()) return
 
@@ -5576,24 +5602,38 @@ function handleSessionDateChange(value: string) {
                                     {moderationStatus === 'rejected' && <small className="moderation-badge rejected">{text.rejectedMessage}</small>}
                                   </div>
                                   <p>{message.body}</p>
-                                  {canReviewMessage && (
+                                  {(canReviewMessage || isAdmin) && (
                                     <div className="moderation-actions">
-                                      <button
-                                        className="secondary small-button"
-                                        disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
-                                        type="button"
-                                        onClick={() => reviewSessionMessage(message, 'approved')}
-                                      >
-                                        {text.approveMessage}
-                                      </button>
-                                      <button
-                                        className="danger small-button"
-                                        disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
-                                        type="button"
-                                        onClick={() => reviewSessionMessage(message, 'rejected')}
-                                      >
-                                        {text.rejectMessage}
-                                      </button>
+                                      {canReviewMessage && (
+                                        <>
+                                          <button
+                                            className="secondary small-button"
+                                            disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
+                                            type="button"
+                                            onClick={() => reviewSessionMessage(message, 'approved')}
+                                          >
+                                            {text.approveMessage}
+                                          </button>
+                                          <button
+                                            className="danger small-button"
+                                            disabled={busyMessageKey === `${message.id}-approved` || busyMessageKey === `${message.id}-rejected`}
+                                            type="button"
+                                            onClick={() => reviewSessionMessage(message, 'rejected')}
+                                          >
+                                            {text.rejectMessage}
+                                          </button>
+                                        </>
+                                      )}
+                                      {isAdmin && (
+                                        <button
+                                          className="danger small-button"
+                                          disabled={busyMessageKey === `${message.id}-delete`}
+                                          type="button"
+                                          onClick={() => deleteSessionMessage(message)}
+                                        >
+                                          {text.deleteMessage}
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
