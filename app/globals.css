@@ -1342,14 +1342,33 @@ body {
 
 .app .message-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.app .message-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app .message-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c9d4d8;
+}
+
+.app .message-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .app .session-message {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px;
+  align-items: start;
+  gap: 7px;
+  padding: 7px;
   border: 1px solid #e4ecef;
   border-radius: 8px;
   background: #ffffff;
@@ -1360,9 +1379,38 @@ body {
   background: #f3f6ff;
 }
 
+.app .session-message.own-message {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-left: clamp(18px, 8vw, 72px);
+  border-color: #cfe2ea;
+  background: #f7fbff;
+}
+
+.app .session-message.announcement.own-message {
+  border-color: #c7d5ff;
+  background: #eef4ff;
+}
+
+.app .session-message.own-message .message-avatar {
+  grid-column: 2;
+}
+
+.app .session-message .message-body {
+  min-width: 0;
+}
+
+.app .session-message.own-message .message-body {
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .app .session-message p {
   margin: 2px 0 0;
   color: #4a5a60;
+}
+
+.app .session-message.own-message p {
+  text-align: right;
 }
 
 .app .message-meta-row {
@@ -1370,6 +1418,10 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.app .session-message.own-message .message-meta-row {
+  justify-content: flex-end;
 }
 
 .app .moderation-badge {
@@ -3416,6 +3468,14 @@ body {
     padding: 12px;
   }
 
+  .app .message-list {
+    max-height: 202px;
+  }
+
+  .app .session-message.own-message {
+    margin-left: 18px;
+  }
+
   .app h1 {
     font-size: 26px;
   }
@@ -4104,12 +4164,26 @@ body {
     border-color: rgba(255, 255, 255, 0.12);
   }
 
+  .app .session-message.own-message {
+    background: #1c2a30;
+    border-color: rgba(125, 211, 252, 0.22);
+  }
+
+  .app .session-message.announcement.own-message {
+    background: #1e2838;
+    border-color: rgba(147, 197, 253, 0.28);
+  }
+
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message {
     color: #f6f7f9;
   }
 
   .app .reminder-strip small, .app .session-message p {
     color: #aeb9bd;
+  }
+
+  .app .message-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.24);
   }
 
   .app .moderation-badge.pending {
