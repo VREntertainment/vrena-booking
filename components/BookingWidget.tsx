@@ -876,6 +876,23 @@ function getHCaptcha() {
   return (window as unknown as { hcaptcha?: HCaptchaApi }).hcaptcha
 }
 
+function scheduleDeferredWork(callback: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const idleWindow = window as unknown as {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+    cancelIdleCallback?: (handle: number) => void
+  }
+
+  if (idleWindow.requestIdleCallback) {
+    const handle = idleWindow.requestIdleCallback(callback, { timeout: 2500 })
+    return () => idleWindow.cancelIdleCallback?.(handle)
+  }
+
+  const handle = window.setTimeout(callback, 900)
+  return () => window.clearTimeout(handle)
+}
+
 export default function WidgetPage() {
   const [activeView, setActiveView] = useState<'sessions' | 'create' | 'clubs' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
@@ -883,7 +900,7 @@ export default function WidgetPage() {
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
-  const [networkTablesReady, setNetworkTablesReady] = useState(true)
+  const [networkTablesReady, setNetworkTablesReady] = useState(false)
   const [tournamentData, setTournamentData] = useState<TournamentData>({
     editors: [],
     pools: [],
@@ -1023,6 +1040,12 @@ export default function WidgetPage() {
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
+  const clubsLoadedRef = useRef(false)
+  const clubsLoadingRef = useRef(false)
+  const tournamentDataLoadedRef = useRef(false)
+  const tournamentDataLoadingRef = useRef(false)
+  const networkDataLoadedRef = useRef(false)
+  const networkDataLoadingRef = useRef(false)
   const text = uiText[language]
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
@@ -1232,6 +1255,21 @@ export default function WidgetPage() {
 
     promptLogin()
     return false
+  }
+
+  function ensureClubsLoaded() {
+    if (clubsLoadedRef.current || clubsLoadingRef.current) return
+    void loadClubs()
+  }
+
+  function ensureTournamentDataLoaded() {
+    if (tournamentDataLoadedRef.current || tournamentDataLoadingRef.current) return
+    void loadTournamentData()
+  }
+
+  function ensureNetworkDataLoaded() {
+    if (networkDataLoadedRef.current || networkDataLoadingRef.current) return
+    void loadNetworkData()
   }
 
   function openSessionFromProfile(sessionId: string) {
@@ -1941,34 +1979,27 @@ export default function WidgetPage() {
     const sessionRows = (sessionResult.data ?? []) as Session[]
     const sessionIds = sessionRows.map((session) => session.id)
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
-    let waitlistRows: WaitlistEntry[] = []
-    let scoreAdjustments: Record<string, number> = {}
-
-    if (sessionIds.length > 0) {
-      const waitlistResult = await supabase
+    const [waitlistResult, adjustmentResult] = await Promise.all([
+      sessionIds.length > 0
+        ? supabase
         .from('session_waitlist')
         .select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
         .in('session_id', sessionIds)
         .order('created_at', { ascending: true })
-
-      if (!waitlistResult.error) {
-        waitlistRows = (waitlistResult.data ?? []) as WaitlistEntry[]
-      }
-    }
-
-    if (profileIds.length > 0) {
-      const adjustmentResult = await supabase
+        : Promise.resolve({ data: [], error: null }),
+      profileIds.length > 0
+        ? supabase
         .from('profiles')
         .select('id, score_adjustment')
         .in('id', profileIds)
+        : Promise.resolve({ data: [], error: null }),
+    ])
 
-      if (!adjustmentResult.error) {
-        scoreAdjustments = Object.fromEntries((adjustmentResult.data ?? []).map((row) => {
-          const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
-          return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
-        }))
-      }
-    }
+    const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
+    const scoreAdjustments = adjustmentResult.error ? {} : Object.fromEntries((adjustmentResult.data ?? []).map((row) => {
+      const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
+      return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
+    }))
 
     setProfileScoreAdjustments(scoreAdjustments)
     setSessions(sessionRows.map((session) => ({
@@ -1979,6 +2010,7 @@ export default function WidgetPage() {
   }
 
   async function loadClubs() {
+    clubsLoadingRef.current = true
     const { data, error } = await supabase
       .from('clubs')
       .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status)')
@@ -1986,13 +2018,17 @@ export default function WidgetPage() {
 
     if (error) {
       setClubStatus(error.message)
+      clubsLoadingRef.current = false
       return
     }
 
+    clubsLoadedRef.current = true
+    clubsLoadingRef.current = false
     setClubs((data ?? []) as Club[])
   }
 
   async function loadTournamentData() {
+    tournamentDataLoadingRef.current = true
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
       supabase.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
       supabase.from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
@@ -2012,9 +2048,12 @@ export default function WidgetPage() {
     const firstError = editorsResult.error || poolsResult.error || entriesResult.error || matchesResult.error || auditResult.error
     if (firstError) {
       setCreateStatus(firstError.message)
+      tournamentDataLoadingRef.current = false
       return
     }
 
+    tournamentDataLoadedRef.current = true
+    tournamentDataLoadingRef.current = false
     setTournamentData({
       editors: (editorsResult.data ?? []) as TournamentEditor[],
       pools: (poolsResult.data ?? []) as TournamentPool[],
@@ -2025,6 +2064,7 @@ export default function WidgetPage() {
   }
 
   async function loadNetworkData() {
+    networkDataLoadingRef.current = true
     const friendsResult = await supabase
       .from('user_follows')
       .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
@@ -2044,9 +2084,12 @@ export default function WidgetPage() {
       setFriendConnections([])
       setSessionInvites([])
       setSessionMessages([])
+      networkDataLoadingRef.current = false
       return
     }
 
+    networkDataLoadedRef.current = true
+    networkDataLoadingRef.current = false
     setNetworkTablesReady(true)
     setFriendConnections((friendsResult.data ?? []) as FriendConnection[])
     setSessionInvites((invitesResult.data ?? []) as SessionInvite[])
@@ -2062,10 +2105,37 @@ export default function WidgetPage() {
     }
     loadProfile()
     loadSessions()
-    loadClubs()
-    loadTournamentData()
-    loadNetworkData()
+
+    return scheduleDeferredWork(() => {
+      ensureClubsLoaded()
+      ensureTournamentDataLoaded()
+      ensureNetworkDataLoaded()
+    })
   }, [])
+
+  useEffect(() => {
+    if (activeView === 'clubs' || activeView === 'create') {
+      ensureClubsLoaded()
+    }
+
+    if (activeView === 'profile') {
+      ensureNetworkDataLoaded()
+    }
+  }, [activeView])
+
+  useEffect(() => {
+    if (selectedPlayerId) {
+      ensureNetworkDataLoaded()
+    }
+  }, [selectedPlayerId])
+
+  useEffect(() => {
+    const hasExpandedSession = Object.values(expandedSessions).some(Boolean)
+    if (!hasExpandedSession) return
+
+    ensureNetworkDataLoaded()
+    ensureTournamentDataLoaded()
+  }, [expandedSessions])
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -2116,19 +2186,39 @@ export default function WidgetPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         loadProfile()
         loadSessions()
-        loadClubs()
-        loadTournamentData()
+        if (clubsLoadedRef.current) loadClubs()
+        if (tournamentDataLoadedRef.current) loadTournamentData()
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => loadClubs())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadClubs())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => loadTournamentData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => loadTournamentData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => loadTournamentData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => loadTournamentData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => loadTournamentData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => loadNetworkData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => loadNetworkData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => loadNetworkData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
+        if (clubsLoadedRef.current) loadClubs()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
+        if (clubsLoadedRef.current) loadClubs()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => {
+        if (tournamentDataLoadedRef.current) loadTournamentData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => {
+        if (tournamentDataLoadedRef.current) loadTournamentData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => {
+        if (tournamentDataLoadedRef.current) loadTournamentData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
+        if (tournamentDataLoadedRef.current) loadTournamentData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => {
+        if (tournamentDataLoadedRef.current) loadTournamentData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => {
+        if (networkDataLoadedRef.current) loadNetworkData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
+        if (networkDataLoadedRef.current) loadNetworkData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
+        if (networkDataLoadedRef.current) loadNetworkData()
+      })
       .subscribe()
 
     return () => {
