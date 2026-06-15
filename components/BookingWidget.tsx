@@ -999,6 +999,7 @@ export default function WidgetPage() {
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
+  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
@@ -1042,11 +1043,13 @@ export default function WidgetPage() {
   function openPlayerProfile(profileId: string, sessionId = '') {
     setSelectedPlayerId(profileId)
     setSelectedPlayerSessionId(sessionId)
+    setSelectedPlayerScoreEdit(null)
   }
 
   function closePlayerProfile() {
     setSelectedPlayerId('')
     setSelectedPlayerSessionId('')
+    setSelectedPlayerScoreEdit(null)
   }
 
   function updateAvatarColor(value: string) {
@@ -7192,61 +7195,108 @@ function handleSessionDateChange(value: string) {
               <span>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</span>
               <span>{selectedPlayerProfile.wins} {text.wins}</span>
               <span>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</span>
-              <span>{selectedPlayerProfile.totalScore} {text.totalScore}</span>
               <span>{selectedPlayerProfile.averageAccuracy ?? '-'}% {text.accuracy}</span>
               <span>{selectedPlayerProfile.totalProjectiles} {text.projectiles}</span>
             </div>
-            {isAdmin && (
-              <div className="score-controls profile-score-controls">
-                <input
-                  aria-label={text.adminTotalScore}
-                  defaultValue={selectedPlayerProfile.totalScore}
-                  inputMode="numeric"
-                  onBlur={(event) => updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)}
-                  placeholder={text.adminTotalScore}
-                />
+            {!selectedPlayerSessionContext && (
+              <div className="session-score-summary total-score-summary">
+                <div className="score-stack">
+                  <div className="score-line total-line">
+                    <span>{text.totalScore}</span>
+                    {selectedPlayerScoreEdit === 'total' && isAdmin ? (
+                      <input
+                        aria-label={text.adminTotalScore}
+                        autoFocus
+                        className="inline-score-input"
+                        defaultValue={selectedPlayerProfile.totalScore}
+                        inputMode="numeric"
+                        onBlur={async (event) => {
+                          await updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)
+                          setSelectedPlayerScoreEdit(null)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') event.currentTarget.blur()
+                          if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+                        }}
+                      />
+                    ) : (
+                      <button
+                        className={isAdmin ? 'score-value editable' : 'score-value'}
+                        disabled={!isAdmin}
+                        type="button"
+                        onClick={() => setSelectedPlayerScoreEdit('total')}
+                      >
+                        {selectedPlayerProfile.totalScore}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
             {selectedPlayerSessionContext && (
               <div className="session-score-summary">
-                <strong>{selectedPlayerSessionContext.session.name}</strong>
-                <span>{sessionScoreText}: {selectedPlayerSessionContext.score ?? '-'}</span>
-                {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
-                {selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id && (
-                  <div className="score-controls profile-score-controls session-profile-score-controls">
-                    <input
-                      aria-label={text.score}
-                      defaultValue={selectedPlayerManageContext.participant.score ?? ''}
-                      inputMode="numeric"
-                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-                      placeholder={text.score}
-                    />
-                    <input
-                      aria-label={text.accuracy}
-                      defaultValue={selectedPlayerManageContext.participant.accuracy_percent ?? ''}
-                      inputMode="numeric"
-                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', event.target.value, selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-                      placeholder="%"
-                    />
-                    <input
-                      aria-label={text.projectiles}
-                      defaultValue={selectedPlayerManageContext.participant.projectiles_fired ?? ''}
-                      inputMode="numeric"
-                      onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
-                      placeholder={text.projectiles}
-                    />
-                    <select
-                      aria-label={text.place}
-                      value={selectedPlayerManageContext.participant.placement ?? ''}
-                      onChange={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', event.target.value, selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-                    >
-                      <option value="">{text.noPlace}</option>
-                      <option value="1">{text.firstPlace}</option>
-                      <option value="2">{text.secondPlace}</option>
-                      <option value="3">{text.thirdPlace}</option>
-                    </select>
+                <strong className="score-session-name">{selectedPlayerSessionContext.session.name}</strong>
+                <div className="score-stack">
+                  <div className="score-line">
+                    <span>{sessionScoreText}</span>
+                    {selectedPlayerScoreEdit === 'session' && selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id ? (
+                      <input
+                        aria-label={text.score}
+                        autoFocus
+                        className="inline-score-input"
+                        defaultValue={selectedPlayerManageContext.participant.score ?? ''}
+                        inputMode="numeric"
+                        onBlur={async (event) => {
+                          await updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')
+                          setSelectedPlayerScoreEdit(null)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') event.currentTarget.blur()
+                          if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+                        }}
+                      />
+                    ) : (
+                      <button
+                        className={selectedPlayerManageContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id ? 'score-value editable' : 'score-value'}
+                        disabled={!selectedPlayerManageContext || selectedPlayerManageContext.session.id !== selectedPlayerSessionContext.session.id}
+                        type="button"
+                        onClick={() => setSelectedPlayerScoreEdit('session')}
+                      >
+                        {selectedPlayerSessionContext.score ?? '-'}
+                      </button>
+                    )}
                   </div>
-                )}
+                  <div className="score-line total-line">
+                    <span>{text.totalScore}</span>
+                    {selectedPlayerScoreEdit === 'total' && isAdmin ? (
+                      <input
+                        aria-label={text.adminTotalScore}
+                        autoFocus
+                        className="inline-score-input"
+                        defaultValue={selectedPlayerProfile.totalScore}
+                        inputMode="numeric"
+                        onBlur={async (event) => {
+                          await updateProfileTotalScore(selectedPlayerProfile.profileId, event.target.value, selectedPlayerProfile.baseTotalScore)
+                          setSelectedPlayerScoreEdit(null)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') event.currentTarget.blur()
+                          if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+                        }}
+                      />
+                    ) : (
+                      <button
+                        className={isAdmin ? 'score-value editable' : 'score-value'}
+                        disabled={!isAdmin}
+                        type="button"
+                        onClick={() => setSelectedPlayerScoreEdit('total')}
+                      >
+                        {selectedPlayerProfile.totalScore}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {selectedPlayerSessionContext.isBestPerformer && <span className="pill ok">{bestPerformerText}</span>}
               </div>
             )}
             {selectedPlayerProfile.bestByGame.length > 0 && (
@@ -7257,7 +7307,7 @@ function handleSessionDateChange(value: string) {
                 ))}
               </div>
             )}
-            {selectedPlayerManageContext && !selectedPlayerSessionContext && (
+            {selectedPlayerManageContext && !selectedPlayerSessionContext && isAdmin && (
               <div className="score-controls profile-score-controls">
                 <input
                   aria-label={text.score}
@@ -8537,9 +8587,8 @@ function handleSessionDateChange(value: string) {
         }
 
         .session-score-summary {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
           gap: 8px;
           margin-top: 8px;
           padding: 10px 12px;
@@ -8548,6 +8597,77 @@ function handleSessionDateChange(value: string) {
           background: #f5f9fa;
           color: #091213;
           font-size: 14px;
+        }
+
+        .score-session-name {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .score-stack {
+          display: grid;
+          gap: 4px;
+          padding-top: 2px;
+        }
+
+        .score-line {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 12px;
+          min-height: 34px;
+        }
+
+        .score-line span {
+          color: #637075;
+          font-weight: 800;
+        }
+
+        .score-line.total-line {
+          border-top: 1px solid #dce5e8;
+          padding-top: 4px;
+        }
+
+        .total-score-summary .score-line.total-line {
+          border-top: 0;
+          padding-top: 0;
+        }
+
+        .score-value {
+          min-width: 58px;
+          min-height: 32px;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          background: transparent;
+          color: #071112;
+          font: inherit;
+          font-weight: 900;
+          text-align: right;
+        }
+
+        .score-value.editable {
+          border-color: #dce5e8;
+          background: #ffffff;
+          cursor: pointer;
+        }
+
+        .score-value:disabled {
+          opacity: 1;
+        }
+
+        .inline-score-input {
+          width: 84px;
+          min-height: 34px;
+          border: 1px solid #cfd8dc;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 4px 8px;
+          color: #071112;
+          font: inherit;
+          font-weight: 900;
+          text-align: right;
         }
 
         .reminder-strip,
@@ -10614,11 +10734,30 @@ function handleSessionDateChange(value: string) {
           margin-top: 14px;
         }
 
+        .player-profile-panel .stats {
+          display: flex;
+          gap: 6px;
+          margin-top: 10px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .player-profile-panel .stats::-webkit-scrollbar {
+          display: none;
+        }
+
         .stats div,
         .stats > span {
           border: 1px solid rgba(7, 17, 18, 0.12);
           border-radius: 8px;
           padding: 12px;
+        }
+
+        .player-profile-panel .stats > span {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 7px 8px;
+          min-height: 46px;
         }
 
         .stats strong,
@@ -10633,6 +10772,11 @@ function handleSessionDateChange(value: string) {
         .stats span {
           color: #637075;
           font-size: 13px;
+        }
+
+        .player-profile-panel .stats span {
+          font-size: 12px;
+          line-height: 1.2;
         }
 
         @media (max-width: 960px) {
@@ -10805,6 +10949,10 @@ function handleSessionDateChange(value: string) {
             max-height: calc(100vh - 86px);
             border-radius: 18px 18px 10px 10px;
             align-self: end;
+          }
+
+          .player-profile-panel .stats > span {
+            flex: 0 0 108px;
           }
 
           .section-head,
