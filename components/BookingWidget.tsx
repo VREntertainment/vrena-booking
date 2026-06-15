@@ -1140,6 +1140,8 @@ export default function WidgetPage() {
           <img
             src={source.avatar_url}
             alt=""
+            loading="lazy"
+            decoding="async"
             style={{
               position: 'absolute',
               inset: 0,
@@ -4922,7 +4924,7 @@ function handleSessionDateChange(value: string) {
         }}
       >
         <div className="mini-session-title mini-session-title-with-image">
-          <img className="mini-session-image" src={coverGame.image} alt="" />
+          <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
           <strong>{session.name}</strong>
           <span className={createdByMe ? 'pill ok' : 'pill'}>
             {createdByMe ? text.createdByYou : text.joined}
@@ -5004,7 +5006,7 @@ function handleSessionDateChange(value: string) {
     return (
       <article className="mini-session invite-session" key={invite.id}>
         <div className="mini-session-title mini-session-title-with-image">
-          <img className="mini-session-image" src={coverGame.image} alt="" />
+          <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
           <strong>{session.name}</strong>
           <span className="pill ok">{text.invited}</span>
         </div>
@@ -5270,7 +5272,7 @@ function handleSessionDateChange(value: string) {
                         }
                       }}
                     >
-                      <img className="compact-session-image" src={coverGame.image} alt="" />
+                      <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
                       <div className="compact-session-main">
                         <div className="compact-session-title-row">
                           <h3>{session.name}</h3>
@@ -5603,7 +5605,7 @@ function handleSessionDateChange(value: string) {
                                   onClick={() => toggleEditGame(game.id)}
                                   type="button"
                                 >
-                                  <img src={game.image} alt="" />
+                                  <img src={game.image} alt="" loading="lazy" decoding="async" />
                                   <span>{game.title}</span>
                                   <strong>{game.category}</strong>
                                 </button>
@@ -6172,7 +6174,7 @@ function handleSessionDateChange(value: string) {
                             onClick={() => voteForGame(session, gameId)}
                             type="button"
                           >
-                            <img src={game.image} alt="" />
+                            <img src={game.image} alt="" loading="lazy" decoding="async" />
                             <span>{game.title}</span>
                             <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                           </button>
@@ -6583,7 +6585,7 @@ function handleSessionDateChange(value: string) {
                       onClick={() => toggleGame(game.id)}
                       type="button"
                     >
-                      <img src={game.image} alt="" />
+                      <img src={game.image} alt="" loading="lazy" decoding="async" />
                       <span>{game.title}</span>
                       <strong>{game.category}</strong>
                     </button>
@@ -6643,7 +6645,7 @@ function handleSessionDateChange(value: string) {
                 <div className="profile-photo-panel">
                   <label className="profile-photo-preview" style={{ background: avatarColor, color: avatarTextColor }}>
                     {avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
-                      <img src={avatarPreview || profile?.avatar_url || ''} alt="" />
+                      <img src={avatarPreview || profile?.avatar_url || ''} alt="" loading="lazy" decoding="async" />
                     ) : avatarMode === 'emoji' ? (
                       <span className="avatar-emoji">{avatarEmoji}</span>
                     ) : avatarMode === 'initials' ? (
@@ -7062,7 +7064,7 @@ function handleSessionDateChange(value: string) {
             <p>{invitationPopupBodyText}</p>
             <div className="mini-session invite-session">
               <div className="mini-session-title mini-session-title-with-image">
-                <img className="mini-session-image" src={sessionCoverGame(invitePopupSession).image} alt="" />
+                <img className="mini-session-image" src={sessionCoverGame(invitePopupSession).image} alt="" loading="lazy" decoding="async" />
                 <strong>{invitePopupSession.name}</strong>
                 <span className="pill ok">{text.invited}</span>
               </div>
@@ -7245,7 +7247,7 @@ function handleSessionDateChange(value: string) {
                         }}
                       >
                         <div className="compact-session-card club-session-card">
-                          <img className="compact-session-image" src={coverGame.image} alt="" />
+                          <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
                           <div className="compact-session-main">
                             <div className="compact-session-title-row">
                               <h3>{session.name}</h3>
@@ -9067,6 +9069,37 @@ function handleSessionDateChange(value: string) {
             border-color 180ms ease,
             box-shadow 220ms ease,
             transform 260ms cubic-bezier(0.18, 0.82, 0.24, 1);
+        }
+
+        @supports (content-visibility: auto) {
+          .list > .session,
+          .mini-session-list > .mini-session,
+          .club-list > .club-card,
+          .message-list > .session-message,
+          .club-session-preview {
+            content-visibility: auto;
+            contain-intrinsic-size: 160px;
+          }
+
+          .list > .session {
+            contain-intrinsic-size: 180px;
+          }
+
+          .list > .expanded-session {
+            contain-intrinsic-size: 760px;
+          }
+
+          .mini-session-list > .mini-session {
+            contain-intrinsic-size: 96px;
+          }
+
+          .club-list > .club-card {
+            contain-intrinsic-size: 260px;
+          }
+
+          .message-list > .session-message {
+            contain-intrinsic-size: 72px;
+          }
         }
 
         .session:last-child {
