@@ -3063,6 +3063,187 @@ body {
   padding: 6px 14px;
 }
 
+.app .leaderboard-section {
+  display: grid;
+  gap: 12px;
+}
+
+.app .leaderboard-head {
+  align-items: flex-start;
+}
+
+.app .leaderboard-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  gap: 9px;
+  width: min(460px, 100%);
+}
+
+.app .leaderboard-controls label {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #657278;
+}
+
+.app .leaderboard-controls select {
+  width: 100%;
+}
+
+.app .leaderboard-search {
+  width: min(420px, 100%);
+  max-width: 100%;
+}
+
+.app .current-rank-card {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(48, 89, 255, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(48, 89, 255, 0.1)), #ffffff;
+}
+
+.app .current-rank-card > span {
+  color: #657278;
+  font-weight: 800;
+}
+
+.app .current-rank-card strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.app .current-rank-card small {
+  color: #657278;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.app .rank-mini {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .rank-mini span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(7, 17, 18, 0.06);
+}
+
+.app .leaderboard-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .leaderboard-row {
+  display: grid;
+  grid-template-columns: 48px var(--avatar-sm) minmax(0, 1fr) minmax(112px, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(7, 17, 18, 0.045);
+}
+
+.app .leaderboard-row.current-user {
+  border-color: rgba(48, 89, 255, 0.34);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.1)), #ffffff;
+}
+
+.app .leaderboard-rank {
+  color: #657278;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .leaderboard-player-main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.app .leaderboard-player-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .leaderboard-player-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .rank-progress {
+  display: grid;
+  gap: 4px;
+}
+
+.app .rank-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #657278;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .rank-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(7, 17, 18, 0.08);
+}
+
+.app .rank-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+}
+
+.app .rank-progress small {
+  color: #657278;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.app .leaderboard-metric {
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  min-width: 0;
+}
+
+.app .leaderboard-metric span {
+  color: #657278;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.app .leaderboard-metric strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
 .app .tab, .app .segmented button, .app button.secondary, .app button.primary, .app .create-button {
   display: inline-flex;
   align-items: center;
@@ -3075,6 +3256,7 @@ body {
   min-height: 38px;
   padding: 8px 11px;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .app .segmented {
@@ -3738,7 +3920,43 @@ body {
   .app .sub-tabs {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app .sub-tabs button {
+    padding-inline: 8px;
+  }
+
+  .app .leaderboard-head {
+    display: grid;
+  }
+
+  .app .leaderboard-controls {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .app .leaderboard-search {
+    display: block;
+    width: 100%;
+  }
+
+  .app .current-rank-card {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .app .leaderboard-row {
+    grid-template-columns: 40px var(--avatar-sm) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .app .leaderboard-metric {
+    grid-column: 3;
+    justify-items: start;
+  }
+
+  .app .leaderboard-metric span {
+    text-align: left;
   }
 
   .app .compact-session-card {
@@ -4010,6 +4228,34 @@ body {
     padding: 8px 6px;
   }
 
+  .app .sub-tabs button {
+    min-height: 38px;
+    padding: 6px 5px;
+    font-size: 12px;
+  }
+
+  .app .current-rank-card {
+    grid-template-columns: 1fr auto;
+  }
+
+  .app .current-rank-card small {
+    grid-column: 1 / -1;
+  }
+
+  .app .leaderboard-row {
+    grid-template-columns: 34px var(--avatar-sm) minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .app .leaderboard-rank {
+    font-size: 15px;
+  }
+
+  .app .leaderboard-metric strong {
+    font-size: 19px;
+  }
+
   .app .session h3 {
     font-size: 18px;
   }
@@ -4136,6 +4382,34 @@ body {
     background: #f6f7f9;
     color: #071112;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
+  }
+
+  .app .leaderboard-controls label,
+  .app .current-rank-card > span,
+  .app .current-rank-card small,
+  .app .leaderboard-rank,
+  .app .rank-progress-label,
+  .app .rank-progress small,
+  .app .leaderboard-metric span {
+    color: #aeb9bd;
+  }
+
+  .app .current-rank-card,
+  .app .leaderboard-row {
+    background: #10191b;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  }
+
+  .app .current-rank-card,
+  .app .leaderboard-row.current-user {
+    background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(48, 89, 255, 0.14)), #10191b;
+    border-color: rgba(98, 211, 255, 0.28);
+  }
+
+  .app .rank-mini span,
+  .app .rank-progress-track {
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .app .session-expanded {
