@@ -83,9 +83,9 @@ function rankTierForScore(totalScore: number) {
   ), 0)
   const tier = rankTiers[tierIndex] ?? rankTiers[0]
   const nextTier = rankTiers[tierIndex + 1]
-  const progress = nextTier
-    ? Math.max(0, Math.min(100, Math.round(((normalizedScore - tier.minScore) / (nextTier.minScore - tier.minScore)) * 100)))
-    : 100
+  const progress = tier.name === 'Grand Master' || !nextTier
+    ? 100
+    : Math.max(0, Math.min(100, Math.round(((normalizedScore - tier.minScore) / (nextTier.minScore - tier.minScore)) * 100)))
 
   return { tier, nextTier, progress }
 }
