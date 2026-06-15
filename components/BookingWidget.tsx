@@ -988,6 +988,10 @@ export default function WidgetPage() {
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
+  const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
+  const [profilePastExpanded, setProfilePastExpanded] = useState(false)
+  const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
+  const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
@@ -1012,6 +1016,13 @@ export default function WidgetPage() {
   const bestPerformerText = looseText.bestPerformer || 'Best Performer'
   const bestPerformerCountText = looseText.bestPerformerCount || 'Best Performer count'
   const sessionScoreText = looseText.sessionScore || 'Session score'
+  const pendingInvitationsText = looseText.pendingInvitations || 'Pending invitations'
+  const pendingInvitationsHintText = looseText.pendingInvitationsHint || 'Invites waiting for your answer.'
+  const invitationReceivedText = looseText.invitationReceived || 'Session invitation'
+  const invitationPopupTitleText = looseText.invitationPopupTitle || 'New session invitation'
+  const invitationPopupBodyText = looseText.invitationPopupBody || 'You have been invited to join this session.'
+  const openInvitationText = looseText.openInvitation || 'Open invite'
+  const addToCalendarText = looseText.addToCalendar || 'Add calendar'
   const showProfileFields = Boolean(profile || authMode === 'create')
 
   function openPlayerProfile(profileId: string, sessionId = '') {
@@ -1289,6 +1300,10 @@ export default function WidgetPage() {
     return sessionInvites.filter((invite) => invite.session_id === sessionId)
   }
 
+  function sessionForInvite(invite: SessionInvite) {
+    return sessions.find((session) => session.id === invite.session_id)
+  }
+
   function hasSessionInvite(sessionId: string, profileId: string) {
     return sessionInvites.some((invite) => invite.session_id === sessionId && invite.recipient_id === profileId)
   }
@@ -1340,6 +1355,15 @@ export default function WidgetPage() {
     new Notification('VRena', {
       body: `${message}: ${session.name} · ${formatShortDate(session.date, language)} ${session.start_time.slice(0, 5)}`,
       tag: `vrena-${session.id}-${message}`,
+    })
+  }
+
+  function notifyInvite(session: Session) {
+    if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return
+
+    new Notification('VRena', {
+      body: `${invitationReceivedText}: ${session.name} · ${formatShortDate(session.date, language)} ${session.start_time.slice(0, 5)}`,
+      tag: `vrena-invite-${session.id}`,
     })
   }
 
@@ -2343,6 +2367,37 @@ function handleSessionDateChange(value: string) {
     })
   }, [sessions, userId])
 
+  const profileUpcomingSessions = useMemo(() => {
+    return mySessions
+      .filter((session) => isUpcomingSession(session))
+      .sort((a, b) => sessionStartDate(a).getTime() - sessionStartDate(b).getTime())
+  }, [mySessions])
+
+  const profilePastSessions = useMemo(() => {
+    return mySessions
+      .filter((session) => isPastSession(session))
+      .sort((a, b) => sessionStartDate(b).getTime() - sessionStartDate(a).getTime())
+  }, [mySessions])
+
+  const pendingSessionInvites = useMemo(() => {
+    if (!userId) return []
+
+    return sessionInvites
+      .filter((invite) => invite.recipient_id === userId && invite.status === 'pending' && sessionForInvite(invite))
+      .sort((a, b) => {
+        const left = a.created_at ? new Date(a.created_at).getTime() : 0
+        const right = b.created_at ? new Date(b.created_at).getTime() : 0
+        return right - left || a.id.localeCompare(b.id)
+      })
+  }, [sessionInvites, sessions, userId])
+
+  const invitePopupInvite = useMemo(() => {
+    if (!invitePopupInviteId) return undefined
+    return pendingSessionInvites.find((invite) => invite.id === invitePopupInviteId)
+  }, [invitePopupInviteId, pendingSessionInvites])
+
+  const invitePopupSession = invitePopupInvite ? sessionForInvite(invitePopupInvite) : undefined
+
   const joinedUpcomingSessions = useMemo(() => {
     if (!userId) return []
 
@@ -2750,6 +2805,36 @@ function handleSessionDateChange(value: string) {
       timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [joinedUpcomingSessions, language, text.reminderSoon, text.reminderTomorrow])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !userId || pendingSessionInvites.length === 0) return
+
+    const storageKey = `vrena-seen-session-invites-${userId}`
+    let seenInviteIds: string[] = []
+
+    try {
+      const stored = window.localStorage.getItem(storageKey)
+      seenInviteIds = stored ? JSON.parse(stored) : []
+    } catch {
+      seenInviteIds = []
+    }
+
+    const seen = new Set(seenInviteIds)
+    const freshInvite = pendingSessionInvites.find((invite) => !seen.has(invite.id))
+    if (!freshInvite) return
+
+    const session = sessionForInvite(freshInvite)
+    seen.add(freshInvite.id)
+    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(seen).slice(-80)))
+    setInvitePopupInviteId(freshInvite.id)
+
+    if (session) {
+      requestBrowserReminderPermission().then((hasPermission) => {
+        if (hasPermission) notifyInvite(session)
+      })
+      downloadSessionCalendar(session)
+    }
+  }, [language, pendingSessionInvites, userId])
 
   useEffect(() => {
     if (!profile || !topPlayer || topPlayer.profileId !== userId) return
@@ -4563,6 +4648,133 @@ function handleSessionDateChange(value: string) {
 
   function voteCount(session: Session, gameId: GameId) {
     return Object.values(session.game_votes || {}).filter((vote) => vote === gameId).length
+  }
+
+  function renderProfileSessionCard(session: Session) {
+    const participants = session.session_participants ?? []
+    const createdByMe = session.owner_id === userId
+    const canManage = canManageSession(session)
+    const joinedByMe = participants.some((participant) => participant.profile_id === userId)
+    const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
+    const coverGame = sessionCoverGame(session)
+
+    return (
+      <article
+        className="mini-session clickable"
+        key={session.id}
+        onClick={() => openSessionFromProfile(session.id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            openSessionFromProfile(session.id)
+          }
+        }}
+      >
+        <div className="mini-session-title mini-session-title-with-image">
+          <img className="mini-session-image" src={coverGame.image} alt="" />
+          <strong>{session.name}</strong>
+          <span className={createdByMe ? 'pill ok' : 'pill'}>
+            {createdByMe ? text.createdByYou : text.joined}
+          </span>
+        </div>
+        <div className="row-meta">
+          <span>{formatShortDate(session.date, language)}</span>
+          <span>{session.start_time.slice(0, 5)}</span>
+          <span>{session.duration_minutes} min</span>
+          <span>{participants.length}/{session.max_players} {text.players}</span>
+          <span>{arenasUsedBySession(session)} arena{arenasUsedBySession(session) === 1 ? '' : 's'}</span>
+        </div>
+        {canSeeInviteCode && (
+          <div className="invite-code compact">
+            <span>{text.privateCode}</span>
+            <strong>{session.invite_code}</strong>
+            <button
+              className={copiedInviteId === session.id ? 'copied' : ''}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                copyInviteCode(session.id, session.invite_code)
+              }}
+            >
+              {copiedInviteId === session.id ? text.copied : text.copy}
+            </button>
+          </div>
+        )}
+        {canManage ? (
+          <div className="mini-session-actions">
+            <button
+              className="secondary small-button"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                startEditingSession(session)
+                openSessionFromProfile(session.id)
+              }}
+            >
+              {text.editSession}
+            </button>
+            <button
+              className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
+              disabled={busySessionId === session.id}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                cancelSession(session)
+              }}
+            >
+              {text.cancelSession}
+            </button>
+          </div>
+        ) : joinedByMe ? (
+          <div className="mini-session-actions">
+            <button
+              className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
+              disabled={busySessionId === session.id}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                leaveSession(session)
+              }}
+            >
+              {text.leaveSession}
+            </button>
+          </div>
+        ) : null}
+      </article>
+    )
+  }
+
+  function renderPendingInvite(invite: SessionInvite) {
+    const session = sessionForInvite(invite)
+    if (!session) return null
+
+    const coverGame = sessionCoverGame(session)
+
+    return (
+      <article className="mini-session invite-session" key={invite.id}>
+        <div className="mini-session-title mini-session-title-with-image">
+          <img className="mini-session-image" src={coverGame.image} alt="" />
+          <strong>{session.name}</strong>
+          <span className="pill ok">{text.invited}</span>
+        </div>
+        <div className="row-meta">
+          <span>{formatShortDate(session.date, language)}</span>
+          <span>{session.start_time.slice(0, 5)}</span>
+          <span>{session.duration_minutes} min</span>
+          <span>{(session.session_participants ?? []).length}/{session.max_players} {text.players}</span>
+        </div>
+        <div className="mini-session-actions">
+          <button className="primary small-button" type="button" onClick={() => openSessionFromProfile(session.id)}>
+            {openInvitationText}
+          </button>
+          <button className="secondary small-button" type="button" onClick={() => downloadSessionCalendar(session)}>
+            {addToCalendarText}
+          </button>
+        </div>
+      </article>
+    )
   }
 
   return (
@@ -6495,106 +6707,65 @@ function handleSessionDateChange(value: string) {
                   <p className="muted">{text.mySessionsHint}</p>
                 </div>
 
+                {pendingSessionInvites.length > 0 && (
+                  <div className="profile-session-group profile-invites">
+                    <div className="profile-session-group-head">
+                      <div>
+                        <h4>{pendingInvitationsText}</h4>
+                        <p className="muted">{pendingInvitationsHintText}</p>
+                      </div>
+                      {pendingSessionInvites.length > 1 && (
+                        <button className="secondary small-button" type="button" onClick={() => setProfileInvitesExpanded((expanded) => !expanded)}>
+                          {profileInvitesExpanded ? text.hideDetails : text.expandDetails}
+                        </button>
+                      )}
+                    </div>
+                    <div className="mini-session-list">
+                      {(profileInvitesExpanded ? pendingSessionInvites : pendingSessionInvites.slice(0, 1)).map((invite) => renderPendingInvite(invite))}
+                    </div>
+                  </div>
+                )}
+
                 {mySessions.length === 0 ? (
                   <p className="notice">{text.noSessionsYet}</p>
                 ) : (
-                  <div className="mini-session-list">
-                    {mySessions.map((session) => {
-                      const participants = session.session_participants ?? []
-                      const createdByMe = session.owner_id === userId
-                      const canManage = canManageSession(session)
-                      const joinedByMe = participants.some((participant) => participant.profile_id === userId)
-                      const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
-                      const coverGame = sessionCoverGame(session)
+                  <>
+                    <div className="profile-session-group">
+                      <div className="profile-session-group-head">
+                        <h4>{text.upcoming}</h4>
+                        {profileUpcomingSessions.length > 1 && (
+                          <button className="secondary small-button" type="button" onClick={() => setProfileUpcomingExpanded((expanded) => !expanded)}>
+                            {profileUpcomingExpanded ? text.hideDetails : text.expandDetails}
+                          </button>
+                        )}
+                      </div>
+                      {profileUpcomingSessions.length === 0 ? (
+                        <p className="notice">{text.noMatchingSessions}</p>
+                      ) : (
+                        <div className="mini-session-list">
+                          {(profileUpcomingExpanded ? profileUpcomingSessions : profileUpcomingSessions.slice(0, 1)).map((session) => renderProfileSessionCard(session))}
+                        </div>
+                      )}
+                    </div>
 
-                      return (
-                        <article
-                          className="mini-session clickable"
-                          key={session.id}
-                          onClick={() => openSessionFromProfile(session.id)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault()
-                              openSessionFromProfile(session.id)
-                            }
-                          }}
-                        >
-                          <div className="mini-session-title mini-session-title-with-image">
-                            <img className="mini-session-image" src={coverGame.image} alt="" />
-                            <strong>{session.name}</strong>
-                            <span className={createdByMe ? 'pill ok' : 'pill'}>
-                              {createdByMe ? text.createdByYou : text.joined}
-                            </span>
-                          </div>
-                          <div className="row-meta">
-                            <span>{formatShortDate(session.date, language)}</span>
-                            <span>{session.start_time.slice(0, 5)}</span>
-                            <span>{session.duration_minutes} min</span>
-                            <span>{participants.length}/{session.max_players} {text.players}</span>
-                            <span>{arenasUsedBySession(session)} arena{arenasUsedBySession(session) === 1 ? '' : 's'}</span>
-                          </div>
-                          {canSeeInviteCode && (
-                            <div className="invite-code compact">
-                              <span>{text.privateCode}</span>
-                              <strong>{session.invite_code}</strong>
-                              <button
-                                className={copiedInviteId === session.id ? 'copied' : ''}
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  copyInviteCode(session.id, session.invite_code)
-                                }}
-                              >
-                                {copiedInviteId === session.id ? text.copied : text.copy}
-                              </button>
-                            </div>
-                          )}
-                          {canManage ? (
-                            <div className="mini-session-actions">
-                              <button
-                                className="secondary small-button"
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  startEditingSession(session)
-                                  openSessionFromProfile(session.id)
-                                }}
-                              >
-                                {text.editSession}
-                              </button>
-                              <button
-                                className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
-                                disabled={busySessionId === session.id}
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  cancelSession(session)
-                                }}
-                              >
-                                {text.cancelSession}
-                              </button>
-                            </div>
-                          ) : joinedByMe ? (
-                            <div className="mini-session-actions">
-                              <button
-                                className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
-                                disabled={busySessionId === session.id}
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  leaveSession(session)
-                                }}
-                              >
-                                {text.leaveSession}
-                              </button>
-                            </div>
-                          ) : null}
-                        </article>
-                      )
-                    })}
-                  </div>
+                    <div className="profile-session-group">
+                      <div className="profile-session-group-head">
+                        <h4>{text.past}</h4>
+                        {profilePastSessions.length > 1 && (
+                          <button className="secondary small-button" type="button" onClick={() => setProfilePastExpanded((expanded) => !expanded)}>
+                            {profilePastExpanded ? text.hideDetails : text.expandDetails}
+                          </button>
+                        )}
+                      </div>
+                      {profilePastSessions.length === 0 ? (
+                        <p className="notice">{text.noMatchingSessions}</p>
+                      ) : (
+                        <div className="mini-session-list">
+                          {(profilePastExpanded ? profilePastSessions : profilePastSessions.slice(0, 1)).map((session) => renderProfileSessionCard(session))}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -6614,6 +6785,45 @@ function handleSessionDateChange(value: string) {
             <button className="primary create-button" type="button" onClick={goToLogin}>
               {text.loginPromptButton}
             </button>
+          </div>
+        </div>
+      )}
+
+      {invitePopupInvite && invitePopupSession && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="invite-popup-title">
+          <div className="login-modal invite-popup">
+            <button className="modal-close" type="button" onClick={() => setInvitePopupInviteId('')} aria-label={text.close}>
+              ×
+            </button>
+            <h3 id="invite-popup-title">{invitationPopupTitleText}</h3>
+            <p>{invitationPopupBodyText}</p>
+            <div className="mini-session invite-session">
+              <div className="mini-session-title mini-session-title-with-image">
+                <img className="mini-session-image" src={sessionCoverGame(invitePopupSession).image} alt="" />
+                <strong>{invitePopupSession.name}</strong>
+                <span className="pill ok">{text.invited}</span>
+              </div>
+              <div className="row-meta">
+                <span>{formatShortDate(invitePopupSession.date, language)}</span>
+                <span>{invitePopupSession.start_time.slice(0, 5)}</span>
+                <span>{invitePopupSession.duration_minutes} min</span>
+              </div>
+            </div>
+            <div className="invite-popup-actions">
+              <button
+                className="primary create-button"
+                type="button"
+                onClick={() => {
+                  setInvitePopupInviteId('')
+                  openSessionFromProfile(invitePopupSession.id)
+                }}
+              >
+                {openInvitationText}
+              </button>
+              <button className="secondary create-button" type="button" onClick={() => downloadSessionCalendar(invitePopupSession)}>
+                {addToCalendarText}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -7455,6 +7665,33 @@ function handleSessionDateChange(value: string) {
           gap: 10px;
         }
 
+        .profile-session-group {
+          display: grid;
+          gap: 10px;
+          padding-top: 4px;
+        }
+
+        .profile-session-group + .profile-session-group {
+          border-top: 1px solid rgba(7, 17, 18, 0.08);
+          padding-top: 14px;
+        }
+
+        .profile-session-group-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .profile-session-group-head h4 {
+          margin: 0;
+          font-size: 1rem;
+        }
+
+        .profile-session-group-head p {
+          margin: 2px 0 0;
+        }
+
         .mini-session {
           display: grid;
           gap: 8px;
@@ -7505,6 +7742,17 @@ function handleSessionDateChange(value: string) {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+
+        .invite-session {
+          border-color: rgba(48, 89, 255, 0.24);
+          background: #f7f9ff;
+        }
+
+        .invite-popup-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
         }
 
         .profile-photo-panel {
@@ -10899,6 +11147,15 @@ function handleSessionDateChange(value: string) {
             border-color: rgba(255, 255, 255, 0.12);
             color: #f6f7f9;
             box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+          }
+
+          .profile-session-group + .profile-session-group {
+            border-top-color: rgba(255, 255, 255, 0.1);
+          }
+
+          .invite-session {
+            background: #182225;
+            border-color: rgba(88, 123, 255, 0.34);
           }
 
           .tournament-desk {
