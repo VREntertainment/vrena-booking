@@ -356,11 +356,16 @@ body {
 
 .app .date-input-shell {
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
   min-height: 46px;
   display: block;
   border: 1px solid rgba(7, 17, 18, 0.16);
-  border-radius: 14px;
-  background: #ffffff;
+  border-radius: 8px;
+  background: #f0f4f6;
+  color: #071112;
+  overflow: hidden;
+  color-scheme: light;
 }
 
 .app .date-input-native {
@@ -2711,6 +2716,14 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.app .session-timing-row > div {
+  min-width: 0;
+}
+
+.app .session-timing-row select, .app .session-timing-row .date-input-shell {
+  width: 100%;
+}
+
 .app .session-capacity-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -4475,7 +4488,7 @@ body {
     color: #ffe882;
   }
 
-  .app .tab, .app .segmented button, .app button.secondary, .app .language-picker > button, .app .language-menu, .app input, .app select, .app textarea, .app .date-input-native, .app .rich-note-editor, .app .format-toolbar button, .app .country-button, .app .search-close, .app .mobile-search-toggle, .app .day-chip, .app .game-card, .app .editor-results button, .app .emoji-row button, .app .color-row button, .app .custom-color-row input, .app .invite-code button {
+  .app .tab, .app .segmented button, .app button.secondary, .app .language-picker > button, .app .language-menu, .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .format-toolbar button, .app .country-button, .app .search-close, .app .mobile-search-toggle, .app .day-chip, .app .game-card, .app .editor-results button, .app .emoji-row button, .app .color-row button, .app .custom-color-row input, .app .invite-code button {
     background: #182225;
     color: #f6f7f9;
     border-color: rgba(255, 255, 255, 0.14);
@@ -4493,9 +4506,13 @@ body {
     color: #071112;
   }
 
-  .app input, .app select, .app textarea, .app .date-input-native, .app .rich-note-editor, .app .country-button {
+  .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .country-button {
     border-color: rgba(255, 255, 255, 0.26);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .app .date-input-shell {
+    color-scheme: dark;
   }
 
   .app .stat-label,
