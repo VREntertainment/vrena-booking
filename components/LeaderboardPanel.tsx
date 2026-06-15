@@ -50,17 +50,25 @@ type LeaderboardPanelProps = {
 }
 
 const rankTiers = [
-  { name: 'Bronze', emoji: '🥉', minScore: 0 },
-  { name: 'Silver', emoji: '🥈', minScore: 100 },
-  { name: 'Gold', emoji: '🥇', minScore: 250 },
-  { name: 'Platinum', emoji: '💠', minScore: 500 },
-  { name: 'Diamond', emoji: '💎', minScore: 900 },
-  { name: 'Master', emoji: '⭐', minScore: 1400 },
-  { name: 'Grand Master', emoji: '🌟', minScore: 2000 },
-  { name: 'Champion', emoji: '🏆', minScore: 3000 },
+  { name: 'Champion', emoji: '🏆' },
+  { name: 'Grand Master', emoji: '🌟' },
+  { name: 'Master', emoji: '⭐' },
+  { name: 'Diamond', emoji: '💎' },
+  { name: 'Platinum', emoji: '💠' },
+  { name: 'Gold', emoji: '🥇' },
+  { name: 'Silver', emoji: '🥈' },
+  { name: 'Bronze', emoji: '🥉' },
+  { name: 'None', emoji: '' },
 ] as const
 
 type RankTier = typeof rankTiers[number]
+type RankInfo = {
+  nextTier: RankTier | undefined
+  progress: number
+  tier: RankTier
+}
+
+const noneRankTier = rankTiers[rankTiers.length - 1]
 
 function normalizeSearchValue(value: string) {
   return value
@@ -76,23 +84,41 @@ function percentValue(numerator: number, denominator: number) {
   return (numerator / denominator) * 100
 }
 
-function rankTierForScore(totalScore: number) {
-  const normalizedScore = Number.isFinite(totalScore) ? totalScore : 0
-  const tierIndex = rankTiers.reduce((currentIndex, tier, index) => (
-    normalizedScore >= tier.minScore ? index : currentIndex
-  ), 0)
-  const tier = rankTiers[tierIndex] ?? rankTiers[0]
-  const nextTier = rankTiers[tierIndex + 1]
-  const progress = tier.name === 'Grand Master' || !nextTier
-    ? 100
-    : Math.max(0, Math.min(100, Math.round(((normalizedScore - tier.minScore) / (nextTier.minScore - tier.minScore)) * 100)))
+function isRankableLeaderboardValue(value: number) {
+  return Number.isFinite(value) && value > 0
+}
 
+function progressTowardHigherValue(value: number, higherValue: number | null) {
+  if (!isRankableLeaderboardValue(value) || !higherValue || higherValue <= 0) return 0
+  return Math.max(0, Math.min(99, Math.round((value / higherValue) * 100)))
+}
+
+function rankTierForDistinctStatRank(distinctStatRankIndex: number | null, value: number, higherValue: number | null): RankInfo {
+  if (distinctStatRankIndex === null || !isRankableLeaderboardValue(value)) {
+    return { tier: noneRankTier, nextTier: rankTiers[rankTiers.length - 2], progress: 0 }
+  }
+
+  const tierIndex = distinctStatRankIndex < rankTiers.length - 1 ? distinctStatRankIndex : rankTiers.length - 1
+  const tier = rankTiers[tierIndex] ?? noneRankTier
+  const nextTier = tierIndex > 0 ? rankTiers[tierIndex - 1] : undefined
+  const progress = nextTier ? progressTowardHigherValue(value, higherValue) : 100
   return { tier, nextTier, progress }
 }
 
 function rankTierEmoji(tier: RankTier, criterion: LeaderboardCriterion) {
+  if (tier.name === 'None') return ''
   if (criterion === 'totalScore' && tier.name === 'Grand Master') return '👑'
   return tier.emoji
+}
+
+function rankTierName(tier: RankTier, text: TranslationMap) {
+  return tier.name === 'None' ? text.rankNone : tier.name
+}
+
+function rankTierLabel(tier: RankTier, criterion: LeaderboardCriterion, text: TranslationMap) {
+  const emoji = rankTierEmoji(tier, criterion)
+  const name = rankTierName(tier, text)
+  return emoji ? `${emoji} ${name}` : name
 }
 
 function leaderboardMetricValue(player: LeaderboardPlayer, criterion: LeaderboardCriterion) {
@@ -143,15 +169,30 @@ export default function LeaderboardPanel({
       return left.displayName.localeCompare(right.displayName)
     })
 
-    let previousValue: number | null = null
-    let previousRank = 0
+    const metricRows = sortedPlayers.map((player) => ({
+      player,
+      value: leaderboardMetricValue(player, leaderboardCriterion),
+    }))
+    const distinctPositiveValues = Array.from(new Set(
+      metricRows
+        .map(({ value }) => value)
+        .filter(isRankableLeaderboardValue)
+    ))
 
-    return sortedPlayers.map((player, index) => {
-      const value = leaderboardMetricValue(player, leaderboardCriterion)
-      const rank = previousValue !== null && value === previousValue ? previousRank : index + 1
-      previousValue = value
-      previousRank = rank
-      return { player, rank, rankInfo: rankTierForScore(player.totalScore) }
+    return metricRows.map(({ player, value }) => {
+      const rank = metricRows.findIndex((row) => row.value === value) + 1
+      const rankInfo = (() => {
+        if (!isRankableLeaderboardValue(value)) {
+          const bronzeValue = distinctPositiveValues[rankTiers.length - 2] ?? null
+          return rankTierForDistinctStatRank(null, value, bronzeValue)
+        }
+
+        const distinctPositiveValueIndex = distinctPositiveValues.indexOf(value)
+        const previousPositiveValue = distinctPositiveValueIndex > 0 ? distinctPositiveValues[distinctPositiveValueIndex - 1] ?? null : null
+        return rankTierForDistinctStatRank(distinctPositiveValueIndex, value, previousPositiveValue)
+      })()
+
+      return { player, rank, rankInfo }
     })
   }, [leaderboardCriterion, players])
 
@@ -180,7 +221,6 @@ export default function LeaderboardPanel({
   const currentUserLeaderboardRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
   const isScoreRanking = leaderboardCriterion === 'totalScore'
-  const currentRankTierEmoji = currentUserLeaderboardRow ? rankTierEmoji(currentUserLeaderboardRow.rankInfo.tier, leaderboardCriterion) : ''
 
   return (
     <section className="section leaderboard-section">
@@ -230,11 +270,11 @@ export default function LeaderboardPanel({
           <strong>#{currentUserLeaderboardRow.rank}</strong>
           <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
           <div className="rank-mini">
-            <span>{currentRankTierEmoji} {currentUserLeaderboardRow.rankInfo.tier.name}</span>
+            <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, leaderboardCriterion, text)}</span>
             <span>
               {currentUserLeaderboardRow.rankInfo.nextTier
                 ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
-                : 'Champion'}
+                : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
             </span>
           </div>
         </div>
@@ -247,6 +287,8 @@ export default function LeaderboardPanel({
           const tierEmoji = rankTierEmoji(rankInfo.tier, leaderboardCriterion)
           const nextTierEmoji = rankInfo.nextTier ? rankTierEmoji(rankInfo.nextTier, leaderboardCriterion) : ''
           const isAnimatedCrown = isScoreRanking && tierEmoji === '👑'
+          const tierName = rankTierName(rankInfo.tier, text)
+          const nextTierName = rankInfo.nextTier ? rankTierName(rankInfo.nextTier, text) : ''
 
           return (
             <article className={isCurrentUser ? 'leaderboard-row current-user' : 'leaderboard-row'} key={player.profileId}>
@@ -258,7 +300,7 @@ export default function LeaderboardPanel({
                 type="button"
               >
                 {renderAvatar(player)}
-                {isScoreRanking && (
+                {isScoreRanking && tierEmoji && (
                   <span className={isAnimatedCrown ? 'leaderboard-tier-badge crown' : 'leaderboard-tier-badge'}>
                     {tierEmoji}
                   </span>
@@ -271,7 +313,7 @@ export default function LeaderboardPanel({
                 </div>
                 <div className="rank-progress">
                   <div className="rank-progress-label">
-                    <span>{rankInfo.tier.name}</span>
+                    <span>{tierName}</span>
                     <span>{rankInfo.nextTier ? `${rankInfo.progress}%` : 'MAX'}</span>
                   </div>
                   <div className="rank-progress-track">
@@ -279,8 +321,8 @@ export default function LeaderboardPanel({
                   </div>
                   <small>
                     {rankInfo.nextTier
-                      ? `${text.nextRank}: ${nextTierEmoji} ${rankInfo.nextTier.name}`
-                      : 'Champion'}
+                      ? `${text.nextRank}: ${nextTierEmoji ? `${nextTierEmoji} ` : ''}${nextTierName}`
+                      : tierName}
                   </small>
                 </div>
               </div>
