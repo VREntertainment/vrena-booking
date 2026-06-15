@@ -13,6 +13,11 @@ const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
+const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
+const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
+const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
+const CLUB_SELECT = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 
 type HCaptchaApi = {
   render: (
@@ -1062,6 +1067,7 @@ export default function WidgetPage() {
   const openInvitationText = looseText.openInvitation || 'Open invite'
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
   const showProfileFields = Boolean(profile || authMode === 'create')
+  const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
   function openPlayerProfile(profileId: string, sessionId = '') {
     setSelectedPlayerId(profileId)
@@ -1964,7 +1970,7 @@ export default function WidgetPage() {
     const [sessionResult, blockedResult] = await Promise.all([
       supabase
       .from('sessions')
-        .select('*, session_participants(id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at)')
+        .select(SESSION_SELECT)
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
@@ -2013,7 +2019,7 @@ export default function WidgetPage() {
     clubsLoadingRef.current = true
     const { data, error } = await supabase
       .from('clubs')
-      .select('*, club_members(id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status)')
+      .select(CLUB_SELECT)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -2064,20 +2070,36 @@ export default function WidgetPage() {
   }
 
   async function loadNetworkData() {
+    if (!userId) {
+      networkDataLoadedRef.current = false
+      networkDataLoadingRef.current = false
+      setNetworkTablesReady(false)
+      setFriendConnections([])
+      setSessionInvites([])
+      setSessionMessages([])
+      return
+    }
+
     networkDataLoadingRef.current = true
-    const friendsResult = await supabase
-      .from('user_follows')
-      .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
-
-    const invitesResult = await supabase
-      .from('session_invites')
-      .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
-      .order('created_at', { ascending: false })
-
-    const messagesResult = await supabase
-      .from('session_messages')
-      .select('id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at')
-      .order('created_at', { ascending: true })
+    const sessionIds = sessions.map((session) => session.id)
+    const [friendsResult, invitesResult, messagesResult] = await Promise.all([
+      supabase
+        .from('user_follows')
+        .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
+        .eq('follower_id', userId),
+      supabase
+        .from('session_invites')
+        .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
+        .or(`recipient_id.eq.${userId},inviter_id.eq.${userId}`)
+        .order('created_at', { ascending: false }),
+      sessionIds.length > 0
+        ? supabase
+          .from('session_messages')
+          .select(SESSION_MESSAGE_SELECT)
+          .in('session_id', sessionIds)
+          .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+    ])
 
     if (friendsResult.error || invitesResult.error || messagesResult.error) {
       setNetworkTablesReady(false)
@@ -2124,10 +2146,31 @@ export default function WidgetPage() {
   }, [activeView])
 
   useEffect(() => {
+    networkDataLoadedRef.current = false
+    networkDataLoadingRef.current = false
+
+    if (!userId) {
+      setNetworkTablesReady(false)
+      setFriendConnections([])
+      setSessionInvites([])
+      setSessionMessages([])
+      return
+    }
+
+    return scheduleDeferredWork(() => ensureNetworkDataLoaded())
+  }, [userId])
+
+  useEffect(() => {
     if (selectedPlayerId) {
       ensureNetworkDataLoaded()
     }
   }, [selectedPlayerId])
+
+  useEffect(() => {
+    if (!userId || !networkDataLoadedRef.current) return
+
+    void loadNetworkData()
+  }, [sessionIdsKey, userId])
 
   useEffect(() => {
     const hasExpandedSession = Object.values(expandedSessions).some(Boolean)
