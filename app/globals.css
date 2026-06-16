@@ -1752,6 +1752,25 @@ body {
   gap: 18px;
 }
 
+.app .ticket-explainer {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(48, 89, 255, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 181, 184, 0.08), rgba(48, 89, 255, 0.08)), #f7fafb;
+}
+
+.app .ticket-explainer strong {
+  color: #071112;
+  font-size: 15px;
+}
+
+.app .ticket-explainer span {
+  color: #65727a;
+  line-height: 1.4;
+}
+
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
@@ -4804,6 +4823,19 @@ body {
     background: rgba(94, 234, 255, 0.16);
     color: #9eefff;
     border-color: rgba(94, 234, 255, 0.22);
+  }
+
+  .app .ticket-explainer {
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(48, 89, 255, 0.16)), #182225;
+    border-color: rgba(98, 211, 255, 0.22);
+  }
+
+  .app .ticket-explainer strong {
+    color: #f6f7f9;
+  }
+
+  .app .ticket-explainer span {
+    color: #aeb9bd;
   }
 
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
