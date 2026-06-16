@@ -642,6 +642,10 @@ function percentValue(numerator: number, denominator: number) {
   return (numerator / denominator) * 100
 }
 
+function formatWholePercent(value: number | null | undefined) {
+  return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
+}
+
 function bestOfLabel(value?: number | null) {
   return `BO${value || 1}`
 }
@@ -2770,8 +2774,8 @@ function handleSessionDateChange(value: string) {
         ...item,
         scoreAdjustment: profileScoreAdjustments[item.profileId] ?? 0,
         totalScore: item.baseTotalScore + (profileScoreAdjustments[item.profileId] ?? 0),
-        averageAccuracy: item.accuracyCount > 0 ? Math.round(item.totalAccuracy / item.accuracyCount) : null,
-        reliabilityScore: Math.round(percentValue(item.gamesJoined, item.sessionsJoined)),
+        averageAccuracy: item.accuracyCount > 0 ? item.totalAccuracy / item.accuracyCount : null,
+        reliabilityScore: percentValue(item.gamesJoined, item.sessionsJoined),
         bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
           game: games.find((game) => game.id === gameId)?.title || gameId,
           score,
@@ -3126,7 +3130,7 @@ function handleSessionDateChange(value: string) {
             </>
           ),
         }
-      : { key: 'accuracy', value: <><span className="stat-label">{text.accuracy}</span><strong>{selectedPlayerProfile.averageAccuracy ?? '-'}%</strong></> },
+      : { key: 'accuracy', value: <><span className="stat-label">{text.accuracy}</span><strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong></> },
     selectedPlayerSessionContext
       ? {
           key: 'projectiles',
@@ -7188,7 +7192,7 @@ function handleSessionDateChange(value: string) {
                   <span>{playerStats.wins} {text.wins}</span>
                   <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
                   <span>{playerStats.totalScore} {text.totalScore}</span>
-                  <span>{playerStats.averageAccuracy ?? '-'}% {text.accuracy}</span>
+                  <span>{formatWholePercent(playerStats.averageAccuracy)} {text.accuracy}</span>
                   <span>{playerStats.totalProjectiles} {text.projectiles}</span>
                 </div>
                 {playerStats.bestByGame.length > 0 && (

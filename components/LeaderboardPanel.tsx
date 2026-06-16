@@ -51,10 +51,10 @@ type LeaderboardPanelProps = {
 
 const rankTiers = [
   { name: 'Champion', emoji: '🏆' },
-  { name: 'Grand Master', emoji: '🌟' },
+  { name: 'Grandmaster', emoji: '🌟' },
   { name: 'Master', emoji: '⭐' },
-  { name: 'Diamond', emoji: '💎' },
-  { name: 'Platinum', emoji: '💠' },
+  { name: 'Diamond', emoji: '🔷' },
+  { name: 'Platinum', emoji: '💎' },
   { name: 'Gold', emoji: '🥇' },
   { name: 'Silver', emoji: '🥈' },
   { name: 'Bronze', emoji: '🥉' },
@@ -105,9 +105,8 @@ function rankTierForDistinctStatRank(distinctStatRankIndex: number | null, value
   return { tier, nextTier, progress }
 }
 
-function rankTierEmoji(tier: RankTier, criterion: LeaderboardCriterion) {
+function rankTierEmoji(tier: RankTier) {
   if (tier.name === 'None') return ''
-  if (criterion === 'totalScore' && tier.name === 'Grand Master') return '👑'
   return tier.emoji
 }
 
@@ -115,8 +114,8 @@ function rankTierName(tier: RankTier, text: TranslationMap) {
   return tier.name === 'None' ? text.rankJesterMessage : tier.name
 }
 
-function rankTierLabel(tier: RankTier, criterion: LeaderboardCriterion, text: TranslationMap) {
-  const emoji = rankTierEmoji(tier, criterion)
+function rankTierLabel(tier: RankTier, text: TranslationMap) {
+  const emoji = rankTierEmoji(tier)
   const name = rankTierName(tier, text)
   return emoji ? `${emoji} ${name}` : name
 }
@@ -220,7 +219,6 @@ export default function LeaderboardPanel({
 
   const currentUserLeaderboardRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
-  const isScoreRanking = leaderboardCriterion === 'totalScore'
 
   return (
     <section className="section leaderboard-section">
@@ -270,7 +268,7 @@ export default function LeaderboardPanel({
           <strong>#{currentUserLeaderboardRow.rank}</strong>
           <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
           <div className="rank-mini">
-            <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, leaderboardCriterion, text)}</span>
+            <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, text)}</span>
             <span>
               {currentUserLeaderboardRow.rankInfo.nextTier
                 ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
@@ -284,9 +282,8 @@ export default function LeaderboardPanel({
         {visibleLeaderboardRows.length === 0 && <p className="notice">{text.noLeaderboardPlayers}</p>}
         {visibleLeaderboardRows.map(({ player, rank, rankInfo }) => {
           const isCurrentUser = player.profileId === userId
-          const tierEmoji = rankTierEmoji(rankInfo.tier, leaderboardCriterion)
-          const nextTierEmoji = rankInfo.nextTier ? rankTierEmoji(rankInfo.nextTier, leaderboardCriterion) : ''
-          const isAnimatedCrown = isScoreRanking && tierEmoji === '👑'
+          const tierEmoji = rankTierEmoji(rankInfo.tier)
+          const nextTierEmoji = rankInfo.nextTier ? rankTierEmoji(rankInfo.nextTier) : ''
           const tierName = rankTierName(rankInfo.tier, text)
           const nextTierName = rankInfo.nextTier ? rankTierName(rankInfo.nextTier, text) : ''
 
@@ -300,8 +297,8 @@ export default function LeaderboardPanel({
                 type="button"
               >
                 {renderAvatar(player)}
-                {isScoreRanking && tierEmoji && (
-                  <span className={isAnimatedCrown ? 'leaderboard-tier-badge crown' : 'leaderboard-tier-badge'}>
+                {tierEmoji && (
+                  <span className="leaderboard-tier-badge">
                     {tierEmoji}
                   </span>
                 )}
