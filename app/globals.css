@@ -3124,6 +3124,55 @@ body {
   max-width: 100%;
 }
 
+.app .leaderboard-club-pin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid rgba(48, 89, 255, 0.18);
+  border-radius: 10px;
+  background: #f7fafb;
+}
+
+.app .leaderboard-club-pin-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .leaderboard-club-pin-copy strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.app .leaderboard-club-pin-copy small,
+.app .leaderboard-club-pin-error {
+  color: #657278;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .leaderboard-club-pin label {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  color: #657278;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .leaderboard-club-pin input {
+  width: 100%;
+  min-height: 38px;
+  text-transform: uppercase;
+}
+
+.app .leaderboard-club-pin-error {
+  grid-column: 1 / -1;
+  color: #b42318;
+}
+
 .app .current-rank-card {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
@@ -4000,6 +4049,14 @@ body {
     width: 100%;
   }
 
+  .app .leaderboard-club-pin {
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 190px);
+  }
+
+  .app .leaderboard-club-pin button {
+    grid-column: 2;
+  }
+
   .app .current-rank-card {
     grid-template-columns: auto auto minmax(0, 1fr);
   }
@@ -4306,6 +4363,15 @@ body {
     grid-column: 1 / -1;
   }
 
+  .app .leaderboard-club-pin {
+    grid-template-columns: 1fr;
+  }
+
+  .app .leaderboard-club-pin button {
+    grid-column: auto;
+    width: 100%;
+  }
+
   .app .leaderboard-row {
     grid-template-columns: 34px calc(var(--avatar-sm) + 6px) minmax(0, 1fr);
     gap: 8px;
@@ -4469,6 +4535,20 @@ body {
   .app .leaderboard-row.current-user {
     background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(48, 89, 255, 0.14)), #10191b;
     border-color: rgba(98, 211, 255, 0.28);
+  }
+
+  .app .leaderboard-club-pin {
+    background: #10191b;
+    border-color: rgba(98, 211, 255, 0.28);
+  }
+
+  .app .leaderboard-club-pin label,
+  .app .leaderboard-club-pin-copy small {
+    color: #aeb9bd;
+  }
+
+  .app .leaderboard-club-pin-error {
+    color: #ffb4a8;
   }
 
   .app .leaderboard-tier-badge {

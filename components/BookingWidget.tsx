@@ -17,7 +17,8 @@ const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
-const CLUB_SELECT = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_SELECT = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
@@ -245,6 +246,7 @@ type Club = {
   name: string
   description: string | null
   visibility: 'public' | 'private'
+  pin_code?: string | null
   member_count: number | null
   created_at: string
   club_members?: ClubMember[]
@@ -2019,10 +2021,22 @@ export default function WidgetPage() {
 
   async function loadClubs() {
     clubsLoadingRef.current = true
-    const { data, error } = await (await getSupabase())
+    const client = await getSupabase()
+    const result = await client
       .from('clubs')
       .select(CLUB_SELECT)
       .order('created_at', { ascending: false })
+    let data = result.data as Club[] | null
+    let error = result.error
+
+    if (error && error.message.toLowerCase().includes('pin_code')) {
+      const fallbackResult = await client
+        .from('clubs')
+        .select(CLUB_SELECT_BASE)
+        .order('created_at', { ascending: false })
+      data = fallbackResult.data as Club[] | null
+      error = fallbackResult.error
+    }
 
     if (error) {
       setClubStatus(error.message)
@@ -2032,7 +2046,7 @@ export default function WidgetPage() {
 
     clubsLoadedRef.current = true
     clubsLoadingRef.current = false
-    setClubs((data ?? []) as Club[])
+    setClubs(data ?? [])
   }
 
   async function loadTournamentData() {
@@ -3407,25 +3421,45 @@ function handleSessionDateChange(value: string) {
     setIsCreatingClub(true)
     setClubStatus(text.creatingClub)
 
-    const { data: club, error } = await (await getSupabase())
+    const clubPinCode = clubVisibility === 'private' ? generateInviteCode() : null
+    let savedClubPinCode = clubPinCode
+    const client = await getSupabase()
+    const clubPayload = {
+      owner_id: userId,
+      name,
+      description: clubDescription.trim() || null,
+      visibility: clubVisibility,
+      pin_code: clubPinCode,
+    }
+    let clubResult = await client
       .from('clubs')
-      .insert({
-        owner_id: userId,
-        name,
-        description: clubDescription.trim() || null,
-        visibility: clubVisibility,
-      })
+      .insert(clubPayload)
       .select('id')
       .single()
 
-    if (error || !club) {
-      setClubStatus(error?.message || text.createError)
+    if (clubResult.error && clubResult.error.message.toLowerCase().includes('pin_code')) {
+      savedClubPinCode = null
+      const fallbackClubPayload = {
+        owner_id: clubPayload.owner_id,
+        name: clubPayload.name,
+        description: clubPayload.description,
+        visibility: clubPayload.visibility,
+      }
+      clubResult = await client
+        .from('clubs')
+        .insert(fallbackClubPayload)
+        .select('id')
+        .single()
+    }
+
+    if (clubResult.error || !clubResult.data) {
+      setClubStatus(clubResult.error?.message || text.createError)
       setIsCreatingClub(false)
       return
     }
 
-    const memberResult = await (await getSupabase()).from('club_members').insert({
-      club_id: club.id,
+    const memberResult = await client.from('club_members').insert({
+      club_id: clubResult.data.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
       ...avatarFields(activeProfile),
@@ -3442,7 +3476,7 @@ function handleSessionDateChange(value: string) {
     setClubDescription('')
     setClubVisibility('public')
     await loadClubs()
-    setClubStatus(text.clubCreated)
+    setClubStatus(savedClubPinCode ? `${text.clubCreated} ${text.privateCode}: ${savedClubPinCode}` : text.clubCreated)
     setIsCreatingClub(false)
   }
 
@@ -6443,6 +6477,7 @@ function handleSessionDateChange(value: string) {
               avatar_color: player.avatarColor,
               avatar_text_color: player.avatarTextColor,
             })}
+            canBypassPrivateClubPins={isAdmin}
             clubs={clubs}
             onOpenPlayerProfile={openPlayerProfile}
             players={allPlayerStats}
@@ -7345,6 +7380,12 @@ function handleSessionDateChange(value: string) {
             </div>
 
             {selectedClub.description && <p className="notes">{selectedClub.description}</p>}
+            {selectedClub.visibility === 'private' && selectedClub.pin_code && canManageClub(selectedClub) && (
+              <div className="invite-code compact">
+                <span>{text.privateCode}</span>
+                <strong>{selectedClub.pin_code}</strong>
+              </div>
+            )}
 
             <div className="club-action-row">
               {!selectedClubMembership && (
