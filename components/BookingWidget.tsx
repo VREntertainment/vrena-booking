@@ -5753,13 +5753,14 @@ function handleSessionDateChange(value: string) {
                 const isSessionOwner = session.owner_id === userId
                 const isTicket = isTicketSession(session)
                 const canManage = canManageSession(session)
+                const canExpandDetails = !isTicket || isSessionCreator(session)
                 const canSeeInviteCode = !isTicket && session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
                 const isEditing = editingSessionId === session.id
                 const sessionClub = sessionClubFor(session)
                 const sessionClubMembership = clubMembershipFor(sessionClub)
                 const canJoinThisSession = canAccessClubSession(session)
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
-                const isExpanded = Boolean(expandedSessions[session.id])
+                const isExpanded = canExpandDetails && Boolean(expandedSessions[session.id])
                 const isPast = isPastSession(session)
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
@@ -5794,12 +5795,14 @@ function handleSessionDateChange(value: string) {
                     <div
                       className={isExpanded ? 'compact-session-card compact-session-card-expanded' : 'compact-session-card'}
                       onClick={(event) => {
+                        if (!canExpandDetails) return
                         if (isInteractiveClickTarget(event.target)) return
                         setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
                       }}
-                      role="button"
-                      tabIndex={0}
+                      role={canExpandDetails ? 'button' : undefined}
+                      tabIndex={canExpandDetails ? 0 : undefined}
                       onKeyDown={(event) => {
+                        if (!canExpandDetails) return
                         if (isInteractiveClickTarget(event.target)) return
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault()
@@ -5826,13 +5829,10 @@ function handleSessionDateChange(value: string) {
                           <span>{formatShortDate(session.date, language)}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
-                          {!isPast && <span>{remaining} {text.seatsLeft}</span>}
+                          {!isTicket && !isPast && <span>{remaining} {text.seatsLeft}</span>}
                           {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                           {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
                           {isTicket && <span>{session.ticket_player_count || session.max_players} {text.players}</span>}
-                          {isTicket && session.ticket_total_price !== null && session.ticket_total_price !== undefined && (
-                            <span>{formatVnd(session.ticket_total_price)}</span>
-                          )}
                         </div>
                       </div>
                       <div className="compact-session-actions">
@@ -5902,16 +5902,18 @@ function handleSessionDateChange(value: string) {
                             <path d="M5 13V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V13" />
                           </svg>
                         </button>
-                        <button
-                          className="secondary compact-expand"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
-                          }}
-                        >
-                          {isExpanded ? text.hideDetails : text.expandDetails}
-                        </button>
+                        {canExpandDetails && (
+                          <button
+                            className="secondary compact-expand"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                            }}
+                          >
+                            {isExpanded ? text.hideDetails : text.expandDetails}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
@@ -6387,7 +6389,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {Boolean(userId) && (
+                    {!isTicket && Boolean(userId) && (
                     <div className="session-comms">
                       <div className="section-head compact-head">
                         <div>
