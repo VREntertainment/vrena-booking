@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
+    "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
