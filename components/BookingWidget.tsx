@@ -7075,18 +7075,6 @@ function handleSessionDateChange(value: string) {
                 </div>
               )}
               {showProfileFields && (
-                <div className="birthday-field">
-                  <label>{text.birthday}</label>
-                  <ShortDateInput
-                    ariaLabel={text.birthday}
-                    language={language}
-                    onChange={setProfileBirthday}
-                    placeholder={text.chooseDate}
-                    value={profileBirthday}
-                  />
-                </div>
-              )}
-              {showProfileFields && (
                 <div className="nickname-field">
                   <label>{text.nickname}</label>
                   <input
@@ -7107,6 +7095,18 @@ function handleSessionDateChange(value: string) {
                     placeholder={text.profileMottoPlaceholder}
                   />
                   <p className="field-help">{text.profileMottoHelp}</p>
+                </div>
+              )}
+              {showProfileFields && (
+                <div className="birthday-field">
+                  <label>{text.birthday}</label>
+                  <ShortDateInput
+                    ariaLabel={text.birthday}
+                    language={language}
+                    onChange={setProfileBirthday}
+                    placeholder={text.chooseDate}
+                    value={profileBirthday}
+                  />
                 </div>
               )}
               {!profile && authMode === 'create' && (
