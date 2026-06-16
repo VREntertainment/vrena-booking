@@ -1831,16 +1831,19 @@ body {
 .app .ticket-form-panel {
   display: grid;
   gap: 14px;
-  padding: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-.app .ticket-form-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.app .ticket-form-panel .ticket-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
 }
 
 .app .ticket-price-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   gap: 8px;
 }
 
@@ -4836,6 +4839,11 @@ body {
 
   .app .ticket-explainer span {
     color: #aeb9bd;
+  }
+
+  .app .ticket-form-panel {
+    background: transparent;
+    border: 0;
   }
 
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {

@@ -438,7 +438,7 @@ const ticketServices: Array<{
 const individualTicketPrices = {
   weekdayDay: 200000,
   weekdayEvening: 250000,
-  weekend: 320000,
+  weekend: 330000,
 }
 
 const countries = [
