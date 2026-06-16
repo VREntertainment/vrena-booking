@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   description: "Book and play VR games at VRena",
   icons: {
     icon: [
-      { url: "/vrena-icon.png?v=vrena-mark-20260616", sizes: "512x512", type: "image/png" },
-      { url: "/favicon.ico?v=vrena-mark-20260616", sizes: "any", type: "image/x-icon" },
+      { url: "/vrena-icon-20260616.png", sizes: "512x512", type: "image/png" },
+      { url: "/vrena-favicon-20260616.ico", sizes: "any", type: "image/x-icon" },
     ],
-    shortcut: ["/vrena-icon.png?v=vrena-mark-20260616"],
-    apple: [{ url: "/apple-icon.png?v=vrena-mark-20260616", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/vrena-favicon-20260616.ico"],
+    apple: [{ url: "/vrena-apple-icon-20260616.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
