@@ -7043,6 +7043,10 @@ function handleSessionDateChange(value: string) {
                 <p className="muted">{text.ticketsHint}</p>
               </div>
             </div>
+            <div className="ticket-explainer" role="note">
+              <strong>{text.ticketsExplainerTitle}</strong>
+              <span>{text.ticketsExplainerBody}</span>
+            </div>
 
             {!profile ? (
               <div className="ticket-login-panel">
