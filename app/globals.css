@@ -3634,6 +3634,11 @@ body {
   min-width: 178px;
 }
 
+.app .player-profile-panel .stats > .split-stat-card {
+  flex-basis: 150px;
+  min-width: 150px;
+}
+
 .app .stats strong, .app .stats span {
   display: block;
 }
@@ -3689,6 +3694,10 @@ body {
   width: 78px;
 }
 
+.app .split-stat-card .compact-stat-input {
+  width: 72px;
+}
+
 .app .stat-subline {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3703,6 +3712,11 @@ body {
   min-width: 0;
   color: #637075;
   font-weight: 900;
+}
+
+.app .stat-subline strong {
+  min-width: 0;
+  text-align: right;
 }
 
 .app .compact-best-label {
@@ -3897,6 +3911,10 @@ body {
 
   .app .player-profile-panel .stats > .score-stat-card {
     flex-basis: 174px;
+  }
+
+  .app .player-profile-panel .stats > .split-stat-card {
+    flex-basis: 148px;
   }
 
   .app .section-head, .app .join-row {
