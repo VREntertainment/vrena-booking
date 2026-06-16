@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n'
 
 export type LeaderboardPlayer = {
@@ -31,6 +31,8 @@ type LeaderboardClub = {
   id: string
   owner_id: string
   name: string
+  pin_code?: string | null
+  visibility: 'public' | 'private'
   club_members?: Array<{
     profile_id: string
     status?: string | null
@@ -41,6 +43,7 @@ type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 're
 
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
+  canBypassPrivateClubPins?: boolean
   clubs: LeaderboardClub[]
   onOpenPlayerProfile: (profileId: string) => void
   players: LeaderboardPlayer[]
@@ -77,6 +80,10 @@ function normalizeSearchValue(value: string) {
     .replace(/[^a-zA-Z0-9]+/g, ' ')
     .trim()
     .toLowerCase()
+}
+
+function normalizePinCode(value: string | null | undefined) {
+  return (value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
 function percentValue(numerator: number, denominator: number) {
@@ -138,6 +145,7 @@ function formatLeaderboardValue(player: LeaderboardPlayer, criterion: Leaderboar
 
 export default function LeaderboardPanel({
   avatarStyleFor,
+  canBypassPrivateClubPins = false,
   clubs,
   onOpenPlayerProfile,
   players,
@@ -148,6 +156,9 @@ export default function LeaderboardPanel({
   const [leaderboardCriterion, setLeaderboardCriterion] = useState<LeaderboardCriterion>('totalScore')
   const [leaderboardSearch, setLeaderboardSearch] = useState('')
   const [leaderboardClubId, setLeaderboardClubId] = useState('')
+  const [leaderboardClubPinDrafts, setLeaderboardClubPinDrafts] = useState<Record<string, string>>({})
+  const [leaderboardClubPinStatus, setLeaderboardClubPinStatus] = useState('')
+  const [unlockedLeaderboardClubIds, setUnlockedLeaderboardClubIds] = useState<Record<string, boolean>>({})
 
   const leaderboardCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
     { value: 'totalScore', label: text.totalScoreCriterion },
@@ -195,19 +206,36 @@ export default function LeaderboardPanel({
     })
   }, [leaderboardCriterion, players])
 
-  const selectedLeaderboardClubProfileIds = useMemo(() => {
+  const selectedLeaderboardClub = useMemo(() => {
     if (!leaderboardClubId) return null
-    const club = clubs.find((item) => item.id === leaderboardClubId)
-    if (!club) return null
+    return clubs.find((item) => item.id === leaderboardClubId) ?? null
+  }, [clubs, leaderboardClubId])
 
+  const selectedLeaderboardClubCanView = useMemo(() => {
+    if (!selectedLeaderboardClub) return true
+    if (selectedLeaderboardClub.visibility === 'public') return true
+    if (canBypassPrivateClubPins) return true
+    if (unlockedLeaderboardClubIds[selectedLeaderboardClub.id]) return true
+    if (!userId) return false
+    if (selectedLeaderboardClub.owner_id === userId) return true
+    return (selectedLeaderboardClub.club_members ?? []).some((member) => member.profile_id === userId && member.status === 'approved')
+  }, [canBypassPrivateClubPins, selectedLeaderboardClub, unlockedLeaderboardClubIds, userId])
+  const selectedLeaderboardClubLocked = Boolean(selectedLeaderboardClub && !selectedLeaderboardClubCanView)
+  const selectedLeaderboardClubPinDraft = selectedLeaderboardClub ? leaderboardClubPinDrafts[selectedLeaderboardClub.id] ?? '' : ''
+
+  const selectedLeaderboardClubProfileIds = useMemo(() => {
+    if (!selectedLeaderboardClub || selectedLeaderboardClubLocked) return null
+    const club = selectedLeaderboardClub
     const profileIds = new Set<string>([club.owner_id])
     ;(club.club_members ?? []).forEach((member) => {
       if (member.status === 'approved') profileIds.add(member.profile_id)
     })
     return profileIds
-  }, [clubs, leaderboardClubId])
+  }, [selectedLeaderboardClub, selectedLeaderboardClubLocked])
 
   const visibleLeaderboardRows = useMemo(() => {
+    if (selectedLeaderboardClubLocked) return []
+
     const query = normalizeSearchValue(leaderboardSearch)
 
     return rankedLeaderboardRows.filter(({ player }) => {
@@ -215,10 +243,25 @@ export default function LeaderboardPanel({
       const matchesClub = !selectedLeaderboardClubProfileIds || selectedLeaderboardClubProfileIds.has(player.profileId)
       return matchesSearch && matchesClub
     })
-  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubProfileIds])
+  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubLocked, selectedLeaderboardClubProfileIds])
 
   const currentUserLeaderboardRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
+
+  function unlockLeaderboardClub(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedLeaderboardClub) return
+
+    const expectedPin = normalizePinCode(selectedLeaderboardClub.pin_code)
+    const typedPin = normalizePinCode(selectedLeaderboardClubPinDraft)
+    if (!expectedPin || typedPin !== expectedPin) {
+      setLeaderboardClubPinStatus(text.privateIncorrect)
+      return
+    }
+
+    setUnlockedLeaderboardClubIds((current) => ({ ...current, [selectedLeaderboardClub.id]: true }))
+    setLeaderboardClubPinStatus('')
+  }
 
   return (
     <section className="section leaderboard-section">
@@ -241,7 +284,13 @@ export default function LeaderboardPanel({
           {clubs.length > 0 && (
             <label>
               <span>{text.clubFilter}</span>
-              <select value={leaderboardClubId} onChange={(event) => setLeaderboardClubId(event.target.value)}>
+              <select
+                value={leaderboardClubId}
+                onChange={(event) => {
+                  setLeaderboardClubId(event.target.value)
+                  setLeaderboardClubPinStatus('')
+                }}
+              >
                 <option value="">{text.allClubs}</option>
                 {clubs.map((club) => (
                   <option key={club.id} value={club.id}>
@@ -254,6 +303,33 @@ export default function LeaderboardPanel({
         </div>
       </div>
 
+      {selectedLeaderboardClubLocked && selectedLeaderboardClub && (
+        <form className="leaderboard-club-pin" onSubmit={unlockLeaderboardClub}>
+          <div className="leaderboard-club-pin-copy">
+            <strong>{text.privateClubLocked}</strong>
+            <small>{selectedLeaderboardClub.name}</small>
+          </div>
+          <label>
+            <span>{text.privateCode}</span>
+            <input
+              autoComplete="off"
+              inputMode="text"
+              placeholder={text.privateCode}
+              value={selectedLeaderboardClubPinDraft}
+              onChange={(event) => {
+                const value = event.target.value.toUpperCase()
+                setLeaderboardClubPinDrafts((current) => ({ ...current, [selectedLeaderboardClub.id]: value }))
+                setLeaderboardClubPinStatus('')
+              }}
+            />
+          </label>
+          <button className="secondary" type="submit">
+            {text.unlockClub}
+          </button>
+          {leaderboardClubPinStatus && <small className="leaderboard-club-pin-error">{leaderboardClubPinStatus}</small>}
+        </form>
+      )}
+
       <input
         className="search leaderboard-search"
         type="search"
@@ -262,7 +338,7 @@ export default function LeaderboardPanel({
         onChange={(event) => setLeaderboardSearch(event.target.value)}
       />
 
-      {currentUserLeaderboardRow && (
+      {currentUserLeaderboardRow && !selectedLeaderboardClubLocked && (
         <div className="current-rank-card">
           <span>{text.currentRank}</span>
           <strong>#{currentUserLeaderboardRow.rank}</strong>
