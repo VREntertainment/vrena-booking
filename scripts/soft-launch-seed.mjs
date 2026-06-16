@@ -58,7 +58,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   },
 })
 
-const { data, error } = await supabase.rpc('vrena_soft_launch_reset_seed', {
+const { data, error } = await supabase.rpc('vrena_soft_launch_reset_seed_with_demo_auth', {
   p_allow_production_seed: true,
   p_seed_batch: seedBatch,
 })

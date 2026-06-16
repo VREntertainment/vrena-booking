@@ -10,6 +10,10 @@ This is a one-time launch helper for starting customer-facing sessions from a cl
   - Creates service-role-only RPCs:
     - `vrena_soft_launch_reset_seed`
     - `vrena_soft_launch_rollback_seed`
+- `supabase/migrations/20260616142000_soft_launch_demo_auth_users.sql`
+  - Adds demo auth-user preparation for projects where `profiles.id` references `auth.users`.
+  - Creates the preferred wrapper RPC:
+    - `vrena_soft_launch_reset_seed_with_demo_auth`
 - `scripts/soft-launch-seed.mjs`
   - Runs the destructive reset and seed RPC.
 - `scripts/soft-launch-rollback.mjs`
@@ -28,6 +32,8 @@ The reset deletes existing session-related rows only:
 - any other public table with a `session_id` column
 
 It does not delete `auth.users`.
+
+On projects where `profiles.id` references `auth.users`, it creates 12 dedicated demo auth users with `raw_app_meta_data.seed_demo = true` before creating the demo profiles.
 
 It does not delete real `profiles`.
 
@@ -86,6 +92,15 @@ From the project root:
 ALLOW_PRODUCTION_SEED=true \
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
 npm run seed:soft-launch
+```
+
+If you run it manually in the Supabase SQL editor, use the auth-safe wrapper:
+
+```sql
+select public.vrena_soft_launch_reset_seed_with_demo_auth(
+  true,
+  'soft-launch-2026-06-16'
+);
 ```
 
 Optional custom batch:
