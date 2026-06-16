@@ -15,7 +15,8 @@ const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
-const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
+const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
+const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const CLUB_SELECT = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
@@ -68,6 +69,20 @@ type GameId =
   | 'wild-west'
   | 'arc-of-the-covenant'
   | 'joller-house'
+
+type TicketType = 'individual' | 'birthday' | 'corporate'
+type TicketStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
+
+type TicketBookingConfirmation = {
+  sessionId: string
+  reference: string
+  ticketType: TicketType
+  ticketLabel: string
+  date: string
+  time: string
+  players: number
+  totalPrice: number
+}
 
 type Profile = {
   id: string
@@ -215,6 +230,17 @@ type Session = {
   second_prize?: string | null
   third_prize?: string | null
   tournament_locked?: boolean | null
+  seeded?: boolean | null
+  seed_label?: string | null
+  seed_batch?: string | null
+  booking_type?: 'community' | 'ticket' | null
+  ticket_type?: TicketType | null
+  ticket_player_count?: number | null
+  ticket_total_price?: number | null
+  ticket_unit_price?: number | null
+  ticket_status?: TicketStatus | null
+  ticket_reference?: string | null
+  ticket_customer_id?: string | null
   session_participants?: Participant[]
   session_waitlist?: WaitlistEntry[]
 }
@@ -368,6 +394,53 @@ const games: Array<{
   { id: 'joller-house', title: 'Joller House', category: 'Escape', image: '/games/joller-house.png' },
 ]
 
+const ticketServices: Array<{
+  id: TicketType
+  duration: number
+  minPlayers: number
+  maxPlayers: number
+  arenaCount: 1 | 2
+  pricingModel: 'individual_dynamic' | 'fixed_total'
+  fixedPrice?: number
+  defaultGame: GameId
+}> = [
+  {
+    id: 'individual',
+    duration: 20,
+    minPlayers: 1,
+    maxPlayers: 4,
+    arenaCount: 1,
+    pricingModel: 'individual_dynamic',
+    defaultGame: 'laser-tag',
+  },
+  {
+    id: 'birthday',
+    duration: 120,
+    minPlayers: 4,
+    maxPlayers: 12,
+    arenaCount: 2,
+    pricingModel: 'fixed_total',
+    fixedPrice: 1200000,
+    defaultGame: 'joller-house',
+  },
+  {
+    id: 'corporate',
+    duration: 120,
+    minPlayers: 6,
+    maxPlayers: 16,
+    arenaCount: 2,
+    pricingModel: 'fixed_total',
+    fixedPrice: 2500000,
+    defaultGame: 'office-war',
+  },
+]
+
+const individualTicketPrices = {
+  weekdayDay: 200000,
+  weekdayEvening: 250000,
+  weekend: 320000,
+}
+
 const countries = [
   { code: '+84', name: 'Vietnam' },
   { code: '+33', name: 'France' },
@@ -425,6 +498,56 @@ function generateInviteCode() {
 
 function arenasUsedBySession(session: Pick<Session, 'max_players' | 'arena_count'>) {
   return session.arena_count || (session.max_players > 7 ? 2 : 1)
+}
+
+function isTicketSession(session: Pick<Session, 'booking_type'>) {
+  return session.booking_type === 'ticket'
+}
+
+function selectedTicketService(ticketType: TicketType) {
+  return ticketServices.find((service) => service.id === ticketType) || ticketServices[0]
+}
+
+function ticketTypeLabel(ticketType: TicketType, text: Record<string, string>) {
+  if (ticketType === 'birthday') return text.birthdayTicket
+  if (ticketType === 'corporate') return text.corporateTicket
+  return text.individualTicket
+}
+
+function ticketTypeDescription(ticketType: TicketType, text: Record<string, string>) {
+  if (ticketType === 'birthday') return text.birthdayTicketDescription
+  if (ticketType === 'corporate') return text.corporateTicketDescription
+  return text.individualTicketDescription
+}
+
+function formatVnd(value: number) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(Math.max(0, value))
+}
+
+function individualTicketUnitPrice(dateValue: string, timeValue: string) {
+  if (!dateValue) return individualTicketPrices.weekdayDay
+  const day = new Date(`${dateValue}T12:00:00`).getDay()
+  if (day === 0 || day === 6) return individualTicketPrices.weekend
+  const minutes = timeValue ? timeToMinutes(timeValue) : 12 * 60
+  return minutes >= 18 * 60 ? individualTicketPrices.weekdayEvening : individualTicketPrices.weekdayDay
+}
+
+function ticketUnitPrice(ticketType: TicketType, dateValue: string, timeValue: string) {
+  const service = selectedTicketService(ticketType)
+  if (service.pricingModel === 'individual_dynamic') {
+    return individualTicketUnitPrice(dateValue, timeValue)
+  }
+  return service.fixedPrice || 0
+}
+
+function ticketTotalPrice(ticketType: TicketType, dateValue: string, timeValue: string, players: number) {
+  const service = selectedTicketService(ticketType)
+  const unitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
+  return service.pricingModel === 'individual_dynamic' ? unitPrice * players : unitPrice
 }
 
 function resolveCountryCode(input: string) {
@@ -877,7 +1000,7 @@ function scheduleDeferredWork(callback: () => void) {
 }
 
 export default function WidgetPage() {
-  const [activeView, setActiveView] = useState<'sessions' | 'create' | 'leaderboard' | 'clubs' | 'profile'>('sessions')
+  const [activeView, setActiveView] = useState<'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'>('sessions')
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
@@ -957,6 +1080,13 @@ export default function WidgetPage() {
   const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [createStatus, setCreateStatus] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [ticketType, setTicketType] = useState<TicketType>('individual')
+  const [ticketDate, setTicketDate] = useState(localDateString())
+  const [ticketTime, setTicketTime] = useState('')
+  const [ticketPlayers, setTicketPlayers] = useState(1)
+  const [ticketStatus, setTicketStatus] = useState('')
+  const [isBookingTickets, setIsBookingTickets] = useState(false)
+  const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
   const [busySessionId, setBusySessionId] = useState('')
   const [busyVoteKey, setBusyVoteKey] = useState('')
   const [copiedInviteId, setCopiedInviteId] = useState('')
@@ -971,6 +1101,11 @@ export default function WidgetPage() {
   const [editSessionVisibility, setEditSessionVisibility] = useState<'public' | 'private'>('public')
   const [editSessionNotes, setEditSessionNotes] = useState('')
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
+  const [editBookingType, setEditBookingType] = useState<'community' | 'ticket'>('community')
+  const [editTicketCustomerId, setEditTicketCustomerId] = useState('')
+  const [editTicketType, setEditTicketType] = useState<TicketType>('individual')
+  const [editTicketTotalPrice, setEditTicketTotalPrice] = useState('')
+  const [editTicketStatus, setEditTicketStatus] = useState<TicketStatus>('confirmed')
   const [editTournamentFormat, setEditTournamentFormat] = useState<TournamentFormat>('pool_to_final')
   const [editTournamentBestOf, setEditTournamentBestOf] = useState<1 | 3 | 5>(1)
   const [editTournamentRoundsPerMatch, setEditTournamentRoundsPerMatch] = useState(1)
@@ -1966,22 +2101,50 @@ export default function WidgetPage() {
   }
 
   async function loadSessions() {
+    const client = await getSupabase()
     const [sessionResult, blockedResult] = await Promise.all([
-      (await getSupabase())
+      client
         .from('sessions')
         .select(SESSION_SELECT)
         .neq('status', 'cancelled')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true }),
-      (await getSupabase()).from('blocked_times').select('date, start_time, end_time, arenas_used'),
+      client.from('blocked_times').select('date, start_time, end_time, arenas_used'),
     ])
 
-    if (sessionResult.error) {
-      setCreateStatus(sessionResult.error.message)
+    let sessionRowsData: unknown[] | null = sessionResult.data as unknown[] | null
+    let sessionError = sessionResult.error
+    const optionalSessionMetadataMissing = sessionResult.error && [
+      'seeded',
+      'seed_label',
+      'seed_batch',
+      'booking_type',
+      'ticket_type',
+      'ticket_player_count',
+      'ticket_total_price',
+      'ticket_unit_price',
+      'ticket_status',
+      'ticket_reference',
+      'ticket_customer_id',
+    ].some((column) => sessionResult.error?.message.toLowerCase().includes(column))
+
+    if (optionalSessionMetadataMissing) {
+      const fallbackSessionResult = await client
+        .from('sessions')
+        .select(SESSION_SELECT_BASE)
+        .neq('status', 'cancelled')
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true })
+      sessionRowsData = fallbackSessionResult.data
+      sessionError = fallbackSessionResult.error
+    }
+
+    if (sessionError) {
+      setCreateStatus(sessionError.message)
       return
     }
 
-    const sessionRows = (sessionResult.data ?? []) as Session[]
+    const sessionRows = (sessionRowsData ?? []) as Session[]
     const sessionIds = sessionRows.map((session) => session.id)
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
     const [waitlistResult, profilesResult, adjustmentResult] = await Promise.all([
@@ -2395,12 +2558,34 @@ export default function WidgetPage() {
     return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
   }, [blockedTimes, editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, language, sessions])
 
+  const activeTicketService = selectedTicketService(ticketType)
+  const ticketTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(ticketDate, activeTicketService.duration, activeTicketService.arenaCount)
+  }, [activeTicketService.arenaCount, activeTicketService.duration, blockedTimes, language, sessions, ticketDate])
+  const currentTicketUnitPrice = ticketUnitPrice(ticketType, ticketDate, ticketTime)
+  const currentTicketTotalPrice = ticketTotalPrice(ticketType, ticketDate, ticketTime, ticketPlayers)
+  const ticketPlayerOptions = useMemo(() => {
+    return Array.from(
+      { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
+      (_, index) => activeTicketService.minPlayers + index
+    )
+  }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
+
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
   const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
 
 function handleSessionDateChange(value: string) {
   setSessionDate(value)
 }
+
+  function handleTicketTypeChange(value: TicketType) {
+    const service = selectedTicketService(value)
+    setTicketType(value)
+    setTicketPlayers((current) => Math.min(service.maxPlayers, Math.max(service.minPlayers, current)))
+    setTicketTime('')
+    setTicketConfirmation(null)
+    setTicketStatus('')
+  }
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
@@ -3867,6 +4052,66 @@ function handleSessionDateChange(value: string) {
     document.execCommand(command, false)
   }
 
+  async function bookTickets() {
+    if (!requireProfile()) return
+
+    const activeProfile = profile
+    if (!activeProfile) return
+
+    const service = selectedTicketService(ticketType)
+    const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
+
+    if (!ticketDate || !ticketTime || !selectedTimeOption) {
+      setTicketStatus(text.ticketRequired)
+      return
+    }
+
+    if (ticketPlayers < service.minPlayers || ticketPlayers > service.maxPlayers) {
+      setTicketStatus(text.ticketPlayersInvalid)
+      return
+    }
+
+    setIsBookingTickets(true)
+    setTicketStatus(text.bookingTickets)
+    setTicketConfirmation(null)
+
+    const { data, error } = await (await getSupabase()).rpc('create_ticket_booking', {
+      p_ticket_type: ticketType,
+      p_date: ticketDate,
+      p_start_time: `${ticketTime}:00`,
+      p_duration_minutes: service.duration,
+      p_player_count: ticketPlayers,
+      p_arena_count: service.arenaCount,
+      p_game_options: [service.defaultGame],
+      p_unit_price: currentTicketUnitPrice,
+      p_total_price: currentTicketTotalPrice,
+    })
+
+    if (error) {
+      setTicketStatus(error.message || text.ticketBookingError)
+      setIsBookingTickets(false)
+      return
+    }
+
+    const booking = (data || {}) as { session_id?: string; ticket_reference?: string }
+    const confirmation: TicketBookingConfirmation = {
+      sessionId: booking.session_id || '',
+      reference: booking.ticket_reference || '',
+      ticketType,
+      ticketLabel: ticketTypeLabel(ticketType, looseText),
+      date: ticketDate,
+      time: ticketTime,
+      players: ticketPlayers,
+      totalPrice: currentTicketTotalPrice,
+    }
+
+    setTicketConfirmation(confirmation)
+    setTicketStatus(text.ticketBookingCreated)
+    setTicketTime('')
+    await loadSessions()
+    setIsBookingTickets(false)
+  }
+
   async function createSession() {
     if (!requireProfile()) {
       setIsCreating(false)
@@ -3981,6 +4226,11 @@ function handleSessionDateChange(value: string) {
   async function joinSession(session: Session) {
     if (!requireProfile()) return
 
+    if (isTicketSession(session)) {
+      setCreateStatus(text.privateTicketSession)
+      return
+    }
+
     const activeProfile = profile
 
     if (!activeProfile) return
@@ -4043,6 +4293,11 @@ function handleSessionDateChange(value: string) {
 
   async function joinWaitlist(session: Session) {
     if (!requireProfile()) return
+
+    if (isTicketSession(session)) {
+      setCreateStatus(text.privateTicketSession)
+      return
+    }
 
     const activeProfile = profile
     if (!activeProfile) return
@@ -4358,6 +4613,11 @@ function handleSessionDateChange(value: string) {
     setEditSessionVisibility(session.visibility)
     setEditSessionNotes(session.notes || '')
     setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
+    setEditBookingType(session.booking_type === 'ticket' ? 'ticket' : 'community')
+    setEditTicketCustomerId(session.ticket_customer_id || session.owner_id)
+    setEditTicketType(session.ticket_type || 'individual')
+    setEditTicketTotalPrice(String(session.ticket_total_price ?? ''))
+    setEditTicketStatus(session.ticket_status || 'confirmed')
     setEditTournamentFormat(session.tournament_format || 'pool_to_final')
     setEditTournamentBestOf((session.best_of || 1) as 1 | 3 | 5)
     setEditTournamentRoundsPerMatch(session.rounds_per_match || 1)
@@ -4397,18 +4657,20 @@ function handleSessionDateChange(value: string) {
     setIsUpdatingSession(true)
     setCreateStatus(text.savingSession)
 
-    const effectiveEditVisibility = session.club_id ? 'public' : editSessionVisibility
+    const effectiveEditVisibility = session.club_id ? 'public' : editBookingType === 'ticket' ? 'private' : editSessionVisibility
     const inviteCode =
       effectiveEditVisibility === 'private'
         ? session.invite_code || generateInviteCode()
         : null
     const tournament = tournamentForSession(session.id)
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
+    const sanitizedTicketTotal = Math.max(0, Math.round(Number(editTicketTotalPrice) || 0))
 
     const { error } = await (await getSupabase())
       .from('sessions')
       .update({
         name: editSessionName.trim(),
+        ...(isAdmin && editBookingType === 'ticket' && editTicketCustomerId ? { owner_id: editTicketCustomerId } : {}),
         date: editSessionDate,
         start_time: `${editSessionTime}:00`,
         duration_minutes: editSessionDuration,
@@ -4418,6 +4680,17 @@ function handleSessionDateChange(value: string) {
         visibility: effectiveEditVisibility,
         invite_code: inviteCode,
         notes: editSessionNotes.trim() || null,
+        ...(isAdmin
+          ? {
+            booking_type: editBookingType,
+            ticket_customer_id: editBookingType === 'ticket' ? editTicketCustomerId || null : null,
+            ticket_type: editBookingType === 'ticket' ? editTicketType : null,
+            ticket_player_count: editBookingType === 'ticket' ? editSessionMaxPlayers : null,
+            ticket_total_price: editBookingType === 'ticket' ? sanitizedTicketTotal : null,
+            ticket_unit_price: editBookingType === 'ticket' && editSessionMaxPlayers > 0 ? Math.round(sanitizedTicketTotal / editSessionMaxPlayers) : null,
+            ticket_status: editBookingType === 'ticket' ? editTicketStatus : null,
+          }
+          : {}),
         ...(session.session_type === 'tournament'
           ? {
             tournament_format: hasTournamentBracket ? session.tournament_format : editTournamentFormat,
@@ -5156,7 +5429,7 @@ function handleSessionDateChange(value: string) {
     const createdByMe = session.owner_id === userId
     const canManage = canManageSession(session)
     const joinedByMe = participants.some((participant) => participant.profile_id === userId)
-    const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
+    const canSeeInviteCode = !isTicketSession(session) && session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
     const coverGame = sessionCoverGame(session)
 
     return (
@@ -5176,6 +5449,7 @@ function handleSessionDateChange(value: string) {
         <div className="mini-session-title mini-session-title-with-image">
           <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
           <strong>{session.name}</strong>
+          {isTicketSession(session) && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
           <span className={createdByMe ? 'pill ok' : 'pill'}>
             {createdByMe ? text.createdByYou : text.joined}
           </span>
@@ -5341,6 +5615,9 @@ function handleSessionDateChange(value: string) {
           <button className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
             {text.sessions}
           </button>
+          <button className={activeView === 'tickets' ? 'tab active' : 'tab'} onClick={() => setActiveView('tickets')}>
+            {text.tickets}
+          </button>
           <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => setActiveView('leaderboard')}>
             {text.hallOfFame}
           </button>
@@ -5474,8 +5751,9 @@ function handleSessionDateChange(value: string) {
                 const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
                 const myWaitlistPosition = userId ? waitlistPosition(session, userId) : null
                 const isSessionOwner = session.owner_id === userId
+                const isTicket = isTicketSession(session)
                 const canManage = canManageSession(session)
-                const canSeeInviteCode = session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
+                const canSeeInviteCode = !isTicket && session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
                 const isEditing = editingSessionId === session.id
                 const sessionClub = sessionClubFor(session)
                 const sessionClubMembership = clubMembershipFor(sessionClub)
@@ -5539,6 +5817,8 @@ function handleSessionDateChange(value: string) {
                           <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
                             {session.visibility === 'private' ? text.private : text.public}
                           </span>
+                          {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
+                          {session.seeded && <span className="pill soft-opening-pill">{text.softOpeningHighlights}</span>}
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
                           {invitedMe && <span className="pill ok">{text.invited}</span>}
                         </div>
@@ -5549,10 +5829,14 @@ function handleSessionDateChange(value: string) {
                           {!isPast && <span>{remaining} {text.seatsLeft}</span>}
                           {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                           {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
+                          {isTicket && <span>{session.ticket_player_count || session.max_players} {text.players}</span>}
+                          {isTicket && session.ticket_total_price !== null && session.ticket_total_price !== undefined && (
+                            <span>{formatVnd(session.ticket_total_price)}</span>
+                          )}
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                        {!isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && !invitedMe && (
+                          {!isTicket && !isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && !invitedMe && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -5563,7 +5847,9 @@ function handleSessionDateChange(value: string) {
                             }
                           />
                         )}
-                        {!isPast && sessionClub && !canJoinThisSession ? (
+                        {!isPast && isTicket ? (
+                          <span className="ticket-session-label">{text.privateTicketSession}</span>
+                        ) : !isPast && sessionClub && !canJoinThisSession ? (
                           <button
                             className={busyClubId === sessionClub.id ? 'secondary compact-join loading' : 'secondary compact-join'}
                             disabled={busyClubId === sessionClub.id || sessionClubMembership?.status === 'pending'}
@@ -5637,6 +5923,15 @@ function handleSessionDateChange(value: string) {
                           </div>
                         )}
 
+                        {isTicket && (
+                          <div className="ticket-session-summary">
+                            <span>{text.ticketType}: <strong>{ticketTypeLabel(session.ticket_type || 'individual', looseText)}</strong></span>
+                            <span>{text.numberOfPlayers}: <strong>{session.ticket_player_count || session.max_players}</strong></span>
+                            <span>{text.bookingStatus}: <strong>{session.ticket_status || 'confirmed'}</strong></span>
+                            {session.ticket_reference && <span>{text.bookingReference}: <strong>{session.ticket_reference}</strong></span>}
+                          </div>
+                        )}
+
                         {session.notes && (
                           <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
                             <div
@@ -5703,7 +5998,7 @@ function handleSessionDateChange(value: string) {
                             <h3>{text.editSessionTitle}</h3>
                             <p className="muted">{text.editSessionHint}</p>
                           </div>
-                          {!session.club_id && (
+                          {!session.club_id && editBookingType !== 'ticket' && (
                             <div className="segmented">
                               <button className={editSessionVisibility === 'public' ? 'active' : ''} onClick={() => setEditSessionVisibility('public')} type="button">
                                 {text.public}
@@ -5719,6 +6014,67 @@ function handleSessionDateChange(value: string) {
                             <label>{text.sessionName} <span className="required">*</span></label>
                             <input value={editSessionName} onChange={(event) => setEditSessionName(event.target.value)} />
                           </div>
+                          {isAdmin && (
+                            <div className="full ticket-admin-box">
+                              <div className="ticket-admin-head">
+                                <strong>{text.ticketAdminTitle}</strong>
+                                <span>{text.ticketAdminHint}</span>
+                              </div>
+                              <div className="form-grid compact-form-grid">
+                                <div>
+                                  <label>{text.bookingType}</label>
+                                  <select value={editBookingType} onChange={(event) => setEditBookingType(event.target.value as 'community' | 'ticket')}>
+                                    <option value="community">{text.communitySession}</option>
+                                    <option value="ticket">{text.ticketGenerated}</option>
+                                  </select>
+                                </div>
+                                {editBookingType === 'ticket' && (
+                                  <>
+                                    <div>
+                                      <label>{text.ticketCustomer}</label>
+                                      <select value={editTicketCustomerId} onChange={(event) => setEditTicketCustomerId(event.target.value)}>
+                                        <option value="">{text.noProfile}</option>
+                                        {allProfiles.map((player) => (
+                                          <option key={player.id} value={player.id}>
+                                            {displayName(player)}{player.email ? ` · ${player.email}` : ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label>{text.ticketType}</label>
+                                      <select value={editTicketType} onChange={(event) => setEditTicketType(event.target.value as TicketType)}>
+                                        {ticketServices.map((service) => (
+                                          <option key={service.id} value={service.id}>
+                                            {ticketTypeLabel(service.id, looseText)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label>{text.totalPrice}</label>
+                                      <input
+                                        inputMode="numeric"
+                                        min={0}
+                                        type="number"
+                                        value={editTicketTotalPrice}
+                                        onChange={(event) => setEditTicketTotalPrice(event.target.value)}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label>{text.bookingStatus}</label>
+                                      <select value={editTicketStatus} onChange={(event) => setEditTicketStatus(event.target.value as TicketStatus)}>
+                                        <option value="pending">{text.ticketStatusPending}</option>
+                                        <option value="confirmed">{text.ticketStatusConfirmed}</option>
+                                        <option value="cancelled">{text.ticketStatusCancelled}</option>
+                                        <option value="completed">{text.ticketStatusCompleted}</option>
+                                      </select>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {session.session_type === 'tournament' && (() => {
                             const tournament = tournamentForSession(session.id)
                             const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
@@ -6676,6 +7032,152 @@ function handleSessionDateChange(value: string) {
                 )
               })}
             </div>
+          </section>
+        )}
+
+        {activeView === 'tickets' && (
+          <section className="section tickets-section">
+            <div className="section-head">
+              <div>
+                <h2>{text.ticketsTitle}</h2>
+                <p className="muted">{text.ticketsHint}</p>
+              </div>
+            </div>
+
+            {!profile ? (
+              <div className="ticket-login-panel">
+                <strong>{text.ticketLoginRequiredTitle}</strong>
+                <p className="muted">{text.ticketLoginRequiredBody}</p>
+                <button className="primary" type="button" onClick={promptLogin}>
+                  {text.loginPromptButton}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="ticket-flow-grid">
+                  <div className="ticket-type-list">
+                    <label>{text.ticketType}</label>
+                    <div className="ticket-service-grid">
+                      {ticketServices.map((service) => (
+                        <button
+                          className={ticketType === service.id ? 'ticket-service-card active' : 'ticket-service-card'}
+                          key={service.id}
+                          type="button"
+                          onClick={() => handleTicketTypeChange(service.id)}
+                        >
+                          <strong>{ticketTypeLabel(service.id, looseText)}</strong>
+                          <span>{ticketTypeDescription(service.id, looseText)}</span>
+                          <small>
+                            {service.duration} min · {service.minPlayers}-{service.maxPlayers} {text.players}
+                          </small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="ticket-form-panel">
+                    <div className="form-grid compact-form-grid ticket-form-grid">
+                      <div>
+                        <label>{text.date} <span className="required">*</span></label>
+                        <ShortDateInput
+                          ariaLabel={text.date}
+                          language={language}
+                          onChange={(value) => {
+                            setTicketDate(value)
+                            setTicketTime('')
+                            setTicketConfirmation(null)
+                          }}
+                          placeholder={text.chooseDate}
+                          value={ticketDate}
+                        />
+                      </div>
+                      <div>
+                        <label>{text.availableTime} <span className="required">*</span></label>
+                        <select
+                          value={ticketTime}
+                          onChange={(event) => {
+                            setTicketTime(event.target.value)
+                            setTicketConfirmation(null)
+                          }}
+                        >
+                          <option value="">{text.chooseTime}</option>
+                          {ticketTimeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label>{text.numberOfPlayers} <span className="required">*</span></label>
+                        <select
+                          value={ticketPlayers}
+                          onChange={(event) => {
+                            setTicketPlayers(Number(event.target.value))
+                            setTicketConfirmation(null)
+                          }}
+                        >
+                          {ticketPlayerOptions.map((count) => (
+                            <option key={count} value={count}>
+                              {count} {text.players}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="ticket-price-summary">
+                      <div>
+                        <span>{text.ticketType}</span>
+                        <strong>{ticketTypeLabel(ticketType, looseText)}</strong>
+                      </div>
+                      <div>
+                        <span>{text.duration}</span>
+                        <strong>{activeTicketService.duration} min</strong>
+                      </div>
+                      <div>
+                        <span>{text.unitPrice}</span>
+                        <strong>{formatVnd(currentTicketUnitPrice)}</strong>
+                      </div>
+                      <div className="ticket-total-line">
+                        <span>{text.totalPrice}</span>
+                        <strong>{formatVnd(currentTicketTotalPrice)}</strong>
+                      </div>
+                    </div>
+
+                    <button
+                      className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
+                      disabled={isBookingTickets}
+                      type="button"
+                      onClick={bookTickets}
+                    >
+                      {isBookingTickets ? text.bookingTickets : text.bookTickets}
+                    </button>
+                    {ticketStatus && <p className="notice">{ticketStatus}</p>}
+                  </div>
+                </div>
+
+                {ticketConfirmation && (
+                  <div className="ticket-confirmation">
+                    <div>
+                      <span>{text.bookingConfirmed}</span>
+                      <strong>{ticketConfirmation.ticketLabel}</strong>
+                    </div>
+                    <div className="ticket-confirmation-grid">
+                      <span>{formatShortDate(ticketConfirmation.date, language)}</span>
+                      <span>{ticketConfirmation.time}</span>
+                      <span>{ticketConfirmation.players} {text.players}</span>
+                      <span>{formatVnd(ticketConfirmation.totalPrice)}</span>
+                    </div>
+                    {ticketConfirmation.reference && (
+                      <p>
+                        {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </section>
         )}
 
