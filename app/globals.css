@@ -1788,6 +1788,7 @@ body {
   width: 100%;
   padding: 13px;
   text-align: left;
+  color: #071112;
   background: #f7fafb;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
@@ -1795,6 +1796,7 @@ body {
 }
 
 .app .ticket-service-card strong {
+  color: #071112;
   font-size: 16px;
 }
 
@@ -4807,6 +4809,10 @@ body {
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
+    color: #f6f7f9;
+  }
+
+  .app .ticket-service-card strong {
     color: #f6f7f9;
   }
 
