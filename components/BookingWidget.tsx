@@ -1038,6 +1038,8 @@ export default function WidgetPage() {
   const bestPerformerText = looseText.bestPerformer || 'Best Performer'
   const bestPerformerCountText = looseText.bestPerformerCount || 'Best Performer count'
   const sessionScoreText = looseText.sessionScore || 'Session score'
+  const averageAccuracyText = looseText.averageAccuracy || 'Average'
+  const totalShotsText = looseText.totalShots || 'Total Shots'
   const pendingInvitationsText = looseText.pendingInvitations || 'Pending invitations'
   const pendingInvitationsHintText = looseText.pendingInvitationsHint || 'Invites waiting for your answer.'
   const invitationReceivedText = looseText.invitationReceived || 'Session invitation'
@@ -3136,11 +3138,15 @@ function handleSessionDateChange(value: string) {
     selectedPlayerSessionContext
       ? {
           key: 'accuracy',
-          className: 'editable-stat-card',
+          className: 'editable-stat-card split-stat-card',
           value: (
             <>
               <span className="stat-label">{text.accuracy}</span>
               {renderSessionMetricControl('accuracy', selectedSessionParticipant?.accuracy_percent, text.accuracy, '%')}
+              <span className="stat-subline">
+                <span>{averageAccuracyText}</span>
+                <strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong>
+              </span>
             </>
           ),
         }
@@ -3148,11 +3154,15 @@ function handleSessionDateChange(value: string) {
     selectedPlayerSessionContext
       ? {
           key: 'projectiles',
-          className: 'editable-stat-card',
+          className: 'editable-stat-card split-stat-card',
           value: (
             <>
               <span className="stat-label">{text.projectiles}</span>
               {renderSessionMetricControl('projectiles', selectedSessionParticipant?.projectiles_fired, text.projectiles)}
+              <span className="stat-subline">
+                <span>{totalShotsText}</span>
+                <strong>{selectedPlayerProfile.totalProjectiles}</strong>
+              </span>
             </>
           ),
         }
