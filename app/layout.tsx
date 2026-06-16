@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VRena-Booking-App",
+  title: "VRena | Book & Play",
   description: "Book and play VR games at VRena",
 };
 
