@@ -5765,6 +5765,11 @@ function handleSessionDateChange(value: string) {
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
                 const confirmedGameDraft = confirmedGameDrafts[session.id] ?? session.confirmed_game_id ?? ''
+                const confirmedGameOptions = isTicket
+                  ? games
+                  : session.game_options
+                    .map((gameId) => games.find((item) => item.id === gameId))
+                    .filter((game): game is (typeof games)[number] => Boolean(game))
                 const sessionInviteRows = invitesForSession(session.id)
                 const invitedMe = sessionInviteRows.some((invite) => invite.recipient_id === userId)
                 const invitedIds = new Set(sessionInviteRows.map((invite) => invite.recipient_id))
@@ -5823,7 +5828,7 @@ function handleSessionDateChange(value: string) {
                           {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
                           {session.seeded && <span className="pill soft-opening-pill">{text.softOpeningHighlights}</span>}
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
-                          {invitedMe && <span className="pill ok">{text.invited}</span>}
+                          {!isTicket && invitedMe && <span className="pill ok">{text.invited}</span>}
                         </div>
                         <div className="row-meta compact-meta">
                           <span>{formatShortDate(session.date, language)}</span>
@@ -5976,9 +5981,7 @@ function handleSessionDateChange(value: string) {
                           }}
                         >
                           <option value="">{text.notConfirmed}</option>
-                          {session.game_options.map((gameId) => {
-                            const game = games.find((item) => item.id === gameId)
-                            if (!game) return null
+                          {confirmedGameOptions.map((game) => {
                             return <option key={game.id} value={game.id}>{game.title}</option>
                           })}
                         </select>
@@ -6273,7 +6276,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {networkTablesReady && (alreadyJoined || canManage) && (
+                    {!isTicket && networkTablesReady && (alreadyJoined || canManage) && (
                       <div className="network-panel">
                         <div className="section-head compact-head">
                           <div>
@@ -6365,11 +6368,11 @@ function handleSessionDateChange(value: string) {
                       ))}
                     </div>
 
-                    {myWaitlistPosition && (
+                    {!isTicket && myWaitlistPosition && (
                       <p className="notice waitlist-position">{text.waitlistPosition}: #{myWaitlistPosition}</p>
                     )}
 
-                    {canManage && (
+                    {!isTicket && canManage && (
                       <div className="waitlist-panel">
                         <strong>{text.waitlist}</strong>
                         {waitlist.length === 0 ? (
@@ -6779,29 +6782,31 @@ function handleSessionDateChange(value: string) {
                       )
                     })()}
 
-                    <div className="game-strip">
-                      {session.game_options.map((gameId) => {
-                        const game = games.find((item) => item.id === gameId)
-                        if (!game) return null
+                    {!isTicket && (
+                      <div className="game-strip">
+                        {session.game_options.map((gameId) => {
+                          const game = games.find((item) => item.id === gameId)
+                          if (!game) return null
 
-                        return (
-                          <button
-                            className={[
-                              session.game_votes?.[userId] === gameId ? 'game-card selected' : 'game-card',
-                              busyVoteKey === `${session.id}-${gameId}` ? 'loading' : '',
-                            ].join(' ').trim()}
-                            key={gameId}
-                            disabled={busyVoteKey === `${session.id}-${gameId}` || !canMutatePastSession}
-                            onClick={() => voteForGame(session, gameId)}
-                            type="button"
-                          >
-                            <img src={game.image} alt="" loading="lazy" decoding="async" />
-                            <span>{game.title}</span>
-                            <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
-                          </button>
-                        )
-                      })}
-                    </div>
+                          return (
+                            <button
+                              className={[
+                                session.game_votes?.[userId] === gameId ? 'game-card selected' : 'game-card',
+                                busyVoteKey === `${session.id}-${gameId}` ? 'loading' : '',
+                              ].join(' ').trim()}
+                              key={gameId}
+                              disabled={busyVoteKey === `${session.id}-${gameId}` || !canMutatePastSession}
+                              onClick={() => voteForGame(session, gameId)}
+                              type="button"
+                            >
+                              <img src={game.image} alt="" loading="lazy" decoding="async" />
+                              <span>{game.title}</span>
+                              <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
 
                     {!isPast && (
                     <div className="join-row">
