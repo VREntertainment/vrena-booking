@@ -153,6 +153,70 @@ export function BirthdayPopupModal({ closeText, title, message, buttonText, onCl
   )
 }
 
+type TariffPaymentModalProps = {
+  closeText: string
+  title: string
+  rates: string[]
+  arenaText: string
+  discounts: string[]
+  offerLimit: string
+  paymentText: string
+  zaloText: string
+  disclaimer: string
+  onClose: () => void
+}
+
+export function TariffPaymentModal({
+  closeText,
+  title,
+  rates,
+  arenaText,
+  discounts,
+  offerLimit,
+  paymentText,
+  zaloText,
+  disclaimer,
+  onClose,
+}: TariffPaymentModalProps) {
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tariff-payment-title">
+      <div className="login-modal tariff-payment-modal">
+        <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
+          &times;
+        </button>
+        <h3 id="tariff-payment-title">{title}</h3>
+        <div className="tariff-payment-scroll">
+          <div className="tariff-payment-section">
+            {rates.map((rate) => (
+              <p key={rate}>{rate}</p>
+            ))}
+          </div>
+          <div className="tariff-payment-section">
+            <p>{arenaText}</p>
+          </div>
+          <div className="tariff-payment-section">
+            {discounts.map((discount) => (
+              <p key={discount}>{discount}</p>
+            ))}
+          </div>
+          <div className="tariff-payment-section">
+            <p>{offerLimit}</p>
+            <p>{paymentText}</p>
+            <p>
+              <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
+                {zaloText}
+              </a>
+            </p>
+          </div>
+          <div className="tariff-payment-disclaimer">
+            <p>{disclaimer}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 type CheckInModalProps = {
   closeText: string
   title: string

@@ -1672,62 +1672,65 @@ body {
   box-shadow: 0 8px 20px rgba(11, 21, 24, 0.14);
 }
 
-.app .session-tariff-note {
+.app .session-tariff-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   margin: 10px 0 12px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid rgba(48, 89, 255, 0.22);
   border-radius: 8px;
   background: #f7fafb;
+  color: #3059ff;
+  padding: 8px 11px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.app .tariff-payment-modal {
+  width: min(560px, 100%);
+  max-height: min(82vh, 680px);
+  padding: 0;
   overflow: hidden;
 }
 
-.app .session-tariff-note summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 42px;
-  padding: 10px 12px;
-  color: #071112;
-  cursor: pointer;
-  font-weight: 900;
-  list-style: none;
+.app .tariff-payment-modal h3 {
+  margin: 0;
+  padding: 20px 56px 4px 20px;
 }
 
-.app .session-tariff-note summary::-webkit-details-marker {
-  display: none;
+.app .tariff-payment-scroll {
+  display: grid;
+  gap: 12px;
+  max-height: calc(min(82vh, 680px) - 64px);
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  overscroll-behavior: contain;
 }
 
-.app .session-tariff-note summary::after {
-  content: '+';
-  color: #3059ff;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.app .session-tariff-note[open] summary::after {
-  content: '-';
-}
-
-.app .session-tariff-body {
+.app .tariff-payment-section {
   display: grid;
   gap: 6px;
-  padding: 0 12px 12px;
-  color: #65727a;
-  line-height: 1.35;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 8px;
+  background: #f7fafb;
+  padding: 12px;
 }
 
-.app .session-tariff-body p {
+.app .tariff-payment-section p,
+.app .tariff-payment-disclaimer p {
   margin: 0;
+  color: #65727a;
+  line-height: 1.45;
 }
 
-.app .tariff-line-group {
-  display: grid;
-  gap: 3px;
-}
-
-.app .session-tariff-body a {
+.app .tariff-payment-section a {
   color: #3059ff;
   font-weight: 900;
+}
+
+.app .tariff-payment-disclaimer {
+  border-top: 1px solid rgba(7, 17, 18, 0.1);
+  padding-top: 12px;
 }
 
 .app .compact-session-card {
@@ -4936,21 +4939,28 @@ body {
     color: #aeb9bd;
   }
 
-  .app .session-tariff-note {
+  .app .session-tariff-link {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #9eefff;
+  }
+
+  .app .tariff-payment-section {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
   }
 
-  .app .session-tariff-note summary {
-    color: #f6f7f9;
+  .app .tariff-payment-section p,
+  .app .tariff-payment-disclaimer p {
+    color: #aeb9bd;
   }
 
-  .app .session-tariff-note summary::after, .app .session-tariff-body a {
+  .app .tariff-payment-section a {
     color: #9eefff;
   }
 
-  .app .session-tariff-body {
-    color: #aeb9bd;
+  .app .tariff-payment-disclaimer {
+    border-top-color: rgba(255, 255, 255, 0.12);
   }
 
   .app .ticket-form-panel {
