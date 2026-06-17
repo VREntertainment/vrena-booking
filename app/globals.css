@@ -1094,9 +1094,25 @@ body {
   text-align: center;
 }
 
+.app .birthday-modal {
+  text-align: center;
+}
+
 .app .champion-spark {
   font-size: 44px;
   animation: crownBob 1.1s ease-in-out infinite;
+}
+
+.app .birthday-cake {
+  font-size: 54px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(11, 21, 24, 0.16));
+  animation: birthdayCakeBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes birthdayCakeBounce {
+  0%, 100% { transform: rotate(-4deg) translateY(0) scale(1); }
+  50% { transform: rotate(4deg) translateY(-5px) scale(1.05); }
 }
 
 .app .profile-large {
