@@ -132,9 +132,10 @@ type BirthdayPopupModalProps = {
   message: string
   buttonText: string
   onClose: () => void
+  onAction?: () => void
 }
 
-export function BirthdayPopupModal({ closeText, title, message, buttonText, onClose }: BirthdayPopupModalProps) {
+export function BirthdayPopupModal({ closeText, title, message, buttonText, onClose, onAction }: BirthdayPopupModalProps) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="birthday-popup-title">
       <div className="login-modal birthday-modal">
@@ -144,7 +145,7 @@ export function BirthdayPopupModal({ closeText, title, message, buttonText, onCl
         <div className="birthday-cake" aria-hidden="true">🎂</div>
         <h3 id="birthday-popup-title">{title}</h3>
         <p>{message}</p>
-        <button className="primary" type="button" onClick={onClose}>
+        <button className="primary" type="button" onClick={onAction || onClose}>
           {buttonText}
         </button>
       </div>
