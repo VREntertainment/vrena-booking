@@ -715,6 +715,17 @@ function upcomingBatchEndForDate(dateValue: string) {
   return addDaysToDateValue(today, (batchIndex + 1) * SESSION_LOAD_BATCH_DAYS - 1)
 }
 
+function startOfWeekDateValue(dateValue: string) {
+  const date = dateValueToLocalDate(dateValue)
+  const day = date.getDay()
+  const mondayOffset = day === 0 ? -6 : 1 - day
+  return localDateString(addDays(date, mondayOffset))
+}
+
+function weekDaysFromStart(startDate: string) {
+  return Array.from({ length: 7 }, (_, index) => addDaysToDateValue(startDate, index))
+}
+
 const dateLocales: Record<LanguageCode, string> = {
   en: 'en-US',
   vi: 'vi-VN',
@@ -742,6 +753,11 @@ function formatShortDate(dateValue: string, language: LanguageCode) {
   const day = String(date.getDate()).padStart(2, '0')
   const month = monthAbbreviations[date.getMonth()]
   return `${day} ${month}`
+}
+
+function formatCalendarWeekRange(startDate: string, language: LanguageCode) {
+  const endDate = addDaysToDateValue(startDate, 6)
+  return `${formatShortDate(startDate, language)} - ${formatShortDate(endDate, language)}`
 }
 
 function sessionStartDate(session: Pick<Session, 'date' | 'start_time'>) {
@@ -1211,6 +1227,8 @@ export default function WidgetPage() {
   const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [createStatus, setCreateStatus] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [createSessionMode, setCreateSessionMode] = useState<'calendar' | 'form'>('form')
+  const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(localDateString()))
   const [ticketType, setTicketType] = useState<TicketType>('individual')
   const [ticketDate, setTicketDate] = useState(localDateString())
   const [ticketTime, setTicketTime] = useState('')
@@ -1556,6 +1574,45 @@ export default function WidgetPage() {
     window.setTimeout(() => {
       document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
+  }
+
+  function startSessionFromCalendar(dateValue: string, timeValue: string) {
+    if (!requireProfile()) return
+
+    setSessionDate(dateValue)
+    setSessionTime(timeValue)
+    setCreateStatus('')
+    setCreateSessionMode('form')
+    window.setTimeout(() => {
+      document.getElementById('create-session-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+  }
+
+  function openSessionFromCalendar(session: Session) {
+    openSessionFromProfile(session.id)
+  }
+
+  async function loadCalendarWeek(startDate = calendarWeekStart) {
+    const weekEnd = addDaysToDateValue(startDate, 6)
+    await loadSessionRange(startDate, weekEnd, 'merge', {
+      includeBlockedTimes: true,
+      updateUpcomingPagination: false,
+    })
+  }
+
+  function showCalendarMode() {
+    setCreateSessionMode('calendar')
+    void loadCalendarWeek(calendarWeekStart)
+  }
+
+  function showCreateFormMode() {
+    setCreateSessionMode('form')
+  }
+
+  function moveCalendarWeek(dayOffset: number) {
+    const nextWeekStart = addDaysToDateValue(calendarWeekStart, dayOffset)
+    setCalendarWeekStart(nextWeekStart)
+    void loadCalendarWeek(nextWeekStart)
   }
 
   function resetCaptcha() {
@@ -2389,7 +2446,7 @@ export default function WidgetPage() {
     startDate: string | undefined,
     endDate: string | undefined,
     mode: 'replace-upcoming' | 'replace-past' | 'merge',
-    options: { includeBlockedTimes?: boolean } = {}
+    options: { includeBlockedTimes?: boolean; updateUpcomingPagination?: boolean } = {}
   ) {
     if (loadingSessionRangeRef.current) return false
 
@@ -2455,7 +2512,7 @@ export default function WidgetPage() {
       setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
     }
 
-    if (endDate && endDate >= localDateString()) {
+    if (options.updateUpcomingPagination !== false && endDate && endDate >= localDateString()) {
       setHasMoreUpcomingSessions(await hasFutureSessionsAfter(endDate))
     }
 
@@ -3161,6 +3218,41 @@ function handleSessionDateChange(value: string) {
 
     return options
   }
+
+  const calendarWeekDays = useMemo(() => {
+    return weekDaysFromStart(calendarWeekStart).map((value) => ({ value, ...formatDayButton(value, language) }))
+  }, [calendarWeekStart, language])
+
+  const calendarWeekEnd = addDaysToDateValue(calendarWeekStart, 6)
+
+  const calendarTimeSlots = useMemo(() => {
+    return Array.from({ length: Math.floor((CLOSE_MINUTES - OPEN_MINUTES) / TIME_STEP_MINUTES) }, (_, index) => {
+      const minutes = OPEN_MINUTES + index * TIME_STEP_MINUTES
+      return {
+        minutes,
+        value: minutesToTime(minutes),
+        isHour: minutes % 60 === 0,
+      }
+    })
+  }, [])
+
+  const calendarSessions = useMemo(() => {
+    return sortSessionsByStart(
+      sessions.filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd)
+    )
+  }, [calendarWeekEnd, calendarWeekStart, sessions])
+
+  const calendarAvailableSlotKeys = useMemo(() => {
+    const availableKeys = new Set<string>()
+    const today = localDateString()
+    calendarWeekDays.forEach((day) => {
+      if (day.value < today) return
+      getAvailableTimeOptions(day.value, TIME_STEP_MINUTES, 1).forEach((option) => {
+        availableKeys.add(`${day.value}-${option.value}`)
+      })
+    })
+    return availableKeys
+  }, [blockedTimes, calendarWeekDays, sessions, text.arenaAvailable, text.arenasAvailable])
 
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
@@ -7763,6 +7855,115 @@ function handleSessionDateChange(value: string) {
               </div>
             </div>
 
+            <div className="segmented create-session-mode-toggle" aria-label={text.createSessionTitle}>
+              <button className={createSessionMode === 'calendar' ? 'active' : ''} onClick={showCalendarMode} type="button">
+                {text.calendar}
+              </button>
+              <button className={createSessionMode === 'form' ? 'active' : ''} onClick={showCreateFormMode} type="button">
+                {text.createSession}
+              </button>
+            </div>
+
+            {createSessionMode === 'calendar' ? (
+              <div className="calendar-panel" aria-label={text.calendarAvailabilityTitle}>
+                <div className="calendar-toolbar">
+                  <div>
+                    <strong>{text.calendarAvailabilityTitle}</strong>
+                    <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
+                  </div>
+                  <div className="calendar-nav">
+                    <button
+                      aria-label={text.previousWeek}
+                      type="button"
+                      onClick={() => moveCalendarWeek(-7)}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      aria-label={text.nextWeek}
+                      type="button"
+                      onClick={() => moveCalendarWeek(7)}
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+                <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
+                <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
+                  <div className="calendar-time-column" aria-hidden="true">
+                    <div className="calendar-day-header calendar-time-header" />
+                    {calendarTimeSlots.map((slot) => (
+                      <span className={slot.isHour ? 'calendar-time-label hour' : 'calendar-time-label'} key={slot.value}>
+                        {slot.isHour ? slot.value : ''}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="calendar-days">
+                    {calendarWeekDays.map((day) => {
+                      const daySessions = calendarSessions.filter((session) => {
+                        if (session.date !== day.value) return false
+                        const start = timeToMinutes(session.start_time)
+                        return rangesOverlap(start, start + session.duration_minutes, OPEN_MINUTES, CLOSE_MINUTES)
+                      })
+
+                      return (
+                        <div className="calendar-day-column" key={day.value}>
+                          <div className="calendar-day-header">
+                            <span>{day.weekday}</span>
+                            <strong>{day.day}</strong>
+                          </div>
+                          <div className="calendar-day-slots">
+                            {calendarTimeSlots.map((slot) => {
+                              const slotKey = `${day.value}-${slot.value}`
+                              const slotAvailable = calendarAvailableSlotKeys.has(slotKey)
+                              return (
+                                <button
+                                  aria-label={`${text.emptySlot}: ${day.weekday} ${day.day} ${slot.value}`}
+                                  className={slotAvailable ? 'calendar-slot' : 'calendar-slot unavailable'}
+                                  disabled={!slotAvailable}
+                                  key={slot.value}
+                                  type="button"
+                                  onClick={() => startSessionFromCalendar(day.value, slot.value)}
+                                >
+                                  {slot.isHour ? <span>{slot.value}</span> : null}
+                                </button>
+                              )
+                            })}
+                            {daySessions.map((session) => {
+                              const coverGame = sessionCoverGame(session)
+                              const start = timeToMinutes(session.start_time)
+                              const end = start + session.duration_minutes
+                              const visibleStart = Math.max(start, OPEN_MINUTES)
+                              const visibleEnd = Math.min(end, CLOSE_MINUTES)
+                              const topPercent = ((visibleStart - OPEN_MINUTES) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
+                              const heightPercent = Math.max(
+                                4,
+                                ((visibleEnd - visibleStart) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
+                              )
+
+                              return (
+                                <button
+                                  className={isTicketSession(session) ? 'calendar-session-block ticket' : 'calendar-session-block'}
+                                  key={session.id}
+                                  style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
+                                  type="button"
+                                  onClick={() => openSessionFromCalendar(session)}
+                                >
+                                  <strong>{session.name}</strong>
+                                  <span>{session.start_time.slice(0, 5)}-{minutesToTime(end)}</span>
+                                  <small>{coverGame.title}</small>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="create-session-form" id="create-session-form">
             <div className="form-grid">
               <div className="full">
                 <label>{text.sessionName} <span className="required">*</span></label>
@@ -7973,6 +8174,8 @@ function handleSessionDateChange(value: string) {
             <button className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
               {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
             </button>
+              </div>
+            )}
             {createStatus && <p className="notice">{createStatus}</p>}
           </section>
         )}
