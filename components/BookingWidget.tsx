@@ -5761,6 +5761,19 @@ function handleSessionDateChange(value: string) {
                 ))}
               </div>
             )}
+            <details className="session-tariff-note">
+              <summary>{text.sessionTariffTitle}</summary>
+              <div className="session-tariff-body">
+                <p>{text.sessionTariffRates}</p>
+                <p>{text.sessionTariffGroups}</p>
+                <p>
+                  {text.sessionTariffPayment}{' '}
+                  <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
+                    {text.zaloContact}
+                  </a>
+                </p>
+              </div>
+            </details>
             {createStatus && <p className="notice">{createStatus}</p>}
 
             {sessionReminders.length > 0 && (
