@@ -8140,6 +8140,10 @@ function handleSessionDateChange(value: string) {
           message={text.birthdayPopupMessage}
           buttonText={text.birthdayPopupButton}
           onClose={() => setBirthdayPopupOpen(false)}
+          onAction={() => {
+            setBirthdayPopupOpen(false)
+            setActiveView('create')
+          }}
         />
       )}
 
