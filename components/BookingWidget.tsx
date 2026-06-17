@@ -34,6 +34,7 @@ const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 const LoginPromptModal = dynamic(() => import('./SessionModals').then((module) => module.LoginPromptModal), { ssr: false })
 const InvitePopupModal = dynamic(() => import('./SessionModals').then((module) => module.InvitePopupModal), { ssr: false })
 const ChampionLoginModal = dynamic(() => import('./SessionModals').then((module) => module.ChampionLoginModal), { ssr: false })
+const BirthdayPopupModal = dynamic(() => import('./SessionModals').then((module) => module.BirthdayPopupModal), { ssr: false })
 const CheckInModal = dynamic(() => import('./SessionModals').then((module) => module.CheckInModal), { ssr: false })
 const PlayerProfileModal = dynamic(() => import('./SessionModals').then((module) => module.PlayerProfileModal), { ssr: false })
 const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
@@ -536,10 +537,14 @@ function ticketUnitPrice(_ticketType: TicketType, dateValue: string, timeValue: 
   return individualTicketUnitPrice(dateValue, timeValue)
 }
 
-function ticketGroupDiscountRate(_ticketType: TicketType, players: number) {
+function ticketGroupDiscountRate(players: number) {
   if (players > 8) return 0.15
   if (players > 4) return 0.1
   return 0
+}
+
+function ticketTypeDiscountRate(ticketType: TicketType) {
+  return ticketType === 'birthday' ? 0.1 : 0
 }
 
 function ticketRequiredSlots(players: number) {
@@ -559,7 +564,7 @@ function ticketPricingSummary(
   const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = ticketGroupDiscountRate(ticketType, players)
+  const discountRate = ticketGroupDiscountRate(players) + ticketTypeDiscountRate(ticketType)
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
@@ -581,6 +586,14 @@ function ticketDurationForPlayers(ticketType: TicketType, players: number) {
 
 function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
   return ticketArenaCount
+}
+
+function isBirthdayToday(dateValue: string) {
+  const [year, month, day] = dateValue.split('-').map(Number)
+  if (!year || !month || !day) return false
+
+  const today = new Date()
+  return today.getMonth() + 1 === month && today.getDate() === day
 }
 
 function resolveCountryCode(input: string) {
@@ -1175,6 +1188,7 @@ export default function WidgetPage() {
   const [profilePastExpanded, setProfilePastExpanded] = useState(false)
   const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
   const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
+  const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
@@ -1435,8 +1449,16 @@ export default function WidgetPage() {
   }
 
   function openSessionFromProfile(sessionId: string) {
+    const targetSession = sessions.find((session) => session.id === sessionId)
+
     setSearch('')
+    setSelectedSessionDate('')
+    setIsSearchOpen(false)
     setActiveView('sessions')
+    setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
+    if (targetSession) {
+      setSessionTimeScope(isUpcomingSession(targetSession) ? 'upcoming' : 'past')
+    }
     window.setTimeout(() => {
       document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 80)
@@ -3502,6 +3524,21 @@ function handleSessionDateChange(value: string) {
       downloadSessionCalendar(session)
     }
   }, [language, pendingSessionInvites, userId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !profile || !userId || !profileBirthday || !isBirthdayToday(profileBirthday)) return
+
+    const storageKey = `vrena-birthday-popup-${userId}-${localDateString()}`
+
+    try {
+      if (window.localStorage.getItem(storageKey)) return
+      window.localStorage.setItem(storageKey, 'seen')
+    } catch {
+      // If localStorage is unavailable, still show the one-time in-memory popup for this mount.
+    }
+
+    setBirthdayPopupOpen(true)
+  }, [profile, profileBirthday, userId])
 
   useEffect(() => {
     if (!profile || !crownedTopPlayerId || crownedTopPlayerId !== userId) {
@@ -5778,6 +5815,7 @@ function handleSessionDateChange(value: string) {
               <div className="session-tariff-body">
                 <p>{text.sessionTariffRates}</p>
                 <p>{text.sessionTariffGroups}</p>
+                <p>{text.birthdayDiscount}</p>
                 <p>
                   {text.sessionTariffPayment}{' '}
                   <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
@@ -7161,6 +7199,7 @@ function handleSessionDateChange(value: string) {
               <div className="session-tariff-body">
                 <p>{text.sessionTariffRates}</p>
                 <p>{text.sessionTariffGroups}</p>
+                <p>{text.birthdayDiscount}</p>
                 <p>{text.sessionTariffPayment}</p>
               </div>
             </details>
@@ -7993,6 +8032,16 @@ function handleSessionDateChange(value: string) {
             openSessionFromProfile(invitePopupSession.id)
           }}
           onCalendar={() => downloadSessionCalendar(invitePopupSession)}
+        />
+      )}
+
+      {birthdayPopupOpen && (
+        <BirthdayPopupModal
+          closeText={text.close}
+          title={text.birthdayPopupTitle}
+          message={text.birthdayPopupMessage}
+          buttonText={text.birthdayPopupButton}
+          onClose={() => setBirthdayPopupOpen(false)}
         />
       )}
 

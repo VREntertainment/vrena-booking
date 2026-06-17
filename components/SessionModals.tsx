@@ -126,6 +126,32 @@ export function ChampionLoginModal({ closeText, title, message, onClose }: Champ
   )
 }
 
+type BirthdayPopupModalProps = {
+  closeText: string
+  title: string
+  message: string
+  buttonText: string
+  onClose: () => void
+}
+
+export function BirthdayPopupModal({ closeText, title, message, buttonText, onClose }: BirthdayPopupModalProps) {
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="birthday-popup-title">
+      <div className="login-modal birthday-modal">
+        <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
+          &times;
+        </button>
+        <div className="birthday-cake" aria-hidden="true">🎂</div>
+        <h3 id="birthday-popup-title">{title}</h3>
+        <p>{message}</p>
+        <button className="primary" type="button" onClick={onClose}>
+          {buttonText}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 type CheckInModalProps = {
   closeText: string
   title: string
