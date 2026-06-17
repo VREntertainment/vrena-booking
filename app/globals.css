@@ -1733,6 +1733,12 @@ body {
   padding-top: 12px;
 }
 
+.app .tariff-payment-disclaimer p {
+  font-size: 0.9em;
+  font-style: italic;
+  line-height: 1.38;
+}
+
 .app .compact-session-card {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) auto;
