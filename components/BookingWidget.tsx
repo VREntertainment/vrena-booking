@@ -1035,6 +1035,35 @@ function appRedirectUrl() {
   return window.location.origin
 }
 
+function passwordRecoveryUrlParams() {
+  if (typeof window === 'undefined') return null
+
+  const url = new URL(window.location.href)
+  const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash
+  const hashParams = new URLSearchParams(hash)
+  const searchParams = url.searchParams
+  const type = hashParams.get('type') || searchParams.get('type')
+  const code = searchParams.get('code') || hashParams.get('code')
+  const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
+  const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token')
+  const errorDescription = hashParams.get('error_description') || searchParams.get('error_description')
+  const isRecovery = type === 'recovery' || Boolean(accessToken && refreshToken) || Boolean(code)
+
+  if (!isRecovery && !errorDescription) return null
+
+  return {
+    accessToken,
+    code,
+    errorDescription,
+    refreshToken,
+  }
+}
+
+function cleanPasswordRecoveryUrl() {
+  if (typeof window === 'undefined') return
+  window.history.replaceState(null, '', window.location.pathname)
+}
+
 function icsDate(value: Date) {
   return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 }
@@ -2156,6 +2185,66 @@ export default function WidgetPage() {
     setIsResettingPassword(false)
   }
 
+  async function preparePasswordRecoveryFromUrl() {
+    const recoveryParams = passwordRecoveryUrlParams()
+    if (!recoveryParams) return null
+
+    setActiveView('profile')
+    setAuthMode('login')
+
+    if (recoveryParams.errorDescription) {
+      setIsRecoveryMode(false)
+      setProfileStatus(recoveryParams.errorDescription)
+      cleanPasswordRecoveryUrl()
+      return false
+    }
+
+    const client = await getSupabase()
+
+    if (recoveryParams.accessToken && recoveryParams.refreshToken) {
+      const { error } = await client.auth.setSession({
+        access_token: recoveryParams.accessToken,
+        refresh_token: recoveryParams.refreshToken,
+      })
+
+      if (error) {
+        setIsRecoveryMode(false)
+        setProfileStatus(error.message)
+        cleanPasswordRecoveryUrl()
+        return false
+      }
+    } else if (recoveryParams.code) {
+      const { error } = await client.auth.exchangeCodeForSession(recoveryParams.code)
+
+      if (error) {
+        setIsRecoveryMode(false)
+        setProfileStatus(error.message)
+        cleanPasswordRecoveryUrl()
+        return false
+      }
+    } else if (!recoveryParams.code) {
+      setIsRecoveryMode(false)
+      setProfileStatus(text.resetPasswordSessionRequired)
+      cleanPasswordRecoveryUrl()
+      return false
+    }
+
+    const { data, error } = await client.auth.getSession()
+    cleanPasswordRecoveryUrl()
+
+    if (error || !data.session) {
+      setIsRecoveryMode(false)
+      setProfileStatus(!data.session ? text.resetPasswordSessionRequired : error?.message || text.resetPasswordSessionRequired)
+      return false
+    }
+
+    setUserId(data.session.user.id)
+    setProfileEmail(data.session.user.email || profileEmail)
+    setIsRecoveryMode(true)
+    setProfileStatus(text.resetPasswordReady)
+    return true
+  }
+
   async function updatePasswordFromRecovery() {
     if (newPassword.length < 6) {
       setProfileStatus(text.passwordRequired)
@@ -2163,7 +2252,16 @@ export default function WidgetPage() {
     }
 
     setIsResettingPassword(true)
-    const { error } = await (await getSupabase()).auth.updateUser({ password: newPassword })
+    const client = await getSupabase()
+    const { data: sessionData, error: sessionError } = await client.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      setProfileStatus(!sessionData.session ? text.resetPasswordSessionRequired : sessionError?.message || text.resetPasswordSessionRequired)
+      setIsResettingPassword(false)
+      return
+    }
+
+    const { error } = await client.auth.updateUser({ password: newPassword })
 
     if (error) {
       setProfileStatus(error.message)
@@ -2175,6 +2273,7 @@ export default function WidgetPage() {
     setProfilePassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.passwordUpdated)
+    await loadProfile()
     setIsResettingPassword(false)
   }
 
@@ -2371,20 +2470,31 @@ export default function WidgetPage() {
   }
 
   useEffect(() => {
-    setLanguage(getInitialLanguage())
-    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
-      setIsRecoveryMode(true)
-      setActiveView('profile')
-      window.history.replaceState(null, '', window.location.pathname)
-    }
-    loadProfile()
-    loadSessions()
-
-    return scheduleDeferredWork(() => {
+    let active = true
+    const deferredCleanup = scheduleDeferredWork(() => {
       ensureClubsLoaded()
       ensureTournamentDataLoaded()
       ensureNetworkDataLoaded()
     })
+
+    setLanguage(getInitialLanguage())
+
+    void (async () => {
+      const recoverySessionReady = await preparePasswordRecoveryFromUrl()
+      if (!active) return
+      if (recoverySessionReady === false) {
+        loadSessions()
+        return
+      }
+      await loadProfile()
+      if (!active) return
+      loadSessions()
+    })()
+
+    return () => {
+      active = false
+      deferredCleanup()
+    }
   }, [])
 
   useEffect(() => {
@@ -2457,6 +2567,15 @@ export default function WidgetPage() {
           setUserId('')
           setAuthEmail('')
           setProfile(null)
+        }
+
+        if (event === 'PASSWORD_RECOVERY' && session) {
+          setUserId(session.user.id)
+          setProfileEmail(session.user.email || profileEmail)
+          setIsRecoveryMode(true)
+          setActiveView('profile')
+          setAuthMode('login')
+          setProfileStatus(text.resetPasswordReady)
         }
       })
 
@@ -7663,7 +7782,7 @@ function handleSessionDateChange(value: string) {
                 : text.profileLoginHint}
             </p>
 
-            {!profile && (
+            {!profile && !isRecoveryMode && (
               <div className="segmented auth-toggle">
                 <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')} type="button">
                   {text.logIn}
@@ -7887,7 +8006,7 @@ function handleSessionDateChange(value: string) {
                   </span>
                 </label>
               )}
-              {!profile && (
+              {!profile && !isRecoveryMode && (
                 <div className="password-field">
                   <label>{text.password} <span className="required">*</span></label>
                   <div className="password-control">
@@ -7909,7 +8028,7 @@ function handleSessionDateChange(value: string) {
                   )}
                 </div>
               )}
-              {!profile && (
+              {!profile && !isRecoveryMode && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
@@ -7930,6 +8049,7 @@ function handleSessionDateChange(value: string) {
                       {showPassword ? '🙈' : '👁️'}
                     </button>
                   </div>
+                  <p className="field-help">{text.resetPasswordReady}</p>
                   <button className="link-button" disabled={isResettingPassword} onClick={updatePasswordFromRecovery} type="button">
                     {isResettingPassword ? text.saving : text.updatePassword}
                   </button>
@@ -7937,30 +8057,32 @@ function handleSessionDateChange(value: string) {
               )}
             </div>
 
-            <div className="action-row">
-              <button
-                className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
-                disabled={isSavingProfile}
-                onClick={profile ? saveProfile : handleAuth}
-              >
-                {isSavingProfile
-                  ? authMode === 'login'
-                    ? text.loggingIn
+            {(!isRecoveryMode || profile) && (
+              <div className="action-row">
+                <button
+                  className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
+                  disabled={isSavingProfile}
+                  onClick={profile ? saveProfile : handleAuth}
+                >
+                  {isSavingProfile
+                    ? authMode === 'login'
+                      ? text.loggingIn
+                      : profile
+                        ? text.saving
+                        : text.creating
                     : profile
-                      ? text.saving
-                      : text.creating
-                  : profile
-                    ? text.saveProfile
-                    : authMode === 'login'
-                      ? text.logIn
-                      : text.createAccount}
-              </button>
-              {profile && (
-                <button className="secondary create-button" onClick={logout} type="button">
-                  {text.logOut}
+                      ? text.saveProfile
+                      : authMode === 'login'
+                        ? text.logIn
+                        : text.createAccount}
                 </button>
-              )}
-            </div>
+                {profile && (
+                  <button className="secondary create-button" onClick={logout} type="button">
+                    {text.logOut}
+                  </button>
+                )}
+              </div>
+            )}
             {profile && (
               <div className="account-links">
                 <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
