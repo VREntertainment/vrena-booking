@@ -440,6 +440,7 @@ const individualTicketPrices = {
   weekdayEvening: 250000,
   weekend: 330000,
 }
+const ticketPriceBlockMinutes = 20
 
 const countries = [
   { code: '+84', name: 'Vietnam' },
@@ -544,10 +545,37 @@ function ticketUnitPrice(ticketType: TicketType, dateValue: string, timeValue: s
   return service.fixedPrice || 0
 }
 
-function ticketTotalPrice(ticketType: TicketType, dateValue: string, timeValue: string, players: number) {
+function ticketGroupDiscountRate(ticketType: TicketType, players: number) {
+  if (ticketType !== 'individual') return 0
+  if (players > 8) return 0.15
+  if (players > 4) return 0.1
+  return 0
+}
+
+function ticketPricingSummary(
+  ticketType: TicketType,
+  dateValue: string,
+  timeValue: string,
+  players: number,
+  durationMinutes: number
+) {
   const service = selectedTicketService(ticketType)
   const unitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
-  return service.pricingModel === 'individual_dynamic' ? unitPrice * players : unitPrice
+  const durationBlocks = service.pricingModel === 'individual_dynamic'
+    ? Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
+    : 1
+  const grossPrice = service.pricingModel === 'individual_dynamic' ? unitPrice * players * durationBlocks : unitPrice
+  const discountRate = ticketGroupDiscountRate(ticketType, players)
+  const discountAmount = Math.round(grossPrice * discountRate)
+
+  return {
+    unitPrice,
+    durationBlocks,
+    grossPrice,
+    discountRate,
+    discountAmount,
+    totalPrice: grossPrice - discountAmount,
+  }
 }
 
 function ticketDurationForPlayers(ticketType: TicketType, players: number) {
@@ -2584,8 +2612,9 @@ export default function WidgetPage() {
   const ticketTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, blockedTimes, language, sessions, ticketDate])
-  const currentTicketUnitPrice = ticketUnitPrice(ticketType, ticketDate, ticketTime)
-  const currentTicketTotalPrice = ticketTotalPrice(ticketType, ticketDate, ticketTime, ticketPlayers)
+  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
+  const currentTicketUnitPrice = currentTicketPricing.unitPrice
+  const currentTicketTotalPrice = currentTicketPricing.totalPrice
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -7181,7 +7210,17 @@ function handleSessionDateChange(value: string) {
                       <div>
                         <span>{text.unitPrice}</span>
                         <strong>{formatVnd(currentTicketUnitPrice)}</strong>
+                        {activeTicketService.pricingModel === 'individual_dynamic' && (
+                          <small>{text.perPersonPer20Min}</small>
+                        )}
                       </div>
+                      {currentTicketPricing.discountRate > 0 && (
+                        <div className="ticket-discount-line">
+                          <span>{text.discount}</span>
+                          <strong>{Math.round(currentTicketPricing.discountRate * 100)}%</strong>
+                          <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
+                        </div>
+                      )}
                       <div className="ticket-total-line">
                         <span>{text.totalPrice}</span>
                         <strong>{formatVnd(currentTicketTotalPrice)}</strong>
