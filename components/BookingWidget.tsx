@@ -400,8 +400,6 @@ const ticketServices: Array<{
   minPlayers: number
   maxPlayers: number
   arenaCount: 1 | 2
-  pricingModel: 'individual_dynamic' | 'fixed_total'
-  fixedPrice?: number
   defaultGame: GameId
 }> = [
   {
@@ -410,27 +408,22 @@ const ticketServices: Array<{
     minPlayers: 1,
     maxPlayers: 16,
     arenaCount: 1,
-    pricingModel: 'individual_dynamic',
     defaultGame: 'laser-tag',
   },
   {
     id: 'birthday',
-    duration: 120,
+    duration: 20,
     minPlayers: 4,
-    maxPlayers: 12,
-    arenaCount: 2,
-    pricingModel: 'fixed_total',
-    fixedPrice: 1200000,
+    maxPlayers: 16,
+    arenaCount: 1,
     defaultGame: 'joller-house',
   },
   {
     id: 'corporate',
-    duration: 120,
+    duration: 20,
     minPlayers: 6,
     maxPlayers: 16,
-    arenaCount: 2,
-    pricingModel: 'fixed_total',
-    fixedPrice: 2500000,
+    arenaCount: 1,
     defaultGame: 'office-war',
   },
 ]
@@ -441,6 +434,8 @@ const individualTicketPrices = {
   weekend: 330000,
 }
 const ticketPriceBlockMinutes = 20
+const ticketArenaCount = 1
+const ticketArenaCapacityPerSlot = 4
 
 const countries = [
   { code: '+84', name: 'Vietnam' },
@@ -537,19 +532,18 @@ function individualTicketUnitPrice(dateValue: string, timeValue: string) {
   return minutes >= 18 * 60 ? individualTicketPrices.weekdayEvening : individualTicketPrices.weekdayDay
 }
 
-function ticketUnitPrice(ticketType: TicketType, dateValue: string, timeValue: string) {
-  const service = selectedTicketService(ticketType)
-  if (service.pricingModel === 'individual_dynamic') {
-    return individualTicketUnitPrice(dateValue, timeValue)
-  }
-  return service.fixedPrice || 0
+function ticketUnitPrice(_ticketType: TicketType, dateValue: string, timeValue: string) {
+  return individualTicketUnitPrice(dateValue, timeValue)
 }
 
-function ticketGroupDiscountRate(ticketType: TicketType, players: number) {
-  if (ticketType !== 'individual') return 0
+function ticketGroupDiscountRate(_ticketType: TicketType, players: number) {
   if (players > 8) return 0.15
   if (players > 4) return 0.1
   return 0
+}
+
+function ticketRequiredSlots(players: number) {
+  return Math.max(1, Math.ceil(Math.max(1, players) / ticketArenaCapacityPerSlot))
 }
 
 function ticketPricingSummary(
@@ -559,20 +553,21 @@ function ticketPricingSummary(
   players: number,
   durationMinutes: number
 ) {
-  const service = selectedTicketService(ticketType)
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
-  const durationBlocks = service.pricingModel === 'individual_dynamic'
-    ? Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
-    : 1
-  const unitPrice = service.pricingModel === 'individual_dynamic' ? baseUnitPrice * durationBlocks : baseUnitPrice
-  const grossPrice = service.pricingModel === 'individual_dynamic' ? unitPrice * players : unitPrice
+  const requiredSlots = ticketRequiredSlots(players)
+  const durationBlocks = Math.max(requiredSlots, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
+  const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
+  const unitPrice = baseUnitPrice
+  const grossPrice = baseUnitPrice * chargedPlayerSpots
   const discountRate = ticketGroupDiscountRate(ticketType, players)
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
     baseUnitPrice,
     unitPrice,
+    requiredSlots,
     durationBlocks,
+    chargedPlayerSpots,
     grossPrice,
     discountRate,
     discountAmount,
@@ -581,17 +576,11 @@ function ticketPricingSummary(
 }
 
 function ticketDurationForPlayers(ticketType: TicketType, players: number) {
-  const service = selectedTicketService(ticketType)
-  if (ticketType !== 'individual') return service.duration
-  if (players > 8) return Math.max(service.duration, 60)
-  if (players > 4) return Math.max(service.duration, 40)
-  return service.duration
+  return Math.max(selectedTicketService(ticketType).duration, ticketRequiredSlots(players) * ticketPriceBlockMinutes)
 }
 
-function ticketArenaCountForPlayers(ticketType: TicketType, players: number) {
-  const service = selectedTicketService(ticketType)
-  if (ticketType !== 'individual') return service.arenaCount
-  return players > 7 ? 2 : service.arenaCount
+function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
+  return ticketArenaCount
 }
 
 function resolveCountryCode(input: string) {
@@ -2606,9 +2595,11 @@ export default function WidgetPage() {
   const activeTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
   const activeTicketArenaCount = ticketArenaCountForPlayers(ticketType, ticketPlayers)
   const ticketDurationMessage =
-    ticketType === 'individual' && ticketPlayers > 8
+    ticketPlayers > 12
+      ? text.ticketDurationMinimum80
+      : ticketPlayers > 8
       ? text.ticketDurationMinimum60
-      : ticketType === 'individual' && ticketPlayers > 4
+      : ticketPlayers > 4
         ? text.ticketDurationMinimum40
         : ''
   const ticketTimeOptions = useMemo(() => {
@@ -2617,6 +2608,7 @@ export default function WidgetPage() {
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const currentTicketTotalPrice = currentTicketPricing.totalPrice
+  const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, editSessionDuration)
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -2670,12 +2662,25 @@ function handleSessionDateChange(value: string) {
   function handleEditMaxPlayersChange(value: number) {
     setEditSessionMaxPlayers(value)
 
+    if (editBookingType === 'ticket') {
+      const nextDuration = ticketDurationForPlayers(editTicketType, value)
+      setEditSessionDuration(nextDuration)
+      setEditSessionArenaCount(ticketArenaCountForPlayers(editTicketType, value))
+      setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration).totalPrice))
+      return
+    }
+
     if (value < 8) {
       setEditSessionArenaCount(1)
     }
   }
 
   function handleEditArenaCountChange(value: number) {
+    if (editBookingType === 'ticket') {
+      setEditSessionArenaCount(ticketArenaCount)
+      return
+    }
+
     if (value === 2 && editSessionMaxPlayers < 8) {
       setEditSessionMaxPlayers(8)
     }
@@ -4728,7 +4733,14 @@ function handleSessionDateChange(value: string) {
         : null
     const tournament = tournamentForSession(session.id)
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
-    const sanitizedTicketTotal = Math.max(0, Math.round(Number(editTicketTotalPrice) || 0))
+    const ticketEditDuration = editBookingType === 'ticket'
+      ? ticketDurationForPlayers(editTicketType, editSessionMaxPlayers)
+      : editSessionDuration
+    const ticketEditArenaCount = editBookingType === 'ticket'
+      ? ticketArenaCountForPlayers(editTicketType, editSessionMaxPlayers)
+      : editSessionArenaCount
+    const ticketEditPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, ticketEditDuration)
+    const sanitizedTicketTotal = Math.max(0, Math.round(Number(editTicketTotalPrice) || ticketEditPricing.totalPrice))
 
     const { error } = await (await getSupabase())
       .from('sessions')
@@ -4737,9 +4749,9 @@ function handleSessionDateChange(value: string) {
         ...(isAdmin && editBookingType === 'ticket' && editTicketCustomerId ? { owner_id: editTicketCustomerId } : {}),
         date: editSessionDate,
         start_time: `${editSessionTime}:00`,
-        duration_minutes: editSessionDuration,
+        duration_minutes: ticketEditDuration,
         max_players: editSessionMaxPlayers,
-        arena_count: editSessionArenaCount,
+        arena_count: ticketEditArenaCount,
         game_options: editSelectedGames,
         visibility: effectiveEditVisibility,
         invite_code: inviteCode,
@@ -4751,7 +4763,7 @@ function handleSessionDateChange(value: string) {
             ticket_type: editBookingType === 'ticket' ? editTicketType : null,
             ticket_player_count: editBookingType === 'ticket' ? editSessionMaxPlayers : null,
             ticket_total_price: editBookingType === 'ticket' ? sanitizedTicketTotal : null,
-            ticket_unit_price: editBookingType === 'ticket' && editSessionMaxPlayers > 0 ? Math.round(sanitizedTicketTotal / editSessionMaxPlayers) : null,
+            ticket_unit_price: editBookingType === 'ticket' ? ticketEditPricing.baseUnitPrice : null,
             ticket_status: editBookingType === 'ticket' ? editTicketStatus : null,
           }
           : {}),
@@ -6125,7 +6137,17 @@ function handleSessionDateChange(value: string) {
                                     </div>
                                     <div>
                                       <label>{text.ticketType}</label>
-                                      <select value={editTicketType} onChange={(event) => setEditTicketType(event.target.value as TicketType)}>
+                                      <select
+                                        value={editTicketType}
+                                        onChange={(event) => {
+                                          const nextType = event.target.value as TicketType
+                                          const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers)
+                                          setEditTicketType(nextType)
+                                          setEditSessionDuration(nextDuration)
+                                          setEditSessionArenaCount(ticketArenaCountForPlayers(nextType, editSessionMaxPlayers))
+                                          setEditTicketTotalPrice(String(ticketPricingSummary(nextType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration).totalPrice))
+                                        }}
+                                      >
                                         {ticketServices.map((service) => (
                                           <option key={service.id} value={service.id}>
                                             {ticketTypeLabel(service.id, looseText)}
@@ -6142,6 +6164,9 @@ function handleSessionDateChange(value: string) {
                                         value={editTicketTotalPrice}
                                         onChange={(event) => setEditTicketTotalPrice(event.target.value)}
                                       />
+                                      <p className="field-help">
+                                        {text.reservedPlayerSpots}: {editTicketPricing.chargedPlayerSpots} · {text.unitPrice}: {formatVnd(editTicketPricing.baseUnitPrice)} · {text.totalPrice}: {formatVnd(editTicketPricing.totalPrice)}
+                                      </p>
                                     </div>
                                     <div>
                                       <label>{text.bookingStatus}</label>
@@ -7131,6 +7156,14 @@ function handleSessionDateChange(value: string) {
               <strong>{text.ticketsExplainerTitle}</strong>
               <span>{text.ticketsExplainerBody}</span>
             </div>
+            <details className="session-tariff-note ticket-tariff-note">
+              <summary>{text.sessionTariffTitle}</summary>
+              <div className="session-tariff-body">
+                <p>{text.sessionTariffRates}</p>
+                <p>{text.sessionTariffGroups}</p>
+                <p>{text.sessionTariffPayment}</p>
+              </div>
+            </details>
 
             {!profile ? (
               <div className="ticket-login-panel">
@@ -7156,7 +7189,7 @@ function handleSessionDateChange(value: string) {
                           <strong>{ticketTypeLabel(service.id, looseText)}</strong>
                           <span>{ticketTypeDescription(service.id, looseText)}</span>
                           <small>
-                            {service.id === 'individual' ? '20-60' : service.duration} min · {service.minPlayers}-{service.maxPlayers} {text.players}
+                            20-80 min · {service.minPlayers}-{service.maxPlayers} {text.players}
                           </small>
                         </button>
                       ))}
@@ -7225,13 +7258,12 @@ function handleSessionDateChange(value: string) {
                       <div>
                         <span>{text.unitPrice}</span>
                         <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                        {activeTicketService.pricingModel === 'individual_dynamic' && (
-                          <small>
-                            {currentTicketPricing.durationBlocks > 1
-                              ? `${formatVnd(currentTicketPricing.baseUnitPrice)} x ${currentTicketPricing.durationBlocks} · ${text.perPersonPer20Min}`
-                              : text.perPersonPer20Min}
-                          </small>
-                        )}
+                        <small>{text.perPersonPer20Min}</small>
+                      </div>
+                      <div>
+                        <span>{text.reservedPlayerSpots}</span>
+                        <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
+                        <small>{currentTicketPricing.durationBlocks} x {ticketArenaCapacityPerSlot} {text.players}</small>
                       </div>
                       {currentTicketPricing.discountRate > 0 && (
                         <div className="ticket-discount-line">
