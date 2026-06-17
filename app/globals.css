@@ -1861,6 +1861,16 @@ body {
   font-size: 13px;
 }
 
+.app .ticket-price-summary small {
+  color: #65727a;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .ticket-discount-line strong {
+  color: #0f766e;
+}
+
 .app .ticket-total-line strong {
   color: #3059ff;
 }
@@ -4861,8 +4871,12 @@ body {
     border-color: rgba(98, 211, 255, 0.28);
   }
 
-  .app .ticket-service-card span, .app .ticket-service-card small, .app .ticket-price-summary span, .app .ticket-confirmation span, .app .ticket-admin-head span, .app .ticket-session-summary span {
+  .app .ticket-service-card span, .app .ticket-service-card small, .app .ticket-price-summary span, .app .ticket-price-summary small, .app .ticket-confirmation span, .app .ticket-admin-head span, .app .ticket-session-summary span {
     color: #aeb9bd;
+  }
+
+  .app .ticket-discount-line strong {
+    color: #5eead4;
   }
 
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message {
