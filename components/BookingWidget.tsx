@@ -525,6 +525,10 @@ function formatVnd(value: number) {
   }).format(Math.max(0, value))
 }
 
+function formatTicketFormulaPrice(value: number) {
+  return `${Math.max(0, value).toLocaleString('vi-VN')} đ`
+}
+
 function individualTicketUnitPrice(dateValue: string, timeValue: string) {
   if (!dateValue) return individualTicketPrices.weekdayDay
   const day = new Date(`${dateValue}T12:00:00`).getDay()
@@ -564,7 +568,7 @@ function ticketPricingSummary(
   const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = ticketGroupDiscountRate(players) + ticketTypeDiscountRate(ticketType)
+  const discountRate = Math.max(ticketGroupDiscountRate(players), ticketTypeDiscountRate(ticketType))
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
@@ -586,6 +590,16 @@ function ticketDurationForPlayers(ticketType: TicketType, players: number) {
 
 function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
   return ticketArenaCount
+}
+
+function ticketUnitFormulaText(text: Record<string, string>, unitPrice: number, players: number) {
+  const playerCount = Math.max(1, players >= ticketArenaCapacityPerSlot ? ticketArenaCapacityPerSlot : players)
+  const playerWord = playerCount === 1 ? text.ticketFormulaPlayer : text.ticketFormulaPlayers
+
+  return text.ticketUnitFormula
+    .replace('{price}', formatTicketFormulaPrice(unitPrice))
+    .replace('{players}', String(playerCount))
+    .replace('{playerWord}', playerWord)
 }
 
 function isBirthdayToday(dateValue: string) {
@@ -3384,6 +3398,33 @@ function handleSessionDateChange(value: string) {
     )
   }
 
+  function renderTariffBody() {
+    return (
+      <div className="session-tariff-body">
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffRateDay}</p>
+          <p>{text.sessionTariffRateEvening}</p>
+          <p>{text.sessionTariffRateWeekend}</p>
+        </div>
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffArena}</p>
+          <p>{text.sessionTariffGroupSmall}</p>
+          <p>{text.sessionTariffGroupLarge}</p>
+          <p>{text.birthdayDiscount}</p>
+          <p>{text.sessionOfferLimit}</p>
+        </div>
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffPayment}</p>
+          <p>
+            <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
+              {text.zaloContact}
+            </a>
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const playerProfileStats = selectedPlayerProfile ? [
     selectedPlayerSessionContext
       ? {
@@ -5812,17 +5853,7 @@ function handleSessionDateChange(value: string) {
             )}
             <details className="session-tariff-note">
               <summary>{text.sessionTariffTitle}</summary>
-              <div className="session-tariff-body">
-                <p>{text.sessionTariffRates}</p>
-                <p>{text.sessionTariffGroups}</p>
-                <p>{text.birthdayDiscount}</p>
-                <p>
-                  {text.sessionTariffPayment}{' '}
-                  <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
-                    {text.zaloContact}
-                  </a>
-                </p>
-              </div>
+              {renderTariffBody()}
             </details>
             {createStatus && <p className="notice">{createStatus}</p>}
 
@@ -7196,12 +7227,7 @@ function handleSessionDateChange(value: string) {
             </div>
             <details className="session-tariff-note ticket-tariff-note">
               <summary>{text.sessionTariffTitle}</summary>
-              <div className="session-tariff-body">
-                <p>{text.sessionTariffRates}</p>
-                <p>{text.sessionTariffGroups}</p>
-                <p>{text.birthdayDiscount}</p>
-                <p>{text.sessionTariffPayment}</p>
-              </div>
+              {renderTariffBody()}
             </details>
 
             {!profile ? (
@@ -7297,7 +7323,7 @@ function handleSessionDateChange(value: string) {
                       <div>
                         <span>{text.unitPrice}</span>
                         <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                        <small>{text.perPersonPer20Min}</small>
+                        <small>{ticketUnitFormulaText(looseText, currentTicketUnitPrice, ticketPlayers)}</small>
                       </div>
                       <div>
                         <span>{text.reservedPlayerSpots}</span>
