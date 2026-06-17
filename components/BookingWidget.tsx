@@ -560,15 +560,17 @@ function ticketPricingSummary(
   durationMinutes: number
 ) {
   const service = selectedTicketService(ticketType)
-  const unitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
+  const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
   const durationBlocks = service.pricingModel === 'individual_dynamic'
     ? Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
     : 1
-  const grossPrice = service.pricingModel === 'individual_dynamic' ? unitPrice * players * durationBlocks : unitPrice
+  const unitPrice = service.pricingModel === 'individual_dynamic' ? baseUnitPrice * durationBlocks : baseUnitPrice
+  const grossPrice = service.pricingModel === 'individual_dynamic' ? unitPrice * players : unitPrice
   const discountRate = ticketGroupDiscountRate(ticketType, players)
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
+    baseUnitPrice,
     unitPrice,
     durationBlocks,
     grossPrice,
@@ -7211,7 +7213,11 @@ function handleSessionDateChange(value: string) {
                         <span>{text.unitPrice}</span>
                         <strong>{formatVnd(currentTicketUnitPrice)}</strong>
                         {activeTicketService.pricingModel === 'individual_dynamic' && (
-                          <small>{text.perPersonPer20Min}</small>
+                          <small>
+                            {currentTicketPricing.durationBlocks > 1
+                              ? `${formatVnd(currentTicketPricing.baseUnitPrice)} x ${currentTicketPricing.durationBlocks} · ${text.perPersonPer20Min}`
+                              : text.perPersonPer20Min}
+                          </small>
                         )}
                       </div>
                       {currentTicketPricing.discountRate > 0 && (
