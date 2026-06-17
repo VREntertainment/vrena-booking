@@ -1147,7 +1147,7 @@ function scheduleDeferredWork(callback: () => void) {
 }
 
 export default function WidgetPage() {
-  const [activeView, setActiveView] = useState<'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'>('sessions')
+  const [activeView, setActiveView] = useState<'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'>('leaderboard')
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
