@@ -555,6 +555,11 @@ function ticketRequiredSlots(players: number) {
   return Math.max(1, Math.ceil(Math.max(1, players) / ticketArenaCapacityPerSlot))
 }
 
+function ticketMinimumDurationBlocks(players: number) {
+  if (players > 12) return 3
+  return ticketRequiredSlots(players)
+}
+
 function ticketPricingSummary(
   ticketType: TicketType,
   dateValue: string,
@@ -563,7 +568,7 @@ function ticketPricingSummary(
   durationMinutes: number
 ) {
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
-  const requiredSlots = ticketRequiredSlots(players)
+  const requiredSlots = ticketMinimumDurationBlocks(players)
   const durationBlocks = Math.max(requiredSlots, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
   const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
   const unitPrice = baseUnitPrice
@@ -585,7 +590,7 @@ function ticketPricingSummary(
 }
 
 function ticketDurationForPlayers(ticketType: TicketType, players: number) {
-  return Math.max(selectedTicketService(ticketType).duration, ticketRequiredSlots(players) * ticketPriceBlockMinutes)
+  return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players) * ticketPriceBlockMinutes)
 }
 
 function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
@@ -1144,6 +1149,7 @@ export default function WidgetPage() {
   const [ticketDate, setTicketDate] = useState(localDateString())
   const [ticketTime, setTicketTime] = useState('')
   const [ticketPlayers, setTicketPlayers] = useState(1)
+  const [ticketDuration, setTicketDuration] = useState(20)
   const [ticketStatus, setTicketStatus] = useState('')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
@@ -2628,7 +2634,10 @@ export default function WidgetPage() {
   }, [blockedTimes, editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, language, sessions])
 
   const activeTicketService = selectedTicketService(ticketType)
-  const activeTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
+  const activeTicketMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
+  const activeTicketDuration = ticketPlayers > 12
+    ? Math.max(activeTicketMinimumDuration, ticketDuration)
+    : activeTicketMinimumDuration
   const activeTicketArenaCount = ticketArenaCountForPlayers(ticketType, ticketPlayers)
   const ticketDurationMessage =
     ticketPlayers > 12
@@ -2644,7 +2653,16 @@ export default function WidgetPage() {
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const currentTicketTotalPrice = currentTicketPricing.totalPrice
-  const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, editSessionDuration)
+  const effectiveEditTicketDuration = editBookingType === 'ticket'
+    ? Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers), editSessionDuration)
+    : editSessionDuration
+  const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
+  const ticketDurationOptions = useMemo(() => {
+    return Array.from(
+      { length: Math.floor((240 - activeTicketMinimumDuration) / ticketPriceBlockMinutes) + 1 },
+      (_, index) => activeTicketMinimumDuration + index * ticketPriceBlockMinutes
+    )
+  }, [activeTicketMinimumDuration])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -2661,22 +2679,33 @@ function handleSessionDateChange(value: string) {
 
   function handleTicketTypeChange(value: TicketType) {
     const service = selectedTicketService(value)
+    const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
+    const nextDuration = ticketDurationForPlayers(value, nextPlayers)
     setTicketType(value)
-    setTicketPlayers((current) => Math.min(service.maxPlayers, Math.max(service.minPlayers, current)))
+    setTicketPlayers(nextPlayers)
+    setTicketDuration(nextDuration)
     setTicketTime('')
     setTicketConfirmation(null)
     setTicketStatus('')
   }
 
   function handleTicketPlayersChange(value: number) {
-    const nextDuration = ticketDurationForPlayers(ticketType, value)
+    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value)
+    const nextDuration = value > 12 ? Math.max(nextMinimumDuration, ticketDuration) : nextMinimumDuration
     const nextArenaCount = ticketArenaCountForPlayers(ticketType, value)
 
     setTicketPlayers(value)
+    setTicketDuration(nextDuration)
     setTicketConfirmation(null)
     if (nextDuration !== activeTicketDuration || nextArenaCount !== activeTicketArenaCount) {
       setTicketTime('')
     }
+  }
+
+  function handleTicketDurationChange(value: number) {
+    setTicketDuration(Math.max(activeTicketMinimumDuration, value))
+    setTicketTime('')
+    setTicketConfirmation(null)
   }
 
   function handleMaxPlayersChange(value: number) {
@@ -4812,7 +4841,7 @@ function handleSessionDateChange(value: string) {
     const tournament = tournamentForSession(session.id)
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
     const ticketEditDuration = editBookingType === 'ticket'
-      ? ticketDurationForPlayers(editTicketType, editSessionMaxPlayers)
+      ? Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers), editSessionDuration)
       : editSessionDuration
     const ticketEditArenaCount = editBookingType === 'ticket'
       ? ticketArenaCountForPlayers(editTicketType, editSessionMaxPlayers)
@@ -7309,6 +7338,21 @@ function handleSessionDateChange(value: string) {
                           ))}
                         </select>
                       </div>
+                      {ticketPlayers > 12 && (
+                        <div>
+                          <label>{text.duration}</label>
+                          <select
+                            value={activeTicketDuration}
+                            onChange={(event) => handleTicketDurationChange(Number(event.target.value))}
+                          >
+                            {ticketDurationOptions.map((duration) => (
+                              <option key={duration} value={duration}>
+                                {duration} min
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="ticket-price-summary">
