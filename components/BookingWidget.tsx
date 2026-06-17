@@ -568,7 +568,7 @@ function ticketPricingSummary(
   const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = ticketGroupDiscountRate(players) + ticketTypeDiscountRate(ticketType)
+  const discountRate = Math.max(ticketGroupDiscountRate(players), ticketTypeDiscountRate(ticketType))
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
@@ -3398,6 +3398,33 @@ function handleSessionDateChange(value: string) {
     )
   }
 
+  function renderTariffBody() {
+    return (
+      <div className="session-tariff-body">
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffRateDay}</p>
+          <p>{text.sessionTariffRateEvening}</p>
+          <p>{text.sessionTariffRateWeekend}</p>
+        </div>
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffArena}</p>
+          <p>{text.sessionTariffGroupSmall}</p>
+          <p>{text.sessionTariffGroupLarge}</p>
+          <p>{text.birthdayDiscount}</p>
+          <p>{text.sessionOfferLimit}</p>
+        </div>
+        <div className="tariff-line-group">
+          <p>{text.sessionTariffPayment}</p>
+          <p>
+            <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
+              {text.zaloContact}
+            </a>
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const playerProfileStats = selectedPlayerProfile ? [
     selectedPlayerSessionContext
       ? {
@@ -5826,17 +5853,7 @@ function handleSessionDateChange(value: string) {
             )}
             <details className="session-tariff-note">
               <summary>{text.sessionTariffTitle}</summary>
-              <div className="session-tariff-body">
-                <p>{text.sessionTariffRates}</p>
-                <p>{text.sessionTariffGroups}</p>
-                <p>{text.birthdayDiscount}</p>
-                <p>
-                  {text.sessionTariffPayment}{' '}
-                  <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
-                    {text.zaloContact}
-                  </a>
-                </p>
-              </div>
+              {renderTariffBody()}
             </details>
             {createStatus && <p className="notice">{createStatus}</p>}
 
@@ -7210,12 +7227,7 @@ function handleSessionDateChange(value: string) {
             </div>
             <details className="session-tariff-note ticket-tariff-note">
               <summary>{text.sessionTariffTitle}</summary>
-              <div className="session-tariff-body">
-                <p>{text.sessionTariffRates}</p>
-                <p>{text.sessionTariffGroups}</p>
-                <p>{text.birthdayDiscount}</p>
-                <p>{text.sessionTariffPayment}</p>
-              </div>
+              {renderTariffBody()}
             </details>
 
             {!profile ? (
