@@ -525,6 +525,10 @@ function formatVnd(value: number) {
   }).format(Math.max(0, value))
 }
 
+function formatTicketFormulaPrice(value: number) {
+  return `${Math.max(0, value).toLocaleString('vi-VN')} đ`
+}
+
 function individualTicketUnitPrice(dateValue: string, timeValue: string) {
   if (!dateValue) return individualTicketPrices.weekdayDay
   const day = new Date(`${dateValue}T12:00:00`).getDay()
@@ -586,6 +590,16 @@ function ticketDurationForPlayers(ticketType: TicketType, players: number) {
 
 function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
   return ticketArenaCount
+}
+
+function ticketUnitFormulaText(text: Record<string, string>, unitPrice: number, players: number) {
+  const playerCount = Math.max(1, players >= ticketArenaCapacityPerSlot ? ticketArenaCapacityPerSlot : players)
+  const playerWord = playerCount === 1 ? text.ticketFormulaPlayer : text.ticketFormulaPlayers
+
+  return text.ticketUnitFormula
+    .replace('{price}', formatTicketFormulaPrice(unitPrice))
+    .replace('{players}', String(playerCount))
+    .replace('{playerWord}', playerWord)
 }
 
 function isBirthdayToday(dateValue: string) {
@@ -7297,7 +7311,7 @@ function handleSessionDateChange(value: string) {
                       <div>
                         <span>{text.unitPrice}</span>
                         <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                        <small>{text.perPersonPer20Min}</small>
+                        <small>{ticketUnitFormulaText(looseText, currentTicketUnitPrice, ticketPlayers)}</small>
                       </div>
                       <div>
                         <span>{text.reservedPlayerSpots}</span>
