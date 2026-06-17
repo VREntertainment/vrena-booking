@@ -9,7 +9,8 @@ const ARENA_COUNT = 2
 const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
-const ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const SESSION_LOAD_BATCH_DAYS = 7
+const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
@@ -688,6 +689,32 @@ function addDays(date: Date, days: number) {
   return nextDate
 }
 
+function dateValueToLocalDate(dateValue: string) {
+  return new Date(`${dateValue}T12:00:00`)
+}
+
+function addDaysToDateValue(dateValue: string, days: number) {
+  return localDateString(addDays(dateValueToLocalDate(dateValue), days))
+}
+
+function daysBetweenDateValues(startDate: string, endDate: string) {
+  const start = dateValueToLocalDate(startDate).getTime()
+  const end = dateValueToLocalDate(endDate).getTime()
+  return Math.round((end - start) / (24 * 60 * 60 * 1000))
+}
+
+function maxDateValue(...dateValues: Array<string | undefined | null>) {
+  const sortedDates = dateValues.filter((dateValue): dateValue is string => Boolean(dateValue)).sort()
+  return sortedDates.length ? sortedDates[sortedDates.length - 1] : ''
+}
+
+function upcomingBatchEndForDate(dateValue: string) {
+  const today = localDateString()
+  const daysFromToday = Math.max(0, daysBetweenDateValues(today, dateValue))
+  const batchIndex = Math.floor(daysFromToday / SESSION_LOAD_BATCH_DAYS)
+  return addDaysToDateValue(today, (batchIndex + 1) * SESSION_LOAD_BATCH_DAYS - 1)
+}
+
 const dateLocales: Record<LanguageCode, string> = {
   en: 'en-US',
   vi: 'vi-VN',
@@ -731,6 +758,14 @@ function isPastSession(session: Session) {
 
 function isUpcomingSession(session: Session) {
   return !isPastSession(session)
+}
+
+function sortSessionsByStart(sessionsToSort: Session[]) {
+  return [...sessionsToSort].sort((left, right) => {
+    const leftStart = `${left.date}T${left.start_time}`
+    const rightStart = `${right.date}T${right.start_time}`
+    return leftStart.localeCompare(rightStart) || left.name.localeCompare(right.name)
+  })
 }
 
 function seatsLeft(session: Pick<Session, 'max_players' | 'session_participants'>) {
@@ -1242,6 +1277,9 @@ export default function WidgetPage() {
   const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
   const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
+  const [hasMoreUpcomingSessions, setHasMoreUpcomingSessions] = useState(true)
+  const [isLoadingMoreSessions, setIsLoadingMoreSessions] = useState(false)
+  const [isLoadingPastSessions, setIsLoadingPastSessions] = useState(false)
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
@@ -1264,6 +1302,10 @@ export default function WidgetPage() {
   const tournamentDataLoadingRef = useRef(false)
   const networkDataLoadedRef = useRef(false)
   const networkDataLoadingRef = useRef(false)
+  const upcomingSessionsThroughRef = useRef('')
+  const loadingSessionRangeRef = useRef(false)
+  const pastSessionsLoadedRef = useRef(false)
+  const pastSessionsLoadingRef = useRef(false)
   const text = uiText[language]
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
@@ -2277,17 +2319,19 @@ export default function WidgetPage() {
     setIsResettingPassword(false)
   }
 
-  async function loadSessions() {
+  async function loadSessionRows(startDate?: string, endDate?: string) {
     const client = await getSupabase()
-    const [sessionResult, blockedResult] = await Promise.all([
-      client
-        .from('sessions')
-        .select(SESSION_SELECT)
-        .neq('status', 'cancelled')
-        .order('date', { ascending: true })
-        .order('start_time', { ascending: true }),
-      client.from('blocked_times').select('date, start_time, end_time, arenas_used'),
-    ])
+    let sessionQuery = client
+      .from('sessions')
+      .select(SESSION_SELECT)
+      .neq('status', 'cancelled')
+
+    if (startDate) sessionQuery = sessionQuery.gte('date', startDate)
+    if (endDate) sessionQuery = sessionQuery.lte('date', endDate)
+
+    const sessionResult = await sessionQuery
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true })
 
     let sessionRowsData: unknown[] | null = sessionResult.data as unknown[] | null
     let sessionError = sessionResult.error
@@ -2306,10 +2350,15 @@ export default function WidgetPage() {
     ].some((column) => sessionResult.error?.message.toLowerCase().includes(column))
 
     if (optionalSessionMetadataMissing) {
-      const fallbackSessionResult = await client
+      let fallbackSessionQuery = client
         .from('sessions')
         .select(SESSION_SELECT_BASE)
         .neq('status', 'cancelled')
+
+      if (startDate) fallbackSessionQuery = fallbackSessionQuery.gte('date', startDate)
+      if (endDate) fallbackSessionQuery = fallbackSessionQuery.lte('date', endDate)
+
+      const fallbackSessionResult = await fallbackSessionQuery
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
       sessionRowsData = fallbackSessionResult.data
@@ -2318,26 +2367,57 @@ export default function WidgetPage() {
 
     if (sessionError) {
       setCreateStatus(sessionError.message)
-      return
+      return null
     }
 
-    const sessionRows = (sessionRowsData ?? []) as Session[]
+    return (sessionRowsData ?? []) as Session[]
+  }
+
+  async function hasFutureSessionsAfter(dateValue: string) {
+    const { data, error } = await (await getSupabase())
+      .from('sessions')
+      .select('id')
+      .neq('status', 'cancelled')
+      .gt('date', dateValue)
+      .limit(1)
+
+    if (error) return true
+    return (data ?? []).length > 0
+  }
+
+  async function loadSessionRange(
+    startDate: string | undefined,
+    endDate: string | undefined,
+    mode: 'replace-upcoming' | 'replace-past' | 'merge',
+    options: { includeBlockedTimes?: boolean } = {}
+  ) {
+    if (loadingSessionRangeRef.current) return false
+
+    loadingSessionRangeRef.current = true
+    const sessionRows = await loadSessionRows(startDate, endDate)
+
+    if (!sessionRows) {
+      loadingSessionRangeRef.current = false
+      return false
+    }
+
     const sessionIds = sessionRows.map((session) => session.id)
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
+    const client = await getSupabase()
     const [waitlistResult, profilesResult, adjustmentResult] = await Promise.all([
       sessionIds.length > 0
-        ? (await getSupabase())
+        ? client
         .from('session_waitlist')
         .select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
         .in('session_id', sessionIds)
         .order('created_at', { ascending: true })
         : Promise.resolve({ data: [], error: null }),
-      (await getSupabase())
+      client
         .from('profiles')
         .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment')
         .order('full_name', { ascending: true }),
       profileIds.length > 0
-        ? (await getSupabase())
+        ? client
         .from('profiles')
         .select('id, score_adjustment')
         .in('id', profileIds)
@@ -2354,11 +2434,88 @@ export default function WidgetPage() {
 
     setAllProfiles(profileRows)
     setProfileScoreAdjustments(scoreAdjustments)
-    setSessions(sessionRows.map((session) => ({
+    const hydratedSessions = sessionRows.map((session) => ({
       ...session,
       session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
-    })))
-    setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
+    }))
+
+    setSessions((currentSessions) => {
+      const retainedSessions = mode === 'replace-upcoming'
+        ? currentSessions.filter((session) => isPastSession(session))
+        : mode === 'replace-past'
+          ? currentSessions.filter((session) => isUpcomingSession(session))
+          : currentSessions
+      const sessionsById = new Map(retainedSessions.map((session) => [session.id, session]))
+      hydratedSessions.forEach((session) => sessionsById.set(session.id, session))
+      return sortSessionsByStart(Array.from(sessionsById.values()))
+    })
+
+    if (options.includeBlockedTimes) {
+      const blockedResult = await client.from('blocked_times').select('date, start_time, end_time, arenas_used')
+      setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
+    }
+
+    if (endDate && endDate >= localDateString()) {
+      setHasMoreUpcomingSessions(await hasFutureSessionsAfter(endDate))
+    }
+
+    loadingSessionRangeRef.current = false
+    return true
+  }
+
+  async function loadSessions(options: { focusDate?: string } = {}) {
+    const today = localDateString()
+    const defaultEndDate = addDaysToDateValue(today, SESSION_LOAD_BATCH_DAYS - 1)
+    const focusEndDate = options.focusDate && options.focusDate >= today ? upcomingBatchEndForDate(options.focusDate) : ''
+    const nextEndDate = maxDateValue(defaultEndDate, upcomingSessionsThroughRef.current, focusEndDate)
+
+    const previousEndDate = upcomingSessionsThroughRef.current
+    upcomingSessionsThroughRef.current = nextEndDate
+    const loaded = await loadSessionRange(today, nextEndDate, 'replace-upcoming', { includeBlockedTimes: true })
+    if (!loaded) upcomingSessionsThroughRef.current = previousEndDate
+  }
+
+  async function loadMoreUpcomingSessions() {
+    if (isLoadingMoreSessions || loadingSessionRangeRef.current || !hasMoreUpcomingSessions) return
+
+    const today = localDateString()
+    const currentEndDate = upcomingSessionsThroughRef.current || addDaysToDateValue(today, SESSION_LOAD_BATCH_DAYS - 1)
+    const nextStartDate = addDaysToDateValue(currentEndDate, 1)
+    const nextEndDate = addDaysToDateValue(nextStartDate, SESSION_LOAD_BATCH_DAYS - 1)
+
+    setIsLoadingMoreSessions(true)
+    const previousEndDate = upcomingSessionsThroughRef.current
+    upcomingSessionsThroughRef.current = nextEndDate
+    const loaded = await loadSessionRange(nextStartDate, nextEndDate, 'merge')
+    if (!loaded) upcomingSessionsThroughRef.current = previousEndDate
+    setIsLoadingMoreSessions(false)
+  }
+
+  async function ensureUpcomingSessionsThroughDate(dateValue: string) {
+    const today = localDateString()
+    if (!dateValue || dateValue < today) return
+
+    const currentEndDate = upcomingSessionsThroughRef.current || addDaysToDateValue(today, SESSION_LOAD_BATCH_DAYS - 1)
+    const targetEndDate = upcomingBatchEndForDate(dateValue)
+
+    if (targetEndDate <= currentEndDate) return
+
+    const nextStartDate = addDaysToDateValue(currentEndDate, 1)
+    const previousEndDate = upcomingSessionsThroughRef.current
+    upcomingSessionsThroughRef.current = targetEndDate
+    const loaded = await loadSessionRange(nextStartDate, targetEndDate, 'merge')
+    if (!loaded) upcomingSessionsThroughRef.current = previousEndDate
+  }
+
+  async function ensurePastSessionsLoaded() {
+    if (pastSessionsLoadedRef.current || pastSessionsLoadingRef.current) return
+
+    pastSessionsLoadingRef.current = true
+    setIsLoadingPastSessions(true)
+    const loaded = await loadSessionRange(undefined, localDateString(), 'replace-past')
+    pastSessionsLoadedRef.current = loaded
+    pastSessionsLoadingRef.current = false
+    setIsLoadingPastSessions(false)
   }
 
   async function loadClubs() {
@@ -2506,6 +2663,47 @@ export default function WidgetPage() {
       ensureNetworkDataLoaded()
     }
   }, [activeView])
+
+  useEffect(() => {
+    if (sessionTimeScope === 'past') {
+      void ensurePastSessionsLoaded()
+    }
+  }, [sessionTimeScope])
+
+  useEffect(() => {
+    if (activeView === 'tickets') {
+      void ensureUpcomingSessionsThroughDate(ticketDate)
+    }
+
+    if (activeView === 'create') {
+      void ensureUpcomingSessionsThroughDate(sessionDate)
+    }
+
+    if (editingSessionId) {
+      void ensureUpcomingSessionsThroughDate(editSessionDate)
+    }
+
+    if (activeView === 'sessions' && sessionTimeScope === 'upcoming' && selectedSessionDate) {
+      void ensureUpcomingSessionsThroughDate(selectedSessionDate)
+    }
+  }, [activeView, ticketDate, sessionDate, editingSessionId, editSessionDate, sessionTimeScope, selectedSessionDate])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (sessionTimeScope !== 'upcoming' || !hasMoreUpcomingSessions || isLoadingMoreSessions) return
+
+    function loadWhenNearPageEnd() {
+      const documentElement = document.documentElement
+      const distanceFromEnd = documentElement.scrollHeight - window.scrollY - window.innerHeight
+      if (distanceFromEnd < 640) {
+        void loadMoreUpcomingSessions()
+      }
+    }
+
+    loadWhenNearPageEnd()
+    window.addEventListener('scroll', loadWhenNearPageEnd, { passive: true })
+    return () => window.removeEventListener('scroll', loadWhenNearPageEnd)
+  }, [sessionTimeScope, hasMoreUpcomingSessions, isLoadingMoreSessions, sessions.length])
 
   useEffect(() => {
     networkDataLoadedRef.current = false
@@ -4412,7 +4610,7 @@ function handleSessionDateChange(value: string) {
     setTicketConfirmation(confirmation)
     setTicketStatus(text.ticketBookingCreated)
     setTicketTime('')
-    await loadSessions()
+    await loadSessions({ focusDate: ticketDate })
     setIsBookingTickets(false)
   }
 
@@ -4522,7 +4720,7 @@ function handleSessionDateChange(value: string) {
     setTournamentThirdPrize('')
     setSelectedGames(['laser-tag'])
     setSessionVisibility('public')
-    await loadSessions()
+    await loadSessions({ focusDate: sessionDate })
     setActiveView('sessions')
     setIsCreating(false)
   }
@@ -4588,7 +4786,7 @@ function handleSessionDateChange(value: string) {
       .eq('session_id', session.id)
       .eq('recipient_id', userId)
 
-    await loadSessions()
+    await loadSessions({ focusDate: session.date })
     await loadNetworkData()
     setBusySessionId('')
     setCreateStatus(text.joinedSession)
@@ -4639,7 +4837,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await loadSessions()
+    await loadSessions({ focusDate: session.date })
     setCreateStatus(text.waitlistJoined)
     setBusySessionId('')
   }
@@ -5025,7 +5223,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await loadSessions()
+    await loadSessions({ focusDate: editSessionDate })
     setCreateStatus(effectiveEditVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
     stopEditingSession()
   }
@@ -6054,7 +6252,8 @@ function handleSessionDateChange(value: string) {
             </div>
 
             <div className="list">
-              {filteredSessions.length === 0 && <p className="notice">{text.noMatchingSessions}</p>}
+              {filteredSessions.length === 0 && !(sessionTimeScope === 'past' && isLoadingPastSessions) && <p className="notice">{text.noMatchingSessions}</p>}
+              {sessionTimeScope === 'past' && isLoadingPastSessions && <p className="notice" aria-busy="true">...</p>}
 
               {filteredSessions.map((session) => {
                 const participants = session.session_participants ?? []
@@ -6138,7 +6337,7 @@ function handleSessionDateChange(value: string) {
                             {session.visibility === 'private' ? text.private : text.public}
                           </span>
                           {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
-                          {session.seeded && <span className="pill soft-opening-pill">{text.softOpeningHighlights}</span>}
+                          {session.seeded && <span className="pill soft-opening-pill">{session.seed_label || text.softOpeningHighlights}</span>}
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
                           {!isTicket && invitedMe && <span className="pill ok">{text.invited}</span>}
                         </div>
@@ -7165,6 +7364,11 @@ function handleSessionDateChange(value: string) {
                   </article>
                 )
               })}
+              {sessionTimeScope === 'upcoming' && hasMoreUpcomingSessions && (
+                <div className="session-load-more" aria-busy={isLoadingMoreSessions}>
+                  {isLoadingMoreSessions ? '...' : ''}
+                </div>
+              )}
             </div>
           </section>
         )}

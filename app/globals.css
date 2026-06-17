@@ -3291,6 +3291,14 @@ body {
   gap: 9px;
 }
 
+.app .session-load-more {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  min-height: 48px;
+}
+
 .app .session {
   gap: 8px;
   padding: 9px 10px;
