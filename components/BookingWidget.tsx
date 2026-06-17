@@ -35,6 +35,7 @@ const LoginPromptModal = dynamic(() => import('./SessionModals').then((module) =
 const InvitePopupModal = dynamic(() => import('./SessionModals').then((module) => module.InvitePopupModal), { ssr: false })
 const ChampionLoginModal = dynamic(() => import('./SessionModals').then((module) => module.ChampionLoginModal), { ssr: false })
 const BirthdayPopupModal = dynamic(() => import('./SessionModals').then((module) => module.BirthdayPopupModal), { ssr: false })
+const TariffPaymentModal = dynamic(() => import('./SessionModals').then((module) => module.TariffPaymentModal), { ssr: false })
 const CheckInModal = dynamic(() => import('./SessionModals').then((module) => module.CheckInModal), { ssr: false })
 const PlayerProfileModal = dynamic(() => import('./SessionModals').then((module) => module.PlayerProfileModal), { ssr: false })
 const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
@@ -1210,6 +1211,7 @@ export default function WidgetPage() {
   const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
   const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
   const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
+  const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
@@ -3453,30 +3455,11 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  function renderTariffBody() {
+  function renderTariffTrigger(extraClassName = '') {
     return (
-      <div className="session-tariff-body">
-        <div className="tariff-line-group">
-          <p>{text.sessionTariffRateDay}</p>
-          <p>{text.sessionTariffRateEvening}</p>
-          <p>{text.sessionTariffRateWeekend}</p>
-        </div>
-        <div className="tariff-line-group">
-          <p>{text.sessionTariffArena}</p>
-          <p>{text.sessionTariffGroupSmall}</p>
-          <p>{text.sessionTariffGroupLarge}</p>
-          <p>{text.birthdayDiscount}</p>
-          <p>{text.sessionOfferLimit}</p>
-        </div>
-        <div className="tariff-line-group">
-          <p>{text.sessionTariffPayment}</p>
-          <p>
-            <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
-              {text.zaloContact}
-            </a>
-          </p>
-        </div>
-      </div>
+      <button className={`session-tariff-link ${extraClassName}`.trim()} type="button" onClick={() => setTariffPaymentOpen(true)}>
+        {text.sessionTariffTitle}
+      </button>
     )
   }
 
@@ -5906,10 +5889,7 @@ function handleSessionDateChange(value: string) {
                 ))}
               </div>
             )}
-            <details className="session-tariff-note">
-              <summary>{text.sessionTariffTitle}</summary>
-              {renderTariffBody()}
-            </details>
+            {renderTariffTrigger()}
             {createStatus && <p className="notice">{createStatus}</p>}
 
             {sessionReminders.length > 0 && (
@@ -7280,10 +7260,7 @@ function handleSessionDateChange(value: string) {
               <strong>{text.ticketsExplainerTitle}</strong>
               <span>{text.ticketsExplainerBody}</span>
             </div>
-            <details className="session-tariff-note ticket-tariff-note">
-              <summary>{text.sessionTariffTitle}</summary>
-              {renderTariffBody()}
-            </details>
+            {renderTariffTrigger('ticket-tariff-link')}
 
             {!profile ? (
               <div className="ticket-login-panel">
@@ -8144,6 +8121,29 @@ function handleSessionDateChange(value: string) {
             setBirthdayPopupOpen(false)
             setActiveView('create')
           }}
+        />
+      )}
+
+      {tariffPaymentOpen && (
+        <TariffPaymentModal
+          closeText={text.close}
+          title={text.sessionTariffTitle}
+          rates={[
+            text.sessionTariffRateDay,
+            text.sessionTariffRateEvening,
+            text.sessionTariffRateWeekend,
+          ]}
+          arenaText={text.sessionTariffArena}
+          discounts={[
+            text.sessionTariffGroupSmall,
+            text.sessionTariffGroupLarge,
+            text.sessionTariffBirthdayOffer,
+          ]}
+          offerLimit={text.sessionOfferLimit}
+          paymentText={text.sessionTariffPayment}
+          zaloText={text.zaloContact}
+          disclaimer={text.sessionTariffDisclaimer}
+          onClose={() => setTariffPaymentOpen(false)}
         />
       )}
 
