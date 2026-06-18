@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { getInitialLanguage, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
+import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
+import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
+import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import type { LeaderboardPlayer } from './LeaderboardPanel'
 
 type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'
@@ -246,6 +248,7 @@ function isBirthdayToday(dateValue: string | null | undefined) {
 export default function FastHomeShell() {
   const [heavyTarget, setHeavyTarget] = useState<HeavyTarget | null>(() => hasRecoveryParams() ? { view: 'profile' } : null)
   const [language, setLanguage] = useState<LanguageCode>(() => getInitialLanguage())
+  const [text, setText] = useState<TranslationMap>(() => getFallbackTranslation())
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
@@ -256,7 +259,6 @@ export default function FastHomeShell() {
   const [leaderboardStatus, setLeaderboardStatus] = useState('')
   const [sharedKey, setSharedKey] = useState('')
 
-  const text = uiText[language]
   const topPlayer = leaderboardPlayers[0]
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
 
@@ -273,6 +275,18 @@ export default function FastHomeShell() {
       />
     )
   }, [heavyTarget])
+
+  useEffect(() => {
+    let active = true
+
+    void loadTranslation(language).then((nextText) => {
+      if (active) setText(nextText)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [language])
 
   useEffect(() => {
     if (heavyTarget) return
@@ -348,7 +362,7 @@ export default function FastHomeShell() {
         return
       }
 
-      const players = ((leaderboardResult.data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
+      const players = ((leaderboardResult.data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, 'Player'))
       setLeaderboardPlayers(players)
       setIsLeaderboardLoading(false)
 
@@ -366,7 +380,7 @@ export default function FastHomeShell() {
     return () => {
       active = false
     }
-  }, [heavyTarget, text.player])
+  }, [heavyTarget])
 
   async function shareApp() {
     const appUrl = window.location.origin || 'https://vrena-booking.vercel.app'
