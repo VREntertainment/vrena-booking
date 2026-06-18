@@ -35,6 +35,14 @@ function getSupabase() {
 
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
+const StaffConsole = dynamic(() => import('./StaffConsole'), {
+  ssr: false,
+  loading: () => (
+    <section className="section staff-console">
+      <p className="notice" aria-busy="true">Loading Staff Console...</p>
+    </section>
+  ),
+})
 const LoginPromptModal = dynamic(() => import('./SessionModals').then((module) => module.LoginPromptModal), { ssr: false })
 const InvitePopupModal = dynamic(() => import('./SessionModals').then((module) => module.InvitePopupModal), { ssr: false })
 const ChampionLoginModal = dynamic(() => import('./SessionModals').then((module) => module.ChampionLoginModal), { ssr: false })
@@ -109,7 +117,7 @@ type Profile = {
   avatar_color?: string | null
   avatar_text_color?: string | null
   profile_motto?: string | null
-  role?: 'player' | 'admin'
+  role?: string | null
   score_adjustment?: number | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
@@ -153,7 +161,18 @@ function isAdminEmail(email?: string | null) {
 }
 
 function isAdminRole(role?: string | null) {
-  return role?.toLowerCase() === 'admin'
+  const normalizedRole = role?.toLowerCase()
+  return normalizedRole === 'owner' || normalizedRole === 'admin'
+}
+
+function staffConsoleRank(role?: string | null, email?: string | null) {
+  const normalizedEmail = email?.toLowerCase() || ''
+  const normalizedRole = role?.toLowerCase() || ''
+  if (isAdminEmail(normalizedEmail) || normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (normalizedRole === 'manager') return 80
+  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
+  if (normalizedRole === 'viewer') return 20
+  return 0
 }
 
 function isLeaderboardCriterion(value: string | null | undefined): value is LeaderboardCriterion {
@@ -1370,7 +1389,7 @@ function scheduleDeferredWork(callback: () => void) {
   return () => window.clearTimeout(handle)
 }
 
-type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'
+type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
 type BookingWidgetProps = {
   initialSelectedPlayerId?: string
@@ -4102,6 +4121,7 @@ function handleSessionDateChange(value: string) {
   const currentUserStatsShared = sharedKey === 'stats'
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
+  const canAccessStaffConsole = Boolean(profile && staffConsoleRank(profile.role, profile.email || authEmail) >= 20)
   const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
@@ -7674,7 +7694,7 @@ function handleSessionDateChange(value: string) {
           </div>
         </button>
 
-        <div className="tabs">
+        <div className={canAccessStaffConsole ? 'tabs staff-tabs-visible' : 'tabs'}>
           <button className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
             {text.sessions}
           </button>
@@ -7687,6 +7707,11 @@ function handleSessionDateChange(value: string) {
           <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('clubs') : promptLogin())}>
             {text.clubs}
           </button>
+          {canAccessStaffConsole && (
+            <button className={activeView === 'staff' ? 'tab active' : 'tab'} onClick={() => setActiveView('staff')}>
+              Staff
+            </button>
+          )}
         </div>
 
         <div className="shop-contact">
@@ -9173,6 +9198,17 @@ function handleSessionDateChange(value: string) {
               })}
             </div>
           </section>
+        )}
+
+        {activeView === 'staff' && (
+          canAccessStaffConsole ? (
+            <StaffConsole authEmail={authEmail} profile={profile} />
+          ) : (
+            <section className="section staff-console">
+              <h2>Staff Console</h2>
+              <p className="notice">Staff access required.</p>
+            </section>
+          )
         )}
 
         {activeView === 'tickets' && (

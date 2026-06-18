@@ -7,7 +7,7 @@ import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
-type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'
+type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
 type Profile = {
   id: string
@@ -153,7 +153,18 @@ function isAdminEmail(email?: string | null) {
 }
 
 function isAdminRole(role?: string | null) {
-  return role?.toLowerCase() === 'admin'
+  const normalizedRole = role?.toLowerCase()
+  return normalizedRole === 'owner' || normalizedRole === 'admin'
+}
+
+function staffConsoleRank(role?: string | null, email?: string | null) {
+  const normalizedEmail = email?.toLowerCase() || ''
+  const normalizedRole = role?.toLowerCase() || ''
+  if (isAdminEmail(normalizedEmail) || normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (normalizedRole === 'manager') return 80
+  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
+  if (normalizedRole === 'viewer') return 20
+  return 0
 }
 
 function limitDisplayName(value: string) {
@@ -377,6 +388,7 @@ export default function FastHomeShell() {
 
   const topPlayer = leaderboardPlayers[0]
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
+  const canAccessStaffConsole = Boolean(profile && staffConsoleRank(profile.role, profile.email || authEmail) >= 20)
 
   const currentUserIsCrowned = Boolean(userId && topPlayer?.profileId === userId && topPlayer.totalScore > 0)
 
@@ -718,7 +730,7 @@ export default function FastHomeShell() {
           </div>
         </button>
 
-        <div className="tabs">
+        <div className={canAccessStaffConsole ? 'tabs staff-tabs-visible' : 'tabs'}>
           <button className="tab" onClick={() => openFullApp('sessions')} type="button">
             {text.sessions}
           </button>
@@ -731,6 +743,11 @@ export default function FastHomeShell() {
           <button className="tab" onClick={() => openFullApp(profile ? 'clubs' : 'profile')} type="button">
             {text.clubs}
           </button>
+          {canAccessStaffConsole && (
+            <button className="tab" onClick={() => openFullApp('staff')} type="button">
+              Staff
+            </button>
+          )}
         </div>
 
         <div className="shop-contact">

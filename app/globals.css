@@ -921,6 +921,219 @@ body {
   text-decoration: underline;
 }
 
+.app .staff-console {
+  display: grid;
+  gap: 14px;
+}
+
+.app .staff-role-pill {
+  align-self: start;
+  border-radius: 999px;
+  background: #e7f7f8;
+  color: #0d7c51;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.app .staff-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.app .staff-tabs button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  background: #ffffff;
+  color: #071112;
+  white-space: nowrap;
+}
+
+.app .staff-tabs button.active {
+  background: #071112;
+  border-color: #071112;
+  color: #ffffff;
+}
+
+.app .staff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.app .staff-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.app .staff-card-wide {
+  min-width: 0;
+}
+
+.app .staff-summary-card {
+  position: sticky;
+  top: 12px;
+}
+
+.app .staff-price-lines {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  border-radius: 8px;
+  background: #f0f4f6;
+  padding: 12px;
+}
+
+.app .staff-price-lines span,
+.app .staff-table span,
+.app .staff-list-item span,
+.app .staff-summary-grid span,
+.app .staff-audit-list span {
+  color: #637075;
+  font-size: 12px;
+}
+
+.app .staff-price-lines strong:last-child {
+  color: #3059ff;
+  font-size: 20px;
+}
+
+.app .staff-note-field {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-invoice-details {
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.app .staff-invoice-details summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.app .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+.app .checkbox-row input {
+  width: auto;
+}
+
+.app .staff-list-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  background: #f8fafb;
+  color: #071112;
+  text-align: left;
+}
+
+.app .staff-list-item:hover {
+  border-color: rgba(48, 89, 255, 0.3);
+}
+
+.app .staff-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.app .staff-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.app .staff-table th,
+.app .staff-table td {
+  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  padding: 9px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.app .staff-table th {
+  color: #637075;
+  font-size: 12px;
+}
+
+.app .staff-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app .staff-row-actions button,
+.app .staff-report-filters button {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
+.app .staff-report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.app .staff-report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.app .staff-report-filters input {
+  width: auto;
+  min-width: 140px;
+}
+
+.app .staff-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app .staff-summary-grid > div {
+  display: grid;
+  gap: 6px;
+  min-height: 74px;
+  border-radius: 8px;
+  background: #f0f4f6;
+  padding: 12px;
+}
+
+.app .staff-summary-grid strong {
+  font-size: 18px;
+}
+
+.app .staff-audit-title {
+  margin-top: 8px;
+}
+
+.app .staff-audit-list {
+  display: grid;
+  gap: 6px;
+}
+
 .app .profile-mobile-contact {
   display: none;
 }
@@ -4739,6 +4952,10 @@ body {
     gap: 6px;
   }
 
+  .app .tabs.staff-tabs-visible {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
   .app .app-share {
     grid-area: share;
     justify-self: center;
@@ -4753,6 +4970,31 @@ body {
     min-height: 42px;
     padding: 9px 8px;
     font-size: 14px;
+  }
+
+  .app .tabs.staff-tabs-visible .tab {
+    padding-inline: 5px;
+    font-size: 12px;
+  }
+
+  .app .staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-summary-card {
+    position: static;
+  }
+
+  .app .staff-report-head {
+    display: grid;
+  }
+
+  .app .staff-report-filters {
+    justify-content: flex-start;
+  }
+
+  .app .staff-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .app .shop-contact {
@@ -5342,10 +5584,23 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .app .tabs.staff-tabs-visible {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
   .app .tab {
     font-size: 13px;
     min-height: 40px;
     padding: 8px 6px;
+  }
+
+  .app .tabs.staff-tabs-visible .tab {
+    font-size: 11px;
+    padding-inline: 3px;
+  }
+
+  .app .staff-summary-grid {
+    grid-template-columns: 1fr;
   }
 
   .app .ticket-service-grid {
@@ -5524,11 +5779,45 @@ body {
     color: #f6f7f9;
   }
 
-  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box {
+  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  }
+
+  .app .staff-tabs button.active {
+    background: #f6f7f9;
+    border-color: #f6f7f9;
+    color: #071112;
+  }
+
+  .app .staff-role-pill {
+    background: rgba(13, 124, 81, 0.22);
+    color: #8ce8b5;
+  }
+
+  .app .staff-price-lines,
+  .app .staff-summary-grid > div,
+  .app .staff-list-item,
+  .app .staff-invoice-details {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f6f7f9;
+  }
+
+  .app .staff-price-lines span,
+  .app .staff-table span,
+  .app .staff-list-item span,
+  .app .staff-summary-grid span,
+  .app .staff-audit-list span,
+  .app .staff-table th {
+    color: #aeb9bd;
+  }
+
+  .app .staff-table th,
+  .app .staff-table td {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
   .app .profile-toggle-field {
