@@ -20,7 +20,7 @@ const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, st
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
-const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
+const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
 const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -1677,7 +1677,7 @@ export default function WidgetPage({
     setClubs((currentClubs) =>
       currentClubs.map((club) => ({
         ...club,
-        club_members: club.club_members?.map((member) =>
+        club_members: clubMembers(club).map((member) =>
           mergeCurrentUserAvatar(member, nextProfileSnapshot, updatedProfile.id)
         ),
       }))
@@ -3579,7 +3579,7 @@ function handleSessionDateChange(value: string) {
     if (!query) return clubs
 
     return clubs.filter((club) => {
-      const memberNames = (club.club_members ?? [])
+      const memberNames = clubMembers(club)
         .map((member) => member.display_name || '')
         .join(' ')
       const haystack = normalizeSearchValue([
@@ -3683,7 +3683,7 @@ function handleSessionDateChange(value: string) {
   const sessionClubOptions = useMemo(() => {
     if (!userId) return []
 
-    return clubs.filter((club) => club.owner_id === userId || (club.club_members ?? []).some((member) => member.profile_id === userId && member.status === 'approved'))
+    return clubs.filter((club) => club.owner_id === userId || clubMembers(club).some((member) => member.profile_id === userId && member.status === 'approved'))
   }, [clubs, userId])
 
   const selectedClub = useMemo(() => {
@@ -3718,11 +3718,11 @@ function handleSessionDateChange(value: string) {
   }, [selectedClubDate, selectedClubSessions])
 
   const selectedClubApprovedMembers = useMemo(() => {
-    return (selectedClub?.club_members ?? []).filter((member) => member.status === 'approved')
+    return clubMembers(selectedClub).filter((member) => member.status === 'approved')
   }, [selectedClub])
 
   const selectedClubPendingMembers = useMemo(() => {
-    return (selectedClub?.club_members ?? []).filter((member) => member.status === 'pending')
+    return clubMembers(selectedClub).filter((member) => member.status === 'pending')
   }, [selectedClub])
 
   useEffect(() => {
@@ -3977,7 +3977,7 @@ function handleSessionDateChange(value: string) {
     }
 
     for (const club of clubs) {
-      const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
+      const member = clubMembers(club).find((item) => item.profile_id === selectedPlayerId)
       if (member) {
         visibleAvatar = member.avatar_url || visibleAvatar
         visibleEmoji = member.avatar_emoji || visibleEmoji
@@ -4071,7 +4071,7 @@ function handleSessionDateChange(value: string) {
     }
 
     for (const club of clubs) {
-      const member = (club.club_members ?? []).find((item) => item.profile_id === selectedPlayerId)
+      const member = clubMembers(club).find((item) => item.profile_id === selectedPlayerId)
       if (member) {
         return {
           profileId: member.profile_id,
@@ -4665,7 +4665,7 @@ function handleSessionDateChange(value: string) {
   function clubRoleFor(club: Club, profileId = userId): ClubRole {
     if (!profileId) return 'member'
     if (club.owner_id === profileId) return 'owner'
-    const member = (club.club_members ?? []).find((item) => item.profile_id === profileId)
+    const member = clubMembers(club).find((item) => item.profile_id === profileId)
     if (member?.status !== 'approved') return 'member'
     return member.role || 'member'
   }
@@ -4726,8 +4726,12 @@ function handleSessionDateChange(value: string) {
     } as Record<string, string>
   }
 
+  function clubMembers(club: Club | undefined): ClubMember[] {
+    return Array.isArray(club?.club_members) ? club.club_members : []
+  }
+
   function approvedClubMember(club: Club, profileId = userId) {
-    return (club.club_members ?? []).some((member) => member.profile_id === profileId && member.status === 'approved')
+    return clubMembers(club).some((member) => member.profile_id === profileId && member.status === 'approved')
   }
 
   function canSeeClubPrivateData(club: Club | undefined) {
@@ -4750,17 +4754,17 @@ function handleSessionDateChange(value: string) {
 
   function clubMembershipFor(club: Club | undefined, profileId = userId) {
     if (!club || !profileId) return undefined
-    return (club.club_members ?? []).find((member) => member.profile_id === profileId)
+    return clubMembers(club).find((member) => member.profile_id === profileId)
   }
 
   function canAccessClubSession(session: Session) {
     const club = sessionClubFor(session)
     if (!club) return true
-    return canManageClub(club) || approvedClubMember(club)
+    return canSeeClubPrivateData(club)
   }
 
   function clubMemberCount(club: Club) {
-    return club.member_count ?? (club.club_members ?? []).filter((member) => member.status === 'approved').length
+    return club.member_count ?? clubMembers(club).filter((member) => member.status === 'approved').length
   }
 
   function openClubPage(clubId: string) {
@@ -4986,7 +4990,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function notifyClubMembersOfSession(club: Club, sessionId: string) {
-    const recipients = (club.club_members ?? [])
+    const recipients = clubMembers(club)
       .filter((member) => member.status === 'approved' && member.profile_id !== userId)
       .slice(0, 80)
 
@@ -5097,7 +5101,7 @@ function handleSessionDateChange(value: string) {
     const activeProfile = profile
     if (!activeProfile) return
 
-    const currentMembership = (club.club_members ?? []).find((member) => member.profile_id === userId)
+    const currentMembership = clubMembers(club).find((member) => member.profile_id === userId)
     if (currentMembership) return
 
     setBusyClubId(club.id)
@@ -7340,11 +7344,19 @@ function handleSessionDateChange(value: string) {
                             disabled={busyClubId === sessionClub.id || sessionClubMembership?.status === 'pending'}
                             onClick={(event) => {
                               event.stopPropagation()
-                              joinClub(sessionClub)
+                              if (sessionClub.visibility === 'private') {
+                                openClubPage(sessionClub.id)
+                              } else {
+                                joinClub(sessionClub)
+                              }
                             }}
                             type="button"
                           >
-                            {sessionClubMembership?.status === 'pending' ? text.requestSent : text.joinClub}
+                            {sessionClubMembership?.status === 'pending'
+                              ? text.requestSent
+                              : sessionClub.visibility === 'private'
+                                ? text.unlockClub
+                                : text.joinClub}
                           </button>
                         ) : !isPast && (
                           <button
@@ -8438,7 +8450,7 @@ function handleSessionDateChange(value: string) {
             <div className="club-list">
               {filteredClubs.length === 0 && <p className="notice">{text.noMatchingClubs}</p>}
               {filteredClubs.map((club) => {
-                const members = club.club_members ?? []
+                const members = clubMembers(club)
                 const approvedMembers = members.filter((member) => member.status === 'approved')
                 const pendingMembers = members.filter((member) => member.status === 'pending')
                 const membership = members.find((member) => member.profile_id === userId)
