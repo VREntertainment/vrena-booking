@@ -199,6 +199,12 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
   const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
   const baseTotalScore = finiteNumber(row.base_total_score)
   const scoreAdjustment = finiteNumber(row.score_adjustment)
+  const bestEscapeDurationSeconds = bestByGameRows.reduce<number | null>((best, item) => {
+    if (!item || typeof item !== 'object') return best
+    const duration = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
+    if (!Number.isFinite(duration) || duration <= 0) return best
+    return best === null || duration < best ? duration : best
+  }, null)
 
   return {
     profileId: row.profile_id,
@@ -221,6 +227,7 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
     totalProjectiles: finiteNumber(row.total_projectiles),
     averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
     reliabilityScore: finiteNumber(row.reliability_score),
+    bestEscapeDurationSeconds,
     leaderboardRank: row.leaderboard_rank === null || row.leaderboard_rank === undefined ? undefined : finiteNumber(row.leaderboard_rank),
     leaderboardDistinctRank: row.leaderboard_distinct_rank === null || row.leaderboard_distinct_rank === undefined
       ? null
@@ -238,8 +245,9 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
       if (!item || typeof item !== 'object') return []
       const gameValue = 'game' in item ? String(item.game || '') : ''
       const score = finiteNumber('score' in item ? item.score : null, Number.NaN)
+      const escapeDurationSeconds = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
       if (!gameValue || !Number.isFinite(score)) return []
-      return [{ game: gameTitles[gameValue] || gameValue, score }]
+      return [{ game: gameTitles[gameValue] || gameValue, score, escapeDurationSeconds: Number.isFinite(escapeDurationSeconds) ? escapeDurationSeconds : null }]
     }),
   }
 }

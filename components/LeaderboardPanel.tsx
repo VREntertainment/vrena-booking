@@ -24,7 +24,8 @@ export type LeaderboardPlayer = {
   totalProjectiles: number
   averageAccuracy: number | null
   reliabilityScore: number
-  bestByGame: Array<{ game: string; score: number }>
+  bestByGame: Array<{ game: string; score: number; escapeDurationSeconds?: number | null }>
+  bestEscapeDurationSeconds: number | null
   leaderboardRank?: number
   leaderboardDistinctRank?: number | null
   leaderboardHigherMetricValue?: number | null
@@ -44,7 +45,7 @@ type LeaderboardClub = {
   }> | null
 }
 
-export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'gamesPlayed'
+export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'gamesPlayed' | 'escapeTime'
 
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
@@ -118,12 +119,17 @@ function isRankableLeaderboardValue(value: number) {
   return Number.isFinite(value) && value > 0
 }
 
-function progressTowardHigherValue(value: number, higherValue: number | null) {
+function isAscendingLeaderboardCriterion(criterion: LeaderboardCriterion) {
+  return criterion === 'escapeTime'
+}
+
+function progressTowardHigherValue(value: number, higherValue: number | null, lowerIsBetter = false) {
   if (!isRankableLeaderboardValue(value) || !higherValue || higherValue <= 0) return 0
+  if (lowerIsBetter) return Math.max(0, Math.min(99, Math.round((higherValue / value) * 100)))
   return Math.max(0, Math.min(99, Math.round((value / higherValue) * 100)))
 }
 
-function rankTierForDistinctStatRank(distinctStatRankIndex: number | null, value: number, higherValue: number | null): RankInfo {
+function rankTierForDistinctStatRank(distinctStatRankIndex: number | null, value: number, higherValue: number | null, lowerIsBetter = false): RankInfo {
   if (distinctStatRankIndex === null || !isRankableLeaderboardValue(value)) {
     return { tier: noneRankTier, nextTier: rankTiers[rankTiers.length - 2], progress: 0 }
   }
@@ -131,7 +137,7 @@ function rankTierForDistinctStatRank(distinctStatRankIndex: number | null, value
   const tierIndex = distinctStatRankIndex < rankTiers.length - 1 ? distinctStatRankIndex : rankTiers.length - 1
   const tier = rankTiers[tierIndex] ?? noneRankTier
   const nextTier = tierIndex > 0 ? rankTiers[tierIndex - 1] : undefined
-  const progress = nextTier ? progressTowardHigherValue(value, higherValue) : 100
+  const progress = nextTier ? progressTowardHigherValue(value, higherValue, lowerIsBetter) : 100
   return { tier, nextTier, progress }
 }
 
@@ -157,11 +163,25 @@ function leaderboardMetricValue(player: LeaderboardPlayer, criterion: Leaderboar
   if (criterion === 'reliability') return player.reliabilityScore
   if (criterion === 'projectiles') return player.totalProjectiles
   if (criterion === 'gamesPlayed') return player.gamesJoined
+  if (criterion === 'escapeTime') return player.bestEscapeDurationSeconds ?? 0
   return player.totalScore
+}
+
+function formatSpeedrunTime(value: number | null | undefined) {
+  if (!Number.isFinite(value) || Number(value) <= 0) return '-'
+
+  const totalSeconds = Math.round(Number(value))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 function formatLeaderboardValue(player: LeaderboardPlayer, criterion: LeaderboardCriterion) {
   const value = leaderboardMetricValue(player, criterion)
+  if (criterion === 'escapeTime') return formatSpeedrunTime(value)
   if (criterion === 'winRate' || criterion === 'accuracy' || criterion === 'reliability') return `${Math.round(value)}%`
   return Math.round(value).toLocaleString('en-US')
 }
@@ -210,6 +230,7 @@ export default function LeaderboardPanel({
     { value: 'reliability', label: text.reliabilityCriterion },
     { value: 'projectiles', label: text.projectilesCriterion },
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
+    { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
 
   useEffect(() => {
@@ -221,11 +242,13 @@ export default function LeaderboardPanel({
   }, [initialCriterion])
 
   const rankedLeaderboardRows = useMemo(() => {
+    const lowerIsBetter = isAscendingLeaderboardCriterion(leaderboardCriterion)
+
     if (useServerRanking) {
       return players.map((player, index) => {
         const value = leaderboardMetricValue(player, leaderboardCriterion)
         const distinctRankIndex = typeof player.leaderboardDistinctRank === 'number' ? player.leaderboardDistinctRank - 1 : null
-        const rankInfo = rankTierForDistinctStatRank(distinctRankIndex, value, player.leaderboardHigherMetricValue ?? null)
+        const rankInfo = rankTierForDistinctStatRank(distinctRankIndex, value, player.leaderboardHigherMetricValue ?? null, lowerIsBetter)
 
         return {
           player,
@@ -236,7 +259,14 @@ export default function LeaderboardPanel({
     }
 
     const sortedPlayers = [...players].sort((left, right) => {
-      const valueDiff = leaderboardMetricValue(right, leaderboardCriterion) - leaderboardMetricValue(left, leaderboardCriterion)
+      const leftValue = leaderboardMetricValue(left, leaderboardCriterion)
+      const rightValue = leaderboardMetricValue(right, leaderboardCriterion)
+      const leftRankable = isRankableLeaderboardValue(leftValue)
+      const rightRankable = isRankableLeaderboardValue(rightValue)
+
+      if (leftRankable !== rightRankable) return leftRankable ? -1 : 1
+
+      const valueDiff = lowerIsBetter ? leftValue - rightValue : rightValue - leftValue
       if (valueDiff !== 0) return valueDiff
       const scoreDiff = right.totalScore - left.totalScore
       if (scoreDiff !== 0) return scoreDiff
@@ -263,7 +293,7 @@ export default function LeaderboardPanel({
 
         const distinctPositiveValueIndex = distinctPositiveValues.indexOf(value)
         const previousPositiveValue = distinctPositiveValueIndex > 0 ? distinctPositiveValues[distinctPositiveValueIndex - 1] ?? null : null
-        return rankTierForDistinctStatRank(distinctPositiveValueIndex, value, previousPositiveValue)
+        return rankTierForDistinctStatRank(distinctPositiveValueIndex, value, previousPositiveValue, lowerIsBetter)
       })()
 
       return { player, rank, rankInfo }
@@ -322,7 +352,12 @@ export default function LeaderboardPanel({
     return {
       player: currentUserRankPlayer,
       rank: currentUserRankPlayer.leaderboardRank ?? 0,
-      rankInfo: rankTierForDistinctStatRank(distinctRankIndex, value, currentUserRankPlayer.leaderboardHigherMetricValue ?? null),
+      rankInfo: rankTierForDistinctStatRank(
+        distinctRankIndex,
+        value,
+        currentUserRankPlayer.leaderboardHigherMetricValue ?? null,
+        isAscendingLeaderboardCriterion(leaderboardCriterion)
+      ),
     }
   }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
