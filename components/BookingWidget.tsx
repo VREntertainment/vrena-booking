@@ -1213,8 +1213,20 @@ function scheduleDeferredWork(callback: () => void) {
   return () => window.clearTimeout(handle)
 }
 
-export default function WidgetPage() {
-  const [activeView, setActiveView] = useState<'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'>('leaderboard')
+type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'
+
+type BookingWidgetProps = {
+  initialSelectedPlayerId?: string
+  initialSelectedPlayerSessionId?: string
+  initialView?: BookingWidgetView
+}
+
+export default function WidgetPage({
+  initialSelectedPlayerId = '',
+  initialSelectedPlayerSessionId = '',
+  initialView = 'leaderboard',
+}: BookingWidgetProps = {}) {
+  const [activeView, setActiveView] = useState<BookingWidgetView>(initialView)
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
@@ -1353,8 +1365,8 @@ export default function WidgetPage() {
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
   const [checkInPaymentStatus, setCheckInPaymentStatus] = useState<'cash' | 'bank_transfer' | 'free' | ''>('')
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
-  const [selectedPlayerId, setSelectedPlayerId] = useState('')
-  const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState('')
+  const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
+  const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})

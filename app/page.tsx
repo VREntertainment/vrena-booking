@@ -1,5 +1,5 @@
-import BookingWidget from '../components/BookingWidget'
+import FastHomeShell from '../components/FastHomeShell'
 
 export default function Home() {
-  return <BookingWidget />
+  return <FastHomeShell />
 }
