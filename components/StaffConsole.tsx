@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'orders' | 'report'
@@ -201,6 +202,10 @@ const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelle
 const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
 const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
+const staffGameImageBucket = 'staff-game-images'
+const staffGameImageMaxBytes = 2 * 1024 * 1024
+const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const staffGameImageHelp = 'JPG, PNG, or WEBP · max 2 MB · wide image works best.'
 
 function staffRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
@@ -338,6 +343,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [gameImageUploading, setGameImageUploading] = useState(false)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     if (rank >= 80) return ['new', 'today', 'games', 'prices', 'discounts', 'orders', 'report']
@@ -481,6 +487,45 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setBooking(defaultBookingForm())
     await loadStaffData()
     setSaving(false)
+  }
+
+  async function handleGameImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (!canManageConfig) return
+
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (!staffGameImageTypes.includes(file.type)) {
+      setStatus('Game photo must be JPG, PNG, or WEBP.')
+      return
+    }
+
+    if (file.size > staffGameImageMaxBytes) {
+      setStatus('Game photo must be 2 MB or smaller.')
+      return
+    }
+
+    setGameImageUploading(true)
+    setStatus('Uploading game photo...')
+    const safeName = file.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
+    const safeGame = slugify(gameForm.slug || gameForm.name || 'game')
+    const path = `${profile?.id || 'staff'}/${safeGame}-${Date.now()}-${safeName}`
+    const { error } = await supabase.storage.from(staffGameImageBucket).upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+    })
+
+    if (error) {
+      setStatus(error.message)
+      setGameImageUploading(false)
+      return
+    }
+
+    const { data } = supabase.storage.from(staffGameImageBucket).getPublicUrl(path)
+    setGameForm((current) => ({ ...current, image_url: data.publicUrl }))
+    setStatus('Game photo uploaded. Save the game to keep it.')
+    setGameImageUploading(false)
   }
 
   async function saveGame() {
@@ -855,7 +900,32 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>Max players / arena<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
               <label>Rounds<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
               <label>Difficulty<input value={gameForm.difficulty} onChange={(event) => setGameForm({ ...gameForm, difficulty: event.target.value })} /></label>
-              <label>Image URL<input value={gameForm.image_url} onChange={(event) => setGameForm({ ...gameForm, image_url: event.target.value })} /></label>
+              <div className="full staff-game-photo-field">
+                <span className="staff-field-label">Game photo</span>
+                <label className={gameForm.image_url ? 'staff-game-photo-upload has-image' : 'staff-game-photo-upload'}>
+                  {gameForm.image_url ? (
+                    <span
+                      aria-hidden="true"
+                      className="staff-game-photo-preview"
+                      style={{ backgroundImage: `url(${gameForm.image_url})` }}
+                    />
+                  ) : (
+                    <span>
+                      <strong>Click to upload game photo</strong>
+                      <small>{staffGameImageHelp}</small>
+                    </span>
+                  )}
+                  {gameImageUploading && <em>Uploading...</em>}
+                  <input
+                    accept={staffGameImageTypes.join(',')}
+                    disabled={gameImageUploading}
+                    type="file"
+                    onChange={handleGameImageUpload}
+                  />
+                </label>
+                <p className="field-help">{staffGameImageHelp}</p>
+              </div>
+              <label className="full">Image URL<input value={gameForm.image_url} onChange={(event) => setGameForm({ ...gameForm, image_url: event.target.value })} /></label>
               <label className="full">Arena IDs<input value={gameForm.available_arena_ids} onChange={(event) => setGameForm({ ...gameForm, available_arena_ids: event.target.value })} /></label>
               <label className="full">Description<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
               <label className="checkbox-row"><input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} /> Active</label>
