@@ -1180,6 +1180,26 @@ body {
   min-width: 140px;
 }
 
+.app .staff-compare-toggle {
+  width: auto;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 8px;
+  padding: 6px 9px;
+  color: #071112;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-compare-toggle input {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
 .app .staff-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1197,6 +1217,140 @@ body {
 
 .app .staff-summary-grid strong {
   font-size: 18px;
+}
+
+.app .staff-report-graphics {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.app .staff-report-sales-graph {
+  grid-row: span 2;
+}
+
+.app .staff-report-graph {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 12px;
+}
+
+.app .staff-report-graph-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: start;
+}
+
+.app .staff-report-graph-head h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.app .staff-report-graph-head span,
+.app .staff-comparison-list small,
+.app .staff-report-bar-group small {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-report-compare-label {
+  border-radius: 999px;
+  background: #eef3f5;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.app .staff-report-bars {
+  min-height: 220px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(62px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.app .staff-report-bar-group {
+  display: grid;
+  grid-template-rows: 150px auto auto;
+  gap: 6px;
+  min-width: 62px;
+  text-align: center;
+}
+
+.app .staff-report-bar-track {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 4px;
+  min-height: 150px;
+  border-radius: 8px;
+  background: #f0f4f6;
+  padding: 8px;
+}
+
+.app .staff-report-bar {
+  width: 16px;
+  min-height: 4px;
+  border-radius: 999px 999px 4px 4px;
+  transition: height 180ms ease;
+}
+
+.app .staff-report-bar.current {
+  background: linear-gradient(180deg, #3059ff, #09b7ac);
+}
+
+.app .staff-report-bar.compare {
+  background: #b8c3c8;
+}
+
+.app .staff-comparison-list,
+.app .staff-payment-mix {
+  display: grid;
+  gap: 9px;
+}
+
+.app .staff-comparison-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.app .staff-comparison-list small {
+  grid-column: 2;
+}
+
+.app .staff-payment-row {
+  display: grid;
+  gap: 7px;
+}
+
+.app .staff-payment-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .staff-payment-track {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #eef3f5;
+}
+
+.app .staff-payment-track span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #09b7ac, #3059ff);
+  transition: width 180ms ease;
 }
 
 .app .staff-audit-title {
@@ -5071,6 +5225,22 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .staff-report-graphics {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-sales-graph {
+    grid-row: auto;
+  }
+
+  .app .staff-report-bars {
+    grid-auto-columns: minmax(58px, 72px);
+  }
+
+  .app .staff-report-graph-head {
+    display: grid;
+  }
+
   .app .shop-contact {
     display: none;
   }
@@ -5875,7 +6045,10 @@ body {
   .app .staff-summary-grid > div,
   .app .staff-list-item,
   .app .staff-invoice-details,
-  .app .staff-game-photo-upload {
+  .app .staff-game-photo-upload,
+  .app .staff-report-bar-track,
+  .app .staff-payment-track,
+  .app .staff-report-compare-label {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -5886,8 +6059,20 @@ body {
   .app .staff-list-item span,
   .app .staff-summary-grid span,
   .app .staff-audit-list span,
-  .app .staff-table th {
+  .app .staff-table th,
+  .app .staff-report-graph-head span,
+  .app .staff-comparison-list small,
+  .app .staff-report-bar-group small {
     color: #aeb9bd;
+  }
+
+  .app .staff-compare-toggle {
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f6f7f9;
+  }
+
+  .app .staff-report-graph {
+    border-top-color: rgba(255, 255, 255, 0.1);
   }
 
   .app .staff-field-label,

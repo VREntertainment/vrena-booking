@@ -130,7 +130,40 @@ type StaffConsoleProps = {
 
 const todayString = () => {
   const date = new Date()
+  return dateInputValue(date)
+}
+
+const shortDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
+
+function dateInputValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function dateFromInput(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year || 1970, (month || 1) - 1, day || 1)
+}
+
+function addDays(value: string, days: number) {
+  const date = dateFromInput(value)
+  date.setDate(date.getDate() + days)
+  return dateInputValue(date)
+}
+
+function daysBetween(start: string, end: string) {
+  return Math.round((dateFromInput(end).getTime() - dateFromInput(start).getTime()) / 86400000)
+}
+
+function orderedRange(start: string, end: string) {
+  return start <= end ? [start, end] : [end, start]
+}
+
+function shortDateLabel(value: string) {
+  return shortDateFormatter.format(dateFromInput(value))
+}
+
+function rangeLabel(start: string, end: string) {
+  return start === end ? shortDateLabel(start) : `${shortDateLabel(start)} - ${shortDateLabel(end)}`
 }
 
 const defaultBookingForm = (): BookingForm => ({
@@ -322,6 +355,83 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   URL.revokeObjectURL(url)
 }
 
+function ordersInDateRange(orders: StaffOrder[], start: string, end: string) {
+  const [from, to] = orderedRange(start, end)
+  return orders.filter((order) => order.booking_date >= from && order.booking_date <= to)
+}
+
+function buildStaffReport(orders: StaffOrder[], gameNameById: Map<string, string>) {
+  const totals = orders.reduce((summary, order) => {
+    summary.totalSales += order.total
+    summary.players += order.players_count
+    summary.discounts += order.discount_total
+    if (order.payment_status === 'paid') summary.totalPaid += order.total
+    if (order.payment_status !== 'paid') summary.unpaidAmount += order.total
+    if (order.payment_method === 'cash') summary.cashTotal += order.total
+    if (order.payment_method === 'bank_transfer') summary.bankTransferTotal += order.total
+    if (order.payment_method === 'momo_manual') summary.momoTotal += order.total
+    if (order.payment_method === 'voucher' || order.payment_method === 'free_ticket') summary.voucherTotal += order.total
+    if (order.order_status === 'cancelled') summary.cancelled += 1
+    if (order.order_status === 'no_show') summary.noShows += 1
+    const gameName = order.game_id ? gameNameById.get(order.game_id) || 'Unknown' : 'Unknown'
+    summary.gameCounts.set(gameName, (summary.gameCounts.get(gameName) || 0) + 1)
+    return summary
+  }, {
+    totalSales: 0,
+    totalPaid: 0,
+    unpaidAmount: 0,
+    cashTotal: 0,
+    bankTransferTotal: 0,
+    momoTotal: 0,
+    voucherTotal: 0,
+    bookings: orders.length,
+    players: 0,
+    cancelled: 0,
+    noShows: 0,
+    discounts: 0,
+    gameCounts: new Map<string, number>(),
+  })
+  const bestSellingGame = [...totals.gameCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'None yet'
+
+  return {
+    totalSales: totals.totalSales,
+    totalPaid: totals.totalPaid,
+    unpaidAmount: totals.unpaidAmount,
+    cashTotal: totals.cashTotal,
+    bankTransferTotal: totals.bankTransferTotal,
+    momoTotal: totals.momoTotal,
+    voucherTotal: totals.voucherTotal,
+    bookings: totals.bookings,
+    players: totals.players,
+    cancelled: totals.cancelled,
+    noShows: totals.noShows,
+    discounts: totals.discounts,
+    bestSellingGame,
+  }
+}
+
+function buildDailySeries(orders: StaffOrder[], start: string, end: string) {
+  const [from, to] = orderedRange(start, end)
+  const byDate = new Map<string, { date: string; sales: number; bookings: number; players: number }>()
+  for (let date = from, index = 0; date <= to && index < 45; date = addDays(date, 1), index += 1) {
+    byDate.set(date, { date, sales: 0, bookings: 0, players: 0 })
+  }
+  orders.forEach((order) => {
+    const point = byDate.get(order.booking_date)
+    if (!point) return
+    point.sales += order.total
+    point.bookings += 1
+    point.players += order.players_count
+  })
+  return [...byDate.values()]
+}
+
+function percentChange(current: number, previous: number) {
+  if (previous <= 0) return current > 0 ? 'New' : '0%'
+  const value = ((current - previous) / previous) * 100
+  return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
+}
+
 export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) {
   const rank = staffRank(profile?.role, profile?.email || authEmail)
   const role = roleLabel(profile?.role, profile?.email || authEmail)
@@ -340,6 +450,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [discountForm, setDiscountForm] = useState(() => defaultDiscountForm())
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
+  const [compareEnabled, setCompareEnabled] = useState(false)
+  const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
+  const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -381,36 +494,37 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     const today = todayString()
     return orders.filter((order) => order.booking_date === today)
   }, [orders])
+  const gameNameById = useMemo(() => new Map(games.map((game) => [game.id, game.name])), [games])
 
   const reportOrders = useMemo(() => (
-    orders.filter((order) => order.booking_date >= reportStart && order.booking_date <= reportEnd)
+    ordersInDateRange(orders, reportStart, reportEnd)
   ), [orders, reportEnd, reportStart])
+  const comparisonOrders = useMemo(() => (
+    compareEnabled ? ordersInDateRange(orders, compareStart, compareEnd) : []
+  ), [compareEnabled, compareEnd, compareStart, orders])
 
-  const report = useMemo(() => {
-    const paidOrders = reportOrders.filter((order) => order.payment_status === 'paid')
-    const gameCounts = new Map<string, number>()
-    reportOrders.forEach((order) => {
-      const name = games.find((game) => game.id === order.game_id)?.name || 'Unknown'
-      gameCounts.set(name, (gameCounts.get(name) || 0) + 1)
-    })
-    const bestSellingGame = [...gameCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'None yet'
-
-    return {
-      totalSales: reportOrders.reduce((sum, order) => sum + order.total, 0),
-      totalPaid: paidOrders.reduce((sum, order) => sum + order.total, 0),
-      unpaidAmount: reportOrders.filter((order) => order.payment_status !== 'paid').reduce((sum, order) => sum + order.total, 0),
-      cashTotal: reportOrders.filter((order) => order.payment_method === 'cash').reduce((sum, order) => sum + order.total, 0),
-      bankTransferTotal: reportOrders.filter((order) => order.payment_method === 'bank_transfer').reduce((sum, order) => sum + order.total, 0),
-      momoTotal: reportOrders.filter((order) => order.payment_method === 'momo_manual').reduce((sum, order) => sum + order.total, 0),
-      voucherTotal: reportOrders.filter((order) => order.payment_method === 'voucher' || order.payment_method === 'free_ticket').reduce((sum, order) => sum + order.total, 0),
-      bookings: reportOrders.length,
-      players: reportOrders.reduce((sum, order) => sum + order.players_count, 0),
-      cancelled: reportOrders.filter((order) => order.order_status === 'cancelled').length,
-      noShows: reportOrders.filter((order) => order.order_status === 'no_show').length,
-      discounts: reportOrders.reduce((sum, order) => sum + order.discount_total, 0),
-      bestSellingGame,
-    }
-  }, [games, reportOrders])
+  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById), [gameNameById, reportOrders])
+  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById), [comparisonOrders, gameNameById])
+  const reportSeries = useMemo(() => buildDailySeries(reportOrders, reportStart, reportEnd), [reportEnd, reportOrders, reportStart])
+  const comparisonSeries = useMemo(() => (
+    compareEnabled ? buildDailySeries(comparisonOrders, compareStart, compareEnd) : []
+  ), [compareEnabled, compareEnd, compareStart, comparisonOrders])
+  const reportChartMax = useMemo(() => Math.max(
+    1,
+    ...reportSeries.map((point) => point.sales),
+    ...comparisonSeries.map((point) => point.sales)
+  ), [comparisonSeries, reportSeries])
+  const paymentMix = useMemo(() => {
+    const items = [
+      { label: 'Cash', value: report.cashTotal },
+      { label: 'Bank', value: report.bankTransferTotal },
+      { label: 'Momo', value: report.momoTotal },
+      { label: 'Voucher / free', value: report.voucherTotal },
+      { label: 'Unpaid', value: report.unpaidAmount },
+    ]
+    const total = Math.max(1, items.reduce((sum, item) => sum + item.value, 0))
+    return items.map((item) => ({ ...item, share: Math.round((item.value / total) * 100) }))
+  }, [report])
 
   useEffect(() => {
     void loadStaffData()
@@ -659,6 +773,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       max_uses: discount.max_uses === null ? '' : String(discount.max_uses),
       active: discount.active,
     })
+  }
+
+  function applyPreviousPeriodComparison() {
+    const [from, to] = orderedRange(reportStart, reportEnd)
+    const periodDays = Math.max(1, daysBetween(from, to) + 1)
+    const previousEnd = addDays(from, -1)
+    const previousStart = addDays(previousEnd, -(periodDays - 1))
+    setCompareStart(previousStart)
+    setCompareEnd(previousEnd)
+    setCompareEnabled(true)
   }
 
   function exportReport() {
@@ -1024,6 +1148,17 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               }}>Yesterday</button>
               <input type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} />
               <input type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} />
+              <button type="button" onClick={applyPreviousPeriodComparison}>Previous period</button>
+              <label className="staff-compare-toggle">
+                <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
+                Compare
+              </label>
+              {compareEnabled && (
+                <>
+                  <input aria-label="Compare start date" type="date" value={compareStart} onChange={(event) => setCompareStart(event.target.value)} />
+                  <input aria-label="Compare end date" type="date" value={compareEnd} onChange={(event) => setCompareEnd(event.target.value)} />
+                </>
+              )}
               <button type="button" onClick={exportReport}>Export CSV</button>
             </div>
           </div>
@@ -1041,6 +1176,90 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             <div><span>No-shows</span><strong>{report.noShows}</strong></div>
             <div><span>Discounts</span><strong>{formatVnd(report.discounts)}</strong></div>
             <div><span>Best-selling game</span><strong>{report.bestSellingGame}</strong></div>
+          </div>
+          <div className="staff-report-graphics">
+            <section className="staff-report-graph staff-report-sales-graph" aria-label="Sales by day">
+              <div className="staff-report-graph-head">
+                <div>
+                  <h4>Sales trend</h4>
+                  <span>{rangeLabel(reportStart, reportEnd)}</span>
+                </div>
+                {compareEnabled && <span className="staff-report-compare-label">vs {rangeLabel(compareStart, compareEnd)}</span>}
+              </div>
+              {reportSeries.length > 0 ? (
+                <div className="staff-report-bars">
+                  {reportSeries.map((point, index) => {
+                    const comparePoint = comparisonSeries[index]
+                    const currentHeight = `${Math.round((point.sales / reportChartMax) * 100)}%`
+                    const compareHeight = `${Math.round(((comparePoint?.sales || 0) / reportChartMax) * 100)}%`
+                    return (
+                      <div className="staff-report-bar-group" key={`${point.date}-${index}`}>
+                        <div className="staff-report-bar-track">
+                          {compareEnabled && (
+                            <span
+                              className="staff-report-bar compare"
+                              style={{ height: compareHeight }}
+                              title={`${comparePoint ? shortDateLabel(comparePoint.date) : 'Compare'}: ${formatVnd(comparePoint?.sales || 0)}`}
+                            />
+                          )}
+                          <span
+                            className="staff-report-bar current"
+                            style={{ height: currentHeight }}
+                            title={`${shortDateLabel(point.date)}: ${formatVnd(point.sales)}`}
+                          />
+                        </div>
+                        <strong>{shortDateLabel(point.date)}</strong>
+                        <small>{formatVnd(point.sales)}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="muted">No sales in this period yet.</p>
+              )}
+            </section>
+            <section className="staff-report-graph" aria-label="Period comparison">
+              <div className="staff-report-graph-head">
+                <div>
+                  <h4>Compare</h4>
+                  <span>{compareEnabled ? rangeLabel(compareStart, compareEnd) : 'Choose another date or period'}</span>
+                </div>
+              </div>
+              <div className="staff-comparison-list">
+                {[
+                  { label: 'Sales', current: formatVnd(report.totalSales), previous: formatVnd(comparisonReport.totalSales), change: percentChange(report.totalSales, comparisonReport.totalSales) },
+                  { label: 'Bookings', current: report.bookings, previous: comparisonReport.bookings, change: percentChange(report.bookings, comparisonReport.bookings) },
+                  { label: 'Players', current: report.players, previous: comparisonReport.players, change: percentChange(report.players, comparisonReport.players) },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.current}</strong>
+                    <small>{compareEnabled ? `${item.change} vs ${item.previous}` : 'Turn on compare'}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="staff-report-graph" aria-label="Payment mix">
+              <div className="staff-report-graph-head">
+                <div>
+                  <h4>Payment mix</h4>
+                  <span>{rangeLabel(reportStart, reportEnd)}</span>
+                </div>
+              </div>
+              <div className="staff-payment-mix">
+                {paymentMix.map((item) => (
+                  <div className="staff-payment-row" key={item.label}>
+                    <div>
+                      <span>{item.label}</span>
+                      <strong>{formatVnd(item.value)}</strong>
+                    </div>
+                    <div className="staff-payment-track">
+                      <span style={{ width: `${item.share}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
           {orderRows(reportOrders)}
           <h3 className="staff-audit-title">Recent audit log</h3>
