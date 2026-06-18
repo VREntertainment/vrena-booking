@@ -842,6 +842,11 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     })
   }
 
+  function startNewGame() {
+    setGameForm(defaultGameForm())
+    setStatus('')
+  }
+
   function editPrice(rule: StaffPriceRule) {
     setPriceForm({
       id: rule.id,
@@ -1213,7 +1218,10 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>Save game</button>
           </div>
           <div className="staff-card">
-            <h3>Games</h3>
+            <div className="staff-list-head">
+              <h3>Games</h3>
+              <button type="button" onClick={startNewGame}>New game</button>
+            </div>
             {games.map((game) => (
               <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
                 <strong>{game.name}</strong>
