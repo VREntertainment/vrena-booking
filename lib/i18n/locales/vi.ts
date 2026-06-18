@@ -44,6 +44,7 @@ export const vi = {
   ticketDurationMinimum40: '5-8 người: 40 phút, 1 arena, giữ 8 suất, giảm 10%.',
   ticketDurationMinimum60: '9-12 người: 60 phút, 1 arena, giữ 12 suất, giảm 15%.',
   ticketDurationMinimum80: 'Tối thiểu 60 phút; chọn thêm thời gian để mọi người có thời lượng chơi bằng nhau.',
+  ticketDurationBelowRecommended: 'Dưới thời lượng khuyến nghị: không phải ai cũng có cùng thời gian chơi.',
   ticketDiscountDeskNote: 'Mã voucher và giảm giá sẽ được áp dụng khi check-in tại quầy lễ tân.',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',

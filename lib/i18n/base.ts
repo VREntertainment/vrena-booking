@@ -42,6 +42,7 @@ export const en = {
   ticketDurationMinimum40: '5-8 players: 40 min, one arena, 8 reserved spots, 10% discount.',
   ticketDurationMinimum60: '9-12 players: 60 min, one arena, 12 reserved spots, 15% discount.',
   ticketDurationMinimum80: '60 min as minimum; choose more time for all players to have equal playtime',
+  ticketDurationBelowRecommended: 'Below the recommended time: not all players may get the same playtime.',
   ticketDiscountDeskNote: 'Voucher codes and discounts are applied at check-in at the reception desk.',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',
