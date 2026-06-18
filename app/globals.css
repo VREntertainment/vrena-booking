@@ -1013,6 +1013,17 @@ body {
   gap: 6px;
 }
 
+.app .staff-manual-discount {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-manual-discount > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.55fr);
+  gap: 8px;
+}
+
 .app .staff-field-label {
   display: block;
   color: #637075;
@@ -5239,6 +5250,10 @@ body {
 
   .app .staff-report-graph-head {
     display: grid;
+  }
+
+  .app .staff-manual-discount > div {
+    grid-template-columns: 1fr;
   }
 
   .app .shop-contact {
