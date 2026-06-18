@@ -48,6 +48,19 @@ body {
   overflow: hidden;
 }
 
+.app.staff-only-app {
+  display: block;
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+.app.staff-only-app main {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
 .app aside {
   background: #ffffff;
   border-right: 1px solid rgba(7, 17, 18, 0.12);
@@ -959,6 +972,37 @@ body {
   color: #ffffff;
 }
 
+.app .mobile-staff-profile-action,
+.app .staff-mode-backdrop {
+  display: none;
+}
+
+.app .staff-mode-panel {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 340px);
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(7, 17, 18, 0.18);
+}
+
+.app .staff-mode-panel h2,
+.app .staff-mode-panel p {
+  margin: 0;
+}
+
+.app .staff-mode-panel p {
+  color: #637075;
+}
+
+.app .staff-mode-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .app .staff-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
@@ -973,6 +1017,20 @@ body {
   border-radius: 8px;
   background: #ffffff;
   padding: 14px;
+}
+
+.app .staff-card .compact-form-grid > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.app .staff-card input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), .app .staff-card select {
+  height: 46px;
+  min-height: 46px;
+  padding-block: 0;
+  line-height: 1.2;
 }
 
 .app .staff-card-wide {
@@ -5214,7 +5272,28 @@ body {
   }
 
   .app .tabs.staff-tabs-visible {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app .mobile-staff-tab {
+    display: none;
+  }
+
+  .app .mobile-staff-profile-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app .staff-mode-backdrop {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(7, 17, 18, 0.42);
+    backdrop-filter: blur(8px);
   }
 
   .app .app-share {
@@ -5866,7 +5945,7 @@ body {
   }
 
   .app .tabs.staff-tabs-visible {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .app .tab {
@@ -6060,7 +6139,7 @@ body {
     color: #f6f7f9;
   }
 
-  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button {
+  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-mode-panel {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -6113,7 +6192,8 @@ body {
   }
 
   .app .staff-field-label,
-  .app .staff-game-photo-upload small {
+  .app .staff-game-photo-upload small,
+  .app .staff-mode-panel p {
     color: #aeb9bd;
   }
 
