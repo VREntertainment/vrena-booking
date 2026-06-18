@@ -9320,6 +9320,9 @@ function handleSessionDateChange(value: string) {
                     </div>
 
                     {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
+                    {ticketType !== 'individual' && (
+                      <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
+                    )}
                     <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>
 
                     <button

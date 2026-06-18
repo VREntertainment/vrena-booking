@@ -45,6 +45,7 @@ export const ja = {
   ticketDurationMinimum60: '9-12名: 60分、1アリーナ、12枠予約、15%割引。',
   ticketDurationMinimum80: '最低60分です。全員が同じプレイ時間にするには時間を追加してください。',
   ticketDurationBelowRecommended: '推奨時間より短いです。全員のプレイ時間が同じにならない場合があります。',
+  ticketSpecialBookingNote: 'この予約で追加対応が必要ですか？VRenaチームに連絡して、内容を調整し最終料金を確認してください。',
   ticketDiscountDeskNote: 'バウチャーコードと割引は受付でのチェックイン時に適用されます。',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',
