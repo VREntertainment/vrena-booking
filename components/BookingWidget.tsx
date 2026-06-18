@@ -7708,7 +7708,7 @@ function handleSessionDateChange(value: string) {
             {text.clubs}
           </button>
           {canAccessStaffConsole && (
-            <button className={activeView === 'staff' ? 'tab active' : 'tab'} onClick={() => setActiveView('staff')}>
+            <button className={activeView === 'staff' ? 'tab active mobile-staff-tab' : 'tab mobile-staff-tab'} onClick={() => setActiveView('staff')}>
               Staff
             </button>
           )}
@@ -10076,6 +10076,11 @@ function handleSessionDateChange(value: string) {
                         ? text.logIn
                         : text.createAccount}
                 </button>
+                {profile && canAccessStaffConsole && (
+                  <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
+                    Staff Console
+                  </button>
+                )}
                 {profile && (
                   <button className="secondary create-button" onClick={logout} type="button">
                     {text.logOut}

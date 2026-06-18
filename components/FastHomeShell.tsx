@@ -83,6 +83,7 @@ type HeavyTarget = {
 const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
+const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px)'
 
 type LeaderboardQuery = {
   clubId: string
@@ -132,6 +133,15 @@ const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
   ),
 })
 
+const StaffConsolePanel = dynamic(() => import('./StaffConsole'), {
+  ssr: false,
+  loading: () => (
+    <section className="section staff-console">
+      <p className="notice" aria-busy="true">Loading Staff Console...</p>
+    </section>
+  ),
+})
+
 function hasRecoveryParams() {
   if (typeof window === 'undefined') return false
 
@@ -146,6 +156,10 @@ function hasRecoveryParams() {
     || hashParams.get('error_description')
     || searchParams.get('error_description')
   )
+}
+
+function isStaffModeMobileViewport() {
+  return typeof window !== 'undefined' && window.matchMedia(STAFF_MODE_MOBILE_QUERY).matches
 }
 
 function isAdminEmail(email?: string | null) {
@@ -368,6 +382,9 @@ export default function FastHomeShell() {
   const [text, setText] = useState<TranslationMap>(() => getFallbackTranslation())
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [isStaffModeMobile, setIsStaffModeMobile] = useState(false)
+  const [staffModeChoiceResolved, setStaffModeChoiceResolved] = useState(false)
+  const [staffOnlyModeOpen, setStaffOnlyModeOpen] = useState(false)
   const [userId, setUserId] = useState('')
   const [authEmail, setAuthEmail] = useState('')
   const [clubs, setClubs] = useState<LeaderboardClub[]>([])
@@ -391,6 +408,22 @@ export default function FastHomeShell() {
   const canAccessStaffConsole = Boolean(profile && staffConsoleRank(profile.role, profile.email || authEmail) >= 20)
 
   const currentUserIsCrowned = Boolean(userId && topPlayer?.profileId === userId && topPlayer.totalScore > 0)
+  const shouldShowStaffModeChoice = Boolean(
+    isStaffModeMobile
+    && canAccessStaffConsole
+    && !staffModeChoiceResolved
+    && !heavyTarget
+    && !staffOnlyModeOpen
+  )
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(STAFF_MODE_MOBILE_QUERY)
+    const updateMatch = () => setIsStaffModeMobile(mediaQuery.matches)
+
+    updateMatch()
+    mediaQuery.addEventListener?.('change', updateMatch)
+    return () => mediaQuery.removeEventListener?.('change', updateMatch)
+  }, [])
 
   const fullWidget = useMemo(() => {
     if (!heavyTarget) return null
@@ -529,6 +562,7 @@ export default function FastHomeShell() {
       if (!active) return
 
       const authUser = userData.user
+      let shouldOfferMobileStaffChoice = false
       if (authUser) {
         setUserId(authUser.id)
         setAuthEmail(authUser.email?.toLowerCase() || '')
@@ -542,6 +576,10 @@ export default function FastHomeShell() {
         if (!active) return
 
         const nextProfile = profileRow as Profile | null
+        const effectiveRole = nextProfile?.role || (isAdminEmail(authUser.email) ? 'admin' : 'player')
+        const effectiveEmail = nextProfile?.email || authUser.email || ''
+        shouldOfferMobileStaffChoice = staffConsoleRank(effectiveRole, effectiveEmail) >= 20 && isStaffModeMobileViewport()
+
         setProfile(nextProfile ?? {
           id: authUser.id,
           phone: typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : null,
@@ -560,23 +598,25 @@ export default function FastHomeShell() {
           role: isAdminEmail(authUser.email) ? 'admin' : 'player',
         })
 
-        if (nextProfile?.birthday && isBirthdayToday(nextProfile.birthday)) {
+        if (!shouldOfferMobileStaffChoice && nextProfile?.birthday && isBirthdayToday(nextProfile.birthday)) {
           setHeavyTarget({ view: 'leaderboard' })
           return
         }
 
-        const { data: pendingInvites } = await client
-          .from('session_invites')
-          .select('id')
-          .eq('recipient_id', authUser.id)
-          .eq('status', 'pending')
-          .limit(1)
+        if (!shouldOfferMobileStaffChoice) {
+          const { data: pendingInvites } = await client
+            .from('session_invites')
+            .select('id')
+            .eq('recipient_id', authUser.id)
+            .eq('status', 'pending')
+            .limit(1)
 
-        if (!active) return
+          if (!active) return
 
-        if ((pendingInvites ?? []).length > 0) {
-          setHeavyTarget({ view: 'profile' })
-          return
+          if ((pendingInvites ?? []).length > 0) {
+            setHeavyTarget({ view: 'profile' })
+            return
+          }
         }
       }
 
@@ -585,7 +625,12 @@ export default function FastHomeShell() {
 
       if (!active) return
 
-      if (authUser && players?.[0]?.profileId === authUser.id && players[0].totalScore > 0) {
+      if (
+        authUser
+        && !shouldOfferMobileStaffChoice
+        && players?.[0]?.profileId === authUser.id
+        && players[0].totalScore > 0
+      ) {
         setHeavyTarget({ view: 'leaderboard' })
       }
     }
@@ -611,6 +656,11 @@ export default function FastHomeShell() {
 
   function openFullApp(view: AppView, profileId = '') {
     setHeavyTarget({ profileId, view })
+  }
+
+  function chooseMobileStaffMode(view: 'client' | 'staff') {
+    setStaffModeChoiceResolved(true)
+    if (view === 'staff') setStaffOnlyModeOpen(true)
   }
 
   const reloadLeaderboard = useCallback((nextQuery: LeaderboardQuery) => {
@@ -668,8 +718,30 @@ export default function FastHomeShell() {
 
   if (fullWidget) return fullWidget
 
+  if (staffOnlyModeOpen && canAccessStaffConsole) {
+    return (
+      <div className="app staff-only-app">
+        <main>
+          <StaffConsolePanel authEmail={authEmail} profile={profile} />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
+      {shouldShowStaffModeChoice && (
+        <div className="staff-mode-backdrop" role="dialog" aria-modal="true" aria-labelledby="staff-mode-title">
+          <div className="staff-mode-panel">
+            <h2 id="staff-mode-title">Choose mode</h2>
+            <p>Open the customer app or the staff backend.</p>
+            <div className="staff-mode-actions">
+              <button type="button" onClick={() => chooseMobileStaffMode('client')}>Client</button>
+              <button type="button" onClick={() => chooseMobileStaffMode('staff')}>Staff</button>
+            </div>
+          </div>
+        </div>
+      )}
       <aside>
         <div>
           <div className="app-title-row">
@@ -744,7 +816,7 @@ export default function FastHomeShell() {
             {text.clubs}
           </button>
           {canAccessStaffConsole && (
-            <button className="tab" onClick={() => openFullApp('staff')} type="button">
+            <button className="tab mobile-staff-tab" onClick={() => openFullApp('staff')} type="button">
               Staff
             </button>
           )}
