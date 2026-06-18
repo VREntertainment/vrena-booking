@@ -45,6 +45,7 @@ export const it = {
   ticketDurationMinimum60: '9-12 giocatori: 60 min, 1 arena, 12 posti riservati, sconto 15%.',
   ticketDurationMinimum80: '60 min minimo; scegli più tempo perché tutti abbiano lo stesso tempo di gioco.',
   ticketDurationBelowRecommended: 'Sotto il tempo consigliato: non tutti i giocatori potrebbero avere lo stesso tempo di gioco.',
+  ticketSpecialBookingNote: 'Hai bisogno di extra per questa prenotazione? Contatta il team VRena così possiamo organizzarli e confermare il prezzo finale.',
   ticketDiscountDeskNote: 'Codici voucher e sconti saranno applicati al check-in alla reception.',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',
