@@ -104,6 +104,30 @@ type Profile = {
   score_adjustment?: number | null
 }
 
+type LeaderboardRpcRow = {
+  profile_id: string
+  display_name: string | null
+  avatar_url: string | null
+  avatar_emoji: string | null
+  avatar_initials: string | null
+  avatar_color: string | null
+  avatar_text_color: string | null
+  profile_motto: string | null
+  sessions_joined: number | null
+  games_joined: number | null
+  wins: number | null
+  best_performer_count: number | null
+  base_total_score: number | null
+  total_score: number | null
+  score_adjustment: number | null
+  total_accuracy: number | null
+  accuracy_count: number | null
+  total_projectiles: number | null
+  average_accuracy: number | null
+  reliability_score: number | null
+  best_by_game: unknown
+}
+
 function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
 }
@@ -657,6 +681,49 @@ function compactDisplayName(value: string | null | undefined, fallback = 'Player
   return limitDisplayName(cleaned)
 }
 
+function finiteNumber(value: unknown, fallback = 0) {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : fallback
+}
+
+function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: string): LeaderboardPlayer {
+  const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
+  const baseTotalScore = finiteNumber(row.base_total_score)
+  const scoreAdjustment = finiteNumber(row.score_adjustment)
+
+  return {
+    profileId: row.profile_id,
+    displayName: compactDisplayName(row.display_name, fallbackName),
+    avatarUrl: row.avatar_url || null,
+    avatarEmoji: row.avatar_emoji || null,
+    avatarInitials: row.avatar_initials || null,
+    avatarColor: row.avatar_color || null,
+    avatarTextColor: row.avatar_text_color || null,
+    profileMotto: row.profile_motto || null,
+    sessionsJoined: finiteNumber(row.sessions_joined),
+    gamesJoined: finiteNumber(row.games_joined),
+    wins: finiteNumber(row.wins),
+    bestPerformerCount: finiteNumber(row.best_performer_count),
+    baseTotalScore,
+    totalScore: finiteNumber(row.total_score, baseTotalScore + scoreAdjustment),
+    scoreAdjustment,
+    totalAccuracy: finiteNumber(row.total_accuracy),
+    accuracyCount: finiteNumber(row.accuracy_count),
+    totalProjectiles: finiteNumber(row.total_projectiles),
+    averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
+    reliabilityScore: finiteNumber(row.reliability_score),
+    bestByGame: bestByGameRows.flatMap((item) => {
+      if (!item || typeof item !== 'object') return []
+      const gameValue = 'game' in item ? String(item.game || '') : ''
+      const score = finiteNumber('score' in item ? item.score : null, Number.NaN)
+      if (!gameValue || !Number.isFinite(score)) return []
+
+      const game = games.find((candidate) => candidate.id === gameValue)
+      return [{ game: game?.title || gameValue, score }]
+    }),
+  }
+}
+
 function compactInitials(value: string) {
   return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
 }
@@ -1151,6 +1218,9 @@ export default function WidgetPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
+  const [leaderboardPlayers, setLeaderboardPlayers] = useState<LeaderboardPlayer[]>([])
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
+  const [leaderboardStatus, setLeaderboardStatus] = useState('')
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
@@ -1320,6 +1390,9 @@ export default function WidgetPage() {
   const tournamentDataLoadingRef = useRef(false)
   const networkDataLoadedRef = useRef(false)
   const networkDataLoadingRef = useRef(false)
+  const leaderboardLoadedRef = useRef(false)
+  const leaderboardLoadingRef = useRef(false)
+  const sessionsLoadedRef = useRef(false)
   const upcomingSessionsThroughRef = useRef('')
   const loadingSessionRangeRef = useRef(false)
   const pastSessionsLoadedRef = useRef(false)
@@ -1516,6 +1589,22 @@ export default function WidgetPage() {
       const nextProfiles = currentProfiles.map((item) => (item.id === updatedProfile.id ? { ...item, ...updatedProfile } : item))
       return nextProfiles.some((item) => item.id === updatedProfile.id) ? nextProfiles : [...nextProfiles, updatedProfile]
     })
+
+    setLeaderboardPlayers((currentPlayers) =>
+      currentPlayers.map((player) => player.profileId === updatedProfile.id
+        ? {
+          ...player,
+          displayName: compactDisplayName(displayName(updatedProfile), text.player),
+          avatarUrl: updatedProfile.avatar_url || null,
+          avatarEmoji: updatedProfile.avatar_emoji || null,
+          avatarInitials: updatedProfile.avatar_initials || null,
+          avatarColor: updatedProfile.avatar_color || null,
+          avatarTextColor: updatedProfile.avatar_text_color || null,
+          profileMotto: updatedProfile.profile_motto || null,
+        }
+        : player
+      )
+    )
   }
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
@@ -1558,6 +1647,26 @@ export default function WidgetPage() {
   function ensureNetworkDataLoaded() {
     if (networkDataLoadedRef.current || networkDataLoadingRef.current) return
     void loadNetworkData()
+  }
+
+  function ensureLeaderboardLoaded() {
+    if (leaderboardLoadedRef.current || leaderboardLoadingRef.current) return
+    void loadLeaderboardPlayers()
+  }
+
+  function ensureSessionsLoaded() {
+    if (sessionsLoadedRef.current || loadingSessionRangeRef.current) return
+    void loadSessions()
+  }
+
+  function refreshLeaderboardIfLoaded() {
+    if (!leaderboardLoadedRef.current) return
+    void loadLeaderboardPlayers()
+  }
+
+  function refreshSessionsIfLoaded() {
+    if (!sessionsLoadedRef.current) return
+    void loadSessions()
   }
 
   function openSessionFromProfile(sessionId: string) {
@@ -2376,6 +2485,37 @@ export default function WidgetPage() {
     setIsResettingPassword(false)
   }
 
+  async function loadLeaderboardPlayers() {
+    if (leaderboardLoadingRef.current) return false
+
+    leaderboardLoadingRef.current = true
+    setIsLeaderboardLoading(true)
+    setLeaderboardStatus('')
+
+    const { data, error } = await (await getSupabase()).rpc('get_leaderboard_players')
+
+    if (error) {
+      leaderboardLoadingRef.current = false
+      setIsLeaderboardLoading(false)
+      setLeaderboardStatus(error.message)
+      await loadSessions()
+      return false
+    }
+
+    const players = ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
+    const scoreAdjustments = Object.fromEntries(players.map((player) => [player.profileId, player.scoreAdjustment]))
+
+    leaderboardLoadedRef.current = true
+    leaderboardLoadingRef.current = false
+    setIsLeaderboardLoading(false)
+    setLeaderboardPlayers(players)
+    setProfileScoreAdjustments((current) => ({
+      ...current,
+      ...scoreAdjustments,
+    }))
+    return true
+  }
+
   async function loadSessionRows(startDate?: string, endDate?: string) {
     const client = await getSupabase()
     let sessionQuery = client
@@ -2496,6 +2636,7 @@ export default function WidgetPage() {
       session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
     }))
 
+    sessionsLoadedRef.current = true
     setSessions((currentSessions) => {
       const retainedSessions = mode === 'replace-upcoming'
         ? currentSessions.filter((session) => isPastSession(session))
@@ -2687,8 +2828,6 @@ export default function WidgetPage() {
     let active = true
     const deferredCleanup = scheduleDeferredWork(() => {
       ensureClubsLoaded()
-      ensureTournamentDataLoaded()
-      ensureNetworkDataLoaded()
     })
 
     setLanguage(getInitialLanguage())
@@ -2697,12 +2836,12 @@ export default function WidgetPage() {
       const recoverySessionReady = await preparePasswordRecoveryFromUrl()
       if (!active) return
       if (recoverySessionReady === false) {
-        loadSessions()
+        loadLeaderboardPlayers()
         return
       }
       await loadProfile()
       if (!active) return
-      loadSessions()
+      loadLeaderboardPlayers()
     })()
 
     return () => {
@@ -2714,6 +2853,14 @@ export default function WidgetPage() {
   useEffect(() => {
     if (activeView === 'clubs' || activeView === 'create' || activeView === 'leaderboard') {
       ensureClubsLoaded()
+    }
+
+    if (activeView === 'leaderboard') {
+      ensureLeaderboardLoaded()
+    }
+
+    if (activeView === 'sessions' || activeView === 'tickets' || activeView === 'create' || activeView === 'profile') {
+      ensureSessionsLoaded()
     }
 
     if (activeView === 'profile') {
@@ -2867,12 +3014,19 @@ export default function WidgetPage() {
 
       const channel = client
         .channel('vrena-live-refresh')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadSessions())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => loadSessions())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => loadSessions())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
+          refreshSessionsIfLoaded()
+          refreshLeaderboardIfLoaded()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => {
+          refreshSessionsIfLoaded()
+          refreshLeaderboardIfLoaded()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => refreshSessionsIfLoaded())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
           loadProfile()
-          loadSessions()
+          refreshSessionsIfLoaded()
+          refreshLeaderboardIfLoaded()
           if (clubsLoadedRef.current) loadClubs()
           if (tournamentDataLoadedRef.current) loadTournamentData()
         })
@@ -3556,7 +3710,9 @@ function handleSessionDateChange(value: string) {
       .sort((a, b) => b.totalScore - a.totalScore)
   }, [allProfiles, profileScoreAdjustments, sessions, text.player])
 
-  const playerStats = allPlayerStats.find((item) => item.profileId === userId) ?? {
+  const leaderboardPlayerStats = leaderboardPlayers.length > 0 ? leaderboardPlayers : allPlayerStats
+
+  const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? {
     profileId: userId,
     displayName: displayName(profile),
     avatarUrl: profile?.avatar_url || null,
@@ -3581,11 +3737,11 @@ function handleSessionDateChange(value: string) {
   }
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
-  const topPlayer = allPlayerStats[0]
+  const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
   const crownedTopPlayerScore = crownedTopPlayer?.totalScore ?? 0
-  const selectedPlayerStats = allPlayerStats.find((item) => item.profileId === selectedPlayerId)
+  const selectedPlayerStats = leaderboardPlayerStats.find((item) => item.profileId === selectedPlayerId)
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
 
@@ -4412,6 +4568,7 @@ function handleSessionDateChange(value: string) {
     }
 
     await loadSessions()
+    refreshLeaderboardIfLoaded()
   }
 
   async function updateProfileTotalScore(profileId: string, totalScoreValue: string | number | null, baseTotalScore: number) {
@@ -4447,6 +4604,17 @@ function handleSessionDateChange(value: string) {
     if (profile?.id === profileId) {
       setProfile({ ...profile, score_adjustment: Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment })
     }
+    setLeaderboardPlayers((currentPlayers) =>
+      currentPlayers.map((player) => player.profileId === profileId
+        ? {
+          ...player,
+          scoreAdjustment: Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment,
+          totalScore: player.baseTotalScore + (Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment),
+        }
+        : player
+      )
+    )
+    refreshLeaderboardIfLoaded()
     setCreateStatus(text.scoreSaved)
   }
 
@@ -7466,26 +7634,30 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'leaderboard' && (
-          <LeaderboardPanel
-            avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-              avatar_color: player.avatarColor,
-              avatar_text_color: player.avatarTextColor,
-            })}
-            canBypassPrivateClubPins={isAdmin}
-            clubs={clubs}
-            onOpenPlayerProfile={openPlayerProfile}
-            players={allPlayerStats}
-            renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-              avatar_url: player.avatarUrl,
-              avatar_emoji: player.avatarEmoji,
-              avatar_initials: player.avatarInitials,
-              avatar_color: player.avatarColor,
-              avatar_text_color: player.avatarTextColor,
-              display_name: player.displayName,
-            }, 'P')}
-            text={text}
-            userId={userId}
-          />
+          <>
+            {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <p className="notice" aria-busy="true">...</p>}
+            {leaderboardStatus && leaderboardPlayerStats.length === 0 && <p className="notice">{leaderboardStatus}</p>}
+            <LeaderboardPanel
+              avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+                avatar_color: player.avatarColor,
+                avatar_text_color: player.avatarTextColor,
+              })}
+              canBypassPrivateClubPins={isAdmin}
+              clubs={clubs}
+              onOpenPlayerProfile={openPlayerProfile}
+              players={leaderboardPlayerStats}
+              renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+                avatar_url: player.avatarUrl,
+                avatar_emoji: player.avatarEmoji,
+                avatar_initials: player.avatarInitials,
+                avatar_color: player.avatarColor,
+                avatar_text_color: player.avatarTextColor,
+                display_name: player.displayName,
+              }, 'P')}
+              text={text}
+              userId={userId}
+            />
+          </>
         )}
 
         {activeView === 'clubs' && (
