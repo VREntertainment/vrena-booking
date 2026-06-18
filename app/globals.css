@@ -967,8 +967,8 @@ body {
 }
 
 .app .staff-tabs button.active {
-  background: #071112;
-  border-color: #071112;
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  border-color: transparent;
   color: #ffffff;
 }
 
@@ -1265,10 +1265,20 @@ body {
 }
 
 .app .staff-row-actions button,
-.app .staff-report-filters button {
+.app .staff-report-filter-row button,
+.app .staff-report-export-actions button,
+.app .staff-chart-mode button {
   min-height: 32px;
   padding: 6px 9px;
   font-size: 12px;
+}
+
+.app .staff-report-filter-row button,
+.app .staff-report-export-actions button,
+.app .staff-chart-mode button.active {
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  border-color: transparent;
+  color: #ffffff;
 }
 
 .app .staff-report-head {
@@ -1279,15 +1289,40 @@ body {
 }
 
 .app .staff-report-filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
-  justify-content: flex-end;
+  justify-items: end;
+  min-width: 0;
 }
 
 .app .staff-report-filters input {
   width: auto;
   min-width: 140px;
+}
+
+.app .staff-report-filter-row,
+.app .staff-report-compare-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.app .staff-report-export-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.app .staff-report-compare-row {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.app .staff-report-compare-row > span {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .app .staff-compare-toggle {
@@ -1355,6 +1390,28 @@ body {
   align-items: start;
 }
 
+.app .staff-report-graph-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.app .staff-chart-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 999px;
+  background: #f6f8f9;
+}
+
+.app .staff-chart-mode button {
+  border-radius: 999px;
+  background: transparent;
+  color: #637075;
+  border-color: transparent;
+}
+
 .app .staff-report-graph-head h4 {
   margin: 0;
   font-size: 16px;
@@ -1408,6 +1465,8 @@ body {
   width: 16px;
   min-height: 4px;
   border-radius: 999px 999px 4px 4px;
+  animation: staffBarRise 520ms ease both;
+  transform-origin: bottom;
   transition: height 180ms ease;
 }
 
@@ -1461,6 +1520,129 @@ body {
   border-radius: inherit;
   background: linear-gradient(90deg, #09b7ac, #3059ff);
   transition: width 180ms ease;
+}
+
+.app .staff-report-curve-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-report-curve {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f6f8f9, #eef3f5);
+}
+
+.app .staff-report-curve-fill {
+  fill: rgba(0, 174, 179, 0.12);
+}
+
+.app .staff-report-curve-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: staffCurveDraw 780ms ease forwards;
+}
+
+.app .staff-report-curve-line.current {
+  stroke: url(#staffReportCurveGradient);
+}
+
+.app .staff-report-curve-line.compare {
+  stroke: #b8c3c8;
+  stroke-width: 3;
+}
+
+.app .staff-report-curve-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-report-curve-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app .staff-report-curve-legend i {
+  width: 16px;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.app .staff-report-curve-legend i.current {
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+}
+
+.app .staff-report-curve-legend i.compare {
+  background: #b8c3c8;
+}
+
+.app .staff-report-pie-wrap {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.55fr) minmax(180px, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.app .staff-report-pie {
+  width: min(100%, 210px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-inline: auto;
+  box-shadow: inset 0 0 0 18px rgba(255, 255, 255, 0.68);
+  animation: staffPieSpin 640ms ease both;
+}
+
+.app .staff-report-pie span {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: inherit;
+  background: #ffffff;
+  color: #071112;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+@keyframes staffBarRise {
+  from {
+    transform: scaleY(0.08);
+    opacity: 0.5;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes staffCurveDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes staffPieSpin {
+  from {
+    transform: rotate(-16deg) scale(0.94);
+    opacity: 0.65;
+  }
+  to {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .app .staff-audit-title {
@@ -5349,7 +5531,17 @@ body {
   }
 
   .app .staff-report-filters {
+    justify-items: stretch;
+  }
+
+  .app .staff-report-filter-row,
+  .app .staff-report-compare-row {
     justify-content: flex-start;
+  }
+
+  .app .staff-report-filter-row input,
+  .app .staff-report-compare-row input {
+    flex: 1 1 150px;
   }
 
   .app .staff-summary-grid {
@@ -5370,6 +5562,14 @@ body {
 
   .app .staff-report-graph-head {
     display: grid;
+  }
+
+  .app .staff-report-graph-actions {
+    justify-items: start;
+  }
+
+  .app .staff-report-pie-wrap {
+    grid-template-columns: 1fr;
   }
 
   .app .staff-manual-discount > div {
@@ -6166,9 +6366,9 @@ body {
   }
 
   .app .staff-tabs button.active {
-    background: #f6f7f9;
-    border-color: #f6f7f9;
-    color: #071112;
+    background: linear-gradient(90deg, #00aeb3, #3059ff);
+    border-color: transparent;
+    color: #ffffff;
   }
 
   .app .staff-role-pill {
@@ -6183,7 +6383,9 @@ body {
   .app .staff-game-photo-upload,
   .app .staff-report-bar-track,
   .app .staff-payment-track,
-  .app .staff-report-compare-label {
+  .app .staff-report-compare-label,
+  .app .staff-chart-mode,
+  .app .staff-report-curve {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -6196,9 +6398,31 @@ body {
   .app .staff-audit-list span,
   .app .staff-table th,
   .app .staff-report-graph-head span,
+  .app .staff-report-compare-row > span,
+  .app .staff-report-curve-legend,
   .app .staff-comparison-list small,
   .app .staff-report-bar-group small {
     color: #aeb9bd;
+  }
+
+  .app .staff-report-filter-row button,
+  .app .staff-report-export-actions button,
+  .app .staff-chart-mode button.active {
+    background: linear-gradient(90deg, #00aeb3, #3059ff);
+    color: #ffffff;
+  }
+
+  .app .staff-chart-mode button {
+    color: #aeb9bd;
+  }
+
+  .app .staff-report-pie {
+    box-shadow: inset 0 0 0 18px rgba(24, 34, 37, 0.7);
+  }
+
+  .app .staff-report-pie span {
+    background: #10191b;
+    color: #f6f7f9;
   }
 
   .app .staff-compare-toggle {

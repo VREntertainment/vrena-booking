@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'loyalty' | 'orders' | 'report'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
+type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 
 type StaffProfile = {
   id: string
@@ -263,7 +264,10 @@ const defaultLoyaltyForm = () => ({
   notes: '',
 })
 
-const paymentMethods = ['cash', 'bank_transfer', 'momo_manual', 'card_manual', 'voucher', 'free_ticket', 'unpaid']
+const paymentMethods = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+] as const
 const paymentStatuses = ['unpaid', 'partially_paid', 'paid', 'refunded'] as const
 const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
 const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
@@ -401,25 +405,176 @@ function customerName(profile: StaffProfile) {
   return profile.nickname || profile.full_name || profile.phone || profile.email || 'Customer'
 }
 
-function csvCell(value: unknown) {
-  const text = String(value ?? '')
-  return `"${text.replace(/"/g, '""')}"`
+function paymentMethodLabel(value: string) {
+  return paymentMethods.find((method) => method.value === value)?.label || value.replace(/_/g, ' ')
 }
 
-function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
-  if (rows.length === 0) return
-  const headers = Object.keys(rows[0])
-  const csv = [
-    headers.map(csvCell).join(','),
-    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
-  ].join('\n')
-  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' })
+function htmlCell(value: unknown) {
+  const text = String(value ?? '')
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function downloadBlob(filename: string, type: string, content: BlobPart) {
+  const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
   anchor.click()
   URL.revokeObjectURL(url)
+}
+
+function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>) {
+  const tables = sections.map((section) => {
+    if (section.rows.length === 0) {
+      return `<h2>${htmlCell(section.title)}</h2><table><tbody><tr><td>No data</td></tr></tbody></table>`
+    }
+    const headers = Object.keys(section.rows[0])
+    return `
+      <h2>${htmlCell(section.title)}</h2>
+      <table>
+        <thead><tr>${headers.map((header) => `<th>${htmlCell(header)}</th>`).join('')}</tr></thead>
+        <tbody>${section.rows.map((row) => (
+          `<tr>${headers.map((header) => `<td>${htmlCell(row[header])}</td>`).join('')}</tr>`
+        )).join('')}</tbody>
+      </table>
+    `
+  }).join('')
+  const html = `
+    <!doctype html>
+    <html>
+      <head><meta charset="utf-8" /><style>body{font-family:Arial,sans-serif}h2{margin:18px 0 8px}table{border-collapse:collapse;margin-bottom:18px}th,td{border:1px solid #d7dee2;padding:6px 8px;text-align:left}th{background:#eef3f5}</style></head>
+      <body>${tables}</body>
+    </html>
+  `
+  downloadBlob(filename, 'application/vnd.ms-excel;charset=utf-8;', `\uFEFF${html}`)
+}
+
+function pdfSafeText(value: unknown) {
+  return String(value ?? '')
+    .replace(/[đ₫]/gi, 'VND')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+}
+
+function buildSimplePdf(lines: string[]) {
+  const streamLines = [
+    'BT',
+    '/F1 18 Tf',
+    '42 792 Td',
+    `(${pdfSafeText(lines[0] || 'VRena report')}) Tj`,
+    '/F1 10 Tf',
+    ...lines.slice(1, 48).flatMap((line) => ['0 -16 Td', `(${pdfSafeText(line)}) Tj`]),
+    'ET',
+  ]
+  const stream = streamLines.join('\n')
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ]
+  const chunks = ['%PDF-1.4\n']
+  const offsets = [0]
+  objects.forEach((object, index) => {
+    offsets.push(chunks.join('').length)
+    chunks.push(`${index + 1} 0 obj\n${object}\nendobj\n`)
+  })
+  const xrefOffset = chunks.join('').length
+  chunks.push(`xref\n0 ${objects.length + 1}\n`)
+  chunks.push('0000000000 65535 f \n')
+  offsets.slice(1).forEach((offset) => chunks.push(`${String(offset).padStart(10, '0')} 00000 n \n`))
+  chunks.push(`trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`)
+  return chunks.join('')
+}
+
+function downloadPdf(filename: string, lines: string[]) {
+  downloadBlob(filename, 'application/pdf', buildSimplePdf(lines))
+}
+
+function staffReportRows(report: ReturnType<typeof buildStaffReport>) {
+  return [
+    { metric: 'Total sales', value: formatVnd(report.totalSales) },
+    { metric: 'Total paid', value: formatVnd(report.totalPaid) },
+    { metric: 'Unpaid', value: formatVnd(report.unpaidAmount) },
+    { metric: 'Cash', value: formatVnd(report.cashTotal) },
+    { metric: 'Bank Transfer', value: formatVnd(report.bankTransferTotal) },
+    { metric: 'Bookings', value: report.bookings },
+    { metric: 'Players', value: report.players },
+    { metric: 'Cancelled', value: report.cancelled },
+    { metric: 'No-shows', value: report.noShows },
+    { metric: 'Discounts', value: formatVnd(report.discounts) },
+    { metric: 'Best-selling game', value: report.bestSellingGame },
+  ]
+}
+
+function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[]) {
+  return orders.map((order) => ({
+    order_number: order.order_number,
+    date: order.booking_date,
+    time: normalizeTime(order.booking_time),
+    customer: order.customer_name || order.customer_phone || order.customer_email || 'Walk-in',
+    game: games.find((game) => game.id === order.game_id)?.name || '',
+    players: order.players_count,
+    subtotal: formatVnd(order.subtotal),
+    discount: formatVnd(order.discount_total),
+    total: formatVnd(order.total),
+    payment_method: paymentMethodLabel(order.payment_method),
+    payment_status: order.payment_status,
+    order_status: order.order_status,
+  }))
+}
+
+function reportPdfLines(title: string, report: ReturnType<typeof buildStaffReport>, orders: StaffOrder[], games: StaffGame[]) {
+  return [
+    title,
+    ...staffReportRows(report).map((row) => `${row.metric}: ${row.value}`),
+    '',
+    'Orders',
+    ...staffOrderExportRows(orders, games).slice(0, 28).map((order) => (
+      `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.game} | ${order.total} | ${order.payment_method}`
+    )),
+  ]
+}
+
+function buildLineChartPath(series: Array<{ sales: number }>, max: number) {
+  if (series.length === 0) return ''
+  if (series.length === 1) {
+    const y = 94 - (series[0].sales / max) * 78
+    return `M 6 ${y.toFixed(2)} L 94 ${y.toFixed(2)}`
+  }
+  return series.map((point, index) => {
+    const x = 6 + (index / (series.length - 1)) * 88
+    const y = 94 - (point.sales / max) * 78
+    return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+  }).join(' ')
+}
+
+function conicStops(items: Array<{ value: number }>) {
+  const total = items.reduce((sum, item) => sum + item.value, 0)
+  if (total <= 0) return '#dfe7eb 0deg 360deg'
+  const colors = ['#00aeb3', '#3059ff', '#b8c3c8']
+  let cursor = 0
+  return items.map((item, index) => {
+    const start = cursor
+    cursor += (item.value / total) * 360
+    return `${colors[index % colors.length]} ${start.toFixed(1)}deg ${cursor.toFixed(1)}deg`
+  }).join(', ')
+}
+
+function paymentPieItems(report: ReturnType<typeof buildStaffReport>) {
+  return [
+    { label: 'Cash', value: report.cashTotal },
+    { label: 'Bank Transfer', value: report.bankTransferTotal },
+    { label: 'Unpaid', value: report.unpaidAmount },
+  ]
 }
 
 function ordersInDateRange(orders: StaffOrder[], start: string, end: string) {
@@ -436,8 +591,6 @@ function buildStaffReport(orders: StaffOrder[], gameNameById: Map<string, string
     if (order.payment_status !== 'paid') summary.unpaidAmount += order.total
     if (order.payment_method === 'cash') summary.cashTotal += order.total
     if (order.payment_method === 'bank_transfer') summary.bankTransferTotal += order.total
-    if (order.payment_method === 'momo_manual') summary.momoTotal += order.total
-    if (order.payment_method === 'voucher' || order.payment_method === 'free_ticket') summary.voucherTotal += order.total
     if (order.order_status === 'cancelled') summary.cancelled += 1
     if (order.order_status === 'no_show') summary.noShows += 1
     const gameName = order.game_id ? gameNameById.get(order.game_id) || 'Unknown' : 'Unknown'
@@ -449,8 +602,6 @@ function buildStaffReport(orders: StaffOrder[], gameNameById: Map<string, string
     unpaidAmount: 0,
     cashTotal: 0,
     bankTransferTotal: 0,
-    momoTotal: 0,
-    voucherTotal: 0,
     bookings: orders.length,
     players: 0,
     cancelled: 0,
@@ -466,8 +617,6 @@ function buildStaffReport(orders: StaffOrder[], gameNameById: Map<string, string
     unpaidAmount: totals.unpaidAmount,
     cashTotal: totals.cashTotal,
     bankTransferTotal: totals.bankTransferTotal,
-    momoTotal: totals.momoTotal,
-    voucherTotal: totals.voucherTotal,
     bookings: totals.bookings,
     players: totals.players,
     cancelled: totals.cancelled,
@@ -522,6 +671,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [compareEnabled, setCompareEnabled] = useState(false)
   const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
+  const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -592,14 +742,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const paymentMix = useMemo(() => {
     const items = [
       { label: 'Cash', value: report.cashTotal },
-      { label: 'Bank', value: report.bankTransferTotal },
-      { label: 'Momo', value: report.momoTotal },
-      { label: 'Voucher / free', value: report.voucherTotal },
+      { label: 'Bank Transfer', value: report.bankTransferTotal },
       { label: 'Unpaid', value: report.unpaidAmount },
     ]
     const total = Math.max(1, items.reduce((sum, item) => sum + item.value, 0))
     return items.map((item) => ({ ...item, share: Math.round((item.value / total) * 100) }))
   }, [report])
+  const reportLinePath = useMemo(() => buildLineChartPath(reportSeries, reportChartMax), [reportChartMax, reportSeries])
+  const comparisonLinePath = useMemo(() => buildLineChartPath(comparisonSeries, reportChartMax), [comparisonSeries, reportChartMax])
+  const pieItems = useMemo(() => paymentPieItems(report), [report])
+  const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
 
   useEffect(() => {
     void loadStaffData()
@@ -914,21 +1066,18 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setCompareEnabled(true)
   }
 
-  function exportReport() {
-    downloadCsv(`vrena-daily-report-${reportStart}-${reportEnd}.csv`, reportOrders.map((order) => ({
-      order_number: order.order_number,
-      date: order.booking_date,
-      time: normalizeTime(order.booking_time),
-      customer: order.customer_name,
-      game: games.find((game) => game.id === order.game_id)?.name || '',
-      players: order.players_count,
-      subtotal: order.subtotal,
-      discount: order.discount_total,
-      total: order.total,
-      payment_method: order.payment_method,
-      payment_status: order.payment_status,
-      order_status: order.order_status,
-    })))
+  function exportExcelReport() {
+    downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xls`, [
+      { title: `VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report) },
+      { title: 'Orders', rows: staffOrderExportRows(reportOrders, games) },
+    ])
+  }
+
+  function exportPdfReport() {
+    downloadPdf(
+      `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
+      reportPdfLines(`VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games)
+    )
   }
 
   const tabButton = (tab: StaffTab, label: string) => (
@@ -962,7 +1111,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <td>{games.find((game) => game.id === order.game_id)?.name || 'Game'}</td>
               <td>{order.booking_date} · {normalizeTime(order.booking_time)}</td>
               <td>{formatVnd(order.total)}</td>
-              <td>{order.payment_method}<br /><span>{order.payment_status}</span></td>
+              <td>{paymentMethodLabel(order.payment_method)}<br /><span>{order.payment_status}</span></td>
               <td>{order.order_status}</td>
               {canCreateOrders && (
                 <td>
@@ -1124,7 +1273,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>
                 Payment method
                 <select value={booking.paymentMethod} onChange={(event) => setBooking({ ...booking, paymentMethod: event.target.value })}>
-                  {paymentMethods.map((method) => <option key={method} value={method}>{method}</option>)}
+                  {paymentMethods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
                 </select>
               </label>
               <label>
@@ -1357,28 +1506,34 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
           <div className="staff-report-head">
             <h3>Daily report</h3>
             <div className="staff-report-filters">
-              <button type="button" onClick={() => { const date = todayString(); setReportStart(date); setReportEnd(date) }}>Today</button>
-              <button type="button" onClick={() => {
-                const date = new Date()
-                date.setDate(date.getDate() - 1)
-                const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                setReportStart(value)
-                setReportEnd(value)
-              }}>Yesterday</button>
-              <input type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} />
-              <input type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} />
-              <button type="button" onClick={applyPreviousPeriodComparison}>Previous period</button>
-              <label className="staff-compare-toggle">
-                <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                Compare
-              </label>
+              <div className="staff-report-filter-row">
+                <button type="button" onClick={() => { const date = todayString(); setReportStart(date); setReportEnd(date) }}>Today</button>
+                <button type="button" onClick={() => {
+                  const date = new Date()
+                  date.setDate(date.getDate() - 1)
+                  const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                  setReportStart(value)
+                  setReportEnd(value)
+                }}>Yesterday</button>
+                <input aria-label="Report start date" type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} />
+                <input aria-label="Report end date" type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} />
+                <button type="button" onClick={applyPreviousPeriodComparison}>Previous period</button>
+                <label className="staff-compare-toggle">
+                  <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
+                  Compare
+                </label>
+                <div className="staff-report-export-actions">
+                  <button type="button" onClick={exportExcelReport}>Excel</button>
+                  <button type="button" onClick={exportPdfReport}>PDF</button>
+                </div>
+              </div>
               {compareEnabled && (
-                <>
+                <div className="staff-report-compare-row">
+                  <span>Compare with</span>
                   <input aria-label="Compare start date" type="date" value={compareStart} onChange={(event) => setCompareStart(event.target.value)} />
                   <input aria-label="Compare end date" type="date" value={compareEnd} onChange={(event) => setCompareEnd(event.target.value)} />
-                </>
+                </div>
               )}
-              <button type="button" onClick={exportReport}>Export CSV</button>
             </div>
           </div>
           <div className="staff-summary-grid">
@@ -1387,8 +1542,6 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             <div><span>Unpaid</span><strong>{formatVnd(report.unpaidAmount)}</strong></div>
             <div><span>Cash</span><strong>{formatVnd(report.cashTotal)}</strong></div>
             <div><span>Bank transfer</span><strong>{formatVnd(report.bankTransferTotal)}</strong></div>
-            <div><span>Momo manual</span><strong>{formatVnd(report.momoTotal)}</strong></div>
-            <div><span>Voucher / free</span><strong>{formatVnd(report.voucherTotal)}</strong></div>
             <div><span>Bookings</span><strong>{report.bookings}</strong></div>
             <div><span>Players</span><strong>{report.players}</strong></div>
             <div><span>Cancelled</span><strong>{report.cancelled}</strong></div>
@@ -1403,9 +1556,28 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                   <h4>Sales trend</h4>
                   <span>{rangeLabel(reportStart, reportEnd)}</span>
                 </div>
-                {compareEnabled && <span className="staff-report-compare-label">vs {rangeLabel(compareStart, compareEnd)}</span>}
+                <div className="staff-report-graph-actions">
+                  {compareEnabled && <span className="staff-report-compare-label">vs {rangeLabel(compareStart, compareEnd)}</span>}
+                  <div className="staff-chart-mode" aria-label="Graph display" role="group">
+                    {[
+                      { value: 'columns', label: 'Column' },
+                      { value: 'curves', label: 'Curves' },
+                      { value: 'cheese', label: 'Cheese' },
+                    ].map((mode) => (
+                      <button
+                        aria-pressed={reportChartMode === mode.value}
+                        className={reportChartMode === mode.value ? 'active' : ''}
+                        key={mode.value}
+                        type="button"
+                        onClick={() => setReportChartMode(mode.value as StaffReportChartMode)}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              {reportSeries.length > 0 ? (
+              {reportSeries.length > 0 && reportChartMode === 'columns' ? (
                 <div className="staff-report-bars">
                   {reportSeries.map((point, index) => {
                     const comparePoint = comparisonSeries[index]
@@ -1433,8 +1605,47 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     )
                   })}
                 </div>
-              ) : (
+              ) : null}
+              {reportSeries.length > 0 && reportChartMode === 'curves' ? (
+                <div className="staff-report-curve-wrap">
+                  <svg className="staff-report-curve" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="staffReportCurveGradient" x1="0" x2="1" y1="0" y2="0">
+                        <stop offset="0%" stopColor="#00aeb3" />
+                        <stop offset="100%" stopColor="#3059ff" />
+                      </linearGradient>
+                    </defs>
+                    <path className="staff-report-curve-fill" d={`${reportLinePath} L 94 96 L 6 96 Z`} />
+                    {compareEnabled && <path className="staff-report-curve-line compare" d={comparisonLinePath} />}
+                    <path className="staff-report-curve-line current" d={reportLinePath} />
+                  </svg>
+                  <div className="staff-report-curve-legend">
+                    <span><i className="current" /> {rangeLabel(reportStart, reportEnd)}</span>
+                    {compareEnabled && <span><i className="compare" /> {rangeLabel(compareStart, compareEnd)}</span>}
+                  </div>
+                </div>
+              ) : null}
+              {reportSeries.length > 0 && reportChartMode === 'cheese' ? (
+                <div className="staff-report-pie-wrap">
+                  <div className="staff-report-pie" style={{ background: `conic-gradient(${pieStops})` }}>
+                    <span>{formatVnd(report.totalSales)}</span>
+                  </div>
+                  <div className="staff-payment-mix">
+                    {pieItems.map((item) => (
+                      <div className="staff-payment-row" key={item.label}>
+                        <div>
+                          <span>{item.label}</span>
+                          <strong>{formatVnd(item.value)}</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {reportSeries.length === 0 ? (
                 <p className="muted">No sales in this period yet.</p>
+              ) : (
+                null
               )}
             </section>
             <section className="staff-report-graph" aria-label="Period comparison">
