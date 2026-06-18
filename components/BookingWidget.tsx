@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
@@ -153,6 +153,10 @@ function isLeaderboardCriterion(value: string | null | undefined): value is Lead
     || value === 'reliability'
     || value === 'projectiles'
     || value === 'gamesPlayed'
+}
+
+function normalizePrivateCode(value: string | null | undefined) {
+  return (value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
 type Participant = {
@@ -1401,6 +1405,10 @@ export default function WidgetPage({
   const [selectedClubDate, setSelectedClubDate] = useState('')
   const [selectedClubTab, setSelectedClubTab] = useState<ClubTab>('hall')
   const [selectedClubSessionScope, setSelectedClubSessionScope] = useState<ClubSessionScope>('upcoming')
+  const [clubUnlockTargetId, setClubUnlockTargetId] = useState('')
+  const [clubUnlockCode, setClubUnlockCode] = useState('')
+  const [clubUnlockStatus, setClubUnlockStatus] = useState('')
+  const [unlockedClubIds, setUnlockedClubIds] = useState<Record<string, boolean>>({})
   const [clubEditName, setClubEditName] = useState('')
   const [clubEditMotto, setClubEditMotto] = useState('')
   const [clubEditDescription, setClubEditDescription] = useState('')
@@ -3682,6 +3690,10 @@ function handleSessionDateChange(value: string) {
     return clubs.find((club) => club.id === selectedClubId)
   }, [clubs, selectedClubId])
 
+  const clubUnlockTarget = useMemo(() => {
+    return clubs.find((club) => club.id === clubUnlockTargetId)
+  }, [clubUnlockTargetId, clubs])
+
   const selectedClubMembership = useMemo(() => {
     if (!selectedClub) return undefined
     return (selectedClub.club_members ?? []).find((member) => member.profile_id === userId)
@@ -4720,7 +4732,7 @@ function handleSessionDateChange(value: string) {
 
   function canSeeClubPrivateData(club: Club | undefined) {
     if (!club) return true
-    return club.visibility === 'public' || canManageClub(club) || approvedClubMember(club)
+    return club.visibility === 'public' || canManageClub(club) || approvedClubMember(club) || Boolean(unlockedClubIds[club.id])
   }
 
   function canOpenClubPage(club: Club | undefined) {
@@ -4755,11 +4767,43 @@ function handleSessionDateChange(value: string) {
     const club = clubs.find((item) => item.id === clubId)
     if (!canOpenClubPage(club)) {
       setSelectedClubId('')
-      setClubStatus(text.hiddenMembers)
+      if (club?.visibility === 'private') {
+        setClubUnlockTargetId(club.id)
+        setClubUnlockCode('')
+        setClubUnlockStatus('')
+      } else {
+        setClubStatus(text.hiddenMembers)
+      }
       return
     }
 
     setSelectedClubId(clubId)
+    setSelectedClubDate('')
+    setSelectedClubTab('hall')
+    setSelectedClubSessionScope('upcoming')
+  }
+
+  function closeClubUnlockModal() {
+    setClubUnlockTargetId('')
+    setClubUnlockCode('')
+    setClubUnlockStatus('')
+  }
+
+  function unlockClubPage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!clubUnlockTarget) return
+
+    const expectedCode = normalizePrivateCode(clubUnlockTarget.pin_code)
+    const typedCode = normalizePrivateCode(clubUnlockCode)
+    if (!expectedCode || typedCode !== expectedCode) {
+      setClubUnlockStatus(text.privateIncorrect)
+      return
+    }
+
+    setUnlockedClubIds((current) => ({ ...current, [clubUnlockTarget.id]: true }))
+    const unlockedClubId = clubUnlockTarget.id
+    closeClubUnlockModal()
+    setSelectedClubId(unlockedClubId)
     setSelectedClubDate('')
     setSelectedClubTab('hall')
     setSelectedClubSessionScope('upcoming')
@@ -8400,22 +8444,24 @@ function handleSessionDateChange(value: string) {
                 const membership = members.find((member) => member.profile_id === userId)
                 const canManage = canManageClub(club)
                 const canOpenPage = canOpenClubPage(club)
+                const canAskPrivateCode = club.visibility === 'private' && !canOpenPage
+                const canActivateClubCard = canOpenPage || canAskPrivateCode
                 const canSeeMembers = canSeeClubPrivateData(club)
 
                 return (
                   <article
-                    className={canOpenPage ? 'club-card clickable' : 'club-card'}
+                    className={canActivateClubCard ? 'club-card clickable' : 'club-card'}
                     key={club.id}
-                    onClick={canOpenPage ? () => openClubPage(club.id) : undefined}
-                    onKeyDown={canOpenPage ? (event) => {
+                    onClick={canActivateClubCard ? () => openClubPage(club.id) : undefined}
+                    onKeyDown={canActivateClubCard ? (event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault()
                         openClubPage(club.id)
                       }
                     } : undefined}
                     style={clubThemeStyle(club)}
-                    role={canOpenPage ? 'button' : undefined}
-                    tabIndex={canOpenPage ? 0 : undefined}
+                    role={canActivateClubCard ? 'button' : undefined}
+                    tabIndex={canActivateClubCard ? 0 : undefined}
                   >
                     <div className="session-top">
                       <div>
@@ -9459,6 +9505,42 @@ function handleSessionDateChange(value: string) {
           onClose={() => setLoginPromptOpen(false)}
           onLogin={goToLogin}
         />
+      )}
+
+      {clubUnlockTarget && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-unlock-title" onClick={closeClubUnlockModal}>
+          <form className="login-modal" onSubmit={unlockClubPage} onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={closeClubUnlockModal} aria-label={text.close}>
+              &times;
+            </button>
+            <h3 id="club-unlock-title">{text.unlockClub}</h3>
+            <p>{text.privateClubLocked}</p>
+            <p className="muted">{clubUnlockTarget.name}</p>
+            <label>
+              <span>{text.privateCode}</span>
+              <input
+                autoComplete="off"
+                autoFocus
+                inputMode="text"
+                placeholder={text.privateCode}
+                value={clubUnlockCode}
+                onChange={(event) => {
+                  setClubUnlockCode(event.target.value.toUpperCase())
+                  setClubUnlockStatus('')
+                }}
+              />
+            </label>
+            {clubUnlockStatus && <p className="notice error">{clubUnlockStatus}</p>}
+            <div className="club-action-row">
+              <button className="primary create-button" type="submit">
+                {text.unlockClub}
+              </button>
+              <button className="secondary create-button" type="button" onClick={closeClubUnlockModal}>
+                {text.close}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {invitePopupInvite && invitePopupSession && (
