@@ -112,6 +112,8 @@ type BookingForm = {
   players: number
   arenaId: string
   discountId: string
+  manualDiscountType: '' | 'fixed_amount' | 'percentage'
+  manualDiscountValue: number
   paymentMethod: string
   paymentStatus: 'unpaid' | 'partially_paid' | 'paid' | 'refunded'
   orderStatus: 'draft' | 'confirmed' | 'paid' | 'partially_paid' | 'cancelled' | 'refunded' | 'no_show' | 'completed'
@@ -177,6 +179,8 @@ const defaultBookingForm = (): BookingForm => ({
   players: 1,
   arenaId: 'arena-1',
   discountId: '',
+  manualDiscountType: '',
+  manualDiscountValue: 0,
   paymentMethod: 'cash',
   paymentStatus: 'paid',
   orderStatus: 'confirmed',
@@ -330,6 +334,21 @@ function calculateDiscount(discount: StaffDiscount | null, subtotal: number, uni
   return Math.min(subtotal, Math.max(0, Math.round(amount)))
 }
 
+function calculateManualDiscount(type: BookingForm['manualDiscountType'], value: number, subtotal: number) {
+  if (!type || value <= 0) return 0
+  const amount = type === 'percentage'
+    ? subtotal * Math.min(value, 100) / 100
+    : value
+  return Math.min(subtotal, Math.max(0, Math.round(amount)))
+}
+
+function manualDiscountLabel(type: BookingForm['manualDiscountType'], value: number) {
+  if (!type || value <= 0) return ''
+  return type === 'percentage'
+    ? `Unique discount · ${Math.min(value, 100)}%`
+    : `Unique discount · ${formatVnd(value)}`
+}
+
 function customerName(profile: StaffProfile) {
   return profile.nickname || profile.full_name || profile.phone || profile.email || 'Customer'
 }
@@ -479,16 +498,22 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     const subtotal = selectedRule?.price_per_arena_slot
       ? selectedRule.price_per_arena_slot * durationBlocks
       : unitPrice * booking.players
-    const discountTotal = calculateDiscount(selectedDiscount, subtotal, unitPrice)
+    const manualDiscountTotal = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, subtotal)
+    const discountTotal = manualDiscountTotal > 0
+      ? manualDiscountTotal
+      : calculateDiscount(selectedDiscount, subtotal, unitPrice)
     return {
       unitPrice,
       subtotal,
       discountTotal,
+      discountLabel: manualDiscountTotal > 0
+        ? manualDiscountLabel(booking.manualDiscountType, booking.manualDiscountValue)
+        : selectedDiscount?.name || 'No discount',
       total: Math.max(0, subtotal - discountTotal),
       ruleName: selectedRule?.rule_name || 'Default walk-in rate',
       duration: selectedGame?.duration_minutes || 20,
     }
-  }, [booking.players, selectedDiscount, selectedGame, selectedRule])
+  }, [booking.manualDiscountType, booking.manualDiscountValue, booking.players, selectedDiscount, selectedGame, selectedRule])
 
   const todayOrders = useMemo(() => {
     const today = todayString()
@@ -568,6 +593,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
     setSaving(true)
     setStatus('Creating order...')
+    const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
     const { data, error } = await supabase.rpc('create_staff_order', {
       p_customer_id: booking.customerId || null,
       p_customer_name: booking.customerName || null,
@@ -578,7 +604,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       p_booking_time: `${booking.time}:00`,
       p_players_count: booking.players,
       p_arena_id: booking.arenaId || null,
-      p_discount_rule_id: booking.discountId || null,
+      p_discount_rule_id: hasManualDiscount ? null : booking.discountId || null,
+      p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
+      p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
       p_payment_method: booking.paymentMethod,
       p_payment_status: booking.paymentStatus,
       p_order_status: booking.orderStatus,
@@ -944,13 +972,53 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               </label>
               <label>
                 Discount / voucher
-                <select value={booking.discountId} onChange={(event) => setBooking({ ...booking, discountId: event.target.value })}>
+                <select
+                  value={booking.discountId}
+                  onChange={(event) => setBooking({
+                    ...booking,
+                    discountId: event.target.value,
+                    manualDiscountType: '',
+                    manualDiscountValue: 0,
+                  })}
+                >
                   <option value="">No discount</option>
                   {discounts.filter((discount) => discount.active).map((discount) => (
                     <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</option>
                   ))}
                 </select>
               </label>
+              <div className="staff-manual-discount full">
+                <span className="staff-field-label">Unique discount</span>
+                <div>
+                  <select
+                    value={booking.manualDiscountType}
+                    onChange={(event) => setBooking({
+                      ...booking,
+                      discountId: '',
+                      manualDiscountType: event.target.value as BookingForm['manualDiscountType'],
+                      manualDiscountValue: event.target.value ? booking.manualDiscountValue : 0,
+                    })}
+                  >
+                    <option value="">No unique discount</option>
+                    <option value="fixed_amount">VND amount</option>
+                    <option value="percentage">Percentage</option>
+                  </select>
+                  <input
+                    disabled={!booking.manualDiscountType}
+                    min={0}
+                    max={booking.manualDiscountType === 'percentage' ? 100 : undefined}
+                    placeholder={booking.manualDiscountType === 'percentage' ? '%' : 'VND'}
+                    type="number"
+                    value={booking.manualDiscountValue || ''}
+                    onChange={(event) => setBooking({
+                      ...booking,
+                      discountId: '',
+                      manualDiscountValue: Number(event.target.value),
+                    })}
+                  />
+                </div>
+                <p className="field-help">One-off discount for this booking only. It does not create a reusable voucher.</p>
+              </div>
               <label>
                 Payment method
                 <select value={booking.paymentMethod} onChange={(event) => setBooking({ ...booking, paymentMethod: event.target.value })}>
@@ -995,6 +1063,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <span>Rule</span><strong>{quote.ruleName}</strong>
               <span>Duration</span><strong>{quote.duration} min</strong>
               <span>Subtotal</span><strong>{formatVnd(quote.subtotal)}</strong>
+              <span>Discount type</span><strong>{quote.discountLabel}</strong>
               <span>Discount</span><strong>-{formatVnd(quote.discountTotal)}</strong>
               <span>Total</span><strong>{formatVnd(quote.total)}</strong>
             </div>
