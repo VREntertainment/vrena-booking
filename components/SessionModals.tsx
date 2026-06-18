@@ -320,6 +320,7 @@ export type PlayerProfileModalProps = {
   onClose: () => void
   stats: Array<{ key: string; value: ReactNode; className?: string }>
   scoreSummary: ReactNode
+  challengeControls?: ReactNode
   bestScoresTitle: string
   bestScores: Array<{ game: string; score: number }>
   adminControls?: ReactNode
@@ -339,6 +340,7 @@ export function PlayerProfileModal({
   onClose,
   stats,
   scoreSummary,
+  challengeControls,
   bestScoresTitle,
   bestScores,
   adminControls,
@@ -369,6 +371,7 @@ export function PlayerProfileModal({
           ))}
         </div>
         {scoreSummary}
+        {challengeControls}
         {bestScores.length > 0 && (
           <div className="best-score-list">
             <strong>{bestScoresTitle}</strong>

@@ -17,7 +17,7 @@ const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
-const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, session_participants(${SESSION_PARTICIPANT_SELECT})`
+const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const CLUB_SELECT = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
@@ -75,6 +75,8 @@ type GameId =
 
 type TicketType = 'individual' | 'birthday' | 'corporate'
 type TicketStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
+type BookingType = 'community' | 'ticket' | 'challenge'
+type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
 
 type TicketBookingConfirmation = {
   sessionId: string
@@ -260,7 +262,7 @@ type Session = {
   seeded?: boolean | null
   seed_label?: string | null
   seed_batch?: string | null
-  booking_type?: 'community' | 'ticket' | null
+  booking_type?: BookingType | null
   ticket_type?: TicketType | null
   ticket_player_count?: number | null
   ticket_total_price?: number | null
@@ -268,6 +270,10 @@ type Session = {
   ticket_status?: TicketStatus | null
   ticket_reference?: string | null
   ticket_customer_id?: string | null
+  challenge_target_id?: string | null
+  challenge_status?: ChallengeStatus | null
+  challenge_accepted_at?: string | null
+  challenge_declined_at?: string | null
   session_participants?: Participant[]
   session_waitlist?: WaitlistEntry[]
 }
@@ -526,6 +532,10 @@ function arenasUsedBySession(session: Pick<Session, 'max_players' | 'arena_count
 
 function isTicketSession(session: Pick<Session, 'booking_type'>) {
   return session.booking_type === 'ticket'
+}
+
+function isChallengeSession(session: Pick<Session, 'booking_type'>) {
+  return session.booking_type === 'challenge'
 }
 
 function selectedTicketService(ticketType: TicketType) {
@@ -1319,6 +1329,13 @@ export default function WidgetPage({
   const [ticketStatus, setTicketStatus] = useState('')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
+  const [challengeTargetId, setChallengeTargetId] = useState('')
+  const [challengeGameId, setChallengeGameId] = useState<GameId>('laser-tag')
+  const [challengeDate, setChallengeDate] = useState(localDateString())
+  const [challengeTime, setChallengeTime] = useState('')
+  const [challengeDuration, setChallengeDuration] = useState(20)
+  const [challengeStatus, setChallengeStatus] = useState('')
+  const [isCreatingChallenge, setIsCreatingChallenge] = useState(false)
   const [busySessionId, setBusySessionId] = useState('')
   const [busyVoteKey, setBusyVoteKey] = useState('')
   const [copiedInviteId, setCopiedInviteId] = useState('')
@@ -1333,7 +1350,7 @@ export default function WidgetPage({
   const [editSessionVisibility, setEditSessionVisibility] = useState<'public' | 'private'>('public')
   const [editSessionNotes, setEditSessionNotes] = useState('')
   const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
-  const [editBookingType, setEditBookingType] = useState<'community' | 'ticket'>('community')
+  const [editBookingType, setEditBookingType] = useState<BookingType>('community')
   const [editTicketCustomerId, setEditTicketCustomerId] = useState('')
   const [editTicketType, setEditTicketType] = useState<TicketType>('individual')
   const [editTicketTotalPrice, setEditTicketTotalPrice] = useState('')
@@ -1429,6 +1446,14 @@ export default function WidgetPage({
   const showProfileFields = Boolean(profile || authMode === 'create')
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
+  function challengeStatusLabel(status?: ChallengeStatus | null) {
+    if (status === 'accepted') return text.challengeAccepted
+    if (status === 'declined') return text.challengeDeclined
+    if (status === 'completed') return text.challengeCompleted
+    if (status === 'cancelled') return text.challengeCancelled
+    return text.challengePending
+  }
+
   function openPlayerProfile(profileId: string, sessionId = '') {
     setSelectedPlayerId(profileId)
     setSelectedPlayerSessionId(sessionId)
@@ -1439,6 +1464,8 @@ export default function WidgetPage({
     setSelectedPlayerId('')
     setSelectedPlayerSessionId('')
     setSelectedPlayerScoreEdit(null)
+    setChallengeTargetId('')
+    setChallengeStatus('')
   }
 
   function updateAvatarColor(value: string) {
@@ -2556,6 +2583,10 @@ export default function WidgetPage({
       'ticket_status',
       'ticket_reference',
       'ticket_customer_id',
+      'challenge_target_id',
+      'challenge_status',
+      'challenge_accepted_at',
+      'challenge_declined_at',
     ].some((column) => sessionResult.error?.message.toLowerCase().includes(column))
 
     if (optionalSessionMetadataMissing) {
@@ -2807,18 +2838,19 @@ export default function WidgetPage({
 
     networkDataLoadingRef.current = true
     const sessionIds = sessions.map((session) => session.id)
+    const client = await getSupabase()
     const [friendsResult, invitesResult, messagesResult] = await Promise.all([
-      (await getSupabase())
+      client
         .from('user_follows')
         .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
         .eq('follower_id', userId),
-      (await getSupabase())
+      client
         .from('session_invites')
         .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
         .or(`recipient_id.eq.${userId},inviter_id.eq.${userId}`)
         .order('created_at', { ascending: false }),
       sessionIds.length > 0
-        ? (await getSupabase())
+        ? client
           .from('session_messages')
           .select(SESSION_MESSAGE_SELECT)
           .in('session_id', sessionIds)
@@ -2832,8 +2864,30 @@ export default function WidgetPage({
     networkDataLoadingRef.current = false
     setNetworkTablesReady(networkReady)
     setFriendConnections(friendsResult.error ? [] : (friendsResult.data ?? []) as FriendConnection[])
-    setSessionInvites(invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[])
+    const inviteRows = invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[]
+    setSessionInvites(inviteRows)
     if (!messagesResult.error) setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
+
+    const loadedSessionIds = new Set(sessionIds)
+    const missingInviteSessionIds = Array.from(new Set(inviteRows.map((invite) => invite.session_id)))
+      .filter((sessionId) => !loadedSessionIds.has(sessionId))
+      .slice(0, 20)
+
+    if (missingInviteSessionIds.length > 0) {
+      const invitedSessionsResult = await client
+        .from('sessions')
+        .select(SESSION_SELECT)
+        .in('id', missingInviteSessionIds)
+        .neq('status', 'cancelled')
+
+      if (!invitedSessionsResult.error && invitedSessionsResult.data) {
+        setSessions((currentSessions) => {
+          const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
+          ;((invitedSessionsResult.data ?? []) as Session[]).forEach((session) => sessionsById.set(session.id, session))
+          return sortSessionsByStart(Array.from(sessionsById.values()))
+        })
+      }
+    }
   }
 
   useEffect(() => {
@@ -2903,6 +2957,11 @@ export default function WidgetPage({
       void ensureUpcomingSessionsThroughDate(selectedSessionDate)
     }
   }, [activeView, ticketDate, sessionDate, editingSessionId, editSessionDate, sessionTimeScope, selectedSessionDate])
+
+  useEffect(() => {
+    if (!challengeTargetId) return
+    void ensureUpcomingSessionsThroughDate(challengeDate)
+  }, [challengeDate, challengeTargetId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -3191,6 +3250,9 @@ export default function WidgetPage({
   const ticketTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, blockedTimes, language, sessions, ticketDate])
+  const challengeTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
+  }, [blockedTimes, challengeDate, challengeDuration, language, sessions])
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const currentTicketTotalPrice = currentTicketPricing.totalPrice
@@ -3948,6 +4010,85 @@ function handleSessionDateChange(value: string) {
     ? selectedPlayerManageContext.participant
     : null
 
+  function openChallengeForm(player: NonNullable<typeof selectedPlayerProfile>) {
+    if (!profile) {
+      closePlayerProfile()
+      promptLogin()
+      return
+    }
+    if (player.profileId === userId) {
+      setChallengeStatus(text.challengeSelfBlocked)
+      return
+    }
+
+    const contextSession = selectedPlayerSessionContext?.session
+    const contextDate = contextSession && !isPastSession(contextSession) ? contextSession.date : localDateString()
+    const contextDuration = contextSession ? Math.min(120, Math.max(20, Math.ceil(contextSession.duration_minutes / 20) * 20)) : 20
+    const contextGame = contextSession?.confirmed_game_id || contextSession?.game_options?.[0] || 'laser-tag'
+
+    setChallengeTargetId(player.profileId)
+    setChallengeGameId(contextGame)
+    setChallengeDate(contextDate)
+    setChallengeTime('')
+    setChallengeDuration(contextDuration)
+    setChallengeStatus('')
+    void ensureUpcomingSessionsThroughDate(contextDate)
+  }
+
+  async function createFriendChallenge(player: NonNullable<typeof selectedPlayerProfile>) {
+    if (!profile) {
+      closePlayerProfile()
+      promptLogin()
+      return
+    }
+    if (player.profileId === userId) {
+      setChallengeStatus(text.challengeSelfBlocked)
+      return
+    }
+
+    if (!challengeDate || !challengeTime || !challengeGameId) {
+      setChallengeStatus(text.challengeRequired)
+      return
+    }
+
+    setIsCreatingChallenge(true)
+    setChallengeStatus(text.challengeCreating)
+
+    const { data, error } = await (await getSupabase()).rpc('create_friend_challenge', {
+      p_target_profile_id: player.profileId,
+      p_date: challengeDate,
+      p_start_time: `${challengeTime}:00`,
+      p_duration_minutes: challengeDuration,
+      p_game_id: challengeGameId,
+    })
+
+    if (error) {
+      setChallengeStatus(error.message)
+      setIsCreatingChallenge(false)
+      return
+    }
+
+    const sessionId = typeof data === 'object' && data && 'session_id' in data
+      ? String((data as { session_id?: unknown }).session_id || '')
+      : ''
+
+    await loadSessions({ focusDate: challengeDate })
+    await loadNetworkData()
+    refreshLeaderboardIfLoaded()
+    setIsCreatingChallenge(false)
+    setChallengeTargetId('')
+    setChallengeTime('')
+    setChallengeStatus(text.challengeCreated)
+    if (sessionId) {
+      setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
+      setSessionTimeScope('upcoming')
+      setActiveView('sessions')
+      window.setTimeout(() => {
+        document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 120)
+    }
+  }
+
   async function updateSelectedSessionMetric(metric: 'session' | 'accuracy' | 'projectiles', value: string) {
     const participant = selectedSessionEditableParticipant
     if (!participant) return
@@ -4103,6 +4244,105 @@ function handleSessionDateChange(value: string) {
     { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
     { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
   ] : []
+
+  function renderChallengeControls(player: NonNullable<typeof selectedPlayerProfile>) {
+    if (player.profileId === userId) return null
+
+    const isOpen = challengeTargetId === player.profileId
+    const sentChallenge = sessionInvites.find((invite) => {
+      const invitedSession = sessionForInvite(invite)
+      return invite.inviter_id === userId
+        && invite.recipient_id === player.profileId
+        && invite.status === 'pending'
+        && invitedSession
+        && isChallengeSession(invitedSession)
+    })
+
+    if (!isOpen) {
+      return (
+        <div className="challenge-card compact-challenge-card">
+          <button className="primary small-button challenge-button" type="button" onClick={() => openChallengeForm(player)}>
+            {text.challengeFriend}
+          </button>
+          {sentChallenge && <span className="challenge-sent-pill">{text.challengePending}</span>}
+        </div>
+      )
+    }
+
+    const selectedGame = games.find((game) => game.id === challengeGameId) || games[0]
+
+    return (
+      <div className="challenge-card">
+        <div className="challenge-card-head">
+          <div>
+            <strong>{text.challengeFriendTitle}</strong>
+            <span>{text.challengeFriendHint}</span>
+          </div>
+          <button className="secondary small-button" type="button" onClick={() => setChallengeTargetId('')}>
+            {text.close}
+          </button>
+        </div>
+        <div className="challenge-form-grid">
+          <label>
+            <span>{text.playedGame}</span>
+            <select value={challengeGameId} onChange={(event) => setChallengeGameId(event.target.value as GameId)}>
+              {games.map((game) => (
+                <option key={game.id} value={game.id}>{game.title}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{text.date}</span>
+            <ShortDateInput
+              ariaLabel={text.date}
+              language={language}
+              onChange={(value) => {
+                setChallengeDate(value)
+                setChallengeTime('')
+              }}
+              placeholder={text.chooseDate}
+              value={challengeDate}
+            />
+          </label>
+          <label>
+            <span>{text.availableTime}</span>
+            <select value={challengeTime} onChange={(event) => setChallengeTime(event.target.value)}>
+              <option value="">{text.chooseTime}</option>
+              {challengeTimeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{text.duration}</span>
+            <select value={challengeDuration} onChange={(event) => {
+              setChallengeDuration(Number(event.target.value))
+              setChallengeTime('')
+            }}>
+              {[20, 40, 60, 80, 100, 120].map((duration) => (
+                <option key={duration} value={duration}>{duration} min</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p className="challenge-summary">
+          {selectedGame.title} · {challengeDate ? formatShortDate(challengeDate, language) : text.chooseDate}
+          {challengeTime ? ` · ${challengeTime}` : ''}
+        </p>
+        <button
+          className={isCreatingChallenge ? 'primary create-button loading' : 'primary create-button'}
+          disabled={isCreatingChallenge}
+          type="button"
+          onClick={() => createFriendChallenge(player)}
+        >
+          {isCreatingChallenge ? text.challengeCreating : text.sendChallenge}
+        </button>
+        {challengeStatus && <p className="notice compact-notice">{challengeStatus}</p>}
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (!checkInParticipant) {
@@ -5005,6 +5245,11 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    if (isChallengeSession(session) && session.challenge_target_id !== userId && !hasSessionInvite(session.id, userId)) {
+      setCreateStatus(text.challengeInviteOnly)
+      return
+    }
+
     const activeProfile = profile
 
     if (!activeProfile) return
@@ -5070,6 +5315,11 @@ function handleSessionDateChange(value: string) {
 
     if (isTicketSession(session)) {
       setCreateStatus(text.privateTicketSession)
+      return
+    }
+
+    if (isChallengeSession(session)) {
+      setCreateStatus(text.challengeInviteOnly)
       return
     }
 
@@ -5387,7 +5637,7 @@ function handleSessionDateChange(value: string) {
     setEditSessionVisibility(session.visibility)
     setEditSessionNotes(session.notes || '')
     setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
-    setEditBookingType(session.booking_type === 'ticket' ? 'ticket' : 'community')
+    setEditBookingType(session.booking_type || 'community')
     setEditTicketCustomerId(session.ticket_customer_id || session.owner_id)
     setEditTicketType(session.ticket_type || 'individual')
     setEditTicketTotalPrice(String(session.ticket_total_price ?? ''))
@@ -5431,7 +5681,7 @@ function handleSessionDateChange(value: string) {
     setIsUpdatingSession(true)
     setCreateStatus(text.savingSession)
 
-    const effectiveEditVisibility = session.club_id ? 'public' : editBookingType === 'ticket' ? 'private' : editSessionVisibility
+    const effectiveEditVisibility = session.club_id ? 'public' : editBookingType === 'ticket' || editBookingType === 'challenge' ? 'private' : editSessionVisibility
     const inviteCode =
       effectiveEditVisibility === 'private'
         ? session.invite_code || generateInviteCode()
@@ -6210,7 +6460,8 @@ function handleSessionDateChange(value: string) {
     const createdByMe = session.owner_id === userId
     const canManage = canManageSession(session)
     const joinedByMe = participants.some((participant) => participant.profile_id === userId)
-    const canSeeInviteCode = !isTicketSession(session) && session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
+    const isChallenge = isChallengeSession(session)
+    const canSeeInviteCode = !isTicketSession(session) && !isChallenge && session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
     const coverGame = sessionCoverGame(session)
 
     return (
@@ -6231,6 +6482,7 @@ function handleSessionDateChange(value: string) {
           <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
           <strong>{session.name}</strong>
           {isTicketSession(session) && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
+          {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
           <span className={createdByMe ? 'pill ok' : 'pill'}>
             {createdByMe ? text.createdByYou : text.joined}
           </span>
@@ -6307,13 +6559,14 @@ function handleSessionDateChange(value: string) {
     if (!session) return null
 
     const coverGame = sessionCoverGame(session)
+    const isChallenge = isChallengeSession(session)
 
     return (
       <article className="mini-session invite-session" key={invite.id}>
         <div className="mini-session-title mini-session-title-with-image">
           <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
           <strong>{session.name}</strong>
-          <span className="pill ok">{text.invited}</span>
+          <span className="pill ok">{isChallenge ? text.challengeInviteLabel : text.invited}</span>
         </div>
         <div className="row-meta">
           <span>{formatShortDate(session.date, language)}</span>
@@ -6535,9 +6788,14 @@ function handleSessionDateChange(value: string) {
                 const myWaitlistPosition = userId ? waitlistPosition(session, userId) : null
                 const isSessionOwner = session.owner_id === userId
                 const isTicket = isTicketSession(session)
+                const isChallenge = isChallengeSession(session)
                 const canManage = canManageSession(session)
-                const canExpandDetails = !isTicket || isSessionCreator(session)
-                const canSeeInviteCode = !isTicket && session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
+                const canExpandDetails = isTicket
+                  ? isSessionCreator(session)
+                  : isChallenge
+                    ? Boolean(isSessionOwner || isAdmin || alreadyJoined || session.challenge_target_id === userId)
+                    : true
+                const canSeeInviteCode = !isTicket && !isChallenge && session.visibility === 'private' && session.invite_code && (alreadyJoined || isSessionOwner || isAdmin)
                 const isEditing = editingSessionId === session.id
                 const sessionClub = sessionClubFor(session)
                 const sessionClubMembership = clubMembershipFor(sessionClub)
@@ -6548,7 +6806,7 @@ function handleSessionDateChange(value: string) {
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
                 const confirmedGameDraft = confirmedGameDrafts[session.id] ?? session.confirmed_game_id ?? ''
-                const confirmedGameOptions = isTicket
+                const confirmedGameOptions = isTicket || isChallenge
                   ? games
                   : session.game_options
                     .map((gameId) => games.find((item) => item.id === gameId))
@@ -6609,9 +6867,11 @@ function handleSessionDateChange(value: string) {
                             {session.visibility === 'private' ? text.private : text.public}
                           </span>
                           {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
+                          {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
+                          {isChallenge && session.challenge_status && <span className="pill ok">{challengeStatusLabel(session.challenge_status)}</span>}
                           {session.seeded && <span className="pill soft-opening-pill">{session.seed_label || text.softOpeningHighlights}</span>}
                           {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
-                          {!isTicket && invitedMe && <span className="pill ok">{text.invited}</span>}
+                          {!isTicket && !isChallenge && invitedMe && <span className="pill ok">{text.invited}</span>}
                         </div>
                         <div className="row-meta compact-meta">
                           <span>{formatShortDate(session.date, language)}</span>
@@ -6624,7 +6884,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                       </div>
                       <div className="compact-session-actions">
-                          {!isTicket && !isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && !invitedMe && (
+                          {!isTicket && !isChallenge && !isPast && (!sessionClub || canJoinThisSession) && session.visibility === 'private' && !alreadyJoined && !myWaitlistPosition && !invitedMe && (
                           <input
                             className="compact-code"
                             placeholder={text.privateCode}
@@ -6637,6 +6897,22 @@ function handleSessionDateChange(value: string) {
                         )}
                         {!isPast && isTicket ? (
                           <span className="ticket-session-label">{text.privateTicketSession}</span>
+                        ) : !isPast && isChallenge ? (
+                          invitedMe && !alreadyJoined ? (
+                            <button
+                              className={busySessionId === session.id ? 'primary compact-join loading' : 'primary compact-join'}
+                              disabled={busySessionId === session.id}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                joinSession(session)
+                              }}
+                              type="button"
+                            >
+                              {busySessionId === session.id ? text.joining : text.acceptChallenge}
+                            </button>
+                          ) : (
+                            <span className="challenge-session-label">{challengeStatusLabel(session.challenge_status)}</span>
+                          )
                         ) : !isPast && sessionClub && !canJoinThisSession ? (
                           <button
                             className={busyClubId === sessionClub.id ? 'secondary compact-join loading' : 'secondary compact-join'}
@@ -6786,7 +7062,7 @@ function handleSessionDateChange(value: string) {
                             <h3>{text.editSessionTitle}</h3>
                             <p className="muted">{text.editSessionHint}</p>
                           </div>
-                          {!session.club_id && editBookingType !== 'ticket' && (
+                          {!session.club_id && editBookingType !== 'ticket' && editBookingType !== 'challenge' && (
                             <div className="segmented">
                               <button className={editSessionVisibility === 'public' ? 'active' : ''} onClick={() => setEditSessionVisibility('public')} type="button">
                                 {text.public}
@@ -6811,9 +7087,10 @@ function handleSessionDateChange(value: string) {
                               <div className="form-grid compact-form-grid">
                                 <div>
                                   <label>{text.bookingType}</label>
-                                  <select value={editBookingType} onChange={(event) => setEditBookingType(event.target.value as 'community' | 'ticket')}>
+                                  <select value={editBookingType} onChange={(event) => setEditBookingType(event.target.value as BookingType)}>
                                     <option value="community">{text.communitySession}</option>
                                     <option value="ticket">{text.ticketGenerated}</option>
+                                    <option value="challenge">{text.challengeGenerated}</option>
                                   </select>
                                 </div>
                                 {editBookingType === 'ticket' && (
@@ -7072,7 +7349,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {!isTicket && networkTablesReady && (alreadyJoined || canManage) && (
+                    {!isTicket && !isChallenge && networkTablesReady && (alreadyJoined || canManage) && (
                       <div className="network-panel">
                         <div className="section-head compact-head">
                           <div>
@@ -7164,11 +7441,11 @@ function handleSessionDateChange(value: string) {
                       ))}
                     </div>
 
-                    {!isTicket && myWaitlistPosition && (
+                    {!isTicket && !isChallenge && myWaitlistPosition && (
                       <p className="notice waitlist-position">{text.waitlistPosition}: #{myWaitlistPosition}</p>
                     )}
 
-                    {!isTicket && canManage && (
+                    {!isTicket && !isChallenge && canManage && (
                       <div className="waitlist-panel">
                         <strong>{text.waitlist}</strong>
                         {waitlist.length === 0 ? (
@@ -7578,7 +7855,7 @@ function handleSessionDateChange(value: string) {
                       )
                     })()}
 
-                    {!isTicket && (
+                    {!isTicket && !isChallenge && (
                       <div className="game-strip">
                         {session.game_options.map((gameId) => {
                           const game = games.find((item) => item.id === gameId)
@@ -7604,7 +7881,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     )}
 
-                    {!isPast && (
+                    {!isPast && !isChallenge && (
                     <div className="join-row">
                       {alreadyJoined && !isSessionOwner && canMutatePastSession && (
                         <button
@@ -9091,6 +9368,7 @@ function handleSessionDateChange(value: string) {
           onClose={closePlayerProfile}
           stats={playerProfileStats}
           scoreSummary={null}
+          challengeControls={renderChallengeControls(selectedPlayerProfile)}
           bestScoresTitle={text.bestScores}
           bestScores={selectedPlayerProfile.bestByGame}
           adminControls={selectedPlayerManageContext && !selectedPlayerSessionContext && isAdmin ? (
