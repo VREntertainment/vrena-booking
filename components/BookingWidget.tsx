@@ -657,7 +657,7 @@ function ticketPricingSummary(
 ) {
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
   const requiredSlots = ticketMinimumDurationBlocks(players)
-  const durationBlocks = Math.max(requiredSlots, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
+  const durationBlocks = Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
   const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
@@ -3503,9 +3503,7 @@ export default function WidgetPage({
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const currentTicketTotalPrice = currentTicketPricing.totalPrice
-  const effectiveEditTicketDuration = editBookingType === 'ticket'
-    ? Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers), editSessionDuration)
-    : editSessionDuration
+  const effectiveEditTicketDuration = editSessionDuration
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
   const ticketDurationOptions = useMemo(() => {
     const durationOptions = Array.from(
@@ -6520,9 +6518,7 @@ function handleSessionDateChange(value: string) {
         : null
     const tournament = tournamentForSession(session.id)
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
-    const ticketEditDuration = editBookingType === 'ticket'
-      ? Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers), editSessionDuration)
-      : editSessionDuration
+    const ticketEditDuration = editSessionDuration
     const ticketEditArenaCount = editBookingType === 'ticket'
       ? ticketArenaCountForPlayers(editTicketType, editSessionMaxPlayers)
       : editSessionArenaCount
