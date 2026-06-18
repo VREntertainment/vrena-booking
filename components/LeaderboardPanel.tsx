@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n'
 
 export type LeaderboardPlayer = {
@@ -25,6 +25,11 @@ export type LeaderboardPlayer = {
   averageAccuracy: number | null
   reliabilityScore: number
   bestByGame: Array<{ game: string; score: number }>
+  leaderboardRank?: number
+  leaderboardDistinctRank?: number | null
+  leaderboardHigherMetricValue?: number | null
+  leaderboardMetricValue?: number | null
+  leaderboardTotalCount?: number
 }
 
 type LeaderboardClub = {
@@ -39,15 +44,28 @@ type LeaderboardClub = {
   }> | null
 }
 
-type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'gamesPlayed'
+export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'gamesPlayed'
 
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
   canBypassPrivateClubPins?: boolean
   clubs: LeaderboardClub[]
+  currentUserRankPlayer?: LeaderboardPlayer | null
+  hasMorePlayers?: boolean
+  isLoadingMorePlayers?: boolean
+  isLoadingClubs?: boolean
   onOpenPlayerProfile: (profileId: string) => void
+  onLeaderboardClubChange?: (clubId: string) => void
+  onLeaderboardClubFilterOpen?: () => void
+  onLeaderboardClubPinUnlock?: (clubId: string, pinCode: string) => void
+  onLeaderboardCriterionChange?: (criterion: LeaderboardCriterion) => void
+  onLeaderboardSearchChange?: (search: string) => void
+  onLoadMorePlayers?: () => void
   players: LeaderboardPlayer[]
   renderAvatar: (player: LeaderboardPlayer) => ReactNode
+  serverFiltered?: boolean
+  useServerRanking?: boolean
+  showClubFilter?: boolean
   text: TranslationMap
   userId: string
 }
@@ -147,10 +165,23 @@ export default function LeaderboardPanel({
   avatarStyleFor,
   canBypassPrivateClubPins = false,
   clubs,
+  currentUserRankPlayer,
+  hasMorePlayers = false,
+  isLoadingMorePlayers = false,
+  isLoadingClubs = false,
+  onLeaderboardClubChange,
+  onLeaderboardClubFilterOpen,
+  onLeaderboardClubPinUnlock,
+  onLeaderboardCriterionChange,
+  onLeaderboardSearchChange,
+  onLoadMorePlayers,
   onOpenPlayerProfile,
   players,
   renderAvatar,
+  serverFiltered = false,
+  showClubFilter = false,
   text,
+  useServerRanking = false,
   userId,
 }: LeaderboardPanelProps) {
   const [leaderboardCriterion, setLeaderboardCriterion] = useState<LeaderboardCriterion>('totalScore')
@@ -159,6 +190,7 @@ export default function LeaderboardPanel({
   const [leaderboardClubPinDrafts, setLeaderboardClubPinDrafts] = useState<Record<string, string>>({})
   const [leaderboardClubPinStatus, setLeaderboardClubPinStatus] = useState('')
   const [unlockedLeaderboardClubIds, setUnlockedLeaderboardClubIds] = useState<Record<string, boolean>>({})
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const leaderboardCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
     { value: 'totalScore', label: text.totalScoreCriterion },
@@ -171,6 +203,20 @@ export default function LeaderboardPanel({
   ]
 
   const rankedLeaderboardRows = useMemo(() => {
+    if (useServerRanking) {
+      return players.map((player, index) => {
+        const value = leaderboardMetricValue(player, leaderboardCriterion)
+        const distinctRankIndex = typeof player.leaderboardDistinctRank === 'number' ? player.leaderboardDistinctRank - 1 : null
+        const rankInfo = rankTierForDistinctStatRank(distinctRankIndex, value, player.leaderboardHigherMetricValue ?? null)
+
+        return {
+          player,
+          rank: player.leaderboardRank ?? index + 1,
+          rankInfo,
+        }
+      })
+    }
+
     const sortedPlayers = [...players].sort((left, right) => {
       const valueDiff = leaderboardMetricValue(right, leaderboardCriterion) - leaderboardMetricValue(left, leaderboardCriterion)
       if (valueDiff !== 0) return valueDiff
@@ -204,7 +250,7 @@ export default function LeaderboardPanel({
 
       return { player, rank, rankInfo }
     })
-  }, [leaderboardCriterion, players])
+  }, [leaderboardCriterion, players, useServerRanking])
 
   const selectedLeaderboardClub = useMemo(() => {
     if (!leaderboardClubId) return null
@@ -236,6 +282,8 @@ export default function LeaderboardPanel({
   const visibleLeaderboardRows = useMemo(() => {
     if (selectedLeaderboardClubLocked) return []
 
+    if (serverFiltered) return rankedLeaderboardRows
+
     const query = normalizeSearchValue(leaderboardSearch)
 
     return rankedLeaderboardRows.filter(({ player }) => {
@@ -243,10 +291,35 @@ export default function LeaderboardPanel({
       const matchesClub = !selectedLeaderboardClubProfileIds || selectedLeaderboardClubProfileIds.has(player.profileId)
       return matchesSearch && matchesClub
     })
-  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubLocked, selectedLeaderboardClubProfileIds])
+  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubLocked, selectedLeaderboardClubProfileIds, serverFiltered])
 
-  const currentUserLeaderboardRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
+  const currentUserLeaderboardRow = useMemo(() => {
+    const localRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
+    if (localRow || !currentUserRankPlayer) return localRow
+
+    const value = leaderboardMetricValue(currentUserRankPlayer, leaderboardCriterion)
+    const distinctRankIndex = typeof currentUserRankPlayer.leaderboardDistinctRank === 'number'
+      ? currentUserRankPlayer.leaderboardDistinctRank - 1
+      : null
+    return {
+      player: currentUserRankPlayer,
+      rank: currentUserRankPlayer.leaderboardRank ?? 0,
+      rankInfo: rankTierForDistinctStatRank(distinctRankIndex, value, currentUserRankPlayer.leaderboardHigherMetricValue ?? null),
+    }
+  }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
+
+  useEffect(() => {
+    if (!onLoadMorePlayers || !hasMorePlayers || isLoadingMorePlayers || !loadMoreRef.current) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) onLoadMorePlayers()
+    }, { rootMargin: '480px 0px' })
+
+    observer.observe(loadMoreRef.current)
+
+    return () => observer.disconnect()
+  }, [hasMorePlayers, isLoadingMorePlayers, onLoadMorePlayers])
 
   function unlockLeaderboardClub(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -261,6 +334,7 @@ export default function LeaderboardPanel({
 
     setUnlockedLeaderboardClubIds((current) => ({ ...current, [selectedLeaderboardClub.id]: true }))
     setLeaderboardClubPinStatus('')
+    onLeaderboardClubPinUnlock?.(selectedLeaderboardClub.id, selectedLeaderboardClubPinDraft)
   }
 
   return (
@@ -273,7 +347,14 @@ export default function LeaderboardPanel({
         <div className="leaderboard-controls">
           <label>
             <span>{text.rankBy}</span>
-            <select value={leaderboardCriterion} onChange={(event) => setLeaderboardCriterion(event.target.value as LeaderboardCriterion)}>
+            <select
+              value={leaderboardCriterion}
+              onChange={(event) => {
+                const nextCriterion = event.target.value as LeaderboardCriterion
+                setLeaderboardCriterion(nextCriterion)
+                onLeaderboardCriterionChange?.(nextCriterion)
+              }}
+            >
               {leaderboardCriteria.map((criterion) => (
                 <option key={criterion.value} value={criterion.value}>
                   {criterion.label}
@@ -281,17 +362,21 @@ export default function LeaderboardPanel({
               ))}
             </select>
           </label>
-          {clubs.length > 0 && (
+          {(showClubFilter || clubs.length > 0) && (
             <label>
               <span>{text.clubFilter}</span>
               <select
                 value={leaderboardClubId}
+                onFocus={onLeaderboardClubFilterOpen}
+                onMouseDown={onLeaderboardClubFilterOpen}
                 onChange={(event) => {
-                  setLeaderboardClubId(event.target.value)
+                  const nextClubId = event.target.value
+                  setLeaderboardClubId(nextClubId)
                   setLeaderboardClubPinStatus('')
+                  onLeaderboardClubChange?.(nextClubId)
                 }}
               >
-                <option value="">{text.allClubs}</option>
+                <option value="">{isLoadingClubs ? '...' : text.allClubs}</option>
                 {clubs.map((club) => (
                   <option key={club.id} value={club.id}>
                     {club.name}
@@ -335,7 +420,11 @@ export default function LeaderboardPanel({
         type="search"
         placeholder={text.leaderboardSearchPlaceholder}
         value={leaderboardSearch}
-        onChange={(event) => setLeaderboardSearch(event.target.value)}
+        onChange={(event) => {
+          const nextSearch = event.target.value
+          setLeaderboardSearch(nextSearch)
+          onLeaderboardSearchChange?.(nextSearch)
+        }}
       />
 
       {currentUserLeaderboardRow && !selectedLeaderboardClubLocked && (
@@ -406,6 +495,11 @@ export default function LeaderboardPanel({
             </article>
           )
         })}
+        {(hasMorePlayers || isLoadingMorePlayers) && (
+          <div ref={loadMoreRef} className="leaderboard-load-more" aria-busy={isLoadingMorePlayers}>
+            {isLoadingMorePlayers ? '...' : ''}
+          </div>
+        )}
       </div>
     </section>
   )

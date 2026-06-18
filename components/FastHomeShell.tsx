@@ -1,11 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
-import type { LeaderboardPlayer } from './LeaderboardPanel'
+import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
 type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile'
 
@@ -47,6 +47,11 @@ type LeaderboardRpcRow = {
   average_accuracy: number | null
   reliability_score: number | null
   best_by_game: unknown
+  leaderboard_rank?: number | null
+  leaderboard_distinct_rank?: number | null
+  leaderboard_higher_metric_value?: number | null
+  leaderboard_metric_value?: number | null
+  leaderboard_total_count?: number | null
 }
 
 type LeaderboardClub = {
@@ -68,7 +73,15 @@ type HeavyTarget = {
 }
 
 const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
+
+type LeaderboardQuery = {
+  clubId: string
+  clubPin: string
+  criterion: LeaderboardCriterion
+  search: string
+}
 
 const gameTitles: Record<string, string> = {
   'arc-of-the-covenant': 'The Secret of the Arc',
@@ -184,6 +197,19 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
     totalProjectiles: finiteNumber(row.total_projectiles),
     averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
     reliabilityScore: finiteNumber(row.reliability_score),
+    leaderboardRank: row.leaderboard_rank === null || row.leaderboard_rank === undefined ? undefined : finiteNumber(row.leaderboard_rank),
+    leaderboardDistinctRank: row.leaderboard_distinct_rank === null || row.leaderboard_distinct_rank === undefined
+      ? null
+      : finiteNumber(row.leaderboard_distinct_rank),
+    leaderboardHigherMetricValue: row.leaderboard_higher_metric_value === null || row.leaderboard_higher_metric_value === undefined
+      ? null
+      : finiteNumber(row.leaderboard_higher_metric_value),
+    leaderboardMetricValue: row.leaderboard_metric_value === null || row.leaderboard_metric_value === undefined
+      ? null
+      : finiteNumber(row.leaderboard_metric_value),
+    leaderboardTotalCount: row.leaderboard_total_count === null || row.leaderboard_total_count === undefined
+      ? undefined
+      : finiteNumber(row.leaderboard_total_count),
     bestByGame: bestByGameRows.flatMap((item) => {
       if (!item || typeof item !== 'object') return []
       const gameValue = 'game' in item ? String(item.game || '') : ''
@@ -245,6 +271,34 @@ function isBirthdayToday(dateValue: string | null | undefined) {
   return today.getMonth() + 1 === month && today.getDate() === day
 }
 
+function initialLeaderboardQuery(): LeaderboardQuery {
+  return {
+    clubId: '',
+    clubPin: '',
+    criterion: 'totalScore',
+    search: '',
+  }
+}
+
+function leaderboardRpcArgs(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
+  return {
+    p_club_id: query.clubId || null,
+    p_club_pin: query.clubPin || null,
+    p_limit: limit,
+    p_offset: offset,
+    p_profile_id: profileId || null,
+    p_rank_by: query.criterion,
+    p_search: query.search.trim() || null,
+  }
+}
+
+function isMissingPagedLeaderboardFunction(error: { message?: string; code?: string } | null | undefined) {
+  const message = (error?.message || '').toLowerCase()
+  return error?.code === 'PGRST202'
+    || message.includes('get_leaderboard_players_page')
+    || message.includes('could not find the function')
+}
+
 export default function FastHomeShell() {
   const [heavyTarget, setHeavyTarget] = useState<HeavyTarget | null>(() => hasRecoveryParams() ? { view: 'profile' } : null)
   const [language, setLanguage] = useState<LanguageCode>(() => getInitialLanguage())
@@ -254,10 +308,20 @@ export default function FastHomeShell() {
   const [userId, setUserId] = useState('')
   const [authEmail, setAuthEmail] = useState('')
   const [clubs, setClubs] = useState<LeaderboardClub[]>([])
+  const [clubsLoaded, setClubsLoaded] = useState(false)
+  const [isLoadingClubs, setIsLoadingClubs] = useState(false)
   const [leaderboardPlayers, setLeaderboardPlayers] = useState<LeaderboardPlayer[]>([])
+  const [currentUserRankPlayer, setCurrentUserRankPlayer] = useState<LeaderboardPlayer | null>(null)
+  const [hasMoreLeaderboardPlayers, setHasMoreLeaderboardPlayers] = useState(false)
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(true)
+  const [isLoadingMoreLeaderboardPlayers, setIsLoadingMoreLeaderboardPlayers] = useState(false)
   const [leaderboardStatus, setLeaderboardStatus] = useState('')
   const [sharedKey, setSharedKey] = useState('')
+  const leaderboardQueryRef = useRef<LeaderboardQuery>(initialLeaderboardQuery())
+  const leaderboardLoadedCountRef = useRef(0)
+  const leaderboardLoadingRef = useRef(false)
+  const clubsLoadingRef = useRef(false)
+  const searchReloadTimeoutRef = useRef<number | null>(null)
 
   const topPlayer = leaderboardPlayers[0]
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
@@ -288,6 +352,105 @@ export default function FastHomeShell() {
     }
   }, [language])
 
+  const fetchLeaderboardRows = useCallback(async (query: LeaderboardQuery, offset: number, limit: number, profileId = '') => {
+    const client = await getSupabase()
+    const { data, error } = await client.rpc(
+      'get_leaderboard_players_page',
+      leaderboardRpcArgs(query, offset, limit, profileId)
+    )
+
+    if (error) {
+      if (isMissingPagedLeaderboardFunction(error)) {
+        setHeavyTarget({ view: 'leaderboard' })
+        return null
+      }
+
+      throw error
+    }
+
+    return ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, 'Player'))
+  }, [])
+
+  const loadLeaderboardPage = useCallback(async (
+    query: LeaderboardQuery,
+    offset: number,
+    mode: 'append' | 'replace',
+    targetUserId = ''
+  ) => {
+    if (leaderboardLoadingRef.current) return null
+
+    leaderboardLoadingRef.current = true
+    setLeaderboardStatus('')
+    if (mode === 'append') {
+      setIsLoadingMoreLeaderboardPlayers(true)
+    } else {
+      setIsLeaderboardLoading(true)
+      setHasMoreLeaderboardPlayers(false)
+      setCurrentUserRankPlayer(null)
+    }
+
+    try {
+      const players = await fetchLeaderboardRows(query, offset, LEADERBOARD_PAGE_SIZE)
+      if (!players) return null
+
+      const totalCount = players[0]?.leaderboardTotalCount ?? offset + players.length
+      leaderboardLoadedCountRef.current = mode === 'append'
+        ? leaderboardLoadedCountRef.current + players.length
+        : players.length
+      setHasMoreLeaderboardPlayers(leaderboardLoadedCountRef.current < totalCount)
+
+      if (mode === 'append') {
+        setLeaderboardPlayers((current) => {
+          const existingIds = new Set(current.map((player) => player.profileId))
+          return [...current, ...players.filter((player) => !existingIds.has(player.profileId))]
+        })
+      } else {
+        setLeaderboardPlayers(players)
+      }
+
+      if (targetUserId && mode === 'replace') {
+        const currentUserRow = players.find((player) => player.profileId === targetUserId)
+        if (currentUserRow) {
+          setCurrentUserRankPlayer(currentUserRow)
+        } else {
+          const currentUserRows = await fetchLeaderboardRows(query, 0, 1, targetUserId)
+          setCurrentUserRankPlayer(currentUserRows?.[0] ?? null)
+        }
+      }
+
+      return players
+    } catch (error) {
+      setLeaderboardStatus(error instanceof Error ? error.message : String(error))
+      if (mode === 'replace') setLeaderboardPlayers([])
+      setHasMoreLeaderboardPlayers(false)
+      return null
+    } finally {
+      leaderboardLoadingRef.current = false
+      setIsLeaderboardLoading(false)
+      setIsLoadingMoreLeaderboardPlayers(false)
+    }
+  }, [fetchLeaderboardRows])
+
+  const loadClubs = useCallback(async () => {
+    if (clubsLoaded || clubsLoadingRef.current) return
+
+    clubsLoadingRef.current = true
+    setIsLoadingClubs(true)
+    const client = await getSupabase()
+    const { data, error } = await client
+      .from('clubs')
+      .select('id, owner_id, name, visibility, pin_code, club_members(profile_id, status)')
+      .order('created_at', { ascending: false })
+
+    if (!error) {
+      setClubs((data ?? []) as LeaderboardClub[])
+      setClubsLoaded(true)
+    }
+
+    clubsLoadingRef.current = false
+    setIsLoadingClubs(false)
+  }, [clubsLoaded])
+
   useEffect(() => {
     if (heavyTarget) return
 
@@ -295,13 +458,8 @@ export default function FastHomeShell() {
 
     async function loadFastHome() {
       const client = await getSupabase()
-      const [{ data: userData }, leaderboardResult, clubsResult] = await Promise.all([
+      const [{ data: userData }] = await Promise.all([
         client.auth.getUser(),
-        client.rpc('get_leaderboard_players'),
-        client
-          .from('clubs')
-          .select('id, owner_id, name, visibility, pin_code, club_members(profile_id, status)')
-          .order('created_at', { ascending: false }),
       ])
 
       if (!active) return
@@ -356,21 +514,12 @@ export default function FastHomeShell() {
         }
       }
 
-      if (leaderboardResult.error) {
-        setLeaderboardStatus(leaderboardResult.error.message)
-        setHeavyTarget({ view: 'leaderboard' })
-        return
-      }
+      const query = leaderboardQueryRef.current
+      const players = await loadLeaderboardPage(query, 0, 'replace', authUser?.id || '')
 
-      const players = ((leaderboardResult.data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, 'Player'))
-      setLeaderboardPlayers(players)
-      setIsLeaderboardLoading(false)
+      if (!active) return
 
-      if (!clubsResult.error) {
-        setClubs((clubsResult.data ?? []) as LeaderboardClub[])
-      }
-
-      if (authUser && players[0]?.profileId === authUser.id && players[0].totalScore > 0) {
+      if (authUser && players?.[0]?.profileId === authUser.id && players[0].totalScore > 0) {
         setHeavyTarget({ view: 'leaderboard' })
       }
     }
@@ -380,7 +529,7 @@ export default function FastHomeShell() {
     return () => {
       active = false
     }
-  }, [heavyTarget])
+  }, [heavyTarget, loadLeaderboardPage])
 
   async function shareApp() {
     const appUrl = window.location.origin || 'https://vrena-booking.vercel.app'
@@ -397,6 +546,59 @@ export default function FastHomeShell() {
   function openFullApp(view: AppView, profileId = '') {
     setHeavyTarget({ profileId, view })
   }
+
+  const reloadLeaderboard = useCallback((nextQuery: LeaderboardQuery) => {
+    leaderboardQueryRef.current = nextQuery
+    leaderboardLoadedCountRef.current = 0
+    void loadLeaderboardPage(nextQuery, 0, 'replace', userId)
+  }, [loadLeaderboardPage, userId])
+
+  const handleLeaderboardCriterionChange = useCallback((criterion: LeaderboardCriterion) => {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      criterion,
+    })
+  }, [reloadLeaderboard])
+
+  const handleLeaderboardSearchChange = useCallback((search: string) => {
+    const nextQuery = {
+      ...leaderboardQueryRef.current,
+      search,
+    }
+
+    leaderboardQueryRef.current = nextQuery
+
+    if (searchReloadTimeoutRef.current) window.clearTimeout(searchReloadTimeoutRef.current)
+    searchReloadTimeoutRef.current = window.setTimeout(() => {
+      leaderboardLoadedCountRef.current = 0
+      void loadLeaderboardPage(nextQuery, 0, 'replace', userId)
+    }, 260)
+  }, [loadLeaderboardPage, userId])
+
+  const handleLeaderboardClubChange = useCallback((clubId: string) => {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      clubId,
+      clubPin: clubId === leaderboardQueryRef.current.clubId ? leaderboardQueryRef.current.clubPin : '',
+    })
+  }, [reloadLeaderboard])
+
+  const handleLeaderboardClubPinUnlock = useCallback((clubId: string, clubPin: string) => {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      clubId,
+      clubPin,
+    })
+  }, [reloadLeaderboard])
+
+  const loadMoreLeaderboardPlayers = useCallback(() => {
+    if (!hasMoreLeaderboardPlayers || isLoadingMoreLeaderboardPlayers) return
+    void loadLeaderboardPage(leaderboardQueryRef.current, leaderboardLoadedCountRef.current, 'append', userId)
+  }, [hasMoreLeaderboardPlayers, isLoadingMoreLeaderboardPlayers, loadLeaderboardPage, userId])
+
+  useEffect(() => () => {
+    if (searchReloadTimeoutRef.current) window.clearTimeout(searchReloadTimeoutRef.current)
+  }, [])
 
   if (fullWidget) return fullWidget
 
@@ -492,6 +694,16 @@ export default function FastHomeShell() {
           })}
           canBypassPrivateClubPins={isAdmin}
           clubs={clubs}
+          currentUserRankPlayer={currentUserRankPlayer}
+          hasMorePlayers={hasMoreLeaderboardPlayers}
+          isLoadingClubs={isLoadingClubs}
+          isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
+          onLeaderboardClubChange={handleLeaderboardClubChange}
+          onLeaderboardClubFilterOpen={loadClubs}
+          onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
+          onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+          onLeaderboardSearchChange={handleLeaderboardSearchChange}
+          onLoadMorePlayers={loadMoreLeaderboardPlayers}
           onOpenPlayerProfile={(profileId) => openFullApp('leaderboard', profileId)}
           players={leaderboardPlayers}
           renderAvatar={(player: LeaderboardPlayer) => avatarNode({
@@ -500,7 +712,10 @@ export default function FastHomeShell() {
             avatar_initials: player.avatarInitials,
             display_name: player.displayName,
           }, 'P')}
+          serverFiltered
+          showClubFilter
           text={text}
+          useServerRanking
           userId={userId}
         />
       </main>

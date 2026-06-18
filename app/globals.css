@@ -3755,6 +3755,14 @@ body {
   gap: 8px;
 }
 
+.app .leaderboard-load-more {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  min-height: 48px;
+}
+
 .app .leaderboard-row {
   display: grid;
   grid-template-columns: 48px calc(var(--avatar-sm) + 8px) minmax(0, 1fr) minmax(112px, auto);
