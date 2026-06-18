@@ -1090,6 +1090,76 @@ body {
   font-weight: 800;
 }
 
+.app .challenge-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 8px;
+  background: #f4f8f9;
+  padding: 10px;
+}
+
+.app .compact-challenge-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.app .challenge-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .challenge-card-head strong,
+.app .challenge-card-head span {
+  display: block;
+}
+
+.app .challenge-card-head span,
+.app .challenge-summary {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .challenge-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .challenge-form-grid label {
+  display: grid;
+  gap: 4px;
+}
+
+.app .challenge-form-grid label > span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .challenge-button {
+  min-height: 36px;
+}
+
+.app .challenge-sent-pill {
+  justify-self: end;
+  border-radius: 999px;
+  background: #e8f6ee;
+  color: #0f7c4a;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .compact-notice {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
 .app .champion-modal {
   text-align: center;
 }
@@ -1820,7 +1890,12 @@ body {
   color: #075d68;
 }
 
-.app .ticket-session-label {
+.app .challenge-pill, .app .challenge-session-label {
+  background: #fff4ba;
+  color: #6a5200;
+}
+
+.app .ticket-session-label, .app .challenge-session-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5024,6 +5099,15 @@ body {
     width: 100%;
   }
 
+  .app .challenge-form-grid,
+  .app .compact-challenge-card {
+    grid-template-columns: 1fr;
+  }
+
+  .app .challenge-sent-pill {
+    justify-self: start;
+  }
+
   .app .leaderboard-controls {
     gap: 8px;
   }
@@ -5338,6 +5422,28 @@ body {
     background: rgba(94, 234, 255, 0.16);
     color: #9eefff;
     border-color: rgba(94, 234, 255, 0.22);
+  }
+
+  .app .challenge-pill, .app .challenge-session-label {
+    background: rgba(255, 218, 90, 0.18);
+    color: #ffe083;
+    border-color: rgba(255, 218, 90, 0.24);
+  }
+
+  .app .challenge-card {
+    background: #111d20;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .app .challenge-card-head span,
+  .app .challenge-summary,
+  .app .challenge-form-grid label > span {
+    color: #aeb9bd;
+  }
+
+  .app .challenge-sent-pill {
+    background: rgba(54, 211, 153, 0.14);
+    color: #8cf2c4;
   }
 
   .app .ticket-explainer {
