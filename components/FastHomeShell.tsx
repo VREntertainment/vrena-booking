@@ -23,6 +23,8 @@ type Profile = {
   avatar_text_color?: string | null
   profile_motto?: string | null
   role?: string | null
+  anonymous_mode?: boolean | null
+  anonymous_callsign?: string | null
 }
 
 type LeaderboardRpcRow = {
@@ -53,6 +55,12 @@ type LeaderboardRpcRow = {
   leaderboard_metric_value?: number | null
   leaderboard_total_count?: number | null
 }
+
+const ANONYMOUS_MASK_EMOJI = '🎭'
+const ANONYMOUS_MASK_COLOR = '#11181b'
+const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
+const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
+const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, anonymous_mode, anonymous_callsign'
 
 type LeaderboardClub = {
   id: string
@@ -161,8 +169,24 @@ function compactInitials(value: string) {
   return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
 }
 
+function anonymousCallsignForId(profileId: string | null | undefined) {
+  const value = profileId || 'private-player'
+  let hash = 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+  }
+  const prefix = ANONYMOUS_CALLSIGN_PREFIXES[hash % ANONYMOUS_CALLSIGN_PREFIXES.length]
+  const number = String((hash % 900) + 100).padStart(3, '0')
+  return `${prefix}-${number}`
+}
+
+function anonymousProfileName(profile: Pick<Profile, 'id' | 'nickname' | 'anonymous_callsign'>) {
+  return compactDisplayName(profile.nickname || profile.anonymous_callsign || anonymousCallsignForId(profile.id), 'CIPHER-291')
+}
+
 function displayName(profile: Profile | null) {
   if (!profile) return 'Player'
+  if (profile.anonymous_mode) return anonymousProfileName(profile)
   return compactDisplayName(profile.nickname || profile.full_name || profile.phone || profile.email)
 }
 
@@ -226,6 +250,26 @@ function avatarStyle(source: { avatar_color?: string | null; avatar_text_color?:
   return {
     ...(source.avatar_color ? { background: source.avatar_color } : {}),
     ...(source.avatar_text_color ? { color: source.avatar_text_color } : {}),
+  }
+}
+
+function avatarFields(source: Profile | null | undefined) {
+  if (source?.anonymous_mode) {
+    return {
+      avatar_url: null,
+      avatar_emoji: ANONYMOUS_MASK_EMOJI,
+      avatar_initials: null,
+      avatar_color: ANONYMOUS_MASK_COLOR,
+      avatar_text_color: ANONYMOUS_MASK_TEXT_COLOR,
+    }
+  }
+
+  return {
+    avatar_url: source?.avatar_url || null,
+    avatar_emoji: source?.avatar_emoji || null,
+    avatar_initials: source?.avatar_initials || null,
+    avatar_color: source?.avatar_color || null,
+    avatar_text_color: source?.avatar_text_color || null,
   }
 }
 
@@ -471,7 +515,7 @@ export default function FastHomeShell() {
 
         const { data: profileRow } = await client
           .from('profiles')
-          .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+          .select(PROFILE_SELECT)
           .eq('id', authUser.id)
           .maybeSingle()
 
@@ -491,6 +535,8 @@ export default function FastHomeShell() {
           avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
           avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
           profile_motto: typeof authUser.user_metadata?.profile_motto === 'string' ? authUser.user_metadata.profile_motto : null,
+          anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
+          anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
           role: isAdminEmail(authUser.email) ? 'admin' : 'player',
         })
 
@@ -651,8 +697,11 @@ export default function FastHomeShell() {
         </div>
 
         <button className="profile-chip" onClick={() => openFullApp('profile')} type="button">
-          <div className="avatar" style={avatarStyle(profile)}>
-            {avatarNode(profile, 'P')}
+          <div className="avatar" style={avatarStyle(avatarFields(profile))}>
+            {avatarNode(profile ? {
+              ...avatarFields(profile),
+              display_name: displayName(profile),
+            } : null, 'P')}
             {currentUserIsCrowned && <span className="champion-badge">🏆</span>}
           </div>
           <div>

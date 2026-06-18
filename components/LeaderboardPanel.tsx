@@ -49,10 +49,12 @@ export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
   canBypassPrivateClubPins?: boolean
+  canShareCurrentUserStats?: boolean
   clubs: LeaderboardClub[]
   currentUserRankPlayer?: LeaderboardPlayer | null
   fixedClubId?: string
   hasMorePlayers?: boolean
+  isCurrentUserStatsShared?: boolean
   initialCriterion?: LeaderboardCriterion
   isLoadingMorePlayers?: boolean
   isLoadingClubs?: boolean
@@ -63,6 +65,7 @@ type LeaderboardPanelProps = {
   onLeaderboardCriterionChange?: (criterion: LeaderboardCriterion) => void
   onLeaderboardSearchChange?: (search: string) => void
   onLoadMorePlayers?: () => void
+  onShareCurrentUserStats?: () => void
   players: LeaderboardPlayer[]
   renderAvatar: (player: LeaderboardPlayer) => ReactNode
   serverFiltered?: boolean
@@ -166,10 +169,12 @@ function formatLeaderboardValue(player: LeaderboardPlayer, criterion: Leaderboar
 export default function LeaderboardPanel({
   avatarStyleFor,
   canBypassPrivateClubPins = false,
+  canShareCurrentUserStats = false,
   clubs,
   currentUserRankPlayer,
   fixedClubId = '',
   hasMorePlayers = false,
+  isCurrentUserStatsShared = false,
   initialCriterion = 'totalScore',
   isLoadingMorePlayers = false,
   isLoadingClubs = false,
@@ -180,6 +185,7 @@ export default function LeaderboardPanel({
   onLeaderboardSearchChange,
   onLoadMorePlayers,
   onOpenPlayerProfile,
+  onShareCurrentUserStats,
   players,
   renderAvatar,
   serverFiltered = false,
@@ -452,6 +458,11 @@ export default function LeaderboardPanel({
                 : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
             </span>
           </div>
+          {canShareCurrentUserStats && onShareCurrentUserStats && (
+            <button className="secondary small-button leaderboard-share-button" type="button" onClick={onShareCurrentUserStats}>
+              {isCurrentUserStatsShared ? text.shared : text.shareStats}
+            </button>
+          )}
         </div>
       )}
 
