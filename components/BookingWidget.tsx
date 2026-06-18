@@ -4723,6 +4723,10 @@ function handleSessionDateChange(value: string) {
     return club.visibility === 'public' || canManageClub(club) || approvedClubMember(club)
   }
 
+  function canOpenClubPage(club: Club | undefined) {
+    return Boolean(club && canSeeClubPrivateData(club))
+  }
+
   function canCreateClubSession(club: Club | undefined) {
     if (!club) return false
     return canManageClub(club) || approvedClubMember(club)
@@ -4748,6 +4752,13 @@ function handleSessionDateChange(value: string) {
   }
 
   function openClubPage(clubId: string) {
+    const club = clubs.find((item) => item.id === clubId)
+    if (!canOpenClubPage(club)) {
+      setSelectedClubId('')
+      setClubStatus(text.hiddenMembers)
+      return
+    }
+
     setSelectedClubId(clubId)
     setSelectedClubDate('')
     setSelectedClubTab('hall')
@@ -8388,25 +8399,32 @@ function handleSessionDateChange(value: string) {
                 const pendingMembers = members.filter((member) => member.status === 'pending')
                 const membership = members.find((member) => member.profile_id === userId)
                 const canManage = canManageClub(club)
-                const canSeeMembers = club.visibility === 'public' || canManage
+                const canOpenPage = canOpenClubPage(club)
+                const canSeeMembers = canSeeClubPrivateData(club)
 
                 return (
-	                  <article
-	                    className="club-card clickable"
-	                    key={club.id}
-	                    onClick={() => openClubPage(club.id)}
-	                    style={clubThemeStyle(club)}
-	                    role="button"
-	                    tabIndex={0}
-	                  >
-	                    <div className="session-top">
-	                      <div>
-	                        <h3>{club.name}</h3>
-	                        {club.motto && <p className="club-card-motto">{club.motto}</p>}
-	                        <div className="row-meta">
-	                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
-	                            {club.visibility === 'private' ? text.private : text.public}
-	                          </span>
+                  <article
+                    className={canOpenPage ? 'club-card clickable' : 'club-card'}
+                    key={club.id}
+                    onClick={canOpenPage ? () => openClubPage(club.id) : undefined}
+                    onKeyDown={canOpenPage ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        openClubPage(club.id)
+                      }
+                    } : undefined}
+                    style={clubThemeStyle(club)}
+                    role={canOpenPage ? 'button' : undefined}
+                    tabIndex={canOpenPage ? 0 : undefined}
+                  >
+                    <div className="session-top">
+                      <div>
+                        <h3>{club.name}</h3>
+                        {club.motto && <p className="club-card-motto">{club.motto}</p>}
+                        <div className="row-meta">
+                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                            {club.visibility === 'private' ? text.private : text.public}
+                          </span>
                           <span>{clubMemberCount(club)} {text.members}</span>
                           {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
                         </div>
