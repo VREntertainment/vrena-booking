@@ -51,7 +51,9 @@ type LeaderboardPanelProps = {
   canBypassPrivateClubPins?: boolean
   clubs: LeaderboardClub[]
   currentUserRankPlayer?: LeaderboardPlayer | null
+  fixedClubId?: string
   hasMorePlayers?: boolean
+  initialCriterion?: LeaderboardCriterion
   isLoadingMorePlayers?: boolean
   isLoadingClubs?: boolean
   onOpenPlayerProfile: (profileId: string) => void
@@ -166,7 +168,9 @@ export default function LeaderboardPanel({
   canBypassPrivateClubPins = false,
   clubs,
   currentUserRankPlayer,
+  fixedClubId = '',
   hasMorePlayers = false,
+  initialCriterion = 'totalScore',
   isLoadingMorePlayers = false,
   isLoadingClubs = false,
   onLeaderboardClubChange,
@@ -184,9 +188,9 @@ export default function LeaderboardPanel({
   useServerRanking = false,
   userId,
 }: LeaderboardPanelProps) {
-  const [leaderboardCriterion, setLeaderboardCriterion] = useState<LeaderboardCriterion>('totalScore')
+  const [leaderboardCriterion, setLeaderboardCriterion] = useState<LeaderboardCriterion>(initialCriterion)
   const [leaderboardSearch, setLeaderboardSearch] = useState('')
-  const [leaderboardClubId, setLeaderboardClubId] = useState('')
+  const [leaderboardClubId, setLeaderboardClubId] = useState(fixedClubId)
   const [leaderboardClubPinDrafts, setLeaderboardClubPinDrafts] = useState<Record<string, string>>({})
   const [leaderboardClubPinStatus, setLeaderboardClubPinStatus] = useState('')
   const [unlockedLeaderboardClubIds, setUnlockedLeaderboardClubIds] = useState<Record<string, boolean>>({})
@@ -201,6 +205,14 @@ export default function LeaderboardPanel({
     { value: 'projectiles', label: text.projectilesCriterion },
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
   ]
+
+  useEffect(() => {
+    if (fixedClubId) setLeaderboardClubId(fixedClubId)
+  }, [fixedClubId])
+
+  useEffect(() => {
+    setLeaderboardCriterion(initialCriterion)
+  }, [initialCriterion])
 
   const rankedLeaderboardRows = useMemo(() => {
     if (useServerRanking) {
@@ -362,7 +374,7 @@ export default function LeaderboardPanel({
               ))}
             </select>
           </label>
-          {(showClubFilter || clubs.length > 0) && (
+          {!fixedClubId && (showClubFilter || clubs.length > 0) && (
             <label>
               <span>{text.clubFilter}</span>
               <select

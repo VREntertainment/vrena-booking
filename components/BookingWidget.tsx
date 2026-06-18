@@ -2,8 +2,8 @@
 
 import dynamic from 'next/dynamic'
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { getInitialLanguage, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
-import type { LeaderboardPlayer } from './LeaderboardPanel'
+import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
+import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
 const ARENA_COUNT = 2
 const OPEN_MINUTES = 9 * 60
@@ -18,10 +18,13 @@ const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
-const CLUB_MEMBER_SELECT = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
-const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
-const CLUB_SELECT = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
+const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
+const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
+const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
+const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
+const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
 
@@ -77,6 +80,10 @@ type TicketType = 'individual' | 'birthday' | 'corporate'
 type TicketStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
 type BookingType = 'community' | 'ticket' | 'challenge'
 type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
+type ClubRole = 'owner' | 'admin' | 'moderator' | 'member'
+type ClubMemberRole = Exclude<ClubRole, 'owner'>
+type ClubTab = 'hall' | 'members' | 'sessions' | 'settings'
+type ClubSessionScope = 'upcoming' | 'past'
 
 type TicketBookingConfirmation = {
   sessionId: string
@@ -136,6 +143,16 @@ function isAdminEmail(email?: string | null) {
 
 function isAdminRole(role?: string | null) {
   return role?.toLowerCase() === 'admin'
+}
+
+function isLeaderboardCriterion(value: string | null | undefined): value is LeaderboardCriterion {
+  return value === 'totalScore'
+    || value === 'wins'
+    || value === 'winRate'
+    || value === 'accuracy'
+    || value === 'reliability'
+    || value === 'projectiles'
+    || value === 'gamesPlayed'
 }
 
 type Participant = {
@@ -297,13 +314,20 @@ type ClubMember = {
   avatar_text_color?: string | null
   profile_motto?: string | null
   status: 'pending' | 'approved'
+  role?: ClubMemberRole | null
+  created_at?: string | null
 }
 
 type Club = {
   id: string
   owner_id: string
   name: string
+  motto?: string | null
   description: string | null
+  banner_url?: string | null
+  theme_color?: string | null
+  default_language?: LanguageCode | string | null
+  ranking_criterion?: LeaderboardCriterion | string | null
   visibility: 'public' | 'private'
   pin_code?: string | null
   member_count: number | null
@@ -497,6 +521,7 @@ const countries = [
 const avatarColors = ['#3059ff', '#00b5b8', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e', '#111827']
 const avatarTextColors = ['#ffffff', '#071112', '#fef3c7', '#cffafe', '#fce7f3', '#dcfce7']
 const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '🚀', '🌀', '🎯', '🕹️', '👾', '🤖', '🧠', '💥', '🛡️', '🧩', '🏆', '✨']
+const clubThemeColors = ['#3059ff', '#00b5b8', '#0f766e', '#f59e0b', '#ef4444', '#7c3aed', '#111827']
 
 
 function minutesToTime(minutes: number) {
@@ -1374,6 +1399,19 @@ export default function WidgetPage({
   const [busyClubId, setBusyClubId] = useState('')
   const [selectedClubId, setSelectedClubId] = useState('')
   const [selectedClubDate, setSelectedClubDate] = useState('')
+  const [selectedClubTab, setSelectedClubTab] = useState<ClubTab>('hall')
+  const [selectedClubSessionScope, setSelectedClubSessionScope] = useState<ClubSessionScope>('upcoming')
+  const [clubEditName, setClubEditName] = useState('')
+  const [clubEditMotto, setClubEditMotto] = useState('')
+  const [clubEditDescription, setClubEditDescription] = useState('')
+  const [clubEditVisibility, setClubEditVisibility] = useState<'public' | 'private'>('public')
+  const [clubEditThemeColor, setClubEditThemeColor] = useState(clubThemeColors[0])
+  const [clubEditThemeColorDraft, setClubEditThemeColorDraft] = useState(clubThemeColors[0])
+  const [clubEditDefaultLanguage, setClubEditDefaultLanguage] = useState<LanguageCode>('en')
+  const [clubEditRankingCriterion, setClubEditRankingCriterion] = useState<LeaderboardCriterion>('totalScore')
+  const [clubBannerFile, setClubBannerFile] = useState<File | null>(null)
+  const [clubBannerPreview, setClubBannerPreview] = useState('')
+  const [isSavingClub, setIsSavingClub] = useState(false)
   const [tournamentPoolSize, setTournamentPoolSize] = useState(4)
   const [tournamentEditorEmail, setTournamentEditorEmail] = useState('')
   const [tournamentEditorResults, setTournamentEditorResults] = useState<Profile[]>([])
@@ -1443,6 +1481,15 @@ export default function WidgetPage({
   const invitationPopupBodyText = looseText.invitationPopupBody || 'You have been invited to join this session.'
   const openInvitationText = looseText.openInvitation || 'Open invite'
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
+  const clubRankingCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
+    { value: 'totalScore', label: text.totalScoreCriterion },
+    { value: 'wins', label: text.winsCriterion },
+    { value: 'winRate', label: text.winRateCriterion },
+    { value: 'accuracy', label: text.accuracyCriterion },
+    { value: 'reliability', label: text.reliabilityCriterion },
+    { value: 'projectiles', label: text.projectilesCriterion },
+    { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
+  ]
   const showProfileFields = Boolean(profile || authMode === 'create')
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
@@ -1488,6 +1535,17 @@ export default function WidgetPage({
   function updateAvatarTextColorDraft(value: string) {
     setAvatarTextColorDraft(value)
     if (isHexColor(value)) setAvatarTextColor(value.toLowerCase())
+  }
+
+  function updateClubThemeColor(value: string) {
+    const normalized = cleanHexColor(value, clubEditThemeColor)
+    setClubEditThemeColor(normalized)
+    setClubEditThemeColorDraft(normalized)
+  }
+
+  function updateClubThemeColorDraft(value: string) {
+    setClubEditThemeColorDraft(value)
+    if (isHexColor(value)) setClubEditThemeColor(value.toLowerCase())
   }
 
   function chooseAvatarMode(mode: 'photo' | 'emoji' | 'initials') {
@@ -2769,7 +2827,7 @@ export default function WidgetPage({
     let data = result.data as Club[] | null
     let error = result.error
 
-    if (error && error.message.toLowerCase().includes('pin_code')) {
+    if (error) {
       const fallbackResult = await client
         .from('clubs')
         .select(CLUB_SELECT_BASE)
@@ -3630,9 +3688,12 @@ function handleSessionDateChange(value: string) {
   }, [selectedClub, userId])
 
   const selectedClubSessions = useMemo(() => {
-    if (!selectedClubId) return []
-    return sessions.filter((session) => session.club_id === selectedClubId && isUpcomingSession(session))
-  }, [selectedClubId, sessions])
+    if (!selectedClub || !canSeeClubPrivateData(selectedClub)) return []
+    return sessions.filter((session) => {
+      if (session.club_id !== selectedClub.id) return false
+      return selectedClubSessionScope === 'past' ? isPastSession(session) : isUpcomingSession(session)
+    })
+  }, [selectedClub, selectedClubSessionScope, sessions])
 
   const selectedClubDayOptions = useMemo(() => {
     const uniqueDays = Array.from(new Set(selectedClubSessions.map((session) => session.date))).sort()
@@ -3643,6 +3704,30 @@ function handleSessionDateChange(value: string) {
     if (!selectedClubDate) return selectedClubSessions
     return selectedClubSessions.filter((session) => session.date === selectedClubDate)
   }, [selectedClubDate, selectedClubSessions])
+
+  const selectedClubApprovedMembers = useMemo(() => {
+    return (selectedClub?.club_members ?? []).filter((member) => member.status === 'approved')
+  }, [selectedClub])
+
+  const selectedClubPendingMembers = useMemo(() => {
+    return (selectedClub?.club_members ?? []).filter((member) => member.status === 'pending')
+  }, [selectedClub])
+
+  useEffect(() => {
+    if (!selectedClub) return
+
+    const themeColor = clubTheme(selectedClub)
+    setClubEditName(selectedClub.name)
+    setClubEditMotto(selectedClub.motto || '')
+    setClubEditDescription(selectedClub.description || '')
+    setClubEditVisibility(selectedClub.visibility)
+    setClubEditThemeColor(themeColor)
+    setClubEditThemeColorDraft(themeColor)
+    setClubEditDefaultLanguage(isLanguageCode(selectedClub.default_language || '') ? selectedClub.default_language as LanguageCode : language)
+    setClubEditRankingCriterion(clubRankingCriterion(selectedClub))
+    setClubBannerFile(null)
+    setClubBannerPreview('')
+  }, [language, selectedClub])
 
   const checkInSession = useMemo(() => {
     if (!checkInTarget) return undefined
@@ -4565,8 +4650,68 @@ function handleSessionDateChange(value: string) {
     return calculatePoolStandings(session, pool, data.poolEntries, data.matches)
   }
 
+  function clubRoleFor(club: Club, profileId = userId): ClubRole {
+    if (!profileId) return 'member'
+    if (club.owner_id === profileId) return 'owner'
+    const member = (club.club_members ?? []).find((item) => item.profile_id === profileId)
+    if (member?.status !== 'approved') return 'member'
+    return member.role || 'member'
+  }
+
+  function clubRoleLabel(role: ClubRole) {
+    if (role === 'owner') return text.ownerRole
+    if (role === 'admin') return text.adminRole
+    if (role === 'moderator') return text.moderatorRole
+    return text.memberRole
+  }
+
   function canManageClub(club: Club) {
-    return Boolean(userId && (club.owner_id === userId || isAdmin))
+    const role = clubRoleFor(club)
+    return Boolean(userId && (isAdmin || role === 'owner' || role === 'admin'))
+  }
+
+  function canModerateClubMembers(club: Club) {
+    const role = clubRoleFor(club)
+    return Boolean(userId && (isAdmin || role === 'owner' || role === 'admin' || role === 'moderator'))
+  }
+
+  function canManageClubMember(club: Club, member: ClubMember) {
+    if (!userId) return false
+    if (member.profile_id === club.owner_id) return false
+    if (isAdmin) return true
+
+    const actorRole = clubRoleFor(club)
+    const targetRole = clubRoleFor(club, member.profile_id)
+
+    if (actorRole === 'owner') return true
+    if (actorRole === 'admin') return targetRole === 'moderator' || targetRole === 'member'
+    if (actorRole === 'moderator') return targetRole === 'member'
+    return false
+  }
+
+  function manageableRoleOptions(club: Club, member: ClubMember): ClubMemberRole[] {
+    if (!canManageClubMember(club, member)) return []
+    if (isAdmin || clubRoleFor(club) === 'owner') return ['admin', 'moderator', 'member']
+    if (clubRoleFor(club) === 'admin') return ['moderator', 'member']
+    return ['member']
+  }
+
+  function clubTheme(club: Club | undefined) {
+    return cleanHexColor(club?.theme_color || '', clubThemeColors[0])
+  }
+
+  function clubRankingCriterion(club: Club | undefined): LeaderboardCriterion {
+    const criterion = club?.ranking_criterion
+    return isLeaderboardCriterion(criterion) ? criterion : 'totalScore'
+  }
+
+  function clubThemeStyle(club: Club | undefined) {
+    const color = clubTheme(club)
+    return {
+      '--club-theme': color,
+      '--club-theme-soft': `${color}24`,
+      '--club-theme-faint': `${color}12`,
+    } as Record<string, string>
   }
 
   function approvedClubMember(club: Club, profileId = userId) {
@@ -4600,6 +4745,220 @@ function handleSessionDateChange(value: string) {
 
   function clubMemberCount(club: Club) {
     return club.member_count ?? (club.club_members ?? []).filter((member) => member.status === 'approved').length
+  }
+
+  function openClubPage(clubId: string) {
+    setSelectedClubId(clubId)
+    setSelectedClubDate('')
+    setSelectedClubTab('hall')
+    setSelectedClubSessionScope('upcoming')
+  }
+
+  function handleClubTabChange(tab: ClubTab) {
+    setSelectedClubTab(tab)
+    if (tab === 'sessions' && selectedClubSessionScope === 'past') {
+      void ensurePastSessionsLoaded()
+    }
+  }
+
+  function handleClubSessionScopeChange(scope: ClubSessionScope) {
+    setSelectedClubSessionScope(scope)
+    setSelectedClubDate('')
+    if (scope === 'past') void ensurePastSessionsLoaded()
+  }
+
+  function handleClubBannerChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!CLUB_BANNER_TYPES.includes(file.type)) {
+      setClubStatus(text.clubBannerTypeError)
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > CLUB_BANNER_MAX_BYTES) {
+      setClubStatus(text.clubBannerSizeError)
+      event.target.value = ''
+      return
+    }
+
+    setClubBannerFile(file)
+    setClubBannerPreview(URL.createObjectURL(file))
+    setClubStatus('')
+  }
+
+  async function uploadClubBanner(club: Club) {
+    if (!clubBannerFile) return club.banner_url || null
+
+    const safeName = clubBannerFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
+    const path = `${club.id}/${Date.now()}-${safeName}`
+    const client = await getSupabase()
+    const upload = await client.storage.from('club-banners').upload(path, clubBannerFile, {
+      contentType: clubBannerFile.type,
+      upsert: true,
+    })
+
+    if (upload.error) {
+      setClubStatus(upload.error.message)
+      return false
+    }
+
+    const { data } = client.storage.from('club-banners').getPublicUrl(path)
+    return data.publicUrl
+  }
+
+  async function saveClubSettings(club: Club) {
+    if (!canManageClub(club)) return
+
+    const name = clubEditName.trim()
+    if (!name) {
+      setClubStatus(text.clubRequired)
+      return
+    }
+
+    setIsSavingClub(true)
+    setBusyClubId(club.id)
+    setClubStatus(text.saving)
+
+    const bannerUrl = await uploadClubBanner(club)
+    if (bannerUrl === false) {
+      setIsSavingClub(false)
+      setBusyClubId('')
+      return
+    }
+
+    const nextPinCode = clubEditVisibility === 'private' ? club.pin_code || generateInviteCode() : null
+    const { error } = await (await getSupabase())
+      .from('clubs')
+      .update({
+        name,
+        motto: clubEditMotto.trim() || null,
+        description: clubEditDescription.trim() || null,
+        banner_url: bannerUrl,
+        theme_color: cleanHexColor(clubEditThemeColor, clubThemeColors[0]),
+        visibility: clubEditVisibility,
+        pin_code: nextPinCode,
+        default_language: clubEditDefaultLanguage,
+        ranking_criterion: clubEditRankingCriterion,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', club.id)
+
+    if (error) {
+      setClubStatus(error.message)
+      setIsSavingClub(false)
+      setBusyClubId('')
+      return
+    }
+
+    await loadClubs()
+    setClubBannerFile(null)
+    setClubBannerPreview('')
+    setClubStatus(text.clubSaved)
+    setIsSavingClub(false)
+    setBusyClubId('')
+  }
+
+  async function regenerateClubInviteCode(club: Club) {
+    if (!canManageClub(club)) return
+
+    setBusyClubId(club.id)
+    const { error } = await (await getSupabase())
+      .from('clubs')
+      .update({
+        pin_code: generateInviteCode(),
+        visibility: 'private',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', club.id)
+
+    if (error) setClubStatus(error.message)
+    else {
+      await loadClubs()
+      setClubStatus(text.clubInviteRegenerated)
+    }
+    setBusyClubId('')
+  }
+
+  async function shareClubInvite(club: Club) {
+    const code = club.pin_code || ''
+    const shareBody = club.visibility === 'private'
+      ? `${club.name} · ${text.privateCode}: ${code}`
+      : `${club.name} · ${DEFAULT_APP_URL}`
+
+    if (navigator.share) {
+      await navigator.share({ title: club.name, text: shareBody })
+    } else {
+      await navigator.clipboard?.writeText(shareBody)
+      setClubStatus(text.copied)
+    }
+  }
+
+  async function updateClubMemberRole(club: Club, member: ClubMember, role: ClubMemberRole) {
+    if (!manageableRoleOptions(club, member).includes(role)) return
+
+    setBusyClubId(club.id)
+    const { error } = await (await getSupabase())
+      .from('club_members')
+      .update({ role, status: 'approved' })
+      .eq('id', member.id)
+
+    if (error) setClubStatus(error.message)
+    else {
+      await loadClubs()
+      setClubStatus(text.clubRoleUpdated)
+    }
+    setBusyClubId('')
+  }
+
+  async function transferClubOwnership(club: Club, member: ClubMember) {
+    if (!userId || (!isAdmin && club.owner_id !== userId)) return
+    if (!window.confirm(text.transferOwnershipConfirm)) return
+
+    setBusyClubId(club.id)
+    const { error } = await (await getSupabase()).rpc('transfer_club_ownership', {
+      p_club_id: club.id,
+      p_new_owner_id: member.profile_id,
+    })
+
+    if (error) setClubStatus(error.message)
+    else {
+      await loadClubs()
+      setClubStatus(text.clubOwnershipTransferred)
+    }
+    setBusyClubId('')
+  }
+
+  async function notifyClubMembersOfSession(club: Club, sessionId: string) {
+    const recipients = (club.club_members ?? [])
+      .filter((member) => member.status === 'approved' && member.profile_id !== userId)
+      .slice(0, 80)
+
+    if (recipients.length === 0) return
+
+    const payloads = recipients.map((member) => {
+      const snapshot = socialAvatarFields(member)
+      return {
+        session_id: sessionId,
+        inviter_id: userId,
+        recipient_id: member.profile_id,
+        recipient_display_name: snapshot.display_name,
+        recipient_avatar_url: snapshot.avatar_url,
+        recipient_avatar_emoji: snapshot.avatar_emoji,
+        recipient_avatar_initials: snapshot.avatar_initials,
+        recipient_avatar_color: snapshot.avatar_color,
+        recipient_avatar_text_color: snapshot.avatar_text_color,
+        recipient_profile_motto: snapshot.profile_motto,
+        status: 'pending',
+      }
+    })
+
+    const { error } = await (await getSupabase())
+      .from('session_invites')
+      .upsert(payloads, { onConflict: 'session_id,recipient_id' })
+
+    if (!error && networkDataLoadedRef.current) await loadNetworkData()
   }
 
   async function createClub() {
@@ -4707,8 +5066,11 @@ function handleSessionDateChange(value: string) {
   }
 
   async function approveClubMember(member: ClubMember) {
+    const club = clubs.find((item) => item.id === member.club_id)
+    if (!club || !canModerateClubMembers(club)) return
+
     setBusyClubId(member.club_id)
-    const { error } = await (await getSupabase()).from('club_members').update({ status: 'approved' }).eq('id', member.id)
+    const { error } = await (await getSupabase()).from('club_members').update({ status: 'approved', role: 'member' }).eq('id', member.id)
 
     if (error) {
       setClubStatus(error.message)
@@ -4722,7 +5084,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function removeClubMember(club: Club, member: ClubMember) {
-    if (!canManageClub(club)) return
+    if (!canManageClubMember(club, member)) return
 
     if (!window.confirm(text.removeMemberConfirm)) return
 
@@ -5205,6 +5567,10 @@ function handleSessionDateChange(value: string) {
       display_name: displayName(activeProfile),
       ...avatarFields(activeProfile),
     })
+
+    if (selectedSessionClub) {
+      await notifyClubMembersOfSession(selectedSessionClub, created.id)
+    }
 
     setCreateStatus(
       sessionVisibility === 'private'
@@ -8025,23 +8391,22 @@ function handleSessionDateChange(value: string) {
                 const canSeeMembers = club.visibility === 'public' || canManage
 
                 return (
-                  <article
-                    className="club-card clickable"
-                    key={club.id}
-                    onClick={() => {
-                      setSelectedClubId(club.id)
-                      setSelectedClubDate('')
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="session-top">
-                      <div>
-                        <h3>{club.name}</h3>
-                        <div className="row-meta">
-                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                            {club.visibility === 'private' ? text.private : text.public}
-                          </span>
+	                  <article
+	                    className="club-card clickable"
+	                    key={club.id}
+	                    onClick={() => openClubPage(club.id)}
+	                    style={clubThemeStyle(club)}
+	                    role="button"
+	                    tabIndex={0}
+	                  >
+	                    <div className="session-top">
+	                      <div>
+	                        <h3>{club.name}</h3>
+	                        {club.motto && <p className="club-card-motto">{club.motto}</p>}
+	                        <div className="row-meta">
+	                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
+	                            {club.visibility === 'private' ? text.private : text.public}
+	                          </span>
                           <span>{clubMemberCount(club)} {text.members}</span>
                           {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
                         </div>
@@ -9137,206 +9502,467 @@ function handleSessionDateChange(value: string) {
         />
       )}
 
-      {selectedClub && (
-        <div className="club-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-drawer-title" onClick={() => setSelectedClubId('')}>
-          <div
-            className="club-drawer"
-            onClick={(event) => event.stopPropagation()}
-            onTouchStart={(event) => setDrawerTouchStart(event.touches[0]?.clientY ?? null)}
-            onTouchEnd={(event) => {
-              if (drawerTouchStart === null) return
-              const endY = event.changedTouches[0]?.clientY ?? drawerTouchStart
-              if (endY - drawerTouchStart > 70) {
-                setSelectedClubId('')
-              }
-              setDrawerTouchStart(null)
-            }}
-          >
-            <div className="drawer-handle" />
-            <div className="session-top">
-              <div>
-                <h2 id="club-drawer-title">{selectedClub.name}</h2>
-                <div className="row-meta">
-                  <span className={selectedClub.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                    {selectedClub.visibility === 'private' ? text.private : text.public}
-                  </span>
-                  <span>{clubMemberCount(selectedClub)} {text.members}</span>
-                </div>
-              </div>
-              <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
-                {text.close}
-              </button>
-            </div>
+      {selectedClub && (() => {
+        const canManageSelectedClub = canManageClub(selectedClub)
+        const canModerateSelectedClub = canModerateClubMembers(selectedClub)
+        const canSeeSelectedClubData = canSeeClubPrivateData(selectedClub)
+        const bannerUrl = clubBannerPreview || selectedClub.banner_url || ''
+        const showInviteCode = selectedClub.visibility === 'private' && selectedClub.pin_code && canManageSelectedClub
+        const canCreateSelectedClubSession = sessionClubOptions.some((club) => club.id === selectedClub.id)
+        const noClubSessionsText = selectedClubSessionScope === 'past' ? text.noPastClubSessions : text.noUpcomingClubSessions
 
-            {selectedClub.description && <p className="notes">{selectedClub.description}</p>}
-            {selectedClub.visibility === 'private' && selectedClub.pin_code && canManageClub(selectedClub) && (
-              <div className="invite-code compact">
-                <span>{text.privateCode}</span>
-                <strong>{selectedClub.pin_code}</strong>
-              </div>
-            )}
-
-            <div className="club-action-row">
-              {!selectedClubMembership && (
-                <button
-                  className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
-                  disabled={busyClubId === selectedClub.id}
-                  onClick={() => joinClub(selectedClub)}
-                  type="button"
-                >
-                  {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
-                </button>
-              )}
-
-              {sessionClubOptions.some((club) => club.id === selectedClub.id) && (
-                <button
-                  className="primary create-button"
-                  type="button"
-                  onClick={() => {
-                    setSessionClubId(selectedClub.id)
-                    setSessionVisibility('public')
-                    setCreateStatus(text.clubOnlyCreateHint)
-                    setActiveView('create')
-                    setSelectedClubId('')
-                  }}
-                >
-                  {text.clubOnly}
-                </button>
-              )}
-
-              {selectedClubMembership?.status === 'approved' && selectedClub.owner_id !== userId && (
-                <button
-                  className={busyClubId === selectedClub.id ? 'secondary loading create-button' : 'secondary create-button'}
-                  disabled={busyClubId === selectedClub.id}
-                  onClick={() => leaveClub(selectedClub, selectedClubMembership)}
-                  type="button"
-                >
-                  {leaveClubText}
-                </button>
-              )}
-            </div>
-
-            {selectedClubMembership?.status === 'pending' && (
-              <p className="notice">{text.requestSent}</p>
-            )}
-
-            <div className="drawer-block">
-              <h3>{text.members}</h3>
-              {canSeeClubPrivateData(selectedClub) ? (
-                <div className="players">
-                  {(selectedClub.club_members ?? [])
-                    .filter((member) => member.status === 'approved')
-                    .map((member) => (
-                      <div className="player" key={member.id}>
-                        <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
-                          {avatarNode(member, 'P')}
-                        </button>
-                        <span>{compactDisplayName(member.display_name, text.player)}</span>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="notice">{text.hiddenMembers}</p>
-              )}
-            </div>
-
-            <div className="drawer-block">
-              <div className="section-head compact-head">
-                <div>
-                  <h3>{text.nextGames}</h3>
-                </div>
-              </div>
-              {selectedClubDayOptions.length > 0 && (
-                <div className="day-strip drawer-days">
-                  <button
-                    className={!selectedClubDate ? 'day-chip active' : 'day-chip'}
-                    type="button"
-                    onClick={() => setSelectedClubDate('')}
-                  >
-                    <strong>{text.allDays}</strong>
+        return (
+          <div className="club-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-drawer-title" onClick={() => setSelectedClubId('')}>
+            <div
+              className="club-drawer club-page"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={(event) => setDrawerTouchStart(event.touches[0]?.clientY ?? null)}
+              onTouchEnd={(event) => {
+                if (drawerTouchStart === null) return
+                const endY = event.changedTouches[0]?.clientY ?? drawerTouchStart
+                if (endY - drawerTouchStart > 70) {
+                  setSelectedClubId('')
+                }
+                setDrawerTouchStart(null)
+              }}
+              style={clubThemeStyle(selectedClub)}
+            >
+              <div className="drawer-handle" />
+              <div className={bannerUrl ? 'club-hero has-banner' : 'club-hero'}>
+                {bannerUrl ? (
+                  <img src={bannerUrl} alt="" loading="lazy" decoding="async" />
+                ) : (
+                  <div className="club-banner-empty">
+                    <strong>{text.clubBanner}</strong>
+                    {canManageSelectedClub && <span>{text.clubBannerHelp}</span>}
+                  </div>
+                )}
+                <div className="club-hero-content">
+                  <div>
+                    <h2 id="club-drawer-title">{selectedClub.name}</h2>
+                    {selectedClub.motto && <p className="club-motto">{selectedClub.motto}</p>}
+                    <div className="row-meta">
+                      <span className={selectedClub.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                        {selectedClub.visibility === 'private' ? text.private : text.public}
+                      </span>
+                      <span>{clubMemberCount(selectedClub)} {text.members}</span>
+                      <span>{clubRoleLabel(clubRoleFor(selectedClub))}</span>
+                    </div>
+                  </div>
+                  <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
+                    {text.close}
                   </button>
-                  {selectedClubDayOptions.map((day) => (
-                    <button
-                      className={selectedClubDate === day.value ? 'day-chip active' : 'day-chip'}
-                      key={day.value}
-                      type="button"
-                      onClick={() => setSelectedClubDate(day.value)}
-                    >
-                      <span>{day.weekday}</span>
-                      <strong>{day.day}</strong>
-                    </button>
-                  ))}
+                </div>
+              </div>
+
+              {selectedClub.description && <p className="notes club-description">{selectedClub.description}</p>}
+
+              <div className="club-action-row">
+                {!selectedClubMembership && (
+                  <button
+                    className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
+                    disabled={busyClubId === selectedClub.id}
+                    onClick={() => joinClub(selectedClub)}
+                    type="button"
+                  >
+                    {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
+                  </button>
+                )}
+
+                {canCreateSelectedClubSession && (
+                  <button
+                    className="primary create-button"
+                    type="button"
+                    onClick={() => {
+                      setSessionClubId(selectedClub.id)
+                      setSessionVisibility('public')
+                      setCreateStatus(text.clubOnlyCreateHint)
+                      setActiveView('create')
+                      setSelectedClubId('')
+                    }}
+                  >
+                    {text.clubOnly}
+                  </button>
+                )}
+
+                {selectedClubMembership?.status === 'approved' && selectedClub.owner_id !== userId && (
+                  <button
+                    className={busyClubId === selectedClub.id ? 'secondary loading create-button' : 'secondary create-button'}
+                    disabled={busyClubId === selectedClub.id}
+                    onClick={() => leaveClub(selectedClub, selectedClubMembership)}
+                    type="button"
+                  >
+                    {leaveClubText}
+                  </button>
+                )}
+              </div>
+
+              {showInviteCode && (
+                <div className="club-invite-box">
+                  <span>{text.clubInviteCode}</span>
+                  <strong>{selectedClub.pin_code}</strong>
+                  <button className="secondary small-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
+                    {text.shareClubCode}
+                  </button>
                 </div>
               )}
 
-              {filteredSelectedClubSessions.length === 0 ? (
-                <p className="notice">{text.noClubGames}</p>
-              ) : (
-                <div className="mini-session-list">
-                  {filteredSelectedClubSessions.map((session) => {
-                    const coverGame = sessionCoverGame(session)
-                    const remaining = seatsLeft(session)
-                    const isPast = isPastSession(session)
+              {selectedClubMembership?.status === 'pending' && (
+                <p className="notice">{text.requestSent}</p>
+              )}
 
-                    return (
-                      <article
-                        className="club-session-preview"
-                        key={session.id}
-                        onClick={() => {
-                          setSelectedClubId('')
-                          openSessionFromProfile(session.id)
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault()
-                            setSelectedClubId('')
-                            openSessionFromProfile(session.id)
-                          }
-                        }}
+              <div className="sub-tabs club-page-tabs">
+                <button className={selectedClubTab === 'hall' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('hall')}>
+                  {text.clubHallOfFame}
+                </button>
+                <button className={selectedClubTab === 'members' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('members')}>
+                  {text.clubMembers}
+                </button>
+                <button className={selectedClubTab === 'sessions' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('sessions')}>
+                  {text.clubSessions}
+                </button>
+                {canManageSelectedClub && (
+                  <button className={selectedClubTab === 'settings' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('settings')}>
+                    {text.clubSettings}
+                  </button>
+                )}
+              </div>
+
+              {selectedClubTab === 'hall' && (
+                <div className="club-tab-panel club-hall-panel">
+                  {!canSeeSelectedClubData ? (
+                    <p className="notice">{text.hiddenMembers}</p>
+                  ) : (
+                    <>
+                      {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <p className="notice" aria-busy="true">...</p>}
+                      <LeaderboardPanel
+                        avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+                          avatar_color: player.avatarColor,
+                          avatar_text_color: player.avatarTextColor,
+                        })}
+                        canBypassPrivateClubPins={isAdmin}
+                        clubs={[selectedClub]}
+                        fixedClubId={selectedClub.id}
+                        initialCriterion={clubRankingCriterion(selectedClub)}
+                        onOpenPlayerProfile={openPlayerProfile}
+                        players={leaderboardPlayerStats}
+                        renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+                          avatar_url: player.avatarUrl,
+                          avatar_emoji: player.avatarEmoji,
+                          avatar_initials: player.avatarInitials,
+                          avatar_color: player.avatarColor,
+                          avatar_text_color: player.avatarTextColor,
+                          display_name: player.displayName,
+                        }, 'P')}
+                        text={text}
+                        userId={userId}
+                      />
+                      {canManageSelectedClub && (
+                        <div className="club-ranking-box">
+                          <strong>{text.clubRankingSystem}</strong>
+                          <span>{text.clubDefaultRanking}</span>
+                          <p className="muted">{text.clubCustomRankingHint}</p>
+                        </div>
+                      )}
+                      {selectedClubApprovedMembers.length === 0 && <p className="notice">{text.noTrophiesYet}</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {selectedClubTab === 'members' && (
+                <div className="club-tab-panel">
+                  {!canSeeSelectedClubData ? (
+                    <p className="notice">{text.hiddenMembers}</p>
+                  ) : (
+                    <>
+                      {selectedClubApprovedMembers.length === 0 && <p className="notice">{text.noMembersYet}</p>}
+                      <div className="club-member-list">
+                        {selectedClubApprovedMembers.map((member) => {
+                          const role = clubRoleFor(selectedClub, member.profile_id)
+                          const roleOptions = manageableRoleOptions(selectedClub, member)
+                          const canTransfer = (isAdmin || selectedClub.owner_id === userId) && member.profile_id !== selectedClub.owner_id
+
+                          return (
+                            <article className="club-member-row" key={member.id}>
+                              <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
+                                {avatarNode(member, 'P')}
+                              </button>
+                              <div className="club-member-main">
+                                <strong>{compactDisplayName(member.display_name, text.player)}</strong>
+                                <div className="row-meta">
+                                  <span>{clubRoleLabel(role)}</span>
+                                  {member.created_at && <span>{text.joinedOn}: {formatShortDate(localDateString(new Date(member.created_at)), language)}</span>}
+                                </div>
+                              </div>
+                              {roleOptions.length > 0 && (
+                                <select
+                                  aria-label={text.assignRole}
+                                  disabled={busyClubId === selectedClub.id}
+                                  value={(member.role || 'member') as ClubMemberRole}
+                                  onChange={(event) => updateClubMemberRole(selectedClub, member, event.target.value as ClubMemberRole)}
+                                >
+                                  {roleOptions.map((option) => (
+                                    <option key={option} value={option}>{clubRoleLabel(option)}</option>
+                                  ))}
+                                </select>
+                              )}
+                              {canTransfer && (
+                                <button className="secondary small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => transferClubOwnership(selectedClub, member)}>
+                                  {text.transferOwnership}
+                                </button>
+                              )}
+                              {canManageClubMember(selectedClub, member) && (
+                                <button className="danger small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => removeClubMember(selectedClub, member)}>
+                                  {text.remove}
+                                </button>
+                              )}
+                            </article>
+                          )
+                        })}
+                      </div>
+
+                      {canModerateSelectedClub && selectedClubPendingMembers.length > 0 && (
+                        <div className="pending-list">
+                          <h3>{text.pending}</h3>
+                          {selectedClubPendingMembers.map((member) => (
+                            <div className="pending-member" key={member.id}>
+                              <span>{compactDisplayName(member.display_name, text.player)}</span>
+                              <div className="mini-session-actions">
+                                <button className="secondary small-button" disabled={busyClubId === selectedClub.id} onClick={() => approveClubMember(member)} type="button">
+                                  {text.approve}
+                                </button>
+                                {canManageClubMember(selectedClub, member) && (
+                                  <button className="danger small-button" disabled={busyClubId === selectedClub.id} onClick={() => removeClubMember(selectedClub, member)} type="button">
+                                    {text.remove}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {selectedClubTab === 'sessions' && (
+                <div className="club-tab-panel">
+                  <div className="section-head compact-head">
+                    <div>
+                      <h3>{text.clubSessions}</h3>
+                      <p className="muted">{text.clubMembersOnly}</p>
+                    </div>
+                    <div className="segmented compact-segmented">
+                      <button className={selectedClubSessionScope === 'upcoming' ? 'active' : ''} type="button" onClick={() => handleClubSessionScopeChange('upcoming')}>
+                        {text.upcoming}
+                      </button>
+                      <button className={selectedClubSessionScope === 'past' ? 'active' : ''} type="button" onClick={() => handleClubSessionScopeChange('past')}>
+                        {text.past}
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedClubDayOptions.length > 0 && (
+                    <div className="day-strip drawer-days">
+                      <button
+                        className={!selectedClubDate ? 'day-chip active' : 'day-chip'}
+                        type="button"
+                        onClick={() => setSelectedClubDate('')}
                       >
-                        <div className="compact-session-card club-session-card">
-                          <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
-                          <div className="compact-session-main">
-                            <div className="compact-session-title-row">
-                              <h3>{session.name}</h3>
-                              <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
-                                {session.session_type === 'tournament' ? text.tournament : text.normalGame}
-                              </span>
-                              <span className="pill">{text.clubSession}</span>
-                            </div>
-                            <div className="row-meta compact-meta">
-                              <span>{formatShortDate(session.date, language)}</span>
-                              <span>{session.start_time.slice(0, 5)}</span>
-                              <span>{session.duration_minutes} min</span>
-                              {!isPast && <span>{remaining} {text.seatsLeft}</span>}
-                              {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
-                            </div>
-                          </div>
-                          <div className="compact-session-actions club-session-actions">
-                            <button
-                              className="secondary compact-expand"
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
+                        <strong>{text.allDays}</strong>
+                      </button>
+                      {selectedClubDayOptions.map((day) => (
+                        <button
+                          className={selectedClubDate === day.value ? 'day-chip active' : 'day-chip'}
+                          key={day.value}
+                          type="button"
+                          onClick={() => setSelectedClubDate(day.value)}
+                        >
+                          <span>{day.weekday}</span>
+                          <strong>{day.day}</strong>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredSelectedClubSessions.length === 0 ? (
+                    <p className="notice">{isLoadingPastSessions && selectedClubSessionScope === 'past' ? '...' : noClubSessionsText}</p>
+                  ) : (
+                    <div className="mini-session-list">
+                      {filteredSelectedClubSessions.map((session) => {
+                        const coverGame = sessionCoverGame(session)
+                        const remaining = seatsLeft(session)
+                        const isPast = isPastSession(session)
+
+                        return (
+                          <article
+                            className="club-session-preview"
+                            key={session.id}
+                            onClick={() => {
+                              setSelectedClubId('')
+                              openSessionFromProfile(session.id)
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
                                 setSelectedClubId('')
                                 openSessionFromProfile(session.id)
-                              }}
-                            >
-                              {text.expandDetails}
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    )
-                  })}
+                              }
+                            }}
+                          >
+                            <div className="compact-session-card club-session-card">
+                              <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
+                              <div className="compact-session-main">
+                                <div className="compact-session-title-row">
+                                  <h3>{session.name}</h3>
+                                  <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
+                                    {session.session_type === 'tournament' ? text.tournament : text.normalGame}
+                                  </span>
+                                  <span className="pill">{text.clubSession}</span>
+                                </div>
+                                <div className="row-meta compact-meta">
+                                  <span>{formatShortDate(session.date, language)}</span>
+                                  <span>{session.start_time.slice(0, 5)}</span>
+                                  <span>{session.duration_minutes} min</span>
+                                  {!isPast && <span>{remaining} {text.seatsLeft}</span>}
+                                  {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
+                                </div>
+                              </div>
+                              <div className="compact-session-actions club-session-actions">
+                                <button
+                                  className="secondary compact-expand"
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setSelectedClubId('')
+                                    openSessionFromProfile(session.id)
+                                  }}
+                                >
+                                  {text.expandDetails}
+                                </button>
+                              </div>
+                            </div>
+                          </article>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {selectedClubSessionScope === 'upcoming' && hasMoreUpcomingSessions && (
+                    <button className="secondary create-button" type="button" onClick={loadMoreUpcomingSessions} disabled={isLoadingMoreSessions}>
+                      {isLoadingMoreSessions ? '...' : text.expandDetails}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {selectedClubTab === 'settings' && canManageSelectedClub && (
+                <div className="club-tab-panel club-settings-panel">
+                  <div className="form-grid club-settings-grid">
+                    <div>
+                      <label>{text.clubName} <span className="required">*</span></label>
+                      <input value={clubEditName} onChange={(event) => setClubEditName(event.target.value)} />
+                    </div>
+                    <div>
+                      <label>{text.clubMotto}</label>
+                      <input maxLength={48} value={clubEditMotto} onChange={(event) => setClubEditMotto(event.target.value)} placeholder={text.clubMottoPlaceholder} />
+                    </div>
+                    <div className="full">
+                      <label>{text.clubDescription}</label>
+                      <textarea value={clubEditDescription} onChange={(event) => setClubEditDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
+                    </div>
+                    <div>
+                      <label>{text.clubPrivacy}</label>
+                      <div className="segmented visibility-toggle">
+                        <button className={clubEditVisibility === 'public' ? 'active' : ''} onClick={() => setClubEditVisibility('public')} type="button">
+                          {text.public}
+                        </button>
+                        <button className={clubEditVisibility === 'private' ? 'active' : ''} onClick={() => setClubEditVisibility('private')} type="button">
+                          {text.private}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label>{text.clubDefaultLanguage}</label>
+                      <select value={clubEditDefaultLanguage} onChange={(event) => setClubEditDefaultLanguage(event.target.value as LanguageCode)}>
+                        {languageOptions.map((option) => (
+                          <option key={option} value={option}>{option.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label>{text.rankBy}</label>
+                      <select value={clubEditRankingCriterion} onChange={(event) => setClubEditRankingCriterion(event.target.value as LeaderboardCriterion)}>
+                        {clubRankingCriteria.map((criterion) => (
+                          <option key={criterion.value} value={criterion.value}>
+                            {criterion.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="full club-banner-field">
+                      <label>{text.clubBanner}</label>
+                      <label className="club-banner-upload">
+                        {bannerUrl ? <img src={bannerUrl} alt="" loading="lazy" decoding="async" /> : <span>{text.clubBannerHelp}</span>}
+                        <input accept="image/jpeg,image/png,image/webp" type="file" onChange={handleClubBannerChange} />
+                      </label>
+                      <p className="field-help">{text.clubBannerHelp}</p>
+                    </div>
+                    <div className="full">
+                      <label>{text.clubThemeColor}</label>
+                      <div className="color-row" aria-label={text.clubThemeColor}>
+                        {clubThemeColors.map((color) => (
+                          <button
+                            aria-label={color}
+                            className={clubEditThemeColor === color ? 'active' : ''}
+                            key={color}
+                            onClick={() => updateClubThemeColor(color)}
+                            style={{ background: color }}
+                            type="button"
+                          />
+                        ))}
+                      </div>
+                      <div className="custom-color-row">
+                        <label>
+                          <span>{text.customColor}</span>
+                          <input type="color" value={clubEditThemeColor} onChange={(event) => updateClubThemeColor(event.target.value)} />
+                        </label>
+                        <label className="hex-field">
+                          <span>{text.hexColor}</span>
+                          <input
+                            value={clubEditThemeColorDraft}
+                            onBlur={() => setClubEditThemeColorDraft(clubEditThemeColor)}
+                            onChange={(event) => updateClubThemeColorDraft(event.target.value)}
+                            placeholder="#3059ff"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="club-action-row">
+                    <button className={isSavingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isSavingClub || busyClubId === selectedClub.id} type="button" onClick={() => saveClubSettings(selectedClub)}>
+                      {isSavingClub ? text.saving : text.saveClub}
+                    </button>
+                    <button className="secondary create-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => regenerateClubInviteCode(selectedClub)}>
+                      {text.regenerateInviteCode}
+                    </button>
+                    {selectedClub.pin_code && (
+                      <button className="secondary create-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
+                        {text.shareClubCode}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {selectedPlayerProfile && (
         <PlayerProfileModal

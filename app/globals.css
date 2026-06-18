@@ -973,9 +973,17 @@ body {
   display: grid;
   gap: 12px;
   border: 1px solid rgba(7, 17, 18, 0.12);
+  border-left: 4px solid var(--club-theme, #3059ff);
   border-radius: 8px;
   padding: 14px;
   background: #ffffff;
+}
+
+.app .club-card-motto {
+  color: var(--club-theme, #3059ff);
+  font-size: 13px;
+  font-weight: 900;
+  margin-top: 3px;
 }
 
 .app .pending-list {
@@ -1574,6 +1582,198 @@ body {
   padding: 16px;
   box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
   animation: drawerUp 180ms ease-out;
+}
+
+.app .club-page {
+  gap: 12px;
+  width: min(980px, 100%);
+}
+
+.app .club-hero {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), rgba(0, 181, 184, 0.08)),
+    #f4f7f8;
+}
+
+.app .club-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app .club-hero.has-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(7, 17, 18, 0.76), rgba(7, 17, 18, 0.2));
+}
+
+.app .club-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 156px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.app .club-hero.has-banner .club-hero-content,
+.app .club-hero.has-banner .club-hero-content .row-meta span,
+.app .club-hero.has-banner .club-motto {
+  color: #ffffff;
+}
+
+.app .club-banner-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  padding: 16px;
+  text-align: center;
+  color: #637075;
+}
+
+.app .club-banner-empty strong {
+  color: #071112;
+  font-size: 18px;
+}
+
+.app .club-banner-empty span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .club-motto {
+  color: var(--club-theme, #3059ff);
+  font-weight: 900;
+}
+
+.app .club-description {
+  border-left: 3px solid var(--club-theme, #3059ff);
+  padding-left: 10px;
+}
+
+.app .club-invite-box,
+.app .club-ranking-box,
+.app .club-member-row {
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background: var(--club-theme-faint, rgba(48, 89, 255, 0.07));
+}
+
+.app .club-invite-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.app .club-invite-box span,
+.app .club-ranking-box span {
+  color: #637075;
+  font-weight: 800;
+}
+
+.app .club-invite-box strong {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+
+.app .club-page-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.app .club-tab-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.app .club-hall-panel .leaderboard-section {
+  box-shadow: none;
+}
+
+.app .club-ranking-box {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.app .club-member-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .club-member-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(132px, auto) auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+}
+
+.app .club-member-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .club-member-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .club-settings-grid textarea {
+  min-height: 82px;
+}
+
+.app .club-banner-field {
+  display: grid;
+  gap: 7px;
+}
+
+.app .club-banner-upload {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  overflow: hidden;
+  border: 1px dashed rgba(48, 89, 255, 0.34);
+  border-radius: 10px;
+  background: var(--club-theme-faint, rgba(48, 89, 255, 0.07));
+  color: #637075;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .club-banner-upload img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.app .club-banner-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.app .compact-segmented {
+  width: fit-content;
 }
 
 .app .drawer-handle {
@@ -4533,6 +4733,43 @@ body {
     padding: 12px;
   }
 
+  .app .club-hero,
+  .app .club-hero-content {
+    min-height: 136px;
+  }
+
+  .app .club-hero-content {
+    display: grid;
+    align-content: end;
+    padding: 12px;
+  }
+
+  .app .club-page-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .club-invite-box {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-member-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .app .club-member-row select,
+  .app .club-member-row button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .club-banner-upload {
+    min-height: 112px;
+  }
+
+  .app .club-banner-upload img {
+    height: 132px;
+  }
+
   .app .player-profile-panel {
     width: 100%;
     max-height: calc(100vh - 86px);
@@ -5213,11 +5450,32 @@ body {
     color: #f6f7f9;
   }
 
-  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
+  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  }
+
+  .app .club-hero,
+  .app .club-banner-upload {
+    background:
+      linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.2)), rgba(7, 17, 18, 0.4)),
+      #10191b;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #d7e1e4;
+  }
+
+  .app .club-banner-empty strong,
+  .app .club-member-main strong {
+    color: #f6f7f9;
+  }
+
+  .app .club-invite-box span,
+  .app .club-ranking-box span,
+  .app .club-banner-empty,
+  .app .club-card-motto {
+    color: #aeb9bd;
   }
 
   .app .profile-session-group + .profile-session-group {
