@@ -15,7 +15,7 @@ const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
-const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, placement, prize_claimed, prize_claimed_at'
+const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
@@ -164,6 +164,7 @@ function isLeaderboardCriterion(value: string | null | undefined): value is Lead
     || value === 'reliability'
     || value === 'projectiles'
     || value === 'gamesPlayed'
+    || value === 'escapeTime'
 }
 
 function normalizePrivateCode(value: string | null | undefined) {
@@ -186,6 +187,7 @@ type Participant = {
   score?: number | null
   accuracy_percent?: number | null
   projectiles_fired?: number | null
+  escape_duration_seconds?: number | null
   placement?: number | null
   prize_claimed?: boolean | null
   prize_claimed_at?: string | null
@@ -465,6 +467,15 @@ const games: Array<{
   { id: 'arc-of-the-covenant', title: 'The Secret of the Arc', category: 'Escape', image: '/games/arc-of-the-covenant.png' },
   { id: 'joller-house', title: 'Joller House', category: 'Escape', image: '/games/joller-house.png' },
 ]
+
+function isEscapeGameId(gameId: string | null | undefined) {
+  return games.some((game) => game.id === gameId && game.category === 'Escape')
+}
+
+function isEscapeSession(session: Pick<Session, 'confirmed_game_id' | 'game_options'> | null | undefined) {
+  if (!session) return false
+  return isEscapeGameId(session.confirmed_game_id) || (session.game_options ?? []).some((gameId) => isEscapeGameId(gameId))
+}
 
 const ticketServices: Array<{
   id: TicketType
@@ -756,6 +767,12 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
   const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
   const baseTotalScore = finiteNumber(row.base_total_score)
   const scoreAdjustment = finiteNumber(row.score_adjustment)
+  const bestEscapeDurationSeconds = bestByGameRows.reduce<number | null>((best, item) => {
+    if (!item || typeof item !== 'object') return best
+    const duration = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
+    if (!Number.isFinite(duration) || duration <= 0) return best
+    return best === null || duration < best ? duration : best
+  }, null)
 
   return {
     profileId: row.profile_id,
@@ -778,14 +795,16 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
     totalProjectiles: finiteNumber(row.total_projectiles),
     averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
     reliabilityScore: finiteNumber(row.reliability_score),
+    bestEscapeDurationSeconds,
     bestByGame: bestByGameRows.flatMap((item) => {
       if (!item || typeof item !== 'object') return []
       const gameValue = 'game' in item ? String(item.game || '') : ''
       const score = finiteNumber('score' in item ? item.score : null, Number.NaN)
+      const escapeDurationSeconds = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
       if (!gameValue || !Number.isFinite(score)) return []
 
       const game = games.find((candidate) => candidate.id === gameValue)
-      return [{ game: game?.title || gameValue, score }]
+      return [{ game: game?.title || gameValue, score, escapeDurationSeconds: Number.isFinite(escapeDurationSeconds) ? escapeDurationSeconds : null }]
     }),
   }
 }
@@ -1020,6 +1039,36 @@ function percentValue(numerator: number, denominator: number) {
 
 function formatWholePercent(value: number | null | undefined) {
   return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
+}
+
+function formatSpeedrunDuration(value: number | null | undefined) {
+  if (!Number.isFinite(value) || Number(value) <= 0) return '-'
+
+  const totalSeconds = Math.round(Number(value))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+function parseSpeedrunDuration(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === '') return null
+
+  const textValue = String(value).trim()
+  if (!textValue) return null
+
+  if (textValue.includes(':')) {
+    const parts = textValue.split(':').map((part) => Number(part.trim()))
+    if (parts.length < 2 || parts.length > 3 || parts.some((part) => !Number.isFinite(part) || part < 0)) return Number.NaN
+
+    const [hours, minutes, seconds] = parts.length === 3 ? parts : [0, parts[0], parts[1]]
+    return Math.round((hours * 3600) + (minutes * 60) + seconds)
+  }
+
+  const seconds = Number(textValue)
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.round(seconds) : Number.NaN
 }
 
 async function loadCanvasImage(src: string) {
@@ -1500,7 +1549,7 @@ export default function WidgetPage({
   const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
-  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | null>(null)
+  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
@@ -1554,6 +1603,8 @@ export default function WidgetPage({
   const sessionScoreText = looseText.sessionScore || 'Session score'
   const averageAccuracyText = looseText.averageAccuracy || 'Average'
   const totalShotsText = looseText.totalShots || 'Total Shots'
+  const escapeBestTimeText = looseText.escapeBestTime || 'Best escape time'
+  const escapeSessionTimeText = looseText.escapeSessionTime || 'Escape time'
   const pendingInvitationsText = looseText.pendingInvitations || 'Pending invitations'
   const pendingInvitationsHintText = looseText.pendingInvitationsHint || 'Invites waiting for your answer.'
   const invitationReceivedText = looseText.invitationReceived || 'Session invitation'
@@ -1569,6 +1620,7 @@ export default function WidgetPage({
     { value: 'reliability', label: text.reliabilityCriterion },
     { value: 'projectiles', label: text.projectilesCriterion },
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
+    { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
   const showProfileFields = Boolean(profile || authMode === 'create')
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
@@ -3900,6 +3952,7 @@ function handleSessionDateChange(value: string) {
       totalAccuracy: number
       accuracyCount: number
       totalProjectiles: number
+      bestEscapeDurationSeconds: number | null
       bestByGame: Map<string, number>
     }>()
 
@@ -3924,6 +3977,7 @@ function handleSessionDateChange(value: string) {
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
+        bestEscapeDurationSeconds: null,
         bestByGame: new Map<string, number>(),
       })
     })
@@ -3951,6 +4005,7 @@ function handleSessionDateChange(value: string) {
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
+          bestEscapeDurationSeconds: null,
           bestByGame: new Map<string, number>(),
         }
 
@@ -3990,6 +4045,13 @@ function handleSessionDateChange(value: string) {
         const projectiles = Number(participant.projectiles_fired)
         if (Number.isFinite(projectiles)) {
           current.totalProjectiles += projectiles
+        }
+
+        const escapeDuration = Number(participant.escape_duration_seconds)
+        if (isEscapeSession(session) && Number.isFinite(escapeDuration) && escapeDuration > 0) {
+          current.bestEscapeDurationSeconds = current.bestEscapeDurationSeconds === null
+            ? escapeDuration
+            : Math.min(current.bestEscapeDurationSeconds, escapeDuration)
         }
 
         stats.set(participant.profile_id, current)
@@ -4035,6 +4097,7 @@ function handleSessionDateChange(value: string) {
     totalProjectiles: 0,
     averageAccuracy: null,
     reliabilityScore: 0,
+    bestEscapeDurationSeconds: null,
     bestByGame: [],
   }
   const canShareCurrentUserStats = Boolean(profile && hasShareablePlayerStats(playerStats))
@@ -4173,6 +4236,7 @@ function handleSessionDateChange(value: string) {
         totalProjectiles: 0,
         averageAccuracy: null,
         reliabilityScore: 0,
+        bestEscapeDurationSeconds: null,
         bestByGame: [],
       }
     }
@@ -4201,6 +4265,7 @@ function handleSessionDateChange(value: string) {
           totalProjectiles: 0,
           averageAccuracy: null,
           reliabilityScore: 0,
+          bestEscapeDurationSeconds: null,
           bestByGame: [],
         }
       }
@@ -4230,6 +4295,7 @@ function handleSessionDateChange(value: string) {
           totalProjectiles: 0,
           averageAccuracy: null,
           reliabilityScore: 0,
+          bestEscapeDurationSeconds: null,
           bestByGame: [],
         }
       }
@@ -4242,6 +4308,8 @@ function handleSessionDateChange(value: string) {
   const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
     ? selectedPlayerManageContext.participant
     : null
+  const selectedPlayerSessionIsEscape = isEscapeSession(selectedPlayerSessionContext?.session)
+  const selectedPlayerEscapeDurationSeconds = selectedPlayerSessionContext?.participant.escape_duration_seconds ?? null
 
   function openChallengeForm(player: NonNullable<typeof selectedPlayerProfile>) {
     if (!profile) {
@@ -4322,7 +4390,7 @@ function handleSessionDateChange(value: string) {
     }
   }
 
-  async function updateSelectedSessionMetric(metric: 'session' | 'accuracy' | 'projectiles', value: string) {
+  async function updateSelectedSessionMetric(metric: 'session' | 'accuracy' | 'projectiles' | 'escapeDuration', value: string) {
     const participant = selectedSessionEditableParticipant
     if (!participant) return
 
@@ -4331,7 +4399,8 @@ function handleSessionDateChange(value: string) {
       metric === 'session' ? value : participant.score ?? '',
       participant.placement ?? '',
       metric === 'accuracy' ? value : participant.accuracy_percent ?? '',
-      metric === 'projectiles' ? value : participant.projectiles_fired ?? ''
+      metric === 'projectiles' ? value : participant.projectiles_fired ?? '',
+      metric === 'escapeDuration' ? value : undefined
     )
     setSelectedPlayerScoreEdit(null)
   }
@@ -4370,9 +4439,17 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  function renderSessionMetricControl(metric: 'session' | 'accuracy' | 'projectiles', value: number | null | undefined, ariaLabel: string, suffix = '') {
+  function renderSessionMetricControl(
+    metric: 'session' | 'accuracy' | 'projectiles' | 'escapeDuration',
+    value: number | null | undefined,
+    ariaLabel: string,
+    suffix = ''
+  ) {
     const editable = Boolean(selectedSessionEditableParticipant)
-    const displayValue = value === null || value === undefined ? '-' : `${value}${suffix}`
+    const isEscapeDurationMetric = metric === 'escapeDuration'
+    const displayValue = isEscapeDurationMetric
+      ? formatSpeedrunDuration(value)
+      : value === null || value === undefined ? '-' : `${value}${suffix}`
 
     if (selectedPlayerScoreEdit === metric && selectedSessionEditableParticipant) {
       return (
@@ -4380,8 +4457,9 @@ function handleSessionDateChange(value: string) {
           aria-label={ariaLabel}
           autoFocus
           className="inline-score-input compact-stat-input"
-          defaultValue={value ?? ''}
-          inputMode="numeric"
+          defaultValue={isEscapeDurationMetric ? (value ? formatSpeedrunDuration(value) : '') : value ?? ''}
+          inputMode={isEscapeDurationMetric ? 'text' : 'numeric'}
+          placeholder={isEscapeDurationMetric ? text.escapeDurationPlaceholder : undefined}
           onBlur={async (event) => {
             await updateSelectedSessionMetric(metric, event.target.value)
           }}
@@ -4438,6 +4516,30 @@ function handleSessionDateChange(value: string) {
             <>
               <span className="stat-label">{text.totalScore}</span>
               {renderTotalScoreControl(selectedPlayerProfile)}
+            </>
+          ),
+        },
+    selectedPlayerSessionIsEscape
+      ? {
+          key: 'escape-time',
+          className: 'editable-stat-card split-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{escapeSessionTimeText}</span>
+              {renderSessionMetricControl('escapeDuration', selectedPlayerEscapeDurationSeconds, text.escapeSessionTime)}
+              <span className="stat-subline">
+                <span>{escapeBestTimeText}</span>
+                <strong>{formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds)}</strong>
+              </span>
+            </>
+          ),
+        }
+      : {
+          key: 'escape-time',
+          value: (
+            <>
+              <span className="stat-label">{escapeBestTimeText}</span>
+              <strong>{formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds)}</strong>
             </>
           ),
         },
@@ -5342,7 +5444,8 @@ function handleSessionDateChange(value: string) {
     scoreValue: string | number | null,
     placementValue: string | number | null,
     accuracyValue: string | number | null,
-    projectilesValue: string | number | null
+    projectilesValue: string | number | null,
+    escapeDurationValue?: string | number | null
   ) {
     const resultContext = sessions.reduce<{ session: Session; participant: Participant } | null>((match, session) => {
       if (match) return match
@@ -5360,15 +5463,38 @@ function handleSessionDateChange(value: string) {
     const placement = placementValue === '' || placementValue === null ? null : Number(placementValue)
     const accuracy = accuracyValue === '' || accuracyValue === null ? null : Number(accuracyValue)
     const projectiles = projectilesValue === '' || projectilesValue === null ? null : Number(projectilesValue)
+    const escapeDuration = escapeDurationValue === undefined ? undefined : parseSpeedrunDuration(escapeDurationValue)
+
+    if (escapeDurationValue !== undefined && !isEscapeSession(resultContext.session)) {
+      setCreateStatus(text.escapeDurationEscapeOnly)
+      return
+    }
+
+    if (escapeDuration !== undefined && escapeDuration !== null && (!Number.isFinite(escapeDuration) || escapeDuration <= 0)) {
+      setCreateStatus(text.invalidEscapeDuration)
+      return
+    }
+
+    const resultPayload: {
+      score: number | null
+      accuracy_percent: number | null
+      projectiles_fired: number | null
+      placement: number | null
+      escape_duration_seconds?: number | null
+    } = {
+      score: Number.isFinite(score as number) ? score : null,
+      accuracy_percent: Number.isFinite(accuracy as number) ? accuracy : null,
+      projectiles_fired: Number.isFinite(projectiles as number) ? projectiles : null,
+      placement: Number.isFinite(placement as number) ? placement : null,
+    }
+
+    if (escapeDuration !== undefined) {
+      resultPayload.escape_duration_seconds = escapeDuration
+    }
 
     const { error } = await (await getSupabase())
       .from('session_participants')
-      .update({
-        score: Number.isFinite(score as number) ? score : null,
-        accuracy_percent: Number.isFinite(accuracy as number) ? accuracy : null,
-        projectiles_fired: Number.isFinite(projectiles as number) ? projectiles : null,
-        placement: Number.isFinite(placement as number) ? placement : null,
-      })
+      .update(resultPayload)
       .eq('id', participantId)
 
     if (error) {
@@ -10693,6 +10819,22 @@ function handleSessionDateChange(value: string) {
                 onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
                 placeholder={text.projectiles}
               />
+              {isEscapeSession(selectedPlayerManageContext.session) && (
+                <input
+                  aria-label={text.escapeSessionTime}
+                  defaultValue={selectedPlayerManageContext.participant.escape_duration_seconds ? formatSpeedrunDuration(selectedPlayerManageContext.participant.escape_duration_seconds) : ''}
+                  inputMode="text"
+                  onBlur={(event) => updateParticipantResult(
+                    selectedPlayerManageContext.participant.id,
+                    selectedPlayerManageContext.participant.score ?? '',
+                    selectedPlayerManageContext.participant.placement ?? '',
+                    selectedPlayerManageContext.participant.accuracy_percent ?? '',
+                    selectedPlayerManageContext.participant.projectiles_fired ?? '',
+                    event.target.value
+                  )}
+                  placeholder={text.escapeDurationPlaceholder}
+                />
+              )}
               <select
                 aria-label={text.place}
                 value={selectedPlayerManageContext.participant.placement ?? ''}
