@@ -10,6 +10,10 @@ const corsHeaders = {
 
 const ADMIN_EMAILS = ['emile@vre-vietnam.com']
 const MODERATION_MODEL = 'omni-moderation-latest'
+const ANONYMOUS_MASK_EMOJI = '🎭'
+const ANONYMOUS_MASK_COLOR = '#11181b'
+const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
+const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
 
 type MessageType = 'announcement' | 'comment'
 type ModerationStatus = 'approved' | 'pending_review'
@@ -33,6 +37,51 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 
 function isAdmin(profile: { role?: string | null; email?: string | null } | null) {
   return Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
+}
+
+function anonymousCallsignForId(profileId: string | null | undefined) {
+  const value = profileId || 'private-player'
+  let hash = 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+  }
+  const prefix = ANONYMOUS_CALLSIGN_PREFIXES[hash % ANONYMOUS_CALLSIGN_PREFIXES.length]
+  const number = String((hash % 900) + 100).padStart(3, '0')
+  return `${prefix}-${number}`
+}
+
+function publicProfileSnapshot(profile: {
+  id: string
+  full_name?: string | null
+  nickname?: string | null
+  email?: string | null
+  avatar_url?: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
+  avatar_text_color?: string | null
+  anonymous_mode?: boolean | null
+  anonymous_callsign?: string | null
+}) {
+  if (profile.anonymous_mode) {
+    return {
+      displayName: profile.nickname || profile.anonymous_callsign || anonymousCallsignForId(profile.id),
+      avatarUrl: null,
+      avatarEmoji: ANONYMOUS_MASK_EMOJI,
+      avatarInitials: null,
+      avatarColor: ANONYMOUS_MASK_COLOR,
+      avatarTextColor: ANONYMOUS_MASK_TEXT_COLOR,
+    }
+  }
+
+  return {
+    displayName: profile.nickname || profile.full_name || profile.email || 'Player',
+    avatarUrl: profile.avatar_url,
+    avatarEmoji: profile.avatar_emoji,
+    avatarInitials: profile.avatar_initials,
+    avatarColor: profile.avatar_color,
+    avatarTextColor: profile.avatar_text_color,
+  }
 }
 
 function moderationScore(categoryScores: Record<string, unknown>) {
@@ -163,7 +212,7 @@ async function handleRequest(request: Request) {
   const [{ data: profile }, { data: session }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, nickname, email, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto')
+      .select('id, full_name, nickname, email, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign')
       .eq('id', authUser.id)
       .single(),
     supabase
@@ -195,19 +244,19 @@ async function handleRequest(request: Request) {
   }
 
   const moderation = await moderateText(body, owner || admin)
-  const displayName = profile.nickname || profile.full_name || profile.email || 'Player'
+  const publicProfile = publicProfileSnapshot(profile)
 
   const { data: message, error: insertError } = await supabase
     .from('session_messages')
     .insert({
       session_id: sessionId,
       author_id: authUser.id,
-      author_display_name: displayName,
-      author_avatar_url: profile.avatar_url,
-      author_avatar_emoji: profile.avatar_emoji,
-      author_avatar_initials: profile.avatar_initials,
-      author_avatar_color: profile.avatar_color,
-      author_avatar_text_color: profile.avatar_text_color,
+      author_display_name: publicProfile.displayName,
+      author_avatar_url: publicProfile.avatarUrl,
+      author_avatar_emoji: publicProfile.avatarEmoji,
+      author_avatar_initials: publicProfile.avatarInitials,
+      author_avatar_color: publicProfile.avatarColor,
+      author_avatar_text_color: publicProfile.avatarTextColor,
       author_profile_motto: profile.profile_motto,
       message_type: messageType,
       body,

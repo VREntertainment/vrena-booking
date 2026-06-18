@@ -111,6 +111,11 @@ type Profile = {
   profile_motto?: string | null
   role?: 'player' | 'admin'
   score_adjustment?: number | null
+  anonymous_mode?: boolean | null
+  anonymous_callsign?: string | null
+  marketing_consent?: boolean | null
+  marketing_consent_at?: string | null
+  marketing_opted_out_at?: string | null
 }
 
 type LeaderboardRpcRow = {
@@ -136,6 +141,12 @@ type LeaderboardRpcRow = {
   reliability_score: number | null
   best_by_game: unknown
 }
+
+const ANONYMOUS_MASK_EMOJI = '🎭'
+const ANONYMOUS_MASK_COLOR = '#11181b'
+const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
+const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
+const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
 
 function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
@@ -708,6 +719,7 @@ function splitPhoneNumber(phone: string) {
 
 function displayName(profile: Profile | null) {
   if (!profile) return 'Player'
+  if (profile.anonymous_mode) return anonymousProfileName(profile)
   return compactDisplayName(profile.nickname || profile.full_name || profile.phone)
 }
 
@@ -718,6 +730,21 @@ function limitDisplayName(value: string) {
 function compactDisplayName(value: string | null | undefined, fallback = 'Player') {
   const cleaned = (value || fallback).trim() || fallback
   return limitDisplayName(cleaned)
+}
+
+function anonymousCallsignForId(profileId: string | null | undefined) {
+  const value = profileId || 'private-player'
+  let hash = 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+  }
+  const prefix = ANONYMOUS_CALLSIGN_PREFIXES[hash % ANONYMOUS_CALLSIGN_PREFIXES.length]
+  const number = String((hash % 900) + 100).padStart(3, '0')
+  return `${prefix}-${number}`
+}
+
+function anonymousProfileName(profile: Pick<Profile, 'id' | 'nickname' | 'anonymous_callsign'>) {
+  return compactDisplayName(profile.nickname || profile.anonymous_callsign || anonymousCallsignForId(profile.id), 'CIPHER-291')
 }
 
 function finiteNumber(value: unknown, fallback = 0) {
@@ -993,6 +1020,48 @@ function percentValue(numerator: number, denominator: number) {
 
 function formatWholePercent(value: number | null | undefined) {
   return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
+}
+
+async function loadCanvasImage(src: string) {
+  const image = new Image()
+  image.crossOrigin = 'anonymous'
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('image failed'))
+    image.src = src
+  })
+  return image
+}
+
+function drawCanvasRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  const safeRadius = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + safeRadius, y)
+  ctx.lineTo(x + width - safeRadius, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius)
+  ctx.lineTo(x + width, y + height - safeRadius)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height)
+  ctx.lineTo(x + safeRadius, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius)
+  ctx.lineTo(x, y + safeRadius)
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y)
+  ctx.closePath()
+}
+
+function hasShareablePlayerStats(stats: LeaderboardPlayer | null | undefined) {
+  return Boolean(stats && (
+    stats.gamesJoined > 0
+    || stats.sessionsJoined > 0
+    || stats.wins > 0
+    || stats.bestPerformerCount > 0
+    || stats.totalScore > 0
+    || stats.totalProjectiles > 0
+    || Number(stats.averageAccuracy) > 0
+  ))
+}
+
+function safeDownloadSlug(value: string, fallback: string) {
+  return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || fallback
 }
 
 function bestOfLabel(value?: number | null) {
@@ -1310,6 +1379,7 @@ export default function WidgetPage({
   const [profileEmail, setProfileEmail] = useState('')
   const [profileBirthday, setProfileBirthday] = useState('')
   const [personalDataConsent, setPersonalDataConsent] = useState(false)
+  const [marketingConsent, setMarketingConsent] = useState(true)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
   const [avatarMode, setAvatarMode] = useState<'photo' | 'emoji' | 'initials'>('photo')
@@ -1439,6 +1509,8 @@ export default function WidgetPage({
   const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
   const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
   const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
+  const [anonymousConfirmOpen, setAnonymousConfirmOpen] = useState(false)
+  const [isSavingAnonymousMode, setIsSavingAnonymousMode] = useState(false)
   const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
   const [hasMoreUpcomingSessions, setHasMoreUpcomingSessions] = useState(true)
   const [isLoadingMoreSessions, setIsLoadingMoreSessions] = useState(false)
@@ -1624,6 +1696,16 @@ export default function WidgetPage({
   }
 
   function avatarFields(source: Profile) {
+    if (source.anonymous_mode) {
+      return {
+        avatar_url: null,
+        avatar_emoji: ANONYMOUS_MASK_EMOJI,
+        avatar_initials: null,
+        avatar_color: ANONYMOUS_MASK_COLOR,
+        avatar_text_color: ANONYMOUS_MASK_TEXT_COLOR,
+      }
+    }
+
     return {
       avatar_url: source.avatar_url || null,
       avatar_emoji: source.avatar_emoji || null,
@@ -1697,16 +1779,19 @@ export default function WidgetPage({
 
     setLeaderboardPlayers((currentPlayers) =>
       currentPlayers.map((player) => player.profileId === updatedProfile.id
-        ? {
-          ...player,
-          displayName: compactDisplayName(displayName(updatedProfile), text.player),
-          avatarUrl: updatedProfile.avatar_url || null,
-          avatarEmoji: updatedProfile.avatar_emoji || null,
-          avatarInitials: updatedProfile.avatar_initials || null,
-          avatarColor: updatedProfile.avatar_color || null,
-          avatarTextColor: updatedProfile.avatar_text_color || null,
-          profileMotto: updatedProfile.profile_motto || null,
-        }
+        ? (() => {
+          const nextAvatar = avatarFields(updatedProfile)
+          return {
+            ...player,
+            displayName: compactDisplayName(displayName(updatedProfile), text.player),
+            avatarUrl: nextAvatar.avatar_url,
+            avatarEmoji: nextAvatar.avatar_emoji,
+            avatarInitials: nextAvatar.avatar_initials,
+            avatarColor: nextAvatar.avatar_color,
+            avatarTextColor: nextAvatar.avatar_text_color,
+            profileMotto: updatedProfile.profile_motto || null,
+          }
+        })()
         : player
       )
     )
@@ -2076,7 +2161,7 @@ export default function WidgetPage({
 
       const { data: profileRow, error: profileError, status: profileStatusCode } = await (await getSupabase())
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+        .select(PROFILE_SELECT)
         .eq('id', authUser.id)
         .maybeSingle()
 
@@ -2103,6 +2188,7 @@ export default function WidgetPage({
         setProfileNickname(limitDisplayName(profileRow.nickname || ''))
         setProfileEmail(profileRow.email || '')
         setProfileBirthday(profileRow.birthday || '')
+        setMarketingConsent(profileRow.marketing_consent !== false)
         setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
         setAvatarEmoji(profileRow.avatar_emoji || '😎')
         setAvatarInitials(profileRow.avatar_initials || '')
@@ -2133,6 +2219,11 @@ export default function WidgetPage({
         avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
         profile_motto: profileMottoValue || null,
         role: isAdminEmail(email) ? 'admin' : 'player',
+        anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
+        anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
+        marketing_consent: authUser.user_metadata?.marketing_consent === false ? false : true,
+        marketing_consent_at: typeof authUser.user_metadata?.marketing_consent_at === 'string' ? authUser.user_metadata.marketing_consent_at : null,
+        marketing_opted_out_at: typeof authUser.user_metadata?.marketing_opted_out_at === 'string' ? authUser.user_metadata.marketing_opted_out_at : null,
       }
 
       authDebug('loadProfile:missingProfileFallback', fallbackProfile)
@@ -2144,6 +2235,7 @@ export default function WidgetPage({
       setProfileNickname(nickname)
       setProfileEmail(email)
       setProfileBirthday(birthdayValue)
+      setMarketingConsent(fallbackProfile.marketing_consent !== false)
       setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
       setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
       setAvatarInitials(fallbackProfile.avatar_initials || '')
@@ -2165,6 +2257,11 @@ export default function WidgetPage({
         avatar_color: fallbackProfile.avatar_color,
         avatar_text_color: fallbackProfile.avatar_text_color,
         profile_motto: fallbackProfile.profile_motto,
+        anonymous_mode: fallbackProfile.anonymous_mode || false,
+        anonymous_callsign: fallbackProfile.anonymous_callsign || null,
+        marketing_consent: fallbackProfile.marketing_consent !== false,
+        marketing_consent_at: fallbackProfile.marketing_consent_at || new Date().toISOString(),
+        marketing_opted_out_at: fallbackProfile.marketing_opted_out_at || null,
         updated_at: new Date().toISOString(),
       })
 
@@ -2243,6 +2340,9 @@ export default function WidgetPage({
               birthday: profileBirthday || null,
               phone: fullPhone,
               avatar_text_color: avatarTextColor,
+              marketing_consent: marketingConsent,
+              marketing_consent_at: marketingConsent ? consentAt : null,
+              marketing_opted_out_at: marketingConsent ? null : consentAt,
               personal_data_consent: personalDataConsent,
               personal_data_consent_at: consentAt,
               privacy_policy_url: PRIVACY_POLICY_URL,
@@ -2284,7 +2384,7 @@ export default function WidgetPage({
 
         const existingProfileResult = await (await getSupabase())
           .from('profiles')
-          .select('avatar_url, nickname')
+          .select('avatar_url, nickname, anonymous_callsign')
           .eq('id', authUser.id)
           .maybeSingle()
         const existingProfile = existingProfileResult.data
@@ -2318,6 +2418,7 @@ export default function WidgetPage({
           email: loginEmail,
           birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
+          ...marketingConsentValues(marketingConsent, null, consentAt),
           ...avatarPayload,
           personal_data_consent: personalDataConsent,
           personal_data_consent_at: consentAt,
@@ -2338,6 +2439,28 @@ export default function WidgetPage({
           return
         }
 
+        const marketingListError = await syncMarketingListForProfile({
+          id: authUser.id,
+          full_name: fullName,
+          phone: fullPhone,
+          nickname: nickname || existingProfile?.nickname || null,
+          email: loginEmail,
+          birthday: profileBirthday || null,
+          profile_motto: cleanMotto || null,
+          role: isAdminEmail(loginEmail) ? 'admin' : 'player',
+          anonymous_mode: false,
+          anonymous_callsign: existingProfile?.anonymous_callsign || null,
+          ...marketingConsentValues(marketingConsent, null, consentAt),
+          ...avatarPayload,
+        }, marketingConsent)
+
+        if (marketingListError) {
+          resetCaptcha()
+          setProfileStatus(marketingListError)
+          setIsSavingProfile(false)
+          return
+        }
+
         const metadataUpdate = await (await getSupabase()).auth.updateUser({
           data: {
             display_name: display,
@@ -2352,6 +2475,9 @@ export default function WidgetPage({
             avatar_color: avatarPayload.avatar_color,
             avatar_text_color: avatarPayload.avatar_text_color,
             profile_motto: cleanMotto || null,
+            marketing_consent: marketingConsent,
+            marketing_consent_at: marketingConsent ? consentAt : null,
+            marketing_opted_out_at: marketingConsent ? null : consentAt,
             personal_data_consent: personalDataConsent,
             personal_data_consent_at: consentAt,
             privacy_policy_url: PRIVACY_POLICY_URL,
@@ -2720,7 +2846,7 @@ export default function WidgetPage({
         : Promise.resolve({ data: [], error: null }),
       client
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment')
+        .select(PROFILE_SELECT)
         .order('full_name', { ascending: true }),
       profileIds.length > 0
         ? client
@@ -3775,14 +3901,15 @@ function handleSessionDateChange(value: string) {
     }>()
 
     allProfiles.forEach((playerProfile) => {
+      const playerAvatar = avatarFields(playerProfile)
       stats.set(playerProfile.id, {
         profileId: playerProfile.id,
-        displayName: compactDisplayName(playerProfile.nickname || playerProfile.full_name || playerProfile.phone, text.player),
-        avatarUrl: playerProfile.avatar_url || null,
-        avatarEmoji: playerProfile.avatar_emoji || null,
-        avatarInitials: playerProfile.avatar_initials || null,
-        avatarColor: playerProfile.avatar_color || null,
-        avatarTextColor: playerProfile.avatar_text_color || null,
+        displayName: compactDisplayName(displayName(playerProfile), text.player),
+        avatarUrl: playerAvatar.avatar_url,
+        avatarEmoji: playerAvatar.avatar_emoji,
+        avatarInitials: playerAvatar.avatar_initials,
+        avatarColor: playerAvatar.avatar_color,
+        avatarTextColor: playerAvatar.avatar_text_color,
         profileMotto: playerProfile.profile_motto || null,
         sessionsJoined: 0,
         gamesJoined: 0,
@@ -3882,15 +4009,16 @@ function handleSessionDateChange(value: string) {
   }, [allProfiles, profileScoreAdjustments, sessions, text.player])
 
   const leaderboardPlayerStats = leaderboardPlayers.length > 0 ? leaderboardPlayers : allPlayerStats
+  const currentProfileAvatar = profile ? avatarFields(profile) : null
 
   const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? {
     profileId: userId,
     displayName: displayName(profile),
-    avatarUrl: profile?.avatar_url || null,
-    avatarEmoji: profile?.avatar_emoji || null,
-    avatarInitials: profile?.avatar_initials || null,
-    avatarColor: profile?.avatar_color || null,
-    avatarTextColor: profile?.avatar_text_color || null,
+    avatarUrl: currentProfileAvatar?.avatar_url || null,
+    avatarEmoji: currentProfileAvatar?.avatar_emoji || null,
+    avatarInitials: currentProfileAvatar?.avatar_initials || null,
+    avatarColor: currentProfileAvatar?.avatar_color || null,
+    avatarTextColor: currentProfileAvatar?.avatar_text_color || null,
     profileMotto: profile?.profile_motto || null,
     sessionsJoined: 0,
     gamesJoined: 0,
@@ -3906,6 +4034,8 @@ function handleSessionDateChange(value: string) {
     reliabilityScore: 0,
     bestByGame: [],
   }
+  const canShareCurrentUserStats = Boolean(profile && hasShareablePlayerStats(playerStats))
+  const currentUserStatsShared = sharedKey === 'stats'
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
   const topPlayer = leaderboardPlayerStats[0]
@@ -3954,11 +4084,12 @@ function handleSessionDateChange(value: string) {
     let visibleName = ''
 
     if (selectedPlayerId === userId && profile) {
-      visibleAvatar = profile.avatar_url || visibleAvatar
-      visibleEmoji = profile.avatar_emoji || visibleEmoji
-      visibleInitials = profile.avatar_initials || visibleInitials
-      visibleColor = profile.avatar_color || visibleColor
-      visibleTextColor = profile.avatar_text_color || visibleTextColor
+      const profileAvatar = avatarFields(profile)
+      visibleAvatar = profileAvatar.avatar_url || visibleAvatar
+      visibleEmoji = profileAvatar.avatar_emoji || visibleEmoji
+      visibleInitials = profileAvatar.avatar_initials || visibleInitials
+      visibleColor = profileAvatar.avatar_color || visibleColor
+      visibleTextColor = profileAvatar.avatar_text_color || visibleTextColor
       visibleMotto = profile.profile_motto || visibleMotto
       visibleName = displayName(profile) || visibleName
     }
@@ -3991,14 +4122,15 @@ function handleSessionDateChange(value: string) {
 
     if (selectedPlayerStats) {
       if (selectedPlayerId === userId && profile) {
+        const profileAvatar = avatarFields(profile)
         return {
           ...selectedPlayerStats,
           displayName: compactDisplayName(displayName(profile) || selectedPlayerStats.displayName || visibleName, text.player),
-          avatarUrl: profile.avatar_url || null,
-          avatarEmoji: profile.avatar_emoji || null,
-          avatarInitials: profile.avatar_initials || null,
-          avatarColor: profile.avatar_color || null,
-          avatarTextColor: profile.avatar_text_color || null,
+          avatarUrl: profileAvatar.avatar_url,
+          avatarEmoji: profileAvatar.avatar_emoji,
+          avatarInitials: profileAvatar.avatar_initials,
+          avatarColor: profileAvatar.avatar_color,
+          avatarTextColor: profileAvatar.avatar_text_color,
           profileMotto: profile.profile_motto || null,
         }
       }
@@ -4016,14 +4148,15 @@ function handleSessionDateChange(value: string) {
     }
 
     if (selectedPlayerId === userId && profile) {
+      const profileAvatar = avatarFields(profile)
       return {
         profileId: profile.id,
         displayName: compactDisplayName(displayName(profile), text.player),
-        avatarUrl: profile.avatar_url || null,
-        avatarEmoji: profile.avatar_emoji || null,
-        avatarInitials: profile.avatar_initials || null,
-        avatarColor: profile.avatar_color || null,
-        avatarTextColor: profile.avatar_text_color || null,
+        avatarUrl: profileAvatar.avatar_url,
+        avatarEmoji: profileAvatar.avatar_emoji,
+        avatarInitials: profileAvatar.avatar_initials,
+        avatarColor: profileAvatar.avatar_color,
+        avatarTextColor: profileAvatar.avatar_text_color,
         profileMotto: profile.profile_motto || null,
         sessionsJoined: 0,
         gamesJoined: 0,
@@ -4557,7 +4690,7 @@ function handleSessionDateChange(value: string) {
       const safe = query.replace(/[%_,]/g, '')
       const { data } = await (await getSupabase())
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+        .select(PROFILE_SELECT)
         .or(`full_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
         .limit(6)
 
@@ -5291,6 +5424,132 @@ function handleSessionDateChange(value: string) {
     setCreateStatus(text.scoreSaved)
   }
 
+  function marketingConsentValues(consent: boolean, currentProfile: Profile | null, timestamp = new Date().toISOString()) {
+    return {
+      marketing_consent: consent,
+      marketing_consent_at: consent ? currentProfile?.marketing_consent_at || timestamp : currentProfile?.marketing_consent_at || null,
+      marketing_opted_out_at: consent ? null : timestamp,
+    }
+  }
+
+  async function syncMarketingListForProfile(source: Profile, consent: boolean) {
+    const client = await getSupabase()
+
+    if (!consent) {
+      const { error } = await client
+        .from('marketing_list')
+        .delete()
+        .eq('profile_id', source.id)
+      return error?.message || ''
+    }
+
+    const { error } = await client
+      .from('marketing_list')
+      .upsert({
+        profile_id: source.id,
+        email: source.email,
+        full_name: source.full_name,
+        nickname: source.nickname,
+        phone: source.phone,
+        consented_at: source.marketing_consent_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'profile_id' })
+
+    return error?.message || ''
+  }
+
+  async function syncProfilePublicSnapshots(profileId: string) {
+    const { error } = await (await getSupabase()).rpc('sync_profile_public_snapshot', { p_profile_id: profileId })
+    return error?.message || ''
+  }
+
+  async function updateAnonymousMode(nextMode: boolean) {
+    if (!profile || !userId) return
+
+    setIsSavingAnonymousMode(true)
+    const nextCallsign = profile.anonymous_callsign || anonymousCallsignForId(userId)
+    const { data, error } = await (await getSupabase())
+      .from('profiles')
+      .update({
+        anonymous_mode: nextMode,
+        anonymous_callsign: nextCallsign,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select(PROFILE_SELECT)
+      .single()
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsSavingAnonymousMode(false)
+      setAnonymousConfirmOpen(false)
+      return
+    }
+
+    const metadataUpdate = await (await getSupabase()).auth.updateUser({
+      data: {
+        display_name: displayName(data),
+        name: displayName(data),
+        anonymous_mode: data.anonymous_mode,
+        anonymous_callsign: data.anonymous_callsign,
+      },
+    })
+
+    if (metadataUpdate.error) {
+      setProfileStatus(metadataUpdate.error.message)
+      setIsSavingAnonymousMode(false)
+      setAnonymousConfirmOpen(false)
+      return
+    }
+
+    const snapshotError = await syncProfilePublicSnapshots(data.id)
+    if (snapshotError) {
+      setProfileStatus(snapshotError)
+      setIsSavingAnonymousMode(false)
+      setAnonymousConfirmOpen(false)
+      return
+    }
+
+    setProfile(data)
+    syncProfileEverywhere(data)
+    await loadSessions()
+    await loadClubs()
+    if (networkDataLoadedRef.current) await loadNetworkData()
+    refreshLeaderboardIfLoaded()
+    setProfileStatus(nextMode ? text.anonymousModeActivated : text.anonymousModeDeactivated)
+    setAnonymousConfirmOpen(false)
+    setIsSavingAnonymousMode(false)
+  }
+
+  async function updateMarketingConsent(nextConsent: boolean) {
+    setMarketingConsent(nextConsent)
+    if (!profile || !userId) return
+
+    const previousProfile = profile
+    const values = marketingConsentValues(nextConsent, profile)
+    const optimisticProfile = { ...profile, ...values }
+    setProfile(optimisticProfile)
+    setProfileStatus(text.savingProfile)
+
+    const { data, error } = await (await getSupabase())
+      .from('profiles')
+      .update(values)
+      .eq('id', userId)
+      .select(PROFILE_SELECT)
+      .single()
+
+    if (error) {
+      setMarketingConsent(previousProfile.marketing_consent !== false)
+      setProfile(previousProfile)
+      setProfileStatus(error.message)
+      return
+    }
+
+    const listError = await syncMarketingListForProfile(data, nextConsent)
+    setProfile(data)
+    setProfileStatus(listError || (nextConsent ? text.marketingConsentSaved : text.marketingConsentRemoved))
+  }
+
   async function saveProfile() {
     if (!userId) {
       setProfileStatus(text.profileLoading)
@@ -5336,6 +5595,7 @@ function handleSessionDateChange(value: string) {
       nickname: nickname || null,
       email: profileEmail.trim() || null,
       birthday: profileBirthday || null,
+      ...marketingConsentValues(marketingConsent, profile),
       ...avatarPayload,
       updated_at: new Date().toISOString(),
     }
@@ -5343,7 +5603,7 @@ function handleSessionDateChange(value: string) {
     const { data, error } = await (await getSupabase())
       .from('profiles')
       .upsert(row)
-      .select('id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+      .select(PROFILE_SELECT)
       .single()
 
     if (error) {
@@ -5352,7 +5612,8 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const display = nickname || compactDisplayName(fullName)
+    const display = displayName(data)
+    const publicAvatar = avatarFields(data)
     const metadataUpdate = await (await getSupabase()).auth.updateUser({
       data: {
         display_name: display,
@@ -5361,12 +5622,15 @@ function handleSessionDateChange(value: string) {
         nickname: nickname || null,
         birthday: data.birthday,
         phone: data.phone,
-        avatar_url: data.avatar_url,
-        avatar_emoji: data.avatar_emoji,
-        avatar_initials: data.avatar_initials,
-        avatar_color: data.avatar_color,
-        avatar_text_color: data.avatar_text_color,
+        avatar_url: publicAvatar.avatar_url,
+        avatar_emoji: publicAvatar.avatar_emoji,
+        avatar_initials: publicAvatar.avatar_initials,
+        avatar_color: publicAvatar.avatar_color,
+        avatar_text_color: publicAvatar.avatar_text_color,
         profile_motto: data.profile_motto,
+        marketing_consent: data.marketing_consent,
+        marketing_consent_at: data.marketing_consent_at,
+        marketing_opted_out_at: data.marketing_opted_out_at,
       },
     })
 
@@ -5380,11 +5644,11 @@ function handleSessionDateChange(value: string) {
       .from('session_participants')
       .update({
         display_name: display,
-        avatar_url: data.avatar_url,
-        avatar_emoji: data.avatar_emoji,
-        avatar_initials: data.avatar_initials,
-        avatar_color: data.avatar_color,
-        avatar_text_color: data.avatar_text_color,
+        avatar_url: publicAvatar.avatar_url,
+        avatar_emoji: publicAvatar.avatar_emoji,
+        avatar_initials: publicAvatar.avatar_initials,
+        avatar_color: publicAvatar.avatar_color,
+        avatar_text_color: publicAvatar.avatar_text_color,
         profile_motto: data.profile_motto,
     })
       .eq('profile_id', userId)
@@ -5400,11 +5664,11 @@ function handleSessionDateChange(value: string) {
       .from('club_members')
       .update({
         display_name: display,
-        avatar_url: data.avatar_url,
-        avatar_emoji: data.avatar_emoji,
-        avatar_initials: data.avatar_initials,
-        avatar_color: data.avatar_color,
-        avatar_text_color: data.avatar_text_color,
+        avatar_url: publicAvatar.avatar_url,
+        avatar_emoji: publicAvatar.avatar_emoji,
+        avatar_initials: publicAvatar.avatar_initials,
+        avatar_color: publicAvatar.avatar_color,
+        avatar_text_color: publicAvatar.avatar_text_color,
         profile_motto: data.profile_motto,
       })
       .eq('profile_id', userId)
@@ -5420,11 +5684,11 @@ function handleSessionDateChange(value: string) {
       .from('tournament_editors')
       .update({
         display_name: display,
-        avatar_url: data.avatar_url,
-        avatar_emoji: data.avatar_emoji,
-        avatar_initials: data.avatar_initials,
-        avatar_color: data.avatar_color,
-        avatar_text_color: data.avatar_text_color,
+        avatar_url: publicAvatar.avatar_url,
+        avatar_emoji: publicAvatar.avatar_emoji,
+        avatar_initials: publicAvatar.avatar_initials,
+        avatar_color: publicAvatar.avatar_color,
+        avatar_text_color: publicAvatar.avatar_text_color,
         profile_motto: data.profile_motto,
       })
       .eq('profile_id', userId)
@@ -5432,6 +5696,20 @@ function handleSessionDateChange(value: string) {
 
     if (tournamentEditorProfileUpdate.error) {
       setProfileStatus(tournamentEditorProfileUpdate.error.message)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const snapshotError = await syncProfilePublicSnapshots(data.id)
+    if (snapshotError) {
+      setProfileStatus(snapshotError)
+      setIsSavingProfile(false)
+      return
+    }
+
+    const marketingListError = await syncMarketingListForProfile(data, data.marketing_consent !== false)
+    if (marketingListError) {
+      setProfileStatus(marketingListError)
       setIsSavingProfile(false)
       return
     }
@@ -6273,7 +6551,7 @@ function handleSessionDateChange(value: string) {
       ? { data: selectedEditor, error: null }
       : await (await getSupabase())
         .from('profiles')
-        .select('id, phone, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role')
+        .select(PROFILE_SELECT)
         .or(`email.eq.${email},nickname.ilike.%${email}%,full_name.ilike.%${email}%`)
         .limit(1)
         .maybeSingle()
@@ -6285,7 +6563,7 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const display = compactDisplayName(editorProfile.nickname || editorProfile.full_name || editorProfile.email, text.player)
+    const display = compactDisplayName(displayName(editorProfile), text.player)
     const { error } = await (await getSupabase()).from('tournament_editors').upsert({
       session_id: session.id,
       profile_id: editorProfile.id,
@@ -6650,6 +6928,211 @@ function handleSessionDateChange(value: string) {
     await loadSessions()
   }
 
+  async function shareCurrentUserStats(contextLabel = '') {
+    if (!profile || !hasShareablePlayerStats(playerStats)) {
+      setProfileStatus(text.statsShareUnavailable)
+      return
+    }
+
+    const playerName = compactDisplayName(playerStats.displayName || displayName(profile), text.player)
+    const title = contextLabel ? `${text.statsShareTitle} · ${contextLabel}` : text.statsShareTitle
+    const bestScore = playerStats.bestByGame[0]
+    const summary = [
+      `${title}: ${playerName}`,
+      `${text.totalScore}: ${playerStats.totalScore}`,
+      `${text.gamesPlayedCriterion}: ${playerStats.gamesJoined}`,
+      `${text.wins}: ${playerStats.wins}`,
+      `${bestPerformerCountText}: ${playerStats.bestPerformerCount}`,
+      `${text.accuracy}: ${formatWholePercent(playerStats.averageAccuracy)}`,
+      `${text.projectiles}: ${playerStats.totalProjectiles}`,
+      bestScore ? `${text.bestScores}: ${bestScore.game} ${bestScore.score}` : '',
+      DEFAULT_APP_URL,
+    ].filter(Boolean).join('\n')
+
+    let templateImage: HTMLImageElement | null = null
+    try {
+      templateImage = await loadCanvasImage(`${window.location.origin}/brand/tournament-leaderboard-template.jpg`)
+    } catch {
+      templateImage = null
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = templateImage?.naturalWidth || 1080
+    canvas.height = templateImage?.naturalHeight || 1350
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx) {
+      if (navigator.share) {
+        await navigator.share({ title, text: summary, url: DEFAULT_APP_URL })
+        setSharedKey('stats')
+        return
+      }
+
+      await navigator.clipboard?.writeText(summary)
+      setProfileStatus(text.statsShareReady)
+      setSharedKey('stats')
+      return
+    }
+
+    const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900, align: CanvasTextAlign = 'center') => {
+      let fontSize = size
+      ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+      while (ctx.measureText(value).width > maxWidth && fontSize > 18) {
+        fontSize -= 2
+        ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+      }
+      ctx.fillStyle = color
+      ctx.textAlign = align
+      ctx.fillText(value, x, y)
+    }
+
+    const drawShareAvatar = async (x: number, y: number, size: number) => {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2)
+      ctx.clip()
+
+      let drewPhoto = false
+      if (playerStats.avatarUrl) {
+        try {
+          const image = await loadCanvasImage(playerStats.avatarUrl)
+          const imageWidth = image.naturalWidth || image.width
+          const imageHeight = image.naturalHeight || image.height
+          const scale = Math.max(size / imageWidth, size / imageHeight)
+          const drawWidth = imageWidth * scale
+          const drawHeight = imageHeight * scale
+          ctx.drawImage(image, x + (size - drawWidth) / 2, y + (size - drawHeight) / 2, drawWidth, drawHeight)
+          drewPhoto = true
+        } catch {
+          drewPhoto = false
+        }
+      }
+
+      if (!drewPhoto) {
+        const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
+        avatarGradient.addColorStop(0, playerStats.avatarColor || '#00b6c6')
+        avatarGradient.addColorStop(1, '#3059ff')
+        ctx.fillStyle = avatarGradient
+        ctx.fillRect(x, y, size, size)
+        ctx.fillStyle = playerStats.avatarTextColor || '#ffffff'
+        ctx.font = `900 ${playerStats.avatarEmoji ? size * 0.5 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(playerStats.avatarEmoji || compactInitials(playerStats.avatarInitials || playerStats.displayName || text.player).slice(0, 2), x + size / 2, y + size / 2)
+      }
+
+      ctx.restore()
+    }
+
+    if (templateImage) {
+      ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
+    } else {
+      const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+      background.addColorStop(0, '#f6fbfb')
+      background.addColorStop(1, '#dfe8ff')
+      ctx.fillStyle = background
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
+
+    ctx.save()
+    ctx.shadowColor = 'rgba(7, 17, 18, 0.18)'
+    ctx.shadowBlur = 34
+    ctx.shadowOffsetY = 18
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
+    drawCanvasRoundRect(ctx, 92, 118, canvas.width - 184, canvas.height - 236, 42)
+    ctx.fill()
+    ctx.restore()
+
+    ctx.textBaseline = 'alphabetic'
+    fitText(title, canvas.width / 2, 220, 740, 44)
+
+    await drawShareAvatar(canvas.width / 2 - 104, 278, 208)
+
+    ctx.strokeStyle = '#3059ff'
+    ctx.lineWidth = 7
+    ctx.beginPath()
+    ctx.arc(canvas.width / 2, 382, 108, 0, Math.PI * 2)
+    ctx.stroke()
+
+    fitText(playerName, canvas.width / 2, 552, 740, 54)
+    if (contextLabel) {
+      fitText(contextLabel, canvas.width / 2, 598, 660, 26, '#657278', 800)
+    }
+
+    const primaryStats = [
+      { label: text.totalScore, value: playerStats.totalScore.toLocaleString('en-US') },
+      { label: text.gamesPlayedCriterion, value: `${playerStats.gamesJoined}` },
+      { label: text.wins, value: `${playerStats.wins}` },
+      { label: bestPerformerCountText, value: `${playerStats.bestPerformerCount}` },
+      { label: text.accuracy, value: formatWholePercent(playerStats.averageAccuracy) },
+      { label: text.projectiles, value: `${playerStats.totalProjectiles}` },
+    ]
+
+    const cardWidth = 276
+    const cardHeight = 138
+    const startX = (canvas.width - cardWidth * 3 - 34 * 2) / 2
+    const startY = 656
+
+    primaryStats.forEach((stat, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = startX + col * (cardWidth + 34)
+      const y = startY + row * (cardHeight + 28)
+
+      ctx.fillStyle = '#f0f4f6'
+      drawCanvasRoundRect(ctx, x, y, cardWidth, cardHeight, 24)
+      ctx.fill()
+      fitText(stat.label, x + cardWidth / 2, y + 44, cardWidth - 36, 24, '#657278', 800)
+      fitText(stat.value, x + cardWidth / 2, y + 98, cardWidth - 36, 46, '#071112', 900)
+    })
+
+    const bestScores = playerStats.bestByGame.slice(0, 3)
+    if (bestScores.length > 0) {
+      fitText(text.bestScores, canvas.width / 2, 1064, 700, 30, '#071112', 900)
+      bestScores.forEach((item, index) => {
+        fitText(`${item.game}: ${item.score}`, canvas.width / 2, 1110 + index * 40, 720, 28, '#39464b', 800)
+      })
+    }
+
+    fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
+
+    let blob: Blob | null = null
+    try {
+      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+    } catch {
+      blob = null
+    }
+
+    if (!blob) {
+      if (navigator.share) {
+        await navigator.share({ title, text: summary, url: DEFAULT_APP_URL })
+        setSharedKey('stats')
+        return
+      }
+      await navigator.clipboard?.writeText(summary)
+      setProfileStatus(text.statsShareReady)
+      setSharedKey('stats')
+      return
+    }
+
+    const file = new File([blob], `${safeDownloadSlug(playerName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title, text: summary })
+      setSharedKey('stats')
+      return
+    }
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.name
+    link.click()
+    URL.revokeObjectURL(url)
+    setProfileStatus(text.statsShareReady)
+    setSharedKey('stats')
+  }
+
   async function shareTournamentResults(session: Session) {
     const podium = [1, 2, 3]
       .map((placement) => (session.session_participants ?? []).find((participant) => participant.placement === placement))
@@ -6669,17 +7152,6 @@ function handleSessionDateChange(value: string) {
       await navigator.clipboard?.writeText(summary)
       setSharedKey(`results-${session.id}`)
       return
-    }
-
-    const loadCanvasImage = async (src: string) => {
-      const image = new Image()
-      image.crossOrigin = 'anonymous'
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve()
-        image.onerror = () => reject(new Error('image failed'))
-        image.src = src
-      })
-      return image
     }
 
     let templateImage: HTMLImageElement | null = null
@@ -7060,8 +7532,15 @@ function handleSessionDateChange(value: string) {
         </div>
 
         <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => setActiveView('profile')} type="button">
-          <div className="avatar" style={avatarStyle(profile)}>
-            {avatarNode(profile, 'P')}
+          <div className="avatar" style={avatarStyle(currentProfileAvatar)}>
+            {avatarNode(profile ? {
+              avatar_url: currentProfileAvatar?.avatar_url,
+              avatar_emoji: currentProfileAvatar?.avatar_emoji,
+              avatar_initials: currentProfileAvatar?.avatar_initials,
+              avatar_color: currentProfileAvatar?.avatar_color,
+              avatar_text_color: currentProfileAvatar?.avatar_text_color,
+              display_name: displayName(profile),
+            } : null, 'P')}
             {crownedTopPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
           </div>
           <div>
@@ -8137,8 +8616,11 @@ function handleSessionDateChange(value: string) {
                                 <div className="editor-results">
                                   {tournamentEditorResults.map((editorProfile) => (
                                     <button key={editorProfile.id} onClick={() => addTournamentEditor(session, editorProfile)} type="button">
-                                      <span className="player-avatar tiny-avatar" style={avatarStyle(editorProfile)}>{avatarNode(editorProfile, 'E')}</span>
-                                      <span>{compactDisplayName(editorProfile.nickname || editorProfile.full_name || editorProfile.email, text.player)}</span>
+                                      <span className="player-avatar tiny-avatar" style={avatarStyle(avatarFields(editorProfile))}>{avatarNode({
+                                        ...avatarFields(editorProfile),
+                                        display_name: displayName(editorProfile),
+                                      }, 'E')}</span>
+                                      <span>{compactDisplayName(displayName(editorProfile), text.player)}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -8365,7 +8847,10 @@ function handleSessionDateChange(value: string) {
                 avatar_text_color: player.avatarTextColor,
               })}
               canBypassPrivateClubPins={isAdmin}
+              canShareCurrentUserStats={canShareCurrentUserStats}
               clubs={clubs}
+              isCurrentUserStatsShared={currentUserStatsShared}
+              onShareCurrentUserStats={() => shareCurrentUserStats()}
               onOpenPlayerProfile={openPlayerProfile}
               players={leaderboardPlayerStats}
               renderAvatar={(player: LeaderboardPlayer) => avatarNode({
@@ -9109,8 +9594,10 @@ function handleSessionDateChange(value: string) {
             ].join(' ').trim()}>
               {showProfileFields && (
                 <div className="profile-photo-panel">
-                  <label className="profile-photo-preview" style={{ background: avatarColor, color: avatarTextColor }}>
-                    {avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
+                  <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
+                    {profile?.anonymous_mode ? (
+                      <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
+                    ) : avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
                       <img src={avatarPreview || profile?.avatar_url || ''} alt="" loading="lazy" decoding="async" />
                     ) : avatarMode === 'emoji' ? (
                       <span className="avatar-emoji">{avatarEmoji}</span>
@@ -9126,6 +9613,26 @@ function handleSessionDateChange(value: string) {
                     <span>{text.uploadPhoto}</span>
                   </div>
                   <div className="avatar-options">
+                    {profile && (
+                      <label className="profile-toggle-field anonymous-mode-toggle">
+                        <input
+                          checked={Boolean(profile.anonymous_mode)}
+                          disabled={isSavingAnonymousMode}
+                          onChange={(event) => {
+                            if (event.target.checked) {
+                              setAnonymousConfirmOpen(true)
+                              return
+                            }
+                            updateAnonymousMode(false)
+                          }}
+                          type="checkbox"
+                        />
+                        <span>
+                          <strong>{text.anonymousMode}</strong>
+                          <small>{text.anonymousModeHint}</small>
+                        </span>
+                      </label>
+                    )}
                     <span>{text.avatarStyle}</span>
                     <div className="segmented compact-segmented">
                       <button className={avatarMode === 'photo' ? 'active' : ''} onClick={() => chooseAvatarMode('photo')} type="button">{text.usePhoto}</button>
@@ -9299,6 +9806,26 @@ function handleSessionDateChange(value: string) {
                   />
                 </div>
               )}
+              {showProfileFields && (
+                <label className="consent-field marketing-consent-field">
+                  <input
+                    checked={marketingConsent}
+                    onChange={(event) => {
+                      const nextConsent = event.target.checked
+                      if (profile) {
+                        updateMarketingConsent(nextConsent)
+                      } else {
+                        setMarketingConsent(nextConsent)
+                      }
+                    }}
+                    type="checkbox"
+                  />
+                  <span>
+                    <strong>{text.marketingConsent}</strong>
+                    <small>{text.marketingConsentHint}</small>
+                  </span>
+                </label>
+              )}
               {!profile && authMode === 'create' && (
                 <label className="consent-field">
                   <input
@@ -9413,7 +9940,14 @@ function handleSessionDateChange(value: string) {
 
             {profile && (
               <div className="player-stats">
-                <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
+                <div className="profile-stats-head">
+                  <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
+                  {canShareCurrentUserStats && (
+                    <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
+                      {currentUserStatsShared ? text.shared : text.shareStats}
+                    </button>
+                  )}
+                </div>
                 {crownedTopPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
                 <div className="stats">
                   <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
@@ -9552,6 +10086,27 @@ function handleSessionDateChange(value: string) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {anonymousConfirmOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="anonymous-mode-title" onClick={() => setAnonymousConfirmOpen(false)}>
+          <div className="login-modal anonymous-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setAnonymousConfirmOpen(false)} aria-label={text.close}>
+              &times;
+            </button>
+            <div className="anonymous-mask-preview" aria-hidden="true">{ANONYMOUS_MASK_EMOJI}</div>
+            <h3 id="anonymous-mode-title">{text.goAnonymousTitle}</h3>
+            <p>{text.goAnonymousBody}</p>
+            <div className="club-action-row">
+              <button className="secondary create-button" type="button" onClick={() => setAnonymousConfirmOpen(false)}>
+                {text.cancel}
+              </button>
+              <button className={isSavingAnonymousMode ? 'primary loading create-button' : 'primary create-button'} disabled={isSavingAnonymousMode} type="button" onClick={() => updateAnonymousMode(true)}>
+                {text.activateAnonymousMode}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -9753,10 +10308,13 @@ function handleSessionDateChange(value: string) {
                           avatar_text_color: player.avatarTextColor,
                         })}
                         canBypassPrivateClubPins={isAdmin}
+                        canShareCurrentUserStats={canShareCurrentUserStats}
                         clubs={[selectedClub]}
                         fixedClubId={selectedClub.id}
                         initialCriterion={clubRankingCriterion(selectedClub)}
+                        isCurrentUserStatsShared={currentUserStatsShared}
                         onOpenPlayerProfile={openPlayerProfile}
+                        onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
                         players={leaderboardPlayerStats}
                         renderAvatar={(player: LeaderboardPlayer) => avatarNode({
                           avatar_url: player.avatarUrl,
