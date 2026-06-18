@@ -44,6 +44,7 @@ export const fr = {
   ticketDurationMinimum40: '5-8 joueurs: 40 min, 1 arène, 8 places réservées, -10%.',
   ticketDurationMinimum60: '9-12 joueurs: 60 min, 1 arène, 12 places réservées, -15%.',
   ticketDurationMinimum80: '60 min minimum; choisis plus de temps pour que tous les joueurs aient le même temps de jeu.',
+  ticketDurationBelowRecommended: 'Sous le temps conseillé: tous les joueurs peuvent ne pas avoir le même temps de jeu.',
   ticketDiscountDeskNote: 'Les codes voucher et réductions seront appliqués au check-in à la réception.',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',

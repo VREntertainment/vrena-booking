@@ -3429,10 +3429,13 @@ export default function WidgetPage({
 
   const activeTicketService = selectedTicketService(ticketType)
   const activeTicketMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
-  const activeTicketDuration = Math.max(activeTicketMinimumDuration, ticketDuration)
+  const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
   const activeTicketArenaCount = ticketArenaCountForPlayers(ticketType, ticketPlayers)
+  const isTicketDurationBelowRecommended = activeTicketDuration < activeTicketMinimumDuration
   const ticketDurationMessage =
-    ticketPlayers > 12
+    isTicketDurationBelowRecommended
+      ? text.ticketDurationBelowRecommended
+      : ticketPlayers > 12
       ? text.ticketDurationMinimum80
       : ticketPlayers > 8
       ? text.ticketDurationMinimum60
@@ -3454,8 +3457,8 @@ export default function WidgetPage({
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
   const ticketDurationOptions = useMemo(() => {
     const durationOptions = Array.from(
-      { length: Math.floor((ticketMaxCustomerDurationMinutes - activeTicketMinimumDuration) / ticketPriceBlockMinutes) + 1 },
-      (_, index) => activeTicketMinimumDuration + index * ticketPriceBlockMinutes
+      { length: Math.floor((ticketMaxCustomerDurationMinutes - ticketPriceBlockMinutes) / ticketPriceBlockMinutes) + 1 },
+      (_, index) => ticketPriceBlockMinutes + index * ticketPriceBlockMinutes
     )
 
     if (!ticketDate) return durationOptions
@@ -3465,7 +3468,7 @@ export default function WidgetPage({
       if (ticketTime) return options.some((option) => option.value === ticketTime)
       return options.length > 0
     })
-  }, [activeTicketArenaCount, activeTicketMinimumDuration, blockedTimes, language, sessions, ticketDate, ticketTime])
+  }, [activeTicketArenaCount, blockedTimes, language, sessions, ticketDate, ticketTime])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -3521,7 +3524,7 @@ function handleSessionDateChange(value: string) {
   }
 
   function handleTicketDurationChange(value: number) {
-    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketMinimumDuration, value))
+    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, value))
     const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
 
@@ -9088,7 +9091,7 @@ function handleSessionDateChange(value: string) {
                           <strong>{ticketTypeLabel(service.id, looseText)}</strong>
                           <span>{ticketTypeDescription(service.id, looseText)}</span>
                           <small>
-                            20-80 min · {service.minPlayers}-{service.maxPlayers} {text.players}
+                            20-120 min · {service.minPlayers}-{service.maxPlayers} {text.players}
                           </small>
                         </button>
                       ))}

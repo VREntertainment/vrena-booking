@@ -44,6 +44,7 @@ export const ko = {
   ticketDurationMinimum40: '5-8명: 40분, 아레나 1개, 8자리 예약, 10% 할인.',
   ticketDurationMinimum60: '9-12명: 60분, 아레나 1개, 12자리 예약, 15% 할인.',
   ticketDurationMinimum80: '최소 60분입니다. 모두 같은 플레이 시간을 원하면 시간을 더 선택하세요.',
+  ticketDurationBelowRecommended: '권장 시간보다 짧습니다. 모든 플레이어의 플레이 시간이 같지 않을 수 있습니다.',
   ticketDiscountDeskNote: '바우처 코드와 할인은 리셉션 체크인 시 적용됩니다.',
   bookingStatus: 'Booking status',
   ticketAdminTitle: 'Ticket booking',
