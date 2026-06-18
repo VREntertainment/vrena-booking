@@ -229,7 +229,7 @@ const defaultPriceForm = () => ({
   day_type: 'weekday' as StaffPriceRule['day_type'],
   time_start: '09:00',
   time_end: '18:00',
-  price_per_player: 200000,
+  price_per_player: '200000',
   price_per_arena_slot: '',
   valid_from: todayString(),
   valid_until: '',
@@ -296,11 +296,21 @@ function roleLabel(role?: string | null, email?: string | null): StaffRole {
 }
 
 function formatVnd(value: number) {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(Math.max(0, Number(value) || 0))
+  return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
+}
+
+function dongDigits(value: string | number | null | undefined) {
+  return String(value ?? '').replace(/\D/g, '')
+}
+
+function parseDong(value: string | number | null | undefined) {
+  const digits = dongDigits(value)
+  return digits ? Number(digits) : 0
+}
+
+function formatDongInput(value: string | number | null | undefined) {
+  const amount = parseDong(value)
+  return amount > 0 ? formatVnd(amount) : ''
 }
 
 function normalizeTime(value: string | null | undefined) {
@@ -748,8 +758,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       day_type: priceForm.day_type,
       time_start: priceForm.time_start || null,
       time_end: priceForm.time_end || null,
-      price_per_player: Number(priceForm.price_per_player) || 0,
-      price_per_arena_slot: priceForm.price_per_arena_slot ? Number(priceForm.price_per_arena_slot) : null,
+      price_per_player: parseDong(priceForm.price_per_player),
+      price_per_arena_slot: parseDong(priceForm.price_per_arena_slot) > 0 ? parseDong(priceForm.price_per_arena_slot) : null,
       valid_from: priceForm.valid_from,
       valid_until: priceForm.valid_until || null,
       active: priceForm.active,
@@ -855,7 +865,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       day_type: rule.day_type,
       time_start: normalizeTime(rule.time_start),
       time_end: normalizeTime(rule.time_end),
-      price_per_player: rule.price_per_player,
+      price_per_player: String(rule.price_per_player),
       price_per_arena_slot: rule.price_per_arena_slot === null ? '' : String(rule.price_per_arena_slot),
       valid_from: rule.valid_from,
       valid_until: rule.valid_until || '',
@@ -1242,10 +1252,13 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>Day type<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
               <label>Start<input type="time" value={priceForm.time_start} onChange={(event) => setPriceForm({ ...priceForm, time_start: event.target.value })} /></label>
               <label>End<input type="time" value={priceForm.time_end} onChange={(event) => setPriceForm({ ...priceForm, time_end: event.target.value })} /></label>
-              <label>Price / player<input type="number" value={priceForm.price_per_player} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: Number(event.target.value) })} /></label>
-              <label>Price / arena slot<input type="number" value={priceForm.price_per_arena_slot} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: event.target.value })} /></label>
+              <label>Price / player (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_player)} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: dongDigits(event.target.value) })} /></label>
+              <label>Price / arena slot (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_arena_slot)} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: dongDigits(event.target.value) })} /></label>
               <label>Valid from<input type="date" value={priceForm.valid_from} onChange={(event) => setPriceForm({ ...priceForm, valid_from: event.target.value })} /></label>
-              <label>Valid until<input type="date" value={priceForm.valid_until} onChange={(event) => setPriceForm({ ...priceForm, valid_until: event.target.value })} /></label>
+              <label className="staff-valid-until-field">
+                <span className="staff-label-line"><span>Valid until</span><small>optional, by default forever</small></span>
+                <input type="date" value={priceForm.valid_until} onChange={(event) => setPriceForm({ ...priceForm, valid_until: event.target.value })} />
+              </label>
               <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> Active</label>
             </div>
             <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>Save price</button>

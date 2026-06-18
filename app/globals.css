@@ -1017,6 +1017,7 @@ body {
   border-radius: 8px;
   background: #ffffff;
   padding: 14px;
+  --staff-control-height: 46px;
 }
 
 .app .staff-card .compact-form-grid > label {
@@ -1027,10 +1028,28 @@ body {
 }
 
 .app .staff-card input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), .app .staff-card select {
-  height: 46px;
-  min-height: 46px;
+  display: block;
+  height: var(--staff-control-height);
+  min-height: var(--staff-control-height);
   padding-block: 0;
   line-height: 1.2;
+}
+
+.app .staff-card input[type="date"], .app .staff-card input[type="time"] {
+  line-height: var(--staff-control-height);
+}
+
+.app .staff-label-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.app .staff-label-line small {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .app .staff-card-wide {
@@ -6193,7 +6212,8 @@ body {
 
   .app .staff-field-label,
   .app .staff-game-photo-upload small,
-  .app .staff-mode-panel p {
+  .app .staff-mode-panel p,
+  .app .staff-label-line small {
     color: #aeb9bd;
   }
 
