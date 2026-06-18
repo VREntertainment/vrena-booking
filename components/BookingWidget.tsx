@@ -2306,7 +2306,7 @@ export default function WidgetPage({
         setPersonalDataConsent(false)
         await loadProfile()
         setProfileStatus(text.accountCreated)
-        setActiveView('sessions')
+        setActiveView('leaderboard')
         setIsSavingProfile(false)
         return
       }
@@ -2378,7 +2378,7 @@ export default function WidgetPage({
       setProfilePassword('')
       await loadProfile()
       setProfileStatus(text.loggedIn)
-      setActiveView('sessions')
+      setActiveView('leaderboard')
       setIsSavingProfile(false)
     } catch (error) {
       authDebug('handleAuth:thrown', error)
