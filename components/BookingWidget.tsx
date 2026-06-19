@@ -9402,11 +9402,11 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            <StaffConsole authEmail={authEmail} profile={profile} />
+            <StaffConsole authEmail={authEmail} language={language} profile={profile} />
           ) : (
             <section className="section staff-console">
-              <h2>Staff Console</h2>
-              <p className="notice">Staff access required.</p>
+              <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
+              <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
             </section>
           )
         )}
