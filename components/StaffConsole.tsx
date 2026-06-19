@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
-type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'roles' | 'orders' | 'report'
+type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
-type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
+type StaffRole = 'super_admin' | 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type PaymentSplitDraft = {
@@ -26,6 +27,8 @@ type StaffProfile = {
   email?: string | null
   phone?: string | null
   role?: string | null
+  is_seed_demo?: boolean | null
+  seed_batch?: string | null
 }
 
 type StaffGame = {
@@ -135,6 +138,15 @@ type StaffAuditLog = {
   entity_type: string
   entity_id: string | null
   created_at: string
+}
+
+type SoftDeletedRecord = {
+  entity_table: string
+  entity_id: string
+  label: string | null
+  deleted_at: string
+  deleted_by: string | null
+  delete_reason: string | null
 }
 
 type BookingForm = {
@@ -338,16 +350,28 @@ const staffCommerceTabs: Array<{ value: StaffCommerceTab; label: string }> = [
   { value: 'vouchers', label: 'Vouchers' },
   { value: 'loyalty', label: 'Loyalty Points' },
 ]
-const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const superAdminEmails = ['emile@vre-vietnam.com']
+const adminEmails = [...superAdminEmails, 'contact@vre-vietnam.com']
+const staffRoleOptions: StaffRole[] = ['super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
 const staffGameImageHelp = 'JPG, PNG, or WEBP · max 2 MB · wide image works best.'
 
+function isSuperAdminEmail(email?: string | null) {
+  return Boolean(email && superAdminEmails.includes(email.toLowerCase()))
+}
+
+function isAdminEmail(email?: string | null) {
+  return Boolean(email && adminEmails.includes(email.toLowerCase()))
+}
+
 function staffRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (normalizedEmail === 'emile@vre-vietnam.com' || normalizedEmail === 'contact@vre-vietnam.com') return 100
+  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin') return 120
+  if (isAdminEmail(normalizedEmail)) return 100
   if (normalizedRole === 'owner' || normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
@@ -357,6 +381,7 @@ function staffRank(role?: string | null, email?: string | null) {
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
   const rank = staffRank(role, email)
+  if (rank >= 120) return 'super_admin'
   if (rank >= 100) return (role?.toLowerCase() === 'owner' ? 'owner' : 'admin')
   if (rank >= 80) return 'manager'
   if (rank >= 50) return role?.toLowerCase() === 'cashier' ? 'cashier' : 'staff'
@@ -369,7 +394,23 @@ function storedRoleValue(role?: string | null): StaffRole {
   return staffRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
 }
 
+function isDemoProfile(profile: StaffProfile) {
+  const email = (profile.email || '').toLowerCase()
+  const fullName = (profile.full_name || '').toLowerCase()
+  const nickname = (profile.nickname || '').toLowerCase()
+  return Boolean(
+    profile.is_seed_demo ||
+    profile.seed_batch ||
+    email.includes('@vrena.demo') ||
+    email.includes('.demo') ||
+    email.startsWith('softlaunch-') ||
+    /^demo(\s|-|_)/.test(fullName) ||
+    /^demo(\s|-|_)/.test(nickname)
+  )
+}
+
 function staffRoleName(role: StaffRole) {
+  if (role === 'super_admin') return 'Super Admin'
   if (role === 'cashier') return 'Cashier'
   return role.charAt(0).toUpperCase() + role.slice(1)
 }
@@ -792,6 +833,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
   const canManageRoles = rank >= 100
+  const canRestoreDeleted = rank >= 120
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [games, setGames] = useState<StaffGame[]>([])
@@ -802,6 +844,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [auditLogs, setAuditLogs] = useState<StaffAuditLog[]>([])
+  const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
   const [priceForm, setPriceForm] = useState(() => defaultPriceForm())
@@ -817,8 +860,11 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [gameImageUploading, setGameImageUploading] = useState(false)
+  const [roleSearch, setRoleSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
+    if (rank >= 120) return ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'restore', 'orders', 'report']
     if (rank >= 100) return ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
     if (rank >= 80) return ['new', 'today', 'games', 'prices', 'discounts', 'orders', 'report']
     if (rank >= 50) return ['new', 'today', 'discounts', 'orders', 'report']
@@ -876,6 +922,20 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     })
     return map
   }, [orderPayments])
+  const filteredRoleProfiles = useMemo(() => {
+    const query = roleSearch.trim().toLowerCase()
+    return profiles.filter((item) => {
+      const effectiveRole = roleLabel(item.role, item.email)
+      if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false
+      if (!query) return true
+      return [
+        customerName(item),
+        item.email || '',
+        item.phone || '',
+        staffRoleName(effectiveRole),
+      ].some((value) => value.toLowerCase().includes(query))
+    })
+  }, [profiles, roleFilter, roleSearch])
 
   const reportOrders = useMemo(() => (
     ordersInDateRange(orders, reportStart, reportEnd)
@@ -923,21 +983,45 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       supabase.from('staff_loyalty_rules').select('*').order('valid_from', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('staff_orders').select('*').order('booking_date', { ascending: false }).order('booking_time', { ascending: false }).limit(250),
       supabase.from('staff_order_payments').select('*').order('created_at', { ascending: true }).limit(1000),
-      supabase.from('profiles').select('id, full_name, nickname, email, phone, role').order('full_name', { ascending: true }).limit(300),
+      supabase.from('profiles').select('id, full_name, nickname, email, phone, role, is_seed_demo, seed_batch').is('deleted_at', null).order('full_name', { ascending: true }).limit(500),
       supabase.from('audit_logs').select('id, actor_user_id, action, entity_type, entity_id, created_at').order('created_at', { ascending: false }).limit(60),
     ])
 
     if (gamesResult.error) setStatus(gamesResult.error.message)
     if (paymentsResult.error && !paymentsResult.error.message.includes('staff_order_payments')) setStatus(paymentsResult.error.message)
+    if (canRestoreDeleted) {
+      const { data, error } = await supabase.rpc('get_soft_deleted_records', { p_limit: 100 })
+      if (error) setStatus(error.message)
+      else setDeletedRecords((data ?? []) as SoftDeletedRecord[])
+    } else {
+      setDeletedRecords([])
+    }
     setGames((gamesResult.data ?? []) as StaffGame[])
     setPrices((pricesResult.data ?? []) as StaffPriceRule[])
     setDiscounts((discountsResult.data ?? []) as StaffDiscount[])
     setLoyaltyRules((loyaltyResult.data ?? []) as StaffLoyaltyRule[])
     setOrders((ordersResult.data ?? []) as StaffOrder[])
     setOrderPayments((paymentsResult.data ?? []) as StaffOrderPayment[])
-    setProfiles((profilesResult.data ?? []) as StaffProfile[])
+    setProfiles(((profilesResult.data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
     setAuditLogs((auditResult.data ?? []) as StaffAuditLog[])
     setLoading(false)
+  }
+
+  async function consumeStaffRateLimit(action: RateLimitAction, subject: string) {
+    const rule = RATE_LIMITS[action]
+    const { error } = await supabase.rpc('consume_rate_limit', {
+      p_action: action,
+      p_limit: rule.limit,
+      p_window_seconds: rule.windowSeconds,
+      p_subject: subject || null,
+    })
+
+    if (error) {
+      setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
+      return false
+    }
+
+    return true
   }
 
   function applyCustomer(profileId: string) {
@@ -953,6 +1037,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
   async function createOrder() {
     if (!canCreateOrders || !selectedGame) return
+
+    const allowed = await consumeStaffRateLimit('booking_attempt', `${booking.date}:${booking.time}:${selectedGame.id}`)
+    if (!allowed) return
 
     setSaving(true)
     setStatus('Creating order...')
@@ -1144,6 +1231,10 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
   async function updateOrder(order: StaffOrder, patch: Partial<StaffOrder>) {
     if (!canCreateOrders) return
+    if (patch.order_status && ['cancelled', 'refunded', 'no_show'].includes(patch.order_status)) {
+      const allowed = await consumeStaffRateLimit('admin_destructive', `staff-order:${order.id}:${patch.order_status}`)
+      if (!allowed) return
+    }
     setSaving(true)
     const { error } = await supabase.from('staff_orders').update(patch).eq('id', order.id)
     setStatus(error ? error.message : 'Order updated.')
@@ -1153,13 +1244,33 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
     if (!canManageRoles) return
+    const previousProfiles = profiles
+    setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: nextRole } : item))
     setSaving(true)
     setStatus('Updating role...')
     const { error } = await supabase.rpc('set_staff_profile_role', {
       p_profile_id: profileId,
       p_role: nextRole,
     })
-    setStatus(error ? error.message : 'Role updated.')
+    if (error) {
+      setProfiles(previousProfiles)
+      setStatus(error.message)
+    } else {
+      setStatus('Role updated.')
+      await loadStaffData()
+    }
+    setSaving(false)
+  }
+
+  async function restoreDeletedRecord(record: SoftDeletedRecord) {
+    if (!canRestoreDeleted) return
+    setSaving(true)
+    setStatus('Restoring record...')
+    const { error } = await supabase.rpc('restore_soft_deleted_record', {
+      p_entity_table: record.entity_table,
+      p_entity_id: record.entity_id,
+    })
+    setStatus(error ? error.message : 'Record restored.')
     await loadStaffData()
     setSaving(false)
   }
@@ -1364,7 +1475,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
           <h2>Staff Console</h2>
           <p className="muted">Counter bookings, manual payments, games, prices, discounts, and reports.</p>
         </div>
-        <span className="staff-role-pill">{role}</span>
+        <span className="staff-role-pill">{staffRoleName(role)}</span>
       </div>
 
       <div className="staff-tabs" role="tablist" aria-label="Staff Console">
@@ -1374,6 +1485,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         {tabButton('prices', 'Prices')}
         {tabButton('discounts', 'Discounts / Vouchers')}
         {tabButton('roles', 'Roles')}
+        {tabButton('restore', 'Restore')}
         {tabButton('orders', 'Orders')}
         {tabButton('report', 'Daily Report')}
       </div>
@@ -1760,11 +1872,31 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         <div className="staff-card staff-card-wide">
           <h3>Roles</h3>
           <p className="muted">Assign Staff Console access. Admin can manage every role; normal users stay as Player.</p>
+          <div className="staff-role-tools">
+            <label>
+              <span className="staff-field-label">Search users</span>
+              <input
+                value={roleSearch}
+                onChange={(event) => setRoleSearch(event.target.value)}
+                placeholder="Name, email, phone"
+              />
+            </label>
+            <label>
+              <span className="staff-field-label">Filter by role</span>
+              <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as StaffRole | 'all')}>
+                {roleFilterOptions.filter((option) => option === 'all' || option !== 'super_admin' || canRestoreDeleted).map((option) => (
+                  <option key={option} value={option}>
+                    {option === 'all' ? 'All roles' : staffRoleName(option)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="staff-role-list">
-            {profiles.map((item) => {
+            {filteredRoleProfiles.map((item) => {
               const effectiveRole = roleLabel(item.role, item.email)
               const storedRole = storedRoleValue(item.role)
-              const protectedEmail = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com'].includes((item.email || '').toLowerCase())
+              const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
               return (
                 <div className="staff-role-row" key={item.id}>
                   <div>
@@ -1778,14 +1910,36 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     value={storedRole}
                     onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
                   >
-                    {staffRoleOptions.map((option) => (
+                    {staffRoleOptions.filter((option) => option !== 'super_admin' || canRestoreDeleted).map((option) => (
                       <option key={option} value={option}>{staffRoleName(option)}</option>
                     ))}
                   </select>
                 </div>
               )
             })}
-            {profiles.length === 0 && <p className="notice">No users found.</p>}
+            {filteredRoleProfiles.length === 0 && <p className="notice">No users found.</p>}
+          </div>
+        </div>
+      )}
+
+      {currentTab === 'restore' && canRestoreDeleted && (
+        <div className="staff-card staff-card-wide">
+          <h3>Restore deleted records</h3>
+          <p className="muted">Super Admin only. Restoring clears deleted_at, deleted_by, and delete_reason.</p>
+          <div className="staff-restore-list">
+            {deletedRecords.map((record) => (
+              <div className="staff-restore-row" key={`${record.entity_table}-${record.entity_id}`}>
+                <div>
+                  <strong>{record.label || record.entity_id}</strong>
+                  <span>{record.entity_table} · {staffDateLabel(record.deleted_at.slice(0, 10))}</span>
+                  {record.delete_reason && <small>{record.delete_reason}</small>}
+                </div>
+                <button className="secondary" disabled={saving} type="button" onClick={() => restoreDeletedRecord(record)}>
+                  Restore
+                </button>
+              </div>
+            ))}
+            {deletedRecords.length === 0 && <p className="notice">No soft-deleted records.</p>}
           </div>
         </div>
       )}
