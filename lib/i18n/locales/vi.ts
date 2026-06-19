@@ -320,6 +320,8 @@ export const vi = {
   checkedIn: 'Đã vào',
   paymentMethod: 'Thanh toán',
   paymentAmount: 'Đã trả',
+  addPaymentSplit: 'Thêm phần',
+  paidTotal: 'Tổng đã trả',
   cash: 'Tiền mặt',
   bankTransfer: 'Chuyển khoản',
   free: 'Miễn phí',

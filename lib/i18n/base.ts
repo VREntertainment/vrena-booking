@@ -318,6 +318,8 @@ export const en = {
   checkedIn: 'Checked in',
   paymentMethod: 'Payment method',
   paymentAmount: 'Amount paid',
+  addPaymentSplit: 'Add split',
+  paidTotal: 'Paid total',
   cash: 'Cash',
   bankTransfer: 'Bank transfer',
   free: 'Free',

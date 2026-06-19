@@ -320,6 +320,8 @@ export const fr = {
   checkedIn: 'Check-in ✓',
   paymentMethod: 'Paiement',
   paymentAmount: 'Payé',
+  addPaymentSplit: 'Ajouter split',
+  paidTotal: 'Total payé',
   cash: 'Espèces',
   bankTransfer: 'Virement',
   free: 'Gratuit',

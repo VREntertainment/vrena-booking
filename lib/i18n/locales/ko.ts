@@ -320,6 +320,8 @@ export const ko = {
   checkedIn: '체크인됨',
   paymentMethod: '결제 방식',
   paymentAmount: '결제액',
+  addPaymentSplit: '분할 추가',
+  paidTotal: '결제 합계',
   cash: '현금',
   bankTransfer: '계좌이체',
   free: '무료',

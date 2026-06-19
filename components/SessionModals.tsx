@@ -221,18 +221,22 @@ type CheckInModalProps = {
   closeText: string
   title: string
   playerName: string
-  paymentStatus: 'cash' | 'bank_transfer' | 'free' | null
-  paymentAmount: string
+  paymentSplits: Array<{ id: string; payment_method: 'cash' | 'bank_transfer'; amount: string }>
+  paymentSummary: string
   cashText: string
   bankTransferText: string
   freeText: string
   amountText: string
+  addSplitText: string
+  removeText: string
   saveText: string
   clearText: string
   checkedIn: boolean
   onClose: () => void
-  onPaymentStatusChange: (value: 'cash' | 'bank_transfer') => void
-  onPaymentAmountChange: (value: string) => void
+  onPaymentSplitMethodChange: (splitId: string, value: 'cash' | 'bank_transfer') => void
+  onPaymentSplitAmountChange: (splitId: string, value: string) => void
+  onAddPaymentSplit: () => void
+  onRemovePaymentSplit: (splitId: string) => void
   onSaveFree: () => void
   onSavePaid: () => void
   onClear: () => void
@@ -242,18 +246,22 @@ export function CheckInModal({
   closeText,
   title,
   playerName,
-  paymentStatus,
-  paymentAmount,
+  paymentSplits,
+  paymentSummary,
   cashText,
   bankTransferText,
   freeText,
   amountText,
+  addSplitText,
+  removeText,
   saveText,
   clearText,
   checkedIn,
   onClose,
-  onPaymentStatusChange,
-  onPaymentAmountChange,
+  onPaymentSplitMethodChange,
+  onPaymentSplitAmountChange,
+  onAddPaymentSplit,
+  onRemovePaymentSplit,
   onSaveFree,
   onSavePaid,
   onClear,
@@ -266,35 +274,47 @@ export function CheckInModal({
         </button>
         <h3 id="checkin-title">{title}</h3>
         <p>{playerName}</p>
-        <div className="payment-grid">
-          <button className={paymentStatus === 'cash' ? 'secondary active' : 'secondary'} type="button" onClick={() => onPaymentStatusChange('cash')}>
-            {cashText}
+        <div className="payment-grid split-payment-grid">
+          <div className="split-payment-head">
+            <strong>{amountText}</strong>
+            <button className="secondary" type="button" onClick={onAddPaymentSplit}>
+              {addSplitText}
+            </button>
+          </div>
+          {paymentSplits.map((split) => (
+            <div className="payment-split-row" key={split.id}>
+              <select
+                aria-label={amountText}
+                value={split.payment_method}
+                onChange={(event) => onPaymentSplitMethodChange(split.id, event.target.value as 'cash' | 'bank_transfer')}
+              >
+                <option value="cash">{cashText}</option>
+                <option value="bank_transfer">{bankTransferText}</option>
+              </select>
+              <label className="amount-field">
+                <span>{amountText}</span>
+                <div>
+                  <input
+                    inputMode="numeric"
+                    value={split.amount}
+                    onChange={(event) => onPaymentSplitAmountChange(split.id, event.target.value.replace(/[^\d]/g, ''))}
+                    placeholder="0"
+                  />
+                  <strong>đ</strong>
+                </div>
+              </label>
+              <button className="secondary" type="button" onClick={() => onRemovePaymentSplit(split.id)}>
+                {removeText}
+              </button>
+            </div>
+          ))}
+          <p className="field-help">{paymentSummary}</p>
+          <button className="primary" type="button" onClick={onSavePaid}>
+            {saveText}
           </button>
-          <button className={paymentStatus === 'bank_transfer' ? 'secondary active' : 'secondary'} type="button" onClick={() => onPaymentStatusChange('bank_transfer')}>
-            {bankTransferText}
-          </button>
-          <button className={paymentStatus === 'free' ? 'secondary active' : 'secondary'} type="button" onClick={onSaveFree}>
+          <button className="secondary" type="button" onClick={onSaveFree}>
             {freeText}
           </button>
-          {(paymentStatus === 'cash' || paymentStatus === 'bank_transfer') && (
-            <label className="amount-field">
-              <span>{amountText}</span>
-              <div>
-                <input
-                  inputMode="numeric"
-                  value={paymentAmount}
-                  onChange={(event) => onPaymentAmountChange(event.target.value.replace(/[^\d]/g, ''))}
-                  placeholder="0"
-                />
-                <strong>đ</strong>
-              </div>
-            </label>
-          )}
-          {(paymentStatus === 'cash' || paymentStatus === 'bank_transfer') && (
-            <button className="primary" type="button" onClick={onSavePaid}>
-              {saveText}
-            </button>
-          )}
           {checkedIn && (
             <button className="danger" type="button" onClick={onClear}>
               {clearText}
