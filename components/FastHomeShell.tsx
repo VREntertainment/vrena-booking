@@ -738,7 +738,7 @@ export default function FastHomeShell() {
     return (
       <div className="app staff-only-app">
         <main>
-          <StaffConsolePanel authEmail={authEmail} profile={profile} />
+          <StaffConsolePanel authEmail={authEmail} language={language} profile={profile} />
         </main>
       </div>
     )

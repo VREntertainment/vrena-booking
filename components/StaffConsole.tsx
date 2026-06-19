@@ -175,6 +175,614 @@ type BookingForm = {
 type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
+  language?: string
+}
+
+type StaffConsoleLanguage = 'en' | 'vi'
+
+const staffConsoleText = {
+  en: {
+    accessRequired: 'Staff access required.',
+    active: 'active',
+    inactive: 'inactive',
+    allGames: 'All games',
+    allRoles: 'All roles',
+    any: 'any',
+    chooseDate: 'Choose date',
+    chooseTime: 'Choose time',
+    closeRoleHelp: 'Close role explanation',
+    compareOff: 'Turn on compare',
+    compareWith: 'Compare with',
+    customerFallback: 'Customer',
+    defaultWalkInRate: 'Default walk-in rate',
+    editDiscount: 'Edit discount',
+    editGame: 'Edit game',
+    editLoyaltyRule: 'Edit loyalty rule',
+    editPriceRule: 'Edit price rule',
+    editVoucher: 'Edit voucher',
+    gameFallback: 'Game',
+    gamePhotoHelp: 'JPG, PNG, or WEBP · max 2 MB · square photo works best.',
+    loading: 'Loading Staff Console...',
+    noContact: 'No contact',
+    noData: 'No data',
+    noDiscount: 'No discount',
+    noUniqueDiscount: 'No unique discount',
+    days: 'days',
+    emailOverrideKeepsAdmin: 'Email override keeps this account admin.',
+    noExpiry: 'no expiry',
+    noneYet: 'None yet',
+    newValue: 'New',
+    noUsersFound: 'No users found.',
+    reportTitleFallback: 'VRena report',
+    split: 'Split',
+    subtitle: 'Counter bookings, manual payments, games, prices, discounts, and reports.',
+    title: 'Staff Console',
+    unknown: 'Unknown',
+    unpaid: 'Unpaid',
+    vndAmount: 'VND amount',
+    walkIn: 'Walk-in / manual customer',
+    actions: {
+      addSplit: 'Add split',
+      confirmBooking: 'Confirm booking',
+      done: 'Done',
+      excel: 'Excel',
+      newGame: 'New game',
+      noShow: 'No-show',
+      paid: 'Paid',
+      pdf: 'PDF',
+      remove: 'Remove',
+      restore: 'Restore',
+      saveDiscount: 'Save discount',
+      saveGame: 'Save game',
+      saveLoyaltyRule: 'Save loyalty rule',
+      savePrice: 'Save price',
+      saveVoucher: 'Save voucher',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      previousPeriod: 'Previous period',
+    },
+    aria: {
+      bookingDate: 'Booking date',
+      bookingTime: 'Booking time',
+      compareEndDate: 'Compare end date',
+      compareStartDate: 'Compare start date',
+      discountValidFrom: 'Discount valid from',
+      discountValidUntil: 'Discount valid until',
+      graphDisplay: 'Graph display',
+      loyaltyValidFrom: 'Loyalty valid from',
+      loyaltyValidUntil: 'Loyalty valid until',
+      paymentAmount: 'Payment amount',
+      paymentMethod: 'Payment method',
+      paymentMix: 'Payment mix',
+      periodComparison: 'Period comparison',
+      priceEndTime: 'Price end time',
+      priceStartTime: 'Price start time',
+      priceValidFrom: 'Price valid from',
+      priceValidUntil: 'Price valid until',
+      reportEndDate: 'Report end date',
+      reportStartDate: 'Report start date',
+      salesByDay: 'Sales by day',
+      staffConsole: 'Staff Console',
+    },
+    chartModes: {
+      cheese: 'Cheese',
+      columns: 'Column',
+      curves: 'Curves',
+    } satisfies Record<StaffReportChartMode, string>,
+    commerceTabs: {
+      discounts: 'Discounts',
+      vouchers: 'Vouchers',
+      loyalty: 'Loyalty Points',
+    } satisfies Record<StaffCommerceTab, string>,
+    dayTypes: {
+      custom: 'custom',
+      holiday: 'holiday',
+      weekday: 'weekday',
+      weekend: 'weekend',
+    } satisfies Record<StaffPriceRule['day_type'], string>,
+    discountTypes: {
+      birthday: 'birthday',
+      fixed_amount: 'fixed amount',
+      free_ticket: 'free ticket',
+      group: 'group',
+      percentage: 'percentage',
+      resident: 'resident',
+    } satisfies Record<StaffDiscount['discount_type'], string>,
+    gameTypes: {
+      escape: 'escape',
+      other: 'other',
+      shooting: 'shooting',
+      tournament: 'tournament',
+    } satisfies Record<StaffGame['game_type'], string>,
+    labels: {
+      actions: 'Actions',
+      active: 'Active',
+      arena: 'Arena',
+      arenaIds: 'Arena IDs',
+      bankTransfer: 'Bank transfer',
+      bestSellingGame: 'Best-selling game',
+      bookings: 'Bookings',
+      calculation: 'Calculation',
+      cancelled: 'Cancelled',
+      cash: 'Cash',
+      codeOptional: 'Code (optional)',
+      company: 'Company',
+      compare: 'Compare',
+      createDiscount: 'Create discount',
+      createGame: 'Create game',
+      createLoyaltyRule: 'Create loyalty rule',
+      createPriceRule: 'Create price rule',
+      createVoucher: 'Create voucher',
+      current: 'current',
+      customer: 'Customer',
+      customerName: 'Customer name',
+      customerProfile: 'Customer profile',
+      date: 'Date',
+      dayType: 'Day type',
+      description: 'Description',
+      difficulty: 'Difficulty',
+      discount: 'Discount',
+      discountType: 'Discount type',
+      discountVoucher: 'Discount / voucher',
+      discounts: 'Discounts',
+      duration: 'Duration',
+      email: 'E-mail',
+      end: 'End',
+      filterByRole: 'Filter by role',
+      game: 'Game',
+      gamePhoto: 'Game photo',
+      games: 'Games',
+      imageUrl: 'Image URL',
+      internalNote: 'Internal note',
+      invoiceAddress: 'Invoice address',
+      invoiceDetails: 'Invoice details for future MISA export',
+      invoiceEmail: 'Invoice e-mail',
+      invoiceRequired: 'Invoice required',
+      maxPlayersArena: 'Max players / arena',
+      maxUses: 'Max uses',
+      minimumSpend: 'Minimum spend',
+      name: 'Name',
+      newBooking: 'New booking',
+      noShows: 'No-shows',
+      notes: 'Notes',
+      order: 'Order',
+      orderStatus: 'Order status',
+      orders: 'Orders',
+      paid: 'Paid',
+      payment: 'Payment',
+      paymentSplits: 'Payment splits',
+      paymentStatus: 'Payment status',
+      paymentMix: 'Payment mix',
+      perVndSpent: 'Per VND spent',
+      phone: 'Phone',
+      players: 'Players',
+      pointsEarned: 'Points earned',
+      pointsExpireAfterDays: 'Points expire after days',
+      priceArenaSlot: 'Price / arena slot (đ)',
+      pricePlayer: 'Price / player (đ)',
+      priceRules: 'Price rules',
+      recentAuditLog: 'Recent audit log',
+      remaining: 'Remaining',
+      restoreDeletedRecords: 'Restore deleted records',
+      roleExplanation: 'Role explanation',
+      roleFor: 'Role for',
+      roles: 'Roles',
+      rounds: 'Rounds',
+      rule: 'Rule',
+      ruleName: 'Rule name',
+      sales: 'Sales',
+      salesTrend: 'Sales trend',
+      searchUsers: 'Search users',
+      slug: 'Slug',
+      start: 'Start',
+      status: 'Status',
+      subtotal: 'Subtotal',
+      summary: 'Summary',
+      taxCode: 'Tax code',
+      time: 'Time',
+      total: 'Total',
+      totalPaid: 'Total paid',
+      totalSales: 'Total sales',
+      type: 'Type',
+      uniqueDiscount: 'Unique discount',
+      used: 'used',
+      value: 'Value',
+      validFrom: 'Valid from',
+      validUntil: 'Valid until',
+      validUntilHelp: 'optional, by default forever',
+      voucherCodeRequired: 'Voucher code *',
+      vouchers: 'Vouchers',
+    },
+    loyaltyCalculation: {
+      per_booking: 'Per booking',
+      per_player: 'Per player',
+      per_visit: 'Per visit/check-in',
+      per_vnd_spent: 'Spend based',
+    } satisfies Record<StaffLoyaltyRule['calculation_type'], string>,
+    messages: {
+      clickUploadGamePhoto: 'Click to upload game photo',
+      discountSaved: 'Discount saved.',
+      gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
+      gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
+      gamePhotoUploaded: 'Game photo uploaded. Save the game to keep it.',
+      gameSaved: 'Game saved.',
+      loyaltyIntro: 'Define how customers earn points. Redemption will use these rules later.',
+      loyaltyRuleSaved: 'Loyalty rule saved.',
+      noDiscounts: 'No discounts yet.',
+      noLoyaltyRules: 'No loyalty rules yet.',
+      noOrders: 'No orders in this range.',
+      noSales: 'No sales in this period yet.',
+      noSoftDeleted: 'No soft-deleted records.',
+      noVouchers: 'No vouchers yet.',
+      orderConfirmed: 'Order {order} confirmed · {total}',
+      orderCreating: 'Creating order...',
+      orderUpdated: 'Order updated.',
+      priceRuleSaved: 'Price rule saved.',
+      readOnlyBooking: 'Read-only view. Viewer can inspect this flow, but cannot create bookings.',
+      readOnlyCommerce: 'Read-only view. Viewer can inspect these rules, but cannot save changes.',
+      readOnlyGames: 'Read-only view. Viewer can inspect games, but cannot save changes.',
+      readOnlyPrices: 'Read-only view. Viewer can inspect price rules, but cannot save changes.',
+      readOnlyRoles: 'Read-only view. Viewer can inspect role access, but cannot assign roles.',
+      restoreIntro: 'Super Admin only. Restoring clears deleted_at, deleted_by, and delete_reason.',
+      restoringRecord: 'Restoring record...',
+      recordRestored: 'Record restored.',
+      roleHelpAdmin: 'Assign Staff Console access. Admin can manage every role; normal users stay as Player.',
+      roleUpdated: 'Role updated.',
+      roleUpdating: 'Updating role...',
+      staffTooManyAttempts: 'Too many attempts. Please wait a moment and try again.',
+      uniqueDiscountHelp: 'One-off discount for this booking only. It does not create a reusable voucher.',
+      uploadGamePhoto: 'Uploading game photo...',
+      voucherCodeRequired: 'Voucher code is required.',
+      voucherSaved: 'Voucher saved.',
+    },
+    orderStatuses: {
+      cancelled: 'cancelled',
+      completed: 'completed',
+      confirmed: 'confirmed',
+      draft: 'draft',
+      no_show: 'no_show',
+      paid: 'paid',
+      partially_paid: 'partially_paid',
+      refunded: 'refunded',
+    } satisfies Record<StaffOrder['order_status'], string>,
+    paymentMethods: {
+      bank_transfer: 'Bank Transfer',
+      cash: 'Cash',
+    } satisfies Record<StaffPaymentMethod, string>,
+    roles: {
+      admin: 'Admin',
+      cashier: 'Cashier',
+      manager: 'Manager',
+      owner: 'Owner',
+      player: 'Player',
+      staff: 'Staff',
+      super_admin: 'Super Admin',
+      viewer: 'Viewer',
+    } satisfies Record<StaffRole, string>,
+    roleHelp: [
+      { title: 'Owner / Super Admin', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
+      { title: 'Admin', body: 'Full daily operations access and role management below Owner / Super Admin. Restore stays Owner only.' },
+      { title: 'Manager', body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.' },
+      { title: 'Staff / Cashier', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports.' },
+      { title: 'Viewer', body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.' },
+      { title: 'Player', body: 'Client app only. No Staff Console access.' },
+    ],
+    tabs: {
+      discounts: 'Discounts / Vouchers',
+      games: 'Games',
+      new: 'New Booking',
+      orders: 'Orders',
+      prices: 'Prices',
+      report: 'Daily Report',
+      restore: 'Restore',
+      roles: 'Roles',
+      today: 'Today',
+    } satisfies Record<StaffTab, string>,
+  },
+  vi: {
+    accessRequired: 'Cần quyền nhân viên.',
+    active: 'đang bật',
+    inactive: 'đã tắt',
+    allGames: 'Tất cả trò chơi',
+    allRoles: 'Tất cả vai trò',
+    any: 'bất kỳ',
+    chooseDate: 'Chọn ngày',
+    chooseTime: 'Chọn giờ',
+    closeRoleHelp: 'Đóng giải thích vai trò',
+    compareOff: 'Bật so sánh',
+    compareWith: 'So sánh với',
+    customerFallback: 'Khách hàng',
+    defaultWalkInRate: 'Giá khách tại quầy',
+    editDiscount: 'Sửa ưu đãi',
+    editGame: 'Sửa trò chơi',
+    editLoyaltyRule: 'Sửa quy tắc điểm',
+    editPriceRule: 'Sửa quy tắc giá',
+    editVoucher: 'Sửa voucher',
+    gameFallback: 'Trò chơi',
+    gamePhotoHelp: 'JPG, PNG hoặc WEBP · tối đa 2 MB · ảnh vuông hiển thị đẹp nhất.',
+    loading: 'Đang tải Bảng nhân viên...',
+    noContact: 'Chưa có liên hệ',
+    noData: 'Chưa có dữ liệu',
+    noDiscount: 'Không ưu đãi',
+    noUniqueDiscount: 'Không có ưu đãi riêng',
+    days: 'ngày',
+    emailOverrideKeepsAdmin: 'Email cố định vẫn giữ tài khoản này là admin.',
+    noExpiry: 'không hết hạn',
+    noneYet: 'Chưa có',
+    newValue: 'Mới',
+    noUsersFound: 'Không tìm thấy người dùng.',
+    reportTitleFallback: 'Báo cáo VRena',
+    split: 'Tách thanh toán',
+    subtitle: 'Quản lý đặt chỗ tại quầy, thanh toán thủ công, trò chơi, giá, ưu đãi và báo cáo.',
+    title: 'Bảng nhân viên',
+    unknown: 'Không rõ',
+    unpaid: 'Chưa thanh toán',
+    vndAmount: 'Số tiền VND',
+    walkIn: 'Khách tại quầy / nhập tay',
+    actions: {
+      addSplit: 'Thêm phần thanh toán',
+      confirmBooking: 'Xác nhận đặt chỗ',
+      done: 'Hoàn tất',
+      excel: 'Excel',
+      newGame: 'Trò chơi mới',
+      noShow: 'Không đến',
+      paid: 'Đã thanh toán',
+      pdf: 'PDF',
+      remove: 'Xóa',
+      restore: 'Khôi phục',
+      saveDiscount: 'Lưu ưu đãi',
+      saveGame: 'Lưu trò chơi',
+      saveLoyaltyRule: 'Lưu quy tắc điểm',
+      savePrice: 'Lưu giá',
+      saveVoucher: 'Lưu voucher',
+      today: 'Hôm nay',
+      yesterday: 'Hôm qua',
+      previousPeriod: 'Kỳ trước',
+    },
+    aria: {
+      bookingDate: 'Ngày đặt chỗ',
+      bookingTime: 'Giờ đặt chỗ',
+      compareEndDate: 'Ngày kết thúc so sánh',
+      compareStartDate: 'Ngày bắt đầu so sánh',
+      discountValidFrom: 'Ưu đãi hiệu lực từ',
+      discountValidUntil: 'Ưu đãi hiệu lực đến',
+      graphDisplay: 'Cách hiển thị biểu đồ',
+      loyaltyValidFrom: 'Điểm hiệu lực từ',
+      loyaltyValidUntil: 'Điểm hiệu lực đến',
+      paymentAmount: 'Số tiền thanh toán',
+      paymentMethod: 'Phương thức thanh toán',
+      paymentMix: 'Cơ cấu thanh toán',
+      periodComparison: 'So sánh kỳ',
+      priceEndTime: 'Giờ kết thúc giá',
+      priceStartTime: 'Giờ bắt đầu giá',
+      priceValidFrom: 'Giá hiệu lực từ',
+      priceValidUntil: 'Giá hiệu lực đến',
+      reportEndDate: 'Ngày kết thúc báo cáo',
+      reportStartDate: 'Ngày bắt đầu báo cáo',
+      salesByDay: 'Doanh thu theo ngày',
+      staffConsole: 'Bảng nhân viên',
+    },
+    chartModes: {
+      cheese: 'Tròn',
+      columns: 'Cột',
+      curves: 'Đường',
+    } satisfies Record<StaffReportChartMode, string>,
+    commerceTabs: {
+      discounts: 'Ưu đãi',
+      vouchers: 'Voucher',
+      loyalty: 'Điểm thưởng',
+    } satisfies Record<StaffCommerceTab, string>,
+    dayTypes: {
+      custom: 'tùy chỉnh',
+      holiday: 'ngày lễ',
+      weekday: 'ngày thường',
+      weekend: 'cuối tuần',
+    } satisfies Record<StaffPriceRule['day_type'], string>,
+    discountTypes: {
+      birthday: 'sinh nhật',
+      fixed_amount: 'số tiền cố định',
+      free_ticket: 'vé miễn phí',
+      group: 'nhóm',
+      percentage: 'phần trăm',
+      resident: 'cư dân',
+    } satisfies Record<StaffDiscount['discount_type'], string>,
+    gameTypes: {
+      escape: 'escape',
+      other: 'khác',
+      shooting: 'bắn súng',
+      tournament: 'giải đấu',
+    } satisfies Record<StaffGame['game_type'], string>,
+    labels: {
+      actions: 'Thao tác',
+      active: 'Đang bật',
+      arena: 'Arena',
+      arenaIds: 'Mã arena',
+      bankTransfer: 'Chuyển khoản',
+      bestSellingGame: 'Trò chơi bán chạy nhất',
+      bookings: 'Đặt chỗ',
+      calculation: 'Cách tính',
+      cancelled: 'Đã hủy',
+      cash: 'Tiền mặt',
+      codeOptional: 'Mã (không bắt buộc)',
+      company: 'Công ty',
+      compare: 'So sánh',
+      createDiscount: 'Tạo ưu đãi',
+      createGame: 'Tạo trò chơi',
+      createLoyaltyRule: 'Tạo quy tắc điểm',
+      createPriceRule: 'Tạo quy tắc giá',
+      createVoucher: 'Tạo voucher',
+      current: 'hiện tại',
+      customer: 'Khách hàng',
+      customerName: 'Tên khách hàng',
+      customerProfile: 'Hồ sơ khách',
+      date: 'Ngày',
+      dayType: 'Loại ngày',
+      description: 'Mô tả',
+      difficulty: 'Độ khó',
+      discount: 'Ưu đãi',
+      discountType: 'Loại ưu đãi',
+      discountVoucher: 'Ưu đãi / voucher',
+      discounts: 'Ưu đãi',
+      duration: 'Thời lượng',
+      email: 'E-mail',
+      end: 'Kết thúc',
+      filterByRole: 'Lọc theo vai trò',
+      game: 'Trò chơi',
+      gamePhoto: 'Ảnh trò chơi',
+      games: 'Trò chơi',
+      imageUrl: 'URL ảnh',
+      internalNote: 'Ghi chú nội bộ',
+      invoiceAddress: 'Địa chỉ hóa đơn',
+      invoiceDetails: 'Thông tin hóa đơn cho xuất MISA sau này',
+      invoiceEmail: 'E-mail hóa đơn',
+      invoiceRequired: 'Cần hóa đơn',
+      maxPlayersArena: 'Số người tối đa / arena',
+      maxUses: 'Số lần dùng tối đa',
+      minimumSpend: 'Chi tiêu tối thiểu',
+      name: 'Tên',
+      newBooking: 'Đặt chỗ mới',
+      noShows: 'Không đến',
+      notes: 'Ghi chú',
+      order: 'Đơn',
+      orderStatus: 'Trạng thái đơn',
+      orders: 'Đơn hàng',
+      paid: 'Đã trả',
+      payment: 'Thanh toán',
+      paymentSplits: 'Tách thanh toán',
+      paymentStatus: 'Trạng thái thanh toán',
+      paymentMix: 'Cơ cấu thanh toán',
+      perVndSpent: 'Theo VND chi tiêu',
+      phone: 'Điện thoại',
+      players: 'Người chơi',
+      pointsEarned: 'Điểm nhận được',
+      pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
+      priceArenaSlot: 'Giá / slot arena (đ)',
+      pricePlayer: 'Giá / người (đ)',
+      priceRules: 'Quy tắc giá',
+      recentAuditLog: 'Nhật ký gần đây',
+      remaining: 'Còn lại',
+      restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
+      roleExplanation: 'Giải thích vai trò',
+      roleFor: 'Vai trò cho',
+      roles: 'Vai trò',
+      rounds: 'Vòng',
+      rule: 'Quy tắc',
+      ruleName: 'Tên quy tắc',
+      sales: 'Doanh thu',
+      salesTrend: 'Xu hướng doanh thu',
+      searchUsers: 'Tìm người dùng',
+      slug: 'Slug',
+      start: 'Bắt đầu',
+      status: 'Trạng thái',
+      subtotal: 'Tạm tính',
+      summary: 'Tóm tắt',
+      taxCode: 'Mã số thuế',
+      time: 'Giờ',
+      total: 'Tổng',
+      totalPaid: 'Đã thanh toán',
+      totalSales: 'Tổng doanh thu',
+      type: 'Loại',
+      uniqueDiscount: 'Ưu đãi riêng',
+      used: 'đã dùng',
+      value: 'Giá trị',
+      validFrom: 'Hiệu lực từ',
+      validUntil: 'Hiệu lực đến',
+      validUntilHelp: 'không bắt buộc, mặc định là mãi mãi',
+      voucherCodeRequired: 'Mã voucher *',
+      vouchers: 'Voucher',
+    },
+    loyaltyCalculation: {
+      per_booking: 'Theo mỗi đặt chỗ',
+      per_player: 'Theo mỗi người chơi',
+      per_visit: 'Theo mỗi lượt đến/check-in',
+      per_vnd_spent: 'Theo chi tiêu',
+    } satisfies Record<StaffLoyaltyRule['calculation_type'], string>,
+    messages: {
+      clickUploadGamePhoto: 'Bấm để tải ảnh trò chơi',
+      discountSaved: 'Đã lưu ưu đãi.',
+      gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
+      gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
+      gamePhotoUploaded: 'Đã tải ảnh. Lưu trò chơi để giữ ảnh.',
+      gameSaved: 'Đã lưu trò chơi.',
+      loyaltyIntro: 'Thiết lập cách khách hàng nhận điểm. Đổi điểm sẽ dùng các quy tắc này sau.',
+      loyaltyRuleSaved: 'Đã lưu quy tắc điểm.',
+      noDiscounts: 'Chưa có ưu đãi.',
+      noLoyaltyRules: 'Chưa có quy tắc điểm.',
+      noOrders: 'Không có đơn trong khoảng này.',
+      noSales: 'Chưa có doanh thu trong kỳ này.',
+      noSoftDeleted: 'Không có dữ liệu xóa mềm.',
+      noVouchers: 'Chưa có voucher.',
+      orderConfirmed: 'Đơn {order} đã xác nhận · {total}',
+      orderCreating: 'Đang tạo đơn...',
+      orderUpdated: 'Đã cập nhật đơn.',
+      priceRuleSaved: 'Đã lưu quy tắc giá.',
+      readOnlyBooking: 'Chế độ chỉ xem. Viewer có thể xem luồng này nhưng không thể tạo đặt chỗ.',
+      readOnlyCommerce: 'Chế độ chỉ xem. Viewer có thể xem quy tắc nhưng không thể lưu thay đổi.',
+      readOnlyGames: 'Chế độ chỉ xem. Viewer có thể xem trò chơi nhưng không thể lưu thay đổi.',
+      readOnlyPrices: 'Chế độ chỉ xem. Viewer có thể xem quy tắc giá nhưng không thể lưu thay đổi.',
+      readOnlyRoles: 'Chế độ chỉ xem. Viewer có thể xem phân quyền nhưng không thể gán vai trò.',
+      restoreIntro: 'Chỉ Super Admin. Khôi phục sẽ xóa deleted_at, deleted_by và delete_reason.',
+      restoringRecord: 'Đang khôi phục...',
+      recordRestored: 'Đã khôi phục dữ liệu.',
+      roleHelpAdmin: 'Gán quyền Staff Console. Admin có thể quản lý mọi vai trò; người dùng thường giữ Player.',
+      roleUpdated: 'Đã cập nhật vai trò.',
+      roleUpdating: 'Đang cập nhật vai trò...',
+      staffTooManyAttempts: 'Quá nhiều lần thử. Vui lòng chờ một chút rồi thử lại.',
+      uniqueDiscountHelp: 'Ưu đãi dùng một lần cho đặt chỗ này. Không tạo voucher dùng lại.',
+      uploadGamePhoto: 'Đang tải ảnh trò chơi...',
+      voucherCodeRequired: 'Cần nhập mã voucher.',
+      voucherSaved: 'Đã lưu voucher.',
+    },
+    orderStatuses: {
+      cancelled: 'đã hủy',
+      completed: 'hoàn tất',
+      confirmed: 'đã xác nhận',
+      draft: 'nháp',
+      no_show: 'không đến',
+      paid: 'đã thanh toán',
+      partially_paid: 'thanh toán một phần',
+      refunded: 'đã hoàn tiền',
+    } satisfies Record<StaffOrder['order_status'], string>,
+    paymentMethods: {
+      bank_transfer: 'Chuyển khoản',
+      cash: 'Tiền mặt',
+    } satisfies Record<StaffPaymentMethod, string>,
+    roles: {
+      admin: 'Admin',
+      cashier: 'Thu ngân',
+      manager: 'Quản lý',
+      owner: 'Owner',
+      player: 'Player',
+      staff: 'Nhân viên',
+      super_admin: 'Super Admin',
+      viewer: 'Viewer',
+    } satisfies Record<StaffRole, string>,
+    roleHelp: [
+      { title: 'Owner / Super Admin', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
+      { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner / Super Admin. Khôi phục chỉ dành cho Owner.' },
+      { title: 'Manager', body: 'Quản lý trò chơi, giá, ưu đãi, voucher, điểm thưởng, đặt chỗ, đơn hàng và báo cáo.' },
+      { title: 'Staff / Cashier', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo.' },
+      { title: 'Viewer', body: 'Dùng app như người chơi, xem toàn bộ Staff Console, chỉnh hoặc tải báo cáo. Dữ liệu staff còn lại chỉ xem.' },
+      { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
+    ],
+    tabs: {
+      discounts: 'Ưu đãi / Voucher',
+      games: 'Trò chơi',
+      new: 'Đặt chỗ mới',
+      orders: 'Đơn hàng',
+      prices: 'Giá',
+      report: 'Báo cáo ngày',
+      restore: 'Khôi phục',
+      roles: 'Vai trò',
+      today: 'Hôm nay',
+    } satisfies Record<StaffTab, string>,
+  },
+} as const
+
+type StaffConsoleCopy = (typeof staffConsoleText)[StaffConsoleLanguage]
+
+function resolveStaffConsoleLanguage(language?: string): StaffConsoleLanguage {
+  return language === 'vi' ? 'vi' : 'en'
 }
 
 const todayString = () => {
@@ -336,20 +944,13 @@ const defaultLoyaltyForm = () => ({
   notes: '',
 })
 
-const paymentMethods = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-] as const
+const paymentMethods = ['cash', 'bank_transfer'] as const
 const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
 const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
 const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
-const staffCommerceTabs: Array<{ value: StaffCommerceTab; label: string }> = [
-  { value: 'discounts', label: 'Discounts' },
-  { value: 'vouchers', label: 'Vouchers' },
-  { value: 'loyalty', label: 'Loyalty Points' },
-]
+const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
 const superAdminEmails = ['emile@vre-vietnam.com', 'emilejacquet@icloud.com']
 const adminEmails = [...superAdminEmails, 'contact@vre-vietnam.com']
 const staffRoleOptions: StaffRole[] = ['super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
@@ -357,7 +958,6 @@ const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'super_admin', 'owne
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
-const staffGameImageHelp = 'JPG, PNG, or WEBP · max 2 MB · wide image works best.'
 
 function isSuperAdminEmail(email?: string | null) {
   return Boolean(email && superAdminEmails.includes(email.toLowerCase()))
@@ -409,38 +1009,9 @@ function isDemoProfile(profile: StaffProfile) {
   )
 }
 
-function staffRoleName(role: StaffRole) {
-  if (role === 'super_admin') return 'Super Admin'
-  if (role === 'cashier') return 'Cashier'
-  return role.charAt(0).toUpperCase() + role.slice(1)
+function staffRoleName(role: StaffRole, text: StaffConsoleCopy = staffConsoleText.en) {
+  return text.roles[role]
 }
-
-const staffRoleHelpItems = [
-  {
-    title: 'Owner / Super Admin',
-    body: 'Full Staff Console access, role management, restore tools, and every client app feature.',
-  },
-  {
-    title: 'Admin',
-    body: 'Full daily operations access and role management below Owner / Super Admin. Restore stays Owner only.',
-  },
-  {
-    title: 'Manager',
-    body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.',
-  },
-  {
-    title: 'Staff / Cashier',
-    body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports.',
-  },
-  {
-    title: 'Viewer',
-    body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.',
-  },
-  {
-    title: 'Player',
-    body: 'Client app only. No Staff Console access.',
-  },
-]
 
 function formatVnd(value: number) {
   return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
@@ -549,28 +1120,34 @@ function calculateManualDiscount(type: BookingForm['manualDiscountType'], value:
   return Math.min(subtotal, Math.max(0, Math.round(amount)))
 }
 
-function manualDiscountLabel(type: BookingForm['manualDiscountType'], value: number) {
+function manualDiscountLabel(type: BookingForm['manualDiscountType'], value: number, text: StaffConsoleCopy = staffConsoleText.en) {
   if (!type || value <= 0) return ''
   return type === 'percentage'
-    ? `Unique discount · ${Math.min(value, 100)}%`
-    : `Unique discount · ${formatVnd(value)}`
+    ? `${text.labels.uniqueDiscount} · ${Math.min(value, 100)}%`
+    : `${text.labels.uniqueDiscount} · ${formatVnd(value)}`
 }
 
-function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type']) {
-  if (type === 'per_vnd_spent') return 'Spend based'
-  if (type === 'per_booking') return 'Per booking'
-  if (type === 'per_player') return 'Per player'
-  return 'Per visit/check-in'
+function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], text: StaffConsoleCopy = staffConsoleText.en) {
+  return text.loyaltyCalculation[type]
 }
 
-function customerName(profile: StaffProfile) {
-  return profile.nickname || profile.full_name || profile.phone || profile.email || 'Customer'
+function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
+  return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
-function paymentMethodLabel(value: string) {
-  if (value === 'split') return 'Split'
-  if (value === 'unpaid') return 'Unpaid'
-  return paymentMethods.find((method) => method.value === value)?.label || value.replace(/_/g, ' ')
+function paymentMethodLabel(value: string, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (value === 'split') return text.split
+  if (value === 'unpaid') return text.unpaid
+  if (value === 'cash' || value === 'bank_transfer') return text.paymentMethods[value]
+  return value.replace(/_/g, ' ')
+}
+
+function paymentStatusLabel(value: StaffOrder['payment_status'], text: StaffConsoleCopy = staffConsoleText.en) {
+  if (value === 'unpaid') return text.unpaid
+  if (value === 'paid') return text.orderStatuses.paid
+  if (value === 'partially_paid') return text.orderStatuses.partially_paid
+  if (value === 'refunded') return text.orderStatuses.refunded
+  return value
 }
 
 function htmlCell(value: unknown) {
@@ -592,10 +1169,10 @@ function downloadBlob(filename: string, type: string, content: BlobPart) {
   URL.revokeObjectURL(url)
 }
 
-function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>) {
+function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>, text: StaffConsoleCopy = staffConsoleText.en) {
   const tables = sections.map((section) => {
     if (section.rows.length === 0) {
-      return `<h2>${htmlCell(section.title)}</h2><table><tbody><tr><td>No data</td></tr></tbody></table>`
+      return `<h2>${htmlCell(section.title)}</h2><table><tbody><tr><td>${htmlCell(text.noData)}</td></tr></tbody></table>`
     }
     const headers = Object.keys(section.rows[0])
     return `
@@ -627,12 +1204,12 @@ function pdfSafeText(value: unknown) {
     .replace(/\)/g, '\\)')
 }
 
-function buildSimplePdf(lines: string[]) {
+function buildSimplePdf(lines: string[], text: StaffConsoleCopy = staffConsoleText.en) {
   const streamLines = [
     'BT',
     '/F1 18 Tf',
     '42 792 Td',
-    `(${pdfSafeText(lines[0] || 'VRena report')}) Tj`,
+    `(${pdfSafeText(lines[0] || text.reportTitleFallback)}) Tj`,
     '/F1 10 Tf',
     ...lines.slice(1, 48).flatMap((line) => ['0 -16 Td', `(${pdfSafeText(line)}) Tj`]),
     'ET',
@@ -659,23 +1236,23 @@ function buildSimplePdf(lines: string[]) {
   return chunks.join('')
 }
 
-function downloadPdf(filename: string, lines: string[]) {
-  downloadBlob(filename, 'application/pdf', buildSimplePdf(lines))
+function downloadPdf(filename: string, lines: string[], text: StaffConsoleCopy = staffConsoleText.en) {
+  downloadBlob(filename, 'application/pdf', buildSimplePdf(lines, text))
 }
 
-function staffReportRows(report: ReturnType<typeof buildStaffReport>) {
+function staffReportRows(report: ReturnType<typeof buildStaffReport>, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
-    { metric: 'Total sales', value: formatVnd(report.totalSales) },
-    { metric: 'Total paid', value: formatVnd(report.totalPaid) },
-    { metric: 'Unpaid', value: formatVnd(report.unpaidAmount) },
-    { metric: 'Cash', value: formatVnd(report.cashTotal) },
-    { metric: 'Bank Transfer', value: formatVnd(report.bankTransferTotal) },
-    { metric: 'Bookings', value: report.bookings },
-    { metric: 'Players', value: report.players },
-    { metric: 'Cancelled', value: report.cancelled },
-    { metric: 'No-shows', value: report.noShows },
-    { metric: 'Discounts', value: formatVnd(report.discounts) },
-    { metric: 'Best-selling game', value: report.bestSellingGame },
+    { metric: text.labels.totalSales, value: formatVnd(report.totalSales) },
+    { metric: text.labels.totalPaid, value: formatVnd(report.totalPaid) },
+    { metric: text.unpaid, value: formatVnd(report.unpaidAmount) },
+    { metric: text.labels.cash, value: formatVnd(report.cashTotal) },
+    { metric: text.labels.bankTransfer, value: formatVnd(report.bankTransferTotal) },
+    { metric: text.labels.bookings, value: report.bookings },
+    { metric: text.labels.players, value: report.players },
+    { metric: text.labels.cancelled, value: report.cancelled },
+    { metric: text.labels.noShows, value: report.noShows },
+    { metric: text.labels.discounts, value: formatVnd(report.discounts) },
+    { metric: text.labels.bestSellingGame, value: report.bestSellingGame },
   ]
 }
 
@@ -683,11 +1260,11 @@ function staffOrderPaymentRows(order: StaffOrder, paymentsByOrderId: Map<string,
   return paymentsByOrderId.get(order.id) || []
 }
 
-function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
   const payments = staffOrderPaymentRows(order, paymentsByOrderId)
-  if (payments.length === 0) return paymentMethodLabel(order.payment_method)
+  if (payments.length === 0) return paymentMethodLabel(order.payment_method, text)
   return payments
-    .map((payment) => `${paymentMethodLabel(payment.payment_method)} ${formatVnd(payment.amount)}`)
+    .map((payment) => `${paymentMethodLabel(payment.payment_method, text)} ${formatVnd(payment.amount)}`)
     .join(' + ')
 }
 
@@ -697,21 +1274,21 @@ function orderPaidAmount(order: StaffOrder, paymentsByOrderId: Map<string, Staff
   return order.payment_status === 'paid' ? order.total : 0
 }
 
-function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
   return orders.map((order) => ({
     order_number: order.order_number,
     date: order.booking_date,
     time: normalizeTime(order.booking_time),
-    customer: order.customer_name || order.customer_phone || order.customer_email || 'Walk-in',
+    customer: order.customer_name || order.customer_phone || order.customer_email || text.walkIn,
     game: games.find((game) => game.id === order.game_id)?.name || '',
     players: order.players_count,
     subtotal: formatVnd(order.subtotal),
     discount: formatVnd(order.discount_total),
     total: formatVnd(order.total),
-    payment_method: orderPaymentLabel(order, paymentsByOrderId),
+    payment_method: orderPaymentLabel(order, paymentsByOrderId, text),
     paid_amount: formatVnd(orderPaidAmount(order, paymentsByOrderId)),
-    payment_status: order.payment_status,
-    order_status: order.order_status,
+    payment_status: paymentStatusLabel(order.payment_status, text),
+    order_status: text.orderStatuses[order.order_status],
   }))
 }
 
@@ -720,14 +1297,15 @@ function reportPdfLines(
   report: ReturnType<typeof buildStaffReport>,
   orders: StaffOrder[],
   games: StaffGame[],
-  paymentsByOrderId: Map<string, StaffOrderPayment[]>
+  paymentsByOrderId: Map<string, StaffOrderPayment[]>,
+  text: StaffConsoleCopy = staffConsoleText.en
 ) {
   return [
     title,
-    ...staffReportRows(report).map((row) => `${row.metric}: ${row.value}`),
+    ...staffReportRows(report, text).map((row) => `${row.metric}: ${row.value}`),
     '',
-    'Orders',
-    ...staffOrderExportRows(orders, games, paymentsByOrderId).slice(0, 28).map((order) => (
+    text.labels.orders,
+    ...staffOrderExportRows(orders, games, paymentsByOrderId, text).slice(0, 28).map((order) => (
       `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.game} | ${order.total} | ${order.payment_method}`
     )),
   ]
@@ -758,11 +1336,11 @@ function conicStops(items: Array<{ value: number }>) {
   }).join(', ')
 }
 
-function paymentPieItems(report: ReturnType<typeof buildStaffReport>) {
+function paymentPieItems(report: ReturnType<typeof buildStaffReport>, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
-    { label: 'Cash', value: report.cashTotal },
-    { label: 'Bank Transfer', value: report.bankTransferTotal },
-    { label: 'Unpaid', value: report.unpaidAmount },
+    { label: text.labels.cash, value: report.cashTotal },
+    { label: text.labels.bankTransfer, value: report.bankTransferTotal },
+    { label: text.unpaid, value: report.unpaidAmount },
   ]
 }
 
@@ -774,7 +1352,8 @@ function ordersInDateRange(orders: StaffOrder[], start: string, end: string) {
 function buildStaffReport(
   orders: StaffOrder[],
   gameNameById: Map<string, string>,
-  paymentsByOrderId: Map<string, StaffOrderPayment[]>
+  paymentsByOrderId: Map<string, StaffOrderPayment[]>,
+  text: StaffConsoleCopy = staffConsoleText.en
 ) {
   const totals = orders.reduce((summary, order) => {
     const payments = staffOrderPaymentRows(order, paymentsByOrderId)
@@ -799,7 +1378,7 @@ function buildStaffReport(
     }
     if (order.order_status === 'cancelled') summary.cancelled += 1
     if (order.order_status === 'no_show') summary.noShows += 1
-    const gameName = order.game_id ? gameNameById.get(order.game_id) || 'Unknown' : 'Unknown'
+    const gameName = order.game_id ? gameNameById.get(order.game_id) || text.unknown : text.unknown
     summary.gameCounts.set(gameName, (summary.gameCounts.get(gameName) || 0) + 1)
     return summary
   }, {
@@ -815,7 +1394,7 @@ function buildStaffReport(
     discounts: 0,
     gameCounts: new Map<string, number>(),
   })
-  const bestSellingGame = [...totals.gameCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'None yet'
+  const bestSellingGame = [...totals.gameCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || text.noneYet
 
   return {
     totalSales: totals.totalSales,
@@ -848,13 +1427,14 @@ function buildDailySeries(orders: StaffOrder[], start: string, end: string) {
   return [...byDate.values()]
 }
 
-function percentChange(current: number, previous: number) {
-  if (previous <= 0) return current > 0 ? 'New' : '0%'
+function percentChange(current: number, previous: number, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (previous <= 0) return current > 0 ? text.newValue : '0%'
   const value = ((current - previous) / previous) * 100
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language }: StaffConsoleProps) {
+  const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
   const rank = staffRank(profile?.role, profile?.email || authEmail)
   const role = roleLabel(profile?.role, profile?.email || authEmail)
   const canManageConfig = rank >= 80
@@ -925,13 +1505,13 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       subtotal,
       discountTotal,
       discountLabel: manualDiscountTotal > 0
-        ? manualDiscountLabel(booking.manualDiscountType, booking.manualDiscountValue)
-        : selectedDiscount?.name || 'No discount',
+        ? manualDiscountLabel(booking.manualDiscountType, booking.manualDiscountValue, text)
+        : selectedDiscount?.name || text.noDiscount,
       total: Math.max(0, subtotal - discountTotal),
-      ruleName: selectedRule?.rule_name || 'Default walk-in rate',
+      ruleName: selectedRule?.rule_name || text.defaultWalkInRate,
       duration: selectedGame?.duration_minutes || 20,
     }
-  }, [booking.manualDiscountType, booking.manualDiscountValue, booking.players, selectedDiscount, selectedGame, selectedRule])
+  }, [booking.manualDiscountType, booking.manualDiscountValue, booking.players, selectedDiscount, selectedGame, selectedRule, text])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
@@ -957,13 +1537,13 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false
       if (!query) return true
       return [
-        customerName(item),
+        customerName(item, text),
         item.email || '',
         item.phone || '',
-        staffRoleName(effectiveRole),
+        staffRoleName(effectiveRole, text),
       ].some((value) => value.toLowerCase().includes(query))
     })
-  }, [profiles, roleFilter, roleSearch])
+  }, [profiles, roleFilter, roleSearch, text])
 
   const reportOrders = useMemo(() => (
     ordersInDateRange(orders, reportStart, reportEnd)
@@ -972,8 +1552,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     compareEnabled ? ordersInDateRange(orders, compareStart, compareEnd) : []
   ), [compareEnabled, compareEnd, compareStart, orders])
 
-  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById, orderPaymentsByOrderId), [gameNameById, orderPaymentsByOrderId, reportOrders])
-  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById, orderPaymentsByOrderId), [comparisonOrders, gameNameById, orderPaymentsByOrderId])
+  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById, orderPaymentsByOrderId, text), [gameNameById, orderPaymentsByOrderId, reportOrders, text])
+  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById, orderPaymentsByOrderId, text), [comparisonOrders, gameNameById, orderPaymentsByOrderId, text])
   const reportSeries = useMemo(() => buildDailySeries(reportOrders, reportStart, reportEnd), [reportEnd, reportOrders, reportStart])
   const comparisonSeries = useMemo(() => (
     compareEnabled ? buildDailySeries(comparisonOrders, compareStart, compareEnd) : []
@@ -985,16 +1565,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   ), [comparisonSeries, reportSeries])
   const paymentMix = useMemo(() => {
     const items = [
-      { label: 'Cash', value: report.cashTotal },
-      { label: 'Bank Transfer', value: report.bankTransferTotal },
-      { label: 'Unpaid', value: report.unpaidAmount },
+      { label: text.labels.cash, value: report.cashTotal },
+      { label: text.labels.bankTransfer, value: report.bankTransferTotal },
+      { label: text.unpaid, value: report.unpaidAmount },
     ]
     const total = Math.max(1, items.reduce((sum, item) => sum + item.value, 0))
     return items.map((item) => ({ ...item, share: Math.round((item.value / total) * 100) }))
-  }, [report])
+  }, [report, text])
   const reportLinePath = useMemo(() => buildLineChartPath(reportSeries, reportChartMax), [reportChartMax, reportSeries])
   const comparisonLinePath = useMemo(() => buildLineChartPath(comparisonSeries, reportChartMax), [comparisonSeries, reportChartMax])
-  const pieItems = useMemo(() => paymentPieItems(report), [report])
+  const pieItems = useMemo(() => paymentPieItems(report, text), [report, text])
   const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
 
   useEffect(() => {
@@ -1045,7 +1625,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     })
 
     if (error) {
-      setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
+      setStatus(error.message || text.messages.staffTooManyAttempts)
       return false
     }
 
@@ -1057,7 +1637,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setBooking((current) => ({
       ...current,
       customerId: profileId,
-      customerName: selected ? customerName(selected) : current.customerName,
+      customerName: selected ? customerName(selected, text) : current.customerName,
       customerPhone: selected?.phone || current.customerPhone,
       customerEmail: selected?.email || current.customerEmail,
     }))
@@ -1070,7 +1650,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     if (!allowed) return
 
     setSaving(true)
-    setStatus('Creating order...')
+    setStatus(text.messages.orderCreating)
     const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
     const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
     const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
@@ -1103,7 +1683,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     }
 
     const order = data as { order_number?: string; total?: number } | null
-    setStatus(`Order ${order?.order_number || ''} confirmed · ${formatVnd(order?.total || quote.total)}`)
+    setStatus(text.messages.orderConfirmed
+      .replace('{order}', order?.order_number || '')
+      .replace('{total}', formatVnd(order?.total || quote.total)))
     setBooking(defaultBookingForm())
     await loadStaffData()
     setSaving(false)
@@ -1117,17 +1699,17 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     if (!file) return
 
     if (!staffGameImageTypes.includes(file.type)) {
-      setStatus('Game photo must be JPG, PNG, or WEBP.')
+      setStatus(text.messages.gamePhotoType)
       return
     }
 
     if (file.size > staffGameImageMaxBytes) {
-      setStatus('Game photo must be 2 MB or smaller.')
+      setStatus(text.messages.gamePhotoSmall)
       return
     }
 
     setGameImageUploading(true)
-    setStatus('Uploading game photo...')
+    setStatus(text.messages.uploadGamePhoto)
     const safeName = file.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
     const safeGame = slugify(gameForm.slug || gameForm.name || 'game')
     const path = `${profile?.id || 'staff'}/${safeGame}-${Date.now()}-${safeName}`
@@ -1144,7 +1726,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
     const { data } = supabase.storage.from(staffGameImageBucket).getPublicUrl(path)
     setGameForm((current) => ({ ...current, image_url: data.publicUrl }))
-    setStatus('Game photo uploaded. Save the game to keep it.')
+    setStatus(text.messages.gamePhotoUploaded)
     setGameImageUploading(false)
   }
 
@@ -1169,7 +1751,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       ? supabase.from('staff_games').update(payload).eq('id', gameForm.id)
       : supabase.from('staff_games').insert(payload)
     const { error } = await request
-    setStatus(error ? error.message : 'Game saved.')
+    setStatus(error ? error.message : text.messages.gameSaved)
     if (!error) setGameForm(defaultGameForm())
     await loadStaffData()
     setSaving(false)
@@ -1195,7 +1777,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       ? supabase.from('staff_pricing_rules').update(payload).eq('id', priceForm.id)
       : supabase.from('staff_pricing_rules').insert(payload)
     const { error } = await request
-    setStatus(error ? error.message : 'Price rule saved.')
+    setStatus(error ? error.message : text.messages.priceRuleSaved)
     if (!error) setPriceForm(defaultPriceForm())
     await loadStaffData()
     setSaving(false)
@@ -1204,7 +1786,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   async function saveDiscount() {
     if (!canCreateOrders) return
     if (commerceTab === 'vouchers' && !discountForm.code.trim()) {
-      setStatus('Voucher code is required.')
+      setStatus(text.messages.voucherCodeRequired)
       return
     }
     setSaving(true)
@@ -1224,7 +1806,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       ? supabase.from('staff_discount_rules').update(payload).eq('id', discountForm.id)
       : supabase.from('staff_discount_rules').insert(payload)
     const { error } = await request
-    setStatus(error ? error.message : `${isVoucher ? 'Voucher' : 'Discount'} saved.`)
+    setStatus(error ? error.message : isVoucher ? text.messages.voucherSaved : text.messages.discountSaved)
     if (!error) setDiscountForm(defaultDiscountForm())
     await loadStaffData()
     setSaving(false)
@@ -1251,7 +1833,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       ? supabase.from('staff_loyalty_rules').update(payload).eq('id', loyaltyForm.id)
       : supabase.from('staff_loyalty_rules').insert(payload)
     const { error } = await request
-    setStatus(error ? error.message : 'Loyalty rule saved.')
+    setStatus(error ? error.message : text.messages.loyaltyRuleSaved)
     if (!error) setLoyaltyForm(defaultLoyaltyForm())
     await loadStaffData()
     setSaving(false)
@@ -1265,7 +1847,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     }
     setSaving(true)
     const { error } = await supabase.from('staff_orders').update(patch).eq('id', order.id)
-    setStatus(error ? error.message : 'Order updated.')
+    setStatus(error ? error.message : text.messages.orderUpdated)
     await loadStaffData()
     setSaving(false)
   }
@@ -1275,7 +1857,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     const previousProfiles = profiles
     setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: nextRole } : item))
     setSaving(true)
-    setStatus('Updating role...')
+    setStatus(text.messages.roleUpdating)
     const { data, error } = await supabase.rpc('set_staff_profile_role', {
       p_profile_id: profileId,
       p_role: nextRole,
@@ -1286,7 +1868,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     } else {
       const savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || nextRole)
       setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: savedRole } : item))
-      setStatus('Role updated.')
+      setStatus(text.messages.roleUpdated)
     }
     setSaving(false)
   }
@@ -1294,12 +1876,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   async function restoreDeletedRecord(record: SoftDeletedRecord) {
     if (!canRestoreDeleted) return
     setSaving(true)
-    setStatus('Restoring record...')
+    setStatus(text.messages.restoringRecord)
     const { error } = await supabase.rpc('restore_soft_deleted_record', {
       p_entity_table: record.entity_table,
       p_entity_id: record.entity_id,
     })
-    setStatus(error ? error.message : 'Record restored.')
+    setStatus(error ? error.message : text.messages.recordRestored)
     await loadStaffData()
     setSaving(false)
   }
@@ -1387,15 +1969,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
   function exportExcelReport() {
     downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xls`, [
-      { title: `VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report) },
-      { title: 'Orders', rows: staffOrderExportRows(reportOrders, games, orderPaymentsByOrderId) },
-    ])
+      { title: `${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report, text) },
+      { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, orderPaymentsByOrderId, text) },
+    ], text)
   }
 
   function exportPdfReport() {
     downloadPdf(
       `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
-      reportPdfLines(`VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, orderPaymentsByOrderId)
+      reportPdfLines(`${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, orderPaymentsByOrderId, text),
+      text
     )
   }
 
@@ -1447,32 +2030,32 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       <table className="staff-table">
         <thead>
           <tr>
-            <th>Order</th>
-            <th>Customer</th>
-            <th>Game</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Payment</th>
-            <th>Status</th>
-            {canCreateOrders && <th>Actions</th>}
+            <th>{text.labels.order}</th>
+            <th>{text.labels.customer}</th>
+            <th>{text.labels.game}</th>
+            <th>{text.labels.date}</th>
+            <th>{text.labels.total}</th>
+            <th>{text.labels.payment}</th>
+            <th>{text.labels.status}</th>
+            {canCreateOrders && <th>{text.labels.actions}</th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((order) => (
             <tr key={order.id}>
               <td><strong>{order.order_number}</strong></td>
-              <td>{order.customer_name || order.customer_phone || order.customer_email || 'Walk-in'}</td>
-              <td>{games.find((game) => game.id === order.game_id)?.name || 'Game'}</td>
+              <td>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</td>
+              <td>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</td>
               <td>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</td>
               <td>{formatVnd(order.total)}</td>
-              <td>{orderPaymentLabel(order, orderPaymentsByOrderId)}<br /><span>{order.payment_status}</span></td>
-              <td>{order.order_status}</td>
+              <td>{orderPaymentLabel(order, orderPaymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
+              <td>{text.orderStatuses[order.order_status]}</td>
               {canCreateOrders && (
                 <td>
                   <div className="staff-row-actions">
-                    <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>Paid</button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>Done</button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>No-show</button>
+                    <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>{text.actions.paid}</button>
+                    <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
+                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>{text.actions.noShow}</button>
                   </div>
                 </td>
               )}
@@ -1480,7 +2063,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={canCreateOrders ? 8 : 7}>No orders in this range.</td>
+              <td colSpan={canCreateOrders ? 8 : 7}>{text.messages.noOrders}</td>
             </tr>
           )}
         </tbody>
@@ -1491,8 +2074,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   if (rank < 20) {
     return (
       <section className="section staff-console">
-        <h2>Staff Console</h2>
-        <p className="notice">Staff access required.</p>
+        <h2>{text.title}</h2>
+        <p className="notice">{text.accessRequired}</p>
       </section>
     )
   }
@@ -1501,57 +2084,57 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     <section className="section staff-console">
       <div className="section-head">
         <div>
-          <h2>Staff Console</h2>
-          <p className="muted">Counter bookings, manual payments, games, prices, discounts, and reports.</p>
+          <h2>{text.title}</h2>
+          <p className="muted">{text.subtitle}</p>
         </div>
-        <span className="staff-role-pill">{staffRoleName(role)}</span>
+        <span className="staff-role-pill">{staffRoleName(role, text)}</span>
       </div>
 
-      <div className="staff-tabs" role="tablist" aria-label="Staff Console">
-        {tabButton('new', 'New Booking')}
-        {tabButton('today', 'Today')}
-        {tabButton('games', 'Games')}
-        {tabButton('prices', 'Prices')}
-        {tabButton('discounts', 'Discounts / Vouchers')}
-        {tabButton('roles', 'Roles')}
-        {tabButton('restore', 'Restore')}
-        {tabButton('orders', 'Orders')}
-        {tabButton('report', 'Daily Report')}
+      <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
+        {tabButton('new', text.tabs.new)}
+        {tabButton('today', text.tabs.today)}
+        {tabButton('games', text.tabs.games)}
+        {tabButton('prices', text.tabs.prices)}
+        {tabButton('discounts', text.tabs.discounts)}
+        {tabButton('roles', text.tabs.roles)}
+        {tabButton('restore', text.tabs.restore)}
+        {tabButton('orders', text.tabs.orders)}
+        {tabButton('report', text.tabs.report)}
       </div>
 
       {status && <p className="notice">{status}</p>}
-      {loading && <p className="notice" aria-busy="true">Loading Staff Console...</p>}
+      {loading && <p className="notice" aria-busy="true">{text.loading}</p>}
 
       {currentTab === 'new' && (
         <div className="staff-grid">
           <div className="staff-card staff-card-wide">
-            <h3>New booking</h3>
-            {!canCreateOrders && <p className="staff-readonly-note">Read-only view. Viewer can inspect this flow, but cannot create bookings.</p>}
+            <h3>{text.labels.newBooking}</h3>
+            {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders}>
             <div className="form-grid compact-form-grid">
               <label>
-                Customer profile
+                {text.labels.customerProfile}
                 <select value={booking.customerId} onChange={(event) => applyCustomer(event.target.value)}>
-                  <option value="">Walk-in / manual customer</option>
+                  <option value="">{text.walkIn}</option>
                   {profiles.map((item) => (
-                    <option key={item.id} value={item.id}>{customerName(item)}</option>
+                    <option key={item.id} value={item.id}>{customerName(item, text)}</option>
                   ))}
                 </select>
               </label>
               <label>
-                Customer name
+                {text.labels.customerName}
                 <input value={booking.customerName} onChange={(event) => setBooking({ ...booking, customerName: event.target.value })} />
               </label>
               <label>
-                Phone
+                {text.labels.phone}
                 <input value={booking.customerPhone} onChange={(event) => setBooking({ ...booking, customerPhone: event.target.value })} />
               </label>
               <label>
-                E-mail
+                {text.labels.email}
                 <input value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
               </label>
               <label>
-                Game
+                {text.labels.game}
                 <select value={booking.gameId || selectedGame?.id || ''} onChange={(event) => setBooking({ ...booking, gameId: event.target.value })}>
                   {activeGames.map((game) => (
                     <option key={game.id} value={game.id}>{game.name}</option>
@@ -1559,19 +2142,19 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                 </select>
               </label>
               <label>
-                Date
-                <StaffPickerField ariaLabel="Booking date" type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
+                {text.labels.date}
+                <StaffPickerField ariaLabel={text.aria.bookingDate} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
               </label>
               <label>
-                Time
-                <StaffPickerField ariaLabel="Booking time" type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
+                {text.labels.time}
+                <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
               </label>
               <label>
-                Players
+                {text.labels.players}
                 <input min={1} max={64} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
               </label>
               <label>
-                Arena
+                {text.labels.arena}
                 <select value={booking.arenaId} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
                   {(selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1']).map((arena) => (
                     <option key={arena} value={arena}>{arena}</option>
@@ -1579,7 +2162,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                 </select>
               </label>
               <label>
-                Discount / voucher
+                {text.labels.discountVoucher}
                 <select
                   value={booking.discountId}
                   onChange={(event) => setBooking({
@@ -1589,14 +2172,14 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     manualDiscountValue: 0,
                   })}
                 >
-                  <option value="">No discount</option>
+                  <option value="">{text.noDiscount}</option>
                   {discounts.filter((discount) => discount.active).map((discount) => (
                     <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</option>
                   ))}
                 </select>
               </label>
               <div className="staff-manual-discount full">
-                <span className="staff-field-label">Unique discount</span>
+                <span className="staff-field-label">{text.labels.uniqueDiscount}</span>
                 <div>
                   <select
                     value={booking.manualDiscountType}
@@ -1607,9 +2190,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                       manualDiscountValue: event.target.value ? booking.manualDiscountValue : 0,
                     })}
                   >
-                    <option value="">No unique discount</option>
-                    <option value="fixed_amount">VND amount</option>
-                    <option value="percentage">Percentage</option>
+                    <option value="">{text.noUniqueDiscount}</option>
+                    <option value="fixed_amount">{text.vndAmount}</option>
+                    <option value="percentage">{text.discountTypes.percentage}</option>
                   </select>
                   <input
                     disabled={!booking.manualDiscountType}
@@ -1625,79 +2208,79 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     })}
                   />
                 </div>
-                <p className="field-help">One-off discount for this booking only. It does not create a reusable voucher.</p>
+                <p className="field-help">{text.messages.uniqueDiscountHelp}</p>
               </div>
               <div className="staff-payment-splits full">
                 <div className="staff-list-head">
-                  <h4>Payment splits</h4>
-                  <button type="button" onClick={addBookingPaymentSplit}>Add split</button>
+                  <h4>{text.labels.paymentSplits}</h4>
+                  <button type="button" onClick={addBookingPaymentSplit}>{text.actions.addSplit}</button>
                 </div>
                 <div className="staff-payment-split-list">
                   {booking.paymentSplits.map((split) => (
                     <div className="staff-payment-split-row" key={split.id}>
                       <select
-                        aria-label="Payment method"
+                        aria-label={text.aria.paymentMethod}
                         value={split.payment_method}
                         onChange={(event) => updateBookingPaymentSplit(split.id, { payment_method: event.target.value as StaffPaymentMethod })}
                       >
-                        {paymentMethods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
+                        {paymentMethods.map((method) => <option key={method} value={method}>{text.paymentMethods[method]}</option>)}
                       </select>
                       <input
-                        aria-label="Payment amount"
+                        aria-label={text.aria.paymentAmount}
                         inputMode="numeric"
                         placeholder="0 đ"
                         value={formatDongInput(split.amount)}
                         onChange={(event) => updateBookingPaymentSplit(split.id, { amount: dongDigits(event.target.value) })}
                       />
-                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>Remove</button>
+                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>{text.actions.remove}</button>
                     </div>
                   ))}
                 </div>
                 <p className="field-help">
-                  Paid {formatVnd(bookingPaidTotal)} · Remaining {formatVnd(bookingRemainingTotal)}
+                  {text.labels.paid} {formatVnd(bookingPaidTotal)} · {text.labels.remaining} {formatVnd(bookingRemainingTotal)}
                   {' · '}
-                  Status {paymentStatusFromAmount(quote.total, bookingPaidTotal)}
+                  {text.labels.status} {paymentStatusLabel(paymentStatusFromAmount(quote.total, bookingPaidTotal), text)}
                 </p>
               </div>
               <label>
-                Order status
+                {text.labels.orderStatus}
                 <select value={booking.orderStatus} onChange={(event) => setBooking({ ...booking, orderStatus: event.target.value as BookingForm['orderStatus'] })}>
-                  {orderStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                  {orderStatuses.map((status) => <option key={status} value={status}>{text.orderStatuses[status]}</option>)}
                 </select>
               </label>
             </div>
             <details className="staff-invoice-details">
-              <summary>Invoice details for future MISA export</summary>
+              <summary>{text.labels.invoiceDetails}</summary>
               <div className="form-grid compact-form-grid">
                 <label className="checkbox-row">
                   <input type="checkbox" checked={booking.invoiceRequired} onChange={(event) => setBooking({ ...booking, invoiceRequired: event.target.checked })} />
-                  Invoice required
+                  {text.labels.invoiceRequired}
                 </label>
-                <label>Company<input value={booking.companyName} onChange={(event) => setBooking({ ...booking, companyName: event.target.value })} /></label>
-                <label>Tax code<input value={booking.taxCode} onChange={(event) => setBooking({ ...booking, taxCode: event.target.value })} /></label>
-                <label>Invoice e-mail<input value={booking.invoiceEmail} onChange={(event) => setBooking({ ...booking, invoiceEmail: event.target.value })} /></label>
-                <label className="full">Invoice address<input value={booking.invoiceAddress} onChange={(event) => setBooking({ ...booking, invoiceAddress: event.target.value })} /></label>
+                <label>{text.labels.company}<input value={booking.companyName} onChange={(event) => setBooking({ ...booking, companyName: event.target.value })} /></label>
+                <label>{text.labels.taxCode}<input value={booking.taxCode} onChange={(event) => setBooking({ ...booking, taxCode: event.target.value })} /></label>
+                <label>{text.labels.invoiceEmail}<input value={booking.invoiceEmail} onChange={(event) => setBooking({ ...booking, invoiceEmail: event.target.value })} /></label>
+                <label className="full">{text.labels.invoiceAddress}<input value={booking.invoiceAddress} onChange={(event) => setBooking({ ...booking, invoiceAddress: event.target.value })} /></label>
               </div>
             </details>
             <label className="staff-note-field">
-              Internal note
+              {text.labels.internalNote}
               <textarea value={booking.note} onChange={(event) => setBooking({ ...booking, note: event.target.value })} />
             </label>
             </fieldset>
           </div>
 
           <div className="staff-card staff-summary-card">
-            <h3>Summary</h3>
+            <h3>{text.labels.summary}</h3>
             <div className="staff-price-lines">
-              <span>Rule</span><strong>{quote.ruleName}</strong>
-              <span>Duration</span><strong>{quote.duration} min</strong>
-              <span>Subtotal</span><strong>{formatVnd(quote.subtotal)}</strong>
-              <span>Discount type</span><strong>{quote.discountLabel}</strong>
-              <span>Discount</span><strong>-{formatVnd(quote.discountTotal)}</strong>
-              <span>Total</span><strong>{formatVnd(quote.total)}</strong>
+              <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
+              <span>{text.labels.duration}</span><strong>{quote.duration} min</strong>
+              <span>{text.labels.subtotal}</span><strong>{formatVnd(quote.subtotal)}</strong>
+              <span>{text.labels.discountType}</span><strong>{quote.discountLabel}</strong>
+              <span>{text.labels.discount}</span><strong>-{formatVnd(quote.discountTotal)}</strong>
+              <span>{text.labels.total}</span><strong>{formatVnd(quote.total)}</strong>
             </div>
             <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame} type="button" onClick={createOrder}>
-              Confirm booking
+              {text.actions.confirmBooking}
             </button>
           </div>
         </div>
@@ -1705,7 +2288,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
       {currentTab === 'today' && (
         <div className="staff-card">
-          <h3>Today</h3>
+          <h3>{text.tabs.today}</h3>
           {orderRows(todayOrders)}
         </div>
       )}
@@ -1713,19 +2296,19 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'games' && (
         <div className="staff-grid">
           <div className="staff-card">
-            <h3>{gameForm.id ? 'Edit game' : 'Create game'}</h3>
-            {!canManageConfig && <p className="staff-readonly-note">Read-only view. Viewer can inspect games, but cannot save changes.</p>}
+            <h3>{gameForm.id ? text.editGame : text.labels.createGame}</h3>
+            {!canManageConfig && <p className="staff-readonly-note">{text.messages.readOnlyGames}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
             <div className="form-grid compact-form-grid">
-              <label>Name<input value={gameForm.name} onChange={(event) => setGameForm({ ...gameForm, name: event.target.value })} /></label>
-              <label>Slug<input value={gameForm.slug} onChange={(event) => setGameForm({ ...gameForm, slug: event.target.value })} /></label>
-              <label>Type<select value={gameForm.game_type} onChange={(event) => setGameForm({ ...gameForm, game_type: event.target.value as StaffGame['game_type'] })}>{gameTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-              <label>Duration<input type="number" value={gameForm.duration_minutes} onChange={(event) => setGameForm({ ...gameForm, duration_minutes: Number(event.target.value) })} /></label>
-              <label>Max players / arena<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
-              <label>Rounds<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
-              <label>Difficulty<input value={gameForm.difficulty} onChange={(event) => setGameForm({ ...gameForm, difficulty: event.target.value })} /></label>
+              <label>{text.labels.name}<input value={gameForm.name} onChange={(event) => setGameForm({ ...gameForm, name: event.target.value })} /></label>
+              <label>{text.labels.slug}<input value={gameForm.slug} onChange={(event) => setGameForm({ ...gameForm, slug: event.target.value })} /></label>
+              <label>{text.labels.type}<select value={gameForm.game_type} onChange={(event) => setGameForm({ ...gameForm, game_type: event.target.value as StaffGame['game_type'] })}>{gameTypes.map((type) => <option key={type} value={type}>{text.gameTypes[type]}</option>)}</select></label>
+              <label>{text.labels.duration}<input type="number" value={gameForm.duration_minutes} onChange={(event) => setGameForm({ ...gameForm, duration_minutes: Number(event.target.value) })} /></label>
+              <label>{text.labels.maxPlayersArena}<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
+              <label>{text.labels.rounds}<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
+              <label>{text.labels.difficulty}<input value={gameForm.difficulty} onChange={(event) => setGameForm({ ...gameForm, difficulty: event.target.value })} /></label>
               <div className="full staff-game-photo-field">
-                <span className="staff-field-label">Game photo</span>
+                <span className="staff-field-label">{text.labels.gamePhoto}</span>
                 <label className={gameForm.image_url ? 'staff-game-photo-upload has-image' : 'staff-game-photo-upload'}>
                   {gameForm.image_url ? (
                     <span
@@ -1735,11 +2318,11 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     />
                   ) : (
                     <span>
-                      <strong>Click to upload game photo</strong>
-                      <small>{staffGameImageHelp}</small>
+                      <strong>{text.messages.clickUploadGamePhoto}</strong>
+                      <small>{text.gamePhotoHelp}</small>
                     </span>
                   )}
-                  {gameImageUploading && <em>Uploading...</em>}
+                  {gameImageUploading && <em>{text.messages.uploadGamePhoto}</em>}
                   <input
                     accept={staffGameImageTypes.join(',')}
                     disabled={gameImageUploading}
@@ -1747,25 +2330,25 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     onChange={handleGameImageUpload}
                   />
                 </label>
-                <p className="field-help">{staffGameImageHelp}</p>
+                <p className="field-help">{text.gamePhotoHelp}</p>
               </div>
-              <label className="full">Image URL<input value={gameForm.image_url} onChange={(event) => setGameForm({ ...gameForm, image_url: event.target.value })} /></label>
-              <label className="full">Arena IDs<input value={gameForm.available_arena_ids} onChange={(event) => setGameForm({ ...gameForm, available_arena_ids: event.target.value })} /></label>
-              <label className="full">Description<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
-              <label className="checkbox-row"><input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} /> Active</label>
+              <label className="full">{text.labels.imageUrl}<input value={gameForm.image_url} onChange={(event) => setGameForm({ ...gameForm, image_url: event.target.value })} /></label>
+              <label className="full">{text.labels.arenaIds}<input value={gameForm.available_arena_ids} onChange={(event) => setGameForm({ ...gameForm, available_arena_ids: event.target.value })} /></label>
+              <label className="full">{text.labels.description}<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
+              <label className="checkbox-row"><input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} /> {text.labels.active}</label>
             </div>
-            <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>Save game</button>
+            <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>{text.actions.saveGame}</button>
             </fieldset>
           </div>
           <div className="staff-card">
             <div className="staff-list-head">
-              <h3>Games</h3>
-              {canManageConfig && <button type="button" onClick={startNewGame}>New game</button>}
+              <h3>{text.labels.games}</h3>
+              {canManageConfig && <button type="button" onClick={startNewGame}>{text.actions.newGame}</button>}
             </div>
             {games.map((game) => (
               <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
                 <strong>{game.name}</strong>
-                <span>{game.game_type} · {game.duration_minutes} min · {game.active ? 'active' : 'inactive'}</span>
+                <span>{text.gameTypes[game.game_type]} · {game.duration_minutes} min · {game.active ? text.active : text.inactive}</span>
               </button>
             ))}
           </div>
@@ -1775,33 +2358,33 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'prices' && (
         <div className="staff-grid">
           <div className="staff-card">
-            <h3>{priceForm.id ? 'Edit price rule' : 'Create price rule'}</h3>
-            {!canManageConfig && <p className="staff-readonly-note">Read-only view. Viewer can inspect price rules, but cannot save changes.</p>}
+            <h3>{priceForm.id ? text.editPriceRule : text.labels.createPriceRule}</h3>
+            {!canManageConfig && <p className="staff-readonly-note">{text.messages.readOnlyPrices}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
             <div className="form-grid compact-form-grid">
-              <label>Rule name<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
-              <label>Game<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
-              <label>Day type<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-              <label>Start<StaffPickerField ariaLabel="Price start time" type="time" value={priceForm.time_start} onChange={(value) => setPriceForm({ ...priceForm, time_start: value })} /></label>
-              <label>End<StaffPickerField ariaLabel="Price end time" type="time" value={priceForm.time_end} onChange={(value) => setPriceForm({ ...priceForm, time_end: value })} /></label>
-              <label>Price / player (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_player)} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: dongDigits(event.target.value) })} /></label>
-              <label>Price / arena slot (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_arena_slot)} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: dongDigits(event.target.value) })} /></label>
-              <label>Valid from<StaffPickerField ariaLabel="Price valid from" type="date" value={priceForm.valid_from} onChange={(value) => setPriceForm({ ...priceForm, valid_from: value })} /></label>
+              <label>{text.labels.ruleName}<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
+              <label>{text.labels.game}<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
+              <label>{text.labels.dayType}<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type} value={type}>{text.dayTypes[type]}</option>)}</select></label>
+              <label>{text.labels.start}<StaffPickerField ariaLabel={text.aria.priceStartTime} placeholder={text.chooseTime} type="time" value={priceForm.time_start} onChange={(value) => setPriceForm({ ...priceForm, time_start: value })} /></label>
+              <label>{text.labels.end}<StaffPickerField ariaLabel={text.aria.priceEndTime} placeholder={text.chooseTime} type="time" value={priceForm.time_end} onChange={(value) => setPriceForm({ ...priceForm, time_end: value })} /></label>
+              <label>{text.labels.pricePlayer}<input inputMode="numeric" value={formatDongInput(priceForm.price_per_player)} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: dongDigits(event.target.value) })} /></label>
+              <label>{text.labels.priceArenaSlot}<input inputMode="numeric" value={formatDongInput(priceForm.price_per_arena_slot)} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: dongDigits(event.target.value) })} /></label>
+              <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.priceValidFrom} placeholder={text.chooseDate} type="date" value={priceForm.valid_from} onChange={(value) => setPriceForm({ ...priceForm, valid_from: value })} /></label>
               <label className="staff-valid-until-field">
-                <span className="staff-label-line"><span>Valid until</span><small>optional, by default forever</small></span>
-                <StaffPickerField ariaLabel="Price valid until" type="date" value={priceForm.valid_until} onChange={(value) => setPriceForm({ ...priceForm, valid_until: value })} />
+                <span className="staff-label-line"><span>{text.labels.validUntil}</span><small>{text.labels.validUntilHelp}</small></span>
+                <StaffPickerField ariaLabel={text.aria.priceValidUntil} placeholder={text.chooseDate} type="date" value={priceForm.valid_until} onChange={(value) => setPriceForm({ ...priceForm, valid_until: value })} />
               </label>
-              <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> Active</label>
+              <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> {text.labels.active}</label>
             </div>
-            <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>Save price</button>
+            <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>{text.actions.savePrice}</button>
             </fieldset>
           </div>
           <div className="staff-card">
-            <h3>Price rules</h3>
+            <h3>{text.labels.priceRules}</h3>
             {prices.map((rule) => (
               <button className="staff-list-item" key={rule.id} type="button" onClick={() => editPrice(rule)}>
                 <strong>{rule.rule_name}</strong>
-                <span>{rule.day_type} · {normalizeTime(rule.time_start) || 'any'}-{normalizeTime(rule.time_end) || 'any'} · {formatVnd(rule.price_per_player)}</span>
+                <span>{text.dayTypes[rule.day_type]} · {normalizeTime(rule.time_start) || text.any}-{normalizeTime(rule.time_end) || text.any} · {formatVnd(rule.price_per_player)}</span>
               </button>
             ))}
           </div>
@@ -1811,100 +2394,100 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'discounts' && (
         <div className="staff-grid">
           <div className="staff-card">
-            {!canEditCommerceTab && <p className="staff-readonly-note">Read-only view. Viewer can inspect these rules, but cannot save changes.</p>}
+            {!canEditCommerceTab && <p className="staff-readonly-note">{text.messages.readOnlyCommerce}</p>}
             {commerceTab === 'loyalty' ? (
               <>
-                <h3>{loyaltyForm.id ? 'Edit loyalty rule' : 'Create loyalty rule'}</h3>
-                <p className="muted">Define how customers earn points. Redemption will use these rules later.</p>
+                <h3>{loyaltyForm.id ? text.editLoyaltyRule : text.labels.createLoyaltyRule}</h3>
+                <p className="muted">{text.messages.loyaltyIntro}</p>
                 <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
                 <div className="form-grid compact-form-grid">
-                  <label>Rule name<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
-                  <label>Game<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
-                  <label>Calculation<select value={loyaltyForm.calculation_type} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, calculation_type: event.target.value as StaffLoyaltyRule['calculation_type'] })}>{loyaltyCalculationTypes.map((type) => <option key={type} value={type}>{loyaltyCalculationLabel(type)}</option>)}</select></label>
-                  <label>Points earned<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
-                  <label>Per VND spent<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
-                  <label>Minimum spend<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
-                  <label>Points expire after days<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
-                  <label>Valid from<StaffPickerField ariaLabel="Loyalty valid from" type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
-                  <label>Valid until<StaffPickerField ariaLabel="Loyalty valid until" type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
-                  <label className="full">Notes<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
-                  <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> Active</label>
+                  <label>{text.labels.ruleName}<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
+                  <label>{text.labels.game}<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
+                  <label>{text.labels.calculation}<select value={loyaltyForm.calculation_type} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, calculation_type: event.target.value as StaffLoyaltyRule['calculation_type'] })}>{loyaltyCalculationTypes.map((type) => <option key={type} value={type}>{loyaltyCalculationLabel(type, text)}</option>)}</select></label>
+                  <label>{text.labels.pointsEarned}<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
+                  <label>{text.labels.perVndSpent}<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
+                  <label>{text.labels.minimumSpend}<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
+                  <label>{text.labels.pointsExpireAfterDays}<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
+                  <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.loyaltyValidFrom} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
+                  <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.loyaltyValidUntil} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
+                  <label className="full">{text.labels.notes}<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
+                  <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> {text.labels.active}</label>
                 </div>
-                <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>Save loyalty rule</button>
+                <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>{text.actions.saveLoyaltyRule}</button>
                 </fieldset>
               </>
             ) : (
               <>
                 <h3>
                   {discountForm.id
-                    ? `Edit ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`
-                    : `Create ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`}
+                    ? (commerceTab === 'vouchers' ? text.editVoucher : text.editDiscount)
+                    : (commerceTab === 'vouchers' ? text.labels.createVoucher : text.labels.createDiscount)}
                 </h3>
                 <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
                 <div className="form-grid compact-form-grid">
-                  <label>{commerceTab === 'vouchers' ? 'Voucher code *' : 'Code (optional)'}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
-                  <label>Name<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
-                  <label>Type<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-                  <label>Value<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
-                  <label>Valid from<StaffPickerField ariaLabel="Discount valid from" type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
-                  <label>Valid until<StaffPickerField ariaLabel="Discount valid until" type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
-                  <label>Max uses<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
-                  <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> Active</label>
+                  <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
+                  <label>{text.labels.name}<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
+                  <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
+                  <label>{text.labels.value}<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
+                  <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.discountValidFrom} placeholder={text.chooseDate} type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
+                  <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.discountValidUntil} placeholder={text.chooseDate} type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
+                  <label>{text.labels.maxUses}<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
+                  <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> {text.labels.active}</label>
                 </div>
                 <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>
-                  Save {commerceTab === 'vouchers' ? 'voucher' : 'discount'}
+                  {commerceTab === 'vouchers' ? text.actions.saveVoucher : text.actions.saveDiscount}
                 </button>
                 </fieldset>
               </>
             )}
           </div>
           <div className="staff-card">
-            <div className="staff-commerce-switcher" role="tablist" aria-label="Discounts, vouchers, and loyalty points">
+            <div className="staff-commerce-switcher" role="tablist" aria-label={text.tabs.discounts}>
               {staffCommerceTabs.map((item) => (
                 <button
-                  aria-selected={commerceTab === item.value}
-                  className={commerceTab === item.value ? 'active' : ''}
-                  key={item.value}
+                  aria-selected={commerceTab === item}
+                  className={commerceTab === item ? 'active' : ''}
+                  key={item}
                   role="tab"
                   type="button"
-                  onClick={() => openCommerceTab(item.value)}
+                  onClick={() => openCommerceTab(item)}
                 >
-                  {item.label}
+                  {text.commerceTabs[item]}
                 </button>
               ))}
             </div>
 
             {commerceTab === 'loyalty' ? (
               <>
-                <h3>Loyalty rules</h3>
+                <h3>{text.commerceTabs.loyalty}</h3>
                 {loyaltyRules.map((rule) => (
                   <button className="staff-list-item" key={rule.id} type="button" onClick={() => editLoyaltyRule(rule)}>
                     <strong>{rule.rule_name}</strong>
                     <span>
-                      {loyaltyCalculationLabel(rule.calculation_type)}
+                      {loyaltyCalculationLabel(rule.calculation_type, text)}
                       {' · '}
                       {rule.points_value} pts
                       {rule.calculation_type === 'per_vnd_spent' ? ` / ${formatVnd(rule.spend_amount)}` : ''}
                       {' · '}
-                      {rule.point_expiry_days ? `${rule.point_expiry_days} days` : 'no expiry'}
+                      {rule.point_expiry_days ? `${rule.point_expiry_days} ${text.days}` : text.noExpiry}
                       {' · '}
-                      {rule.active ? 'active' : 'inactive'}
+                      {rule.active ? text.active : text.inactive}
                     </span>
                   </button>
                 ))}
-                {loyaltyRules.length === 0 && <p className="notice">No loyalty rules yet.</p>}
+                {loyaltyRules.length === 0 && <p className="notice">{text.messages.noLoyaltyRules}</p>}
               </>
             ) : (
               <>
-                <h3>{commerceTab === 'vouchers' ? 'Vouchers' : 'Discounts'}</h3>
+                <h3>{commerceTab === 'vouchers' ? text.labels.vouchers : text.labels.discounts}</h3>
                 {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
                   <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                     <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                    <span>{discount.discount_type} · {discount.value} · used {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                    <span>{text.discountTypes[discount.discount_type]} · {discount.value} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
                   </button>
                 ))}
-                {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">No vouchers yet.</p>}
-                {commerceTab === 'discounts' && discountRules.length === 0 && <p className="notice">No discounts yet.</p>}
+                {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">{text.messages.noVouchers}</p>}
+                {commerceTab === 'discounts' && discountRules.length === 0 && <p className="notice">{text.messages.noDiscounts}</p>}
               </>
             )}
           </div>
@@ -1914,31 +2497,31 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'roles' && (
         <div className="staff-card staff-card-wide">
           <div className="staff-card-heading">
-            <h3>Roles</h3>
+            <h3>{text.labels.roles}</h3>
             <button className="staff-link-button" type="button" onClick={() => setRoleHelpOpen(true)}>
-              Role explanation
+              {text.labels.roleExplanation}
             </button>
           </div>
           <p className="muted">
             {canManageRoles
-              ? 'Assign Staff Console access. Admin can manage every role; normal users stay as Player.'
-              : 'Read-only view. Viewer can inspect role access, but cannot assign roles.'}
+              ? text.messages.roleHelpAdmin
+              : text.messages.readOnlyRoles}
           </p>
           <div className="staff-role-tools">
             <label>
-              <span className="staff-field-label">Search users</span>
+              <span className="staff-field-label">{text.labels.searchUsers}</span>
               <input
                 value={roleSearch}
                 onChange={(event) => setRoleSearch(event.target.value)}
-                placeholder="Name, email, phone"
+                placeholder={`${text.labels.name}, ${text.labels.email}, ${text.labels.phone}`}
               />
             </label>
             <label>
-              <span className="staff-field-label">Filter by role</span>
+              <span className="staff-field-label">{text.labels.filterByRole}</span>
               <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as StaffRole | 'all')}>
                 {roleFilterOptions.map((option) => (
                   <option key={option} value={option}>
-                    {option === 'all' ? 'All roles' : staffRoleName(option)}
+                    {option === 'all' ? text.allRoles : staffRoleName(option, text)}
                   </option>
                 ))}
               </select>
@@ -1952,12 +2535,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               return (
                 <div className="staff-role-row" key={item.id}>
                   <div>
-                    <strong>{customerName(item)}</strong>
-                    <span>{item.email || item.phone || 'No contact'} · current {staffRoleName(effectiveRole)}</span>
-                    {protectedEmail && <small>Email override keeps this account admin.</small>}
+                    <strong>{customerName(item, text)}</strong>
+                    <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
+                    {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
                   </div>
                   <select
-                    aria-label={`Role for ${customerName(item)}`}
+                    aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
                     disabled={!canManageRoles || saving}
                     value={storedRole}
                     onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
@@ -1965,21 +2548,21 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     {staffRoleOptions.filter((option) => (
                       canRestoreDeleted || !['super_admin', 'owner'].includes(option) || option === storedRole
                     )).map((option) => (
-                      <option key={option} value={option}>{staffRoleName(option)}</option>
+                      <option key={option} value={option}>{staffRoleName(option, text)}</option>
                     ))}
                   </select>
                 </div>
               )
             })}
-            {filteredRoleProfiles.length === 0 && <p className="notice">No users found.</p>}
+            {filteredRoleProfiles.length === 0 && <p className="notice">{text.noUsersFound}</p>}
           </div>
         </div>
       )}
 
       {currentTab === 'restore' && canRestoreDeleted && (
         <div className="staff-card staff-card-wide">
-          <h3>Restore deleted records</h3>
-          <p className="muted">Super Admin only. Restoring clears deleted_at, deleted_by, and delete_reason.</p>
+          <h3>{text.labels.restoreDeletedRecords}</h3>
+          <p className="muted">{text.messages.restoreIntro}</p>
           <div className="staff-restore-list">
             {deletedRecords.map((record) => (
               <div className="staff-restore-row" key={`${record.entity_table}-${record.entity_id}`}>
@@ -1989,18 +2572,18 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                   {record.delete_reason && <small>{record.delete_reason}</small>}
                 </div>
                 <button className="secondary" disabled={saving} type="button" onClick={() => restoreDeletedRecord(record)}>
-                  Restore
+                  {text.actions.restore}
                 </button>
               </div>
             ))}
-            {deletedRecords.length === 0 && <p className="notice">No soft-deleted records.</p>}
+            {deletedRecords.length === 0 && <p className="notice">{text.messages.noSoftDeleted}</p>}
           </div>
         </div>
       )}
 
       {currentTab === 'orders' && (
         <div className="staff-card">
-          <h3>Orders</h3>
+          <h3>{text.labels.orders}</h3>
           {orderRows(orders)}
         </div>
       )}
@@ -2008,65 +2591,65 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'report' && (
         <div className="staff-card">
           <div className="staff-report-head">
-            <h3>Daily report</h3>
+            <h3>{text.tabs.report}</h3>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
-                <button type="button" onClick={() => { const date = todayString(); setReportStart(date); setReportEnd(date) }}>Today</button>
+                <button type="button" onClick={() => { const date = todayString(); setReportStart(date); setReportEnd(date) }}>{text.actions.today}</button>
                 <button type="button" onClick={() => {
                   const date = new Date()
                   date.setDate(date.getDate() - 1)
                   const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
                   setReportStart(value)
                   setReportEnd(value)
-                }}>Yesterday</button>
-                <StaffPickerField ariaLabel="Report start date" type="date" value={reportStart} onChange={setReportStart} />
-                <StaffPickerField ariaLabel="Report end date" type="date" value={reportEnd} onChange={setReportEnd} />
-                <button type="button" onClick={applyPreviousPeriodComparison}>Previous period</button>
+                }}>{text.actions.yesterday}</button>
+                <StaffPickerField ariaLabel={text.aria.reportStartDate} placeholder={text.chooseDate} type="date" value={reportStart} onChange={setReportStart} />
+                <StaffPickerField ariaLabel={text.aria.reportEndDate} placeholder={text.chooseDate} type="date" value={reportEnd} onChange={setReportEnd} />
+                <button type="button" onClick={applyPreviousPeriodComparison}>{text.actions.previousPeriod}</button>
                 <label className="staff-compare-toggle">
                   <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                  Compare
+                  {text.labels.compare}
                 </label>
                 <div className="staff-report-export-actions">
-                  <button type="button" onClick={exportExcelReport}>Excel</button>
-                  <button type="button" onClick={exportPdfReport}>PDF</button>
+                  <button type="button" onClick={exportExcelReport}>{text.actions.excel}</button>
+                  <button type="button" onClick={exportPdfReport}>{text.actions.pdf}</button>
                 </div>
               </div>
               {compareEnabled && (
                 <div className="staff-report-compare-row">
-                  <span>Compare with</span>
-                  <StaffPickerField ariaLabel="Compare start date" type="date" value={compareStart} onChange={setCompareStart} />
-                  <StaffPickerField ariaLabel="Compare end date" type="date" value={compareEnd} onChange={setCompareEnd} />
+                  <span>{text.compareWith}</span>
+                  <StaffPickerField ariaLabel={text.aria.compareStartDate} placeholder={text.chooseDate} type="date" value={compareStart} onChange={setCompareStart} />
+                  <StaffPickerField ariaLabel={text.aria.compareEndDate} placeholder={text.chooseDate} type="date" value={compareEnd} onChange={setCompareEnd} />
                 </div>
               )}
             </div>
           </div>
           <div className="staff-summary-grid">
-            <div><span>Total sales</span><strong>{formatVnd(report.totalSales)}</strong></div>
-            <div><span>Total paid</span><strong>{formatVnd(report.totalPaid)}</strong></div>
-            <div><span>Unpaid</span><strong>{formatVnd(report.unpaidAmount)}</strong></div>
-            <div><span>Cash</span><strong>{formatVnd(report.cashTotal)}</strong></div>
-            <div><span>Bank transfer</span><strong>{formatVnd(report.bankTransferTotal)}</strong></div>
-            <div><span>Bookings</span><strong>{report.bookings}</strong></div>
-            <div><span>Players</span><strong>{report.players}</strong></div>
-            <div><span>Cancelled</span><strong>{report.cancelled}</strong></div>
-            <div><span>No-shows</span><strong>{report.noShows}</strong></div>
-            <div><span>Discounts</span><strong>{formatVnd(report.discounts)}</strong></div>
-            <div><span>Best-selling game</span><strong>{report.bestSellingGame}</strong></div>
+            <div><span>{text.labels.totalSales}</span><strong>{formatVnd(report.totalSales)}</strong></div>
+            <div><span>{text.labels.totalPaid}</span><strong>{formatVnd(report.totalPaid)}</strong></div>
+            <div><span>{text.unpaid}</span><strong>{formatVnd(report.unpaidAmount)}</strong></div>
+            <div><span>{text.labels.cash}</span><strong>{formatVnd(report.cashTotal)}</strong></div>
+            <div><span>{text.labels.bankTransfer}</span><strong>{formatVnd(report.bankTransferTotal)}</strong></div>
+            <div><span>{text.labels.bookings}</span><strong>{report.bookings}</strong></div>
+            <div><span>{text.labels.players}</span><strong>{report.players}</strong></div>
+            <div><span>{text.labels.cancelled}</span><strong>{report.cancelled}</strong></div>
+            <div><span>{text.labels.noShows}</span><strong>{report.noShows}</strong></div>
+            <div><span>{text.labels.discounts}</span><strong>{formatVnd(report.discounts)}</strong></div>
+            <div><span>{text.labels.bestSellingGame}</span><strong>{report.bestSellingGame}</strong></div>
           </div>
           <div className="staff-report-graphics">
-            <section className="staff-report-graph staff-report-sales-graph" aria-label="Sales by day">
+            <section className="staff-report-graph staff-report-sales-graph" aria-label={text.aria.salesByDay}>
               <div className="staff-report-graph-head">
                 <div>
-                  <h4>Sales trend</h4>
+                  <h4>{text.labels.salesTrend}</h4>
                   <span>{rangeLabel(reportStart, reportEnd)}</span>
                 </div>
                 <div className="staff-report-graph-actions">
                   {compareEnabled && <span className="staff-report-compare-label">vs {rangeLabel(compareStart, compareEnd)}</span>}
-                  <div className="staff-chart-mode" aria-label="Graph display" role="group">
+                  <div className="staff-chart-mode" aria-label={text.aria.graphDisplay} role="group">
                     {[
-                      { value: 'columns', label: 'Column' },
-                      { value: 'curves', label: 'Curves' },
-                      { value: 'cheese', label: 'Cheese' },
+                      { value: 'columns', label: text.chartModes.columns },
+                      { value: 'curves', label: text.chartModes.curves },
+                      { value: 'cheese', label: text.chartModes.cheese },
                     ].map((mode) => (
                       <button
                         aria-pressed={reportChartMode === mode.value}
@@ -2094,7 +2677,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                             <span
                               className="staff-report-bar compare"
                               style={{ height: compareHeight }}
-                              title={`${comparePoint ? shortDateLabel(comparePoint.date) : 'Compare'}: ${formatVnd(comparePoint?.sales || 0)}`}
+                              title={`${comparePoint ? shortDateLabel(comparePoint.date) : text.labels.compare}: ${formatVnd(comparePoint?.sales || 0)}`}
                             />
                           )}
                           <span
@@ -2147,36 +2730,36 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                 </div>
               ) : null}
               {reportSeries.length === 0 ? (
-                <p className="muted">No sales in this period yet.</p>
+                <p className="muted">{text.messages.noSales}</p>
               ) : (
                 null
               )}
             </section>
-            <section className="staff-report-graph" aria-label="Period comparison">
+            <section className="staff-report-graph" aria-label={text.aria.periodComparison}>
               <div className="staff-report-graph-head">
                 <div>
-                  <h4>Compare</h4>
-                  <span>{compareEnabled ? rangeLabel(compareStart, compareEnd) : 'Choose another date or period'}</span>
+                  <h4>{text.labels.compare}</h4>
+                  <span>{compareEnabled ? rangeLabel(compareStart, compareEnd) : text.compareOff}</span>
                 </div>
               </div>
               <div className="staff-comparison-list">
                 {[
-                  { label: 'Sales', current: formatVnd(report.totalSales), previous: formatVnd(comparisonReport.totalSales), change: percentChange(report.totalSales, comparisonReport.totalSales) },
-                  { label: 'Bookings', current: report.bookings, previous: comparisonReport.bookings, change: percentChange(report.bookings, comparisonReport.bookings) },
-                  { label: 'Players', current: report.players, previous: comparisonReport.players, change: percentChange(report.players, comparisonReport.players) },
+                  { label: text.labels.sales, current: formatVnd(report.totalSales), previous: formatVnd(comparisonReport.totalSales), change: percentChange(report.totalSales, comparisonReport.totalSales, text) },
+                  { label: text.labels.bookings, current: report.bookings, previous: comparisonReport.bookings, change: percentChange(report.bookings, comparisonReport.bookings, text) },
+                  { label: text.labels.players, current: report.players, previous: comparisonReport.players, change: percentChange(report.players, comparisonReport.players, text) },
                 ].map((item) => (
                   <div key={item.label}>
                     <span>{item.label}</span>
                     <strong>{item.current}</strong>
-                    <small>{compareEnabled ? `${item.change} vs ${item.previous}` : 'Turn on compare'}</small>
+                    <small>{compareEnabled ? `${item.change} vs ${item.previous}` : text.compareOff}</small>
                   </div>
                 ))}
               </div>
             </section>
-            <section className="staff-report-graph" aria-label="Payment mix">
+            <section className="staff-report-graph" aria-label={text.aria.paymentMix}>
               <div className="staff-report-graph-head">
                 <div>
-                  <h4>Payment mix</h4>
+                  <h4>{text.labels.paymentMix}</h4>
                   <span>{rangeLabel(reportStart, reportEnd)}</span>
                 </div>
               </div>
@@ -2196,7 +2779,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             </section>
           </div>
           {orderRows(reportOrders)}
-          <h3 className="staff-audit-title">Recent audit log</h3>
+          <h3 className="staff-audit-title">{text.labels.recentAuditLog}</h3>
           <div className="staff-audit-list">
             {auditLogs.map((log) => (
               <span key={log.id}>{new Date(log.created_at).toLocaleString()} · {log.action} · {log.entity_type}</span>
@@ -2214,12 +2797,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
           onClick={() => setRoleHelpOpen(false)}
         >
           <div className="login-modal staff-role-help-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label="Close role explanation" onClick={() => setRoleHelpOpen(false)}>
+            <button className="modal-close" type="button" aria-label={text.closeRoleHelp} onClick={() => setRoleHelpOpen(false)}>
               ×
             </button>
-            <h3 id="staff-role-help-title">Role explanation</h3>
+            <h3 id="staff-role-help-title">{text.labels.roleExplanation}</h3>
             <div className="staff-role-help-list">
-              {staffRoleHelpItems.map((item) => (
+              {text.roleHelp.map((item) => (
                 <div className="staff-role-help-item" key={item.title}>
                   <strong>{item.title}</strong>
                   <span>{item.body}</span>
