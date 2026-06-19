@@ -232,10 +232,12 @@ const staffConsoleText = {
       pdf: 'PDF',
       remove: 'Remove',
       restore: 'Restore',
+      cancel: 'Cancel',
       saveDiscount: 'Save discount',
       saveGame: 'Save game',
       saveLoyaltyRule: 'Save loyalty rule',
       savePrice: 'Save price',
+      saveRole: 'Save role',
       saveVoucher: 'Save voucher',
       today: 'Today',
       yesterday: 'Yesterday',
@@ -530,10 +532,12 @@ const staffConsoleText = {
       pdf: 'PDF',
       remove: 'Xóa',
       restore: 'Khôi phục',
+      cancel: 'Hủy',
       saveDiscount: 'Lưu ưu đãi',
       saveGame: 'Lưu trò chơi',
       saveLoyaltyRule: 'Lưu quy tắc điểm',
       savePrice: 'Lưu giá',
+      saveRole: 'Lưu vai trò',
       saveVoucher: 'Lưu voucher',
       today: 'Hôm nay',
       yesterday: 'Hôm qua',
@@ -1470,6 +1474,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [roleSearch, setRoleSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
+  const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     const staffTabs: StaffTab[] = ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
@@ -1611,6 +1616,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     setOrders((ordersResult.data ?? []) as StaffOrder[])
     setOrderPayments((paymentsResult.data ?? []) as StaffOrderPayment[])
     setProfiles(((profilesResult.data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
+    setPendingRoleChanges({})
     setAuditLogs((auditResult.data ?? []) as StaffAuditLog[])
     setLoading(false)
   }
@@ -1854,8 +1860,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
 
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
     if (!canManageRoles) return
-    const previousProfiles = profiles
-    setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: nextRole } : item))
     setSaving(true)
     setStatus(text.messages.roleUpdating)
     const { data, error } = await supabase.rpc('set_staff_profile_role', {
@@ -1863,14 +1867,35 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       p_role: nextRole,
     })
     if (error) {
-      setProfiles(previousProfiles)
       setStatus(error.message)
     } else {
       const savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || nextRole)
       setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: savedRole } : item))
+      setPendingRoleChanges((current) => {
+        const next = { ...current }
+        delete next[profileId]
+        return next
+      })
       setStatus(text.messages.roleUpdated)
     }
     setSaving(false)
+  }
+
+  function stageProfileRole(profileId: string, storedRole: StaffRole, nextRole: StaffRole) {
+    setPendingRoleChanges((current) => {
+      const next = { ...current }
+      if (nextRole === storedRole) delete next[profileId]
+      else next[profileId] = nextRole
+      return next
+    })
+  }
+
+  function clearStagedProfileRole(profileId: string) {
+    setPendingRoleChanges((current) => {
+      const next = { ...current }
+      delete next[profileId]
+      return next
+    })
   }
 
   async function restoreDeletedRecord(record: SoftDeletedRecord) {
@@ -2531,6 +2556,8 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
             {filteredRoleProfiles.map((item) => {
               const effectiveRole = roleLabel(item.role, item.email)
               const storedRole = storedRoleValue(item.role)
+              const selectedRole = pendingRoleChanges[item.id] || storedRole
+              const hasPendingRoleChange = selectedRole !== storedRole
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
               return (
                 <div className="staff-role-row" key={item.id}>
@@ -2539,18 +2566,40 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                     <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
                     {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
                   </div>
-                  <select
-                    aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
-                    disabled={!canManageRoles || saving}
-                    value={storedRole}
-                    onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
-                  >
-                    {staffRoleOptions.filter((option) => (
-                      canRestoreDeleted || !['super_admin', 'owner'].includes(option) || option === storedRole
-                    )).map((option) => (
-                      <option key={option} value={option}>{staffRoleName(option, text)}</option>
-                    ))}
-                  </select>
+                  <div className="staff-role-action-cell">
+                    <select
+                      aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
+                      disabled={!canManageRoles || saving}
+                      value={selectedRole}
+                      onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
+                    >
+                      {staffRoleOptions.filter((option) => (
+                        canRestoreDeleted || !['super_admin', 'owner'].includes(option) || option === storedRole
+                      )).map((option) => (
+                        <option key={option} value={option}>{staffRoleName(option, text)}</option>
+                      ))}
+                    </select>
+                    {hasPendingRoleChange && (
+                      <div className="staff-role-actions">
+                        <button
+                          className="primary"
+                          disabled={!canManageRoles || saving}
+                          type="button"
+                          onClick={() => updateProfileRole(item.id, selectedRole)}
+                        >
+                          {text.actions.saveRole}
+                        </button>
+                        <button
+                          className="secondary"
+                          disabled={saving}
+                          type="button"
+                          onClick={() => clearStagedProfileRole(item.id)}
+                        >
+                          {text.actions.cancel}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })}

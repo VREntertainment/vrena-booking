@@ -1465,6 +1465,23 @@ body {
   font-weight: 800;
 }
 
+.app .staff-role-action-cell {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app .staff-role-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.app .staff-role-actions button {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
 .app .staff-table-wrap {
   max-width: 100%;
   overflow-x: auto;
