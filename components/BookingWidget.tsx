@@ -182,14 +182,15 @@ function isAdminRole(role?: string | null) {
 }
 
 function isSuperAdminRole(role?: string | null) {
-  return role?.toLowerCase() === 'super_admin'
+  const normalizedRole = role?.toLowerCase()
+  return normalizedRole === 'super_admin' || normalizedRole === 'owner'
 }
 
 function staffConsoleRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin') return 120
-  if (isAdminEmail(normalizedEmail) || normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
+  if (isAdminEmail(normalizedEmail) || normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
   if (normalizedRole === 'viewer') return 20
