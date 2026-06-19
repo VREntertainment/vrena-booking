@@ -131,6 +131,11 @@ type StaffOrderPayment = {
   created_at: string
 }
 
+type RoleSaveFeedback = {
+  tone: 'saving' | 'success' | 'error'
+  message: string
+}
+
 type StaffAuditLog = {
   id: string
   actor_user_id: string | null
@@ -429,6 +434,8 @@ const staffConsoleText = {
       restoringRecord: 'Restoring record...',
       recordRestored: 'Record restored.',
       roleHelpAdmin: 'Assign Staff Console access. Admin can manage every role; normal users stay as Player.',
+      roleSaveFailed: 'Role was not saved. Apply the latest Supabase SQL migration, then try again.',
+      roleSaveMismatch: 'Role was not saved. Supabase still returned a different role.',
       roleUpdated: 'Role updated.',
       roleUpdating: 'Updating role...',
       staffTooManyAttempts: 'Too many attempts. Please wait a moment and try again.',
@@ -729,6 +736,8 @@ const staffConsoleText = {
       restoringRecord: 'Đang khôi phục...',
       recordRestored: 'Đã khôi phục dữ liệu.',
       roleHelpAdmin: 'Gán quyền Staff Console. Admin có thể quản lý mọi vai trò; người dùng thường giữ Player.',
+      roleSaveFailed: 'Chưa lưu được vai trò. Hãy chạy SQL Supabase mới nhất rồi thử lại.',
+      roleSaveMismatch: 'Chưa lưu được vai trò. Supabase vẫn trả về vai trò khác.',
       roleUpdated: 'Đã cập nhật vai trò.',
       roleUpdating: 'Đang cập nhật vai trò...',
       staffTooManyAttempts: 'Quá nhiều lần thử. Vui lòng chờ một chút rồi thử lại.',
@@ -1052,6 +1061,17 @@ function paymentStatusFromAmount(total: number, paidTotal: number): StaffOrder['
   if (total <= 0) return 'paid'
   if (paidTotal <= 0) return 'unpaid'
   return paidTotal >= total ? 'paid' : 'partially_paid'
+}
+
+function shouldFallbackRoleUpdate(error: { code?: string; message?: string } | null, savedRole: StaffRole, nextRole: StaffRole) {
+  if (!error && savedRole !== nextRole) return true
+  const message = (error?.message || '').toLowerCase()
+  return Boolean(error && (
+    error.code === 'PGRST202'
+    || message.includes('schema cache')
+    || message.includes('could not find the function')
+    || message.includes('set_staff_profile_role')
+  ))
 }
 
 function normalizeTime(value: string | null | undefined) {
@@ -1475,6 +1495,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
+  const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     const staffTabs: StaffTab[] = ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
@@ -1862,14 +1883,52 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     if (!canManageRoles) return
     setSaving(true)
     setStatus(text.messages.roleUpdating)
+    setRoleSaveFeedback((current) => ({
+      ...current,
+      [profileId]: { tone: 'saving', message: text.messages.roleUpdating },
+    }))
+
     const { data, error } = await supabase.rpc('set_staff_profile_role', {
       p_profile_id: profileId,
       p_role: nextRole,
     })
-    if (error) {
-      setStatus(error.message)
+
+    let savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || '')
+    let saveError = error?.message || ''
+
+    if (shouldFallbackRoleUpdate(error, savedRole, nextRole)) {
+      const directUpdate = await supabase
+        .from('profiles')
+        .update({ role: nextRole, updated_at: new Date().toISOString() })
+        .eq('id', profileId)
+        .is('deleted_at', null)
+        .select('id, role')
+        .maybeSingle()
+
+      if (directUpdate.error) {
+        saveError = `${error?.message ? `${error.message} ` : ''}${directUpdate.error.message}`.trim()
+      } else {
+        savedRole = storedRoleValue(directUpdate.data?.role || '')
+        saveError = ''
+      }
+    }
+
+    if (saveError) {
+      const message = saveError || text.messages.roleSaveFailed
+      setStatus(message)
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'error', message },
+      }))
+    } else if (savedRole !== nextRole) {
+      const message = `${text.messages.roleSaveMismatch} ${text.labels.current} ${staffRoleName(savedRole, text)}.`
+      setStatus(message)
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'error', message },
+      }))
     } else {
-      const savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || nextRole)
+      const message = `${text.messages.roleUpdated} ${staffRoleName(savedRole, text)}.`
       setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: savedRole } : item))
       setPendingRoleChanges((current) => {
         const next = { ...current }
@@ -1877,7 +1936,11 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
         return next
       })
       await loadStaffData()
-      setStatus(text.messages.roleUpdated)
+      setStatus(message)
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'success', message },
+      }))
     }
     setSaving(false)
   }
@@ -2560,6 +2623,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
+              const rowFeedback = roleSaveFeedback[item.id]
               return (
                 <div className="staff-role-row" key={item.id}>
                   <div>
@@ -2599,6 +2663,11 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                           {text.actions.cancel}
                         </button>
                       </div>
+                    )}
+                    {rowFeedback && (
+                      <small className={`staff-role-feedback ${rowFeedback.tone}`}>
+                        {rowFeedback.message}
+                      </small>
                     )}
                   </div>
                 </div>

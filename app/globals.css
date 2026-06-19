@@ -1482,6 +1482,26 @@ body {
   padding: 8px 10px;
 }
 
+.app .staff-role-feedback {
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.app .staff-role-feedback.saving {
+  background: rgba(48, 89, 255, 0.1);
+  color: #3059ff;
+}
+
+.app .staff-role-feedback.success {
+  background: rgba(13, 124, 81, 0.12);
+  color: #0d7c51;
+}
+
+.app .staff-role-feedback.error {
+  background: rgba(185, 40, 31, 0.12);
+  color: #b9281f;
+}
+
 .app .staff-table-wrap {
   max-width: 100%;
   overflow-x: auto;
