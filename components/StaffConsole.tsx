@@ -1439,8 +1439,8 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
 
 export default function StaffConsole({ profile, authEmail, language }: StaffConsoleProps) {
   const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
-  const rank = staffRank(profile?.role, profile?.email || authEmail)
-  const role = roleLabel(profile?.role, profile?.email || authEmail)
+  const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
+  const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
   const canManageRoles = rank >= 100
@@ -1876,6 +1876,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
         delete next[profileId]
         return next
       })
+      await loadStaffData()
       setStatus(text.messages.roleUpdated)
     }
     setSaving(false)
