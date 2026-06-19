@@ -972,6 +972,29 @@ body {
   color: #ffffff;
 }
 
+.app .staff-commerce-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.app .staff-commerce-switcher button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  background: #ffffff;
+  color: #071112;
+  text-align: center;
+  white-space: normal;
+}
+
+.app .staff-commerce-switcher button.active {
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  border-color: transparent;
+  color: #ffffff;
+}
+
 .app .mobile-staff-profile-action,
 .app .staff-mode-backdrop {
   display: none;
@@ -1304,6 +1327,40 @@ body {
 
 .app .staff-list-item:hover {
   border-color: rgba(48, 89, 255, 0.3);
+}
+
+.app .staff-role-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-role-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 10px;
+}
+
+.app .staff-role-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-role-row span,
+.app .staff-role-row small {
+  color: #637075;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.app .staff-role-row small {
+  color: #0d7c51;
+  font-weight: 800;
 }
 
 .app .staff-table-wrap {
@@ -5618,6 +5675,10 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .staff-role-row {
+    grid-template-columns: 1fr;
+  }
+
   .app .staff-summary-card {
     position: static;
   }
@@ -6465,7 +6526,7 @@ body {
     color: #f6f7f9;
   }
 
-  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-mode-panel {
+  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -6473,6 +6534,12 @@ body {
   }
 
   .app .staff-tabs button.active {
+    background: linear-gradient(90deg, #00aeb3, #3059ff);
+    border-color: transparent;
+    color: #ffffff;
+  }
+
+  .app .staff-commerce-switcher button.active {
     background: linear-gradient(90deg, #00aeb3, #3059ff);
     border-color: transparent;
     color: #ffffff;
@@ -6486,6 +6553,7 @@ body {
   .app .staff-price-lines,
   .app .staff-summary-grid > div,
   .app .staff-list-item,
+  .app .staff-role-row,
   .app .staff-invoice-details,
   .app .staff-game-photo-upload,
   .app .staff-report-bar-track,
@@ -6501,6 +6569,7 @@ body {
   .app .staff-price-lines span,
   .app .staff-table span,
   .app .staff-list-item span,
+  .app .staff-role-row span,
   .app .staff-summary-grid span,
   .app .staff-audit-list span,
   .app .staff-table th,
@@ -6560,6 +6629,10 @@ body {
 
   .app .staff-game-photo-upload strong {
     color: #f6f7f9;
+  }
+
+  .app .staff-role-row small {
+    color: #8ce8b5;
   }
 
   .app .staff-table th,

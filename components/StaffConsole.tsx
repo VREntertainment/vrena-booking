@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { supabase } from '../lib/supabase/client'
 
-type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'loyalty' | 'orders' | 'report'
+type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'roles' | 'orders' | 'report'
+type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
@@ -332,6 +333,12 @@ const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
 const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
+const staffCommerceTabs: Array<{ value: StaffCommerceTab; label: string }> = [
+  { value: 'discounts', label: 'Discounts' },
+  { value: 'vouchers', label: 'Vouchers' },
+  { value: 'loyalty', label: 'Loyalty Points' },
+]
+const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -355,6 +362,16 @@ function roleLabel(role?: string | null, email?: string | null): StaffRole {
   if (rank >= 50) return role?.toLowerCase() === 'cashier' ? 'cashier' : 'staff'
   if (rank >= 20) return 'viewer'
   return 'player'
+}
+
+function storedRoleValue(role?: string | null): StaffRole {
+  const normalized = (role || '').toLowerCase()
+  return staffRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
+}
+
+function staffRoleName(role: StaffRole) {
+  if (role === 'cashier') return 'Cashier'
+  return role.charAt(0).toUpperCase() + role.slice(1)
 }
 
 function formatVnd(value: number) {
@@ -774,7 +791,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const role = roleLabel(profile?.role, profile?.email || authEmail)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
+  const canManageRoles = rank >= 100
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
+  const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [games, setGames] = useState<StaffGame[]>([])
   const [prices, setPrices] = useState<StaffPriceRule[]>([])
   const [discounts, setDiscounts] = useState<StaffDiscount[]>([])
@@ -800,13 +819,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [gameImageUploading, setGameImageUploading] = useState(false)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
-    if (rank >= 80) return ['new', 'today', 'games', 'prices', 'discounts', 'loyalty', 'orders', 'report']
+    if (rank >= 100) return ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
+    if (rank >= 80) return ['new', 'today', 'games', 'prices', 'discounts', 'orders', 'report']
     if (rank >= 50) return ['new', 'today', 'discounts', 'orders', 'report']
     return ['report']
   }, [rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
 
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
+  const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
+  const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
   const selectedGame = useMemo(() => activeGames.find((game) => game.id === booking.gameId) || activeGames[0] || null, [activeGames, booking.gameId])
   const selectedDiscount = useMemo(() => discounts.find((discount) => discount.id === booking.discountId) || null, [booking.discountId, discounts])
   const selectedRule = useMemo(() => {
@@ -1066,7 +1088,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
 
   async function saveDiscount() {
     if (!canCreateOrders) return
+    if (commerceTab === 'vouchers' && !discountForm.code.trim()) {
+      setStatus('Voucher code is required.')
+      return
+    }
     setSaving(true)
+    const isVoucher = Boolean(discountForm.code.trim())
     const payload = {
       code: discountForm.code.trim() || null,
       name: discountForm.name.trim(),
@@ -1082,7 +1109,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       ? supabase.from('staff_discount_rules').update(payload).eq('id', discountForm.id)
       : supabase.from('staff_discount_rules').insert(payload)
     const { error } = await request
-    setStatus(error ? error.message : 'Discount saved.')
+    setStatus(error ? error.message : `${isVoucher ? 'Voucher' : 'Discount'} saved.`)
     if (!error) setDiscountForm(defaultDiscountForm())
     await loadStaffData()
     setSaving(false)
@@ -1120,6 +1147,19 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setSaving(true)
     const { error } = await supabase.from('staff_orders').update(patch).eq('id', order.id)
     setStatus(error ? error.message : 'Order updated.')
+    await loadStaffData()
+    setSaving(false)
+  }
+
+  async function updateProfileRole(profileId: string, nextRole: StaffRole) {
+    if (!canManageRoles) return
+    setSaving(true)
+    setStatus('Updating role...')
+    const { error } = await supabase.rpc('set_staff_profile_role', {
+      p_profile_id: profileId,
+      p_role: nextRole,
+    })
+    setStatus(error ? error.message : 'Role updated.')
     await loadStaffData()
     setSaving(false)
   }
@@ -1163,6 +1203,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   }
 
   function editDiscount(discount: StaffDiscount) {
+    setCommerceTab(discount.code ? 'vouchers' : 'discounts')
     setDiscountForm({
       id: discount.id,
       code: discount.code || '',
@@ -1177,6 +1218,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   }
 
   function editLoyaltyRule(rule: StaffLoyaltyRule) {
+    setCommerceTab('loyalty')
     setLoyaltyForm({
       id: rule.id,
       rule_name: rule.rule_name,
@@ -1240,6 +1282,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         ? current.paymentSplits.filter((split) => split.id !== splitId)
         : [newPaymentSplit('cash')],
     }))
+  }
+
+  function openCommerceTab(tab: StaffCommerceTab) {
+    setCommerceTab(tab)
+    setStatus('')
+    if (tab === 'loyalty') {
+      setLoyaltyForm(defaultLoyaltyForm())
+    } else {
+      setDiscountForm(defaultDiscountForm())
+    }
   }
 
   const tabButton = (tab: StaffTab, label: string) => (
@@ -1321,7 +1373,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         {tabButton('games', 'Games')}
         {tabButton('prices', 'Prices')}
         {tabButton('discounts', 'Discounts / Vouchers')}
-        {tabButton('loyalty', 'Loyalty Points')}
+        {tabButton('roles', 'Roles')}
         {tabButton('orders', 'Orders')}
         {tabButton('report', 'Daily Report')}
       </div>
@@ -1609,69 +1661,131 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {currentTab === 'discounts' && canCreateOrders && (
         <div className="staff-grid">
           <div className="staff-card">
-            <h3>{discountForm.id ? 'Edit discount' : 'Create discount'}</h3>
-            <div className="form-grid compact-form-grid">
-              <label>Code<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
-              <label>Name<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
-              <label>Type<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-              <label>Value<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
-              <label>Valid from<StaffPickerField ariaLabel="Discount valid from" type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
-              <label>Valid until<StaffPickerField ariaLabel="Discount valid until" type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
-              <label>Max uses<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
-              <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> Active</label>
-            </div>
-            <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>Save discount</button>
+            {commerceTab === 'loyalty' && canManageConfig ? (
+              <>
+                <h3>{loyaltyForm.id ? 'Edit loyalty rule' : 'Create loyalty rule'}</h3>
+                <p className="muted">Define how customers earn points. Redemption will use these rules later.</p>
+                <div className="form-grid compact-form-grid">
+                  <label>Rule name<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
+                  <label>Game<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
+                  <label>Calculation<select value={loyaltyForm.calculation_type} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, calculation_type: event.target.value as StaffLoyaltyRule['calculation_type'] })}>{loyaltyCalculationTypes.map((type) => <option key={type} value={type}>{loyaltyCalculationLabel(type)}</option>)}</select></label>
+                  <label>Points earned<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
+                  <label>Per VND spent<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
+                  <label>Minimum spend<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
+                  <label>Points expire after days<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
+                  <label>Valid from<StaffPickerField ariaLabel="Loyalty valid from" type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
+                  <label>Valid until<StaffPickerField ariaLabel="Loyalty valid until" type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
+                  <label className="full">Notes<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
+                  <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> Active</label>
+                </div>
+                <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>Save loyalty rule</button>
+              </>
+            ) : (
+              <>
+                <h3>
+                  {discountForm.id
+                    ? `Edit ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`
+                    : `Create ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`}
+                </h3>
+                <div className="form-grid compact-form-grid">
+                  <label>{commerceTab === 'vouchers' ? 'Voucher code *' : 'Code (optional)'}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
+                  <label>Name<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
+                  <label>Type<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
+                  <label>Value<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
+                  <label>Valid from<StaffPickerField ariaLabel="Discount valid from" type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
+                  <label>Valid until<StaffPickerField ariaLabel="Discount valid until" type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
+                  <label>Max uses<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
+                  <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> Active</label>
+                </div>
+                <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>
+                  Save {commerceTab === 'vouchers' ? 'voucher' : 'discount'}
+                </button>
+              </>
+            )}
           </div>
           <div className="staff-card">
-            <h3>Discounts / vouchers</h3>
-            {discounts.map((discount) => (
-              <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
-                <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                <span>{discount.discount_type} · {discount.value} · used {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
-              </button>
-            ))}
+            <div className="staff-commerce-switcher" role="tablist" aria-label="Discounts, vouchers, and loyalty points">
+              {staffCommerceTabs.filter((item) => item.value !== 'loyalty' || canManageConfig).map((item) => (
+                <button
+                  aria-selected={commerceTab === item.value}
+                  className={commerceTab === item.value ? 'active' : ''}
+                  key={item.value}
+                  role="tab"
+                  type="button"
+                  onClick={() => openCommerceTab(item.value)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {commerceTab === 'loyalty' && canManageConfig ? (
+              <>
+                <h3>Loyalty rules</h3>
+                {loyaltyRules.map((rule) => (
+                  <button className="staff-list-item" key={rule.id} type="button" onClick={() => editLoyaltyRule(rule)}>
+                    <strong>{rule.rule_name}</strong>
+                    <span>
+                      {loyaltyCalculationLabel(rule.calculation_type)}
+                      {' · '}
+                      {rule.points_value} pts
+                      {rule.calculation_type === 'per_vnd_spent' ? ` / ${formatVnd(rule.spend_amount)}` : ''}
+                      {' · '}
+                      {rule.point_expiry_days ? `${rule.point_expiry_days} days` : 'no expiry'}
+                      {' · '}
+                      {rule.active ? 'active' : 'inactive'}
+                    </span>
+                  </button>
+                ))}
+                {loyaltyRules.length === 0 && <p className="notice">No loyalty rules yet.</p>}
+              </>
+            ) : (
+              <>
+                <h3>{commerceTab === 'vouchers' ? 'Vouchers' : 'Discounts'}</h3>
+                {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
+                  <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
+                    <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
+                    <span>{discount.discount_type} · {discount.value} · used {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                  </button>
+                ))}
+                {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">No vouchers yet.</p>}
+                {commerceTab === 'discounts' && discountRules.length === 0 && <p className="notice">No discounts yet.</p>}
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {currentTab === 'loyalty' && canManageConfig && (
-        <div className="staff-grid">
-          <div className="staff-card">
-            <h3>{loyaltyForm.id ? 'Edit loyalty rule' : 'Create loyalty rule'}</h3>
-            <p className="muted">Define how customers earn points. Redemption will use these rules later.</p>
-            <div className="form-grid compact-form-grid">
-              <label>Rule name<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
-              <label>Game<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
-              <label>Calculation<select value={loyaltyForm.calculation_type} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, calculation_type: event.target.value as StaffLoyaltyRule['calculation_type'] })}>{loyaltyCalculationTypes.map((type) => <option key={type} value={type}>{loyaltyCalculationLabel(type)}</option>)}</select></label>
-              <label>Points earned<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
-              <label>Per VND spent<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
-              <label>Minimum spend<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
-              <label>Points expire after days<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
-              <label>Valid from<StaffPickerField ariaLabel="Loyalty valid from" type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
-              <label>Valid until<StaffPickerField ariaLabel="Loyalty valid until" type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
-              <label className="full">Notes<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
-              <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> Active</label>
-            </div>
-            <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>Save loyalty rule</button>
-          </div>
-          <div className="staff-card">
-            <h3>Loyalty rules</h3>
-            {loyaltyRules.map((rule) => (
-              <button className="staff-list-item" key={rule.id} type="button" onClick={() => editLoyaltyRule(rule)}>
-                <strong>{rule.rule_name}</strong>
-                <span>
-                  {loyaltyCalculationLabel(rule.calculation_type)}
-                  {' · '}
-                  {rule.points_value} pts
-                  {rule.calculation_type === 'per_vnd_spent' ? ` / ${formatVnd(rule.spend_amount)}` : ''}
-                  {' · '}
-                  {rule.point_expiry_days ? `${rule.point_expiry_days} days` : 'no expiry'}
-                  {' · '}
-                  {rule.active ? 'active' : 'inactive'}
-                </span>
-              </button>
-            ))}
-            {loyaltyRules.length === 0 && <p className="notice">No loyalty rules yet.</p>}
+      {currentTab === 'roles' && canManageRoles && (
+        <div className="staff-card staff-card-wide">
+          <h3>Roles</h3>
+          <p className="muted">Assign Staff Console access. Admin can manage every role; normal users stay as Player.</p>
+          <div className="staff-role-list">
+            {profiles.map((item) => {
+              const effectiveRole = roleLabel(item.role, item.email)
+              const storedRole = storedRoleValue(item.role)
+              const protectedEmail = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com'].includes((item.email || '').toLowerCase())
+              return (
+                <div className="staff-role-row" key={item.id}>
+                  <div>
+                    <strong>{customerName(item)}</strong>
+                    <span>{item.email || item.phone || 'No contact'} · current {staffRoleName(effectiveRole)}</span>
+                    {protectedEmail && <small>Email override keeps this account admin.</small>}
+                  </div>
+                  <select
+                    aria-label={`Role for ${customerName(item)}`}
+                    disabled={saving}
+                    value={storedRole}
+                    onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
+                  >
+                    {staffRoleOptions.map((option) => (
+                      <option key={option} value={option}>{staffRoleName(option)}</option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })}
+            {profiles.length === 0 && <p className="notice">No users found.</p>}
           </div>
         </div>
       )}
