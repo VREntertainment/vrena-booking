@@ -415,6 +415,33 @@ function staffRoleName(role: StaffRole) {
   return role.charAt(0).toUpperCase() + role.slice(1)
 }
 
+const staffRoleHelpItems = [
+  {
+    title: 'Owner / Super Admin',
+    body: 'Full Staff Console access, role management, restore tools, and every client app feature.',
+  },
+  {
+    title: 'Admin',
+    body: 'Full daily operations access and role management below Owner / Super Admin. Restore stays Owner only.',
+  },
+  {
+    title: 'Manager',
+    body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.',
+  },
+  {
+    title: 'Staff / Cashier',
+    body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports.',
+  },
+  {
+    title: 'Viewer',
+    body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.',
+  },
+  {
+    title: 'Player',
+    body: 'Client app only. No Staff Console access.',
+  },
+]
+
 function formatVnd(value: number) {
   return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
 }
@@ -862,15 +889,16 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [gameImageUploading, setGameImageUploading] = useState(false)
   const [roleSearch, setRoleSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
+  const [roleHelpOpen, setRoleHelpOpen] = useState(false)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
+    const staffTabs: StaffTab[] = ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
     if (rank >= 120) return ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'restore', 'orders', 'report']
-    if (rank >= 100) return ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
-    if (rank >= 80) return ['new', 'today', 'games', 'prices', 'discounts', 'orders', 'report']
-    if (rank >= 50) return ['new', 'today', 'discounts', 'orders', 'report']
+    if (rank >= 20) return staffTabs
     return ['report']
   }, [rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
+  const canEditCommerceTab = commerceTab === 'loyalty' ? canManageConfig : canCreateOrders
 
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
@@ -1494,10 +1522,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       {status && <p className="notice">{status}</p>}
       {loading && <p className="notice" aria-busy="true">Loading Staff Console...</p>}
 
-      {currentTab === 'new' && canCreateOrders && (
+      {currentTab === 'new' && (
         <div className="staff-grid">
           <div className="staff-card staff-card-wide">
             <h3>New booking</h3>
+            {!canCreateOrders && <p className="staff-readonly-note">Read-only view. Viewer can inspect this flow, but cannot create bookings.</p>}
+            <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders}>
             <div className="form-grid compact-form-grid">
               <label>
                 Customer profile
@@ -1653,6 +1683,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               Internal note
               <textarea value={booking.note} onChange={(event) => setBooking({ ...booking, note: event.target.value })} />
             </label>
+            </fieldset>
           </div>
 
           <div className="staff-card staff-summary-card">
@@ -1665,7 +1696,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <span>Discount</span><strong>-{formatVnd(quote.discountTotal)}</strong>
               <span>Total</span><strong>{formatVnd(quote.total)}</strong>
             </div>
-            <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={saving || !selectedGame} type="button" onClick={createOrder}>
+            <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame} type="button" onClick={createOrder}>
               Confirm booking
             </button>
           </div>
@@ -1679,10 +1710,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         </div>
       )}
 
-      {currentTab === 'games' && canManageConfig && (
+      {currentTab === 'games' && (
         <div className="staff-grid">
           <div className="staff-card">
             <h3>{gameForm.id ? 'Edit game' : 'Create game'}</h3>
+            {!canManageConfig && <p className="staff-readonly-note">Read-only view. Viewer can inspect games, but cannot save changes.</p>}
+            <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
             <div className="form-grid compact-form-grid">
               <label>Name<input value={gameForm.name} onChange={(event) => setGameForm({ ...gameForm, name: event.target.value })} /></label>
               <label>Slug<input value={gameForm.slug} onChange={(event) => setGameForm({ ...gameForm, slug: event.target.value })} /></label>
@@ -1722,11 +1755,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label className="checkbox-row"><input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} /> Active</label>
             </div>
             <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>Save game</button>
+            </fieldset>
           </div>
           <div className="staff-card">
             <div className="staff-list-head">
               <h3>Games</h3>
-              <button type="button" onClick={startNewGame}>New game</button>
+              {canManageConfig && <button type="button" onClick={startNewGame}>New game</button>}
             </div>
             {games.map((game) => (
               <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
@@ -1738,10 +1772,12 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         </div>
       )}
 
-      {currentTab === 'prices' && canManageConfig && (
+      {currentTab === 'prices' && (
         <div className="staff-grid">
           <div className="staff-card">
             <h3>{priceForm.id ? 'Edit price rule' : 'Create price rule'}</h3>
+            {!canManageConfig && <p className="staff-readonly-note">Read-only view. Viewer can inspect price rules, but cannot save changes.</p>}
+            <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
             <div className="form-grid compact-form-grid">
               <label>Rule name<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
               <label>Game<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
@@ -1758,6 +1794,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> Active</label>
             </div>
             <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>Save price</button>
+            </fieldset>
           </div>
           <div className="staff-card">
             <h3>Price rules</h3>
@@ -1771,13 +1808,15 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         </div>
       )}
 
-      {currentTab === 'discounts' && canCreateOrders && (
+      {currentTab === 'discounts' && (
         <div className="staff-grid">
           <div className="staff-card">
-            {commerceTab === 'loyalty' && canManageConfig ? (
+            {!canEditCommerceTab && <p className="staff-readonly-note">Read-only view. Viewer can inspect these rules, but cannot save changes.</p>}
+            {commerceTab === 'loyalty' ? (
               <>
                 <h3>{loyaltyForm.id ? 'Edit loyalty rule' : 'Create loyalty rule'}</h3>
                 <p className="muted">Define how customers earn points. Redemption will use these rules later.</p>
+                <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
                 <div className="form-grid compact-form-grid">
                   <label>Rule name<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
                   <label>Game<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
@@ -1792,6 +1831,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                   <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> Active</label>
                 </div>
                 <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>Save loyalty rule</button>
+                </fieldset>
               </>
             ) : (
               <>
@@ -1800,6 +1840,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     ? `Edit ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`
                     : `Create ${commerceTab === 'vouchers' ? 'voucher' : 'discount'}`}
                 </h3>
+                <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
                 <div className="form-grid compact-form-grid">
                   <label>{commerceTab === 'vouchers' ? 'Voucher code *' : 'Code (optional)'}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
                   <label>Name<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
@@ -1813,12 +1854,13 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                 <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>
                   Save {commerceTab === 'vouchers' ? 'voucher' : 'discount'}
                 </button>
+                </fieldset>
               </>
             )}
           </div>
           <div className="staff-card">
             <div className="staff-commerce-switcher" role="tablist" aria-label="Discounts, vouchers, and loyalty points">
-              {staffCommerceTabs.filter((item) => item.value !== 'loyalty' || canManageConfig).map((item) => (
+              {staffCommerceTabs.map((item) => (
                 <button
                   aria-selected={commerceTab === item.value}
                   className={commerceTab === item.value ? 'active' : ''}
@@ -1832,7 +1874,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               ))}
             </div>
 
-            {commerceTab === 'loyalty' && canManageConfig ? (
+            {commerceTab === 'loyalty' ? (
               <>
                 <h3>Loyalty rules</h3>
                 {loyaltyRules.map((rule) => (
@@ -1869,10 +1911,19 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
         </div>
       )}
 
-      {currentTab === 'roles' && canManageRoles && (
+      {currentTab === 'roles' && (
         <div className="staff-card staff-card-wide">
-          <h3>Roles</h3>
-          <p className="muted">Assign Staff Console access. Admin can manage every role; normal users stay as Player.</p>
+          <div className="staff-card-heading">
+            <h3>Roles</h3>
+            <button className="staff-link-button" type="button" onClick={() => setRoleHelpOpen(true)}>
+              Role explanation
+            </button>
+          </div>
+          <p className="muted">
+            {canManageRoles
+              ? 'Assign Staff Console access. Admin can manage every role; normal users stay as Player.'
+              : 'Read-only view. Viewer can inspect role access, but cannot assign roles.'}
+          </p>
           <div className="staff-role-tools">
             <label>
               <span className="staff-field-label">Search users</span>
@@ -1885,7 +1936,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             <label>
               <span className="staff-field-label">Filter by role</span>
               <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as StaffRole | 'all')}>
-                {roleFilterOptions.filter((option) => option === 'all' || !['super_admin', 'owner'].includes(option) || canRestoreDeleted).map((option) => (
+                {roleFilterOptions.map((option) => (
                   <option key={option} value={option}>
                     {option === 'all' ? 'All roles' : staffRoleName(option)}
                   </option>
@@ -1907,11 +1958,13 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                   </div>
                   <select
                     aria-label={`Role for ${customerName(item)}`}
-                    disabled={saving}
+                    disabled={!canManageRoles || saving}
                     value={storedRole}
                     onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
                   >
-                    {staffRoleOptions.filter((option) => !['super_admin', 'owner'].includes(option) || canRestoreDeleted).map((option) => (
+                    {staffRoleOptions.filter((option) => (
+                      canRestoreDeleted || !['super_admin', 'owner'].includes(option) || option === storedRole
+                    )).map((option) => (
                       <option key={option} value={option}>{staffRoleName(option)}</option>
                     ))}
                   </select>
@@ -2148,6 +2201,31 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             {auditLogs.map((log) => (
               <span key={log.id}>{new Date(log.created_at).toLocaleString()} · {log.action} · {log.entity_type}</span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {roleHelpOpen && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="staff-role-help-title"
+          onClick={() => setRoleHelpOpen(false)}
+        >
+          <div className="login-modal staff-role-help-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label="Close role explanation" onClick={() => setRoleHelpOpen(false)}>
+              ×
+            </button>
+            <h3 id="staff-role-help-title">Role explanation</h3>
+            <div className="staff-role-help-list">
+              {staffRoleHelpItems.map((item) => (
+                <div className="staff-role-help-item" key={item.title}>
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
