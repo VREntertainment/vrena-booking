@@ -1329,12 +1329,28 @@ body {
   border-color: rgba(48, 89, 255, 0.3);
 }
 
-.app .staff-role-list {
+.app .staff-role-list,
+.app .staff-restore-list {
   display: grid;
   gap: 8px;
 }
 
-.app .staff-role-row {
+.app .staff-role-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+  gap: 10px;
+  align-items: end;
+  margin: 10px 0 12px;
+}
+
+.app .staff-role-tools label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .staff-role-row,
+.app .staff-restore-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
   gap: 12px;
@@ -1345,20 +1361,24 @@ body {
   padding: 10px;
 }
 
-.app .staff-role-row > div {
+.app .staff-role-row > div,
+.app .staff-restore-row > div {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
 .app .staff-role-row span,
-.app .staff-role-row small {
+.app .staff-role-row small,
+.app .staff-restore-row span,
+.app .staff-restore-row small {
   color: #637075;
   font-size: 12px;
   overflow-wrap: anywhere;
 }
 
-.app .staff-role-row small {
+.app .staff-role-row small,
+.app .staff-restore-row small {
   color: #0d7c51;
   font-weight: 800;
 }
@@ -5675,7 +5695,12 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .app .staff-role-row {
+  .app .staff-role-row,
+  .app .staff-restore-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-role-tools {
     grid-template-columns: 1fr;
   }
 
@@ -6554,6 +6579,7 @@ body {
   .app .staff-summary-grid > div,
   .app .staff-list-item,
   .app .staff-role-row,
+  .app .staff-restore-row,
   .app .staff-invoice-details,
   .app .staff-game-photo-upload,
   .app .staff-report-bar-track,
@@ -6570,6 +6596,8 @@ body {
   .app .staff-table span,
   .app .staff-list-item span,
   .app .staff-role-row span,
+  .app .staff-restore-row span,
+  .app .staff-restore-row small,
   .app .staff-summary-grid span,
   .app .staff-audit-list span,
   .app .staff-table th,
@@ -6631,7 +6659,8 @@ body {
     color: #f6f7f9;
   }
 
-  .app .staff-role-row small {
+  .app .staff-role-row small,
+  .app .staff-restore-row small {
     color: #8ce8b5;
   }
 

@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-const ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const MODERATION_MODEL = 'omni-moderation-latest'
 const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'
@@ -36,7 +36,8 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 }
 
 function isAdmin(profile: { role?: string | null; email?: string | null } | null) {
-  return Boolean(profile?.role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
+  const role = profile?.role?.toLowerCase()
+  return Boolean(role === 'super_admin' || role === 'owner' || role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
 }
 
 function anonymousCallsignForId(profileId: string | null | undefined) {
