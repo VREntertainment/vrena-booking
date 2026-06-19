@@ -11,7 +11,8 @@ const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const SESSION_LOAD_BATCH_DAYS = 7
-const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const OWNER_EMAILS = ['emilejacquet@icloud.com']
+const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com', ...OWNER_EMAILS]
 const ADMIN_EMAILS = [...SUPER_ADMIN_EMAILS, 'contact@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
@@ -174,6 +175,14 @@ function isAdminEmail(email?: string | null) {
 
 function isSuperAdminEmail(email?: string | null) {
   return Boolean(email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
+function defaultRoleForEmail(email?: string | null) {
+  const normalizedEmail = email?.toLowerCase() || ''
+  if (OWNER_EMAILS.includes(normalizedEmail)) return 'owner'
+  if (isSuperAdminEmail(normalizedEmail)) return 'super_admin'
+  if (isAdminEmail(normalizedEmail)) return 'admin'
+  return 'player'
 }
 
 function isAdminRole(role?: string | null) {
@@ -2375,7 +2384,7 @@ export default function WidgetPage({
         avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
         avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
         profile_motto: profileMottoValue || null,
-        role: isSuperAdminEmail(email) ? 'super_admin' : isAdminEmail(email) ? 'admin' : 'player',
+        role: defaultRoleForEmail(email),
         anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
         anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
         marketing_consent: authUser.user_metadata?.marketing_consent === false ? false : true,
@@ -2617,7 +2626,7 @@ export default function WidgetPage({
           phone: fullPhone,
           nickname: nickname || existingProfile?.nickname || null,
           email: loginEmail,
-          role: isSuperAdminEmail(loginEmail) ? 'super_admin' : isAdminEmail(loginEmail) ? 'admin' : 'player',
+          role: defaultRoleForEmail(loginEmail),
           birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
           ...marketingConsentValues(marketingConsent, null, consentAt),
@@ -2649,7 +2658,7 @@ export default function WidgetPage({
           email: loginEmail,
           birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
-          role: isSuperAdminEmail(loginEmail) ? 'super_admin' : isAdminEmail(loginEmail) ? 'admin' : 'player',
+          role: defaultRoleForEmail(loginEmail),
           anonymous_mode: false,
           anonymous_callsign: existingProfile?.anonymous_callsign || null,
           ...marketingConsentValues(marketingConsent, null, consentAt),

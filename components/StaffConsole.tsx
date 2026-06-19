@@ -350,7 +350,7 @@ const staffCommerceTabs: Array<{ value: StaffCommerceTab; label: string }> = [
   { value: 'vouchers', label: 'Vouchers' },
   { value: 'loyalty', label: 'Loyalty Points' },
 ]
-const superAdminEmails = ['emile@vre-vietnam.com']
+const superAdminEmails = ['emile@vre-vietnam.com', 'emilejacquet@icloud.com']
 const adminEmails = [...superAdminEmails, 'contact@vre-vietnam.com']
 const staffRoleOptions: StaffRole[] = ['super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
