@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'emilejacquet@icloud.com', 'contact@vre-vietnam.com']
 const MODERATION_MODEL = 'omni-moderation-latest'
 const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'

@@ -80,7 +80,8 @@ type HeavyTarget = {
   view: AppView
 }
 
-const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const OWNER_EMAILS = ['emilejacquet@icloud.com']
+const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com', ...OWNER_EMAILS]
 const ADMIN_EMAILS = [...SUPER_ADMIN_EMAILS, 'contact@vre-vietnam.com']
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
@@ -169,6 +170,14 @@ function isAdminEmail(email?: string | null) {
 
 function isSuperAdminEmail(email?: string | null) {
   return Boolean(email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
+function defaultRoleForEmail(email?: string | null) {
+  const normalizedEmail = email?.toLowerCase() || ''
+  if (OWNER_EMAILS.includes(normalizedEmail)) return 'owner'
+  if (isSuperAdminEmail(normalizedEmail)) return 'super_admin'
+  if (isAdminEmail(normalizedEmail)) return 'admin'
+  return 'player'
 }
 
 function isAdminRole(role?: string | null) {
@@ -583,7 +592,7 @@ export default function FastHomeShell() {
         if (!active) return
 
         const nextProfile = profileRow as Profile | null
-        const effectiveRole = nextProfile?.role || (isSuperAdminEmail(authUser.email) ? 'super_admin' : isAdminEmail(authUser.email) ? 'admin' : 'player')
+        const effectiveRole = nextProfile?.role || defaultRoleForEmail(authUser.email)
         const effectiveEmail = nextProfile?.email || authUser.email || ''
         shouldOfferMobileStaffChoice = staffConsoleRank(effectiveRole, effectiveEmail) >= 20 && isStaffModeMobileViewport()
 
@@ -602,7 +611,7 @@ export default function FastHomeShell() {
           profile_motto: typeof authUser.user_metadata?.profile_motto === 'string' ? authUser.user_metadata.profile_motto : null,
           anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
           anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
-          role: isSuperAdminEmail(authUser.email) ? 'super_admin' : isAdminEmail(authUser.email) ? 'admin' : 'player',
+          role: defaultRoleForEmail(authUser.email),
         })
 
         if (!shouldOfferMobileStaffChoice && nextProfile?.birthday && isBirthdayToday(nextProfile.birthday)) {
