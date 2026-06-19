@@ -320,6 +320,8 @@ export const ja = {
   checkedIn: 'チェックイン済',
   paymentMethod: '支払い方法',
   paymentAmount: '支払額',
+  addPaymentSplit: '分割追加',
+  paidTotal: '支払合計',
   cash: '現金',
   bankTransfer: '銀行振込',
   free: '無料',

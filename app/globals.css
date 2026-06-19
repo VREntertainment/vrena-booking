@@ -1101,6 +1101,19 @@ body {
   gap: 8px;
 }
 
+.app .staff-payment-splits,
+.app .staff-payment-split-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-payment-split-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
 .app .staff-field-label {
   display: block;
   color: #637075;
@@ -1768,6 +1781,28 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.app .split-payment-grid {
+  grid-template-columns: 1fr;
+}
+
+.app .split-payment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .payment-split-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.85fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.app .payment-split-row .amount-field {
+  grid-column: auto;
 }
 
 .app .payment-grid .active {
@@ -5574,6 +5609,15 @@ body {
 
   .app .staff-manual-discount > div {
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-payment-split-row,
+  .app .payment-split-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .payment-split-row .amount-field {
+    grid-column: 1;
   }
 
   .app .shop-contact {

@@ -15,7 +15,7 @@ const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
-const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
+const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
@@ -92,6 +92,16 @@ type ClubRole = 'owner' | 'admin' | 'moderator' | 'member'
 type ClubMemberRole = Exclude<ClubRole, 'owner'>
 type ClubTab = 'hall' | 'members' | 'sessions' | 'settings'
 type ClubSessionScope = 'upcoming' | 'past'
+type ParticipantPaymentMethod = 'cash' | 'bank_transfer'
+type ParticipantPaymentSplit = {
+  payment_method: ParticipantPaymentMethod
+  amount: number
+}
+type ParticipantPaymentSplitDraft = {
+  id: string
+  payment_method: ParticipantPaymentMethod
+  amount: string
+}
 
 type TicketBookingConfirmation = {
   sessionId: string
@@ -203,6 +213,7 @@ type Participant = {
   checked_in?: boolean | null
   payment_status?: 'cash' | 'bank_transfer' | 'free' | null
   payment_amount?: number | null
+  payment_splits?: ParticipantPaymentSplit[] | null
   score?: number | null
   accuracy_percent?: number | null
   projectiles_fired?: number | null
@@ -634,6 +645,69 @@ function formatVnd(value: number) {
 
 function formatTicketFormulaPrice(value: number) {
   return `${Math.max(0, value).toLocaleString('vi-VN')} đ`
+}
+
+function newParticipantPaymentSplit(method: ParticipantPaymentMethod = 'cash', amount = ''): ParticipantPaymentSplitDraft {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    payment_method: method,
+    amount,
+  }
+}
+
+function normalizeParticipantPaymentSplits(splits: ParticipantPaymentSplitDraft[]): ParticipantPaymentSplit[] {
+  return splits
+    .map((split) => ({
+      payment_method: split.payment_method,
+      amount: Number(String(split.amount || '').replace(/[^\d]/g, '')),
+    }))
+    .filter((split) => split.amount > 0)
+}
+
+function participantPaymentSplitTotal(splits: ParticipantPaymentSplit[] | null | undefined) {
+  return (splits ?? []).reduce((sum, split) => sum + split.amount, 0)
+}
+
+function paymentSplitsFromParticipant(participant: Participant): ParticipantPaymentSplitDraft[] {
+  const savedSplits = Array.isArray(participant.payment_splits)
+    ? participant.payment_splits.filter((split) => (
+      (split.payment_method === 'cash' || split.payment_method === 'bank_transfer')
+      && Number(split.amount) > 0
+    ))
+    : []
+
+  if (savedSplits.length > 0) {
+    return savedSplits.map((split) => newParticipantPaymentSplit(split.payment_method, String(split.amount)))
+  }
+
+  if ((participant.payment_status === 'cash' || participant.payment_status === 'bank_transfer') && Number(participant.payment_amount) > 0) {
+    return [newParticipantPaymentSplit(participant.payment_status, String(participant.payment_amount))]
+  }
+
+  return [newParticipantPaymentSplit('cash')]
+}
+
+function participantPaymentMethodSummary(participant: Participant, text: Record<string, string>) {
+  const savedSplits = Array.isArray(participant.payment_splits)
+    ? participant.payment_splits.filter((split) => Number(split.amount) > 0)
+    : []
+
+  if (savedSplits.length > 0) {
+    return savedSplits
+      .map((split) => split.payment_method === 'cash' ? text.cash : text.bankTransfer)
+      .filter((label, index, labels) => labels.indexOf(label) === index)
+      .join(' + ')
+  }
+
+  if (participant.payment_status === 'cash') return text.cash
+  if (participant.payment_status === 'bank_transfer') return text.bankTransfer
+  if (participant.payment_status === 'free') return text.free
+  return ''
+}
+
+function participantPaymentAmountSummary(participant: Participant) {
+  const splitTotal = participantPaymentSplitTotal(participant.payment_splits)
+  return splitTotal || participant.payment_amount || 0
 }
 
 function individualTicketUnitPrice(dateValue: string, timeValue: string) {
@@ -1564,8 +1638,7 @@ export default function WidgetPage({
   const [busyTournamentId, setBusyTournamentId] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
-  const [checkInPaymentStatus, setCheckInPaymentStatus] = useState<'cash' | 'bank_transfer' | 'free' | ''>('')
-  const [checkInPaymentAmount, setCheckInPaymentAmount] = useState('')
+  const [checkInPaymentSplits, setCheckInPaymentSplits] = useState<ParticipantPaymentSplitDraft[]>(() => [newParticipantPaymentSplit('cash')])
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
@@ -3948,6 +4021,8 @@ function handleSessionDateChange(value: string) {
     if (!checkInTarget || !checkInSession) return undefined
     return (checkInSession.session_participants ?? []).find((participant) => participant.id === checkInTarget.participantId)
   }, [checkInSession, checkInTarget])
+  const normalizedCheckInPaymentSplits = useMemo(() => normalizeParticipantPaymentSplits(checkInPaymentSplits), [checkInPaymentSplits])
+  const checkInPaymentTotal = useMemo(() => participantPaymentSplitTotal(normalizedCheckInPaymentSplits), [normalizedCheckInPaymentSplits])
 
   const allPlayerStats = useMemo(() => {
     const stats = new Map<string, {
@@ -4699,13 +4774,11 @@ function handleSessionDateChange(value: string) {
 
   useEffect(() => {
     if (!checkInParticipant) {
-      setCheckInPaymentStatus('')
-      setCheckInPaymentAmount('')
+      setCheckInPaymentSplits([newParticipantPaymentSplit('cash')])
       return
     }
 
-    setCheckInPaymentStatus(checkInParticipant.payment_status || '')
-    setCheckInPaymentAmount(checkInParticipant.payment_amount ? String(checkInParticipant.payment_amount) : '')
+    setCheckInPaymentSplits(paymentSplitsFromParticipant(checkInParticipant))
   }, [checkInParticipant])
 
   useEffect(() => {
@@ -5436,15 +5509,22 @@ function handleSessionDateChange(value: string) {
     setBusyClubId('')
   }
 
-  async function updateParticipantCheckIn(participantId: string, paymentStatus: 'cash' | 'bank_transfer' | 'free' | null, amountValue = '') {
-    const normalizedAmount = paymentStatus && paymentStatus !== 'free' ? Number(amountValue.replace(/[^\d]/g, '')) : null
+  async function updateParticipantCheckIn(participantId: string, paymentSplits: ParticipantPaymentSplit[] | null, markFree = false) {
+    const normalizedSplits = paymentSplits ?? []
+    const normalizedAmount = participantPaymentSplitTotal(normalizedSplits)
+    const summaryStatus = markFree
+      ? 'free'
+      : normalizedSplits.length > 0
+        ? normalizedSplits[0].payment_method
+        : null
     const { error } = await (await getSupabase())
       .from('session_participants')
       .update({
-        checked_in: Boolean(paymentStatus),
-        payment_status: paymentStatus,
-        payment_amount: Number.isFinite(normalizedAmount as number) ? normalizedAmount : null,
-        checked_in_at: paymentStatus ? new Date().toISOString() : null,
+        checked_in: Boolean(summaryStatus),
+        payment_status: summaryStatus,
+        payment_amount: normalizedAmount > 0 ? normalizedAmount : null,
+        payment_splits: markFree ? [] : normalizedSplits,
+        checked_in_at: summaryStatus ? new Date().toISOString() : null,
       })
       .eq('id', participantId)
 
@@ -5455,6 +5535,22 @@ function handleSessionDateChange(value: string) {
 
     setCheckInTarget(null)
     await loadSessions()
+  }
+
+  function updateCheckInPaymentSplit(splitId: string, patch: Partial<ParticipantPaymentSplitDraft>) {
+    setCheckInPaymentSplits((splits) => splits.map((split) => (
+      split.id === splitId ? { ...split, ...patch } : split
+    )))
+  }
+
+  function addCheckInPaymentSplit() {
+    setCheckInPaymentSplits((splits) => [...splits, newParticipantPaymentSplit('cash')])
+  }
+
+  function removeCheckInPaymentSplit(splitId: string) {
+    setCheckInPaymentSplits((splits) => (
+      splits.length > 1 ? splits.filter((split) => split.id !== splitId) : [newParticipantPaymentSplit('cash')]
+    ))
   }
 
   async function updateParticipantResult(
@@ -8475,8 +8571,8 @@ function handleSessionDateChange(value: string) {
                           </span>
                           {(canManage || participant.profile_id === userId) && participant.payment_status && (
                             <small className="private-payment">
-                              {participant.payment_status === 'cash' ? text.cash : participant.payment_status === 'bank_transfer' ? text.bankTransfer : text.free}
-                              {participant.payment_amount ? ` · ${participant.payment_amount.toLocaleString('vi-VN')} đ` : ''}
+                              {participantPaymentMethodSummary(participant, text)}
+                              {participantPaymentAmountSummary(participant) ? ` · ${participantPaymentAmountSummary(participant).toLocaleString('vi-VN')} đ` : ''}
                             </small>
                           )}
                           {canManage && (
@@ -10904,24 +11000,24 @@ function handleSessionDateChange(value: string) {
           closeText={text.close}
           title={text.checkIn}
           playerName={compactDisplayName(checkInParticipant.display_name, text.player)}
-          paymentStatus={checkInPaymentStatus || null}
-          paymentAmount={checkInPaymentAmount}
+          paymentSplits={checkInPaymentSplits}
+          paymentSummary={`${text.paidTotal}: ${formatTicketFormulaPrice(checkInPaymentTotal)}`}
           cashText={text.cash}
           bankTransferText={text.bankTransfer}
           freeText={text.free}
           amountText={text.paymentAmount}
+          addSplitText={text.addPaymentSplit}
+          removeText={text.remove}
           saveText={text.saveChanges}
           clearText={text.clearCheckIn}
           checkedIn={Boolean(checkInParticipant.checked_in)}
           onClose={() => setCheckInTarget(null)}
-          onPaymentStatusChange={(value) => setCheckInPaymentStatus(value)}
-          onPaymentAmountChange={setCheckInPaymentAmount}
-          onSaveFree={() => updateParticipantCheckIn(checkInParticipant.id, 'free')}
-          onSavePaid={() => {
-            if (checkInPaymentStatus === 'cash' || checkInPaymentStatus === 'bank_transfer') {
-              updateParticipantCheckIn(checkInParticipant.id, checkInPaymentStatus, checkInPaymentAmount)
-            }
-          }}
+          onPaymentSplitMethodChange={(splitId, value) => updateCheckInPaymentSplit(splitId, { payment_method: value })}
+          onPaymentSplitAmountChange={(splitId, value) => updateCheckInPaymentSplit(splitId, { amount: value })}
+          onAddPaymentSplit={addCheckInPaymentSplit}
+          onRemovePaymentSplit={removeCheckInPaymentSplit}
+          onSaveFree={() => updateParticipantCheckIn(checkInParticipant.id, null, true)}
+          onSavePaid={() => updateParticipantCheckIn(checkInParticipant.id, normalizedCheckInPaymentSplits)}
           onClear={() => updateParticipantCheckIn(checkInParticipant.id, null)}
         />
       )}

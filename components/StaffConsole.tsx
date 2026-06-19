@@ -7,6 +7,16 @@ import { supabase } from '../lib/supabase/client'
 type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'loyalty' | 'orders' | 'report'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
+type StaffPaymentMethod = 'cash' | 'bank_transfer'
+type PaymentSplitDraft = {
+  id: string
+  payment_method: StaffPaymentMethod
+  amount: string
+}
+type PaymentSplitPayload = {
+  payment_method: StaffPaymentMethod
+  amount: number
+}
 
 type StaffProfile = {
   id: string
@@ -108,6 +118,15 @@ type StaffOrder = {
   internal_note: string | null
 }
 
+type StaffOrderPayment = {
+  id: string
+  order_id: string
+  payment_method: StaffPaymentMethod
+  amount: number
+  created_by: string | null
+  created_at: string
+}
+
 type StaffAuditLog = {
   id: string
   actor_user_id: string | null
@@ -130,8 +149,7 @@ type BookingForm = {
   discountId: string
   manualDiscountType: '' | 'fixed_amount' | 'percentage'
   manualDiscountValue: number
-  paymentMethod: string
-  paymentStatus: 'unpaid' | 'partially_paid' | 'paid' | 'refunded'
+  paymentSplits: PaymentSplitDraft[]
   orderStatus: 'draft' | 'confirmed' | 'paid' | 'partially_paid' | 'cancelled' | 'refunded' | 'no_show' | 'completed'
   invoiceRequired: boolean
   companyName: string
@@ -184,6 +202,14 @@ function rangeLabel(start: string, end: string) {
   return start === end ? shortDateLabel(start) : `${shortDateLabel(start)} - ${shortDateLabel(end)}`
 }
 
+function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    payment_method: method,
+    amount,
+  }
+}
+
 const defaultBookingForm = (): BookingForm => ({
   customerId: '',
   customerName: '',
@@ -197,8 +223,7 @@ const defaultBookingForm = (): BookingForm => ({
   discountId: '',
   manualDiscountType: '',
   manualDiscountValue: 0,
-  paymentMethod: 'cash',
-  paymentStatus: 'paid',
+  paymentSplits: [newPaymentSplit('cash')],
   orderStatus: 'confirmed',
   invoiceRequired: false,
   companyName: '',
@@ -268,7 +293,6 @@ const paymentMethods = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
 ] as const
-const paymentStatuses = ['unpaid', 'partially_paid', 'paid', 'refunded'] as const
 const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
 const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
 const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
@@ -315,6 +339,25 @@ function parseDong(value: string | number | null | undefined) {
 function formatDongInput(value: string | number | null | undefined) {
   const amount = parseDong(value)
   return amount > 0 ? formatVnd(amount) : ''
+}
+
+function normalizePaymentSplits(splits: PaymentSplitDraft[]): PaymentSplitPayload[] {
+  return splits
+    .map((split) => ({
+      payment_method: split.payment_method,
+      amount: parseDong(split.amount),
+    }))
+    .filter((split) => split.amount > 0)
+}
+
+function paymentSplitTotal(splits: PaymentSplitPayload[]) {
+  return splits.reduce((sum, split) => sum + split.amount, 0)
+}
+
+function paymentStatusFromAmount(total: number, paidTotal: number): StaffOrder['payment_status'] {
+  if (total <= 0) return 'paid'
+  if (paidTotal <= 0) return 'unpaid'
+  return paidTotal >= total ? 'paid' : 'partially_paid'
 }
 
 function normalizeTime(value: string | null | undefined) {
@@ -406,6 +449,8 @@ function customerName(profile: StaffProfile) {
 }
 
 function paymentMethodLabel(value: string) {
+  if (value === 'split') return 'Split'
+  if (value === 'unpaid') return 'Unpaid'
   return paymentMethods.find((method) => method.value === value)?.label || value.replace(/_/g, ' ')
 }
 
@@ -515,7 +560,25 @@ function staffReportRows(report: ReturnType<typeof buildStaffReport>) {
   ]
 }
 
-function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[]) {
+function staffOrderPaymentRows(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+  return paymentsByOrderId.get(order.id) || []
+}
+
+function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+  const payments = staffOrderPaymentRows(order, paymentsByOrderId)
+  if (payments.length === 0) return paymentMethodLabel(order.payment_method)
+  return payments
+    .map((payment) => `${paymentMethodLabel(payment.payment_method)} ${formatVnd(payment.amount)}`)
+    .join(' + ')
+}
+
+function orderPaidAmount(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+  const payments = staffOrderPaymentRows(order, paymentsByOrderId)
+  if (payments.length > 0) return payments.reduce((sum, payment) => sum + payment.amount, 0)
+  return order.payment_status === 'paid' ? order.total : 0
+}
+
+function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
   return orders.map((order) => ({
     order_number: order.order_number,
     date: order.booking_date,
@@ -526,19 +589,26 @@ function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[]) {
     subtotal: formatVnd(order.subtotal),
     discount: formatVnd(order.discount_total),
     total: formatVnd(order.total),
-    payment_method: paymentMethodLabel(order.payment_method),
+    payment_method: orderPaymentLabel(order, paymentsByOrderId),
+    paid_amount: formatVnd(orderPaidAmount(order, paymentsByOrderId)),
     payment_status: order.payment_status,
     order_status: order.order_status,
   }))
 }
 
-function reportPdfLines(title: string, report: ReturnType<typeof buildStaffReport>, orders: StaffOrder[], games: StaffGame[]) {
+function reportPdfLines(
+  title: string,
+  report: ReturnType<typeof buildStaffReport>,
+  orders: StaffOrder[],
+  games: StaffGame[],
+  paymentsByOrderId: Map<string, StaffOrderPayment[]>
+) {
   return [
     title,
     ...staffReportRows(report).map((row) => `${row.metric}: ${row.value}`),
     '',
     'Orders',
-    ...staffOrderExportRows(orders, games).slice(0, 28).map((order) => (
+    ...staffOrderExportRows(orders, games, paymentsByOrderId).slice(0, 28).map((order) => (
       `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.game} | ${order.total} | ${order.payment_method}`
     )),
   ]
@@ -582,15 +652,32 @@ function ordersInDateRange(orders: StaffOrder[], start: string, end: string) {
   return orders.filter((order) => order.booking_date >= from && order.booking_date <= to)
 }
 
-function buildStaffReport(orders: StaffOrder[], gameNameById: Map<string, string>) {
+function buildStaffReport(
+  orders: StaffOrder[],
+  gameNameById: Map<string, string>,
+  paymentsByOrderId: Map<string, StaffOrderPayment[]>
+) {
   const totals = orders.reduce((summary, order) => {
+    const payments = staffOrderPaymentRows(order, paymentsByOrderId)
+    const paidAmount = payments.length > 0
+      ? payments.reduce((sum, payment) => sum + payment.amount, 0)
+      : order.payment_status === 'paid'
+        ? order.total
+        : 0
     summary.totalSales += order.total
     summary.players += order.players_count
     summary.discounts += order.discount_total
-    if (order.payment_status === 'paid') summary.totalPaid += order.total
-    if (order.payment_status !== 'paid') summary.unpaidAmount += order.total
-    if (order.payment_method === 'cash') summary.cashTotal += order.total
-    if (order.payment_method === 'bank_transfer') summary.bankTransferTotal += order.total
+    summary.totalPaid += paidAmount
+    summary.unpaidAmount += Math.max(0, order.total - paidAmount)
+    if (payments.length > 0) {
+      payments.forEach((payment) => {
+        if (payment.payment_method === 'cash') summary.cashTotal += payment.amount
+        if (payment.payment_method === 'bank_transfer') summary.bankTransferTotal += payment.amount
+      })
+    } else {
+      if (order.payment_method === 'cash') summary.cashTotal += order.total
+      if (order.payment_method === 'bank_transfer') summary.bankTransferTotal += order.total
+    }
     if (order.order_status === 'cancelled') summary.cancelled += 1
     if (order.order_status === 'no_show') summary.noShows += 1
     const gameName = order.game_id ? gameNameById.get(order.game_id) || 'Unknown' : 'Unknown'
@@ -659,6 +746,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   const [discounts, setDiscounts] = useState<StaffDiscount[]>([])
   const [loyaltyRules, setLoyaltyRules] = useState<StaffLoyaltyRule[]>([])
   const [orders, setOrders] = useState<StaffOrder[]>([])
+  const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [auditLogs, setAuditLogs] = useState<StaffAuditLog[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
@@ -714,12 +802,24 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       duration: selectedGame?.duration_minutes || 20,
     }
   }, [booking.manualDiscountType, booking.manualDiscountValue, booking.players, selectedDiscount, selectedGame, selectedRule])
+  const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
+  const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
+  const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
 
   const todayOrders = useMemo(() => {
     const today = todayString()
     return orders.filter((order) => order.booking_date === today)
   }, [orders])
   const gameNameById = useMemo(() => new Map(games.map((game) => [game.id, game.name])), [games])
+  const orderPaymentsByOrderId = useMemo(() => {
+    const map = new Map<string, StaffOrderPayment[]>()
+    orderPayments.forEach((payment) => {
+      const list = map.get(payment.order_id) || []
+      list.push(payment)
+      map.set(payment.order_id, list)
+    })
+    return map
+  }, [orderPayments])
 
   const reportOrders = useMemo(() => (
     ordersInDateRange(orders, reportStart, reportEnd)
@@ -728,8 +828,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     compareEnabled ? ordersInDateRange(orders, compareStart, compareEnd) : []
   ), [compareEnabled, compareEnd, compareStart, orders])
 
-  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById), [gameNameById, reportOrders])
-  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById), [comparisonOrders, gameNameById])
+  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById, orderPaymentsByOrderId), [gameNameById, orderPaymentsByOrderId, reportOrders])
+  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById, orderPaymentsByOrderId), [comparisonOrders, gameNameById, orderPaymentsByOrderId])
   const reportSeries = useMemo(() => buildDailySeries(reportOrders, reportStart, reportEnd), [reportEnd, reportOrders, reportStart])
   const comparisonSeries = useMemo(() => (
     compareEnabled ? buildDailySeries(comparisonOrders, compareStart, compareEnd) : []
@@ -760,22 +860,25 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   async function loadStaffData() {
     setLoading(true)
     setStatus('')
-    const [gamesResult, pricesResult, discountsResult, loyaltyResult, ordersResult, profilesResult, auditResult] = await Promise.all([
+    const [gamesResult, pricesResult, discountsResult, loyaltyResult, ordersResult, paymentsResult, profilesResult, auditResult] = await Promise.all([
       supabase.from('staff_games').select('*').order('name', { ascending: true }),
       supabase.from('staff_pricing_rules').select('*').order('valid_from', { ascending: false }),
       supabase.from('staff_discount_rules').select('*').order('created_at', { ascending: false }),
       supabase.from('staff_loyalty_rules').select('*').order('valid_from', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('staff_orders').select('*').order('booking_date', { ascending: false }).order('booking_time', { ascending: false }).limit(250),
+      supabase.from('staff_order_payments').select('*').order('created_at', { ascending: true }).limit(1000),
       supabase.from('profiles').select('id, full_name, nickname, email, phone, role').order('full_name', { ascending: true }).limit(300),
       supabase.from('audit_logs').select('id, actor_user_id, action, entity_type, entity_id, created_at').order('created_at', { ascending: false }).limit(60),
     ])
 
     if (gamesResult.error) setStatus(gamesResult.error.message)
+    if (paymentsResult.error && !paymentsResult.error.message.includes('staff_order_payments')) setStatus(paymentsResult.error.message)
     setGames((gamesResult.data ?? []) as StaffGame[])
     setPrices((pricesResult.data ?? []) as StaffPriceRule[])
     setDiscounts((discountsResult.data ?? []) as StaffDiscount[])
     setLoyaltyRules((loyaltyResult.data ?? []) as StaffLoyaltyRule[])
     setOrders((ordersResult.data ?? []) as StaffOrder[])
+    setOrderPayments((paymentsResult.data ?? []) as StaffOrderPayment[])
     setProfiles((profilesResult.data ?? []) as StaffProfile[])
     setAuditLogs((auditResult.data ?? []) as StaffAuditLog[])
     setLoading(false)
@@ -798,7 +901,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setSaving(true)
     setStatus('Creating order...')
     const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
-    const { data, error } = await supabase.rpc('create_staff_order', {
+    const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
+    const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
       p_customer_id: booking.customerId || null,
       p_customer_name: booking.customerName || null,
       p_customer_phone: booking.customerPhone || null,
@@ -811,8 +915,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       p_discount_rule_id: hasManualDiscount ? null : booking.discountId || null,
       p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
       p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
-      p_payment_method: booking.paymentMethod,
-      p_payment_status: booking.paymentStatus,
+      p_payment_splits: paymentSplits,
       p_order_status: booking.orderStatus,
       p_invoice_required: booking.invoiceRequired,
       p_company_name: booking.companyName || null,
@@ -1069,15 +1172,40 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
   function exportExcelReport() {
     downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xls`, [
       { title: `VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report) },
-      { title: 'Orders', rows: staffOrderExportRows(reportOrders, games) },
+      { title: 'Orders', rows: staffOrderExportRows(reportOrders, games, orderPaymentsByOrderId) },
     ])
   }
 
   function exportPdfReport() {
     downloadPdf(
       `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
-      reportPdfLines(`VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games)
+      reportPdfLines(`VRena Daily Report ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, orderPaymentsByOrderId)
     )
+  }
+
+  function updateBookingPaymentSplit(splitId: string, patch: Partial<PaymentSplitDraft>) {
+    setBooking((current) => ({
+      ...current,
+      paymentSplits: current.paymentSplits.map((split) => (
+        split.id === splitId ? { ...split, ...patch } : split
+      )),
+    }))
+  }
+
+  function addBookingPaymentSplit() {
+    setBooking((current) => ({
+      ...current,
+      paymentSplits: [...current.paymentSplits, newPaymentSplit('cash')],
+    }))
+  }
+
+  function removeBookingPaymentSplit(splitId: string) {
+    setBooking((current) => ({
+      ...current,
+      paymentSplits: current.paymentSplits.length > 1
+        ? current.paymentSplits.filter((split) => split.id !== splitId)
+        : [newPaymentSplit('cash')],
+    }))
   }
 
   const tabButton = (tab: StaffTab, label: string) => (
@@ -1111,7 +1239,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <td>{games.find((game) => game.id === order.game_id)?.name || 'Game'}</td>
               <td>{order.booking_date} · {normalizeTime(order.booking_time)}</td>
               <td>{formatVnd(order.total)}</td>
-              <td>{paymentMethodLabel(order.payment_method)}<br /><span>{order.payment_status}</span></td>
+              <td>{orderPaymentLabel(order, orderPaymentsByOrderId)}<br /><span>{order.payment_status}</span></td>
               <td>{order.order_status}</td>
               {canCreateOrders && (
                 <td>
@@ -1270,18 +1398,38 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                 </div>
                 <p className="field-help">One-off discount for this booking only. It does not create a reusable voucher.</p>
               </div>
-              <label>
-                Payment method
-                <select value={booking.paymentMethod} onChange={(event) => setBooking({ ...booking, paymentMethod: event.target.value })}>
-                  {paymentMethods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
-                </select>
-              </label>
-              <label>
-                Payment status
-                <select value={booking.paymentStatus} onChange={(event) => setBooking({ ...booking, paymentStatus: event.target.value as BookingForm['paymentStatus'] })}>
-                  {paymentStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </label>
+              <div className="staff-payment-splits full">
+                <div className="staff-list-head">
+                  <h4>Payment splits</h4>
+                  <button type="button" onClick={addBookingPaymentSplit}>Add split</button>
+                </div>
+                <div className="staff-payment-split-list">
+                  {booking.paymentSplits.map((split) => (
+                    <div className="staff-payment-split-row" key={split.id}>
+                      <select
+                        aria-label="Payment method"
+                        value={split.payment_method}
+                        onChange={(event) => updateBookingPaymentSplit(split.id, { payment_method: event.target.value as StaffPaymentMethod })}
+                      >
+                        {paymentMethods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
+                      </select>
+                      <input
+                        aria-label="Payment amount"
+                        inputMode="numeric"
+                        placeholder="0 đ"
+                        value={formatDongInput(split.amount)}
+                        onChange={(event) => updateBookingPaymentSplit(split.id, { amount: dongDigits(event.target.value) })}
+                      />
+                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+                <p className="field-help">
+                  Paid {formatVnd(bookingPaidTotal)} · Remaining {formatVnd(bookingRemainingTotal)}
+                  {' · '}
+                  Status {paymentStatusFromAmount(quote.total, bookingPaidTotal)}
+                </p>
+              </div>
               <label>
                 Order status
                 <select value={booking.orderStatus} onChange={(event) => setBooking({ ...booking, orderStatus: event.target.value as BookingForm['orderStatus'] })}>
