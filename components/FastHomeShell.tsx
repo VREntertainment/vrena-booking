@@ -420,7 +420,10 @@ export default function FastHomeShell() {
 
   const topPlayer = leaderboardPlayers[0]
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
-  const canAccessStaffConsole = Boolean(profile && staffConsoleRank(profile.role, profile.email || authEmail) >= 20)
+  const staffAccessRank = profile
+    ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
+    : 0
+  const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
 
   const currentUserIsCrowned = Boolean(userId && topPlayer?.profileId === userId && topPlayer.totalScore > 0)
   const shouldShowStaffModeChoice = Boolean(
@@ -593,8 +596,10 @@ export default function FastHomeShell() {
 
         const nextProfile = profileRow as Profile | null
         const effectiveRole = nextProfile?.role || defaultRoleForEmail(authUser.email)
-        const effectiveEmail = nextProfile?.email || authUser.email || ''
-        shouldOfferMobileStaffChoice = staffConsoleRank(effectiveRole, effectiveEmail) >= 20 && isStaffModeMobileViewport()
+        shouldOfferMobileStaffChoice = Math.max(
+          staffConsoleRank(effectiveRole, nextProfile?.email),
+          staffConsoleRank(effectiveRole, authUser.email)
+        ) >= 20 && isStaffModeMobileViewport()
 
         setProfile(nextProfile ?? {
           id: authUser.id,

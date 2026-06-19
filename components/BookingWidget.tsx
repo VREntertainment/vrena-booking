@@ -4284,7 +4284,10 @@ function handleSessionDateChange(value: string) {
   const currentUserStatsShared = sharedKey === 'stats'
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
-  const canAccessStaffConsole = Boolean(profile && staffConsoleRank(profile.role, profile.email || authEmail) >= 20)
+  const staffAccessRank = profile
+    ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
+    : 0
+  const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
   const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
