@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
+import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
 const ARENA_COUNT = 2
@@ -10,7 +11,8 @@ const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const SESSION_LOAD_BATCH_DAYS = 7
-const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const ADMIN_EMAILS = [...SUPER_ADMIN_EMAILS, 'contact@vre-vietnam.com']
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
@@ -170,15 +172,25 @@ function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
 }
 
+function isSuperAdminEmail(email?: string | null) {
+  return Boolean(email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
 function isAdminRole(role?: string | null) {
   const normalizedRole = role?.toLowerCase()
-  return normalizedRole === 'owner' || normalizedRole === 'admin'
+  return normalizedRole === 'super_admin' || normalizedRole === 'owner' || normalizedRole === 'admin'
+}
+
+function isSuperAdminRole(role?: string | null) {
+  const normalizedRole = role?.toLowerCase()
+  return normalizedRole === 'super_admin' || normalizedRole === 'owner'
 }
 
 function staffConsoleRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isAdminEmail(normalizedEmail) || normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
+  if (isAdminEmail(normalizedEmail) || normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
   if (normalizedRole === 'viewer') return 20
@@ -2307,6 +2319,7 @@ export default function WidgetPage({
         .from('profiles')
         .select(PROFILE_SELECT)
         .eq('id', authUser.id)
+        .is('deleted_at', null)
         .maybeSingle()
 
       authDebug('loadProfile:profileQuery', {
@@ -2362,7 +2375,7 @@ export default function WidgetPage({
         avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
         avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
         profile_motto: profileMottoValue || null,
-        role: isAdminEmail(email) ? 'admin' : 'player',
+        role: isSuperAdminEmail(email) ? 'super_admin' : isAdminEmail(email) ? 'admin' : 'player',
         anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
         anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
         marketing_consent: authUser.user_metadata?.marketing_consent === false ? false : true,
@@ -2401,6 +2414,7 @@ export default function WidgetPage({
         avatar_color: fallbackProfile.avatar_color,
         avatar_text_color: fallbackProfile.avatar_text_color,
         profile_motto: fallbackProfile.profile_motto,
+        role: fallbackProfile.role,
         anonymous_mode: fallbackProfile.anonymous_mode || false,
         anonymous_callsign: fallbackProfile.anonymous_callsign || null,
         marketing_consent: fallbackProfile.marketing_consent !== false,
@@ -2414,6 +2428,43 @@ export default function WidgetPage({
       authDebug('loadProfile:thrown', error)
       setProfileStatus(error instanceof Error ? error.message : String(error))
     }
+  }
+
+  async function consumeAppRateLimit(
+    action: RateLimitAction,
+    subject: string,
+    setStatus: (message: string) => void = setCreateStatus
+  ) {
+    const rule = RATE_LIMITS[action]
+    const { error } = await (await getSupabase()).rpc('consume_rate_limit', {
+      p_action: action,
+      p_limit: rule.limit,
+      p_window_seconds: rule.windowSeconds,
+      p_subject: subject || null,
+    })
+
+    if (error) {
+      setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
+      return false
+    }
+
+    return true
+  }
+
+  async function softDeleteRecord(entityTable: string, entityId: string, reason: string) {
+    return (await getSupabase()).rpc('soft_delete_record', {
+      p_entity_table: entityTable,
+      p_entity_id: entityId,
+      p_delete_reason: reason,
+    })
+  }
+
+  async function softDeleteTournamentRecords(sessionId: string, includePools: boolean, reason: string) {
+    return (await getSupabase()).rpc('soft_delete_tournament_records', {
+      p_session_id: sessionId,
+      p_include_pools: includePools,
+      p_delete_reason: reason,
+    })
   }
 
   async function handleAuth() {
@@ -2462,6 +2513,11 @@ export default function WidgetPage({
       if (!captchaToken) {
         setProfileStatus(text.captchaRequired)
         return
+      }
+
+      if (authMode === 'login') {
+        const allowed = await consumeAppRateLimit('login_attempt', loginEmail, setProfileStatus)
+        if (!allowed) return
       }
 
       setIsSavingProfile(true)
@@ -2530,6 +2586,7 @@ export default function WidgetPage({
           .from('profiles')
           .select('avatar_url, nickname, anonymous_callsign')
           .eq('id', authUser.id)
+          .is('deleted_at', null)
           .maybeSingle()
         const existingProfile = existingProfileResult.data
 
@@ -2560,6 +2617,7 @@ export default function WidgetPage({
           phone: fullPhone,
           nickname: nickname || existingProfile?.nickname || null,
           email: loginEmail,
+          role: isSuperAdminEmail(loginEmail) ? 'super_admin' : isAdminEmail(loginEmail) ? 'admin' : 'player',
           birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
           ...marketingConsentValues(marketingConsent, null, consentAt),
@@ -2591,7 +2649,7 @@ export default function WidgetPage({
           email: loginEmail,
           birthday: profileBirthday || null,
           profile_motto: cleanMotto || null,
-          role: isAdminEmail(loginEmail) ? 'admin' : 'player',
+          role: isSuperAdminEmail(loginEmail) ? 'super_admin' : isAdminEmail(loginEmail) ? 'admin' : 'player',
           anonymous_mode: false,
           anonymous_callsign: existingProfile?.anonymous_callsign || null,
           ...marketingConsentValues(marketingConsent, null, consentAt),
@@ -2867,7 +2925,15 @@ export default function WidgetPage({
     setIsLeaderboardLoading(true)
     setLeaderboardStatus('')
 
-    const { data, error } = await (await getSupabase()).rpc('get_leaderboard_players')
+    const { data, error } = await (await getSupabase()).rpc('get_leaderboard_players_page', {
+      p_limit: 5000,
+      p_offset: 0,
+      p_search: null,
+      p_rank_by: 'totalScore',
+      p_profile_id: null,
+      p_club_id: null,
+      p_club_pin: null,
+    })
 
     if (error) {
       leaderboardLoadingRef.current = false
@@ -2896,6 +2962,8 @@ export default function WidgetPage({
     let sessionQuery = client
       .from('sessions')
       .select(SESSION_SELECT)
+      .is('deleted_at', null)
+      .is('session_participants.deleted_at', null)
       .neq('status', 'cancelled')
 
     if (startDate) sessionQuery = sessionQuery.gte('date', startDate)
@@ -2929,6 +2997,8 @@ export default function WidgetPage({
       let fallbackSessionQuery = client
         .from('sessions')
         .select(SESSION_SELECT_BASE)
+        .is('deleted_at', null)
+        .is('session_participants.deleted_at', null)
         .neq('status', 'cancelled')
 
       if (startDate) fallbackSessionQuery = fallbackSessionQuery.gte('date', startDate)
@@ -2953,6 +3023,7 @@ export default function WidgetPage({
     const { data, error } = await (await getSupabase())
       .from('sessions')
       .select('id')
+      .is('deleted_at', null)
       .neq('status', 'cancelled')
       .gt('date', dateValue)
       .limit(1)
@@ -2991,11 +3062,13 @@ export default function WidgetPage({
       client
         .from('profiles')
         .select(PROFILE_SELECT)
+        .is('deleted_at', null)
         .order('full_name', { ascending: true }),
       profileIds.length > 0
         ? client
         .from('profiles')
         .select('id, score_adjustment')
+        .is('deleted_at', null)
         .in('id', profileIds)
         : Promise.resolve({ data: [], error: null }),
     ])
@@ -3101,6 +3174,7 @@ export default function WidgetPage({
     const result = await client
       .from('clubs')
       .select(CLUB_SELECT)
+      .is('club_members.deleted_at', null)
       .order('created_at', { ascending: false })
     let data = result.data as Club[] | null
     let error = result.error
@@ -3109,6 +3183,7 @@ export default function WidgetPage({
       const fallbackResult = await client
         .from('clubs')
         .select(CLUB_SELECT_BASE)
+        .is('club_members.deleted_at', null)
         .order('created_at', { ascending: false })
       data = fallbackResult.data as Club[] | null
       error = fallbackResult.error
@@ -3129,11 +3204,12 @@ export default function WidgetPage({
     tournamentDataLoadingRef.current = true
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
       (await getSupabase()).from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
-      (await getSupabase()).from('tournament_pools').select('id, session_id, name, sort_order').order('sort_order', { ascending: true }),
-      (await getSupabase()).from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label'),
+      (await getSupabase()).from('tournament_pools').select('id, session_id, name, sort_order').is('deleted_at', null).order('sort_order', { ascending: true }),
+      (await getSupabase()).from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label').is('deleted_at', null),
       (await getSupabase())
         .from('tournament_matches')
         .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, wins_a, wins_b, winner_participant_id, loser_participant_id, status, arena_number, queue_position, best_of')
+        .is('deleted_at', null)
         .order('round', { ascending: true })
         .order('match_number', { ascending: true }),
       (await getSupabase())
@@ -3190,6 +3266,7 @@ export default function WidgetPage({
           .from('session_messages')
           .select(SESSION_MESSAGE_SELECT)
           .in('session_id', sessionIds)
+          .is('deleted_at', null)
           .order('created_at', { ascending: true })
         : Promise.resolve({ data: [], error: null }),
     ])
@@ -3214,6 +3291,8 @@ export default function WidgetPage({
         .from('sessions')
         .select(SESSION_SELECT)
         .in('id', missingInviteSessionIds)
+        .is('deleted_at', null)
+        .is('session_participants.deleted_at', null)
         .neq('status', 'cancelled')
 
       if (!invitedSessionsResult.error && invitedSessionsResult.data) {
@@ -5477,7 +5556,7 @@ function handleSessionDateChange(value: string) {
     if (!window.confirm(text.removeMemberConfirm)) return
 
     setBusyClubId(club.id)
-    const { error } = await (await getSupabase()).from('club_members').delete().eq('id', member.id)
+    const { error } = await softDeleteRecord('club_members', member.id, 'Removed from club')
 
     if (error) {
       setClubStatus(error.message)
@@ -5496,7 +5575,7 @@ function handleSessionDateChange(value: string) {
     if (!window.confirm(leaveClubConfirmText)) return
 
     setBusyClubId(club.id)
-    const { error } = await (await getSupabase()).from('club_members').delete().eq('id', member.id).eq('profile_id', userId)
+    const { error } = await softDeleteRecord('club_members', member.id, 'User left club')
 
     if (error) {
       setClubStatus(error.message)
@@ -6027,6 +6106,9 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, setTicketStatus)
+    if (!allowed) return
+
     setIsBookingTickets(true)
     setTicketStatus(text.bookingTickets)
     setTicketConfirmation(null)
@@ -6091,6 +6173,12 @@ function handleSessionDateChange(value: string) {
 
     if (selectedSessionClub && !canCreateClubSession(selectedSessionClub)) {
       setCreateStatus(text.clubMembershipRequired)
+      setIsCreating(false)
+      return
+    }
+
+    const allowed = await consumeAppRateLimit('booking_attempt', `${sessionDate}:${sessionTime}`)
+    if (!allowed) {
       setIsCreating(false)
       return
     }
@@ -6222,6 +6310,9 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    const allowed = await consumeAppRateLimit('join_leave', `join:${session.id}`)
+    if (!allowed) return
+
     setBusySessionId(session.id)
 
     const { error } = await (await getSupabase()).from('session_participants').insert({
@@ -6289,6 +6380,9 @@ function handleSessionDateChange(value: string) {
     const participants = session.session_participants ?? []
     if (participants.some((participant) => participant.profile_id === userId)) return
     if (waitlistPosition(session, userId)) return
+
+    const allowed = await consumeAppRateLimit('join_leave', `waitlist:${session.id}`)
+    if (!allowed) return
 
     setBusySessionId(session.id)
 
@@ -6464,10 +6558,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusyMessageKey(`${message.id}-delete`)
-    const { error } = await (await getSupabase())
-      .from('session_messages')
-      .delete()
-      .eq('id', message.id)
+    const { error } = await softDeleteRecord('session_messages', message.id, 'Admin deleted message')
 
     if (error) {
       setCreateStatus(error.message)
@@ -6490,12 +6581,14 @@ function handleSessionDateChange(value: string) {
     const confirmed = window.confirm(`${text.leaveConfirmPrefix} "${session.name}"? ${text.leaveConfirmSuffix}`)
     if (!confirmed) return
 
+    const participant = (session.session_participants ?? []).find((item) => item.profile_id === userId)
+    if (!participant) return
+
+    const allowed = await consumeAppRateLimit('join_leave', `leave:${session.id}`)
+    if (!allowed) return
+
     setBusySessionId(session.id)
-    const { error } = await (await getSupabase())
-      .from('session_participants')
-      .delete()
-      .eq('session_id', session.id)
-      .eq('profile_id', userId)
+    const { error } = await softDeleteRecord('session_participants', participant.id, 'User left session')
 
     if (error) {
       setCreateStatus(error.message)
@@ -6703,6 +6796,9 @@ function handleSessionDateChange(value: string) {
     const confirmed = window.confirm(`${text.cancelConfirmPrefix} "${session.name}"? ${text.cancelConfirmSuffix}`)
     if (!confirmed) return
 
+    const allowed = await consumeAppRateLimit('admin_destructive', `cancel-session:${session.id}`)
+    if (!allowed) return
+
     setBusySessionId(session.id)
     const { error } = await (await getSupabase()).from('sessions').update({ status: 'cancelled' }).eq('id', session.id)
 
@@ -6732,7 +6828,7 @@ function handleSessionDateChange(value: string) {
     if (!confirmed) return
 
     setBusySessionId(session.id)
-    const { error } = await (await getSupabase()).from('session_participants').delete().eq('id', participant.id)
+    const { error } = await softDeleteRecord('session_participants', participant.id, 'Removed from session')
 
     if (error) {
       setCreateStatus(error.message)
@@ -6755,7 +6851,7 @@ function handleSessionDateChange(value: string) {
     setIsDeletingAccount(true)
     setProfileStatus(text.saving)
 
-    const { error } = await (await getSupabase()).from('profiles').delete().eq('id', userId)
+    const { error } = await softDeleteRecord('profiles', userId, 'User deleted own account')
 
     if (error) {
       setProfileStatus(error.message)
@@ -6843,9 +6939,12 @@ function handleSessionDateChange(value: string) {
     }
 
     setBusyTournamentId(session.id)
-    await (await getSupabase()).from('tournament_matches').delete().eq('session_id', session.id)
-    await (await getSupabase()).from('tournament_pool_entries').delete().eq('session_id', session.id)
-    await (await getSupabase()).from('tournament_pools').delete().eq('session_id', session.id)
+    const softDeleteResult = await softDeleteTournamentRecords(session.id, true, 'Tournament pools regenerated')
+    if (softDeleteResult.error) {
+      setCreateStatus(softDeleteResult.error.message)
+      setBusyTournamentId('')
+      return
+    }
 
     const format = session.tournament_format || 'pool_to_final'
     const seededParticipants = shuffleItems(participants)
@@ -6910,7 +7009,12 @@ function handleSessionDateChange(value: string) {
     }
 
     setBusyTournamentId(session.id)
-    await (await getSupabase()).from('tournament_matches').delete().eq('session_id', session.id)
+    const softDeleteResult = await softDeleteTournamentRecords(session.id, false, 'Tournament matches regenerated')
+    if (softDeleteResult.error) {
+      setCreateStatus(softDeleteResult.error.message)
+      setBusyTournamentId('')
+      return
+    }
 
     const bestOf = session.best_of || 1
     const format = session.tournament_format || 'pool_to_final'

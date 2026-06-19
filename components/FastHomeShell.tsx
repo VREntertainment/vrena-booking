@@ -80,7 +80,8 @@ type HeavyTarget = {
   view: AppView
 }
 
-const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com']
+const ADMIN_EMAILS = [...SUPER_ADMIN_EMAILS, 'contact@vre-vietnam.com']
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
 const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px)'
@@ -166,15 +167,20 @@ function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
 }
 
+function isSuperAdminEmail(email?: string | null) {
+  return Boolean(email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase()))
+}
+
 function isAdminRole(role?: string | null) {
   const normalizedRole = role?.toLowerCase()
-  return normalizedRole === 'owner' || normalizedRole === 'admin'
+  return normalizedRole === 'super_admin' || normalizedRole === 'owner' || normalizedRole === 'admin'
 }
 
 function staffConsoleRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isAdminEmail(normalizedEmail) || normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
+  if (isAdminEmail(normalizedEmail) || normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
   if (normalizedRole === 'viewer') return 20
@@ -571,12 +577,13 @@ export default function FastHomeShell() {
           .from('profiles')
           .select(PROFILE_SELECT)
           .eq('id', authUser.id)
+          .is('deleted_at', null)
           .maybeSingle()
 
         if (!active) return
 
         const nextProfile = profileRow as Profile | null
-        const effectiveRole = nextProfile?.role || (isAdminEmail(authUser.email) ? 'admin' : 'player')
+        const effectiveRole = nextProfile?.role || (isSuperAdminEmail(authUser.email) ? 'super_admin' : isAdminEmail(authUser.email) ? 'admin' : 'player')
         const effectiveEmail = nextProfile?.email || authUser.email || ''
         shouldOfferMobileStaffChoice = staffConsoleRank(effectiveRole, effectiveEmail) >= 20 && isStaffModeMobileViewport()
 
@@ -595,7 +602,7 @@ export default function FastHomeShell() {
           profile_motto: typeof authUser.user_metadata?.profile_motto === 'string' ? authUser.user_metadata.profile_motto : null,
           anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
           anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
-          role: isAdminEmail(authUser.email) ? 'admin' : 'player',
+          role: isSuperAdminEmail(authUser.email) ? 'super_admin' : isAdminEmail(authUser.email) ? 'admin' : 'player',
         })
 
         if (!shouldOfferMobileStaffChoice && nextProfile?.birthday && isBirthdayToday(nextProfile.birthday)) {
