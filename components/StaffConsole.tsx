@@ -170,6 +170,7 @@ const todayString = () => {
 }
 
 const shortDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
+const staffDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: '2-digit' })
 
 function dateInputValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -198,8 +199,41 @@ function shortDateLabel(value: string) {
   return shortDateFormatter.format(dateFromInput(value))
 }
 
+function staffDateLabel(value: string) {
+  return value ? staffDateFormatter.format(dateFromInput(value)) : ''
+}
+
 function rangeLabel(start: string, end: string) {
   return start === end ? shortDateLabel(start) : `${shortDateLabel(start)} - ${shortDateLabel(end)}`
+}
+
+type StaffPickerFieldProps = {
+  ariaLabel: string
+  type: 'date' | 'time'
+  value: string
+  placeholder?: string
+  onChange: (value: string) => void
+}
+
+function StaffPickerField({ ariaLabel, type, value, placeholder, onChange }: StaffPickerFieldProps) {
+  const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
+  const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
+
+  return (
+    <span className={displayValue ? 'staff-picker-shell' : 'staff-picker-shell placeholder'}>
+      <input
+        aria-label={ariaLabel}
+        className="staff-picker-native"
+        type={type}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+          event.currentTarget.blur()
+        }}
+      />
+      <span className="staff-picker-display">{displayValue || fallback}</span>
+    </span>
+  )
 }
 
 function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
@@ -1237,7 +1271,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <td><strong>{order.order_number}</strong></td>
               <td>{order.customer_name || order.customer_phone || order.customer_email || 'Walk-in'}</td>
               <td>{games.find((game) => game.id === order.game_id)?.name || 'Game'}</td>
-              <td>{order.booking_date} · {normalizeTime(order.booking_time)}</td>
+              <td>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</td>
               <td>{formatVnd(order.total)}</td>
               <td>{orderPaymentLabel(order, orderPaymentsByOrderId)}<br /><span>{order.payment_status}</span></td>
               <td>{order.order_status}</td>
@@ -1331,11 +1365,11 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               </label>
               <label>
                 Date
-                <input type="date" value={booking.date} onChange={(event) => setBooking({ ...booking, date: event.target.value })} />
+                <StaffPickerField ariaLabel="Booking date" type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
               </label>
               <label>
                 Time
-                <input type="time" value={booking.time} onChange={(event) => setBooking({ ...booking, time: event.target.value })} />
+                <StaffPickerField ariaLabel="Booking time" type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
               </label>
               <label>
                 Players
@@ -1547,14 +1581,14 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>Rule name<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
               <label>Game<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">All games</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
               <label>Day type<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-              <label>Start<input type="time" value={priceForm.time_start} onChange={(event) => setPriceForm({ ...priceForm, time_start: event.target.value })} /></label>
-              <label>End<input type="time" value={priceForm.time_end} onChange={(event) => setPriceForm({ ...priceForm, time_end: event.target.value })} /></label>
+              <label>Start<StaffPickerField ariaLabel="Price start time" type="time" value={priceForm.time_start} onChange={(value) => setPriceForm({ ...priceForm, time_start: value })} /></label>
+              <label>End<StaffPickerField ariaLabel="Price end time" type="time" value={priceForm.time_end} onChange={(value) => setPriceForm({ ...priceForm, time_end: value })} /></label>
               <label>Price / player (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_player)} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: dongDigits(event.target.value) })} /></label>
               <label>Price / arena slot (đ)<input inputMode="numeric" value={formatDongInput(priceForm.price_per_arena_slot)} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: dongDigits(event.target.value) })} /></label>
-              <label>Valid from<input type="date" value={priceForm.valid_from} onChange={(event) => setPriceForm({ ...priceForm, valid_from: event.target.value })} /></label>
+              <label>Valid from<StaffPickerField ariaLabel="Price valid from" type="date" value={priceForm.valid_from} onChange={(value) => setPriceForm({ ...priceForm, valid_from: value })} /></label>
               <label className="staff-valid-until-field">
                 <span className="staff-label-line"><span>Valid until</span><small>optional, by default forever</small></span>
-                <input type="date" value={priceForm.valid_until} onChange={(event) => setPriceForm({ ...priceForm, valid_until: event.target.value })} />
+                <StaffPickerField ariaLabel="Price valid until" type="date" value={priceForm.valid_until} onChange={(value) => setPriceForm({ ...priceForm, valid_until: value })} />
               </label>
               <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> Active</label>
             </div>
@@ -1581,8 +1615,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>Name<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
               <label>Type<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
               <label>Value<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
-              <label>Valid from<input type="date" value={discountForm.valid_from} onChange={(event) => setDiscountForm({ ...discountForm, valid_from: event.target.value })} /></label>
-              <label>Valid until<input type="date" value={discountForm.valid_until} onChange={(event) => setDiscountForm({ ...discountForm, valid_until: event.target.value })} /></label>
+              <label>Valid from<StaffPickerField ariaLabel="Discount valid from" type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
+              <label>Valid until<StaffPickerField ariaLabel="Discount valid until" type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
               <label>Max uses<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
               <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> Active</label>
             </div>
@@ -1613,8 +1647,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               <label>Per VND spent<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
               <label>Minimum spend<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
               <label>Points expire after days<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
-              <label>Valid from<input type="date" value={loyaltyForm.valid_from} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, valid_from: event.target.value })} /></label>
-              <label>Valid until<input type="date" value={loyaltyForm.valid_until} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, valid_until: event.target.value })} /></label>
+              <label>Valid from<StaffPickerField ariaLabel="Loyalty valid from" type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
+              <label>Valid until<StaffPickerField ariaLabel="Loyalty valid until" type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
               <label className="full">Notes<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
               <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> Active</label>
             </div>
@@ -1663,8 +1697,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                   setReportStart(value)
                   setReportEnd(value)
                 }}>Yesterday</button>
-                <input aria-label="Report start date" type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} />
-                <input aria-label="Report end date" type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} />
+                <StaffPickerField ariaLabel="Report start date" type="date" value={reportStart} onChange={setReportStart} />
+                <StaffPickerField ariaLabel="Report end date" type="date" value={reportEnd} onChange={setReportEnd} />
                 <button type="button" onClick={applyPreviousPeriodComparison}>Previous period</button>
                 <label className="staff-compare-toggle">
                   <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
@@ -1678,8 +1712,8 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
               {compareEnabled && (
                 <div className="staff-report-compare-row">
                   <span>Compare with</span>
-                  <input aria-label="Compare start date" type="date" value={compareStart} onChange={(event) => setCompareStart(event.target.value)} />
-                  <input aria-label="Compare end date" type="date" value={compareEnd} onChange={(event) => setCompareEnd(event.target.value)} />
+                  <StaffPickerField ariaLabel="Compare start date" type="date" value={compareStart} onChange={setCompareStart} />
+                  <StaffPickerField ariaLabel="Compare end date" type="date" value={compareEnd} onChange={setCompareEnd} />
                 </div>
               )}
             </div>

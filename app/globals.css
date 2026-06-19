@@ -1039,6 +1039,66 @@ body {
   line-height: var(--staff-control-height);
 }
 
+.app .staff-picker-shell {
+  position: relative;
+  width: 100%;
+  height: var(--staff-control-height);
+  min-height: var(--staff-control-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(7, 17, 18, 0.16);
+  border-radius: 8px;
+  background: #f0f4f6;
+  color: #071112;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.app .staff-picker-shell.placeholder {
+  color: #8a9498;
+}
+
+.app .staff-picker-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  appearance: none;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.app .staff-picker-native::-webkit-date-and-time-value {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.app .staff-picker-display {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.app .staff-picker-shell:focus-within {
+  border-color: rgba(48, 89, 255, 0.58);
+  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12);
+}
+
 .app .staff-label-line {
   display: flex;
   flex-wrap: wrap;
@@ -1308,7 +1368,8 @@ body {
   min-width: 0;
 }
 
-.app .staff-report-filters input {
+.app .staff-report-filters input,
+.app .staff-report-filters .staff-picker-shell {
   width: auto;
   min-width: 140px;
 }
@@ -5575,7 +5636,9 @@ body {
   }
 
   .app .staff-report-filter-row input,
-  .app .staff-report-compare-row input {
+  .app .staff-report-compare-row input,
+  .app .staff-report-filter-row .staff-picker-shell,
+  .app .staff-report-compare-row .staff-picker-shell {
     flex: 1 1 150px;
   }
 
@@ -6458,6 +6521,16 @@ body {
 
   .app .staff-chart-mode button {
     color: #aeb9bd;
+  }
+
+  .app .staff-picker-shell {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #f6f7f9;
+  }
+
+  .app .staff-picker-shell.placeholder {
+    color: #8a9498;
   }
 
   .app .staff-report-pie {
