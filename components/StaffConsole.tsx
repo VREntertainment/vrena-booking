@@ -370,9 +370,9 @@ function isAdminEmail(email?: string | null) {
 function staffRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin') return 120
+  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
   if (isAdminEmail(normalizedEmail)) return 100
-  if (normalizedRole === 'owner' || normalizedRole === 'admin') return 100
+  if (normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
   if (normalizedRole === 'viewer') return 20
@@ -381,7 +381,7 @@ function staffRank(role?: string | null, email?: string | null) {
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
   const rank = staffRank(role, email)
-  if (rank >= 120) return 'super_admin'
+  if (rank >= 120) return role?.toLowerCase() === 'owner' ? 'owner' : 'super_admin'
   if (rank >= 100) return (role?.toLowerCase() === 'owner' ? 'owner' : 'admin')
   if (rank >= 80) return 'manager'
   if (rank >= 50) return role?.toLowerCase() === 'cashier' ? 'cashier' : 'staff'
@@ -1248,7 +1248,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
     setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: nextRole } : item))
     setSaving(true)
     setStatus('Updating role...')
-    const { error } = await supabase.rpc('set_staff_profile_role', {
+    const { data, error } = await supabase.rpc('set_staff_profile_role', {
       p_profile_id: profileId,
       p_role: nextRole,
     })
@@ -1256,8 +1256,9 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
       setProfiles(previousProfiles)
       setStatus(error.message)
     } else {
+      const savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || nextRole)
+      setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, role: savedRole } : item))
       setStatus('Role updated.')
-      await loadStaffData()
     }
     setSaving(false)
   }
@@ -1884,7 +1885,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
             <label>
               <span className="staff-field-label">Filter by role</span>
               <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as StaffRole | 'all')}>
-                {roleFilterOptions.filter((option) => option === 'all' || option !== 'super_admin' || canRestoreDeleted).map((option) => (
+                {roleFilterOptions.filter((option) => option === 'all' || !['super_admin', 'owner'].includes(option) || canRestoreDeleted).map((option) => (
                   <option key={option} value={option}>
                     {option === 'all' ? 'All roles' : staffRoleName(option)}
                   </option>
@@ -1910,7 +1911,7 @@ export default function StaffConsole({ profile, authEmail }: StaffConsoleProps) 
                     value={storedRole}
                     onChange={(event) => updateProfileRole(item.id, event.target.value as StaffRole)}
                   >
-                    {staffRoleOptions.filter((option) => option !== 'super_admin' || canRestoreDeleted).map((option) => (
+                    {staffRoleOptions.filter((option) => !['super_admin', 'owner'].includes(option) || canRestoreDeleted).map((option) => (
                       <option key={option} value={option}>{staffRoleName(option)}</option>
                     ))}
                   </select>
