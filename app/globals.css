@@ -995,6 +995,62 @@ body {
   color: #ffffff;
 }
 
+.app .staff-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app .staff-card-heading h3 {
+  margin: 0;
+}
+
+.app .staff-link-button {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  color: #3059ff;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  box-shadow: none;
+}
+
+.app .staff-link-button:hover {
+  color: #00aeb3;
+}
+
+.app .staff-readonly-note {
+  margin: 0 0 10px;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-readonly-fieldset {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.app .staff-readonly-fieldset:disabled {
+  opacity: 1;
+}
+
+.app .staff-readonly-fieldset:disabled input,
+.app .staff-readonly-fieldset:disabled select,
+.app .staff-readonly-fieldset:disabled textarea,
+.app .staff-readonly-fieldset:disabled button {
+  cursor: not-allowed;
+}
+
 .app .mobile-staff-profile-action,
 .app .staff-mode-backdrop {
   display: none;
@@ -1333,6 +1389,32 @@ body {
 .app .staff-restore-list {
   display: grid;
   gap: 8px;
+}
+
+.app .staff-role-help-modal {
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.app .staff-role-help-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-role-help-item {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 10px;
+}
+
+.app .staff-role-help-item span {
+  color: #637075;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .app .staff-role-tools {
@@ -6580,6 +6662,7 @@ body {
   .app .staff-list-item,
   .app .staff-role-row,
   .app .staff-restore-row,
+  .app .staff-role-help-item,
   .app .staff-invoice-details,
   .app .staff-game-photo-upload,
   .app .staff-report-bar-track,
@@ -6596,6 +6679,7 @@ body {
   .app .staff-table span,
   .app .staff-list-item span,
   .app .staff-role-row span,
+  .app .staff-role-help-item span,
   .app .staff-restore-row span,
   .app .staff-restore-row small,
   .app .staff-summary-grid span,
@@ -6662,6 +6746,14 @@ body {
   .app .staff-role-row small,
   .app .staff-restore-row small {
     color: #8ce8b5;
+  }
+
+  .app .staff-link-button {
+    color: #7f99ff;
+  }
+
+  .app .staff-readonly-note {
+    color: #aeb9bd;
   }
 
   .app .staff-table th,
