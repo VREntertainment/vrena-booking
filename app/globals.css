@@ -1349,17 +1349,6 @@ body {
   cursor: pointer;
 }
 
-.app .staff-invoice-details {
-  border: 1px solid rgba(7, 17, 18, 0.1);
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.app .staff-invoice-details summary {
-  cursor: pointer;
-  font-weight: 800;
-}
-
 .app .checkbox-row {
   display: flex;
   align-items: center;
@@ -6700,7 +6689,6 @@ body {
   .app .staff-role-row,
   .app .staff-restore-row,
   .app .staff-role-help-item,
-  .app .staff-invoice-details,
   .app .staff-game-photo-upload,
   .app .staff-report-bar-track,
   .app .staff-payment-track,
