@@ -1070,6 +1070,7 @@ function shouldFallbackRoleUpdate(error: { code?: string; message?: string } | n
     error.code === 'PGRST202'
     || message.includes('schema cache')
     || message.includes('could not find the function')
+    || (message.includes('digest(') && message.includes('does not exist'))
     || message.includes('set_staff_profile_role')
   ))
 }
