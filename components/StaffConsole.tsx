@@ -313,7 +313,6 @@ const staffConsoleText = {
       cancelled: 'Cancelled',
       cash: 'Cash',
       codeOptional: 'Code (optional)',
-      company: 'Company',
       compare: 'Compare',
       createDiscount: 'Create discount',
       createGame: 'Create game',
@@ -341,10 +340,6 @@ const staffConsoleText = {
       games: 'Games',
       imageUrl: 'Image URL',
       internalNote: 'Internal note',
-      invoiceAddress: 'Invoice address',
-      invoiceDetails: 'Invoice details for future MISA export',
-      invoiceEmail: 'Invoice e-mail',
-      invoiceRequired: 'Invoice required',
       maxPlayersArena: 'Max players / arena',
       maxUses: 'Max uses',
       minimumSpend: 'Minimum spend',
@@ -385,7 +380,6 @@ const staffConsoleText = {
       status: 'Status',
       subtotal: 'Subtotal',
       summary: 'Summary',
-      taxCode: 'Tax code',
       time: 'Time',
       total: 'Total',
       totalPaid: 'Total paid',
@@ -615,7 +609,6 @@ const staffConsoleText = {
       cancelled: 'Đã hủy',
       cash: 'Tiền mặt',
       codeOptional: 'Mã (không bắt buộc)',
-      company: 'Công ty',
       compare: 'So sánh',
       createDiscount: 'Tạo ưu đãi',
       createGame: 'Tạo trò chơi',
@@ -643,10 +636,6 @@ const staffConsoleText = {
       games: 'Trò chơi',
       imageUrl: 'URL ảnh',
       internalNote: 'Ghi chú nội bộ',
-      invoiceAddress: 'Địa chỉ hóa đơn',
-      invoiceDetails: 'Thông tin hóa đơn cho xuất MISA sau này',
-      invoiceEmail: 'E-mail hóa đơn',
-      invoiceRequired: 'Cần hóa đơn',
       maxPlayersArena: 'Số người tối đa / arena',
       maxUses: 'Số lần dùng tối đa',
       minimumSpend: 'Chi tiêu tối thiểu',
@@ -687,7 +676,6 @@ const staffConsoleText = {
       status: 'Trạng thái',
       subtotal: 'Tạm tính',
       summary: 'Tóm tắt',
-      taxCode: 'Mã số thuế',
       time: 'Giờ',
       total: 'Tổng',
       totalPaid: 'Đã thanh toán',
@@ -2339,19 +2327,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 </select>
               </label>
             </div>
-            <details className="staff-invoice-details">
-              <summary>{text.labels.invoiceDetails}</summary>
-              <div className="form-grid compact-form-grid">
-                <label className="checkbox-row">
-                  <input type="checkbox" checked={booking.invoiceRequired} onChange={(event) => setBooking({ ...booking, invoiceRequired: event.target.checked })} />
-                  {text.labels.invoiceRequired}
-                </label>
-                <label>{text.labels.company}<input value={booking.companyName} onChange={(event) => setBooking({ ...booking, companyName: event.target.value })} /></label>
-                <label>{text.labels.taxCode}<input value={booking.taxCode} onChange={(event) => setBooking({ ...booking, taxCode: event.target.value })} /></label>
-                <label>{text.labels.invoiceEmail}<input value={booking.invoiceEmail} onChange={(event) => setBooking({ ...booking, invoiceEmail: event.target.value })} /></label>
-                <label className="full">{text.labels.invoiceAddress}<input value={booking.invoiceAddress} onChange={(event) => setBooking({ ...booking, invoiceAddress: event.target.value })} /></label>
-              </div>
-            </details>
             <label className="staff-note-field">
               {text.labels.internalNote}
               <textarea value={booking.note} onChange={(event) => setBooking({ ...booking, note: event.target.value })} />
