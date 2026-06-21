@@ -7,7 +7,8 @@ import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'today' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
-type StaffRole = 'super_admin' | 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
+type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
+type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
@@ -221,7 +222,7 @@ const staffConsoleText = {
     noDiscount: 'No discount',
     noUniqueDiscount: 'No unique discount',
     days: 'days',
-    emailOverrideKeepsAdmin: 'Email override keeps this account admin.',
+    emailOverrideKeepsAdmin: 'Email override keeps this account in its protected role.',
     noExpiry: 'no expiry',
     noneYet: 'None yet',
     newValue: 'New',
@@ -390,6 +391,7 @@ const staffConsoleText = {
       sales: 'Sales',
       salesTrend: 'Sales trend',
       searchUsers: 'Search users',
+      sortBy: 'Sort by',
       slug: 'Slug',
       start: 'Start',
       status: 'Status',
@@ -444,7 +446,7 @@ const staffConsoleText = {
       readOnlyCommerce: 'Read-only view. Viewer can inspect these rules, but cannot save changes.',
       readOnlyGames: 'Read-only view. Viewer can inspect games, but cannot save changes.',
       readOnlyPrices: 'Read-only view. Viewer can inspect price rules, but cannot save changes.',
-      restoreIntro: 'Super Admin only. Restoring clears deleted_at, deleted_by, and delete_reason.',
+      restoreIntro: 'Owner only. Restoring clears deleted_at, deleted_by, and delete_reason.',
       restoringRecord: 'Restoring record...',
       recordRestored: 'Record restored.',
       roleSaveFailed: 'Role was not saved. Apply the latest Supabase SQL migration, then try again.',
@@ -478,12 +480,18 @@ const staffConsoleText = {
       owner: 'Owner',
       player: 'Player',
       staff: 'Staff',
-      super_admin: 'Super Admin',
       viewer: 'Viewer',
     } satisfies Record<StaffRole, string>,
+    roleSorts: {
+      email_asc: 'E-mail A-Z',
+      name_asc: 'Name A-Z',
+      name_desc: 'Name Z-A',
+      role_asc: 'Role low-high',
+      role_desc: 'Role high-low',
+    } satisfies Record<StaffRoleSort, string>,
     roleHelp: [
-      { title: 'Owner / Super Admin', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
-      { title: 'Admin', body: 'Full daily operations access and role management below Owner / Super Admin. Restore stays Owner only.' },
+      { title: 'Owner', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
+      { title: 'Admin', body: 'Full daily operations access and role management below Owner. Restore stays Owner only.' },
       { title: 'Manager', body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.' },
       { title: 'Staff / Cashier', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports.' },
       { title: 'Viewer', body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.' },
@@ -528,7 +536,7 @@ const staffConsoleText = {
     noDiscount: 'Không ưu đãi',
     noUniqueDiscount: 'Không có ưu đãi riêng',
     days: 'ngày',
-    emailOverrideKeepsAdmin: 'Email cố định vẫn giữ tài khoản này là admin.',
+    emailOverrideKeepsAdmin: 'Email cố định vẫn giữ tài khoản này trong vai trò được bảo vệ.',
     noExpiry: 'không hết hạn',
     noneYet: 'Chưa có',
     newValue: 'Mới',
@@ -697,6 +705,7 @@ const staffConsoleText = {
       sales: 'Doanh thu',
       salesTrend: 'Xu hướng doanh thu',
       searchUsers: 'Tìm người dùng',
+      sortBy: 'Sắp xếp theo',
       slug: 'Slug',
       start: 'Bắt đầu',
       status: 'Trạng thái',
@@ -751,7 +760,7 @@ const staffConsoleText = {
       readOnlyCommerce: 'Chế độ chỉ xem. Viewer có thể xem quy tắc nhưng không thể lưu thay đổi.',
       readOnlyGames: 'Chế độ chỉ xem. Viewer có thể xem trò chơi nhưng không thể lưu thay đổi.',
       readOnlyPrices: 'Chế độ chỉ xem. Viewer có thể xem quy tắc giá nhưng không thể lưu thay đổi.',
-      restoreIntro: 'Chỉ Super Admin. Khôi phục sẽ xóa deleted_at, deleted_by và delete_reason.',
+      restoreIntro: 'Chỉ Owner. Khôi phục sẽ xóa deleted_at, deleted_by và delete_reason.',
       restoringRecord: 'Đang khôi phục...',
       recordRestored: 'Đã khôi phục dữ liệu.',
       roleSaveFailed: 'Chưa lưu được vai trò. Hãy chạy SQL Supabase mới nhất rồi thử lại.',
@@ -785,12 +794,18 @@ const staffConsoleText = {
       owner: 'Owner',
       player: 'Player',
       staff: 'Nhân viên',
-      super_admin: 'Super Admin',
       viewer: 'Viewer',
     } satisfies Record<StaffRole, string>,
+    roleSorts: {
+      email_asc: 'E-mail A-Z',
+      name_asc: 'Tên A-Z',
+      name_desc: 'Tên Z-A',
+      role_asc: 'Vai trò thấp-cao',
+      role_desc: 'Vai trò cao-thấp',
+    } satisfies Record<StaffRoleSort, string>,
     roleHelp: [
-      { title: 'Owner / Super Admin', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
-      { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner / Super Admin. Khôi phục chỉ dành cho Owner.' },
+      { title: 'Owner', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
+      { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner. Khôi phục chỉ dành cho Owner.' },
       { title: 'Manager', body: 'Quản lý trò chơi, giá, ưu đãi, voucher, điểm thưởng, đặt chỗ, đơn hàng và báo cáo.' },
       { title: 'Staff / Cashier', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo.' },
       { title: 'Viewer', body: 'Dùng app như người chơi, xem toàn bộ Staff Console, chỉnh hoặc tải báo cáo. Dữ liệu staff còn lại chỉ xem.' },
@@ -994,10 +1009,12 @@ const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
 const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
-const superAdminEmails = ['emile@vre-vietnam.com', 'emilejacquet@icloud.com']
-const adminEmails = [...superAdminEmails, 'contact@vre-vietnam.com']
-const staffRoleOptions: StaffRole[] = ['super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
-const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'super_admin', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const ownerEmails = ['emilejacquet@icloud.com']
+const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const adminEmails = [...ownerEmails, ...adminOnlyEmails]
+const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 'role_asc', 'email_asc']
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -1017,19 +1034,24 @@ function parseStaffArenaIds(value?: string | null) {
   return arenaIds.length ? arenaIds : defaultStaffArenaIds
 }
 
-function isSuperAdminEmail(email?: string | null) {
-  return Boolean(email && superAdminEmails.includes(email.toLowerCase()))
+function isOwnerEmail(email?: string | null) {
+  return Boolean(email && ownerEmails.includes(email.toLowerCase()))
 }
 
 function isAdminEmail(email?: string | null) {
   return Boolean(email && adminEmails.includes(email.toLowerCase()))
 }
 
+function isAdminOnlyEmail(email?: string | null) {
+  return Boolean(email && adminOnlyEmails.includes(email.toLowerCase()))
+}
+
 function staffRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (isAdminEmail(normalizedEmail)) return 100
+  if (isOwnerEmail(normalizedEmail)) return 120
+  if (isAdminOnlyEmail(normalizedEmail)) return 100
+  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
   if (normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
@@ -1039,16 +1061,19 @@ function staffRank(role?: string | null, email?: string | null) {
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
   const rank = staffRank(role, email)
-  if (rank >= 120) return role?.toLowerCase() === 'owner' ? 'owner' : 'super_admin'
-  if (rank >= 100) return (role?.toLowerCase() === 'owner' ? 'owner' : 'admin')
+  if (rank >= 120) return 'owner'
+  if (rank >= 100) return 'admin'
   if (rank >= 80) return 'manager'
   if (rank >= 50) return role?.toLowerCase() === 'cashier' ? 'cashier' : 'staff'
   if (rank >= 20) return 'viewer'
   return 'player'
 }
 
-function storedRoleValue(role?: string | null): StaffRole {
+function storedRoleValue(role?: string | null, email?: string | null): StaffRole {
   const normalized = (role || '').toLowerCase()
+  if (isOwnerEmail(email)) return 'owner'
+  if (isAdminOnlyEmail(email) && (normalized === 'super_admin' || normalized === 'owner')) return 'admin'
+  if (normalized === 'super_admin') return 'owner'
   return staffRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
 }
 
@@ -1069,6 +1094,10 @@ function isDemoProfile(profile: StaffProfile) {
 
 function staffRoleName(role: StaffRole, text: StaffConsoleCopy = staffConsoleText.en) {
   return text.roles[role]
+}
+
+function staffRoleSortName(sort: StaffRoleSort, text: StaffConsoleCopy = staffConsoleText.en) {
+  return text.roleSorts[sort]
 }
 
 function formatVnd(value: number) {
@@ -1562,6 +1591,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [gameImageUploading, setGameImageUploading] = useState(false)
   const [roleSearch, setRoleSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
+  const [roleSort, setRoleSort] = useState<StaffRoleSort>('name_asc')
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
@@ -1629,7 +1659,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   }, [orderPayments])
   const filteredRoleProfiles = useMemo(() => {
     const query = roleSearch.trim().toLowerCase()
-    return profiles.filter((item) => {
+    const rows = profiles.filter((item) => {
       const effectiveRole = roleLabel(item.role, item.email)
       if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false
       if (!query) return true
@@ -1640,7 +1670,22 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
         staffRoleName(effectiveRole, text),
       ].some((value) => value.toLowerCase().includes(query))
     })
-  }, [profiles, roleFilter, roleSearch, text])
+
+    return rows.sort((left, right) => {
+      const leftName = customerName(left, text).toLowerCase()
+      const rightName = customerName(right, text).toLowerCase()
+      const leftEmail = (left.email || '').toLowerCase()
+      const rightEmail = (right.email || '').toLowerCase()
+      const leftRank = staffRank(left.role, left.email)
+      const rightRank = staffRank(right.role, right.email)
+
+      if (roleSort === 'name_desc') return rightName.localeCompare(leftName) || leftEmail.localeCompare(rightEmail)
+      if (roleSort === 'role_desc') return rightRank - leftRank || leftName.localeCompare(rightName)
+      if (roleSort === 'role_asc') return leftRank - rightRank || leftName.localeCompare(rightName)
+      if (roleSort === 'email_asc') return leftEmail.localeCompare(rightEmail) || leftName.localeCompare(rightName)
+      return leftName.localeCompare(rightName) || leftEmail.localeCompare(rightEmail)
+    })
+  }, [profiles, roleFilter, roleSearch, roleSort, text])
 
   const reportOrders = useMemo(() => (
     ordersInDateRange(orders, reportStart, reportEnd)
@@ -2819,11 +2864,21 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 ))}
               </select>
             </label>
+            <label>
+              <span className="staff-field-label">{text.labels.sortBy}</span>
+              <select value={roleSort} onChange={(event) => setRoleSort(event.target.value as StaffRoleSort)}>
+                {roleSortOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {staffRoleSortName(option, text)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className="staff-role-list">
             {filteredRoleProfiles.map((item) => {
               const effectiveRole = roleLabel(item.role, item.email)
-              const storedRole = storedRoleValue(item.role)
+              const storedRole = storedRoleValue(item.role, item.email)
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
@@ -2843,7 +2898,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                       onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
                     >
                       {staffRoleOptions.filter((option) => (
-                        canRestoreDeleted || !['super_admin', 'owner'].includes(option) || option === storedRole
+                        canRestoreDeleted || option !== 'owner' || option === storedRole
                       )).map((option) => (
                         <option key={option} value={option}>{staffRoleName(option, text)}</option>
                       ))}

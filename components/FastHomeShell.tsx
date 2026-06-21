@@ -81,8 +81,8 @@ type HeavyTarget = {
 }
 
 const OWNER_EMAILS = ['emilejacquet@icloud.com']
-const SUPER_ADMIN_EMAILS = ['emile@vre-vietnam.com', ...OWNER_EMAILS]
-const ADMIN_EMAILS = [...SUPER_ADMIN_EMAILS, 'contact@vre-vietnam.com']
+const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
+const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
 const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px)'
@@ -168,14 +168,17 @@ function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
 }
 
-function isSuperAdminEmail(email?: string | null) {
-  return Boolean(email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase()))
+function isOwnerEmail(email?: string | null) {
+  return Boolean(email && OWNER_EMAILS.includes(email.toLowerCase()))
+}
+
+function isAdminOnlyEmail(email?: string | null) {
+  return Boolean(email && ADMIN_ONLY_EMAILS.includes(email.toLowerCase()))
 }
 
 function defaultRoleForEmail(email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   if (OWNER_EMAILS.includes(normalizedEmail)) return 'owner'
-  if (isSuperAdminEmail(normalizedEmail)) return 'super_admin'
   if (isAdminEmail(normalizedEmail)) return 'admin'
   return 'player'
 }
@@ -188,8 +191,10 @@ function isAdminRole(role?: string | null) {
 function staffConsoleRank(role?: string | null, email?: string | null) {
   const normalizedEmail = email?.toLowerCase() || ''
   const normalizedRole = role?.toLowerCase() || ''
-  if (isSuperAdminEmail(normalizedEmail) || normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (isAdminEmail(normalizedEmail) || normalizedRole === 'admin') return 100
+  if (isOwnerEmail(normalizedEmail)) return 120
+  if (isAdminOnlyEmail(normalizedEmail)) return 100
+  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
+  if (normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
   if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
   if (normalizedRole === 'viewer') return 20

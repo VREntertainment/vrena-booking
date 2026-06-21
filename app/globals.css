@@ -1502,7 +1502,7 @@ body {
 
 .app .staff-role-tools {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(150px, 220px);
   gap: 10px;
   align-items: end;
   margin: 10px 0 12px;
