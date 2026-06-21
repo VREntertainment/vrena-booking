@@ -1309,11 +1309,17 @@ body {
   min-width: 0;
 }
 
+.app .staff-audience-options,
 .app .staff-arena-options {
   display: grid;
   gap: 8px;
 }
 
+.app .staff-audience-options {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.app .staff-audience-option,
 .app .staff-arena-option,
 .app .staff-game-active-toggle {
   display: flex;
@@ -1328,6 +1334,7 @@ body {
   padding: 8px 10px;
 }
 
+.app .staff-audience-option input,
 .app .staff-arena-option input,
 .app .staff-game-active-toggle input {
   width: 16px;
@@ -1336,6 +1343,7 @@ body {
   flex: 0 0 auto;
 }
 
+.app .staff-audience-option input:disabled,
 .app .staff-arena-option input:disabled {
   opacity: 0.55;
 }
@@ -6796,6 +6804,7 @@ body {
   .app .staff-restore-row,
   .app .staff-role-help-item,
   .app .staff-game-photo-upload,
+  .app .staff-audience-option,
   .app .staff-arena-option,
   .app .staff-game-active-toggle,
   .app .staff-report-bar-track,

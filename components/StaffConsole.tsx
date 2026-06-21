@@ -12,6 +12,7 @@ type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'emai
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
+type StaffAudience = 'family_friendly' | 'scary' | 'fun'
 type PaymentSplitDraft = {
   id: string
   payment_method: StaffPaymentMethod
@@ -42,7 +43,8 @@ type StaffGame = {
   max_players_per_arena: number
   number_of_rounds: number
   description: string | null
-  difficulty: string | null
+  difficulty?: string | null
+  audience?: StaffAudience[] | null
   image_url: string | null
   active: boolean
   available_arena_ids: string[]
@@ -314,6 +316,11 @@ const staffConsoleText = {
       shooting: 'shooting',
       tournament: 'tournament',
     } satisfies Record<StaffGame['game_type'], string>,
+    audienceOptions: {
+      family_friendly: 'Family friendly',
+      scary: 'Scary',
+      fun: 'Fun',
+    } satisfies Record<StaffAudience, string>,
     labels: {
       actions: 'Actions',
       active: 'Active',
@@ -342,7 +349,7 @@ const staffConsoleText = {
       dayType: 'Day type',
       deleteReason: 'Reason',
       description: 'Description',
-      difficulty: 'Difficulty',
+      audience: 'Audience',
       discount: 'Discount',
       discountType: 'Discount type',
       discountVoucher: 'Discount / voucher',
@@ -628,6 +635,11 @@ const staffConsoleText = {
       shooting: 'bắn súng',
       tournament: 'giải đấu',
     } satisfies Record<StaffGame['game_type'], string>,
+    audienceOptions: {
+      family_friendly: 'Thân thiện gia đình',
+      scary: 'Rùng rợn',
+      fun: 'Vui nhộn',
+    } satisfies Record<StaffAudience, string>,
     labels: {
       actions: 'Thao tác',
       active: 'Đang bật',
@@ -656,7 +668,7 @@ const staffConsoleText = {
       dayType: 'Loại ngày',
       deleteReason: 'Lý do',
       description: 'Mô tả',
-      difficulty: 'Độ khó',
+      audience: 'Đối tượng',
       discount: 'Ưu đãi',
       discountType: 'Loại ưu đãi',
       discountVoucher: 'Ưu đãi / voucher',
@@ -955,7 +967,7 @@ const defaultGameForm = () => ({
   max_players_per_arena: 4,
   number_of_rounds: 1,
   description: '',
-  difficulty: '',
+  audience: [] as StaffAudience[],
   image_url: '',
   active: true,
   available_arena_ids: 'arena-1, arena-2',
@@ -1018,11 +1030,35 @@ const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const staffAudienceOptions: StaffAudience[] = ['family_friendly', 'scary', 'fun']
 const staffArenaOptions = [
   { id: 'arena-1', label: 'Arena 1' },
   { id: 'arena-2', label: 'Arena 2' },
 ]
 const defaultStaffArenaIds = staffArenaOptions.map((arena) => arena.id)
+
+function normalizeStaffAudience(value?: StaffAudience[] | string[] | null, legacyDifficulty?: string | null): StaffAudience[] {
+  const validOptions = new Set<StaffAudience>(staffAudienceOptions)
+  const selected = (Array.isArray(value) ? value : []).reduce<StaffAudience[]>((items, item) => {
+    const audience = item as StaffAudience
+    if (validOptions.has(audience)) items.push(audience)
+    return items
+  }, [])
+
+  if (selected.length) return selected
+
+  const legacy = (legacyDifficulty || '').toLowerCase()
+  if (legacy.includes('family')) return ['family_friendly']
+  if (legacy.includes('scary') || legacy.includes('hard')) return ['scary']
+  if (legacy.includes('fun') || legacy.includes('medium')) return ['fun']
+  if (legacy.includes('easy')) return ['family_friendly', 'fun']
+  return []
+}
+
+function staffAudienceLabel(value?: StaffAudience[] | string[] | null, legacyDifficulty?: string | null, text: StaffConsoleCopy = staffConsoleText.en) {
+  const audience = normalizeStaffAudience(value, legacyDifficulty)
+  return audience.map((item) => text.audienceOptions[item]).join(', ')
+}
 
 function parseStaffArenaIds(value?: string | null) {
   const knownArenaIds = new Set(defaultStaffArenaIds)
@@ -1718,6 +1754,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const comparisonLinePath = useMemo(() => buildLineChartPath(comparisonSeries, reportChartMax), [comparisonSeries, reportChartMax])
   const pieItems = useMemo(() => paymentPieItems(report, text), [report, text])
   const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
+  const selectedGameAudiences = useMemo(() => normalizeStaffAudience(gameForm.audience), [gameForm.audience])
   const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
   const selectedDiscountValueUnit = discountValueUnit(discountForm.discount_type)
 
@@ -1886,7 +1923,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       max_players_per_arena: Number(gameForm.max_players_per_arena),
       number_of_rounds: Number(gameForm.number_of_rounds),
       description: gameForm.description.trim() || null,
-      difficulty: gameForm.difficulty.trim() || null,
+      audience: normalizeStaffAudience(gameForm.audience),
       image_url: gameForm.image_url.trim() || null,
       active: gameForm.active,
       available_arena_ids: parseStaffArenaIds(gameForm.available_arena_ids),
@@ -2172,7 +2209,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       max_players_per_arena: game.max_players_per_arena,
       number_of_rounds: game.number_of_rounds,
       description: game.description || '',
-      difficulty: game.difficulty || '',
+      audience: normalizeStaffAudience(game.audience, game.difficulty),
       image_url: game.image_url || '',
       active: game.active,
       available_arena_ids: (game.available_arena_ids || []).join(', '),
@@ -2182,6 +2219,22 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   function startNewGame() {
     setGameForm(defaultGameForm())
     setStatus('')
+  }
+
+  function updateGameAudience(audience: StaffAudience, checked: boolean) {
+    setGameForm((current) => {
+      const selected = new Set(normalizeStaffAudience(current.audience))
+      if (checked) {
+        selected.add(audience)
+      } else {
+        selected.delete(audience)
+      }
+
+      return {
+        ...current,
+        audience: staffAudienceOptions.filter((option) => selected.has(option)),
+      }
+    })
   }
 
   function updateGameArena(arenaId: string, checked: boolean) {
@@ -2597,7 +2650,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               <label>{text.labels.duration}<input type="number" value={gameForm.duration_minutes} onChange={(event) => setGameForm({ ...gameForm, duration_minutes: Number(event.target.value) })} /></label>
               <label>{text.labels.maxPlayersArena}<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
               <label>{text.labels.rounds}<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
-              <label>{text.labels.difficulty}<input value={gameForm.difficulty} onChange={(event) => setGameForm({ ...gameForm, difficulty: event.target.value })} /></label>
               <div className="full staff-game-media-row">
                 <div className="staff-game-photo-field">
                   <span className="staff-field-label">{text.labels.gamePhoto}</span>
@@ -2624,6 +2676,24 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                   </label>
                 </div>
                 <div className="staff-game-settings-panel">
+                  <div>
+                    <span className="staff-field-label">{text.labels.audience}</span>
+                    <div className="staff-audience-options">
+                      {staffAudienceOptions.map((audience) => {
+                        const checked = selectedGameAudiences.includes(audience)
+                        return (
+                          <label className="staff-audience-option" key={audience}>
+                            <input
+                              checked={checked}
+                              type="checkbox"
+                              onChange={(event) => updateGameAudience(audience, event.target.checked)}
+                            />
+                            <span>{text.audienceOptions[audience]}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
                   <div>
                     <span className="staff-field-label">{text.labels.arenaIds}</span>
                     <div className="staff-arena-options">
@@ -2662,7 +2732,14 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
             {games.map((game) => (
               <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
                 <strong>{game.name}</strong>
-                <span>{text.gameTypes[game.game_type]} · {game.duration_minutes} min · {game.active ? text.active : text.inactive}</span>
+                <span>
+                  {[
+                    text.gameTypes[game.game_type],
+                    `${game.duration_minutes} min`,
+                    staffAudienceLabel(game.audience, game.difficulty, text),
+                    game.active ? text.active : text.inactive,
+                  ].filter(Boolean).join(' · ')}
+                </span>
               </button>
             ))}
           </div>
