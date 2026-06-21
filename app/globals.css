@@ -1266,6 +1266,51 @@ body {
   gap: 7px;
 }
 
+.app .staff-game-media-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(180px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.app .staff-game-settings-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.app .staff-arena-options {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-arena-option,
+.app .staff-game-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #071112;
+  font-weight: 900;
+  padding: 8px 10px;
+}
+
+.app .staff-arena-option input,
+.app .staff-game-active-toggle input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 auto;
+}
+
+.app .staff-arena-option input:disabled {
+  opacity: 0.55;
+}
+
 .app .staff-game-photo-upload {
   position: relative;
   display: grid;
@@ -1358,6 +1403,10 @@ body {
 
 .app .checkbox-row input {
   width: auto;
+}
+
+.app .checkbox-row.staff-game-active-toggle input {
+  width: 16px;
 }
 
 .app .staff-list-item {
@@ -6444,6 +6493,10 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .staff-game-media-row {
+    grid-template-columns: 1fr;
+  }
+
   .app .standing-row {
     grid-template-columns: 20px minmax(0, 1fr);
   }
@@ -6714,6 +6767,8 @@ body {
   .app .staff-restore-row,
   .app .staff-role-help-item,
   .app .staff-game-photo-upload,
+  .app .staff-arena-option,
+  .app .staff-game-active-toggle,
   .app .staff-report-bar-track,
   .app .staff-payment-track,
   .app .staff-report-compare-label,
