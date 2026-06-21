@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationKey, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
@@ -61,6 +61,40 @@ const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
     </section>
   ),
 })
+
+type LocalErrorBoundaryProps = {
+  children: ReactNode
+  fallback: ReactNode
+  resetKey: string
+}
+
+type LocalErrorBoundaryState = {
+  hasError: boolean
+}
+
+class LocalErrorBoundary extends Component<LocalErrorBoundaryProps, LocalErrorBoundaryState> {
+  state: LocalErrorBoundaryState = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidUpdate(previousProps: LocalErrorBoundaryProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false })
+    }
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(error, info)
+    }
+  }
+
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children
+  }
+}
 
 type HCaptchaApi = {
   render: (
@@ -5428,7 +5462,8 @@ function handleSessionDateChange(value: string) {
   }
 
   function clubMembers(club: Club | undefined): ClubMember[] {
-    return Array.isArray(club?.club_members) ? club.club_members.filter((member) => !member.deleted_at) : []
+    if (!Array.isArray(club?.club_members)) return []
+    return club.club_members.filter((member) => Boolean(member?.id && member.profile_id && !member.deleted_at))
   }
 
   function mergeCurrentUserClubMembership(club: Club, memberships: ClubMember[]): Club {
@@ -5480,6 +5515,8 @@ function handleSessionDateChange(value: string) {
 
   function openClubPage(clubId: string) {
     const club = clubs.find((item) => item.id === clubId)
+    setClubStatus('')
+
     if (!canOpenClubPage(club)) {
       setSelectedClubId('')
       if (club?.visibility === 'private') {
@@ -9503,29 +9540,31 @@ function handleSessionDateChange(value: string) {
           <>
             {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <p className="notice" aria-busy="true">...</p>}
             {leaderboardStatus && leaderboardPlayerStats.length === 0 && <p className="notice">{leaderboardStatus}</p>}
-            <LeaderboardPanel
-              avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-                avatar_color: player.avatarColor,
-                avatar_text_color: player.avatarTextColor,
-              })}
-              canBypassPrivateClubPins={isAdmin}
-              canShareCurrentUserStats={canShareCurrentUserStats}
-              clubs={clubs}
-              isCurrentUserStatsShared={currentUserStatsShared}
-              onShareCurrentUserStats={() => shareCurrentUserStats()}
-              onOpenPlayerProfile={openPlayerProfile}
-              players={leaderboardPlayerStats}
-              renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-                avatar_url: player.avatarUrl,
-                avatar_emoji: player.avatarEmoji,
-                avatar_initials: player.avatarInitials,
-                avatar_color: player.avatarColor,
-                avatar_text_color: player.avatarTextColor,
-                display_name: player.displayName,
-              }, 'P')}
-              text={text}
-              userId={userId}
-            />
+            <LocalErrorBoundary fallback={<p className="notice">{text.noLeaderboardPlayers}</p>} resetKey={`leaderboard-${language}-${leaderboardPlayerStats.length}-${clubs.length}`}>
+              <LeaderboardPanel
+                avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+                  avatar_color: player.avatarColor,
+                  avatar_text_color: player.avatarTextColor,
+                })}
+                canBypassPrivateClubPins={isAdmin}
+                canShareCurrentUserStats={canShareCurrentUserStats}
+                clubs={clubs}
+                isCurrentUserStatsShared={currentUserStatsShared}
+                onShareCurrentUserStats={() => shareCurrentUserStats()}
+                onOpenPlayerProfile={openPlayerProfile}
+                players={leaderboardPlayerStats}
+                renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+                  avatar_url: player.avatarUrl,
+                  avatar_emoji: player.avatarEmoji,
+                  avatar_initials: player.avatarInitials,
+                  avatar_color: player.avatarColor,
+                  avatar_text_color: player.avatarTextColor,
+                  display_name: player.displayName,
+                }, 'P')}
+                text={text}
+                userId={userId}
+              />
+            </LocalErrorBoundary>
           </>
         )}
 
@@ -10873,7 +10912,7 @@ function handleSessionDateChange(value: string) {
         </div>
       )}
 
-      {selectedClub && (() => {
+      {selectedClub && canOpenClubPage(selectedClub) && (() => {
         const canManageSelectedClub = canManageClub(selectedClub)
         const canModerateSelectedClub = canModerateClubMembers(selectedClub)
         const canSeeSelectedClubData = canSeeClubPrivateData(selectedClub)
@@ -11006,31 +11045,33 @@ function handleSessionDateChange(value: string) {
                   ) : (
                     <>
                       {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <p className="notice" aria-busy="true">...</p>}
-                      <LeaderboardPanel
-                        avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-                          avatar_color: player.avatarColor,
-                          avatar_text_color: player.avatarTextColor,
-                        })}
-                        canBypassPrivateClubPins={isAdmin}
-                        canShareCurrentUserStats={canShareCurrentUserStats}
-                        clubs={[selectedClub]}
-                        fixedClubId={selectedClub.id}
-                        initialCriterion={clubRankingCriterion(selectedClub)}
-                        isCurrentUserStatsShared={currentUserStatsShared}
-                        onOpenPlayerProfile={openPlayerProfile}
-                        onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
-                        players={leaderboardPlayerStats}
-                        renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-                          avatar_url: player.avatarUrl,
-                          avatar_emoji: player.avatarEmoji,
-                          avatar_initials: player.avatarInitials,
-                          avatar_color: player.avatarColor,
-                          avatar_text_color: player.avatarTextColor,
-                          display_name: player.displayName,
-                        }, 'P')}
-                        text={text}
-                        userId={userId}
-                      />
+                      <LocalErrorBoundary fallback={<p className="notice">{text.noLeaderboardPlayers}</p>} resetKey={`club-hall-${selectedClub.id}-${language}-${leaderboardPlayerStats.length}`}>
+                        <LeaderboardPanel
+                          avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+                            avatar_color: player.avatarColor,
+                            avatar_text_color: player.avatarTextColor,
+                          })}
+                          canBypassPrivateClubPins={isAdmin}
+                          canShareCurrentUserStats={canShareCurrentUserStats}
+                          clubs={[selectedClub]}
+                          fixedClubId={selectedClub.id}
+                          initialCriterion={clubRankingCriterion(selectedClub)}
+                          isCurrentUserStatsShared={currentUserStatsShared}
+                          onOpenPlayerProfile={openPlayerProfile}
+                          onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
+                          players={leaderboardPlayerStats}
+                          renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+                            avatar_url: player.avatarUrl,
+                            avatar_emoji: player.avatarEmoji,
+                            avatar_initials: player.avatarInitials,
+                            avatar_color: player.avatarColor,
+                            avatar_text_color: player.avatarTextColor,
+                            display_name: player.displayName,
+                          }, 'P')}
+                          text={text}
+                          userId={userId}
+                        />
+                      </LocalErrorBoundary>
                       {canManageSelectedClub && (
                         <div className="club-ranking-box">
                           <strong>{text.clubRankingSystem}</strong>

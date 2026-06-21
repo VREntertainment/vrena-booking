@@ -110,6 +110,15 @@ function normalizePinCode(value: string | null | undefined) {
   return (value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
+function safeLeaderboardName(player: Pick<LeaderboardPlayer, 'displayName'>, fallback: string) {
+  return (typeof player.displayName === 'string' && player.displayName.trim()) || fallback
+}
+
+function visibleClubMembers(club: LeaderboardClub | null) {
+  if (!Array.isArray(club?.club_members)) return []
+  return club.club_members.filter((member) => Boolean(member?.profile_id))
+}
+
 function percentValue(numerator: number, denominator: number) {
   if (denominator <= 0) return 0
   return (numerator / denominator) * 100
@@ -270,7 +279,7 @@ export default function LeaderboardPanel({
       if (valueDiff !== 0) return valueDiff
       const scoreDiff = right.totalScore - left.totalScore
       if (scoreDiff !== 0) return scoreDiff
-      return left.displayName.localeCompare(right.displayName)
+      return safeLeaderboardName(left, text.player).localeCompare(safeLeaderboardName(right, text.player))
     })
 
     const metricRows = sortedPlayers.map((player) => ({
@@ -298,7 +307,7 @@ export default function LeaderboardPanel({
 
       return { player, rank, rankInfo }
     })
-  }, [leaderboardCriterion, players, useServerRanking])
+  }, [leaderboardCriterion, players, text.player, useServerRanking])
 
   const selectedLeaderboardClub = useMemo(() => {
     if (!leaderboardClubId) return null
@@ -312,7 +321,7 @@ export default function LeaderboardPanel({
     if (unlockedLeaderboardClubIds[selectedLeaderboardClub.id]) return true
     if (!userId) return false
     if (selectedLeaderboardClub.owner_id === userId) return true
-    return (selectedLeaderboardClub.club_members ?? []).some((member) => member.profile_id === userId && member.status === 'approved')
+    return visibleClubMembers(selectedLeaderboardClub).some((member) => member.profile_id === userId && member.status === 'approved')
   }, [canBypassPrivateClubPins, selectedLeaderboardClub, unlockedLeaderboardClubIds, userId])
   const selectedLeaderboardClubLocked = Boolean(selectedLeaderboardClub && !selectedLeaderboardClubCanView)
   const selectedLeaderboardClubPinDraft = selectedLeaderboardClub ? leaderboardClubPinDrafts[selectedLeaderboardClub.id] ?? '' : ''
@@ -321,7 +330,7 @@ export default function LeaderboardPanel({
     if (!selectedLeaderboardClub || selectedLeaderboardClubLocked) return null
     const club = selectedLeaderboardClub
     const profileIds = new Set<string>([club.owner_id])
-    ;(club.club_members ?? []).forEach((member) => {
+    visibleClubMembers(club).forEach((member) => {
       if (member.status === 'approved') profileIds.add(member.profile_id)
     })
     return profileIds
@@ -335,11 +344,11 @@ export default function LeaderboardPanel({
     const query = normalizeSearchValue(leaderboardSearch)
 
     return rankedLeaderboardRows.filter(({ player }) => {
-      const matchesSearch = !query || normalizeSearchValue(`${player.displayName} ${player.profileMotto || ''}`).includes(query)
+      const matchesSearch = !query || normalizeSearchValue(`${safeLeaderboardName(player, text.player)} ${player.profileMotto || ''}`).includes(query)
       const matchesClub = !selectedLeaderboardClubProfileIds || selectedLeaderboardClubProfileIds.has(player.profileId)
       return matchesSearch && matchesClub
     })
-  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubLocked, selectedLeaderboardClubProfileIds, serverFiltered])
+  }, [leaderboardSearch, rankedLeaderboardRows, selectedLeaderboardClubLocked, selectedLeaderboardClubProfileIds, serverFiltered, text.player])
 
   const currentUserLeaderboardRow = useMemo(() => {
     const localRow = userId ? rankedLeaderboardRows.find(({ player }) => player.profileId === userId) : undefined
@@ -528,7 +537,7 @@ export default function LeaderboardPanel({
               </button>
               <div className="leaderboard-player-main">
                 <div className="leaderboard-player-title">
-                  <strong>{player.displayName}</strong>
+                  <strong>{safeLeaderboardName(player, text.player)}</strong>
                   {isCurrentUser && <span className="pill ok">{text.currentPlayer}</span>}
                 </div>
                 <div className="rank-progress">
