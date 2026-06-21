@@ -5561,6 +5561,24 @@ body {
   align-items: start;
 }
 
+.app .game-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.app .game-picker-head label {
+  margin: 0;
+}
+
+.app .game-card-shell {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
 .app .game-card {
   display: grid;
   gap: 7px;
@@ -5569,6 +5587,7 @@ body {
   color: #071112;
   border: 2px solid rgba(7, 17, 18, 0.12);
   padding: 8px;
+  width: 100%;
 }
 
 .app .game-card.selected {
@@ -5596,6 +5615,167 @@ body {
 .app .game-card strong {
   color: #637075;
   font-size: 12px;
+}
+
+.app .game-guide-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 30px;
+  border: 1px solid rgba(48, 89, 255, 0.22);
+  border-radius: 999px;
+  background: #f7fafb;
+  color: #3059ff;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.app .game-card-guide {
+  width: 100%;
+  min-height: 34px;
+}
+
+.app .compact-game-guide-link {
+  min-height: 26px;
+  padding: 3px 8px;
+  border-color: rgba(0, 174, 179, 0.24);
+  color: #087b80;
+}
+
+.app .confirm-game-guide-link {
+  min-height: 36px;
+}
+
+.app .ticket-game-guide-link {
+  margin-top: 4px;
+}
+
+.app .game-guide-modal {
+  width: min(820px, 100%);
+  max-height: min(86vh, 760px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.app .game-guide-header {
+  padding: 20px 56px 12px 20px;
+  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+}
+
+.app .game-guide-header h3,
+.app .game-guide-header p {
+  margin: 0;
+}
+
+.app .game-guide-header p {
+  margin-top: 6px;
+  color: #637075;
+  line-height: 1.4;
+}
+
+.app .game-guide-scroll {
+  display: grid;
+  gap: 12px;
+  max-height: calc(min(86vh, 760px) - 96px);
+  overflow-y: auto;
+  padding: 14px 20px 20px;
+  overscroll-behavior: contain;
+}
+
+.app .game-guide-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f7fafb;
+  padding: 12px;
+}
+
+.app .game-guide-card > img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #071112;
+}
+
+.app .game-guide-card-body {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+
+.app .game-guide-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.app .game-guide-card-head h4 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.app .game-guide-card-head span,
+.app .game-guide-card-body p,
+.app .game-guide-rules li,
+.app .game-guide-tips li {
+  color: #637075;
+  line-height: 1.38;
+}
+
+.app .game-guide-card-body p {
+  margin: 0;
+}
+
+.app .game-guide-facts {
+  display: grid;
+  gap: 5px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.app .game-guide-facts strong {
+  color: #071112;
+}
+
+.app .game-guide-audience {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.app .game-guide-audience span {
+  border-radius: 999px;
+  background: #eef3f5;
+  color: #087b80;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .game-guide-rules,
+.app .game-guide-tips {
+  display: grid;
+  gap: 6px;
+}
+
+.app .game-guide-rules strong,
+.app .game-guide-tips strong {
+  color: #071112;
+}
+
+.app .game-guide-rules ul,
+.app .game-guide-tips ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .app .compact-games {
@@ -6468,9 +6648,13 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
-  .app .game-strip .game-card {
+  .app .game-strip .strip-game-card-shell {
     flex: 0 0 156px;
     scroll-snap-align: start;
+  }
+
+  .app .game-strip .game-card {
+    min-height: 100%;
   }
 
   .app .game-strip .game-card img {
@@ -6483,6 +6667,44 @@ body {
 
   .app .game-picker .game-card {
     padding: 7px;
+  }
+
+  .app .game-picker-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .app .game-guide-modal {
+    max-height: min(86vh, 720px);
+  }
+
+  .app .game-guide-scroll {
+    max-height: calc(min(86vh, 720px) - 98px);
+    padding: 12px;
+  }
+
+  .app .game-guide-header {
+    padding: 18px 52px 10px 14px;
+  }
+
+  .app .game-guide-card {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .app .game-guide-card-head {
+    display: grid;
+    gap: 8px;
+  }
+
+  .app .game-guide-facts {
+    text-align: left;
+  }
+
+  .app .game-guide-card-head h4 {
+    font-size: 17px;
   }
 
   .app .game-picker .game-card span, .app .game-strip .game-card span {
@@ -7387,6 +7609,41 @@ body {
 
   .app .game-card, .app .confirm-game-panel, .app .profile-photo-panel, .app .club-card, .app .mini-session, .app .tournament-create-box, .app .queue-board, .app .audit-log {
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+  }
+
+  .app .game-guide-link {
+    background: #111f31;
+    border-color: rgba(98, 211, 255, 0.26);
+    color: #8ee7ff;
+  }
+
+  .app .game-guide-header {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .app .game-guide-header p,
+  .app .game-guide-card-head h4,
+  .app .game-guide-card-head span,
+  .app .game-guide-card-body p,
+  .app .game-guide-rules li,
+  .app .game-guide-tips li {
+    color: #aeb9bd;
+  }
+
+  .app .game-guide-card {
+    background: #10191b;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .app .game-guide-facts strong,
+  .app .game-guide-rules strong,
+  .app .game-guide-tips strong {
+    color: #f6f7f9;
+  }
+
+  .app .game-guide-audience span {
+    background: rgba(98, 211, 255, 0.12);
+    color: #8ee7ff;
   }
 
   .app .host-pill {

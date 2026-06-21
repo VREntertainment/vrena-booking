@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
+import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationKey, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
@@ -104,6 +104,25 @@ type ParticipantPaymentSplitDraft = {
   id: string
   payment_method: ParticipantPaymentMethod
   amount: string
+}
+
+type GameAudience =
+  | 'familyFriendly'
+  | 'scary'
+  | 'fun'
+  | 'quest'
+  | 'teamwork'
+  | 'beginnerFriendly'
+  | 'competitive'
+
+type GameInfo = {
+  id: GameId
+  title: string
+  category: 'FPS / PVP' | 'Escape'
+  image: string
+  durationMinutes: number
+  maxPlayersPerArena: number
+  audience: GameAudience[]
 }
 
 type TicketBookingConfirmation = {
@@ -502,21 +521,98 @@ type TournamentMatchInsert = {
   best_of?: 1 | 3 | 5 | number | null
 }
 
-const games: Array<{
-  id: GameId
-  title: string
-  category: 'FPS / PVP' | 'Escape'
-  image: string
-}> = [
-  { id: 'laser-tag', title: 'Laser Tag', category: 'FPS / PVP', image: '/games/laser-tag.png' },
-  { id: 'mini-block-towers', title: 'Mini Block Towers', category: 'FPS / PVP', image: '/games/mini-block-towers.png' },
-  { id: 'office-war', title: 'Office War', category: 'FPS / PVP', image: '/games/office-war.png' },
-  { id: 'paintball', title: 'Paintball', category: 'FPS / PVP', image: '/games/paintball.png' },
-  { id: 'snow-battle', title: 'Snow Battle', category: 'FPS / PVP', image: '/games/snow-battle.png' },
-  { id: 'castle-unspunnen', title: 'Castle Unspunnen', category: 'FPS / PVP', image: '/games/castle-unspunnen.png' },
-  { id: 'wild-west', title: 'Wild West', category: 'FPS / PVP', image: '/games/wild-west.png' },
-  { id: 'arc-of-the-covenant', title: 'The Secret of the Arc', category: 'Escape', image: '/games/arc-of-the-covenant.png' },
-  { id: 'joller-house', title: 'Joller House', category: 'Escape', image: '/games/joller-house.png' },
+const gameAudienceLabelKeys: Record<GameAudience, TranslationKey> = {
+  familyFriendly: 'audienceFamilyFriendly',
+  scary: 'audienceScary',
+  fun: 'audienceFun',
+  quest: 'audienceQuest',
+  teamwork: 'audienceTeamwork',
+  beginnerFriendly: 'audienceBeginnerFriendly',
+  competitive: 'audienceCompetitive',
+}
+
+const games: GameInfo[] = [
+  {
+    id: 'laser-tag',
+    title: 'Laser Tag',
+    category: 'FPS / PVP',
+    image: '/games/laser-tag.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['competitive', 'teamwork', 'beginnerFriendly', 'fun'],
+  },
+  {
+    id: 'mini-block-towers',
+    title: 'Mini Block Towers',
+    category: 'FPS / PVP',
+    image: '/games/mini-block-towers.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
+  },
+  {
+    id: 'office-war',
+    title: 'Office War',
+    category: 'FPS / PVP',
+    image: '/games/office-war.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['fun', 'teamwork', 'beginnerFriendly'],
+  },
+  {
+    id: 'paintball',
+    title: 'Paintball',
+    category: 'FPS / PVP',
+    image: '/games/paintball.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['competitive', 'teamwork', 'fun'],
+  },
+  {
+    id: 'snow-battle',
+    title: 'Snow Battle',
+    category: 'FPS / PVP',
+    image: '/games/snow-battle.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
+  },
+  {
+    id: 'castle-unspunnen',
+    title: 'Castle Unspunnen',
+    category: 'FPS / PVP',
+    image: '/games/castle-unspunnen.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['quest', 'teamwork', 'competitive'],
+  },
+  {
+    id: 'wild-west',
+    title: 'Wild West',
+    category: 'FPS / PVP',
+    image: '/games/wild-west.png',
+    durationMinutes: 20,
+    maxPlayersPerArena: 4,
+    audience: ['competitive', 'fun'],
+  },
+  {
+    id: 'arc-of-the-covenant',
+    title: 'The Secret of the Arc',
+    category: 'Escape',
+    image: '/games/arc-of-the-covenant.png',
+    durationMinutes: 40,
+    maxPlayersPerArena: 4,
+    audience: ['quest', 'teamwork'],
+  },
+  {
+    id: 'joller-house',
+    title: 'Joller House',
+    category: 'Escape',
+    image: '/games/joller-house.png',
+    durationMinutes: 40,
+    maxPlayersPerArena: 4,
+    audience: ['scary', 'quest', 'teamwork'],
+  },
 ]
 
 function isEscapeGameId(gameId: string | null | undefined) {
@@ -526,6 +622,13 @@ function isEscapeGameId(gameId: string | null | undefined) {
 function isEscapeSession(session: Pick<Session, 'confirmed_game_id' | 'game_options'> | null | undefined) {
   if (!session) return false
   return isEscapeGameId(session.confirmed_game_id) || (session.game_options ?? []).some((gameId) => isEscapeGameId(gameId))
+}
+
+function guideTextItems(value: string) {
+  return value
+    .split('|')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
 const ticketServices: Array<{
@@ -1591,6 +1694,8 @@ export default function WidgetPage({
   const [ticketStatus, setTicketStatus] = useState('')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
+  const [gameGuideOpen, setGameGuideOpen] = useState(false)
+  const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
   const [challengeTargetId, setChallengeTargetId] = useState('')
   const [challengeGameId, setChallengeGameId] = useState<GameId>('laser-tag')
   const [challengeDate, setChallengeDate] = useState(localDateString())
@@ -3683,6 +3788,12 @@ export default function WidgetPage({
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const currentTicketTotalPrice = currentTicketPricing.totalPrice
+  const gameGuideGames = useMemo(() => {
+    if (!gameGuideGameId) return games
+    const focusedGame = games.find((game) => game.id === gameGuideGameId)
+    if (!focusedGame) return games
+    return [focusedGame, ...games.filter((game) => game.id !== gameGuideGameId)]
+  }, [gameGuideGameId])
   const effectiveEditTicketDuration = editSessionDuration
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
   const ticketDurationOptions = useMemo(() => {
@@ -4673,6 +4784,77 @@ function handleSessionDateChange(value: string) {
       <button className={`session-tariff-link ${extraClassName}`.trim()} type="button" onClick={() => setTariffPaymentOpen(true)}>
         {text.sessionTariffTitle}
       </button>
+    )
+  }
+
+  function openGameGuide(gameId?: GameId | null) {
+    setGameGuideGameId(gameId || null)
+    setGameGuideOpen(true)
+  }
+
+  function renderGameGuideTrigger(gameId?: GameId | null, extraClassName = '') {
+    return (
+      <button
+        className={`game-guide-link ${extraClassName}`.trim()}
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation()
+          openGameGuide(gameId)
+        }}
+      >
+        {gameId ? text.gameGuideForGame : text.gameGuideOpen}
+      </button>
+    )
+  }
+
+  function renderGameGuideCard(game: GameInfo) {
+    const isEscape = game.category === 'Escape'
+    const summary = isEscape ? text.gameGuideEscapeSummary : text.gameGuideFpsSummary
+    const tips = guideTextItems(isEscape ? text.gameGuideEscapeTips : text.gameGuideFpsTips)
+    const ruleItems = isEscape ? [] : guideTextItems(text.gameGuideFpsRules)
+
+    return (
+      <article className="game-guide-card" key={game.id}>
+        <img src={game.image} alt="" loading="lazy" decoding="async" />
+        <div className="game-guide-card-body">
+          <div className="game-guide-card-head">
+            <div>
+              <h4>{game.title}</h4>
+              <span>{game.category}</span>
+            </div>
+            <div className="game-guide-facts">
+              <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
+              <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
+            </div>
+          </div>
+          <p>{summary}</p>
+          <div className="game-guide-audience" aria-label={text.gameGuideAudience}>
+            {game.audience.map((audience) => (
+              <span key={audience}>{text[gameAudienceLabelKeys[audience]]}</span>
+            ))}
+          </div>
+          {ruleItems.length > 0 && (
+            <div className="game-guide-rules">
+              <strong>{text.gameGuideRules}</strong>
+              <ul>
+                {ruleItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {tips.length > 0 && (
+            <div className="game-guide-tips">
+              <strong>{text.gameGuideTips}</strong>
+              <ul>
+                {tips.map((tip) => (
+                  <li key={tip}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </article>
     )
   }
 
@@ -8143,6 +8325,7 @@ function handleSessionDateChange(value: string) {
                           <span>{formatShortDate(session.date, language)}</span>
                           <span>{session.start_time.slice(0, 5)}</span>
                           <span>{session.duration_minutes} min</span>
+                          {renderGameGuideTrigger(coverGame.id, 'compact-game-guide-link')}
                           {!isTicket && !isPast && <span>{remaining} {text.seatsLeft}</span>}
                           {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                           {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
@@ -8326,6 +8509,7 @@ function handleSessionDateChange(value: string) {
                         >
                           {text.confirmPlayedGame}
                         </button>
+                        {renderGameGuideTrigger((confirmedGameDraft || coverGame.id) as GameId, 'confirm-game-guide-link')}
                       </div>
                     )}
 
@@ -8561,19 +8745,24 @@ function handleSessionDateChange(value: string) {
                             </div>
                           </div>
                           <div className="full">
-                            <label>{text.gameOptions} <span className="required">*</span></label>
+                            <div className="game-picker-head">
+                              <label>{text.gameOptions} <span className="required">*</span></label>
+                              {renderGameGuideTrigger(null, 'game-picker-guide-link')}
+                            </div>
                             <div className="game-picker compact-games">
                               {games.map((game) => (
-                                <button
-                                  className={editSelectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
-                                  key={game.id}
-                                  onClick={() => toggleEditGame(game.id)}
-                                  type="button"
-                                >
-                                  <img src={game.image} alt="" loading="lazy" decoding="async" />
-                                  <span>{game.title}</span>
-                                  <strong>{game.category}</strong>
-                                </button>
+                                <div className="game-card-shell" key={game.id}>
+                                  <button
+                                    className={editSelectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
+                                    onClick={() => toggleEditGame(game.id)}
+                                    type="button"
+                                  >
+                                    <img src={game.image} alt="" loading="lazy" decoding="async" />
+                                    <span>{game.title}</span>
+                                    <strong>{game.category}</strong>
+                                  </button>
+                                  {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -9139,20 +9328,22 @@ function handleSessionDateChange(value: string) {
                           if (!game) return null
 
                           return (
-                            <button
-                              className={[
-                                session.game_votes?.[userId] === gameId ? 'game-card selected' : 'game-card',
-                                busyVoteKey === `${session.id}-${gameId}` ? 'loading' : '',
-                              ].join(' ').trim()}
-                              key={gameId}
-                              disabled={busyVoteKey === `${session.id}-${gameId}` || !canMutatePastSession}
-                              onClick={() => voteForGame(session, gameId)}
-                              type="button"
-                            >
-                              <img src={game.image} alt="" loading="lazy" decoding="async" />
-                              <span>{game.title}</span>
-                              <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
-                            </button>
+                            <div className="game-card-shell strip-game-card-shell" key={gameId}>
+                              <button
+                                className={[
+                                  session.game_votes?.[userId] === gameId ? 'game-card selected' : 'game-card',
+                                  busyVoteKey === `${session.id}-${gameId}` ? 'loading' : '',
+                                ].join(' ').trim()}
+                                disabled={busyVoteKey === `${session.id}-${gameId}` || !canMutatePastSession}
+                                onClick={() => voteForGame(session, gameId)}
+                                type="button"
+                              >
+                                <img src={game.image} alt="" loading="lazy" decoding="async" />
+                                <span>{game.title}</span>
+                                <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
+                              </button>
+                              {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                            </div>
                           )
                         })}
                       </div>
@@ -9434,6 +9625,7 @@ function handleSessionDateChange(value: string) {
             <div className="ticket-explainer" role="note">
               <strong>{text.ticketsExplainerTitle}</strong>
               <span>{text.ticketsExplainerBody}</span>
+              {renderGameGuideTrigger(null, 'ticket-game-guide-link')}
             </div>
             {renderTariffTrigger('ticket-tariff-link')}
 
@@ -9901,19 +10093,24 @@ function handleSessionDateChange(value: string) {
                 <p className="full notice duration-recommendation">{sessionDurationRecommendation}</p>
               )}
               <div className="full">
-                <label>{text.gameOptions} <span className="required">*</span></label>
+                <div className="game-picker-head">
+                  <label>{text.gameOptions} <span className="required">*</span></label>
+                  {renderGameGuideTrigger(null, 'game-picker-guide-link')}
+                </div>
                 <div className="game-picker">
                   {games.map((game) => (
-                    <button
-                      className={selectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
-                      key={game.id}
-                      onClick={() => toggleGame(game.id)}
-                      type="button"
-                    >
-                      <img src={game.image} alt="" loading="lazy" decoding="async" />
-                      <span>{game.title}</span>
-                      <strong>{game.category}</strong>
-                    </button>
+                    <div className="game-card-shell" key={game.id}>
+                      <button
+                        className={selectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
+                        onClick={() => toggleGame(game.id)}
+                        type="button"
+                      >
+                        <img src={game.image} alt="" loading="lazy" decoding="async" />
+                        <span>{game.title}</span>
+                        <strong>{game.category}</strong>
+                      </button>
+                      {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -10550,6 +10747,23 @@ function handleSessionDateChange(value: string) {
         />
       )}
 
+      {gameGuideOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={() => setGameGuideOpen(false)}>
+          <div className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setGameGuideOpen(false)} aria-label={text.gameGuideClose}>
+              ×
+            </button>
+            <div className="game-guide-header">
+              <h3 id="game-guide-title">{text.gameGuideTitle}</h3>
+              <p>{text.gameGuideIntro}</p>
+            </div>
+            <div className="game-guide-scroll">
+              {gameGuideGames.map((game) => renderGameGuideCard(game))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedClub && (() => {
         const canManageSelectedClub = canManageClub(selectedClub)
         const canModerateSelectedClub = canModerateClubMembers(selectedClub)
@@ -10879,6 +11093,7 @@ function handleSessionDateChange(value: string) {
                                   <span>{formatShortDate(session.date, language)}</span>
                                   <span>{session.start_time.slice(0, 5)}</span>
                                   <span>{session.duration_minutes} min</span>
+                                  {renderGameGuideTrigger(coverGame.id, 'compact-game-guide-link')}
                                   {!isPast && <span>{remaining} {text.seatsLeft}</span>}
                                   {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                                 </div>
