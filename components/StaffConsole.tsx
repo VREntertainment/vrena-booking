@@ -982,6 +982,21 @@ const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'super_admin', 'owne
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const staffArenaOptions = [
+  { id: 'arena-1', label: 'Arena 1' },
+  { id: 'arena-2', label: 'Arena 2' },
+]
+const defaultStaffArenaIds = staffArenaOptions.map((arena) => arena.id)
+
+function parseStaffArenaIds(value?: string | null) {
+  const knownArenaIds = new Set(defaultStaffArenaIds)
+  const arenaIds = (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => knownArenaIds.has(item))
+
+  return arenaIds.length ? arenaIds : defaultStaffArenaIds
+}
 
 function isSuperAdminEmail(email?: string | null) {
   return Boolean(email && superAdminEmails.includes(email.toLowerCase()))
@@ -1615,6 +1630,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const comparisonLinePath = useMemo(() => buildLineChartPath(comparisonSeries, reportChartMax), [comparisonSeries, reportChartMax])
   const pieItems = useMemo(() => paymentPieItems(report, text), [report, text])
   const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
+  const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
 
   useEffect(() => {
     void loadStaffData()
@@ -1784,7 +1800,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       difficulty: gameForm.difficulty.trim() || null,
       image_url: gameForm.image_url.trim() || null,
       active: gameForm.active,
-      available_arena_ids: gameForm.available_arena_ids.split(',').map((item) => item.trim()).filter(Boolean),
+      available_arena_ids: parseStaffArenaIds(gameForm.available_arena_ids),
       created_by: profile?.id || null,
     }
     const request = gameForm.id
@@ -2046,6 +2062,25 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   function startNewGame() {
     setGameForm(defaultGameForm())
     setStatus('')
+  }
+
+  function updateGameArena(arenaId: string, checked: boolean) {
+    setGameForm((current) => {
+      const selected = new Set(parseStaffArenaIds(current.available_arena_ids))
+      if (checked) {
+        selected.add(arenaId)
+      } else if (selected.size > 1) {
+        selected.delete(arenaId)
+      }
+
+      return {
+        ...current,
+        available_arena_ids: staffArenaOptions
+          .filter((arena) => selected.has(arena.id))
+          .map((arena) => arena.id)
+          .join(', '),
+      }
+    })
   }
 
   function editPrice(rule: StaffPriceRule) {
@@ -2433,35 +2468,58 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               <label>{text.labels.maxPlayersArena}<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
               <label>{text.labels.rounds}<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
               <label>{text.labels.difficulty}<input value={gameForm.difficulty} onChange={(event) => setGameForm({ ...gameForm, difficulty: event.target.value })} /></label>
-              <div className="full staff-game-photo-field">
-                <span className="staff-field-label">{text.labels.gamePhoto}</span>
-                <label className={gameForm.image_url ? 'staff-game-photo-upload has-image' : 'staff-game-photo-upload'}>
-                  {gameForm.image_url ? (
-                    <span
-                      aria-hidden="true"
-                      className="staff-game-photo-preview"
-                      style={{ backgroundImage: `url(${gameForm.image_url})` }}
+              <div className="full staff-game-media-row">
+                <div className="staff-game-photo-field">
+                  <span className="staff-field-label">{text.labels.gamePhoto}</span>
+                  <label className={gameForm.image_url ? 'staff-game-photo-upload has-image' : 'staff-game-photo-upload'}>
+                    {gameForm.image_url ? (
+                      <span
+                        aria-hidden="true"
+                        className="staff-game-photo-preview"
+                        style={{ backgroundImage: `url(${gameForm.image_url})` }}
+                      />
+                    ) : (
+                      <span>
+                        <strong>{text.messages.clickUploadGamePhoto}</strong>
+                        <small>{text.gamePhotoHelp}</small>
+                      </span>
+                    )}
+                    {gameImageUploading && <em>{text.messages.uploadGamePhoto}</em>}
+                    <input
+                      accept={staffGameImageTypes.join(',')}
+                      disabled={gameImageUploading}
+                      type="file"
+                      onChange={handleGameImageUpload}
                     />
-                  ) : (
-                    <span>
-                      <strong>{text.messages.clickUploadGamePhoto}</strong>
-                      <small>{text.gamePhotoHelp}</small>
-                    </span>
-                  )}
-                  {gameImageUploading && <em>{text.messages.uploadGamePhoto}</em>}
-                  <input
-                    accept={staffGameImageTypes.join(',')}
-                    disabled={gameImageUploading}
-                    type="file"
-                    onChange={handleGameImageUpload}
-                  />
-                </label>
-                <p className="field-help">{text.gamePhotoHelp}</p>
+                  </label>
+                </div>
+                <div className="staff-game-settings-panel">
+                  <div>
+                    <span className="staff-field-label">{text.labels.arenaIds}</span>
+                    <div className="staff-arena-options">
+                      {staffArenaOptions.map((arena) => {
+                        const checked = selectedGameArenaIds.includes(arena.id)
+                        return (
+                          <label className="staff-arena-option" key={arena.id}>
+                            <input
+                              checked={checked}
+                              disabled={checked && selectedGameArenaIds.length <= 1}
+                              type="checkbox"
+                              onChange={(event) => updateGameArena(arena.id, event.target.checked)}
+                            />
+                            <span>{arena.label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <label className="checkbox-row staff-game-active-toggle">
+                    <input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} />
+                    <span>{text.labels.active}</span>
+                  </label>
+                </div>
               </div>
-              <label className="full">{text.labels.imageUrl}<input value={gameForm.image_url} onChange={(event) => setGameForm({ ...gameForm, image_url: event.target.value })} /></label>
-              <label className="full">{text.labels.arenaIds}<input value={gameForm.available_arena_ids} onChange={(event) => setGameForm({ ...gameForm, available_arena_ids: event.target.value })} /></label>
               <label className="full">{text.labels.description}<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
-              <label className="checkbox-row"><input type="checkbox" checked={gameForm.active} onChange={(event) => setGameForm({ ...gameForm, active: event.target.checked })} /> {text.labels.active}</label>
             </div>
             <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>{text.actions.saveGame}</button>
             </fieldset>
