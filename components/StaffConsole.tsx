@@ -220,7 +220,6 @@ const staffConsoleText = {
     noUsersFound: 'No users found.',
     reportTitleFallback: 'VRena report',
     split: 'Split',
-    subtitle: 'Counter bookings, manual payments, games, prices, discounts, and reports.',
     title: 'Staff Console',
     unknown: 'Unknown',
     unpaid: 'Unpaid',
@@ -423,11 +422,9 @@ const staffConsoleText = {
       readOnlyCommerce: 'Read-only view. Viewer can inspect these rules, but cannot save changes.',
       readOnlyGames: 'Read-only view. Viewer can inspect games, but cannot save changes.',
       readOnlyPrices: 'Read-only view. Viewer can inspect price rules, but cannot save changes.',
-      readOnlyRoles: 'Read-only view. Viewer can inspect role access, but cannot assign roles.',
       restoreIntro: 'Super Admin only. Restoring clears deleted_at, deleted_by, and delete_reason.',
       restoringRecord: 'Restoring record...',
       recordRestored: 'Record restored.',
-      roleHelpAdmin: 'Assign Staff Console access. Admin can manage every role; normal users stay as Player.',
       roleSaveFailed: 'Role was not saved. Apply the latest Supabase SQL migration, then try again.',
       roleSaveMismatch: 'Role was not saved. Supabase still returned a different role.',
       roleUpdated: 'Role updated.',
@@ -516,7 +513,6 @@ const staffConsoleText = {
     noUsersFound: 'Không tìm thấy người dùng.',
     reportTitleFallback: 'Báo cáo VRena',
     split: 'Tách thanh toán',
-    subtitle: 'Quản lý đặt chỗ tại quầy, thanh toán thủ công, trò chơi, giá, ưu đãi và báo cáo.',
     title: 'Bảng nhân viên',
     unknown: 'Không rõ',
     unpaid: 'Chưa thanh toán',
@@ -719,11 +715,9 @@ const staffConsoleText = {
       readOnlyCommerce: 'Chế độ chỉ xem. Viewer có thể xem quy tắc nhưng không thể lưu thay đổi.',
       readOnlyGames: 'Chế độ chỉ xem. Viewer có thể xem trò chơi nhưng không thể lưu thay đổi.',
       readOnlyPrices: 'Chế độ chỉ xem. Viewer có thể xem quy tắc giá nhưng không thể lưu thay đổi.',
-      readOnlyRoles: 'Chế độ chỉ xem. Viewer có thể xem phân quyền nhưng không thể gán vai trò.',
       restoreIntro: 'Chỉ Super Admin. Khôi phục sẽ xóa deleted_at, deleted_by và delete_reason.',
       restoringRecord: 'Đang khôi phục...',
       recordRestored: 'Đã khôi phục dữ liệu.',
-      roleHelpAdmin: 'Gán quyền Staff Console. Admin có thể quản lý mọi vai trò; người dùng thường giữ Player.',
       roleSaveFailed: 'Chưa lưu được vai trò. Hãy chạy SQL Supabase mới nhất rồi thử lại.',
       roleSaveMismatch: 'Chưa lưu được vai trò. Supabase vẫn trả về vai trò khác.',
       roleUpdated: 'Đã cập nhật vai trò.',
@@ -2163,7 +2157,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       <div className="section-head">
         <div>
           <h2>{text.title}</h2>
-          <p className="muted">{text.subtitle}</p>
         </div>
         <span className="staff-role-pill">{staffRoleName(role, text)}</span>
       </div>
@@ -2180,7 +2173,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
         {tabButton('report', text.tabs.report)}
       </div>
 
-      {status && <p className="notice">{status}</p>}
+      {status && <p className="sr-only" aria-live="polite">{status}</p>}
       {loading && <p className="notice" aria-busy="true">{text.loading}</p>}
 
       {currentTab === 'new' && (
@@ -2567,11 +2560,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               {text.labels.roleExplanation}
             </button>
           </div>
-          <p className="muted">
-            {canManageRoles
-              ? text.messages.roleHelpAdmin
-              : text.messages.readOnlyRoles}
-          </p>
           <div className="staff-role-tools">
             <label>
               <span className="staff-field-label">{text.labels.searchUsers}</span>
