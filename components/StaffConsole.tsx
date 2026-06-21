@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, RefObject } from 'react'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
@@ -234,6 +234,7 @@ const staffConsoleText = {
     walkIn: 'Walk-in / manual customer',
     actions: {
       addSplit: 'Add split',
+      calendar: 'Calendar',
       confirmBooking: 'Confirm booking',
       done: 'Done',
       excel: 'Excel',
@@ -259,6 +260,7 @@ const staffConsoleText = {
     aria: {
       bookingDate: 'Booking date',
       bookingTime: 'Booking time',
+      openBookingCalendar: 'Open booking calendar',
       compareEndDate: 'Compare end date',
       compareStartDate: 'Compare start date',
       discountValidFrom: 'Discount valid from',
@@ -538,6 +540,7 @@ const staffConsoleText = {
     walkIn: 'Khách tại quầy / nhập tay',
     actions: {
       addSplit: 'Thêm phần thanh toán',
+      calendar: 'Lịch',
       confirmBooking: 'Xác nhận đặt chỗ',
       done: 'Hoàn tất',
       excel: 'Excel',
@@ -563,6 +566,7 @@ const staffConsoleText = {
     aria: {
       bookingDate: 'Ngày đặt chỗ',
       bookingTime: 'Giờ đặt chỗ',
+      openBookingCalendar: 'Mở lịch đặt chỗ',
       compareEndDate: 'Ngày kết thúc so sánh',
       compareStartDate: 'Ngày bắt đầu so sánh',
       discountValidFrom: 'Ưu đãi hiệu lực từ',
@@ -857,10 +861,11 @@ type StaffPickerFieldProps = {
   type: 'date' | 'time'
   value: string
   placeholder?: string
+  inputRef?: RefObject<HTMLInputElement | null>
   onChange: (value: string) => void
 }
 
-function StaffPickerField({ ariaLabel, type, value, placeholder, onChange }: StaffPickerFieldProps) {
+function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onChange }: StaffPickerFieldProps) {
   const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
   const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
 
@@ -869,6 +874,7 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, onChange }: Sta
       <input
         aria-label={ariaLabel}
         className="staff-picker-native"
+        ref={inputRef}
         type={type}
         value={value}
         onChange={(event) => {
@@ -879,6 +885,16 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, onChange }: Sta
       <span className="staff-picker-display">{displayValue || fallback}</span>
     </span>
   )
+}
+
+function openStaffPicker(input: HTMLInputElement | null) {
+  if (!input) return
+  input.focus()
+  try {
+    input.showPicker?.()
+  } catch {
+    input.click()
+  }
 }
 
 function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
@@ -1524,6 +1540,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
+  const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     const staffTabs: StaffTab[] = ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
@@ -2282,7 +2299,17 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       {currentTab === 'new' && (
         <div className="staff-grid">
           <div className="staff-card staff-card-wide">
-            <h3>{text.labels.newBooking}</h3>
+            <div className="staff-card-heading">
+              <h3>{text.labels.newBooking}</h3>
+              <button
+                aria-label={text.aria.openBookingCalendar}
+                className="staff-calendar-shortcut"
+                type="button"
+                onClick={() => openStaffPicker(bookingDateInputRef.current)}
+              >
+                {text.actions.calendar}
+              </button>
+            </div>
             {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders}>
             <div className="form-grid compact-form-grid">
@@ -2317,7 +2344,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               </label>
               <label>
                 {text.labels.date}
-                <StaffPickerField ariaLabel={text.aria.bookingDate} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
+                <StaffPickerField ariaLabel={text.aria.bookingDate} inputRef={bookingDateInputRef} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
               </label>
               <label>
                 {text.labels.time}

@@ -1007,6 +1007,19 @@ body {
   margin: 0;
 }
 
+.app .staff-calendar-shortcut {
+  width: auto;
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
 .app .staff-link-button {
   min-height: auto;
   border: 0;
