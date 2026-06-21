@@ -136,6 +136,13 @@ type RoleSaveFeedback = {
   message: string
 }
 
+type StaffProfileDeleteDraft = {
+  profile: StaffProfile
+  ban: boolean
+  reason: string
+  confirmation: string
+}
+
 type StaffAuditLog = {
   id: string
   actor_user_id: string | null
@@ -237,6 +244,8 @@ const staffConsoleText = {
       remove: 'Remove',
       restore: 'Restore',
       cancel: 'Cancel',
+      confirmDeleteAccount: 'Delete account',
+      deleteAccount: 'Delete account',
       saveDiscount: 'Save discount',
       saveGame: 'Save game',
       saveLoyaltyRule: 'Save loyalty rule',
@@ -312,7 +321,9 @@ const staffConsoleText = {
       cancelled: 'Cancelled',
       cash: 'Cash',
       codeOptional: 'Code (optional)',
+      banAccount: 'Ban this account too',
       compare: 'Compare',
+      confirmDeleteWord: 'Type DELETE to confirm',
       createDiscount: 'Create discount',
       createGame: 'Create game',
       createLoyaltyRule: 'Create loyalty rule',
@@ -324,6 +335,7 @@ const staffConsoleText = {
       customerProfile: 'Customer profile',
       date: 'Date',
       dayType: 'Day type',
+      deleteReason: 'Reason',
       description: 'Description',
       difficulty: 'Difficulty',
       discount: 'Discount',
@@ -401,6 +413,12 @@ const staffConsoleText = {
     } satisfies Record<StaffLoyaltyRule['calculation_type'], string>,
     messages: {
       clickUploadGamePhoto: 'Click to upload game photo',
+      accountDeleteBanNote: 'Ban metadata stays attached to the deleted profile for future review.',
+      accountDeleteBody: 'This soft-deletes the user profile and removes it from active app lists. Historical sessions, scores, orders, and audit records stay intact.',
+      accountDeleteTitle: 'Delete account?',
+      accountDeleted: 'Account deleted.',
+      accountDeleting: 'Deleting account...',
+      accountDeleteConfirmationHelp: 'Write DELETE exactly to unlock this action.',
       discountSaved: 'Discount saved.',
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
@@ -530,6 +548,8 @@ const staffConsoleText = {
       remove: 'Xóa',
       restore: 'Khôi phục',
       cancel: 'Hủy',
+      confirmDeleteAccount: 'Xóa tài khoản',
+      deleteAccount: 'Xóa tài khoản',
       saveDiscount: 'Lưu ưu đãi',
       saveGame: 'Lưu trò chơi',
       saveLoyaltyRule: 'Lưu quy tắc điểm',
@@ -605,7 +625,9 @@ const staffConsoleText = {
       cancelled: 'Đã hủy',
       cash: 'Tiền mặt',
       codeOptional: 'Mã (không bắt buộc)',
+      banAccount: 'Cấm tài khoản này luôn',
       compare: 'So sánh',
+      confirmDeleteWord: 'Nhập DELETE để xác nhận',
       createDiscount: 'Tạo ưu đãi',
       createGame: 'Tạo trò chơi',
       createLoyaltyRule: 'Tạo quy tắc điểm',
@@ -617,6 +639,7 @@ const staffConsoleText = {
       customerProfile: 'Hồ sơ khách',
       date: 'Ngày',
       dayType: 'Loại ngày',
+      deleteReason: 'Lý do',
       description: 'Mô tả',
       difficulty: 'Độ khó',
       discount: 'Ưu đãi',
@@ -694,6 +717,12 @@ const staffConsoleText = {
     } satisfies Record<StaffLoyaltyRule['calculation_type'], string>,
     messages: {
       clickUploadGamePhoto: 'Bấm để tải ảnh trò chơi',
+      accountDeleteBanNote: 'Thông tin cấm sẽ gắn với hồ sơ đã xóa để kiểm tra sau.',
+      accountDeleteBody: 'Thao tác này xóa mềm hồ sơ người dùng và gỡ khỏi danh sách đang hoạt động. Phiên chơi, điểm, đơn hàng và nhật ký lịch sử vẫn được giữ.',
+      accountDeleteTitle: 'Xóa tài khoản?',
+      accountDeleted: 'Đã xóa tài khoản.',
+      accountDeleting: 'Đang xóa tài khoản...',
+      accountDeleteConfirmationHelp: 'Nhập chính xác DELETE để mở khóa thao tác này.',
       discountSaved: 'Đã lưu ưu đãi.',
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
@@ -1479,6 +1508,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
+  const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     const staffTabs: StaffTab[] = ['new', 'today', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
@@ -1943,6 +1973,44 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       delete next[profileId]
       return next
     })
+  }
+
+  function canDeleteProfileAccount(item: StaffProfile) {
+    if (!canManageRoles) return false
+    if (item.id === profile?.id) return false
+    const targetRank = staffRank(item.role, item.email)
+    return targetRank < 120 || canRestoreDeleted
+  }
+
+  function openProfileDeleteDialog(item: StaffProfile) {
+    if (!canDeleteProfileAccount(item)) return
+    setProfileDeleteDraft({ profile: item, ban: false, reason: '', confirmation: '' })
+  }
+
+  async function deleteProfileAccount() {
+    if (!profileDeleteDraft || !canDeleteProfileAccount(profileDeleteDraft.profile)) return
+    if (profileDeleteDraft.confirmation !== 'DELETE') return
+
+    setSaving(true)
+    setStatus(text.messages.accountDeleting)
+    const reason = profileDeleteDraft.reason.trim()
+    const { error } = await supabase.rpc('staff_delete_profile_account', {
+      p_profile_id: profileDeleteDraft.profile.id,
+      p_delete_reason: reason || null,
+      p_ban: profileDeleteDraft.ban,
+      p_ban_reason: profileDeleteDraft.ban ? reason || null : null,
+      p_confirmation: profileDeleteDraft.confirmation,
+    })
+
+    if (error) {
+      setStatus(error.message)
+    } else {
+      setStatus(text.messages.accountDeleted)
+      setProfileDeleteDraft(null)
+      setProfiles((items) => items.filter((item) => item.id !== profileDeleteDraft.profile.id))
+      await loadStaffData()
+    }
+    setSaving(false)
   }
 
   async function restoreDeletedRecord(record: SoftDeletedRecord) {
@@ -2628,6 +2696,16 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                         </button>
                       </div>
                     )}
+                    {canDeleteProfileAccount(item) && (
+                      <button
+                        className="danger small-button staff-role-delete-button"
+                        disabled={saving}
+                        type="button"
+                        onClick={() => openProfileDeleteDialog(item)}
+                      >
+                        {text.actions.deleteAccount}
+                      </button>
+                    )}
                     {rowFeedback && (
                       <small className={`staff-role-feedback ${rowFeedback.tone}`}>
                         {rowFeedback.message}
@@ -2867,6 +2945,65 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
             {auditLogs.map((log) => (
               <span key={log.id}>{new Date(log.created_at).toLocaleString()} · {log.action} · {log.entity_type}</span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {profileDeleteDraft && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="staff-account-delete-title"
+          onClick={() => !saving && setProfileDeleteDraft(null)}
+        >
+          <div className="login-modal staff-account-delete-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label={text.actions.cancel} onClick={() => setProfileDeleteDraft(null)} disabled={saving}>
+              ×
+            </button>
+            <h3 id="staff-account-delete-title">{text.messages.accountDeleteTitle}</h3>
+            <p>
+              <strong>{customerName(profileDeleteDraft.profile, text)}</strong>
+              {' · '}
+              {profileDeleteDraft.profile.email || profileDeleteDraft.profile.phone || text.noContact}
+            </p>
+            <p>{text.messages.accountDeleteBody}</p>
+            <label className="checkbox-row staff-account-ban-row">
+              <input
+                type="checkbox"
+                checked={profileDeleteDraft.ban}
+                onChange={(event) => setProfileDeleteDraft((current) => current ? { ...current, ban: event.target.checked } : current)}
+              />
+              {text.labels.banAccount}
+            </label>
+            {profileDeleteDraft.ban && (
+              <p className="staff-account-delete-warning">{text.messages.accountDeleteBanNote}</p>
+            )}
+            <label className="staff-note-field">
+              {text.labels.deleteReason}
+              <textarea
+                value={profileDeleteDraft.reason}
+                onChange={(event) => setProfileDeleteDraft((current) => current ? { ...current, reason: event.target.value } : current)}
+                placeholder={text.labels.notes}
+              />
+            </label>
+            <label className="staff-note-field">
+              {text.labels.confirmDeleteWord}
+              <input
+                value={profileDeleteDraft.confirmation}
+                onChange={(event) => setProfileDeleteDraft((current) => current ? { ...current, confirmation: event.target.value } : current)}
+                placeholder="DELETE"
+              />
+              <span>{text.messages.accountDeleteConfirmationHelp}</span>
+            </label>
+            <div className="action-row">
+              <button className="danger" disabled={saving || profileDeleteDraft.confirmation !== 'DELETE'} type="button" onClick={deleteProfileAccount}>
+                {saving ? text.messages.accountDeleting : text.actions.confirmDeleteAccount}
+              </button>
+              <button className="secondary" disabled={saving} type="button" onClick={() => setProfileDeleteDraft(null)}>
+                {text.actions.cancel}
+              </button>
+            </div>
           </div>
         </div>
       )}
