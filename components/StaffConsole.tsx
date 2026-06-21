@@ -46,7 +46,7 @@ type StaffGame = {
   number_of_rounds: number
   description: string | null
   difficulty?: string | null
-  audience?: StaffAudience[] | null
+  audience?: StaffAudience[] | string | null
   guide_language?: LanguageCode | null
   guide_summary?: StaffGuideTextMap | null
   guide_rules?: StaffGuideTextMap | null
@@ -1073,15 +1073,63 @@ const staffArenaOptions = [
 ]
 const defaultStaffArenaIds = staffArenaOptions.map((arena) => arena.id)
 
-function normalizeStaffAudience(value?: StaffAudience[] | string[] | null, legacyDifficulty?: string | null): StaffAudience[] {
+function normalizeStaffAudienceToken(value: string): StaffAudience | null {
+  const token = value
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+
+  if (!token) return null
+  if (token === 'familyfriendly' || token === 'family_friendly' || token === 'family') return 'family_friendly'
+  if (token === 'beginnerfriendly' || token === 'beginner_friendly' || token === 'beginner') return 'beginner_friendly'
+  if (token === 'scary' || token === 'hard') return 'scary'
+  if (token === 'fun' || token === 'medium') return 'fun'
+  if (token === 'quest') return 'quest'
+  if (token === 'teamwork' || token === 'team') return 'teamwork'
+  if (token === 'competitive') return 'competitive'
+  if (token === 'easy') return 'family_friendly'
+  return null
+}
+
+function normalizeStaffAudienceItems(value?: StaffAudience[] | string[] | string | null): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item))
+  if (typeof value !== 'string') return []
+
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (Array.isArray(parsed)) return parsed.map((item) => String(item))
+    if (typeof parsed === 'string') return [parsed]
+  } catch {
+    // Postgres array strings and legacy comma text are handled below.
+  }
+
+  return trimmed
+    .replace(/^\{|\}$/g, '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function normalizeStaffAudience(value?: StaffAudience[] | string[] | string | null, legacyDifficulty?: string | null): StaffAudience[] {
   const validOptions = new Set<StaffAudience>(staffAudienceOptions)
-  const selected = (Array.isArray(value) ? value : []).reduce<StaffAudience[]>((items, item) => {
-    const audience = item as StaffAudience
-    if (validOptions.has(audience)) items.push(audience)
+  const selected = normalizeStaffAudienceItems(value).reduce<StaffAudience[]>((items, item) => {
+    const audience = normalizeStaffAudienceToken(item)
+    if (audience && validOptions.has(audience) && !items.includes(audience)) items.push(audience)
     return items
   }, [])
 
   if (selected.length) return selected
+
+  const legacyAudience = normalizeStaffAudienceItems(legacyDifficulty).reduce<StaffAudience[]>((items, item) => {
+    const audience = normalizeStaffAudienceToken(item)
+    if (audience && validOptions.has(audience) && !items.includes(audience)) items.push(audience)
+    return items
+  }, [])
+  if (legacyAudience.length) return legacyAudience
 
   const legacy = (legacyDifficulty || '').toLowerCase()
   if (legacy.includes('family')) return ['family_friendly']
@@ -1095,9 +1143,14 @@ function normalizeStaffAudience(value?: StaffAudience[] | string[] | null, legac
   return []
 }
 
-function staffAudienceLabel(value?: StaffAudience[] | string[] | null, legacyDifficulty?: string | null, text: StaffConsoleCopy = staffConsoleText.en) {
+function staffAudienceLabel(value?: StaffAudience[] | string[] | string | null, legacyDifficulty?: string | null, text: StaffConsoleCopy = staffConsoleText.en) {
   const audience = normalizeStaffAudience(value, legacyDifficulty)
   return audience.map((item) => text.audienceOptions[item]).join(', ')
+}
+
+function isMissingStaffAudienceColumnError(message: string) {
+  const normalized = message.toLowerCase()
+  return normalized.includes('audience') && (normalized.includes('schema cache') || normalized.includes('column'))
 }
 
 function normalizeGuideLanguage(value?: string | null): LanguageCode {
@@ -2031,6 +2084,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   async function saveGame() {
     if (!canManageConfig) return
     setSaving(true)
+    const audience = normalizeStaffAudience(gameForm.audience)
     const payload = {
       slug: gameForm.slug || slugify(gameForm.name),
       name: gameForm.name.trim(),
@@ -2039,7 +2093,8 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       max_players_per_arena: Number(gameForm.max_players_per_arena),
       number_of_rounds: Number(gameForm.number_of_rounds),
       description: gameForm.description.trim() || null,
-      audience: normalizeStaffAudience(gameForm.audience),
+      difficulty: audience.join(', ') || null,
+      audience,
       guide_language: normalizeGuideLanguage(gameForm.guide_language),
       guide_summary: cleanGuideTextMap(gameForm.guide_summary),
       guide_rules: cleanGuideTextMap(gameForm.guide_rules),
@@ -2052,7 +2107,16 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     const request = gameForm.id
       ? supabase.from('staff_games').update(payload).eq('id', gameForm.id)
       : supabase.from('staff_games').insert(payload)
-    const { error } = await request
+    let { error } = await request
+    if (error && isMissingStaffAudienceColumnError(error.message)) {
+      const legacyPayload = { ...payload }
+      delete (legacyPayload as Partial<typeof payload>).audience
+      const legacyRequest = gameForm.id
+        ? supabase.from('staff_games').update(legacyPayload).eq('id', gameForm.id)
+        : supabase.from('staff_games').insert(legacyPayload)
+      const legacyResult = await legacyRequest
+      error = legacyResult.error
+    }
     setStatus(error ? error.message : text.messages.gameSaved)
     if (!error) setGameForm(defaultGameForm())
     await loadStaffData()
