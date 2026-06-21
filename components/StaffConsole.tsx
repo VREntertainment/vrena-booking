@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
+import { languageOptions, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
@@ -13,6 +14,7 @@ type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
 type StaffAudience = 'family_friendly' | 'scary' | 'fun' | 'quest' | 'teamwork' | 'beginner_friendly' | 'competitive'
+type StaffGuideTextMap = Partial<Record<LanguageCode, string>>
 type PaymentSplitDraft = {
   id: string
   payment_method: StaffPaymentMethod
@@ -45,6 +47,10 @@ type StaffGame = {
   description: string | null
   difficulty?: string | null
   audience?: StaffAudience[] | null
+  guide_language?: LanguageCode | null
+  guide_summary?: StaffGuideTextMap | null
+  guide_rules?: StaffGuideTextMap | null
+  guide_tips?: StaffGuideTextMap | null
   image_url: string | null
   active: boolean
   available_arena_ids: string[]
@@ -363,6 +369,10 @@ const staffConsoleText = {
       end: 'End',
       filterByRole: 'Filter by role',
       game: 'Game',
+      guideGameplay: 'GamePlay',
+      guideLanguage: 'Guide language',
+      guideSummary: 'Guide summary',
+      guideTips: 'Guide tips',
       gamePhoto: 'Game photo',
       games: 'Games',
       imageUrl: 'Image URL',
@@ -440,6 +450,7 @@ const staffConsoleText = {
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
       gamePhotoUploaded: 'Game photo uploaded. Save the game to keep it.',
+      gameGuideHelp: 'Select a language, then edit the summary, GamePlay, and tips for this game only. Use one line per GamePlay item or tip.',
       gameSaved: 'Game saved.',
       loyaltyIntro: 'Define how customers earn points. Redemption will use these rules later.',
       loyaltyRuleSaved: 'Loyalty rule saved.',
@@ -686,6 +697,10 @@ const staffConsoleText = {
       end: 'Kết thúc',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
+      guideGameplay: 'GamePlay',
+      guideLanguage: 'Ngôn ngữ hướng dẫn',
+      guideSummary: 'Tóm tắt hướng dẫn',
+      guideTips: 'Mẹo hướng dẫn',
       gamePhoto: 'Ảnh trò chơi',
       games: 'Trò chơi',
       imageUrl: 'URL ảnh',
@@ -763,6 +778,7 @@ const staffConsoleText = {
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
       gamePhotoUploaded: 'Đã tải ảnh. Lưu trò chơi để giữ ảnh.',
+      gameGuideHelp: 'Chọn ngôn ngữ, rồi sửa tóm tắt, GamePlay và mẹo chỉ cho trò chơi này. Mỗi dòng là một mục GamePlay hoặc mẹo.',
       gameSaved: 'Đã lưu trò chơi.',
       loyaltyIntro: 'Thiết lập cách khách hàng nhận điểm. Đổi điểm sẽ dùng các quy tắc này sau.',
       loyaltyRuleSaved: 'Đã lưu quy tắc điểm.',
@@ -976,6 +992,10 @@ const defaultGameForm = () => ({
   number_of_rounds: 1,
   description: '',
   audience: [] as StaffAudience[],
+  guide_language: 'en' as LanguageCode,
+  guide_summary: {} as StaffGuideTextMap,
+  guide_rules: {} as StaffGuideTextMap,
+  guide_tips: {} as StaffGuideTextMap,
   image_url: '',
   active: true,
   available_arena_ids: 'arena-1, arena-2',
@@ -1078,6 +1098,33 @@ function normalizeStaffAudience(value?: StaffAudience[] | string[] | null, legac
 function staffAudienceLabel(value?: StaffAudience[] | string[] | null, legacyDifficulty?: string | null, text: StaffConsoleCopy = staffConsoleText.en) {
   const audience = normalizeStaffAudience(value, legacyDifficulty)
   return audience.map((item) => text.audienceOptions[item]).join(', ')
+}
+
+function normalizeGuideLanguage(value?: string | null): LanguageCode {
+  return languageOptions.includes(value as LanguageCode) ? value as LanguageCode : 'en'
+}
+
+function normalizeGuideTextMap(value?: unknown): StaffGuideTextMap {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
+    const item = (value as Record<string, unknown>)[language]
+    if (typeof item === 'string' && item.trim()) {
+      guideText[language] = item
+    }
+    return guideText
+  }, {})
+}
+
+function cleanGuideTextMap(value: StaffGuideTextMap): StaffGuideTextMap {
+  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
+    const item = value[language]?.trim()
+    if (item) guideText[language] = item
+    return guideText
+  }, {})
+}
+
+function guideTextValue(value: StaffGuideTextMap, language: LanguageCode) {
+  return value[language] || ''
 }
 
 function parseStaffArenaIds(value?: string | null) {
@@ -1944,6 +1991,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       number_of_rounds: Number(gameForm.number_of_rounds),
       description: gameForm.description.trim() || null,
       audience: normalizeStaffAudience(gameForm.audience),
+      guide_language: normalizeGuideLanguage(gameForm.guide_language),
+      guide_summary: cleanGuideTextMap(gameForm.guide_summary),
+      guide_rules: cleanGuideTextMap(gameForm.guide_rules),
+      guide_tips: cleanGuideTextMap(gameForm.guide_tips),
       image_url: gameForm.image_url.trim() || null,
       active: gameForm.active,
       available_arena_ids: parseStaffArenaIds(gameForm.available_arena_ids),
@@ -2230,6 +2281,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       number_of_rounds: game.number_of_rounds,
       description: game.description || '',
       audience: normalizeStaffAudience(game.audience, game.difficulty),
+      guide_language: normalizeGuideLanguage(game.guide_language),
+      guide_summary: normalizeGuideTextMap(game.guide_summary),
+      guide_rules: normalizeGuideTextMap(game.guide_rules),
+      guide_tips: normalizeGuideTextMap(game.guide_tips),
       image_url: game.image_url || '',
       active: game.active,
       available_arena_ids: (game.available_arena_ids || []).join(', '),
@@ -2253,6 +2308,23 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       return {
         ...current,
         audience: staffAudienceOptions.filter((option) => selected.has(option)),
+      }
+    })
+  }
+
+  function updateGameGuideText(field: 'guide_summary' | 'guide_rules' | 'guide_tips', value: string) {
+    setGameForm((current) => {
+      const language = normalizeGuideLanguage(current.guide_language)
+      const nextGuideText = { ...normalizeGuideTextMap(current[field]) }
+      if (value) {
+        nextGuideText[language] = value
+      } else {
+        delete nextGuideText[language]
+      }
+
+      return {
+        ...current,
+        [field]: nextGuideText,
       }
     })
   }
@@ -2753,6 +2825,48 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 </div>
               </div>
               <label className="full">{text.labels.description}<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
+              <div className="full staff-game-guide-editor">
+                <div className="staff-game-guide-head">
+                  <div>
+                    <span className="staff-field-label">{text.labels.guideSummary}</span>
+                    <small>{text.messages.gameGuideHelp}</small>
+                  </div>
+                  <label>
+                    <span>{text.labels.guideLanguage}</span>
+                    <select
+                      value={gameForm.guide_language}
+                      onChange={(event) => setGameForm({ ...gameForm, guide_language: normalizeGuideLanguage(event.target.value) })}
+                    >
+                      {languageOptions.map((language) => (
+                        <option key={language} value={language}>{language.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="staff-game-guide-fields">
+                  <label>
+                    <span>{text.labels.guideSummary}</span>
+                    <textarea
+                      value={guideTextValue(gameForm.guide_summary, gameForm.guide_language)}
+                      onChange={(event) => updateGameGuideText('guide_summary', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>{text.labels.guideGameplay}</span>
+                    <textarea
+                      value={guideTextValue(gameForm.guide_rules, gameForm.guide_language)}
+                      onChange={(event) => updateGameGuideText('guide_rules', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>{text.labels.guideTips}</span>
+                    <textarea
+                      value={guideTextValue(gameForm.guide_tips, gameForm.guide_language)}
+                      onChange={(event) => updateGameGuideText('guide_tips', event.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
             <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>{text.actions.saveGame}</button>
             </fieldset>
