@@ -1386,6 +1386,22 @@ body {
   overflow: auto;
 }
 
+.app .staff-account-delete-modal {
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.app .staff-account-delete-warning {
+  border: 1px solid rgba(180, 35, 24, 0.18);
+  border-radius: 8px;
+  background: #fff3f0;
+  color: #9b1c14;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .app .staff-role-help-list {
   display: grid;
   gap: 8px;
@@ -1469,6 +1485,14 @@ body {
 .app .staff-role-actions button {
   min-height: 38px;
   padding: 8px 10px;
+}
+
+.app .staff-role-delete-button {
+  width: 100%;
+  min-height: 38px;
+  border-color: rgba(180, 35, 24, 0.42);
+  color: #b42318;
+  font-weight: 900;
 }
 
 .app .staff-role-feedback {
@@ -6698,6 +6722,12 @@ body {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
+  }
+
+  .app .staff-account-delete-warning {
+    background: rgba(185, 40, 31, 0.18);
+    border-color: rgba(255, 123, 113, 0.28);
+    color: #ffb8ae;
   }
 
   .app .staff-price-lines span,
