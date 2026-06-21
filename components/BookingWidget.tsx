@@ -125,6 +125,16 @@ type GameInfo = {
   audience: GameAudience[]
 }
 
+type StaffGameGuideText = Partial<Record<LanguageCode, string>>
+
+type StaffGameGuide = {
+  slug: string
+  guide_language?: string | null
+  guide_summary?: StaffGameGuideText | null
+  guide_rules?: StaffGameGuideText | null
+  guide_tips?: StaffGameGuideText | null
+}
+
 type TicketBookingConfirmation = {
   sessionId: string
   reference: string
@@ -626,9 +636,22 @@ function isEscapeSession(session: Pick<Session, 'confirmed_game_id' | 'game_opti
 
 function guideTextItems(value: string) {
   return value
-    .split('|')
+    .split(/\n|\|/)
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function normalizedGuideText(value: StaffGameGuideText | null | undefined, language: LanguageCode, fallbackLanguage: LanguageCode, fallback: string) {
+  const directText = value?.[language]?.trim()
+  if (directText) return directText
+
+  const fallbackLanguageText = value?.[fallbackLanguage]?.trim()
+  if (fallbackLanguageText) return fallbackLanguageText
+
+  const englishText = value?.en?.trim()
+  if (englishText) return englishText
+
+  return fallback
 }
 
 const ticketServices: Array<{
@@ -1696,6 +1719,9 @@ export default function WidgetPage({
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
   const [gameGuideOpen, setGameGuideOpen] = useState(false)
   const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
+  const [staffGameGuides, setStaffGameGuides] = useState<Partial<Record<GameId, StaffGameGuide>>>({})
+  const staffGameGuidesLoadedRef = useRef(false)
+  const staffGameGuidesLoadingRef = useRef(false)
   const [challengeTargetId, setChallengeTargetId] = useState('')
   const [challengeGameId, setChallengeGameId] = useState<GameId>('laser-tag')
   const [challengeDate, setChallengeDate] = useState(localDateString())
@@ -4787,9 +4813,36 @@ function handleSessionDateChange(value: string) {
     )
   }
 
+  async function ensureStaffGameGuidesLoaded() {
+    if (staffGameGuidesLoadedRef.current || staffGameGuidesLoadingRef.current) return
+
+    staffGameGuidesLoadingRef.current = true
+    const client = await getSupabase()
+    const { data, error } = await client
+      .from('staff_games')
+      .select('slug, guide_language, guide_summary, guide_rules, guide_tips')
+      .eq('active', true)
+
+    staffGameGuidesLoadingRef.current = false
+    staffGameGuidesLoadedRef.current = true
+
+    if (error || !data) return
+
+    const knownGameIds = new Set(games.map((game) => game.id))
+    const guidesByGame = ((data ?? []) as StaffGameGuide[]).reduce<Partial<Record<GameId, StaffGameGuide>>>((guides, guide) => {
+      if (knownGameIds.has(guide.slug as GameId)) {
+        guides[guide.slug as GameId] = guide
+      }
+      return guides
+    }, {})
+
+    setStaffGameGuides(guidesByGame)
+  }
+
   function openGameGuide(gameId?: GameId | null) {
     setGameGuideGameId(gameId || null)
     setGameGuideOpen(true)
+    void ensureStaffGameGuidesLoaded()
   }
 
   function renderGameGuideTrigger(gameId?: GameId | null, extraClassName = '') {
@@ -4810,21 +4863,26 @@ function handleSessionDateChange(value: string) {
   function renderGameGuideCard(game: GameInfo) {
     const isEscape = game.category === 'Escape'
     const isMiniBlockTowers = game.id === 'mini-block-towers'
-    const summary = isMiniBlockTowers
+    const staffGuide = staffGameGuides[game.id]
+    const fallbackGuideLanguage = isLanguageCode(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
+    const fallbackSummary = isMiniBlockTowers
       ? text.gameGuideBlockTowersSummary
       : isEscape
         ? text.gameGuideEscapeSummary
         : text.gameGuideFpsSummary
-    const tips = guideTextItems(
-      isMiniBlockTowers
-        ? text.gameGuideBlockTowersTips
-        : isEscape
-          ? text.gameGuideEscapeTips
-          : text.gameGuideFpsTips,
-    )
-    const ruleItems = isEscape
-      ? []
-      : guideTextItems(isMiniBlockTowers ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules)
+    const fallbackRules = isEscape
+      ? ''
+      : isMiniBlockTowers
+        ? text.gameGuideBlockTowersRules
+        : text.gameGuideFpsRules
+    const fallbackTips = isMiniBlockTowers
+      ? text.gameGuideBlockTowersTips
+      : isEscape
+        ? text.gameGuideEscapeTips
+        : text.gameGuideFpsTips
+    const summary = normalizedGuideText(staffGuide?.guide_summary, language, fallbackGuideLanguage, fallbackSummary)
+    const tips = guideTextItems(normalizedGuideText(staffGuide?.guide_tips, language, fallbackGuideLanguage, fallbackTips))
+    const ruleItems = guideTextItems(normalizedGuideText(staffGuide?.guide_rules, language, fallbackGuideLanguage, fallbackRules))
 
     return (
       <article className="game-guide-card" key={game.id}>
