@@ -10,6 +10,7 @@ type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffRole = 'super_admin' | 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
+type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
 type PaymentSplitDraft = {
   id: string
   payment_method: StaffPaymentMethod
@@ -263,6 +264,7 @@ const staffConsoleText = {
       openBookingCalendar: 'Open booking calendar',
       compareEndDate: 'Compare end date',
       compareStartDate: 'Compare start date',
+      discountValueUnit: 'Discount value unit',
       discountValidFrom: 'Discount valid from',
       discountValidUntil: 'Discount valid until',
       graphDisplay: 'Graph display',
@@ -569,6 +571,7 @@ const staffConsoleText = {
       openBookingCalendar: 'Mở lịch đặt chỗ',
       compareEndDate: 'Ngày kết thúc so sánh',
       compareStartDate: 'Ngày bắt đầu so sánh',
+      discountValueUnit: 'Đơn vị ưu đãi',
       discountValidFrom: 'Ưu đãi hiệu lực từ',
       discountValidUntil: 'Ưu đãi hiệu lực đến',
       graphDisplay: 'Cách hiển thị biểu đồ',
@@ -1086,6 +1089,23 @@ function formatDongInput(value: string | number | null | undefined) {
   return amount > 0 ? formatVnd(amount) : ''
 }
 
+function discountValueUnit(type: StaffDiscount['discount_type']): StaffDiscountValueUnit {
+  return type === 'fixed_amount' ? 'fixed_amount' : 'percentage'
+}
+
+function parsePercentInput(value: string | number | null | undefined) {
+  const rawValue = String(value ?? '').replace(/[^\d.]/g, '')
+  const amount = Number(rawValue)
+  if (!Number.isFinite(amount)) return 0
+  return Math.min(100, Math.max(0, amount))
+}
+
+function formatPercentInput(value: string | number | null | undefined) {
+  const amount = parsePercentInput(value)
+  if (amount <= 0) return ''
+  return Number.isInteger(amount) ? String(amount) : String(Number(amount.toFixed(2)))
+}
+
 function normalizePaymentSplits(splits: PaymentSplitDraft[]): PaymentSplitPayload[] {
   return splits
     .map((split) => ({
@@ -1177,6 +1197,12 @@ function calculateDiscount(discount: StaffDiscount | null, subtotal: number, uni
   }
 
   return Math.min(subtotal, Math.max(0, Math.round(amount)))
+}
+
+function formatDiscountRuleValue(discount: Pick<StaffDiscount, 'discount_type' | 'value'>, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (discount.discount_type === 'fixed_amount') return formatVnd(discount.value)
+  if (discount.discount_type === 'free_ticket') return text.discountTypes.free_ticket
+  return `${formatPercentInput(discount.value) || '0'}%`
 }
 
 function calculateManualDiscount(type: BookingForm['manualDiscountType'], value: number, subtotal: number) {
@@ -1648,6 +1674,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const pieItems = useMemo(() => paymentPieItems(report, text), [report, text])
   const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
   const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
+  const selectedDiscountValueUnit = discountValueUnit(discountForm.discount_type)
 
   useEffect(() => {
     void loadStaffData()
@@ -1883,6 +1910,37 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     if (!error) setDiscountForm(defaultDiscountForm())
     await loadStaffData()
     setSaving(false)
+  }
+
+  function updateDiscountType(nextType: StaffDiscount['discount_type']) {
+    setDiscountForm((current) => ({
+      ...current,
+      discount_type: nextType,
+      value: nextType === 'free_ticket'
+        ? 0
+        : discountValueUnit(nextType) === 'percentage'
+          ? parsePercentInput(current.value)
+          : Number(current.value) || 0,
+    }))
+  }
+
+  function updateDiscountValueUnit(unit: StaffDiscountValueUnit) {
+    setDiscountForm((current) => ({
+      ...current,
+      discount_type: unit,
+      value: unit === 'percentage'
+        ? parsePercentInput(current.value)
+        : Number(current.value) || 0,
+    }))
+  }
+
+  function updateDiscountValue(value: string) {
+    setDiscountForm((current) => ({
+      ...current,
+      value: discountValueUnit(current.discount_type) === 'fixed_amount'
+        ? parseDong(value)
+        : parsePercentInput(value),
+    }))
   }
 
   async function saveLoyaltyRule() {
@@ -2638,8 +2696,37 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 <div className="form-grid compact-form-grid">
                   <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
                   <label>{text.labels.name}<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
-                  <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => setDiscountForm({ ...discountForm, discount_type: event.target.value as StaffDiscount['discount_type'] })}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
-                  <label>{text.labels.value}<input type="number" value={discountForm.value} onChange={(event) => setDiscountForm({ ...discountForm, value: Number(event.target.value) })} /></label>
+                  <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => updateDiscountType(event.target.value as StaffDiscount['discount_type'])}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
+                  <label className="staff-discount-value-field">
+                    <span className="staff-label-line">
+                      <span>{text.labels.value}</span>
+                      <small>{formatDiscountRuleValue(discountForm, text)}</small>
+                    </span>
+                    <span className="staff-discount-value-control">
+                      <input
+                        disabled={discountForm.discount_type === 'free_ticket'}
+                        inputMode={selectedDiscountValueUnit === 'fixed_amount' ? 'numeric' : 'decimal'}
+                        max={selectedDiscountValueUnit === 'percentage' ? 100 : undefined}
+                        min={0}
+                        placeholder={selectedDiscountValueUnit === 'fixed_amount' ? '0 đ' : '%'}
+                        value={discountForm.discount_type === 'free_ticket'
+                          ? text.discountTypes.free_ticket
+                          : selectedDiscountValueUnit === 'fixed_amount'
+                            ? formatDongInput(discountForm.value)
+                            : formatPercentInput(discountForm.value)}
+                        onChange={(event) => updateDiscountValue(event.target.value)}
+                      />
+                      <select
+                        aria-label={text.aria.discountValueUnit}
+                        disabled={discountForm.discount_type === 'free_ticket'}
+                        value={selectedDiscountValueUnit}
+                        onChange={(event) => updateDiscountValueUnit(event.target.value as StaffDiscountValueUnit)}
+                      >
+                        <option value="percentage">%</option>
+                        <option value="fixed_amount">VND</option>
+                      </select>
+                    </span>
+                  </label>
                   <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.discountValidFrom} placeholder={text.chooseDate} type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
                   <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.discountValidUntil} placeholder={text.chooseDate} type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
                   <label>{text.labels.maxUses}<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
@@ -2694,7 +2781,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
                   <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                     <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                    <span>{text.discountTypes[discount.discount_type]} · {discount.value} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                    <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
                   </button>
                 ))}
                 {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">{text.messages.noVouchers}</p>}
