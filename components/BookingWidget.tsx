@@ -4809,9 +4809,22 @@ function handleSessionDateChange(value: string) {
 
   function renderGameGuideCard(game: GameInfo) {
     const isEscape = game.category === 'Escape'
-    const summary = isEscape ? text.gameGuideEscapeSummary : text.gameGuideFpsSummary
-    const tips = guideTextItems(isEscape ? text.gameGuideEscapeTips : text.gameGuideFpsTips)
-    const ruleItems = isEscape ? [] : guideTextItems(text.gameGuideFpsRules)
+    const isMiniBlockTowers = game.id === 'mini-block-towers'
+    const summary = isMiniBlockTowers
+      ? text.gameGuideBlockTowersSummary
+      : isEscape
+        ? text.gameGuideEscapeSummary
+        : text.gameGuideFpsSummary
+    const tips = guideTextItems(
+      isMiniBlockTowers
+        ? text.gameGuideBlockTowersTips
+        : isEscape
+          ? text.gameGuideEscapeTips
+          : text.gameGuideFpsTips,
+    )
+    const ruleItems = isEscape
+      ? []
+      : guideTextItems(isMiniBlockTowers ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules)
 
     return (
       <article className="game-guide-card" key={game.id}>
@@ -4834,24 +4847,24 @@ function handleSessionDateChange(value: string) {
             ))}
           </div>
           {ruleItems.length > 0 && (
-            <div className="game-guide-rules">
-              <strong>{text.gameGuideRules}</strong>
+            <details className="game-guide-panel">
+              <summary>{text.gameGuideRules}</summary>
               <ul>
                 {ruleItems.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
           {tips.length > 0 && (
-            <div className="game-guide-tips">
-              <strong>{text.gameGuideTips}</strong>
+            <details className="game-guide-panel">
+              <summary>{text.gameGuideTips}</summary>
               <ul>
                 {tips.map((tip) => (
                   <li key={tip}>{tip}</li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </div>
       </article>

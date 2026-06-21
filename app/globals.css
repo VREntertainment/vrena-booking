@@ -5797,8 +5797,7 @@ body {
 
 .app .game-guide-card-head span,
 .app .game-guide-card-body p,
-.app .game-guide-rules li,
-.app .game-guide-tips li {
+.app .game-guide-panel li {
   color: #637075;
   line-height: 1.38;
 }
@@ -5833,23 +5832,50 @@ body {
   font-weight: 900;
 }
 
-.app .game-guide-rules,
-.app .game-guide-tips {
-  display: grid;
-  gap: 6px;
+.app .game-guide-panel {
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
 }
 
-.app .game-guide-rules strong,
-.app .game-guide-tips strong {
+.app .game-guide-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 10px;
   color: #071112;
+  font-weight: 900;
 }
 
-.app .game-guide-rules ul,
-.app .game-guide-tips ul {
+.app .game-guide-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.app .game-guide-panel summary::after {
+  content: '+';
+  color: #3059ff;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app .game-guide-panel[open] summary {
+  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+}
+
+.app .game-guide-panel[open] summary::after {
+  content: '-';
+}
+
+.app .game-guide-panel ul {
   display: grid;
   gap: 4px;
   margin: 0;
-  padding-left: 18px;
+  padding: 9px 12px 10px 28px;
 }
 
 .app .compact-games {
@@ -7710,8 +7736,7 @@ body {
   .app .game-guide-card-head h4,
   .app .game-guide-card-head span,
   .app .game-guide-card-body p,
-  .app .game-guide-rules li,
-  .app .game-guide-tips li {
+  .app .game-guide-panel li {
     color: #aeb9bd;
   }
 
@@ -7720,9 +7745,21 @@ body {
     border-color: rgba(255, 255, 255, 0.12);
   }
 
+  .app .game-guide-panel {
+    background: #0c1517;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .app .game-guide-panel summary {
+    color: #f6f7f9;
+  }
+
+  .app .game-guide-panel[open] summary {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
   .app .game-guide-facts strong,
-  .app .game-guide-rules strong,
-  .app .game-guide-tips strong {
+  .app .game-guide-panel summary {
     color: #f6f7f9;
   }
 
