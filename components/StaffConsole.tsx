@@ -12,7 +12,7 @@ type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'emai
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
-type StaffAudience = 'family_friendly' | 'scary' | 'fun'
+type StaffAudience = 'family_friendly' | 'scary' | 'fun' | 'quest' | 'teamwork' | 'beginner_friendly' | 'competitive'
 type PaymentSplitDraft = {
   id: string
   payment_method: StaffPaymentMethod
@@ -320,6 +320,10 @@ const staffConsoleText = {
       family_friendly: 'Family friendly',
       scary: 'Scary',
       fun: 'Fun',
+      quest: 'Quest',
+      teamwork: 'Teamwork',
+      beginner_friendly: 'Beginner friendly',
+      competitive: 'Competitive',
     } satisfies Record<StaffAudience, string>,
     labels: {
       actions: 'Actions',
@@ -639,6 +643,10 @@ const staffConsoleText = {
       family_friendly: 'Thân thiện gia đình',
       scary: 'Rùng rợn',
       fun: 'Vui nhộn',
+      quest: 'Nhiệm vụ',
+      teamwork: 'Đồng đội',
+      beginner_friendly: 'Dễ cho người mới',
+      competitive: 'Thi đấu',
     } satisfies Record<StaffAudience, string>,
     labels: {
       actions: 'Thao tác',
@@ -1030,7 +1038,15 @@ const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
-const staffAudienceOptions: StaffAudience[] = ['family_friendly', 'scary', 'fun']
+const staffAudienceOptions: StaffAudience[] = [
+  'family_friendly',
+  'scary',
+  'fun',
+  'quest',
+  'teamwork',
+  'beginner_friendly',
+  'competitive',
+]
 const staffArenaOptions = [
   { id: 'arena-1', label: 'Arena 1' },
   { id: 'arena-2', label: 'Arena 2' },
@@ -1050,6 +1066,10 @@ function normalizeStaffAudience(value?: StaffAudience[] | string[] | null, legac
   const legacy = (legacyDifficulty || '').toLowerCase()
   if (legacy.includes('family')) return ['family_friendly']
   if (legacy.includes('scary') || legacy.includes('hard')) return ['scary']
+  if (legacy.includes('beginner')) return ['beginner_friendly']
+  if (legacy.includes('quest')) return ['quest']
+  if (legacy.includes('team')) return ['teamwork']
+  if (legacy.includes('competitive')) return ['competitive']
   if (legacy.includes('fun') || legacy.includes('medium')) return ['fun']
   if (legacy.includes('easy')) return ['family_friendly', 'fun']
   return []
@@ -2678,21 +2698,34 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 <div className="staff-game-settings-panel">
                   <div>
                     <span className="staff-field-label">{text.labels.audience}</span>
-                    <div className="staff-audience-options">
-                      {staffAudienceOptions.map((audience) => {
-                        const checked = selectedGameAudiences.includes(audience)
-                        return (
-                          <label className="staff-audience-option" key={audience}>
-                            <input
-                              checked={checked}
-                              type="checkbox"
-                              onChange={(event) => updateGameAudience(audience, event.target.checked)}
-                            />
-                            <span>{text.audienceOptions[audience]}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
+                    <details className="staff-audience-menu">
+                      <summary className="staff-audience-summary">
+                        <span className="staff-audience-value">
+                          {selectedGameAudiences.length ? (
+                            selectedGameAudiences.map((audience) => (
+                              <span className="staff-audience-chip" key={audience}>{text.audienceOptions[audience]}</span>
+                            ))
+                          ) : (
+                            <span className="staff-audience-placeholder">{text.any}</span>
+                          )}
+                        </span>
+                      </summary>
+                      <div className="staff-audience-dropdown">
+                        {staffAudienceOptions.map((audience) => {
+                          const checked = selectedGameAudiences.includes(audience)
+                          return (
+                            <label className="staff-audience-option" key={audience}>
+                              <input
+                                checked={checked}
+                                type="checkbox"
+                                onChange={(event) => updateGameAudience(audience, event.target.checked)}
+                              />
+                              <span>{text.audienceOptions[audience]}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </details>
                   </div>
                   <div>
                     <span className="staff-field-label">{text.labels.arenaIds}</span>

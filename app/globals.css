@@ -1309,14 +1309,88 @@ body {
   min-width: 0;
 }
 
-.app .staff-audience-options,
 .app .staff-arena-options {
   display: grid;
   gap: 8px;
 }
 
-.app .staff-audience-options {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+.app .staff-audience-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.app .staff-audience-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #071112;
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+  padding: 8px 10px;
+}
+
+.app .staff-audience-summary::-webkit-details-marker {
+  display: none;
+}
+
+.app .staff-audience-summary::after {
+  content: "⌄";
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+.app .staff-audience-menu[open] .staff-audience-summary::after {
+  transform: rotate(180deg);
+}
+
+.app .staff-audience-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-audience-chip,
+.app .staff-audience-placeholder {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  min-height: 24px;
+  padding: 3px 8px;
+}
+
+.app .staff-audience-chip {
+  background: rgba(48, 89, 255, 0.09);
+  color: #254be8;
+}
+
+.app .staff-audience-placeholder {
+  color: #637075;
+}
+
+.app .staff-audience-dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(7, 17, 18, 0.14);
+  padding: 8px;
 }
 
 .app .staff-audience-option,
@@ -6804,6 +6878,8 @@ body {
   .app .staff-restore-row,
   .app .staff-role-help-item,
   .app .staff-game-photo-upload,
+  .app .staff-audience-summary,
+  .app .staff-audience-dropdown,
   .app .staff-audience-option,
   .app .staff-arena-option,
   .app .staff-game-active-toggle,
@@ -6815,6 +6891,15 @@ body {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
+  }
+
+  .app .staff-audience-chip {
+    background: rgba(48, 89, 255, 0.24);
+    color: #c7d5ff;
+  }
+
+  .app .staff-audience-placeholder {
+    color: #aeb9bd;
   }
 
   .app .staff-account-delete-warning {
