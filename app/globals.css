@@ -1253,6 +1253,22 @@ body {
   gap: 8px;
 }
 
+.app .staff-discount-value-field {
+  min-width: 0;
+}
+
+.app .staff-discount-value-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, 0.36fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.app .staff-discount-value-control input,
+.app .staff-discount-value-control select {
+  min-width: 0;
+}
+
 .app .staff-payment-splits,
 .app .staff-payment-split-list {
   display: grid;
