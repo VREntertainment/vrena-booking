@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
-import { languageOptions, type LanguageCode } from '../lib/i18n'
+import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
@@ -1125,6 +1125,55 @@ function cleanGuideTextMap(value: StaffGuideTextMap): StaffGuideTextMap {
 
 function guideTextValue(value: StaffGuideTextMap, language: LanguageCode) {
   return value[language] || ''
+}
+
+function guideTextForEditing(value: string) {
+  return value
+    .split('|')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join('\n')
+}
+
+function defaultGameGuideMaps(slug: string, gameType: StaffGame['game_type']) {
+  const isMiniBlockTowers = slug === 'mini-block-towers'
+  const isEscape = gameType === 'escape'
+
+  return languageOptions.reduce<{
+    guide_summary: StaffGuideTextMap
+    guide_rules: StaffGuideTextMap
+    guide_tips: StaffGuideTextMap
+  }>((guides, language) => {
+    const text = uiText[language]
+    const summary = isMiniBlockTowers
+      ? text.gameGuideBlockTowersSummary
+      : isEscape
+        ? text.gameGuideEscapeSummary
+        : text.gameGuideFpsSummary
+    const rules = isEscape
+      ? ''
+      : isMiniBlockTowers
+        ? text.gameGuideBlockTowersRules
+        : text.gameGuideFpsRules
+    const tips = isMiniBlockTowers
+      ? text.gameGuideBlockTowersTips
+      : isEscape
+        ? text.gameGuideEscapeTips
+        : text.gameGuideFpsTips
+
+    guides.guide_summary[language] = guideTextForEditing(summary)
+    if (rules.trim()) guides.guide_rules[language] = guideTextForEditing(rules)
+    guides.guide_tips[language] = guideTextForEditing(tips)
+    return guides
+  }, { guide_summary: {}, guide_rules: {}, guide_tips: {} })
+}
+
+function guideTextMapWithDefaults(value: unknown, defaults: StaffGuideTextMap) {
+  const savedGuideText = normalizeGuideTextMap(value)
+  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
+    guideText[language] = savedGuideText[language] || defaults[language] || ''
+    return guideText
+  }, {})
 }
 
 function parseStaffArenaIds(value?: string | null) {
@@ -2271,6 +2320,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   }
 
   function editGame(game: StaffGame) {
+    const defaultGuides = defaultGameGuideMaps(game.slug, game.game_type)
     setGameForm({
       id: game.id,
       slug: game.slug,
@@ -2282,9 +2332,9 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       description: game.description || '',
       audience: normalizeStaffAudience(game.audience, game.difficulty),
       guide_language: normalizeGuideLanguage(game.guide_language),
-      guide_summary: normalizeGuideTextMap(game.guide_summary),
-      guide_rules: normalizeGuideTextMap(game.guide_rules),
-      guide_tips: normalizeGuideTextMap(game.guide_tips),
+      guide_summary: guideTextMapWithDefaults(game.guide_summary, defaultGuides.guide_summary),
+      guide_rules: guideTextMapWithDefaults(game.guide_rules, defaultGuides.guide_rules),
+      guide_tips: guideTextMapWithDefaults(game.guide_tips, defaultGuides.guide_tips),
       image_url: game.image_url || '',
       active: game.active,
       available_arena_ids: (game.available_arena_ids || []).join(', '),
@@ -2824,7 +2874,6 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                   </label>
                 </div>
               </div>
-              <label className="full">{text.labels.description}<textarea value={gameForm.description} onChange={(event) => setGameForm({ ...gameForm, description: event.target.value })} /></label>
               <div className="full staff-game-guide-editor">
                 <div className="staff-game-guide-head">
                   <div>
