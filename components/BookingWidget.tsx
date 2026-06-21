@@ -21,7 +21,7 @@ const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
-const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status'
+const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status, deleted_at'
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
 const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
@@ -413,6 +413,7 @@ type ClubMember = {
   status: 'pending' | 'approved'
   role?: ClubMemberRole | null
   created_at?: string | null
+  deleted_at?: string | null
 }
 
 type Club = {
@@ -3335,9 +3336,36 @@ export default function WidgetPage({
       return
     }
 
+    let currentUserMemberships: ClubMember[] = []
+    if (userId) {
+      const membershipResult = await client
+        .from('club_members')
+        .select(CLUB_MEMBER_SELECT)
+        .eq('profile_id', userId)
+        .is('deleted_at', null)
+
+      let membershipData = membershipResult.data as ClubMember[] | null
+      let membershipError = membershipResult.error
+
+      if (membershipError) {
+        const fallbackMembershipResult = await client
+          .from('club_members')
+          .select(CLUB_MEMBER_SELECT_BASE)
+          .eq('profile_id', userId)
+          .is('deleted_at', null)
+
+        membershipData = fallbackMembershipResult.data as ClubMember[] | null
+        membershipError = fallbackMembershipResult.error
+      }
+
+      if (!membershipError) {
+        currentUserMemberships = membershipData ?? []
+      }
+    }
+
     clubsLoadedRef.current = true
     clubsLoadingRef.current = false
-    setClubs(data ?? [])
+    setClubs((data ?? []).map((club) => mergeCurrentUserClubMembership(club, currentUserMemberships)))
   }
 
   async function loadTournamentData() {
@@ -4192,7 +4220,7 @@ function handleSessionDateChange(value: string) {
 
   const selectedClubMembership = useMemo(() => {
     if (!selectedClub) return undefined
-    return (selectedClub.club_members ?? []).find((member) => member.profile_id === userId)
+    return clubMembers(selectedClub).find((member) => member.profile_id === userId)
   }, [selectedClub, userId])
 
   const selectedClubSessions = useMemo(() => {
@@ -5400,7 +5428,17 @@ function handleSessionDateChange(value: string) {
   }
 
   function clubMembers(club: Club | undefined): ClubMember[] {
-    return Array.isArray(club?.club_members) ? club.club_members : []
+    return Array.isArray(club?.club_members) ? club.club_members.filter((member) => !member.deleted_at) : []
+  }
+
+  function mergeCurrentUserClubMembership(club: Club, memberships: ClubMember[]): Club {
+    const currentUserMemberships = memberships.filter((member) => member.club_id === club.id && !member.deleted_at)
+    if (currentUserMemberships.length === 0) return club
+
+    const mergedMembers = new Map<string, ClubMember>()
+    clubMembers(club).forEach((member) => mergedMembers.set(member.id, member))
+    currentUserMemberships.forEach((member) => mergedMembers.set(member.id, member))
+    return { ...club, club_members: Array.from(mergedMembers.values()) }
   }
 
   function approvedClubMember(club: Club, profileId = userId) {
