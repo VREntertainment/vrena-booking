@@ -1489,12 +1489,14 @@ type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'cl
 type BookingWidgetProps = {
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
+  initialCreateSessionMode?: 'calendar' | 'form'
   initialView?: BookingWidgetView
 }
 
 export default function WidgetPage({
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
+  initialCreateSessionMode = 'form',
   initialView = 'leaderboard',
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<BookingWidgetView>(initialView)
@@ -1581,7 +1583,7 @@ export default function WidgetPage({
   const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [createStatus, setCreateStatus] = useState('')
   const [isCreating, setIsCreating] = useState(false)
-  const [createSessionMode, setCreateSessionMode] = useState<'calendar' | 'form'>('form')
+  const [createSessionMode, setCreateSessionMode] = useState<'calendar' | 'form'>(initialCreateSessionMode)
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(localDateString()))
   const [ticketType, setTicketType] = useState<TicketType>('individual')
   const [ticketDate, setTicketDate] = useState(localDateString())
@@ -2071,6 +2073,15 @@ export default function WidgetPage({
 
   function showCreateFormMode() {
     setCreateSessionMode('form')
+  }
+
+  function openCreateCalendarView() {
+    setActiveView('create')
+    setCreateSessionMode('calendar')
+    void loadCalendarWeek(calendarWeekStart)
+    window.setTimeout(() => {
+      document.querySelector('.calendar-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
   }
 
   function moveCalendarWeek(dayOffset: number) {
@@ -3357,6 +3368,11 @@ export default function WidgetPage({
       ensureNetworkDataLoaded()
     }
   }, [activeView])
+
+  useEffect(() => {
+    if (activeView !== 'create' || createSessionMode !== 'calendar') return
+    void loadCalendarWeek(calendarWeekStart)
+  }, [activeView, calendarWeekStart, createSessionMode])
 
   useEffect(() => {
     if (sessionTimeScope === 'past') {
@@ -9414,7 +9430,7 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            <StaffConsole authEmail={authEmail} language={language} profile={profile} />
+            <StaffConsole authEmail={authEmail} language={language} profile={profile} onOpenCalendar={openCreateCalendarView} />
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>

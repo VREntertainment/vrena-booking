@@ -189,6 +189,7 @@ type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
   language?: string
+  onOpenCalendar?: () => void
 }
 
 type StaffConsoleLanguage = 'en' | 'vi'
@@ -1526,7 +1527,7 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail, language }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, onOpenCalendar }: StaffConsoleProps) {
   const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
@@ -2363,7 +2364,14 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 aria-label={text.aria.openBookingCalendar}
                 className="staff-calendar-shortcut"
                 type="button"
-                onClick={() => openStaffPicker(bookingDateInputRef.current)}
+                onClick={() => {
+                  if (onOpenCalendar) {
+                    onOpenCalendar()
+                    return
+                  }
+
+                  openStaffPicker(bookingDateInputRef.current)
+                }}
               >
                 {text.actions.calendar}
               </button>

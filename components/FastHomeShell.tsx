@@ -75,6 +75,7 @@ type LeaderboardClub = {
 }
 
 type HeavyTarget = {
+  createSessionMode?: 'calendar' | 'form'
   profileId?: string
   sessionId?: string
   view: AppView
@@ -448,6 +449,7 @@ export default function FastHomeShell() {
 
     return (
       <FullBookingWidget
+        initialCreateSessionMode={heavyTarget.createSessionMode}
         initialSelectedPlayerId={heavyTarget.profileId || ''}
         initialSelectedPlayerSessionId={heavyTarget.sessionId || ''}
         initialView={heavyTarget.view}
@@ -679,6 +681,11 @@ export default function FastHomeShell() {
     setHeavyTarget({ profileId, view })
   }
 
+  function openFullAppCalendar() {
+    setStaffOnlyModeOpen(false)
+    setHeavyTarget({ createSessionMode: 'calendar', view: 'create' })
+  }
+
   function chooseMobileStaffMode(view: 'client' | 'staff') {
     setStaffModeChoiceResolved(true)
     if (view === 'staff') setStaffOnlyModeOpen(true)
@@ -743,7 +750,7 @@ export default function FastHomeShell() {
     return (
       <div className="app staff-only-app">
         <main>
-          <StaffConsolePanel authEmail={authEmail} language={language} profile={profile} />
+          <StaffConsolePanel authEmail={authEmail} language={language} profile={profile} onOpenCalendar={openFullAppCalendar} />
         </main>
       </div>
     )
