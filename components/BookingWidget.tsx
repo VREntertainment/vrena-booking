@@ -1727,6 +1727,13 @@ function scheduleDeferredWork(callback: () => void) {
   return () => window.clearTimeout(handle)
 }
 
+function schedulePostEffectStateUpdate(callback: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const handle = window.setTimeout(callback, 0)
+  return () => window.clearTimeout(handle)
+}
+
 type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
 type BookingWidgetProps = {
@@ -1955,7 +1962,7 @@ export default function WidgetPage({
   const [busyMessageKey, setBusyMessageKey] = useState('')
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
-  const [language, setLanguage] = useState<LanguageCode>('en')
+  const [language, setLanguage] = useState<LanguageCode>(() => getInitialLanguage())
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
@@ -4098,8 +4105,6 @@ export default function WidgetPage({
       ensureClubsLoaded()
     })
 
-    setLanguage(getInitialLanguage())
-
     void (async () => {
       const recoverySessionReady = await preparePasswordRecoveryFromUrl()
       if (!active) return
@@ -4195,11 +4200,12 @@ export default function WidgetPage({
     networkDataLoadingRef.current = false
 
     if (!userId) {
-      setNetworkTablesReady(false)
-      setFriendConnections([])
-      setSessionInvites([])
-      resetSessionMessageState()
-      return
+      return schedulePostEffectStateUpdate(() => {
+        setNetworkTablesReady(false)
+        setFriendConnections([])
+        setSessionInvites([])
+        resetSessionMessageState()
+      })
     }
 
     return scheduleDeferredWork(() => ensureNetworkDataLoaded())
@@ -4282,7 +4288,7 @@ export default function WidgetPage({
 
   useEffect(() => {
     if (!profile) return
-    syncProfileEverywhere(profile)
+    return schedulePostEffectStateUpdate(() => syncProfileEverywhere(profile))
   }, [
     profile?.id,
     profile?.nickname,
@@ -4512,16 +4518,18 @@ export default function WidgetPage({
   }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
 
   useEffect(() => {
-    if (ticketDurationOptions.length === 0) {
-      if (ticketTime) setTicketTime('')
-      return
-    }
+    return schedulePostEffectStateUpdate(() => {
+      if (ticketDurationOptions.length === 0) {
+        if (ticketTime) setTicketTime('')
+        return
+      }
 
-    if (!ticketDurationOptions.includes(activeTicketDuration)) {
-      setTicketDuration(ticketDurationOptions[0])
-      setTicketTime('')
-      setTicketConfirmation(null)
-    }
+      if (!ticketDurationOptions.includes(activeTicketDuration)) {
+        setTicketDuration(ticketDurationOptions[0])
+        setTicketTime('')
+        setTicketConfirmation(null)
+      }
+    })
   }, [activeTicketDuration, ticketDurationOptions, ticketTime])
 
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
@@ -4892,22 +4900,26 @@ function handleSessionDateChange(value: string) {
   useEffect(() => {
     if (!selectedClub) return
 
-    const themeColor = clubTheme(selectedClub)
-    setClubEditName(selectedClub.name)
-    setClubEditMotto(selectedClub.motto || '')
-    setClubEditDescription(selectedClub.description || '')
-    setClubEditVisibility(selectedClub.visibility)
-    setClubEditThemeColor(themeColor)
-    setClubEditThemeColorDraft(themeColor)
-    setClubEditDefaultLanguage(isLanguageCode(selectedClub.default_language || '') ? selectedClub.default_language as LanguageCode : language)
-    setClubEditRankingCriterion(clubRankingCriterion(selectedClub))
-    setClubBannerFile(null)
-    setClubBannerPreview('')
+    return schedulePostEffectStateUpdate(() => {
+      const themeColor = clubTheme(selectedClub)
+      setClubEditName(selectedClub.name)
+      setClubEditMotto(selectedClub.motto || '')
+      setClubEditDescription(selectedClub.description || '')
+      setClubEditVisibility(selectedClub.visibility)
+      setClubEditThemeColor(themeColor)
+      setClubEditThemeColorDraft(themeColor)
+      setClubEditDefaultLanguage(isLanguageCode(selectedClub.default_language || '') ? selectedClub.default_language as LanguageCode : language)
+      setClubEditRankingCriterion(clubRankingCriterion(selectedClub))
+      setClubBannerFile(null)
+      setClubBannerPreview('')
+    })
   }, [language, selectedClub])
 
   useEffect(() => {
     if (!selectedClub || selectedClubTab !== 'messages') return
-    void loadClubMessages(selectedClub)
+    return schedulePostEffectStateUpdate(() => {
+      void loadClubMessages(selectedClub)
+    })
   }, [selectedClub, selectedClubTab])
 
   const checkInSession = useMemo(() => {
@@ -5742,18 +5754,19 @@ function handleSessionDateChange(value: string) {
   }
 
   useEffect(() => {
-    if (!checkInParticipant) {
-      setCheckInPaymentSplits([newParticipantPaymentSplit('cash')])
-      return
-    }
+    return schedulePostEffectStateUpdate(() => {
+      if (!checkInParticipant) {
+        setCheckInPaymentSplits([newParticipantPaymentSplit('cash')])
+        return
+      }
 
-    setCheckInPaymentSplits(paymentSplitsFromParticipant(checkInParticipant))
+      setCheckInPaymentSplits(paymentSplitsFromParticipant(checkInParticipant))
+    })
   }, [checkInParticipant])
 
   useEffect(() => {
     if (!userId || !canUseWebPush() || Notification.permission !== 'granted') {
-      setIsPushSubscribed(false)
-      return
+      return schedulePostEffectStateUpdate(() => setIsPushSubscribed(false))
     }
 
     let active = true
@@ -5828,12 +5841,15 @@ function handleSessionDateChange(value: string) {
     const session = sessionForInvite(freshInvite)
     seen.add(freshInvite.id)
     window.localStorage.setItem(storageKey, JSON.stringify(Array.from(seen).slice(-80)))
-    setInvitePopupInviteId(freshInvite.id)
 
-    if (session) {
-      notifyInvite(session)
-      downloadSessionCalendar(session)
-    }
+    return schedulePostEffectStateUpdate(() => {
+      setInvitePopupInviteId(freshInvite.id)
+
+      if (session) {
+        notifyInvite(session)
+        downloadSessionCalendar(session)
+      }
+    })
   }, [language, pendingSessionInvites, userId])
 
   useEffect(() => {
@@ -5848,26 +5864,24 @@ function handleSessionDateChange(value: string) {
       // If localStorage is unavailable, still show the one-time in-memory popup for this mount.
     }
 
-    setBirthdayPopupOpen(true)
+    return schedulePostEffectStateUpdate(() => setBirthdayPopupOpen(true))
   }, [profile, profileBirthday, userId])
 
   useEffect(() => {
     if (!profile || !crownedTopPlayerId || crownedTopPlayerId !== userId) {
-      setChampionLoginOpen(false)
-      return
+      return schedulePostEffectStateUpdate(() => setChampionLoginOpen(false))
     }
     const storageKey = `vrena-crown-login:${userId}:${crownedTopPlayerScore}`
     const alreadyShown = window.sessionStorage.getItem(storageKey)
     if (alreadyShown === 'shown') return
     window.sessionStorage.setItem(storageKey, 'shown')
-    setChampionLoginOpen(true)
+    return schedulePostEffectStateUpdate(() => setChampionLoginOpen(true))
   }, [crownedTopPlayerId, crownedTopPlayerScore, profile, userId])
 
   useEffect(() => {
     const query = tournamentEditorEmail.trim()
     if (query.length < 2) {
-      setTournamentEditorResults([])
-      return
+      return schedulePostEffectStateUpdate(() => setTournamentEditorResults([]))
     }
 
     let cancelled = false

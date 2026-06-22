@@ -76,6 +76,13 @@ type LeaderboardPanelProps = {
   userId: string
 }
 
+function schedulePostEffectStateUpdate(callback: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const handle = window.setTimeout(callback, 0)
+  return () => window.clearTimeout(handle)
+}
+
 const rankTiers = [
   { name: 'Champion', emoji: '🏆' },
   { name: 'Grandmaster', emoji: '🌟' },
@@ -243,11 +250,12 @@ export default function LeaderboardPanel({
   ]
 
   useEffect(() => {
-    if (fixedClubId) setLeaderboardClubId(fixedClubId)
+    if (!fixedClubId) return
+    return schedulePostEffectStateUpdate(() => setLeaderboardClubId(fixedClubId))
   }, [fixedClubId])
 
   useEffect(() => {
-    setLeaderboardCriterion(initialCriterion)
+    return schedulePostEffectStateUpdate(() => setLeaderboardCriterion(initialCriterion))
   }, [initialCriterion])
 
   const rankedLeaderboardRows = useMemo(() => {
