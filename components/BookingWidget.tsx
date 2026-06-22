@@ -11,6 +11,7 @@ const OPEN_MINUTES = 9 * 60
 const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const SESSION_LOAD_BATCH_DAYS = 7
+const LEADERBOARD_PAGE_SIZE = 20
 const OWNER_EMAILS = ['emilejacquet@icloud.com']
 const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
@@ -250,6 +251,11 @@ type LeaderboardRpcRow = {
   average_accuracy: number | null
   reliability_score: number | null
   best_by_game: unknown
+  leaderboard_rank?: number | null
+  leaderboard_distinct_rank?: number | null
+  leaderboard_higher_metric_value?: number | null
+  leaderboard_metric_value?: number | null
+  leaderboard_total_count?: number | null
 }
 
 const ANONYMOUS_MASK_EMOJI = '🎭'
@@ -304,6 +310,27 @@ function isLeaderboardCriterion(value: string | null | undefined): value is Lead
     || value === 'projectiles'
     || value === 'gamesPlayed'
     || value === 'escapeTime'
+}
+
+function initialLeaderboardQuery(): LeaderboardQuery {
+  return {
+    clubId: '',
+    clubPin: '',
+    criterion: 'totalScore',
+    search: '',
+  }
+}
+
+function leaderboardRpcArgs(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
+  return {
+    p_club_id: query.clubId || null,
+    p_club_pin: query.clubPin || null,
+    p_limit: limit,
+    p_offset: offset,
+    p_profile_id: profileId || null,
+    p_rank_by: query.criterion,
+    p_search: query.search.trim() || null,
+  }
 }
 
 function normalizePrivateCode(value: string | null | undefined) {
@@ -1083,6 +1110,19 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
     averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
     reliabilityScore: finiteNumber(row.reliability_score),
     bestEscapeDurationSeconds,
+    leaderboardRank: row.leaderboard_rank === null || row.leaderboard_rank === undefined ? undefined : finiteNumber(row.leaderboard_rank),
+    leaderboardDistinctRank: row.leaderboard_distinct_rank === null || row.leaderboard_distinct_rank === undefined
+      ? null
+      : finiteNumber(row.leaderboard_distinct_rank),
+    leaderboardHigherMetricValue: row.leaderboard_higher_metric_value === null || row.leaderboard_higher_metric_value === undefined
+      ? null
+      : finiteNumber(row.leaderboard_higher_metric_value),
+    leaderboardMetricValue: row.leaderboard_metric_value === null || row.leaderboard_metric_value === undefined
+      ? null
+      : finiteNumber(row.leaderboard_metric_value),
+    leaderboardTotalCount: row.leaderboard_total_count === null || row.leaderboard_total_count === undefined
+      ? undefined
+      : finiteNumber(row.leaderboard_total_count),
     bestByGame: bestByGameRows.flatMap((item) => {
       if (!item || typeof item !== 'object') return []
       const gameValue = 'game' in item ? String(item.game || '') : ''
@@ -1665,6 +1705,13 @@ type BookingWidgetProps = {
   initialView?: BookingWidgetView
 }
 
+type LeaderboardQuery = {
+  clubId: string
+  clubPin: string
+  criterion: LeaderboardCriterion
+  search: string
+}
+
 export default function WidgetPage({
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
@@ -1675,7 +1722,10 @@ export default function WidgetPage({
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [leaderboardPlayers, setLeaderboardPlayers] = useState<LeaderboardPlayer[]>([])
+  const [currentUserRankPlayer, setCurrentUserRankPlayer] = useState<LeaderboardPlayer | null>(null)
+  const [hasMoreLeaderboardPlayers, setHasMoreLeaderboardPlayers] = useState(false)
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
+  const [isLoadingMoreLeaderboardPlayers, setIsLoadingMoreLeaderboardPlayers] = useState(false)
   const [leaderboardStatus, setLeaderboardStatus] = useState('')
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
@@ -1888,6 +1938,9 @@ export default function WidgetPage({
   const networkDataLoadingRef = useRef(false)
   const leaderboardLoadedRef = useRef(false)
   const leaderboardLoadingRef = useRef(false)
+  const leaderboardLoadedCountRef = useRef(0)
+  const leaderboardQueryRef = useRef<LeaderboardQuery>(initialLeaderboardQuery())
+  const leaderboardSearchReloadTimeoutRef = useRef<number | null>(null)
   const sessionsLoadedRef = useRef(false)
   const upcomingSessionsThroughRef = useRef('')
   const loadingSessionRangeRef = useRef(false)
@@ -2204,7 +2257,56 @@ export default function WidgetPage({
 
   function refreshLeaderboardIfLoaded() {
     if (!leaderboardLoadedRef.current) return
-    void loadLeaderboardPlayers()
+    leaderboardLoadedCountRef.current = 0
+    void loadLeaderboardPlayers(leaderboardQueryRef.current, 0, 'replace', userId)
+  }
+
+  function reloadLeaderboard(nextQuery: LeaderboardQuery) {
+    leaderboardQueryRef.current = nextQuery
+    leaderboardLoadedCountRef.current = 0
+    void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
+  }
+
+  function handleLeaderboardCriterionChange(criterion: LeaderboardCriterion) {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      criterion,
+    })
+  }
+
+  function handleLeaderboardSearchChange(searchValue: string) {
+    const nextQuery = {
+      ...leaderboardQueryRef.current,
+      search: searchValue,
+    }
+    leaderboardQueryRef.current = nextQuery
+
+    if (leaderboardSearchReloadTimeoutRef.current) window.clearTimeout(leaderboardSearchReloadTimeoutRef.current)
+    leaderboardSearchReloadTimeoutRef.current = window.setTimeout(() => {
+      leaderboardLoadedCountRef.current = 0
+      void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
+    }, 260)
+  }
+
+  function handleLeaderboardClubChange(clubId: string) {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      clubId,
+      clubPin: clubId === leaderboardQueryRef.current.clubId ? leaderboardQueryRef.current.clubPin : '',
+    })
+  }
+
+  function handleLeaderboardClubPinUnlock(clubId: string, pinCode: string) {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      clubId,
+      clubPin: pinCode,
+    })
+  }
+
+  function loadMoreLeaderboardPlayers() {
+    if (!hasMoreLeaderboardPlayers || isLoadingMoreLeaderboardPlayers) return
+    void loadLeaderboardPlayers(leaderboardQueryRef.current, leaderboardLoadedCountRef.current, 'append', userId)
   }
 
   function refreshSessionsIfLoaded() {
@@ -3224,43 +3326,92 @@ export default function WidgetPage({
     setIsResettingPassword(false)
   }
 
-  async function loadLeaderboardPlayers() {
+  async function fetchLeaderboardRows(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
+    const { data, error } = await (await getSupabase()).rpc(
+      'get_leaderboard_players_page',
+      leaderboardRpcArgs(query, offset, limit, profileId)
+    )
+
+    if (error) throw error
+    return ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
+  }
+
+  async function loadLeaderboardPlayers(
+    query = leaderboardQueryRef.current,
+    offset = 0,
+    mode: 'append' | 'replace' = 'replace',
+    targetUserId = userId
+  ) {
     if (leaderboardLoadingRef.current) return false
 
     leaderboardLoadingRef.current = true
-    setIsLeaderboardLoading(true)
     setLeaderboardStatus('')
-
-    const { data, error } = await (await getSupabase()).rpc('get_leaderboard_players_page', {
-      p_limit: 5000,
-      p_offset: 0,
-      p_search: null,
-      p_rank_by: 'totalScore',
-      p_profile_id: null,
-      p_club_id: null,
-      p_club_pin: null,
-    })
-
-    if (error) {
-      leaderboardLoadingRef.current = false
-      setIsLeaderboardLoading(false)
-      setLeaderboardStatus(error.message)
-      await loadSessions()
-      return false
+    if (mode === 'append') {
+      setIsLoadingMoreLeaderboardPlayers(true)
+    } else {
+      setIsLeaderboardLoading(true)
+      setHasMoreLeaderboardPlayers(false)
+      setCurrentUserRankPlayer(null)
     }
 
-    const players = ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
-    const scoreAdjustments = Object.fromEntries(players.map((player) => [player.profileId, player.scoreAdjustment]))
+    try {
+      const players = await fetchLeaderboardRows(query, offset, LEADERBOARD_PAGE_SIZE)
+      const totalCount = players[0]?.leaderboardTotalCount ?? offset + players.length
+      const nextLoadedCount = mode === 'append'
+        ? leaderboardLoadedCountRef.current + players.length
+        : players.length
+      const scoreAdjustments = Object.fromEntries(players.map((player) => [player.profileId, player.scoreAdjustment]))
 
-    leaderboardLoadedRef.current = true
-    leaderboardLoadingRef.current = false
-    setIsLeaderboardLoading(false)
-    setLeaderboardPlayers(players)
-    setProfileScoreAdjustments((current) => ({
-      ...current,
-      ...scoreAdjustments,
-    }))
-    return true
+      leaderboardLoadedRef.current = true
+      leaderboardLoadedCountRef.current = nextLoadedCount
+      setHasMoreLeaderboardPlayers(nextLoadedCount < totalCount)
+      setProfileScoreAdjustments((current) => ({
+        ...current,
+        ...scoreAdjustments,
+      }))
+
+      if (mode === 'append') {
+        setLeaderboardPlayers((currentPlayers) => {
+          const existingIds = new Set(currentPlayers.map((player) => player.profileId))
+          return [...currentPlayers, ...players.filter((player) => !existingIds.has(player.profileId))]
+        })
+      } else {
+        setLeaderboardPlayers(players)
+      }
+
+      if (targetUserId && mode === 'replace') {
+        const currentUserRow = players.find((player) => player.profileId === targetUserId)
+        if (currentUserRow) {
+          setCurrentUserRankPlayer(currentUserRow)
+        } else {
+          const currentUserRows = await fetchLeaderboardRows(query, 0, 1, targetUserId)
+          const currentUserPlayer = currentUserRows[0] ?? null
+          setCurrentUserRankPlayer(currentUserPlayer)
+          if (currentUserPlayer) {
+            setProfileScoreAdjustments((current) => ({
+              ...current,
+              [currentUserPlayer.profileId]: currentUserPlayer.scoreAdjustment,
+            }))
+          }
+        }
+      }
+
+      return true
+    } catch (error) {
+      setLeaderboardStatus(error instanceof Error ? error.message : String(error))
+      if (mode === 'replace') {
+        leaderboardLoadedRef.current = false
+        leaderboardLoadedCountRef.current = 0
+        setLeaderboardPlayers([])
+        await loadSessions()
+      }
+      setHasMoreLeaderboardPlayers(false)
+      return false
+    } finally {
+      leaderboardLoadingRef.current = false
+      setIsLeaderboardLoading(false)
+      setIsLoadingMoreLeaderboardPlayers(false)
+    }
   }
 
   async function loadSessionRows(startDate?: string, endDate?: string) {
@@ -3698,7 +3849,10 @@ export default function WidgetPage({
     }
 
     if (activeView === 'leaderboard') {
-      ensureLeaderboardLoaded()
+      const nextQuery = initialLeaderboardQuery()
+      leaderboardQueryRef.current = nextQuery
+      leaderboardLoadedCountRef.current = 0
+      void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
     }
 
     if (activeView === 'sessions' || activeView === 'tickets' || activeView === 'create' || activeView === 'profile') {
@@ -3715,6 +3869,10 @@ export default function WidgetPage({
       void ensurePastSessionsLoaded()
     }
   }, [sessionTimeScope])
+
+  useEffect(() => () => {
+    if (leaderboardSearchReloadTimeoutRef.current) window.clearTimeout(leaderboardSearchReloadTimeoutRef.current)
+  }, [])
 
   useEffect(() => {
     if (activeView === 'tickets') {
@@ -4616,7 +4774,7 @@ function handleSessionDateChange(value: string) {
       .sort((a, b) => b.totalScore - a.totalScore)
   }, [allProfiles, profileScoreAdjustments, sessions, text.player])
 
-  const leaderboardPlayerStats = leaderboardPlayers.length > 0 ? leaderboardPlayers : allPlayerStats
+  const leaderboardPlayerStats = leaderboardLoadedRef.current ? leaderboardPlayers : allPlayerStats
   const currentProfileAvatar = profile ? avatarFields(profile) : null
 
   const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? {
@@ -4651,6 +4809,20 @@ function handleSessionDateChange(value: string) {
     ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
     : 0
   const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
+
+  useEffect(() => {
+    if (!selectedClub || selectedClubTab !== 'hall') return
+
+    const nextQuery = {
+      ...initialLeaderboardQuery(),
+      clubId: selectedClub.id,
+      criterion: isLeaderboardCriterion(selectedClub.ranking_criterion) ? selectedClub.ranking_criterion : 'totalScore',
+    }
+    leaderboardQueryRef.current = nextQuery
+    leaderboardLoadedCountRef.current = 0
+    void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
+  }, [selectedClub?.id, selectedClub?.ranking_criterion, selectedClubTab, userId])
+
   const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
@@ -9741,7 +9913,17 @@ function handleSessionDateChange(value: string) {
                 canBypassPrivateClubPins={isAdmin}
                 canShareCurrentUserStats={canShareCurrentUserStats}
                 clubs={clubs}
+                currentUserRankPlayer={currentUserRankPlayer}
+                hasMorePlayers={hasMoreLeaderboardPlayers}
+                initialCriterion={leaderboardQueryRef.current.criterion}
                 isCurrentUserStatsShared={currentUserStatsShared}
+                isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
+                onLeaderboardClubChange={handleLeaderboardClubChange}
+                onLeaderboardClubFilterOpen={ensureClubsLoaded}
+                onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
+                onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+                onLeaderboardSearchChange={handleLeaderboardSearchChange}
+                onLoadMorePlayers={loadMoreLeaderboardPlayers}
                 onShareCurrentUserStats={() => shareCurrentUserStats()}
                 onOpenPlayerProfile={openPlayerProfile}
                 players={leaderboardPlayerStats}
@@ -9753,7 +9935,10 @@ function handleSessionDateChange(value: string) {
                   avatar_text_color: player.avatarTextColor,
                   display_name: player.displayName,
                 }, 'P')}
+                serverFiltered
+                showClubFilter
                 text={text}
+                useServerRanking
                 userId={userId}
               />
             </LocalErrorBoundary>
@@ -11125,9 +11310,15 @@ function handleSessionDateChange(value: string) {
                           canBypassPrivateClubPins={isAdmin}
                           canShareCurrentUserStats={canShareCurrentUserStats}
                           clubs={[selectedClub]}
+                          currentUserRankPlayer={currentUserRankPlayer}
                           fixedClubId={selectedClub.id}
+                          hasMorePlayers={hasMoreLeaderboardPlayers}
                           initialCriterion={clubRankingCriterion(selectedClub)}
                           isCurrentUserStatsShared={currentUserStatsShared}
+                          isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
+                          onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+                          onLeaderboardSearchChange={handleLeaderboardSearchChange}
+                          onLoadMorePlayers={loadMoreLeaderboardPlayers}
                           onOpenPlayerProfile={openPlayerProfile}
                           onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
                           players={leaderboardPlayerStats}
@@ -11139,7 +11330,9 @@ function handleSessionDateChange(value: string) {
                             avatar_text_color: player.avatarTextColor,
                             display_name: player.displayName,
                           }, 'P')}
+                          serverFiltered
                           text={text}
+                          useServerRanking
                           userId={userId}
                         />
                       </LocalErrorBoundary>
