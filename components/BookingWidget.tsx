@@ -55,6 +55,7 @@ const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
+const SESSION_MESSAGE_PAGE_SIZE = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
 
@@ -446,6 +447,13 @@ type SessionMessage = {
   moderation_categories?: Record<string, unknown> | null
   moderation_score?: number | null
   created_at?: string | null
+}
+
+type SessionMessagePageState = {
+  loaded: boolean
+  loading: boolean
+  hasMore: boolean
+  oldestCreatedAt: string | null
 }
 
 type ClubMessage = {
@@ -1752,6 +1760,7 @@ export default function WidgetPage({
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
+  const [sessionMessagePages, setSessionMessagePages] = useState<Record<string, SessionMessagePageState>>({})
   const [loadedSessionDetailIds, setLoadedSessionDetailIds] = useState<Record<string, boolean>>({})
   const [loadingSessionDetailIds, setLoadingSessionDetailIds] = useState<Record<string, boolean>>({})
   const [clubMessages, setClubMessages] = useState<ClubMessage[]>([])
@@ -1964,6 +1973,8 @@ export default function WidgetPage({
   const allProfilesLoadingRef = useRef(false)
   const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
+  const sessionMessagesLoadedRef = useRef<Set<string>>(new Set())
+  const sessionMessagesLoadingRef = useRef<Set<string>>(new Set())
   const expandedSessionIdsRef = useRef<Set<string>>(new Set())
   const leaderboardLoadedRef = useRef(false)
   const leaderboardLoadingRef = useRef(false)
@@ -2355,11 +2366,19 @@ export default function WidgetPage({
     })
   }
 
+  function loadExpandedSessionMessages(options: { force?: boolean } = {}) {
+    expandedSessionIdsRef.current.forEach((sessionId) => {
+      if (!options.force && !sessionMessagesLoadedRef.current.has(sessionId)) return
+      void loadSessionMessages(sessionId, { force: true })
+    })
+  }
+
   function setSessionExpanded(session: Session, expanded: boolean) {
     setExpandedSessions((current) => ({ ...current, [session.id]: expanded }))
     if (!expanded) return
 
     void loadSessionDetail(session.id)
+    void loadSessionMessages(session.id)
     ensureNetworkDataLoaded()
     if (session.session_type === 'tournament') ensureTournamentDataLoaded()
   }
@@ -2373,6 +2392,7 @@ export default function WidgetPage({
     setActiveView('sessions')
     setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
     void loadSessionDetail(sessionId)
+    void loadSessionMessages(sessionId)
     if (targetSession) {
       setSessionTimeScope(isUpcomingSession(targetSession) ? 'upcoming' : 'past')
       if (targetSession.session_type === 'tournament') ensureTournamentDataLoaded()
@@ -2527,6 +2547,28 @@ export default function WidgetPage({
       ...current.filter((item) => item.id !== message.id),
       message,
     ]))
+  }
+
+  function resetSessionMessageState() {
+    sessionMessagesLoadedRef.current.clear()
+    sessionMessagesLoadingRef.current.clear()
+    setSessionMessages([])
+    setSessionMessagePages({})
+  }
+
+  function updateSessionMessagePage(sessionId: string, patch: Partial<SessionMessagePageState>) {
+    setSessionMessagePages((current) => ({
+      ...current,
+      [sessionId]: {
+        ...(current[sessionId] ?? {
+          loaded: false,
+          loading: false,
+          hasMore: false,
+          oldestCreatedAt: null,
+        }),
+        ...patch,
+      },
+    }))
   }
 
   function messagesForSession(session: Session) {
@@ -3552,20 +3594,12 @@ export default function WidgetPage({
     const detailSession = normalizeSessionRow(detailResult.data as Session)
     const participantIds = Array.from(new Set((detailSession.session_participants ?? []).map((participant) => participant.profile_id)))
 
-    const [waitlistResult, messagesResult, invitesResult, adjustmentResult] = await Promise.all([
+    const [waitlistResult, invitesResult, adjustmentResult] = await Promise.all([
       client
         .from('session_waitlist')
         .select(WAITLIST_SELECT)
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true }),
-      userId
-        ? client
-          .from('session_messages')
-          .select(SESSION_MESSAGE_SELECT)
-          .eq('session_id', sessionId)
-          .is('deleted_at', null)
-          .order('created_at', { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
       userId
         ? client
           .from('session_invites')
@@ -3583,7 +3617,6 @@ export default function WidgetPage({
     ])
 
     const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
-    const messageRows = messagesResult.error ? [] : (messagesResult.data ?? []) as SessionMessage[]
     const inviteRows = invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[]
     const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? []) as Array<Pick<Profile, 'id' | 'score_adjustment'>>
 
@@ -3597,12 +3630,6 @@ export default function WidgetPage({
       sessionsById.set(sessionId, hydratedDetailSession)
       return sortSessionsByStart(Array.from(sessionsById.values()))
     })
-    if (!messagesResult.error) {
-      setSessionMessages((current) => sortSessionMessages([
-        ...current.filter((message) => message.session_id !== sessionId),
-        ...messageRows,
-      ]))
-    }
     if (!invitesResult.error) {
       setSessionInvites((current) => [
         ...current.filter((invite) => invite.session_id !== sessionId),
@@ -3624,6 +3651,67 @@ export default function WidgetPage({
     setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
     setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
     return hydratedDetailSession
+  }
+
+  async function loadSessionMessages(
+    sessionId: string,
+    options: { force?: boolean; before?: string | null } = {}
+  ) {
+    if (!sessionId || !userId) return
+
+    const before = options.before ?? null
+    const isInitialPage = !before
+    if (isInitialPage && !options.force && sessionMessagesLoadedRef.current.has(sessionId)) return
+    if (sessionMessagesLoadingRef.current.has(sessionId)) return
+
+    sessionMessagesLoadingRef.current.add(sessionId)
+    updateSessionMessagePage(sessionId, { loading: true })
+
+    const client = await getSupabase()
+    let messageQuery = client
+      .from('session_messages')
+      .select(SESSION_MESSAGE_SELECT)
+      .eq('session_id', sessionId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(SESSION_MESSAGE_PAGE_SIZE + 1)
+
+    if (before) {
+      messageQuery = messageQuery.lt('created_at', before)
+    }
+
+    const { data, error } = await messageQuery
+
+    sessionMessagesLoadingRef.current.delete(sessionId)
+
+    if (error) {
+      setCreateStatus(error.message)
+      updateSessionMessagePage(sessionId, { loading: false })
+      return
+    }
+
+    const rows = ((data ?? []) as SessionMessage[]).slice(0, SESSION_MESSAGE_PAGE_SIZE)
+    const sortedRows = sortSessionMessages(rows)
+    const oldestCreatedAt = sortedRows[0]?.created_at ?? before ?? null
+    const hasMore = ((data ?? []) as SessionMessage[]).length > SESSION_MESSAGE_PAGE_SIZE
+
+    setSessionMessages((current) => {
+      const otherSessions = current.filter((message) => message.session_id !== sessionId)
+      const retainedSessionMessages = before
+        ? current.filter((message) => message.session_id === sessionId)
+        : []
+      const messagesById = new Map(retainedSessionMessages.map((message) => [message.id, message]))
+      sortedRows.forEach((message) => messagesById.set(message.id, message))
+      return sortSessionMessages([...otherSessions, ...Array.from(messagesById.values())])
+    })
+
+    sessionMessagesLoadedRef.current.add(sessionId)
+    updateSessionMessagePage(sessionId, {
+      loaded: true,
+      loading: false,
+      hasMore,
+      oldestCreatedAt,
+    })
   }
 
   async function loadSessionRows(startDate?: string, endDate?: string) {
@@ -3953,7 +4041,7 @@ export default function WidgetPage({
       setNetworkTablesReady(false)
       setFriendConnections([])
       setSessionInvites([])
-      setSessionMessages([])
+      resetSessionMessageState()
       return
     }
 
@@ -4110,7 +4198,7 @@ export default function WidgetPage({
       setNetworkTablesReady(false)
       setFriendConnections([])
       setSessionInvites([])
-      setSessionMessages([])
+      resetSessionMessageState()
       return
     }
 
@@ -4139,6 +4227,7 @@ export default function WidgetPage({
     ensureNetworkDataLoaded()
     expandedIds.forEach((sessionId) => {
       void loadSessionDetail(sessionId)
+      void loadSessionMessages(sessionId)
     })
     if (sessions.some((session) => expandedIds.includes(session.id) && session.session_type === 'tournament')) {
       ensureTournamentDataLoaded()
@@ -4263,7 +4352,7 @@ export default function WidgetPage({
           loadExpandedSessionDetails()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
-          loadExpandedSessionDetails()
+          loadExpandedSessionMessages()
         })
         .subscribe()
 
@@ -5228,8 +5317,13 @@ function handleSessionDateChange(value: string) {
   const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
     ? selectedPlayerManageContext.participant
     : null
-  const selectedPlayerSessionIsEscape = isEscapeSession(selectedPlayerSessionContext?.session)
-  const selectedPlayerEscapeDurationSeconds = selectedPlayerSessionContext?.participant.escape_duration_seconds ?? null
+  const selectedPlayerEditableParticipant = selectedSessionEditableParticipant ?? (isAdmin ? selectedPlayerManageContext?.participant ?? null : null)
+  const selectedPlayerMetricParticipant = selectedPlayerEditableParticipant ?? selectedSessionParticipant
+  const selectedPlayerMetricSession = selectedPlayerEditableParticipant
+    ? selectedPlayerManageContext?.session ?? selectedPlayerSessionContext?.session ?? null
+    : selectedPlayerSessionContext?.session ?? null
+  const selectedPlayerSessionIsEscape = isEscapeSession(selectedPlayerMetricSession)
+  const selectedPlayerEscapeDurationSeconds = selectedPlayerMetricParticipant?.escape_duration_seconds ?? null
 
   function openChallengeForm(player: NonNullable<typeof selectedPlayerProfile>) {
     if (!profile) {
@@ -5312,7 +5406,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function updateSelectedSessionMetric(metric: 'session' | 'accuracy' | 'projectiles' | 'escapeDuration', value: string) {
-    const participant = selectedSessionEditableParticipant
+    const participant = selectedPlayerEditableParticipant
     if (!participant) return
 
     await updateParticipantResult(
@@ -5366,13 +5460,13 @@ function handleSessionDateChange(value: string) {
     ariaLabel: string,
     suffix = ''
   ) {
-    const editable = Boolean(selectedSessionEditableParticipant)
+    const editable = Boolean(selectedPlayerEditableParticipant)
     const isEscapeDurationMetric = metric === 'escapeDuration'
     const displayValue = isEscapeDurationMetric
       ? formatSpeedrunDuration(value)
       : value === null || value === undefined ? '-' : `${value}${suffix}`
 
-    if (selectedPlayerScoreEdit === metric && selectedSessionEditableParticipant) {
+    if (selectedPlayerScoreEdit === metric && selectedPlayerEditableParticipant) {
       return (
         <input
           aria-label={ariaLabel}
@@ -5487,7 +5581,7 @@ function handleSessionDateChange(value: string) {
             </>
           ),
         },
-    selectedPlayerSessionIsEscape
+    selectedPlayerSessionIsEscape && selectedPlayerMetricParticipant
       ? {
           key: 'escape-time',
           className: 'editable-stat-card split-stat-card',
@@ -5511,14 +5605,14 @@ function handleSessionDateChange(value: string) {
             </>
           ),
         },
-    selectedPlayerSessionContext
+    selectedPlayerMetricParticipant
       ? {
           key: 'accuracy',
           className: 'editable-stat-card split-stat-card',
           value: (
             <>
               <span className="stat-label">{text.accuracy}</span>
-              {renderSessionMetricControl('accuracy', selectedSessionParticipant?.accuracy_percent, text.accuracy, '%')}
+              {renderSessionMetricControl('accuracy', selectedPlayerMetricParticipant.accuracy_percent, text.accuracy, '%')}
               <span className="stat-subline">
                 <span>{averageAccuracyText}</span>
                 <strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong>
@@ -5527,14 +5621,14 @@ function handleSessionDateChange(value: string) {
           ),
         }
       : { key: 'accuracy', value: <><span className="stat-label">{text.accuracy}</span><strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong></> },
-    selectedPlayerSessionContext
+    selectedPlayerMetricParticipant
       ? {
           key: 'projectiles',
           className: 'editable-stat-card split-stat-card',
           value: (
             <>
               <span className="stat-label">{text.projectiles}</span>
-              {renderSessionMetricControl('projectiles', selectedSessionParticipant?.projectiles_fired, text.projectiles)}
+              {renderSessionMetricControl('projectiles', selectedPlayerMetricParticipant.projectiles_fired, text.projectiles)}
               <span className="stat-subline">
                 <span>{totalShotsText}</span>
                 <strong>{selectedPlayerProfile.totalProjectiles}</strong>
@@ -7357,9 +7451,12 @@ function handleSessionDateChange(value: string) {
       } else {
         setCommentDrafts((current) => ({ ...current, [session.id]: '' }))
       }
-      if (message) mergeSessionMessage(message)
+      if (message) {
+        mergeSessionMessage(message)
+      } else {
+        await loadSessionMessages(session.id, { force: true })
+      }
       setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
-      await loadSessionDetail(session.id, { force: true })
     }
 
     setBusyMessageKey('')
@@ -7437,7 +7534,12 @@ function handleSessionDateChange(value: string) {
       setCreateStatus(error.message)
     } else {
       setCreateStatus(status === 'approved' ? text.messageApproved : text.messageRejected)
-      await loadSessionDetail(message.session_id, { force: true })
+      const reviewedAt = new Date().toISOString()
+      setSessionMessages((current) => sortSessionMessages(current.map((item) => (
+        item.id === message.id
+          ? { ...item, moderation_status: status, reviewed_by: userId, reviewed_at: reviewedAt }
+          : item
+      ))))
     }
 
     setBusyMessageKey('')
@@ -7460,7 +7562,7 @@ function handleSessionDateChange(value: string) {
       setCreateStatus(error.message)
     } else {
       setCreateStatus(text.messageDeleted)
-      await loadSessionDetail(message.session_id, { force: true })
+      setSessionMessages((current) => current.filter((item) => item.id !== message.id))
     }
 
     setBusyMessageKey('')
@@ -8996,6 +9098,9 @@ function handleSessionDateChange(value: string) {
                   .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
                   .slice(0, 10)
                 const sessionMessageRows = messagesForSession(session)
+                const sessionMessagePage = sessionMessagePages[session.id]
+                const isSessionMessagesLoading = Boolean(sessionMessagePage?.loading)
+                const hasEarlierSessionMessages = Boolean(sessionMessagePage?.hasMore && sessionMessagePage.oldestCreatedAt)
                 const isSessionDetailLoading = Boolean(loadingSessionDetailIds[session.id])
                 const isSessionDetailLoaded = Boolean(loadedSessionDetailIds[session.id])
                 const hasCrownHolder = Boolean(
@@ -9677,8 +9782,20 @@ function handleSessionDateChange(value: string) {
                           </button>
                         </div>
                       )}
+                      {hasEarlierSessionMessages && (
+                        <button
+                          className="secondary small-button load-earlier-messages"
+                          disabled={isSessionMessagesLoading}
+                          type="button"
+                          onClick={() => loadSessionMessages(session.id, { before: sessionMessagePage?.oldestCreatedAt })}
+                        >
+                          {isSessionMessagesLoading ? text.sessionMessagesLoading : text.loadEarlierMessages}
+                        </button>
+                      )}
                       {sessionMessageRows.length === 0 ? (
-                        <p className="notice">{text.noSessionMessages}</p>
+                        <p className="notice" aria-busy={isSessionMessagesLoading}>
+                          {isSessionMessagesLoading ? text.sessionMessagesLoading : text.noSessionMessages}
+                        </p>
                       ) : (
                         <div className="message-list">
                           {sessionMessageRows.map((message) => {

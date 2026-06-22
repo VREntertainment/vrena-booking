@@ -546,6 +546,8 @@ export const ko = {
   announcementPlaceholder: '공지 작성',
   postAnnouncement: '게시',
   noSessionMessages: '아직 소식 없음.',
+  sessionMessagesLoading: '메시지 불러오는 중',
+  loadEarlierMessages: '이전 메시지',
   commentPlaceholder: '댓글 작성',
   postComment: '댓글',
   messagePosted: '메시지 게시됨.',

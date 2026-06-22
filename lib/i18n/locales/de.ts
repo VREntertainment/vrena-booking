@@ -546,6 +546,8 @@ export const de = {
   announcementPlaceholder: 'Ansage schreiben',
   postAnnouncement: 'Posten',
   noSessionMessages: 'Noch keine Infos.',
+  sessionMessagesLoading: 'Nachrichten laden',
+  loadEarlierMessages: 'Ältere laden',
   commentPlaceholder: 'Kommentar schreiben',
   postComment: 'Kommentar',
   messagePosted: 'Nachricht gepostet.',

@@ -546,6 +546,8 @@ export const ja = {
   announcementPlaceholder: '告知を書く',
   postAnnouncement: '投稿',
   noSessionMessages: '連絡はまだありません。',
+  sessionMessagesLoading: 'メッセージ読み込み中',
+  loadEarlierMessages: '以前を読み込む',
   commentPlaceholder: 'コメントを書く',
   postComment: 'コメント',
   messagePosted: 'メッセージ投稿済。',

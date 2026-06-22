@@ -544,6 +544,8 @@ export const en = {
   announcementPlaceholder: 'Write an announcement',
   postAnnouncement: 'Post',
   noSessionMessages: 'No session updates yet.',
+  sessionMessagesLoading: 'Loading messages',
+  loadEarlierMessages: 'Load earlier',
   commentPlaceholder: 'Write a comment',
   postComment: 'Comment',
   messagePosted: 'Message posted.',
