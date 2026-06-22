@@ -171,6 +171,42 @@ type SoftDeletedRecord = {
   delete_reason: string | null
 }
 
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'orders' | 'profiles' | 'audit' | 'restore' | 'report'
+
+type StaffReportSummary = {
+  totalSales: number
+  totalPaid: number
+  unpaidAmount: number
+  cashTotal: number
+  bankTransferTotal: number
+  bookings: number
+  players: number
+  cancelled: number
+  noShows: number
+  discounts: number
+  bestSellingGame: string
+}
+
+type StaffDailyPoint = {
+  date: string
+  sales: number
+  bookings: number
+  players: number
+}
+
+type StaffReportSnapshot = {
+  report: StaffReportSummary
+  comparisonReport: StaffReportSummary
+  reportSeries: StaffDailyPoint[]
+  comparisonSeries: StaffDailyPoint[]
+  orders: StaffOrder[]
+  payments: StaffOrderPayment[]
+}
+
+const emptyStaffOrders: StaffOrder[] = []
+const emptyStaffPayments: StaffOrderPayment[] = []
+const emptyStaffDailySeries: StaffDailyPoint[] = []
+
 type BookingForm = {
   customerId: string
   customerName: string
@@ -1243,10 +1279,6 @@ function isOwnerEmail(email?: string | null) {
   return Boolean(email && ownerEmails.includes(email.toLowerCase()))
 }
 
-function isAdminEmail(email?: string | null) {
-  return Boolean(email && adminEmails.includes(email.toLowerCase()))
-}
-
 function isAdminOnlyEmail(email?: string | null) {
   return Boolean(email && adminOnlyEmails.includes(email.toLowerCase()))
 }
@@ -1567,7 +1599,7 @@ function downloadPdf(filename: string, lines: string[], text: StaffConsoleCopy =
   downloadBlob(filename, 'application/pdf', buildSimplePdf(lines, text))
 }
 
-function staffReportRows(report: ReturnType<typeof buildStaffReport>, text: StaffConsoleCopy = staffConsoleText.en) {
+function staffReportRows(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
     { metric: text.labels.totalSales, value: formatVnd(report.totalSales) },
     { metric: text.labels.totalPaid, value: formatVnd(report.totalPaid) },
@@ -1621,7 +1653,7 @@ function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], payments
 
 function reportPdfLines(
   title: string,
-  report: ReturnType<typeof buildStaffReport>,
+  report: StaffReportSummary,
   orders: StaffOrder[],
   games: StaffGame[],
   paymentsByOrderId: Map<string, StaffOrderPayment[]>,
@@ -1663,7 +1695,7 @@ function conicStops(items: Array<{ value: number }>) {
   }).join(', ')
 }
 
-function paymentPieItems(report: ReturnType<typeof buildStaffReport>, text: StaffConsoleCopy = staffConsoleText.en) {
+function paymentPieItems(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
     { label: text.labels.cash, value: report.cashTotal },
     { label: text.labels.bankTransfer, value: report.bankTransferTotal },
@@ -1671,9 +1703,20 @@ function paymentPieItems(report: ReturnType<typeof buildStaffReport>, text: Staf
   ]
 }
 
-function ordersInDateRange(orders: StaffOrder[], start: string, end: string) {
-  const [from, to] = orderedRange(start, end)
-  return orders.filter((order) => order.booking_date >= from && order.booking_date <= to)
+function emptyStaffReport(text: StaffConsoleCopy = staffConsoleText.en): StaffReportSummary {
+  return {
+    totalSales: 0,
+    totalPaid: 0,
+    unpaidAmount: 0,
+    cashTotal: 0,
+    bankTransferTotal: 0,
+    bookings: 0,
+    players: 0,
+    cancelled: 0,
+    noShows: 0,
+    discounts: 0,
+    bestSellingGame: text.noneYet,
+  }
 }
 
 function buildStaffReport(
@@ -1681,7 +1724,7 @@ function buildStaffReport(
   gameNameById: Map<string, string>,
   paymentsByOrderId: Map<string, StaffOrderPayment[]>,
   text: StaffConsoleCopy = staffConsoleText.en
-) {
+): StaffReportSummary {
   const totals = orders.reduce((summary, order) => {
     const payments = staffOrderPaymentRows(order, paymentsByOrderId)
     const paidAmount = payments.length > 0
@@ -1740,7 +1783,7 @@ function buildStaffReport(
 
 function buildDailySeries(orders: StaffOrder[], start: string, end: string) {
   const [from, to] = orderedRange(start, end)
-  const byDate = new Map<string, { date: string; sales: number; bookings: number; players: number }>()
+  const byDate = new Map<string, StaffDailyPoint>()
   for (let date = from, index = 0; date <= to && index < 45; date = addDays(date, 1), index += 1) {
     byDate.set(date, { date, sales: 0, bookings: 0, players: 0 })
   }
@@ -1752,6 +1795,76 @@ function buildDailySeries(orders: StaffOrder[], start: string, end: string) {
     point.players += order.players_count
   })
   return [...byDate.values()]
+}
+
+function mergeById<T extends { id: string }>(current: T[], next: T[]) {
+  const map = new Map(current.map((item) => [item.id, item]))
+  next.forEach((item) => map.set(item.id, item))
+  return [...map.values()]
+}
+
+function mergeOrderPayments(current: StaffOrderPayment[], orderIds: string[], next: StaffOrderPayment[]) {
+  const orderIdSet = new Set(orderIds)
+  return [
+    ...current.filter((payment) => !orderIdSet.has(payment.order_id)),
+    ...next,
+  ]
+}
+
+function paymentMapFromRows(payments: StaffOrderPayment[]) {
+  const map = new Map<string, StaffOrderPayment[]>()
+  payments.forEach((payment) => {
+    const list = map.get(payment.order_id) || []
+    list.push(payment)
+    map.set(payment.order_id, list)
+  })
+  return map
+}
+
+function numericReportValue(value: unknown) {
+  return Number(value ?? 0) || 0
+}
+
+function reportSummaryFromRpc(value: unknown, text: StaffConsoleCopy = staffConsoleText.en): StaffReportSummary {
+  const row = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  return {
+    totalSales: numericReportValue(row.totalSales ?? row.total_sales),
+    totalPaid: numericReportValue(row.totalPaid ?? row.total_paid),
+    unpaidAmount: numericReportValue(row.unpaidAmount ?? row.unpaid_amount),
+    cashTotal: numericReportValue(row.cashTotal ?? row.cash_total),
+    bankTransferTotal: numericReportValue(row.bankTransferTotal ?? row.bank_transfer_total),
+    bookings: numericReportValue(row.bookings),
+    players: numericReportValue(row.players),
+    cancelled: numericReportValue(row.cancelled),
+    noShows: numericReportValue(row.noShows ?? row.no_shows),
+    discounts: numericReportValue(row.discounts),
+    bestSellingGame: String(row.bestSellingGame ?? row.best_selling_game ?? text.noneYet),
+  }
+}
+
+function dailySeriesFromRpc(value: unknown): StaffDailyPoint[] {
+  if (!Array.isArray(value)) return []
+  return value.map((point) => {
+    const row = (point && typeof point === 'object' ? point : {}) as Record<string, unknown>
+    return {
+      date: String(row.date || ''),
+      sales: numericReportValue(row.sales),
+      bookings: numericReportValue(row.bookings),
+      players: numericReportValue(row.players),
+    }
+  }).filter((point) => point.date)
+}
+
+function staffReportSnapshotFromRpc(value: unknown, text: StaffConsoleCopy = staffConsoleText.en): StaffReportSnapshot {
+  const payload = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  return {
+    report: reportSummaryFromRpc(payload.report, text),
+    comparisonReport: reportSummaryFromRpc(payload.comparisonReport ?? payload.comparison_report, text),
+    reportSeries: dailySeriesFromRpc(payload.reportSeries ?? payload.report_series),
+    comparisonSeries: dailySeriesFromRpc(payload.comparisonSeries ?? payload.comparison_series),
+    orders: Array.isArray(payload.orders) ? payload.orders as StaffOrder[] : [],
+    payments: Array.isArray(payload.payments) ? payload.payments as StaffOrderPayment[] : [],
+  }
 }
 
 function percentChange(current: number, previous: number, text: StaffConsoleCopy = staffConsoleText.en) {
@@ -1791,7 +1904,9 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
   const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
   const [status, setStatus] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loadingData, setLoadingData] = useState<Partial<Record<StaffDataKey, boolean>>>({})
+  const loadedDataRef = useRef<Partial<Record<StaffDataKey, boolean>>>({})
+  const inFlightDataRef = useRef<Partial<Record<StaffDataKey, Promise<void>>>>({})
   const [saving, setSaving] = useState(false)
   const [gameImageUploading, setGameImageUploading] = useState(false)
   const [roleSearch, setRoleSearch] = useState('')
@@ -1801,6 +1916,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
+  const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
@@ -1852,16 +1968,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     const today = todayString()
     return orders.filter((order) => order.booking_date === today)
   }, [orders])
-  const gameNameById = useMemo(() => new Map(games.map((game) => [game.id, game.name])), [games])
-  const orderPaymentsByOrderId = useMemo(() => {
-    const map = new Map<string, StaffOrderPayment[]>()
-    orderPayments.forEach((payment) => {
-      const list = map.get(payment.order_id) || []
-      list.push(payment)
-      map.set(payment.order_id, list)
-    })
-    return map
-  }, [orderPayments])
+  const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
   const filteredRoleProfiles = useMemo(() => {
     const query = roleSearch.trim().toLowerCase()
     const rows = profiles.filter((item) => {
@@ -1892,19 +1999,14 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     })
   }, [profiles, roleFilter, roleSearch, roleSort, text])
 
-  const reportOrders = useMemo(() => (
-    ordersInDateRange(orders, reportStart, reportEnd)
-  ), [orders, reportEnd, reportStart])
-  const comparisonOrders = useMemo(() => (
-    compareEnabled ? ordersInDateRange(orders, compareStart, compareEnd) : []
-  ), [compareEnabled, compareEnd, compareStart, orders])
-
-  const report = useMemo(() => buildStaffReport(reportOrders, gameNameById, orderPaymentsByOrderId, text), [gameNameById, orderPaymentsByOrderId, reportOrders, text])
-  const comparisonReport = useMemo(() => buildStaffReport(comparisonOrders, gameNameById, orderPaymentsByOrderId, text), [comparisonOrders, gameNameById, orderPaymentsByOrderId, text])
-  const reportSeries = useMemo(() => buildDailySeries(reportOrders, reportStart, reportEnd), [reportEnd, reportOrders, reportStart])
-  const comparisonSeries = useMemo(() => (
-    compareEnabled ? buildDailySeries(comparisonOrders, compareStart, compareEnd) : []
-  ), [compareEnabled, compareEnd, compareStart, comparisonOrders])
+  const emptyReport = useMemo(() => emptyStaffReport(text), [text])
+  const reportOrders = reportSnapshot?.orders ?? emptyStaffOrders
+  const reportPayments = reportSnapshot?.payments ?? emptyStaffPayments
+  const reportPaymentsByOrderId = useMemo(() => paymentMapFromRows(reportPayments), [reportPayments])
+  const report = reportSnapshot?.report || emptyReport
+  const comparisonReport = compareEnabled ? reportSnapshot?.comparisonReport || emptyReport : emptyReport
+  const reportSeries = reportSnapshot?.reportSeries ?? emptyStaffDailySeries
+  const comparisonSeries = compareEnabled ? reportSnapshot?.comparisonSeries ?? emptyStaffDailySeries : emptyStaffDailySeries
   const reportChartMax = useMemo(() => Math.max(
     1,
     ...reportSeries.map((point) => point.sales),
@@ -1926,44 +2028,259 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const selectedGameAudiences = useMemo(() => normalizeStaffAudience(gameForm.audience), [gameForm.audience])
   const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
   const selectedDiscountValueUnit = discountValueUnit(discountForm.discount_type)
+  const currentTabLoading = Boolean(
+    currentTab === 'new'
+      ? loadingData.games || loadingData.prices || loadingData.discounts || loadingData.profiles
+      : currentTab === 'today'
+        ? loadingData.games || loadingData.today
+        : currentTab === 'games'
+          ? loadingData.games
+          : currentTab === 'prices'
+            ? loadingData.games || loadingData.prices
+            : currentTab === 'discounts'
+              ? loadingData.discounts || (commerceTab === 'loyalty' && (loadingData.games || loadingData.loyalty))
+              : currentTab === 'roles'
+                ? loadingData.profiles
+                : currentTab === 'restore'
+                  ? loadingData.restore
+                  : currentTab === 'orders'
+                    ? loadingData.games || loadingData.orders
+                    : loadingData.games || loadingData.audit || loadingData.report
+  )
 
   useEffect(() => {
-    void loadStaffData()
-  }, [])
-
-  async function loadStaffData() {
-    setLoading(true)
-    setStatus('')
-    const [gamesResult, pricesResult, discountsResult, loyaltyResult, ordersResult, paymentsResult, profilesResult, auditResult] = await Promise.all([
-      supabase.from('staff_games').select('*').order('name', { ascending: true }),
-      supabase.from('staff_pricing_rules').select('*').order('valid_from', { ascending: false }),
-      supabase.from('staff_discount_rules').select('*').order('created_at', { ascending: false }),
-      supabase.from('staff_loyalty_rules').select('*').order('valid_from', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('staff_orders').select('*').order('booking_date', { ascending: false }).order('booking_time', { ascending: false }).limit(250),
-      supabase.from('staff_order_payments').select('*').order('created_at', { ascending: true }).limit(1000),
-      supabase.from('profiles').select('id, full_name, nickname, email, phone, role, is_seed_demo, seed_batch').is('deleted_at', null).order('full_name', { ascending: true }).limit(500),
-      supabase.from('audit_logs').select('id, actor_user_id, action, entity_type, entity_id, created_at').order('created_at', { ascending: false }).limit(60),
-    ])
-
-    if (gamesResult.error) setStatus(gamesResult.error.message)
-    if (paymentsResult.error && !paymentsResult.error.message.includes('staff_order_payments')) setStatus(paymentsResult.error.message)
-    if (canRestoreDeleted) {
-      const { data, error } = await supabase.rpc('get_soft_deleted_records', { p_limit: 100 })
-      if (error) setStatus(error.message)
-      else setDeletedRecords((data ?? []) as SoftDeletedRecord[])
-    } else {
-      setDeletedRecords([])
+    if (currentTab === 'new') {
+      void Promise.all([loadGames(), loadPrices(), loadDiscounts(), loadProfiles()])
+    } else if (currentTab === 'today') {
+      void Promise.all([loadGames(), loadTodayOrders()])
+    } else if (currentTab === 'games') {
+      void loadGames()
+    } else if (currentTab === 'prices') {
+      void Promise.all([loadGames(), loadPrices()])
+    } else if (currentTab === 'discounts') {
+      const loaders: Array<Promise<void>> = [loadDiscounts()]
+      if (commerceTab === 'loyalty') loaders.push(loadGames(), loadLoyaltyRules())
+      void Promise.all(loaders)
+    } else if (currentTab === 'roles') {
+      void loadProfiles()
+    } else if (currentTab === 'restore') {
+      void loadDeletedRecords()
+    } else if (currentTab === 'orders') {
+      void Promise.all([loadGames(), loadRecentOrders()])
     }
-    setGames((gamesResult.data ?? []) as StaffGame[])
-    setPrices((pricesResult.data ?? []) as StaffPriceRule[])
-    setDiscounts((discountsResult.data ?? []) as StaffDiscount[])
-    setLoyaltyRules((loyaltyResult.data ?? []) as StaffLoyaltyRule[])
-    setOrders((ordersResult.data ?? []) as StaffOrder[])
-    setOrderPayments((paymentsResult.data ?? []) as StaffOrderPayment[])
-    setProfiles(((profilesResult.data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
-    setPendingRoleChanges({})
-    setAuditLogs((auditResult.data ?? []) as StaffAuditLog[])
-    setLoading(false)
+    // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab, commerceTab])
+
+  useEffect(() => {
+    if (currentTab !== 'report') return
+    void Promise.all([loadGames(), loadAuditLogs(), loadReportData(true)])
+    // Report data is intentionally refreshed only by visible range/filter state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab, reportStart, reportEnd, compareEnabled, compareStart, compareEnd])
+
+  async function runStaffLoader(key: StaffDataKey, loader: () => Promise<void>, force = false) {
+    if (inFlightDataRef.current[key]) {
+      await inFlightDataRef.current[key]
+      if (!force) return
+    }
+    if (!force && loadedDataRef.current[key]) return
+
+    setLoadingData((current) => ({ ...current, [key]: true }))
+    const promise = loader()
+      .then(() => {
+        loadedDataRef.current[key] = true
+      })
+      .catch((error: unknown) => {
+        loadedDataRef.current[key] = false
+        setStatus(error instanceof Error ? error.message : String(error))
+      })
+      .finally(() => {
+        delete inFlightDataRef.current[key]
+        setLoadingData((current) => ({ ...current, [key]: false }))
+      })
+    inFlightDataRef.current[key] = promise
+    await promise
+  }
+
+  function markStaffDataStale(...keys: StaffDataKey[]) {
+    keys.forEach((key) => {
+      loadedDataRef.current[key] = false
+    })
+  }
+
+  async function fetchOrderPayments(orderRows: StaffOrder[]) {
+    const orderIds = orderRows.map((order) => order.id)
+    if (orderIds.length === 0) return []
+    const { data, error } = await supabase
+      .from('staff_order_payments')
+      .select('*')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: true })
+    if (error) throw new Error(error.message)
+    return (data ?? []) as StaffOrderPayment[]
+  }
+
+  async function loadGames(force = false) {
+    await runStaffLoader('games', async () => {
+      const { data, error } = await supabase.from('staff_games').select('*').order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      setGames((data ?? []) as StaffGame[])
+    }, force)
+  }
+
+  async function loadPrices(force = false) {
+    await runStaffLoader('prices', async () => {
+      const { data, error } = await supabase.from('staff_pricing_rules').select('*').order('valid_from', { ascending: false })
+      if (error) throw new Error(error.message)
+      setPrices((data ?? []) as StaffPriceRule[])
+    }, force)
+  }
+
+  async function loadDiscounts(force = false) {
+    await runStaffLoader('discounts', async () => {
+      const { data, error } = await supabase.from('staff_discount_rules').select('*').order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      setDiscounts((data ?? []) as StaffDiscount[])
+    }, force)
+  }
+
+  async function loadLoyaltyRules(force = false) {
+    await runStaffLoader('loyalty', async () => {
+      const { data, error } = await supabase.from('staff_loyalty_rules').select('*').order('valid_from', { ascending: false }).order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      setLoyaltyRules((data ?? []) as StaffLoyaltyRule[])
+    }, force)
+  }
+
+  async function loadProfiles(force = false) {
+    await runStaffLoader('profiles', async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, nickname, email, phone, role, is_seed_demo, seed_batch')
+        .is('deleted_at', null)
+        .order('full_name', { ascending: true })
+        .limit(500)
+      if (error) throw new Error(error.message)
+      setProfiles(((data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
+      setPendingRoleChanges({})
+    }, force)
+  }
+
+  async function loadAuditLogs(force = false) {
+    await runStaffLoader('audit', async () => {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('id, actor_user_id, action, entity_type, entity_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(60)
+      if (error) throw new Error(error.message)
+      setAuditLogs((data ?? []) as StaffAuditLog[])
+    }, force)
+  }
+
+  async function loadDeletedRecords(force = false) {
+    await runStaffLoader('restore', async () => {
+      if (!canRestoreDeleted) {
+        setDeletedRecords([])
+        return
+      }
+      const { data, error } = await supabase.rpc('get_soft_deleted_records', { p_limit: 100 })
+      if (error) throw new Error(error.message)
+      setDeletedRecords((data ?? []) as SoftDeletedRecord[])
+    }, force)
+  }
+
+  async function loadOrdersForRange(key: 'today' | 'orders', start: string, end: string, force = false) {
+    const [from, to] = orderedRange(start, end)
+    await runStaffLoader(key, async () => {
+      const { data, error } = await supabase
+        .from('staff_orders')
+        .select('*')
+        .gte('booking_date', from)
+        .lte('booking_date', to)
+        .order('booking_date', { ascending: false })
+        .order('booking_time', { ascending: false })
+        .limit(key === 'today' ? 120 : 250)
+      if (error) throw new Error(error.message)
+      const rows = (data ?? []) as StaffOrder[]
+      const payments = await fetchOrderPayments(rows)
+      setOrders((current) => key === 'orders' ? rows : mergeById(current, rows))
+      setOrderPayments((current) => key === 'orders'
+        ? payments
+        : mergeOrderPayments(current, rows.map((order) => order.id), payments))
+    }, force)
+  }
+
+  async function loadTodayOrders(force = false) {
+    const today = todayString()
+    await loadOrdersForRange('today', today, today, force)
+  }
+
+  async function loadRecentOrders(force = false) {
+    await loadOrdersForRange('orders', addDays(todayString(), -30), addDays(todayString(), 30), force)
+  }
+
+  async function loadReportFallback() {
+    const gamesResult = await supabase.from('staff_games').select('*').order('name', { ascending: true })
+    if (gamesResult.error) throw new Error(gamesResult.error.message)
+    const fallbackGames = (gamesResult.data ?? []) as StaffGame[]
+    setGames(fallbackGames)
+    loadedDataRef.current.games = true
+    const fallbackGameNameById = new Map(fallbackGames.map((game) => [game.id, game.name]))
+    const [reportFrom, reportTo] = orderedRange(reportStart, reportEnd)
+    const [compareFrom, compareTo] = orderedRange(compareStart, compareEnd)
+    const reportResult = await supabase
+      .from('staff_orders')
+      .select('*')
+      .gte('booking_date', reportFrom)
+      .lte('booking_date', reportTo)
+      .order('booking_date', { ascending: false })
+      .order('booking_time', { ascending: false })
+      .limit(250)
+    if (reportResult.error) throw new Error(reportResult.error.message)
+
+    const comparisonResult = compareEnabled
+      ? await supabase
+        .from('staff_orders')
+        .select('*')
+        .gte('booking_date', compareFrom)
+        .lte('booking_date', compareTo)
+        .order('booking_date', { ascending: false })
+        .order('booking_time', { ascending: false })
+        .limit(250)
+      : { data: [], error: null }
+    if (comparisonResult.error) throw new Error(comparisonResult.error.message)
+
+    const reportRows = (reportResult.data ?? []) as StaffOrder[]
+    const comparisonRows = (comparisonResult.data ?? []) as StaffOrder[]
+    const payments = await fetchOrderPayments([...reportRows, ...comparisonRows])
+    const paymentsByOrder = paymentMapFromRows(payments)
+    setReportSnapshot({
+      report: buildStaffReport(reportRows, fallbackGameNameById, paymentsByOrder, text),
+      comparisonReport: compareEnabled ? buildStaffReport(comparisonRows, fallbackGameNameById, paymentsByOrder, text) : emptyStaffReport(text),
+      reportSeries: buildDailySeries(reportRows, reportFrom, reportTo),
+      comparisonSeries: compareEnabled ? buildDailySeries(comparisonRows, compareFrom, compareTo) : [],
+      orders: reportRows,
+      payments,
+    })
+  }
+
+  async function loadReportData(force = false) {
+    await runStaffLoader('report', async () => {
+      const { data, error } = await supabase.rpc('get_staff_daily_report', {
+        p_start_date: reportStart,
+        p_end_date: reportEnd,
+        p_compare_start: compareEnabled ? compareStart : null,
+        p_compare_end: compareEnabled ? compareEnd : null,
+        p_order_limit: 120,
+      })
+      if (error) {
+        await loadReportFallback()
+        return
+      }
+      setReportSnapshot(staffReportSnapshotFromRpc(data, text))
+    }, force)
   }
 
   async function consumeStaffRateLimit(action: RateLimitAction, subject: string) {
@@ -2038,7 +2355,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       .replace('{order}', order?.order_number || '')
       .replace('{total}', formatVnd(order?.total || quote.total)))
     setBooking(defaultBookingForm())
-    await loadStaffData()
+    markStaffDataStale('today', 'orders', 'report', 'audit')
     setSaving(false)
   }
 
@@ -2119,7 +2436,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     }
     setStatus(error ? error.message : text.messages.gameSaved)
     if (!error) setGameForm(defaultGameForm())
-    await loadStaffData()
+    if (!error) {
+      markStaffDataStale('games', 'report')
+      await loadGames(true)
+    }
     setSaving(false)
   }
 
@@ -2145,7 +2465,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     const { error } = await request
     setStatus(error ? error.message : text.messages.priceRuleSaved)
     if (!error) setPriceForm(defaultPriceForm())
-    await loadStaffData()
+    if (!error) {
+      markStaffDataStale('prices')
+      await loadPrices(true)
+    }
     setSaving(false)
   }
 
@@ -2174,7 +2497,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     const { error } = await request
     setStatus(error ? error.message : isVoucher ? text.messages.voucherSaved : text.messages.discountSaved)
     if (!error) setDiscountForm(defaultDiscountForm())
-    await loadStaffData()
+    if (!error) {
+      markStaffDataStale('discounts')
+      await loadDiscounts(true)
+    }
     setSaving(false)
   }
 
@@ -2232,7 +2558,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     const { error } = await request
     setStatus(error ? error.message : text.messages.loyaltyRuleSaved)
     if (!error) setLoyaltyForm(defaultLoyaltyForm())
-    await loadStaffData()
+    if (!error) {
+      markStaffDataStale('loyalty')
+      await loadLoyaltyRules(true)
+    }
     setSaving(false)
   }
 
@@ -2245,7 +2574,13 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     setSaving(true)
     const { error } = await supabase.from('staff_orders').update(patch).eq('id', order.id)
     setStatus(error ? error.message : text.messages.orderUpdated)
-    await loadStaffData()
+    if (!error) {
+      setOrders((items) => items.map((item) => item.id === order.id ? { ...item, ...patch } : item))
+      markStaffDataStale('today', 'orders', 'report', 'audit')
+      if (currentTab === 'today') await loadTodayOrders(true)
+      if (currentTab === 'orders') await loadRecentOrders(true)
+      if (currentTab === 'report') await Promise.all([loadReportData(true), loadAuditLogs(true)])
+    }
     setSaving(false)
   }
 
@@ -2305,7 +2640,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
         delete next[profileId]
         return next
       })
-      await loadStaffData()
+      markStaffDataStale('profiles', 'audit')
       setStatus(message)
       setRoleSaveFeedback((current) => ({
         ...current,
@@ -2365,7 +2700,8 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       setStatus(text.messages.accountDeleted)
       setProfileDeleteDraft(null)
       setProfiles((items) => items.filter((item) => item.id !== profileDeleteDraft.profile.id))
-      await loadStaffData()
+      markStaffDataStale('profiles', 'restore', 'audit')
+      if (currentTab === 'restore') await loadDeletedRecords(true)
     }
     setSaving(false)
   }
@@ -2379,7 +2715,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       p_entity_id: record.entity_id,
     })
     setStatus(error ? error.message : text.messages.recordRestored)
-    await loadStaffData()
+    if (!error) {
+      markStaffDataStale('restore', 'profiles', 'audit')
+      await Promise.all([loadDeletedRecords(true), loadProfiles(true)])
+    }
     setSaving(false)
   }
 
@@ -2524,14 +2863,14 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   function exportExcelReport() {
     downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xls`, [
       { title: `${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report, text) },
-      { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, orderPaymentsByOrderId, text) },
+      { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, reportPaymentsByOrderId, text) },
     ], text)
   }
 
   function exportPdfReport() {
     downloadPdf(
       `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
-      reportPdfLines(`${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, orderPaymentsByOrderId, text),
+      reportPdfLines(`${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, reportPaymentsByOrderId, text),
       text
     )
   }
@@ -2579,7 +2918,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     )
   )
 
-  const orderRows = (rows: StaffOrder[]) => (
+  const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
     <div className="staff-table-wrap">
       <table className="staff-table">
         <thead>
@@ -2602,7 +2941,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               <td>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</td>
               <td>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</td>
               <td>{formatVnd(order.total)}</td>
-              <td>{orderPaymentLabel(order, orderPaymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
+              <td>{orderPaymentLabel(order, paymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
               <td>{text.orderStatuses[order.order_status]}</td>
               {canCreateOrders && (
                 <td>
@@ -2656,7 +2995,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       </div>
 
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
-      {loading && <p className="notice" aria-busy="true">{text.loading}</p>}
+      {currentTabLoading && <p className="notice" aria-busy="true">{text.loading}</p>}
 
       {currentTab === 'new' && (
         <div className="staff-grid">
@@ -3503,7 +3842,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
               </div>
             </section>
           </div>
-          {orderRows(reportOrders)}
+          {orderRows(reportOrders, reportPaymentsByOrderId)}
           <h3 className="staff-audit-title">{text.labels.recentAuditLog}</h3>
           <div className="staff-audit-list">
             {auditLogs.map((log) => (
