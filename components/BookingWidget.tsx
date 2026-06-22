@@ -25,9 +25,12 @@ const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_u
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
 const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at'
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const CLUB_MESSAGE_MAX_LENGTH = 150
+const CLUB_MESSAGE_LIMIT = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
 
@@ -127,7 +130,7 @@ type BookingType = 'community' | 'ticket' | 'challenge'
 type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
 type ClubRole = 'owner' | 'admin' | 'moderator' | 'member'
 type ClubMemberRole = Exclude<ClubRole, 'owner'>
-type ClubTab = 'hall' | 'members' | 'sessions' | 'settings'
+type ClubTab = 'hall' | 'members' | 'sessions' | 'messages' | 'settings'
 type ClubSessionScope = 'upcoming' | 'past'
 type ParticipantPaymentMethod = 'cash' | 'bank_transfer'
 type ParticipantPaymentSplit = {
@@ -370,6 +373,22 @@ type SessionMessage = {
   reviewed_at?: string | null
   moderation_categories?: Record<string, unknown> | null
   moderation_score?: number | null
+  created_at?: string | null
+}
+
+type ClubMessage = {
+  id: string
+  club_id: string
+  author_id: string
+  author_display_name: string | null
+  author_avatar_url: string | null
+  author_avatar_emoji?: string | null
+  author_avatar_initials?: string | null
+  author_avatar_color?: string | null
+  author_avatar_text_color?: string | null
+  author_profile_motto?: string | null
+  message_type: 'public' | 'admin_private'
+  body: string
   created_at?: string | null
 }
 
@@ -1668,6 +1687,9 @@ export default function WidgetPage({
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
+  const [clubMessages, setClubMessages] = useState<ClubMessage[]>([])
+  const [isLoadingClubMessages, setIsLoadingClubMessages] = useState(false)
+  const [clubMessageStatus, setClubMessageStatus] = useState('')
   const [networkTablesReady, setNetworkTablesReady] = useState(false)
   const [tournamentData, setTournamentData] = useState<TournamentData>({
     editors: [],
@@ -1846,6 +1868,8 @@ export default function WidgetPage({
   const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
   const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [clubPublicMessageDrafts, setClubPublicMessageDrafts] = useState<Record<string, string>>({})
+  const [clubAdminMessageDrafts, setClubAdminMessageDrafts] = useState<Record<string, string>>({})
   const [profileScoreAdjustments, setProfileScoreAdjustments] = useState<Record<string, number>>({})
   const [busyInviteKey, setBusyInviteKey] = useState('')
   const [busyFriendId, setBusyFriendId] = useState('')
@@ -1861,6 +1885,7 @@ export default function WidgetPage({
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
   const clubsLoadedRef = useRef(false)
   const clubsLoadingRef = useRef(false)
+  const loadedClubMessagesRef = useRef<Set<string>>(new Set())
   const tournamentDataLoadedRef = useRef(false)
   const tournamentDataLoadingRef = useRef(false)
   const networkDataLoadedRef = useRef(false)
@@ -2034,6 +2059,7 @@ export default function WidgetPage({
         avatar_initials: null,
         avatar_color: ANONYMOUS_MASK_COLOR,
         avatar_text_color: ANONYMOUS_MASK_TEXT_COLOR,
+        profile_motto: null,
       }
     }
 
@@ -2357,6 +2383,38 @@ export default function WidgetPage({
     return sortSessionMessages(sessionMessages
       .filter((message) => message.session_id === session.id && canSeeSessionMessage(session, message))
     )
+  }
+
+  function sortClubMessages(messages: ClubMessage[]) {
+    return [...messages].sort((a, b) => {
+      const left = a.created_at ? new Date(a.created_at).getTime() : 0
+      const right = b.created_at ? new Date(b.created_at).getTime() : 0
+      return left - right || a.id.localeCompare(b.id)
+    })
+  }
+
+  function mergeClubMessage(message: ClubMessage) {
+    setClubMessages((current) => sortClubMessages([
+      ...current.filter((item) => item.id !== message.id),
+      message,
+    ]))
+  }
+
+  function canUseClubMessages(club: Club | undefined) {
+    if (!club || !userId) return false
+    return canManageClub(club) || club.owner_id === userId || approvedClubMember(club)
+  }
+
+  function canSeeClubAdminMessage(club: Club, message: ClubMessage) {
+    return message.message_type === 'public' || message.author_id === userId || canManageClub(club)
+  }
+
+  function messagesForClub(club: Club, messageType: ClubMessage['message_type']) {
+    return sortClubMessages(clubMessages.filter((message) => (
+      message.club_id === club.id
+      && message.message_type === messageType
+      && canSeeClubAdminMessage(club, message)
+    )))
   }
 
   function previousPlayersForSession(session: Session) {
@@ -3402,6 +3460,34 @@ export default function WidgetPage({
     setClubs((data ?? []).map((club) => mergeCurrentUserClubMembership(club, currentUserMemberships)))
   }
 
+  async function loadClubMessages(club: Club, force = false) {
+    if (!canUseClubMessages(club)) return
+    if (!force && loadedClubMessagesRef.current.has(club.id)) return
+
+    setIsLoadingClubMessages(true)
+    const { data, error } = await (await getSupabase())
+      .from('club_messages')
+      .select(CLUB_MESSAGE_SELECT)
+      .eq('club_id', club.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(CLUB_MESSAGE_LIMIT)
+
+    setIsLoadingClubMessages(false)
+
+    if (error) {
+      setClubMessageStatus(error.message)
+      return
+    }
+
+    const rows = sortClubMessages((data ?? []) as ClubMessage[])
+    loadedClubMessagesRef.current.add(club.id)
+    setClubMessages((current) => [
+      ...current.filter((message) => message.club_id !== club.id),
+      ...rows,
+    ])
+  }
+
   async function loadTournamentData() {
     tournamentDataLoadingRef.current = true
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
@@ -4298,6 +4384,11 @@ function handleSessionDateChange(value: string) {
     setClubBannerFile(null)
     setClubBannerPreview('')
   }, [language, selectedClub])
+
+  useEffect(() => {
+    if (!selectedClub || selectedClubTab !== 'messages') return
+    void loadClubMessages(selectedClub)
+  }, [selectedClub, selectedClubTab])
 
   const checkInSession = useMemo(() => {
     if (!checkInTarget) return undefined
@@ -5523,9 +5614,10 @@ function handleSessionDateChange(value: string) {
     return club.member_count ?? clubMembers(club).filter((member) => member.status === 'approved').length
   }
 
-  function openClubPage(clubId: string) {
+  function openClubPage(clubId: string, tab: ClubTab = 'hall') {
     const club = clubs.find((item) => item.id === clubId)
     setClubStatus('')
+    setClubMessageStatus('')
 
     if (!canOpenClubPage(club)) {
       setSelectedClubId('')
@@ -5541,7 +5633,7 @@ function handleSessionDateChange(value: string) {
 
     setSelectedClubId(clubId)
     setSelectedClubDate('')
-    setSelectedClubTab('hall')
+    setSelectedClubTab(tab)
     setSelectedClubSessionScope('upcoming')
   }
 
@@ -6869,6 +6961,61 @@ function handleSessionDateChange(value: string) {
       if (message) mergeSessionMessage(message)
       setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
       await loadNetworkData()
+    }
+
+    setBusyMessageKey('')
+  }
+
+  async function postClubMessage(club: Club, messageType: ClubMessage['message_type']) {
+    if (!requireProfile() || !profile) return
+    if (!canUseClubMessages(club)) {
+      setClubMessageStatus(text.clubMessageLoginRequired)
+      return
+    }
+
+    const drafts = messageType === 'public' ? clubPublicMessageDrafts : clubAdminMessageDrafts
+    const body = (drafts[club.id] || '').trim()
+    if (!body) return
+
+    if (Array.from(body).length > CLUB_MESSAGE_MAX_LENGTH) {
+      setClubMessageStatus(text.clubMessageTooLong)
+      return
+    }
+
+    const messageKey = `${club.id}-${messageType}`
+    setBusyMessageKey(messageKey)
+    setClubMessageStatus('')
+
+    const avatarSnapshot = profileAvatarSnapshot(profile)
+    const { data, error } = await (await getSupabase())
+      .from('club_messages')
+      .insert({
+        club_id: club.id,
+        author_id: userId,
+        author_display_name: avatarSnapshot.display_name,
+        author_avatar_url: avatarSnapshot.avatar_url,
+        author_avatar_emoji: avatarSnapshot.avatar_emoji,
+        author_avatar_initials: avatarSnapshot.avatar_initials,
+        author_avatar_color: avatarSnapshot.avatar_color,
+        author_avatar_text_color: avatarSnapshot.avatar_text_color,
+        author_profile_motto: avatarSnapshot.profile_motto || null,
+        message_type: messageType,
+        body,
+      })
+      .select(CLUB_MESSAGE_SELECT)
+      .single()
+
+    if (error) {
+      setClubMessageStatus(error.message)
+    } else {
+      if (messageType === 'public') {
+        setClubPublicMessageDrafts((current) => ({ ...current, [club.id]: '' }))
+      } else {
+        setClubAdminMessageDrafts((current) => ({ ...current, [club.id]: '' }))
+      }
+      if (data) mergeClubMessage(data as ClubMessage)
+      loadedClubMessagesRef.current.add(club.id)
+      setClubMessageStatus(text.clubMessagePosted)
     }
 
     setBusyMessageKey('')
@@ -9655,6 +9802,7 @@ function handleSessionDateChange(value: string) {
                 const canAskPrivateCode = club.visibility === 'private' && !canOpenPage
                 const canActivateClubCard = canOpenPage || canAskPrivateCode
                 const canSeeMembers = canSeeClubPrivateData(club)
+                const canUseMessages = canOpenPage && canUseClubMessages(club)
 
                 return (
                   <article
@@ -9699,6 +9847,21 @@ function handleSessionDateChange(value: string) {
                     </div>
 
                     {club.description && <p className="notes">{club.description}</p>}
+
+                    {canUseMessages && (
+                      <div className="club-card-actions">
+                        <button
+                          className="secondary small-button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openClubPage(club.id, 'messages')
+                          }}
+                          type="button"
+                        >
+                          {text.clubMessages}
+                        </button>
+                      </div>
+                    )}
 
                     {canSeeMembers ? (
                       <div className="players">
@@ -10930,6 +11093,13 @@ function handleSessionDateChange(value: string) {
         const showInviteCode = selectedClub.visibility === 'private' && selectedClub.pin_code && canManageSelectedClub
         const canCreateSelectedClubSession = canManageSelectedClub || sessionClubOptions.some((club) => club.id === selectedClub.id)
         const noClubSessionsText = selectedClubSessionScope === 'past' ? text.noPastClubSessions : text.noUpcomingClubSessions
+        const canUseSelectedClubMessages = canUseClubMessages(selectedClub)
+        const selectedClubPublicMessages = messagesForClub(selectedClub, 'public')
+        const selectedClubAdminMessages = messagesForClub(selectedClub, 'admin_private')
+        const publicDraft = clubPublicMessageDrafts[selectedClub.id] || ''
+        const adminDraft = clubAdminMessageDrafts[selectedClub.id] || ''
+        const publicCharactersLeft = CLUB_MESSAGE_MAX_LENGTH - Array.from(publicDraft).length
+        const adminCharactersLeft = CLUB_MESSAGE_MAX_LENGTH - Array.from(adminDraft).length
 
         return (
           <div className="club-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-drawer-title" onClick={() => setSelectedClubId('')}>
@@ -11040,6 +11210,9 @@ function handleSessionDateChange(value: string) {
                 </button>
                 <button className={selectedClubTab === 'sessions' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('sessions')}>
                   {text.clubSessions}
+                </button>
+                <button className={selectedClubTab === 'messages' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('messages')}>
+                  {text.clubMessages}
                 </button>
                 {canManageSelectedClub && (
                   <button className={selectedClubTab === 'settings' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('settings')}>
@@ -11282,6 +11455,154 @@ function handleSessionDateChange(value: string) {
                     <button className="secondary create-button" type="button" onClick={loadMoreUpcomingSessions} disabled={isLoadingMoreSessions}>
                       {isLoadingMoreSessions ? '...' : text.expandDetails}
                     </button>
+                  )}
+                </div>
+              )}
+
+              {selectedClubTab === 'messages' && (
+                <div className="club-tab-panel club-messages-panel">
+                  {!canUseSelectedClubMessages ? (
+                    <p className="notice">{text.clubMessageLoginRequired}</p>
+                  ) : (
+                    <>
+                      <div className="section-head compact-head">
+                        <div>
+                          <h3>{text.clubMessages}</h3>
+                          <p className="muted">{text.clubMessagesHint}</p>
+                        </div>
+                        {isLoadingClubMessages && <span className="pill">{text.clubMessagesLoading}</span>}
+                      </div>
+                      {clubMessageStatus && <p className="notice">{clubMessageStatus}</p>}
+                      <div className="club-message-channels">
+                        <section className="club-message-channel">
+                          <div className="message-channel-head">
+                            <strong>{text.clubPublicMessages}</strong>
+                            <small>{text.clubMessageLimit}</small>
+                          </div>
+                          <div className="message-compose club-message-compose">
+                            <textarea
+                              maxLength={CLUB_MESSAGE_MAX_LENGTH}
+                              rows={2}
+                              value={publicDraft}
+                              onChange={(event) => setClubPublicMessageDrafts((current) => ({ ...current, [selectedClub.id]: event.target.value }))}
+                              placeholder={text.clubPublicPlaceholder}
+                            />
+                            <button
+                              className="secondary small-button"
+                              disabled={busyMessageKey === `${selectedClub.id}-public`}
+                              type="button"
+                              onClick={() => postClubMessage(selectedClub, 'public')}
+                            >
+                              {text.sendMessage}
+                            </button>
+                          </div>
+                          <small className={publicCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>
+                            {publicCharactersLeft}
+                          </small>
+                          {selectedClubPublicMessages.length === 0 ? (
+                            <p className="notice">{text.noClubMessages}</p>
+                          ) : (
+                            <div className="message-list club-message-list">
+                              {selectedClubPublicMessages.map((message) => {
+                                const isOwnMessage = message.author_id === userId
+                                const messageClassName = [
+                                  'session-message',
+                                  'club-message',
+                                  isOwnMessage ? 'own-message' : '',
+                                ].filter(Boolean).join(' ')
+
+                                return (
+                                  <div className={messageClassName} key={message.id}>
+                                    <span className="player-avatar tiny-avatar message-avatar" style={avatarStyle({
+                                      avatar_color: message.author_avatar_color,
+                                      avatar_text_color: message.author_avatar_text_color,
+                                    })}>
+                                      {avatarNode({
+                                        avatar_url: message.author_avatar_url,
+                                        avatar_emoji: message.author_avatar_emoji,
+                                        avatar_initials: message.author_avatar_initials,
+                                        display_name: message.author_display_name,
+                                      }, 'P')}
+                                    </span>
+                                    <div className="message-body">
+                                      <div className="message-meta-row">
+                                        <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
+                                      </div>
+                                      <p>{message.body}</p>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </section>
+
+                        <section className="club-message-channel">
+                          <div className="message-channel-head">
+                            <strong>{text.clubAdminMessages}</strong>
+                            <small>{text.clubMessagesPrivateHint}</small>
+                          </div>
+                          <div className="message-compose club-message-compose">
+                            <textarea
+                              maxLength={CLUB_MESSAGE_MAX_LENGTH}
+                              rows={2}
+                              value={adminDraft}
+                              onChange={(event) => setClubAdminMessageDrafts((current) => ({ ...current, [selectedClub.id]: event.target.value }))}
+                              placeholder={text.clubAdminPlaceholder}
+                            />
+                            <button
+                              className="secondary small-button"
+                              disabled={busyMessageKey === `${selectedClub.id}-admin_private`}
+                              type="button"
+                              onClick={() => postClubMessage(selectedClub, 'admin_private')}
+                            >
+                              {text.sendMessage}
+                            </button>
+                          </div>
+                          <small className={adminCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>
+                            {adminCharactersLeft}
+                          </small>
+                          {selectedClubAdminMessages.length === 0 ? (
+                            <p className="notice">{text.noClubAdminMessages}</p>
+                          ) : (
+                            <div className="message-list club-message-list">
+                              {selectedClubAdminMessages.map((message) => {
+                                const isOwnMessage = message.author_id === userId
+                                const messageClassName = [
+                                  'session-message',
+                                  'club-message',
+                                  'admin-private',
+                                  isOwnMessage ? 'own-message' : '',
+                                ].filter(Boolean).join(' ')
+
+                                return (
+                                  <div className={messageClassName} key={message.id}>
+                                    <span className="player-avatar tiny-avatar message-avatar" style={avatarStyle({
+                                      avatar_color: message.author_avatar_color,
+                                      avatar_text_color: message.author_avatar_text_color,
+                                    })}>
+                                      {avatarNode({
+                                        avatar_url: message.author_avatar_url,
+                                        avatar_emoji: message.author_avatar_emoji,
+                                        avatar_initials: message.author_avatar_initials,
+                                        display_name: message.author_display_name,
+                                      }, 'P')}
+                                    </span>
+                                    <div className="message-body">
+                                      <div className="message-meta-row">
+                                        <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
+                                        <small className="moderation-badge pending">{text.private}</small>
+                                      </div>
+                                      <p>{message.body}</p>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </section>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
