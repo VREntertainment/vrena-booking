@@ -21,8 +21,30 @@ const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
+const SESSION_CARD_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in'
 const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
 const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
+const SESSION_CARD_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, invite_code, status, rounds_per_match, session_participants(${SESSION_CARD_PARTICIPANT_SELECT})`
+const SESSION_CARD_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, invite_code, status, rounds_per_match, seeded, seed_label, booking_type, ticket_type, ticket_player_count, challenge_target_id, challenge_status, session_participants(${SESSION_CARD_PARTICIPANT_SELECT})`
+const OPTIONAL_SESSION_METADATA_COLUMNS = [
+  'seeded',
+  'seed_label',
+  'seed_batch',
+  'booking_type',
+  'ticket_type',
+  'ticket_player_count',
+  'ticket_total_price',
+  'ticket_unit_price',
+  'ticket_status',
+  'ticket_reference',
+  'ticket_customer_id',
+  'challenge_target_id',
+  'challenge_status',
+  'challenge_accepted_at',
+  'challenge_declined_at',
+]
+const WAITLIST_SELECT = 'id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at'
+const WAITLIST_POSITION_SELECT = 'id, session_id, profile_id, created_at'
 const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status, deleted_at'
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
@@ -1730,6 +1752,8 @@ export default function WidgetPage({
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
+  const [loadedSessionDetailIds, setLoadedSessionDetailIds] = useState<Record<string, boolean>>({})
+  const [loadingSessionDetailIds, setLoadingSessionDetailIds] = useState<Record<string, boolean>>({})
   const [clubMessages, setClubMessages] = useState<ClubMessage[]>([])
   const [isLoadingClubMessages, setIsLoadingClubMessages] = useState(false)
   const [clubMessageStatus, setClubMessageStatus] = useState('')
@@ -1936,6 +1960,11 @@ export default function WidgetPage({
   const tournamentDataLoadingRef = useRef(false)
   const networkDataLoadedRef = useRef(false)
   const networkDataLoadingRef = useRef(false)
+  const allProfilesLoadedRef = useRef(false)
+  const allProfilesLoadingRef = useRef(false)
+  const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
+  const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
+  const expandedSessionIdsRef = useRef<Set<string>>(new Set())
   const leaderboardLoadedRef = useRef(false)
   const leaderboardLoadingRef = useRef(false)
   const leaderboardLoadedCountRef = useRef(0)
@@ -1990,6 +2019,7 @@ export default function WidgetPage({
     setSelectedPlayerId(profileId)
     setSelectedPlayerSessionId(sessionId)
     setSelectedPlayerScoreEdit(null)
+    if (sessionId) void loadSessionDetail(sessionId)
   }
 
   function closePlayerProfile() {
@@ -2245,6 +2275,11 @@ export default function WidgetPage({
     void loadNetworkData()
   }
 
+  function ensureAllProfilesLoaded() {
+    if (allProfilesLoadedRef.current || allProfilesLoadingRef.current) return
+    void loadAllProfiles()
+  }
+
   function ensureLeaderboardLoaded() {
     if (leaderboardLoadedRef.current || leaderboardLoadingRef.current) return
     void loadLeaderboardPlayers()
@@ -2314,6 +2349,21 @@ export default function WidgetPage({
     void loadSessions()
   }
 
+  function loadExpandedSessionDetails() {
+    expandedSessionIdsRef.current.forEach((sessionId) => {
+      void loadSessionDetail(sessionId, { force: true })
+    })
+  }
+
+  function setSessionExpanded(session: Session, expanded: boolean) {
+    setExpandedSessions((current) => ({ ...current, [session.id]: expanded }))
+    if (!expanded) return
+
+    void loadSessionDetail(session.id)
+    ensureNetworkDataLoaded()
+    if (session.session_type === 'tournament') ensureTournamentDataLoaded()
+  }
+
   function openSessionFromProfile(sessionId: string) {
     const targetSession = sessions.find((session) => session.id === sessionId)
 
@@ -2322,8 +2372,10 @@ export default function WidgetPage({
     setIsSearchOpen(false)
     setActiveView('sessions')
     setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
+    void loadSessionDetail(sessionId)
     if (targetSession) {
       setSessionTimeScope(isUpcomingSession(targetSession) ? 'upcoming' : 'past')
+      if (targetSession.session_type === 'tournament') ensureTournamentDataLoaded()
     }
     window.setTimeout(() => {
       document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -3414,11 +3466,171 @@ export default function WidgetPage({
     }
   }
 
+  async function loadAllProfiles() {
+    if (allProfilesLoadingRef.current) return false
+
+    allProfilesLoadingRef.current = true
+    const { data, error } = await (await getSupabase())
+      .from('profiles')
+      .select(PROFILE_SELECT)
+      .is('deleted_at', null)
+      .order('full_name', { ascending: true })
+
+    allProfilesLoadingRef.current = false
+
+    if (error) {
+      setCreateStatus(error.message)
+      return false
+    }
+
+    const profileRows = (data ?? []) as Profile[]
+    allProfilesLoadedRef.current = true
+    setAllProfiles(profileRows)
+    setProfileScoreAdjustments((current) => ({
+      ...current,
+      ...Object.fromEntries(profileRows.map((row) => {
+        const adjustment = Number(row.score_adjustment ?? 0)
+        return [row.id, Number.isFinite(adjustment) ? adjustment : 0]
+      })),
+    }))
+    return true
+  }
+
+  function optionalSessionMetadataMissing(error: { message?: string } | null | undefined) {
+    const message = error?.message?.toLowerCase() || ''
+    return OPTIONAL_SESSION_METADATA_COLUMNS.some((column) => message.includes(column))
+  }
+
+  function normalizeSessionRow(session: Session): Session {
+    return {
+      ...session,
+      game_options: Array.isArray(session.game_options) ? session.game_options : [],
+      game_votes: session.game_votes || {},
+      session_participants: session.session_participants ?? [],
+      session_waitlist: session.session_waitlist ?? [],
+    }
+  }
+
+  async function loadSessionDetail(sessionId: string, options: { force?: boolean } = {}) {
+    if (!sessionId) return null
+    if (!options.force && sessionDetailsLoadedRef.current.has(sessionId)) {
+      return sessions.find((session) => session.id === sessionId) ?? null
+    }
+    if (sessionDetailsLoadingRef.current.has(sessionId)) return null
+
+    sessionDetailsLoadingRef.current.add(sessionId)
+    setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
+
+    const client = await getSupabase()
+    let detailResult = await client
+      .from('sessions')
+      .select(SESSION_SELECT)
+      .eq('id', sessionId)
+      .is('deleted_at', null)
+      .is('session_participants.deleted_at', null)
+      .neq('status', 'cancelled')
+      .single()
+
+    if (optionalSessionMetadataMissing(detailResult.error)) {
+      detailResult = await client
+        .from('sessions')
+        .select(SESSION_SELECT_BASE)
+        .eq('id', sessionId)
+        .is('deleted_at', null)
+        .is('session_participants.deleted_at', null)
+        .neq('status', 'cancelled')
+        .single()
+    }
+
+    if (detailResult.error || !detailResult.data) {
+      setCreateStatus(detailResult.error?.message || text.noMatchingSessions)
+      sessionDetailsLoadingRef.current.delete(sessionId)
+      setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
+      return null
+    }
+
+    const detailSession = normalizeSessionRow(detailResult.data as Session)
+    const participantIds = Array.from(new Set((detailSession.session_participants ?? []).map((participant) => participant.profile_id)))
+
+    const [waitlistResult, messagesResult, invitesResult, adjustmentResult] = await Promise.all([
+      client
+        .from('session_waitlist')
+        .select(WAITLIST_SELECT)
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true }),
+      userId
+        ? client
+          .from('session_messages')
+          .select(SESSION_MESSAGE_SELECT)
+          .eq('session_id', sessionId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      userId
+        ? client
+          .from('session_invites')
+          .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+      participantIds.length > 0
+        ? client
+          .from('profiles')
+          .select('id, score_adjustment')
+          .is('deleted_at', null)
+          .in('id', participantIds)
+        : Promise.resolve({ data: [], error: null }),
+    ])
+
+    const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
+    const messageRows = messagesResult.error ? [] : (messagesResult.data ?? []) as SessionMessage[]
+    const inviteRows = invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[]
+    const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? []) as Array<Pick<Profile, 'id' | 'score_adjustment'>>
+
+    const hydratedDetailSession = {
+      ...detailSession,
+      session_waitlist: waitlistRows,
+    }
+
+    setSessions((currentSessions) => {
+      const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
+      sessionsById.set(sessionId, hydratedDetailSession)
+      return sortSessionsByStart(Array.from(sessionsById.values()))
+    })
+    if (!messagesResult.error) {
+      setSessionMessages((current) => sortSessionMessages([
+        ...current.filter((message) => message.session_id !== sessionId),
+        ...messageRows,
+      ]))
+    }
+    if (!invitesResult.error) {
+      setSessionInvites((current) => [
+        ...current.filter((invite) => invite.session_id !== sessionId),
+        ...inviteRows,
+      ])
+    }
+    if (adjustmentRows.length > 0) {
+      setProfileScoreAdjustments((current) => ({
+        ...current,
+        ...Object.fromEntries(adjustmentRows.map((row) => {
+          const adjustment = Number(row.score_adjustment ?? 0)
+          return [row.id, Number.isFinite(adjustment) ? adjustment : 0]
+        })),
+      }))
+    }
+
+    sessionDetailsLoadedRef.current.add(sessionId)
+    sessionDetailsLoadingRef.current.delete(sessionId)
+    setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
+    setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
+    return hydratedDetailSession
+  }
+
   async function loadSessionRows(startDate?: string, endDate?: string) {
     const client = await getSupabase()
     let sessionQuery = client
       .from('sessions')
-      .select(SESSION_SELECT)
+      .select(SESSION_CARD_SELECT)
       .is('deleted_at', null)
       .is('session_participants.deleted_at', null)
       .neq('status', 'cancelled')
@@ -3432,28 +3644,11 @@ export default function WidgetPage({
 
     let sessionRowsData: unknown[] | null = sessionResult.data as unknown[] | null
     let sessionError = sessionResult.error
-    const optionalSessionMetadataMissing = sessionResult.error && [
-      'seeded',
-      'seed_label',
-      'seed_batch',
-      'booking_type',
-      'ticket_type',
-      'ticket_player_count',
-      'ticket_total_price',
-      'ticket_unit_price',
-      'ticket_status',
-      'ticket_reference',
-      'ticket_customer_id',
-      'challenge_target_id',
-      'challenge_status',
-      'challenge_accepted_at',
-      'challenge_declined_at',
-    ].some((column) => sessionResult.error?.message.toLowerCase().includes(column))
 
-    if (optionalSessionMetadataMissing) {
+    if (optionalSessionMetadataMissing(sessionResult.error)) {
       let fallbackSessionQuery = client
         .from('sessions')
-        .select(SESSION_SELECT_BASE)
+        .select(SESSION_CARD_SELECT_BASE)
         .is('deleted_at', null)
         .is('session_participants.deleted_at', null)
         .neq('status', 'cancelled')
@@ -3473,7 +3668,7 @@ export default function WidgetPage({
       return null
     }
 
-    return (sessionRowsData ?? []) as Session[]
+    return ((sessionRowsData ?? []) as Session[]).map(normalizeSessionRow)
   }
 
   async function hasFutureSessionsAfter(dateValue: string) {
@@ -3508,19 +3703,14 @@ export default function WidgetPage({
     const sessionIds = sessionRows.map((session) => session.id)
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
     const client = await getSupabase()
-    const [waitlistResult, profilesResult, adjustmentResult] = await Promise.all([
+    const [waitlistResult, adjustmentResult] = await Promise.all([
       sessionIds.length > 0
         ? client
         .from('session_waitlist')
-        .select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
+        .select(WAITLIST_POSITION_SELECT)
         .in('session_id', sessionIds)
         .order('created_at', { ascending: true })
         : Promise.resolve({ data: [], error: null }),
-      client
-        .from('profiles')
-        .select(PROFILE_SELECT)
-        .is('deleted_at', null)
-        .order('full_name', { ascending: true }),
       profileIds.length > 0
         ? client
         .from('profiles')
@@ -3531,19 +3721,25 @@ export default function WidgetPage({
     ])
 
     const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
-    const profileRows = profilesResult.error ? [] : (profilesResult.data ?? []) as Profile[]
-    const adjustmentRows = profileRows.length > 0 ? profileRows : (adjustmentResult.data ?? [])
-    const scoreAdjustments = adjustmentResult.error && profileRows.length === 0 ? {} : Object.fromEntries(adjustmentRows.map((row) => {
+    const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? [])
+    const scoreAdjustments = Object.fromEntries(adjustmentRows.map((row) => {
       const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
       return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
     }))
 
-    setAllProfiles(profileRows)
-    setProfileScoreAdjustments(scoreAdjustments)
+    if (adjustmentRows.length > 0) {
+      setProfileScoreAdjustments((current) => ({
+        ...current,
+        ...scoreAdjustments,
+      }))
+    }
     const hydratedSessions = sessionRows.map((session) => ({
       ...session,
       session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
     }))
+    hydratedSessions.forEach((session) => {
+      sessionDetailsLoadedRef.current.delete(session.id)
+    })
 
     sessionsLoadedRef.current = true
     setSessions((currentSessions) => {
@@ -3556,6 +3752,7 @@ export default function WidgetPage({
       hydratedSessions.forEach((session) => sessionsById.set(session.id, session))
       return sortSessionsByStart(Array.from(sessionsById.values()))
     })
+    loadExpandedSessionDetails()
 
     if (options.includeBlockedTimes) {
       const blockedResult = await client.from('blocked_times').select('date, start_time, end_time, arenas_used')
@@ -3763,7 +3960,7 @@ export default function WidgetPage({
     networkDataLoadingRef.current = true
     const sessionIds = sessions.map((session) => session.id)
     const client = await getSupabase()
-    const [friendsResult, invitesResult, messagesResult] = await Promise.all([
+    const [friendsResult, invitesResult] = await Promise.all([
       client
         .from('user_follows')
         .select('id, follower_id, following_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at')
@@ -3773,25 +3970,15 @@ export default function WidgetPage({
         .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
         .or(`recipient_id.eq.${userId},inviter_id.eq.${userId}`)
         .order('created_at', { ascending: false }),
-      sessionIds.length > 0
-        ? client
-          .from('session_messages')
-          .select(SESSION_MESSAGE_SELECT)
-          .in('session_id', sessionIds)
-          .is('deleted_at', null)
-          .order('created_at', { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
     ])
 
     const networkReady = !friendsResult.error && !invitesResult.error
-    const messagesReady = !messagesResult.error
-    networkDataLoadedRef.current = networkReady || messagesReady
+    networkDataLoadedRef.current = networkReady
     networkDataLoadingRef.current = false
     setNetworkTablesReady(networkReady)
     setFriendConnections(friendsResult.error ? [] : (friendsResult.data ?? []) as FriendConnection[])
     const inviteRows = invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[]
     setSessionInvites(inviteRows)
-    if (!messagesResult.error) setSessionMessages((messagesResult.data ?? []) as SessionMessage[])
 
     const loadedSessionIds = new Set(sessionIds)
     const missingInviteSessionIds = Array.from(new Set(inviteRows.map((invite) => invite.session_id)))
@@ -3801,7 +3988,7 @@ export default function WidgetPage({
     if (missingInviteSessionIds.length > 0) {
       const invitedSessionsResult = await client
         .from('sessions')
-        .select(SESSION_SELECT)
+        .select(SESSION_CARD_SELECT)
         .in('id', missingInviteSessionIds)
         .is('deleted_at', null)
         .is('session_participants.deleted_at', null)
@@ -3810,7 +3997,7 @@ export default function WidgetPage({
       if (!invitedSessionsResult.error && invitedSessionsResult.data) {
         setSessions((currentSessions) => {
           const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
-          ;((invitedSessionsResult.data ?? []) as Session[]).forEach((session) => sessionsById.set(session.id, session))
+          ;((invitedSessionsResult.data ?? []) as Session[]).map(normalizeSessionRow).forEach((session) => sessionsById.set(session.id, session))
           return sortSessionsByStart(Array.from(sessionsById.values()))
         })
       }
@@ -3861,6 +4048,7 @@ export default function WidgetPage({
 
     if (activeView === 'profile') {
       ensureNetworkDataLoaded()
+      ensureLeaderboardLoaded()
     }
   }, [activeView])
 
@@ -3942,12 +4130,20 @@ export default function WidgetPage({
   }, [sessionIdsKey, userId])
 
   useEffect(() => {
-    const hasExpandedSession = Object.values(expandedSessions).some(Boolean)
-    if (!hasExpandedSession) return
+    const expandedIds = Object.entries(expandedSessions)
+      .filter(([, expanded]) => expanded)
+      .map(([sessionId]) => sessionId)
+    expandedSessionIdsRef.current = new Set(expandedIds)
+    if (expandedIds.length === 0) return
 
     ensureNetworkDataLoaded()
-    ensureTournamentDataLoaded()
-  }, [expandedSessions])
+    expandedIds.forEach((sessionId) => {
+      void loadSessionDetail(sessionId)
+    })
+    if (sessions.some((session) => expandedIds.includes(session.id) && session.session_type === 'tournament')) {
+      ensureTournamentDataLoaded()
+    }
+  }, [expandedSessions, sessions])
 
   useEffect(() => {
     let active = true
@@ -4027,7 +4223,10 @@ export default function WidgetPage({
           refreshSessionsIfLoaded()
           refreshLeaderboardIfLoaded()
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => refreshSessionsIfLoaded())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => {
+          refreshSessionsIfLoaded()
+          loadExpandedSessionDetails()
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
           loadProfile()
           refreshSessionsIfLoaded()
@@ -4061,9 +4260,10 @@ export default function WidgetPage({
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
           if (networkDataLoadedRef.current) loadNetworkData()
+          loadExpandedSessionDetails()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
-          if (networkDataLoadedRef.current) loadNetworkData()
+          loadExpandedSessionDetails()
         })
         .subscribe()
 
@@ -4777,7 +4977,7 @@ function handleSessionDateChange(value: string) {
   const leaderboardPlayerStats = leaderboardLoadedRef.current ? leaderboardPlayers : allPlayerStats
   const currentProfileAvatar = profile ? avatarFields(profile) : null
 
-  const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? {
+  const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer : null) ?? {
     profileId: userId,
     displayName: displayName(profile),
     avatarUrl: currentProfileAvatar?.avatar_url || null,
@@ -4828,6 +5028,7 @@ function handleSessionDateChange(value: string) {
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
   const crownedTopPlayerScore = crownedTopPlayer?.totalScore ?? 0
   const selectedPlayerStats = leaderboardPlayerStats.find((item) => item.profileId === selectedPlayerId)
+    ?? (currentUserRankPlayer?.profileId === selectedPlayerId ? currentUserRankPlayer : undefined)
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
 
@@ -5101,6 +5302,7 @@ function handleSessionDateChange(value: string) {
     setChallengeStatus(text.challengeCreated)
     if (sessionId) {
       setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
+      void loadSessionDetail(sessionId)
       setSessionTimeScope('upcoming')
       setActiveView('sessions')
       window.setTimeout(() => {
@@ -7122,6 +7324,7 @@ function handleSessionDateChange(value: string) {
     else setCreateStatus(text.inviteSent)
 
     await loadNetworkData()
+    await loadSessionDetail(session.id, { force: true })
     setBusyInviteKey('')
   }
 
@@ -7156,7 +7359,7 @@ function handleSessionDateChange(value: string) {
       }
       if (message) mergeSessionMessage(message)
       setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
-      await loadNetworkData()
+      await loadSessionDetail(session.id, { force: true })
     }
 
     setBusyMessageKey('')
@@ -7234,7 +7437,7 @@ function handleSessionDateChange(value: string) {
       setCreateStatus(error.message)
     } else {
       setCreateStatus(status === 'approved' ? text.messageApproved : text.messageRejected)
-      await loadNetworkData()
+      await loadSessionDetail(message.session_id, { force: true })
     }
 
     setBusyMessageKey('')
@@ -7257,7 +7460,7 @@ function handleSessionDateChange(value: string) {
       setCreateStatus(error.message)
     } else {
       setCreateStatus(text.messageDeleted)
-      await loadNetworkData()
+      await loadSessionDetail(message.session_id, { force: true })
     }
 
     setBusyMessageKey('')
@@ -7358,32 +7561,37 @@ function handleSessionDateChange(value: string) {
     })
   }
 
-  function startEditingSession(session: Session) {
+  async function startEditingSession(session: Session) {
+    if (isAdmin) ensureAllProfilesLoaded()
+    const fullSession = sessionDetailsLoadedRef.current.has(session.id)
+      ? session
+      : (await loadSessionDetail(session.id)) || session
+
     setEditingSessionId(session.id)
-    setEditSessionName(session.name)
-    setEditSessionDate(session.date)
-    setEditSessionTime(session.start_time.slice(0, 5))
-    setEditSessionDuration(session.duration_minutes)
-    setEditSessionMaxPlayers(session.max_players)
-    setEditSessionArenaCount(arenasUsedBySession(session))
-    setEditSessionVisibility(session.visibility)
-    setEditSessionNotes(session.notes || '')
-    setEditSelectedGames(session.game_options?.length ? session.game_options : ['laser-tag'])
-    setEditBookingType(session.booking_type || 'community')
-    setEditTicketCustomerId(session.ticket_customer_id || session.owner_id)
-    setEditTicketType(session.ticket_type || 'individual')
-    setEditTicketTotalPrice(String(session.ticket_total_price ?? ''))
-    setEditTicketStatus(session.ticket_status || 'confirmed')
-    setEditTournamentFormat(session.tournament_format || 'pool_to_final')
-    setEditTournamentBestOf((session.best_of || 1) as 1 | 3 | 5)
-    setEditTournamentRoundsPerMatch(session.rounds_per_match || 1)
-    setEditTournamentRequirePayment(Boolean(session.require_payment))
-    setEditTournamentQualificationRule(session.qualification_rule || 'top_1')
-    setEditTournamentCustomQualifiers(session.custom_qualifiers || 2)
-    setEditTournamentThirdPlace(Boolean(session.enable_third_place_match))
-    setEditTournamentFirstPrize(session.first_prize || '')
-    setEditTournamentSecondPrize(session.second_prize || '')
-    setEditTournamentThirdPrize(session.third_prize || '')
+    setEditSessionName(fullSession.name)
+    setEditSessionDate(fullSession.date)
+    setEditSessionTime(fullSession.start_time.slice(0, 5))
+    setEditSessionDuration(fullSession.duration_minutes)
+    setEditSessionMaxPlayers(fullSession.max_players)
+    setEditSessionArenaCount(arenasUsedBySession(fullSession))
+    setEditSessionVisibility(fullSession.visibility)
+    setEditSessionNotes(fullSession.notes || '')
+    setEditSelectedGames(fullSession.game_options?.length ? fullSession.game_options : ['laser-tag'])
+    setEditBookingType(fullSession.booking_type || 'community')
+    setEditTicketCustomerId(fullSession.ticket_customer_id || fullSession.owner_id)
+    setEditTicketType(fullSession.ticket_type || 'individual')
+    setEditTicketTotalPrice(String(fullSession.ticket_total_price ?? ''))
+    setEditTicketStatus(fullSession.ticket_status || 'confirmed')
+    setEditTournamentFormat(fullSession.tournament_format || 'pool_to_final')
+    setEditTournamentBestOf((fullSession.best_of || 1) as 1 | 3 | 5)
+    setEditTournamentRoundsPerMatch(fullSession.rounds_per_match || 1)
+    setEditTournamentRequirePayment(Boolean(fullSession.require_payment))
+    setEditTournamentQualificationRule(fullSession.qualification_rule || 'top_1')
+    setEditTournamentCustomQualifiers(fullSession.custom_qualifiers || 2)
+    setEditTournamentThirdPlace(Boolean(fullSession.enable_third_place_match))
+    setEditTournamentFirstPrize(fullSession.first_prize || '')
+    setEditTournamentSecondPrize(fullSession.second_prize || '')
+    setEditTournamentThirdPrize(fullSession.third_prize || '')
     setCreateStatus('')
   }
 
@@ -8788,6 +8996,8 @@ function handleSessionDateChange(value: string) {
                   .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
                   .slice(0, 10)
                 const sessionMessageRows = messagesForSession(session)
+                const isSessionDetailLoading = Boolean(loadingSessionDetailIds[session.id])
+                const isSessionDetailLoaded = Boolean(loadedSessionDetailIds[session.id])
                 const hasCrownHolder = Boolean(
                   crownedTopPlayer?.profileId
                   && crownedTopPlayer.profileId !== userId
@@ -8801,7 +9011,7 @@ function handleSessionDateChange(value: string) {
                       onClick={(event) => {
                         if (!canExpandDetails) return
                         if (isInteractiveClickTarget(event.target)) return
-                        setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                        setSessionExpanded(session, !isExpanded)
                       }}
                       role={canExpandDetails ? 'button' : undefined}
                       tabIndex={canExpandDetails ? 0 : undefined}
@@ -8810,7 +9020,7 @@ function handleSessionDateChange(value: string) {
                         if (isInteractiveClickTarget(event.target)) return
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault()
-                          setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                          setSessionExpanded(session, !isExpanded)
                         }
                       }}
                     >
@@ -8939,7 +9149,7 @@ function handleSessionDateChange(value: string) {
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation()
-                              setExpandedSessions((current) => ({ ...current, [session.id]: !current[session.id] }))
+                              setSessionExpanded(session, !isExpanded)
                             }}
                           >
                             {isExpanded ? text.hideDetails : text.expandDetails}
@@ -8950,6 +9160,10 @@ function handleSessionDateChange(value: string) {
                     {hasCrownHolder && <p className="notice crown-session-notice">{text.topPlayerNotice}</p>}
                     {isExpanded && (
                       <div className="session-expanded">
+                        {isSessionDetailLoading && !isSessionDetailLoaded && (
+                          <p className="notice" aria-busy="true">...</p>
+                        )}
+
                         {sessionClub && (
                           <div className="expanded-session-flags">
                             <span className="pill">{text.clubSession}: {sessionClub.name}</span>
