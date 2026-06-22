@@ -2705,6 +2705,64 @@ body {
   gap: 8px;
 }
 
+.app .club-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.app .club-message-channels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app .club-message-channel {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+  border: 1px solid #e4ecef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.app .message-channel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .message-channel-head small,
+.app .character-count {
+  color: #66777d;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.app .club-message-compose {
+  align-items: stretch;
+}
+
+.app .club-message-compose textarea {
+  min-height: 58px;
+  resize: vertical;
+}
+
+.app .character-count {
+  justify-self: end;
+}
+
+.app .character-count.over-limit {
+  color: #b42318;
+}
+
+.app .club-message-list {
+  max-height: 170px;
+}
+
 .app .message-list {
   display: grid;
   gap: 6px;
@@ -6393,6 +6451,14 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .club-message-channels {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-message-list {
+    max-height: 150px;
+  }
+
   .app .club-invite-box {
     grid-template-columns: 1fr;
   }
@@ -6953,6 +7019,14 @@ body {
 
   .app .muted {
     font-size: 12px;
+  }
+
+  .app .club-message-compose {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-message-compose button {
+    width: 100%;
   }
 
   .app .tabs {
@@ -7526,7 +7600,7 @@ body {
     color: #aeb9bd;
   }
 
-  .app .standings-table, .app .queue-match, .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message, .app .session-message.announcement {
+  .app .standings-table, .app .queue-match, .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message, .app .session-message.announcement, .app .club-message-channel {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
   }
@@ -7643,7 +7717,7 @@ body {
     color: #f6f7f9;
   }
 
-  .app .reminder-strip small, .app .session-message p {
+  .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count {
     color: #aeb9bd;
   }
 
