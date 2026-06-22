@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Component, ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
-import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationKey, uiText } from '../lib/i18n'
+import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 
@@ -55,6 +55,15 @@ function urlBase64ToUint8Array(base64String: string) {
 
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
+const TicketBookingView = dynamic(() => import('./TicketBookingView'), {
+  ssr: false,
+  loading: () => (
+    <section className="section tickets-section">
+      <p className="notice" aria-busy="true">...</p>
+    </section>
+  ),
+})
+const GameGuideModal = dynamic(() => import('./GameGuideModal'), { ssr: false })
 const StaffConsole = dynamic(() => import('./StaffConsole'), {
   ssr: false,
   loading: () => (
@@ -599,16 +608,6 @@ type TournamentMatchInsert = {
   best_of?: 1 | 3 | 5 | number | null
 }
 
-const gameAudienceLabelKeys: Record<GameAudience, TranslationKey> = {
-  familyFriendly: 'audienceFamilyFriendly',
-  scary: 'audienceScary',
-  fun: 'audienceFun',
-  quest: 'audienceQuest',
-  teamwork: 'audienceTeamwork',
-  beginnerFriendly: 'audienceBeginnerFriendly',
-  competitive: 'audienceCompetitive',
-}
-
 const games: GameInfo[] = [
   {
     id: 'laser-tag',
@@ -700,26 +699,6 @@ function isEscapeGameId(gameId: string | null | undefined) {
 function isEscapeSession(session: Pick<Session, 'confirmed_game_id' | 'game_options'> | null | undefined) {
   if (!session) return false
   return isEscapeGameId(session.confirmed_game_id) || (session.game_options ?? []).some((gameId) => isEscapeGameId(gameId))
-}
-
-function guideTextItems(value: string) {
-  return value
-    .split(/\n|\|/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function normalizedGuideText(value: StaffGameGuideText | null | undefined, language: LanguageCode, fallbackLanguage: LanguageCode, fallback: string) {
-  const directText = value?.[language]?.trim()
-  if (directText) return directText
-
-  const fallbackLanguageText = value?.[fallbackLanguage]?.trim()
-  if (fallbackLanguageText) return fallbackLanguageText
-
-  const englishText = value?.en?.trim()
-  if (englishText) return englishText
-
-  return fallback
 }
 
 const ticketServices: Array<{
@@ -5104,75 +5083,6 @@ function handleSessionDateChange(value: string) {
       >
         {gameId ? text.gameGuideForGame : text.gameGuideOpen}
       </button>
-    )
-  }
-
-  function renderGameGuideCard(game: GameInfo) {
-    const isEscape = game.category === 'Escape'
-    const isMiniBlockTowers = game.id === 'mini-block-towers'
-    const staffGuide = staffGameGuides[game.id]
-    const fallbackGuideLanguage = isLanguageCode(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
-    const fallbackSummary = isMiniBlockTowers
-      ? text.gameGuideBlockTowersSummary
-      : isEscape
-        ? text.gameGuideEscapeSummary
-        : text.gameGuideFpsSummary
-    const fallbackRules = isEscape
-      ? ''
-      : isMiniBlockTowers
-        ? text.gameGuideBlockTowersRules
-        : text.gameGuideFpsRules
-    const fallbackTips = isMiniBlockTowers
-      ? text.gameGuideBlockTowersTips
-      : isEscape
-        ? text.gameGuideEscapeTips
-        : text.gameGuideFpsTips
-    const summary = normalizedGuideText(staffGuide?.guide_summary, language, fallbackGuideLanguage, fallbackSummary)
-    const tips = guideTextItems(normalizedGuideText(staffGuide?.guide_tips, language, fallbackGuideLanguage, fallbackTips))
-    const ruleItems = guideTextItems(normalizedGuideText(staffGuide?.guide_rules, language, fallbackGuideLanguage, fallbackRules))
-
-    return (
-      <article className="game-guide-card" key={game.id}>
-        <img src={game.image} alt="" loading="lazy" decoding="async" />
-        <div className="game-guide-card-body">
-          <div className="game-guide-card-head">
-            <div>
-              <h4>{game.title}</h4>
-              <span>{game.category}</span>
-            </div>
-            <div className="game-guide-facts">
-              <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
-              <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
-            </div>
-          </div>
-          <p>{summary}</p>
-          <div className="game-guide-audience" aria-label={text.gameGuideAudience}>
-            {game.audience.map((audience) => (
-              <span key={audience}>{text[gameAudienceLabelKeys[audience]]}</span>
-            ))}
-          </div>
-          {ruleItems.length > 0 && (
-            <details className="game-guide-panel">
-              <summary>{text.gameGuideRules}</summary>
-              <ul>
-                {ruleItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {tips.length > 0 && (
-            <details className="game-guide-panel">
-              <summary>{text.gameGuideTips}</summary>
-              <ul>
-                {tips.map((tip) => (
-                  <li key={tip}>{tip}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      </article>
     )
   }
 
@@ -10061,190 +9971,49 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'tickets' && (
-          <section className="section tickets-section">
-            <div className="section-head">
-              <div>
-                <h2>{text.ticketsTitle}</h2>
-                <p className="muted">{text.ticketsHint}</p>
-              </div>
-            </div>
-            <div className="ticket-explainer" role="note">
-              <strong>{text.ticketsExplainerTitle}</strong>
-              <span>{text.ticketsExplainerBody}</span>
-              {renderGameGuideTrigger(null, 'ticket-game-guide-link')}
-            </div>
-            {renderTariffTrigger('ticket-tariff-link')}
-
-            {!profile ? (
-              <div className="ticket-login-panel">
-                <strong>{text.ticketLoginRequiredTitle}</strong>
-                <p className="muted">{text.ticketLoginRequiredBody}</p>
-                <button className="primary" type="button" onClick={promptLogin}>
-                  {text.loginPromptButton}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="ticket-flow-grid">
-                  <div className="ticket-type-list">
-                    <label>{text.ticketType}</label>
-                    <div className="ticket-service-grid">
-                      {ticketServices.map((service) => (
-                        <button
-                          className={ticketType === service.id ? 'ticket-service-card active' : 'ticket-service-card'}
-                          key={service.id}
-                          type="button"
-                          onClick={() => handleTicketTypeChange(service.id)}
-                        >
-                          <strong>{ticketTypeLabel(service.id, looseText)}</strong>
-                          <span>{ticketTypeDescription(service.id, looseText)}</span>
-                          <small>
-                            20-120 min · {service.minPlayers}-{service.maxPlayers} {text.players}
-                          </small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="ticket-form-panel">
-                    <div className="form-grid compact-form-grid ticket-form-grid">
-                      <div>
-                        <label>{text.date} <span className="required">*</span></label>
-                        <ShortDateInput
-                          ariaLabel={text.date}
-                          language={language}
-                          onChange={(value) => {
-                            setTicketDate(value)
-                            setTicketTime('')
-                            setTicketConfirmation(null)
-                          }}
-                          placeholder={text.chooseDate}
-                          value={ticketDate}
-                        />
-                      </div>
-                      <div>
-                        <label>{text.availableTime} <span className="required">*</span></label>
-                        <select
-                          value={ticketTime}
-                          onChange={(event) => {
-                            setTicketTime(event.target.value)
-                            setTicketConfirmation(null)
-                          }}
-                        >
-                          <option value="">{text.chooseTime}</option>
-                          {ticketTimeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label>{text.duration}</label>
-                        <select
-                          disabled={ticketDurationOptions.length === 0}
-                          value={ticketDurationOptions.includes(activeTicketDuration) ? activeTicketDuration : ''}
-                          onChange={(event) => handleTicketDurationChange(Number(event.target.value))}
-                        >
-                          {ticketDurationOptions.length === 0 && (
-                            <option value="">{text.noAvailableDuration}</option>
-                          )}
-                          {ticketDurationOptions.map((duration) => (
-                            <option key={duration} value={duration}>
-                              {duration} min
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label>{text.numberOfPlayers} <span className="required">*</span></label>
-                        <select
-                          value={ticketPlayers}
-                          onChange={(event) => {
-                            handleTicketPlayersChange(Number(event.target.value))
-                          }}
-                        >
-                          {ticketPlayerOptions.map((count) => (
-                            <option key={count} value={count}>
-                              {count} {text.players}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="ticket-price-summary">
-                      <div>
-                        <span>{text.ticketType}</span>
-                        <strong>{ticketTypeLabel(ticketType, looseText)}</strong>
-                      </div>
-                      <div>
-                        <span>{text.duration}</span>
-                        <strong>{activeTicketDuration} min</strong>
-                      </div>
-                      <div>
-                        <span>{text.unitPrice}</span>
-                        <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                        <small>{ticketUnitFormulaText(looseText, currentTicketUnitPrice, ticketPlayers)}</small>
-                      </div>
-                      <div>
-                        <span>{text.reservedPlayerSpots}</span>
-                        <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
-                        <small>{currentTicketPricing.durationBlocks} x {ticketArenaCapacityPerSlot} {text.players}</small>
-                      </div>
-                      {currentTicketPricing.discountRate > 0 && (
-                        <div className="ticket-discount-line">
-                          <span>{text.discount}</span>
-                          <strong>{Math.round(currentTicketPricing.discountRate * 100)}%</strong>
-                          <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
-                        </div>
-                      )}
-                      <div className="ticket-total-line">
-                        <span>{text.totalPrice}</span>
-                        <strong>{formatVnd(currentTicketTotalPrice)}</strong>
-                      </div>
-                    </div>
-
-                    {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
-                    {ticketType !== 'individual' && (
-                      <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
-                    )}
-                    <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>
-
-                    <button
-                      className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
-                      disabled={isBookingTickets}
-                      type="button"
-                      onClick={bookTickets}
-                    >
-                      {isBookingTickets ? text.bookingTickets : text.bookTickets}
-                    </button>
-                    {ticketStatus && <p className="notice">{ticketStatus}</p>}
-                  </div>
-                </div>
-
-                {ticketConfirmation && (
-                  <div className="ticket-confirmation">
-                    <div>
-                      <span>{text.bookingConfirmed}</span>
-                      <strong>{ticketConfirmation.ticketLabel}</strong>
-                    </div>
-                    <div className="ticket-confirmation-grid">
-                      <span>{formatShortDate(ticketConfirmation.date, language)}</span>
-                      <span>{ticketConfirmation.time}</span>
-                      <span>{ticketConfirmation.players} {text.players}</span>
-                      <span>{formatVnd(ticketConfirmation.totalPrice)}</span>
-                    </div>
-                    {ticketConfirmation.reference && (
-                      <p>
-                        {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </section>
+          <TicketBookingView
+            activeTicketDuration={activeTicketDuration}
+            currentTicketPricing={currentTicketPricing}
+            currentTicketTotalPrice={currentTicketTotalPrice}
+            currentTicketUnitPrice={currentTicketUnitPrice}
+            formatShortDate={formatShortDate}
+            formatVnd={formatVnd}
+            gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
+            isBookingTickets={isBookingTickets}
+            isLoggedIn={Boolean(profile)}
+            language={language}
+            onBookTickets={bookTickets}
+            onPromptLogin={promptLogin}
+            onTicketDateChange={(value) => {
+              setTicketDate(value)
+              setTicketTime('')
+              setTicketConfirmation(null)
+            }}
+            onTicketDurationChange={handleTicketDurationChange}
+            onTicketPlayersChange={handleTicketPlayersChange}
+            onTicketTimeChange={(value) => {
+              setTicketTime(value)
+              setTicketConfirmation(null)
+            }}
+            onTicketTypeChange={handleTicketTypeChange}
+            tariffTrigger={renderTariffTrigger('ticket-tariff-link')}
+            text={looseText}
+            ticketConfirmation={ticketConfirmation}
+            ticketDate={ticketDate}
+            ticketDurationMessage={ticketDurationMessage}
+            ticketDurationOptions={ticketDurationOptions}
+            ticketArenaCapacityPerSlot={ticketArenaCapacityPerSlot}
+            ticketPlayerOptions={ticketPlayerOptions}
+            ticketPlayers={ticketPlayers}
+            ticketServices={ticketServices}
+            ticketStatus={ticketStatus}
+            ticketTime={ticketTime}
+            ticketTimeOptions={ticketTimeOptions}
+            ticketType={ticketType}
+            ticketTypeDescription={ticketTypeDescription}
+            ticketTypeLabel={ticketTypeLabel}
+            ticketUnitFormulaText={ticketUnitFormulaText}
+          />
         )}
 
         {activeView === 'create' && (
@@ -11194,20 +10963,14 @@ function handleSessionDateChange(value: string) {
       )}
 
       {gameGuideOpen && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={() => setGameGuideOpen(false)}>
-          <div className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" onClick={() => setGameGuideOpen(false)} aria-label={text.gameGuideClose}>
-              ×
-            </button>
-            <div className="game-guide-header">
-              <h3 id="game-guide-title">{text.gameGuideTitle}</h3>
-              <p>{text.gameGuideIntro}</p>
-            </div>
-            <div className="game-guide-scroll">
-              {gameGuideGames.map((game) => renderGameGuideCard(game))}
-            </div>
-          </div>
-        </div>
+        <GameGuideModal
+          closeText={text.gameGuideClose}
+          games={gameGuideGames}
+          language={language}
+          onClose={() => setGameGuideOpen(false)}
+          staffGameGuides={staffGameGuides}
+          text={looseText}
+        />
       )}
 
       {selectedClub && canOpenClubPage(selectedClub) && (() => {
