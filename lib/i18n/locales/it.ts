@@ -546,6 +546,8 @@ export const it = {
   announcementPlaceholder: 'Scrivi annuncio',
   postAnnouncement: 'Posta',
   noSessionMessages: 'Nessuna info partita.',
+  sessionMessagesLoading: 'Caricamento messaggi',
+  loadEarlierMessages: 'Carica precedenti',
   commentPlaceholder: 'Scrivi commento',
   postComment: 'Commenta',
   messagePosted: 'Messaggio postato.',

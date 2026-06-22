@@ -546,6 +546,8 @@ export const vi = {
   announcementPlaceholder: 'Viết thông báo',
   postAnnouncement: 'Đăng',
   noSessionMessages: 'Chưa có tin phiên.',
+  sessionMessagesLoading: 'Đang tải tin',
+  loadEarlierMessages: 'Tải tin cũ',
   commentPlaceholder: 'Viết bình luận',
   postComment: 'Bình luận',
   messagePosted: 'Đã đăng tin.',

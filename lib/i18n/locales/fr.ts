@@ -546,6 +546,8 @@ export const fr = {
   announcementPlaceholder: 'Écrire annonce',
   postAnnouncement: 'Poster',
   noSessionMessages: 'Aucune info partie.',
+  sessionMessagesLoading: 'Chargement messages',
+  loadEarlierMessages: 'Charger anciens',
   commentPlaceholder: 'Écrire commentaire',
   postComment: 'Commenter',
   messagePosted: 'Message posté.',
