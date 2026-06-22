@@ -5480,13 +5480,23 @@ function handleSessionDateChange(value: string) {
     return clubMembers(club).some((member) => member.profile_id === profileId && member.status === 'approved')
   }
 
+  function canEnterPrivateClubPage(club: Club | undefined) {
+    if (!club) return false
+    if (club.visibility !== 'private') return true
+    if (!userId) return false
+    return club.owner_id === userId || approvedClubMember(club) || Boolean(unlockedClubIds[club.id])
+  }
+
   function canSeeClubPrivateData(club: Club | undefined) {
     if (!club) return true
-    return club.visibility === 'public' || canManageClub(club) || approvedClubMember(club) || Boolean(unlockedClubIds[club.id])
+    if (club.visibility === 'public') return true
+    return canEnterPrivateClubPage(club) || canManageClub(club)
   }
 
   function canOpenClubPage(club: Club | undefined) {
-    return Boolean(club && canSeeClubPrivateData(club))
+    if (!club) return false
+    if (club.visibility === 'private') return canEnterPrivateClubPage(club)
+    return canSeeClubPrivateData(club)
   }
 
   function canCreateClubSession(club: Club | undefined) {
@@ -10918,7 +10928,7 @@ function handleSessionDateChange(value: string) {
         const canSeeSelectedClubData = canSeeClubPrivateData(selectedClub)
         const bannerUrl = clubBannerPreview || selectedClub.banner_url || ''
         const showInviteCode = selectedClub.visibility === 'private' && selectedClub.pin_code && canManageSelectedClub
-        const canCreateSelectedClubSession = sessionClubOptions.some((club) => club.id === selectedClub.id)
+        const canCreateSelectedClubSession = canManageSelectedClub || sessionClubOptions.some((club) => club.id === selectedClub.id)
         const noClubSessionsText = selectedClubSessionScope === 'past' ? text.noPastClubSessions : text.noUpcomingClubSessions
 
         return (
@@ -10968,7 +10978,7 @@ function handleSessionDateChange(value: string) {
               {selectedClub.description && <p className="notes club-description">{selectedClub.description}</p>}
 
               <div className="club-action-row">
-                {!selectedClubMembership && (
+                {!selectedClubMembership && !canManageSelectedClub && (
                   <button
                     className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
                     disabled={busyClubId === selectedClub.id}
