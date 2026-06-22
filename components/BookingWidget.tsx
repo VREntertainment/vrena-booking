@@ -16,6 +16,7 @@ const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const DEFAULT_APP_URL = 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
 const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
@@ -37,6 +38,19 @@ let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supab
 function getSupabase() {
   supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
   return supabaseClientPromise
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const output = new Uint8Array(rawData.length)
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    output[index] = rawData.charCodeAt(index)
+  }
+
+  return output
 }
 
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
@@ -1764,6 +1778,9 @@ export default function WidgetPage({
   const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
   const [createStatus, setCreateStatus] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [pushReminderStatus, setPushReminderStatus] = useState('')
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false)
+  const [isEnablingPush, setIsEnablingPush] = useState(false)
   const [createSessionMode, setCreateSessionMode] = useState<'calendar' | 'form'>('form')
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(localDateString()))
   const [ticketType, setTicketType] = useState<TicketType>('individual')
@@ -2464,6 +2481,83 @@ export default function WidgetPage({
     return (await Notification.requestPermission()) === 'granted'
   }
 
+  function canUseWebPush() {
+    return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+  }
+
+  async function registerReminderServiceWorker() {
+    return navigator.serviceWorker.register('/sw.js', {
+      scope: '/',
+      updateViaCache: 'none',
+    })
+  }
+
+  async function enablePushReminders() {
+    if (!requireProfile()) return false
+    if (!VAPID_PUBLIC_KEY) {
+      setPushReminderStatus(text.pushMissingConfig)
+      return false
+    }
+    if (!canUseWebPush()) {
+      setPushReminderStatus(text.pushUnsupported)
+      return false
+    }
+
+    setIsEnablingPush(true)
+    setPushReminderStatus('')
+
+    try {
+      const hasPermission = await requestBrowserReminderPermission()
+      if (!hasPermission) {
+        setPushReminderStatus(text.pushPermissionDenied)
+        setIsEnablingPush(false)
+        return false
+      }
+
+      const registration = await registerReminderServiceWorker()
+      const existingSubscription = await registration.pushManager.getSubscription()
+      const subscription = existingSubscription || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+      const serialized = subscription.toJSON()
+      const keys = serialized.keys || {}
+      if (!keys.p256dh || !keys.auth) {
+        setPushReminderStatus(text.pushSaveError)
+        setIsEnablingPush(false)
+        return false
+      }
+
+      const { error } = await (await getSupabase())
+        .from('push_subscriptions')
+        .upsert({
+          profile_id: userId,
+          endpoint: subscription.endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+          user_agent: navigator.userAgent,
+          disabled_at: null,
+          last_seen_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'endpoint' })
+
+      if (error) {
+        setPushReminderStatus(error.message)
+        setIsEnablingPush(false)
+        return false
+      }
+
+      setIsPushSubscribed(true)
+      setPushReminderStatus(text.pushEnabled)
+      setIsEnablingPush(false)
+      return true
+    } catch (error) {
+      setPushReminderStatus(error instanceof Error ? error.message : text.pushSaveError)
+      setIsEnablingPush(false)
+      return false
+    }
+  }
+
   function downloadSessionCalendar(session: Session) {
     if (typeof window === 'undefined') return
 
@@ -2509,7 +2603,7 @@ export default function WidgetPage({
 
   async function prepareJoinedSessionReminders(session: Session) {
     downloadSessionCalendar(session)
-    const hasPermission = await requestBrowserReminderPermission()
+    const hasPermission = await enablePushReminders()
     if (hasPermission) notifySession(session, text.reminderJoined)
   }
 
@@ -5279,6 +5373,28 @@ function handleSessionDateChange(value: string) {
   }, [checkInParticipant])
 
   useEffect(() => {
+    if (!userId || !canUseWebPush() || Notification.permission !== 'granted') {
+      setIsPushSubscribed(false)
+      return
+    }
+
+    let active = true
+
+    registerReminderServiceWorker()
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => {
+        if (active) setIsPushSubscribed(Boolean(subscription))
+      })
+      .catch(() => {
+        if (active) setIsPushSubscribed(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [userId])
+
+  useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return
 
     const now = Date.now()
@@ -5337,9 +5453,7 @@ function handleSessionDateChange(value: string) {
     setInvitePopupInviteId(freshInvite.id)
 
     if (session) {
-      requestBrowserReminderPermission().then((hasPermission) => {
-        if (hasPermission) notifyInvite(session)
-      })
+      notifyInvite(session)
       downloadSessionCalendar(session)
     }
   }, [language, pendingSessionInvites, userId])
@@ -8487,7 +8601,18 @@ function handleSessionDateChange(value: string) {
 
             {sessionReminders.length > 0 && (
               <div className="reminder-strip" aria-label={text.sessionReminders}>
-                <strong>{text.sessionReminders}</strong>
+                <div className="reminder-strip-head">
+                  <strong>{text.sessionReminders}</strong>
+                  <button
+                    className={isPushSubscribed ? 'secondary small-button' : 'primary small-button'}
+                    disabled={isEnablingPush || isPushSubscribed}
+                    type="button"
+                    onClick={enablePushReminders}
+                  >
+                    {isPushSubscribed ? text.remindersEnabled : isEnablingPush ? text.enablingReminders : text.enableReminders}
+                  </button>
+                </div>
+                {pushReminderStatus && <small className="push-reminder-status">{pushReminderStatus}</small>}
                 {sessionReminders.slice(0, 3).map(({ session, label }) => (
                   <button key={session.id} type="button" onClick={() => openSessionFromProfile(session.id)}>
                     <span>{label}</span>

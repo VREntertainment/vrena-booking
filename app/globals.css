@@ -2641,7 +2641,20 @@ body {
   background: #f5f9fa;
 }
 
-.app .reminder-strip button {
+.app .reminder-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .reminder-strip-head .small-button {
+  width: auto;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.app .reminder-strip > button {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2658,6 +2671,17 @@ body {
 .app .reminder-strip small {
   color: #637075;
   font-weight: 700;
+}
+
+.app .push-reminder-status {
+  display: block;
+}
+
+@media (max-width: 520px) {
+  .app .reminder-strip-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .app .waitlist-position {
@@ -7600,7 +7624,7 @@ body {
     color: #aeb9bd;
   }
 
-  .app .standings-table, .app .queue-match, .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message, .app .session-message.announcement, .app .club-message-channel {
+  .app .standings-table, .app .queue-match, .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message, .app .session-message.announcement, .app .club-message-channel {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
   }
@@ -7713,7 +7737,7 @@ body {
     color: #5eead4;
   }
 
-  .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip button, .app .invite-chip, .app .session-message {
+  .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message {
     color: #f6f7f9;
   }
 
