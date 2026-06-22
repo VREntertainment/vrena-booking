@@ -31,10 +31,15 @@ export default function RichNotesEditor({
   resetKey: string
 }) {
   const editorRef = useRef<HTMLDivElement>(null)
+  const valueRef = useRef(value)
+
+  useEffect(() => {
+    valueRef.current = value
+  }, [value])
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.innerHTML = value ? formatNotesHtml(value) : ''
+      editorRef.current.innerHTML = valueRef.current ? formatNotesHtml(valueRef.current) : ''
     }
   }, [resetKey])
 
