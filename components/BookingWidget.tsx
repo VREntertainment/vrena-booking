@@ -1754,9 +1754,13 @@ function schedulePostEffectStateUpdate(callback: () => void) {
 type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
 type BookingWidgetProps = {
+  embedded?: boolean
+  externalLanguage?: LanguageCode
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
   initialView?: BookingWidgetView
+  onActiveViewChange?: (view: BookingWidgetView) => void
+  onProfileChange?: (profile: Profile | null) => void
 }
 
 type LeaderboardQuery = {
@@ -1767,9 +1771,13 @@ type LeaderboardQuery = {
 }
 
 export default function WidgetPage({
+  embedded = false,
+  externalLanguage,
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
   initialView = 'leaderboard',
+  onActiveViewChange,
+  onProfileChange,
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<BookingWidgetView>(initialView)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -1979,7 +1987,7 @@ export default function WidgetPage({
   const [busyMessageKey, setBusyMessageKey] = useState('')
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
-  const [language, setLanguage] = useState<LanguageCode>(() => getInitialLanguage())
+  const [language, setLanguage] = useState<LanguageCode>(() => externalLanguage ?? getInitialLanguage())
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
@@ -4292,6 +4300,27 @@ export default function WidgetPage({
     syncProfileEverywhereRef.current = syncProfileEverywhere
     resetPasswordReadyTextRef.current = text.resetPasswordReady
   })
+
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => {
+      setActiveView((currentView) => currentView === initialView ? currentView : initialView)
+    })
+  }, [initialView])
+
+  useEffect(() => {
+    if (!externalLanguage) return
+    return schedulePostEffectStateUpdate(() => {
+      setLanguage((currentLanguage) => currentLanguage === externalLanguage ? currentLanguage : externalLanguage)
+    })
+  }, [externalLanguage])
+
+  useEffect(() => {
+    onActiveViewChange?.(activeView)
+  }, [activeView, onActiveViewChange])
+
+  useEffect(() => {
+    onProfileChange?.(profile)
+  }, [profile, onProfileChange])
 
   useEffect(() => {
     let active = true
@@ -9038,8 +9067,7 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  return (
-    <div className="app">
+  const appAside = (
       <aside>
         <div>
           <div className="app-title-row">
@@ -9131,7 +9159,9 @@ function handleSessionDateChange(value: string) {
           <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
         </div>
       </aside>
+  )
 
+  const appMain = (
       <main>
         {activeView === 'sessions' && (
           <section className="section sessions-section">
@@ -11563,7 +11593,10 @@ function handleSessionDateChange(value: string) {
         )}
 
       </main>
+  )
 
+  const appOverlays = (
+    <>
       {loginPromptOpen && (
         <LoginPromptModal
           closeText={text.close}
@@ -12458,8 +12491,23 @@ function handleSessionDateChange(value: string) {
           onClear={() => updateParticipantCheckIn(checkInParticipant.id, null)}
         />
       )}
+    </>
+  )
 
+  if (embedded) {
+    return (
+      <>
+        {appMain}
+        {appOverlays}
+      </>
+    )
+  }
 
+  return (
+    <div className="app">
+      {appAside}
+      {appMain}
+      {appOverlays}
     </div>
   )
 }
