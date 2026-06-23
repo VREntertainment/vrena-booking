@@ -13,6 +13,7 @@ const CLOSE_MINUTES = 22 * 60
 const TIME_STEP_MINUTES = 20
 const SESSION_LOAD_BATCH_DAYS = 7
 const LEADERBOARD_PAGE_SIZE = 20
+const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const OWNER_EMAILS = ['emilejacquet@icloud.com']
 const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
@@ -477,6 +478,7 @@ type TournamentFormat = 'pool_only' | 'pool_to_semifinal' | 'pool_to_final' | 's
 type QualificationRule = 'top_1' | 'top_2' | 'top_4' | 'custom'
 type MatchStage = 'pool' | 'round_of_16' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'leaderboard' | 'custom'
 type MatchStatus = 'waiting' | 'next' | 'live' | 'completed' | 'pending'
+type RealtimeRefreshTask = 'profile' | 'sessions' | 'leaderboard' | 'clubs' | 'tournament' | 'network' | 'expandedDetails' | 'expandedMessages'
 
 type Session = {
   id: string
@@ -531,6 +533,14 @@ type BlockedTime = {
   start_time: string
   end_time: string
   arenas_used: number
+}
+
+type SessionListPageResult = {
+  sessions: Session[]
+  scoreAdjustments: Record<string, number>
+  blockedTimes: BlockedTime[]
+  hasMoreAfter: boolean | null
+  source: 'rpc' | 'select'
 }
 
 type ClubMember = {
@@ -1985,6 +1995,11 @@ export default function WidgetPage({
   const sessionMessagesLoadedRef = useRef<Set<string>>(new Set())
   const sessionMessagesLoadingRef = useRef<Set<string>>(new Set())
   const expandedSessionIdsRef = useRef<Set<string>>(new Set())
+  const realtimeRefreshQueueRef = useRef<Set<RealtimeRefreshTask>>(new Set())
+  const realtimeRefreshTimerRef = useRef<number | null>(null)
+  const queueRealtimeRefreshRef = useRef((tasks: RealtimeRefreshTask[]) => {
+    void tasks
+  })
   const leaderboardLoadedRef = useRef(false)
   const leaderboardLoadingRef = useRef(false)
   const leaderboardLoadedCountRef = useRef(0)
@@ -2406,6 +2421,29 @@ export default function WidgetPage({
       if (!options.force && !sessionMessagesLoadedRef.current.has(sessionId)) return
       void loadSessionMessages(sessionId, { force: true })
     })
+  }
+
+  function flushRealtimeRefreshes() {
+    const tasks = realtimeRefreshQueueRef.current
+    if (tasks.size === 0) return
+
+    realtimeRefreshQueueRef.current = new Set()
+    realtimeRefreshTimerRef.current = null
+
+    if (tasks.has('profile')) loadProfileRef.current()
+    if (tasks.has('sessions')) refreshSessionsIfLoadedRef.current()
+    if (tasks.has('leaderboard')) refreshLeaderboardIfLoadedRef.current()
+    if (tasks.has('clubs') && clubsLoadedRef.current) loadClubsRef.current()
+    if (tasks.has('tournament') && tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+    if (tasks.has('network') && networkDataLoadedRef.current) loadNetworkDataRef.current()
+    if (tasks.has('expandedDetails')) loadExpandedSessionDetailsRef.current()
+    if (tasks.has('expandedMessages')) loadExpandedSessionMessagesRef.current()
+  }
+
+  function queueRealtimeRefresh(tasks: RealtimeRefreshTask[]) {
+    tasks.forEach((task) => realtimeRefreshQueueRef.current.add(task))
+    if (realtimeRefreshTimerRef.current) window.clearTimeout(realtimeRefreshTimerRef.current)
+    realtimeRefreshTimerRef.current = window.setTimeout(flushRealtimeRefreshes, REALTIME_REFRESH_DEBOUNCE_MS)
   }
 
   function setSessionExpanded(session: Session, expanded: boolean) {
@@ -3578,6 +3616,39 @@ export default function WidgetPage({
     return OPTIONAL_SESSION_METADATA_COLUMNS.some((column) => message.includes(column))
   }
 
+  function scoreAdjustmentMapFromPayload(value: unknown) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([profileId, rawAdjustment]) => {
+      const adjustment = Number(rawAdjustment ?? 0)
+      return [profileId, Number.isFinite(adjustment) ? adjustment : 0]
+    }))
+  }
+
+  function sessionPageFromRpcPayload(value: unknown): SessionListPageResult {
+    const payload = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+    return {
+      sessions: Array.isArray(payload.sessions)
+        ? (payload.sessions as Session[]).map(normalizeSessionRow)
+        : [],
+      scoreAdjustments: scoreAdjustmentMapFromPayload(payload.scoreAdjustments),
+      blockedTimes: Array.isArray(payload.blockedTimes) ? payload.blockedTimes as BlockedTime[] : [],
+      hasMoreAfter: typeof payload.hasMoreAfter === 'boolean' ? payload.hasMoreAfter : null,
+      source: 'rpc',
+    }
+  }
+
+  function sessionDetailFromRpcPayload(value: unknown) {
+    const payload = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+    const session = payload.session && typeof payload.session === 'object'
+      ? normalizeSessionRow(payload.session as Session)
+      : null
+    const invites = Array.isArray(payload.invites) ? payload.invites as SessionInvite[] : []
+    const scoreAdjustments = scoreAdjustmentMapFromPayload(payload.scoreAdjustments)
+
+    return { session, invites, scoreAdjustments }
+  }
+
   function normalizeSessionRow(session: Session): Session {
     return {
       ...session,
@@ -3599,6 +3670,36 @@ export default function WidgetPage({
     setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
 
     const client = await getSupabase()
+    const rpcDetailResult = await client.rpc('session_detail', { p_session_id: sessionId })
+
+    if (!rpcDetailResult.error && rpcDetailResult.data) {
+      const { session: detailSession, invites: inviteRows, scoreAdjustments } = sessionDetailFromRpcPayload(rpcDetailResult.data)
+
+      if (detailSession) {
+        setSessions((currentSessions) => {
+          const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
+          sessionsById.set(sessionId, detailSession)
+          return sortSessionsByStart(Array.from(sessionsById.values()))
+        })
+        setSessionInvites((current) => [
+          ...current.filter((invite) => invite.session_id !== sessionId),
+          ...inviteRows,
+        ])
+        if (Object.keys(scoreAdjustments).length > 0) {
+          setProfileScoreAdjustments((current) => ({
+            ...current,
+            ...scoreAdjustments,
+          }))
+        }
+
+        sessionDetailsLoadedRef.current.add(sessionId)
+        sessionDetailsLoadingRef.current.delete(sessionId)
+        setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
+        setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
+        return detailSession
+      }
+    }
+
     let detailResult = await client
       .from('sessions')
       .select(SESSION_SELECT)
@@ -3749,8 +3850,20 @@ export default function WidgetPage({
     })
   }
 
-  async function loadSessionRows(startDate?: string, endDate?: string) {
+  async function loadSessionRows(startDate?: string, endDate?: string, includeBlockedTimes = false) {
     const client = await getSupabase()
+    const rpcResult = await client.rpc('sessions_list_page', {
+      p_start_date: startDate || null,
+      p_end_date: endDate || null,
+      p_limit: 500,
+      p_offset: 0,
+      p_include_blocked_times: includeBlockedTimes,
+    })
+
+    if (!rpcResult.error && rpcResult.data) {
+      return sessionPageFromRpcPayload(rpcResult.data)
+    }
+
     let sessionQuery = client
       .from('sessions')
       .select(SESSION_CARD_SELECT)
@@ -3791,7 +3904,13 @@ export default function WidgetPage({
       return null
     }
 
-    return ((sessionRowsData ?? []) as Session[]).map(normalizeSessionRow)
+    return {
+      sessions: ((sessionRowsData ?? []) as Session[]).map(normalizeSessionRow),
+      scoreAdjustments: {},
+      blockedTimes: [],
+      hasMoreAfter: null,
+      source: 'select',
+    } satisfies SessionListPageResult
   }
 
   async function hasFutureSessionsAfter(dateValue: string) {
@@ -3816,17 +3935,19 @@ export default function WidgetPage({
     if (loadingSessionRangeRef.current) return false
 
     loadingSessionRangeRef.current = true
-    const sessionRows = await loadSessionRows(startDate, endDate)
+    const sessionPage = await loadSessionRows(startDate, endDate, Boolean(options.includeBlockedTimes))
 
-    if (!sessionRows) {
+    if (!sessionPage) {
       loadingSessionRangeRef.current = false
       return false
     }
 
+    const sessionRows = sessionPage.sessions
     const sessionIds = sessionRows.map((session) => session.id)
     const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
     const client = await getSupabase()
-    const [waitlistResult, adjustmentResult] = await Promise.all([
+    const needsSupplementalListData = sessionPage.source !== 'rpc'
+    const [waitlistResult, adjustmentResult] = needsSupplementalListData ? await Promise.all([
       sessionIds.length > 0
         ? client
         .from('session_waitlist')
@@ -3841,16 +3962,21 @@ export default function WidgetPage({
         .is('deleted_at', null)
         .in('id', profileIds)
         : Promise.resolve({ data: [], error: null }),
-    ])
+    ]) : [
+      { data: [], error: null },
+      { data: [], error: null },
+    ]
 
-    const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
+    const waitlistRows = needsSupplementalListData
+      ? waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
+      : sessionRows.flatMap((session) => session.session_waitlist ?? [])
     const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? [])
-    const scoreAdjustments = Object.fromEntries(adjustmentRows.map((row) => {
+    const scoreAdjustments = needsSupplementalListData ? Object.fromEntries(adjustmentRows.map((row) => {
       const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
       return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
-    }))
+    })) : sessionPage.scoreAdjustments
 
-    if (adjustmentRows.length > 0) {
+    if (Object.keys(scoreAdjustments).length > 0) {
       setProfileScoreAdjustments((current) => ({
         ...current,
         ...scoreAdjustments,
@@ -3878,12 +4004,18 @@ export default function WidgetPage({
     loadExpandedSessionDetails()
 
     if (options.includeBlockedTimes) {
-      const blockedResult = await client.from('blocked_times').select('date, start_time, end_time, arenas_used')
-      setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
+      if (sessionPage.source === 'rpc') {
+        setBlockedTimes(sessionPage.blockedTimes)
+      } else {
+        const blockedResult = await client.from('blocked_times').select('date, start_time, end_time, arenas_used')
+        setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
+      }
     }
 
     if (options.updateUpcomingPagination !== false && endDate && endDate >= localDateString()) {
-      setHasMoreUpcomingSessions(await hasFutureSessionsAfter(endDate))
+      setHasMoreUpcomingSessions(typeof sessionPage.hasMoreAfter === 'boolean'
+        ? sessionPage.hasMoreAfter
+        : await hasFutureSessionsAfter(endDate))
     }
 
     loadingSessionRangeRef.current = false
@@ -4149,6 +4281,7 @@ export default function WidgetPage({
     notifyInviteRef.current = notifyInvite
     notifySessionRef.current = notifySession
     preparePasswordRecoveryFromUrlRef.current = preparePasswordRecoveryFromUrl
+    queueRealtimeRefreshRef.current = queueRealtimeRefresh
     refreshLeaderboardIfLoadedRef.current = refreshLeaderboardIfLoaded
     refreshSessionsIfLoadedRef.current = refreshSessionsIfLoaded
     syncProfileEverywhereRef.current = syncProfileEverywhere
@@ -4357,54 +4490,46 @@ export default function WidgetPage({
       const channel = client
         .channel('vrena-live-refresh')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
-          refreshSessionsIfLoadedRef.current()
-          refreshLeaderboardIfLoadedRef.current()
+          queueRealtimeRefreshRef.current(['sessions', 'leaderboard'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => {
-          refreshSessionsIfLoadedRef.current()
-          refreshLeaderboardIfLoadedRef.current()
+          queueRealtimeRefreshRef.current(['sessions', 'leaderboard'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => {
-          refreshSessionsIfLoadedRef.current()
-          loadExpandedSessionDetailsRef.current()
+          queueRealtimeRefreshRef.current(['sessions', 'expandedDetails'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          loadProfileRef.current()
-          refreshSessionsIfLoadedRef.current()
-          refreshLeaderboardIfLoadedRef.current()
-          if (clubsLoadedRef.current) loadClubsRef.current()
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['profile', 'sessions', 'leaderboard', 'clubs', 'tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
-          if (clubsLoadedRef.current) loadClubsRef.current()
+          queueRealtimeRefreshRef.current(['clubs'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
-          if (clubsLoadedRef.current) loadClubsRef.current()
+          queueRealtimeRefreshRef.current(['clubs'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
+          queueRealtimeRefreshRef.current(['tournament'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => {
-          if (networkDataLoadedRef.current) loadNetworkDataRef.current()
+          queueRealtimeRefreshRef.current(['network'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
-          if (networkDataLoadedRef.current) loadNetworkDataRef.current()
-          loadExpandedSessionDetailsRef.current()
+          queueRealtimeRefreshRef.current(['network', 'expandedDetails'])
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
-          loadExpandedSessionMessagesRef.current()
+          queueRealtimeRefreshRef.current(['expandedMessages'])
         })
         .subscribe()
 
@@ -4415,6 +4540,11 @@ export default function WidgetPage({
 
     return () => {
       active = false
+      if (realtimeRefreshTimerRef.current) {
+        window.clearTimeout(realtimeRefreshTimerRef.current)
+        realtimeRefreshTimerRef.current = null
+      }
+      realtimeRefreshQueueRef.current = new Set()
       cleanup?.()
     }
   }, [])
