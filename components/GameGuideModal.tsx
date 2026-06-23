@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import type { LanguageCode } from '../lib/i18n'
 import { isLanguageCode } from '../lib/i18n'
 
@@ -116,7 +117,7 @@ export default function GameGuideModal({
 
             return (
               <article className="game-guide-card" key={game.id}>
-                <img src={game.image} alt="" loading="lazy" decoding="async" />
+                <Image src={game.image} alt="" width={240} height={240} unoptimized />
                 <div className="game-guide-card-body">
                   <div className="game-guide-card-head">
                     <div>

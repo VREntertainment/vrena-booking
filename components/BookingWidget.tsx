@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Component, ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
+import NextImage from 'next/image'
+import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
@@ -1025,7 +1026,7 @@ function ticketDurationForPlayers(ticketType: TicketType, players: number) {
   return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players) * ticketPriceBlockMinutes)
 }
 
-function ticketArenaCountForPlayers(_ticketType: TicketType, _players: number) {
+function ticketArenaCountForPlayers() {
   return ticketArenaCount
 }
 
@@ -1258,6 +1259,7 @@ function formatDayButton(dateValue: string, language: LanguageCode) {
 
 function formatShortDate(dateValue: string, language: LanguageCode) {
   if (!dateValue) return ''
+  void language
   const date = new Date(`${dateValue}T12:00:00`)
   const day = String(date.getDate()).padStart(2, '0')
   const month = monthAbbreviations[date.getMonth()]
@@ -1727,6 +1729,13 @@ function scheduleDeferredWork(callback: () => void) {
   return () => window.clearTimeout(handle)
 }
 
+function schedulePostEffectStateUpdate(callback: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const handle = window.setTimeout(callback, 0)
+  return () => window.clearTimeout(handle)
+}
+
 type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
 type BookingWidgetProps = {
@@ -1955,7 +1964,7 @@ export default function WidgetPage({
   const [busyMessageKey, setBusyMessageKey] = useState('')
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
-  const [language, setLanguage] = useState<LanguageCode>('en')
+  const [language, setLanguage] = useState<LanguageCode>(() => getInitialLanguage())
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
@@ -1986,7 +1995,32 @@ export default function WidgetPage({
   const loadingSessionRangeRef = useRef(false)
   const pastSessionsLoadedRef = useRef(false)
   const pastSessionsLoadingRef = useRef(false)
+  const ensureClubsLoadedRef = useRef(ensureClubsLoaded)
+  const ensureLeaderboardLoadedRef = useRef(ensureLeaderboardLoaded)
+  const ensureNetworkDataLoadedRef = useRef(ensureNetworkDataLoaded)
+  const ensurePastSessionsLoadedRef = useRef(ensurePastSessionsLoaded)
+  const ensureSessionsLoadedRef = useRef(ensureSessionsLoaded)
+  const ensureTournamentDataLoadedRef = useRef(ensureTournamentDataLoaded)
+  const ensureUpcomingSessionsThroughDateRef = useRef(ensureUpcomingSessionsThroughDate)
+  const loadClubMessagesRef = useRef(loadClubMessages)
+  const loadClubsRef = useRef(loadClubs)
+  const loadExpandedSessionDetailsRef = useRef(loadExpandedSessionDetails)
+  const loadExpandedSessionMessagesRef = useRef(loadExpandedSessionMessages)
+  const loadLeaderboardPlayersRef = useRef(loadLeaderboardPlayers)
+  const loadMoreUpcomingSessionsRef = useRef(loadMoreUpcomingSessions)
+  const loadNetworkDataRef = useRef(loadNetworkData)
+  const loadProfileRef = useRef(loadProfile)
+  const loadSessionDetailRef = useRef(loadSessionDetail)
+  const loadSessionMessagesRef = useRef(loadSessionMessages)
+  const loadTournamentDataRef = useRef(loadTournamentData)
+  const notifyInviteRef = useRef(notifyInvite)
+  const notifySessionRef = useRef(notifySession)
+  const preparePasswordRecoveryFromUrlRef = useRef(preparePasswordRecoveryFromUrl)
+  const refreshLeaderboardIfLoadedRef = useRef(refreshLeaderboardIfLoaded)
+  const refreshSessionsIfLoadedRef = useRef(refreshSessionsIfLoaded)
+  const syncProfileEverywhereRef = useRef(syncProfileEverywhere)
   const text = uiText[language]
+  const resetPasswordReadyTextRef = useRef(text.resetPasswordReady)
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
   const leaveClubConfirmText = looseText.leaveClubConfirm || 'Leave this club?'
@@ -2108,11 +2142,12 @@ export default function WidgetPage({
             borderRadius: 999,
           }}
         >
-          <img
+          <NextImage
             src={source.avatar_url}
             alt=""
-            loading="lazy"
-            decoding="async"
+            fill
+            sizes="96px"
+            unoptimized
             style={{
               position: 'absolute',
               inset: 0,
@@ -2516,9 +2551,9 @@ export default function WidgetPage({
     return sessionInvites.filter((invite) => invite.session_id === sessionId)
   }
 
-  function sessionForInvite(invite: SessionInvite) {
+  const sessionForInvite = useCallback((invite: SessionInvite) => {
     return sessions.find((session) => session.id === invite.session_id)
-  }
+  }, [sessions])
 
   function hasSessionInvite(sessionId: string, profileId: string) {
     return sessionInvites.some((invite) => invite.session_id === sessionId && invite.recipient_id === profileId)
@@ -4093,23 +4128,49 @@ export default function WidgetPage({
   }
 
   useEffect(() => {
+    ensureClubsLoadedRef.current = ensureClubsLoaded
+    ensureLeaderboardLoadedRef.current = ensureLeaderboardLoaded
+    ensureNetworkDataLoadedRef.current = ensureNetworkDataLoaded
+    ensurePastSessionsLoadedRef.current = ensurePastSessionsLoaded
+    ensureSessionsLoadedRef.current = ensureSessionsLoaded
+    ensureTournamentDataLoadedRef.current = ensureTournamentDataLoaded
+    ensureUpcomingSessionsThroughDateRef.current = ensureUpcomingSessionsThroughDate
+    loadClubMessagesRef.current = loadClubMessages
+    loadClubsRef.current = loadClubs
+    loadExpandedSessionDetailsRef.current = loadExpandedSessionDetails
+    loadExpandedSessionMessagesRef.current = loadExpandedSessionMessages
+    loadLeaderboardPlayersRef.current = loadLeaderboardPlayers
+    loadMoreUpcomingSessionsRef.current = loadMoreUpcomingSessions
+    loadNetworkDataRef.current = loadNetworkData
+    loadProfileRef.current = loadProfile
+    loadSessionDetailRef.current = loadSessionDetail
+    loadSessionMessagesRef.current = loadSessionMessages
+    loadTournamentDataRef.current = loadTournamentData
+    notifyInviteRef.current = notifyInvite
+    notifySessionRef.current = notifySession
+    preparePasswordRecoveryFromUrlRef.current = preparePasswordRecoveryFromUrl
+    refreshLeaderboardIfLoadedRef.current = refreshLeaderboardIfLoaded
+    refreshSessionsIfLoadedRef.current = refreshSessionsIfLoaded
+    syncProfileEverywhereRef.current = syncProfileEverywhere
+    resetPasswordReadyTextRef.current = text.resetPasswordReady
+  })
+
+  useEffect(() => {
     let active = true
     const deferredCleanup = scheduleDeferredWork(() => {
-      ensureClubsLoaded()
+      ensureClubsLoadedRef.current()
     })
 
-    setLanguage(getInitialLanguage())
-
     void (async () => {
-      const recoverySessionReady = await preparePasswordRecoveryFromUrl()
+      const recoverySessionReady = await preparePasswordRecoveryFromUrlRef.current()
       if (!active) return
       if (recoverySessionReady === false) {
-        loadLeaderboardPlayers()
+        loadLeaderboardPlayersRef.current()
         return
       }
-      await loadProfile()
+      await loadProfileRef.current()
       if (!active) return
-      loadLeaderboardPlayers()
+      loadLeaderboardPlayersRef.current()
     })()
 
     return () => {
@@ -4120,29 +4181,29 @@ export default function WidgetPage({
 
   useEffect(() => {
     if (activeView === 'clubs' || activeView === 'create' || activeView === 'leaderboard') {
-      ensureClubsLoaded()
+      ensureClubsLoadedRef.current()
     }
 
     if (activeView === 'leaderboard') {
       const nextQuery = initialLeaderboardQuery()
       leaderboardQueryRef.current = nextQuery
       leaderboardLoadedCountRef.current = 0
-      void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
+      void loadLeaderboardPlayersRef.current(nextQuery, 0, 'replace', userId)
     }
 
     if (activeView === 'sessions' || activeView === 'tickets' || activeView === 'create' || activeView === 'profile') {
-      ensureSessionsLoaded()
+      ensureSessionsLoadedRef.current()
     }
 
     if (activeView === 'profile') {
-      ensureNetworkDataLoaded()
-      ensureLeaderboardLoaded()
+      ensureNetworkDataLoadedRef.current()
+      ensureLeaderboardLoadedRef.current()
     }
-  }, [activeView])
+  }, [activeView, userId])
 
   useEffect(() => {
     if (sessionTimeScope === 'past') {
-      void ensurePastSessionsLoaded()
+      void ensurePastSessionsLoadedRef.current()
     }
   }, [sessionTimeScope])
 
@@ -4152,25 +4213,25 @@ export default function WidgetPage({
 
   useEffect(() => {
     if (activeView === 'tickets') {
-      void ensureUpcomingSessionsThroughDate(ticketDate)
+      void ensureUpcomingSessionsThroughDateRef.current(ticketDate)
     }
 
     if (activeView === 'create') {
-      void ensureUpcomingSessionsThroughDate(sessionDate)
+      void ensureUpcomingSessionsThroughDateRef.current(sessionDate)
     }
 
     if (editingSessionId) {
-      void ensureUpcomingSessionsThroughDate(editSessionDate)
+      void ensureUpcomingSessionsThroughDateRef.current(editSessionDate)
     }
 
     if (activeView === 'sessions' && sessionTimeScope === 'upcoming' && selectedSessionDate) {
-      void ensureUpcomingSessionsThroughDate(selectedSessionDate)
+      void ensureUpcomingSessionsThroughDateRef.current(selectedSessionDate)
     }
   }, [activeView, ticketDate, sessionDate, editingSessionId, editSessionDate, sessionTimeScope, selectedSessionDate])
 
   useEffect(() => {
     if (!challengeTargetId) return
-    void ensureUpcomingSessionsThroughDate(challengeDate)
+    void ensureUpcomingSessionsThroughDateRef.current(challengeDate)
   }, [challengeDate, challengeTargetId])
 
   useEffect(() => {
@@ -4181,7 +4242,7 @@ export default function WidgetPage({
       const documentElement = document.documentElement
       const distanceFromEnd = documentElement.scrollHeight - window.scrollY - window.innerHeight
       if (distanceFromEnd < 640) {
-        void loadMoreUpcomingSessions()
+        void loadMoreUpcomingSessionsRef.current()
       }
     }
 
@@ -4195,26 +4256,27 @@ export default function WidgetPage({
     networkDataLoadingRef.current = false
 
     if (!userId) {
-      setNetworkTablesReady(false)
-      setFriendConnections([])
-      setSessionInvites([])
-      resetSessionMessageState()
-      return
+      return schedulePostEffectStateUpdate(() => {
+        setNetworkTablesReady(false)
+        setFriendConnections([])
+        setSessionInvites([])
+        resetSessionMessageState()
+      })
     }
 
-    return scheduleDeferredWork(() => ensureNetworkDataLoaded())
+    return scheduleDeferredWork(() => ensureNetworkDataLoadedRef.current())
   }, [userId])
 
   useEffect(() => {
     if (selectedPlayerId) {
-      ensureNetworkDataLoaded()
+      ensureNetworkDataLoadedRef.current()
     }
   }, [selectedPlayerId])
 
   useEffect(() => {
     if (!userId || !networkDataLoadedRef.current) return
 
-    void loadNetworkData()
+    void loadNetworkDataRef.current()
   }, [sessionIdsKey, userId])
 
   useEffect(() => {
@@ -4224,13 +4286,13 @@ export default function WidgetPage({
     expandedSessionIdsRef.current = new Set(expandedIds)
     if (expandedIds.length === 0) return
 
-    ensureNetworkDataLoaded()
+    ensureNetworkDataLoadedRef.current()
     expandedIds.forEach((sessionId) => {
-      void loadSessionDetail(sessionId)
-      void loadSessionMessages(sessionId)
+      void loadSessionDetailRef.current(sessionId)
+      void loadSessionMessagesRef.current(sessionId)
     })
     if (sessions.some((session) => expandedIds.includes(session.id) && session.session_type === 'tournament')) {
-      ensureTournamentDataLoaded()
+      ensureTournamentDataLoadedRef.current()
     }
   }, [expandedSessions, sessions])
 
@@ -4263,11 +4325,11 @@ export default function WidgetPage({
 
         if (event === 'PASSWORD_RECOVERY' && session) {
           setUserId(session.user.id)
-          setProfileEmail(session.user.email || profileEmail)
+          setProfileEmail((currentEmail) => session.user.email || currentEmail)
           setIsRecoveryMode(true)
           setActiveView('profile')
           setAuthMode('login')
-          setProfileStatus(text.resetPasswordReady)
+          setProfileStatus(resetPasswordReadyTextRef.current)
         }
       })
 
@@ -4282,18 +4344,8 @@ export default function WidgetPage({
 
   useEffect(() => {
     if (!profile) return
-    syncProfileEverywhere(profile)
-  }, [
-    profile?.id,
-    profile?.nickname,
-    profile?.phone,
-    profile?.avatar_url,
-    profile?.avatar_emoji,
-    profile?.avatar_initials,
-    profile?.avatar_color,
-    profile?.avatar_text_color,
-    profile?.profile_motto,
-  ])
+    return schedulePostEffectStateUpdate(() => syncProfileEverywhereRef.current(profile))
+  }, [profile])
 
   useEffect(() => {
     let active = true
@@ -4305,54 +4357,54 @@ export default function WidgetPage({
       const channel = client
         .channel('vrena-live-refresh')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
-          refreshSessionsIfLoaded()
-          refreshLeaderboardIfLoaded()
+          refreshSessionsIfLoadedRef.current()
+          refreshLeaderboardIfLoadedRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_participants' }, () => {
-          refreshSessionsIfLoaded()
-          refreshLeaderboardIfLoaded()
+          refreshSessionsIfLoadedRef.current()
+          refreshLeaderboardIfLoadedRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => {
-          refreshSessionsIfLoaded()
-          loadExpandedSessionDetails()
+          refreshSessionsIfLoadedRef.current()
+          loadExpandedSessionDetailsRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          loadProfile()
-          refreshSessionsIfLoaded()
-          refreshLeaderboardIfLoaded()
-          if (clubsLoadedRef.current) loadClubs()
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          loadProfileRef.current()
+          refreshSessionsIfLoadedRef.current()
+          refreshLeaderboardIfLoadedRef.current()
+          if (clubsLoadedRef.current) loadClubsRef.current()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
-          if (clubsLoadedRef.current) loadClubs()
+          if (clubsLoadedRef.current) loadClubsRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
-          if (clubsLoadedRef.current) loadClubs()
+          if (clubsLoadedRef.current) loadClubsRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_editors' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pools' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_pool_entries' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_audit_log' }, () => {
-          if (tournamentDataLoadedRef.current) loadTournamentData()
+          if (tournamentDataLoadedRef.current) loadTournamentDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_follows' }, () => {
-          if (networkDataLoadedRef.current) loadNetworkData()
+          if (networkDataLoadedRef.current) loadNetworkDataRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' }, () => {
-          if (networkDataLoadedRef.current) loadNetworkData()
-          loadExpandedSessionDetails()
+          if (networkDataLoadedRef.current) loadNetworkDataRef.current()
+          loadExpandedSessionDetailsRef.current()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_messages' }, () => {
-          loadExpandedSessionMessages()
+          loadExpandedSessionMessagesRef.current()
         })
         .subscribe()
 
@@ -4450,186 +4502,7 @@ export default function WidgetPage({
     }
   }, [clubSearch, isClubSearchOpen, isSearchOpen, search, selectedSessionDate])
 
-  const timeOptions = useMemo(() => {
-    return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
-  }, [blockedTimes, language, sessionArenaCount, sessionDate, sessionDuration, sessions])
-
-  const editTimeOptions = useMemo(() => {
-    return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
-  }, [blockedTimes, editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, language, sessions])
-
-  const activeTicketService = selectedTicketService(ticketType)
-  const activeTicketMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
-  const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
-  const activeTicketArenaCount = ticketArenaCountForPlayers(ticketType, ticketPlayers)
-  const isTicketDurationBelowRecommended = activeTicketDuration < activeTicketMinimumDuration
-  const ticketDurationMessage =
-    isTicketDurationBelowRecommended
-      ? text.ticketDurationBelowRecommended
-      : ticketPlayers > 12
-      ? text.ticketDurationMinimum80
-      : ticketPlayers > 8
-      ? text.ticketDurationMinimum60
-      : ticketPlayers > 4
-        ? text.ticketDurationMinimum40
-        : ''
-  const ticketTimeOptions = useMemo(() => {
-    return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
-  }, [activeTicketArenaCount, activeTicketDuration, blockedTimes, language, sessions, ticketDate])
-  const challengeTimeOptions = useMemo(() => {
-    return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
-  }, [blockedTimes, challengeDate, challengeDuration, language, sessions])
-  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
-  const currentTicketUnitPrice = currentTicketPricing.unitPrice
-  const currentTicketTotalPrice = currentTicketPricing.totalPrice
-  const gameGuideGames = useMemo(() => {
-    if (!gameGuideGameId) return games
-    const focusedGame = games.find((game) => game.id === gameGuideGameId)
-    if (!focusedGame) return games
-    return [focusedGame, ...games.filter((game) => game.id !== gameGuideGameId)]
-  }, [gameGuideGameId])
-  const effectiveEditTicketDuration = editSessionDuration
-  const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
-  const ticketDurationOptions = useMemo(() => {
-    const durationOptions = Array.from(
-      { length: Math.floor((ticketMaxCustomerDurationMinutes - ticketPriceBlockMinutes) / ticketPriceBlockMinutes) + 1 },
-      (_, index) => ticketPriceBlockMinutes + index * ticketPriceBlockMinutes
-    )
-
-    if (!ticketDate) return durationOptions
-
-    return durationOptions.filter((duration) => {
-      const options = getAvailableTimeOptions(ticketDate, duration, activeTicketArenaCount)
-      if (ticketTime) return options.some((option) => option.value === ticketTime)
-      return options.length > 0
-    })
-  }, [activeTicketArenaCount, blockedTimes, language, sessions, ticketDate, ticketTime])
-  const ticketPlayerOptions = useMemo(() => {
-    return Array.from(
-      { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
-      (_, index) => activeTicketService.minPlayers + index
-    )
-  }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
-
-  useEffect(() => {
-    if (ticketDurationOptions.length === 0) {
-      if (ticketTime) setTicketTime('')
-      return
-    }
-
-    if (!ticketDurationOptions.includes(activeTicketDuration)) {
-      setTicketDuration(ticketDurationOptions[0])
-      setTicketTime('')
-      setTicketConfirmation(null)
-    }
-  }, [activeTicketDuration, ticketDurationOptions, ticketTime])
-
-  const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
-  const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
-
-function handleSessionDateChange(value: string) {
-  setSessionDate(value)
-}
-
-  function handleTicketTypeChange(value: TicketType) {
-    const service = selectedTicketService(value)
-    const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
-    const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers), ticketDuration)
-    setTicketType(value)
-    setTicketPlayers(nextPlayers)
-    setTicketDuration(nextDuration)
-    setTicketTime('')
-    setTicketConfirmation(null)
-    setTicketStatus('')
-  }
-
-  function handleTicketPlayersChange(value: number) {
-    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value)
-    const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
-    const nextArenaCount = ticketArenaCountForPlayers(ticketType, value)
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
-    const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
-
-    setTicketPlayers(value)
-    setTicketDuration(nextDuration)
-    setTicketConfirmation(null)
-    if (!keepsSelectedTime || nextDuration !== activeTicketDuration || nextArenaCount !== activeTicketArenaCount) {
-      setTicketTime('')
-    }
-  }
-
-  function handleTicketDurationChange(value: number) {
-    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, value))
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
-    const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
-
-    setTicketDuration(nextDuration)
-    if (!keepsSelectedTime) setTicketTime('')
-    setTicketConfirmation(null)
-  }
-
-  function handleMaxPlayersChange(value: number) {
-    setSessionMaxPlayers(value)
-
-    if (value < 8) {
-      setSessionArenaCount(1)
-    }
-  }
-
-  function handleArenaCountChange(value: number) {
-    if (value === 2 && sessionMaxPlayers < 8) {
-      setSessionMaxPlayers(8)
-    }
-
-    setSessionArenaCount(value)
-  }
-
-  function handleEditMaxPlayersChange(value: number) {
-    setEditSessionMaxPlayers(value)
-
-    if (editBookingType === 'ticket') {
-      const nextDuration = ticketDurationForPlayers(editTicketType, value)
-      setEditSessionDuration(nextDuration)
-      setEditSessionArenaCount(ticketArenaCountForPlayers(editTicketType, value))
-      setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration).totalPrice))
-      return
-    }
-
-    if (value < 8) {
-      setEditSessionArenaCount(1)
-    }
-  }
-
-  function handleEditArenaCountChange(value: number) {
-    if (editBookingType === 'ticket') {
-      setEditSessionArenaCount(ticketArenaCount)
-      return
-    }
-
-    if (value === 2 && editSessionMaxPlayers < 8) {
-      setEditSessionMaxPlayers(8)
-    }
-
-    setEditSessionArenaCount(value)
-  }
-
-  function durationRecommendation(maxPlayers: number, duration: number) {
-    if (maxPlayers > 8 && duration < 60) return text.durationRecommend60
-    if (maxPlayers > 4 && duration < 40) return text.durationRecommend40
-    return ''
-  }
-
-  function handleSessionClubChange(value: string) {
-    setSessionClubId(value)
-    if (value) {
-      setSessionVisibility('public')
-      setCreateStatus(text.clubOnlyCreateHint)
-    } else if (createStatus === text.clubOnlyCreateHint) {
-      setCreateStatus('')
-    }
-  }
-
-  function getAvailableTimeOptions(date: string, duration: number, arenaCount: number, excludeSessionId = '') {
+  const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => {
     if (!date) return []
 
     const now = new Date()
@@ -4675,6 +4548,187 @@ function handleSessionDateChange(value: string) {
     }
 
     return options
+  }, [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
+
+  const timeOptions = useMemo(() => {
+    return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
+  }, [getAvailableTimeOptions, sessionArenaCount, sessionDate, sessionDuration])
+
+  const editTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
+  }, [editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, getAvailableTimeOptions])
+
+  const activeTicketService = selectedTicketService(ticketType)
+  const activeTicketMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
+  const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
+  const activeTicketArenaCount = ticketArenaCountForPlayers()
+  const isTicketDurationBelowRecommended = activeTicketDuration < activeTicketMinimumDuration
+  const ticketDurationMessage =
+    isTicketDurationBelowRecommended
+      ? text.ticketDurationBelowRecommended
+      : ticketPlayers > 12
+      ? text.ticketDurationMinimum80
+      : ticketPlayers > 8
+      ? text.ticketDurationMinimum60
+      : ticketPlayers > 4
+        ? text.ticketDurationMinimum40
+        : ''
+  const ticketTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
+  }, [activeTicketArenaCount, activeTicketDuration, getAvailableTimeOptions, ticketDate])
+  const challengeTimeOptions = useMemo(() => {
+    return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
+  }, [challengeDate, challengeDuration, getAvailableTimeOptions])
+  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
+  const currentTicketUnitPrice = currentTicketPricing.unitPrice
+  const currentTicketTotalPrice = currentTicketPricing.totalPrice
+  const gameGuideGames = useMemo(() => {
+    if (!gameGuideGameId) return games
+    const focusedGame = games.find((game) => game.id === gameGuideGameId)
+    if (!focusedGame) return games
+    return [focusedGame, ...games.filter((game) => game.id !== gameGuideGameId)]
+  }, [gameGuideGameId])
+  const effectiveEditTicketDuration = editSessionDuration
+  const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration)
+  const ticketDurationOptions = useMemo(() => {
+    const durationOptions = Array.from(
+      { length: Math.floor((ticketMaxCustomerDurationMinutes - ticketPriceBlockMinutes) / ticketPriceBlockMinutes) + 1 },
+      (_, index) => ticketPriceBlockMinutes + index * ticketPriceBlockMinutes
+    )
+
+    if (!ticketDate) return durationOptions
+
+    return durationOptions.filter((duration) => {
+      const options = getAvailableTimeOptions(ticketDate, duration, activeTicketArenaCount)
+      if (ticketTime) return options.some((option) => option.value === ticketTime)
+      return options.length > 0
+    })
+  }, [activeTicketArenaCount, getAvailableTimeOptions, ticketDate, ticketTime])
+  const ticketPlayerOptions = useMemo(() => {
+    return Array.from(
+      { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
+      (_, index) => activeTicketService.minPlayers + index
+    )
+  }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
+
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => {
+      if (ticketDurationOptions.length === 0) {
+        if (ticketTime) setTicketTime('')
+        return
+      }
+
+      if (!ticketDurationOptions.includes(activeTicketDuration)) {
+        setTicketDuration(ticketDurationOptions[0])
+        setTicketTime('')
+        setTicketConfirmation(null)
+      }
+    })
+  }, [activeTicketDuration, ticketDurationOptions, ticketTime])
+
+  const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
+  const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
+
+function handleSessionDateChange(value: string) {
+  setSessionDate(value)
+}
+
+  function handleTicketTypeChange(value: TicketType) {
+    const service = selectedTicketService(value)
+    const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
+    const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers), ticketDuration)
+    setTicketType(value)
+    setTicketPlayers(nextPlayers)
+    setTicketDuration(nextDuration)
+    setTicketTime('')
+    setTicketConfirmation(null)
+    setTicketStatus('')
+  }
+
+  function handleTicketPlayersChange(value: number) {
+    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value)
+    const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
+    const nextArenaCount = ticketArenaCountForPlayers()
+    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
+    const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
+
+    setTicketPlayers(value)
+    setTicketDuration(nextDuration)
+    setTicketConfirmation(null)
+    if (!keepsSelectedTime || nextDuration !== activeTicketDuration || nextArenaCount !== activeTicketArenaCount) {
+      setTicketTime('')
+    }
+  }
+
+  function handleTicketDurationChange(value: number) {
+    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, value))
+    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
+    const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
+
+    setTicketDuration(nextDuration)
+    if (!keepsSelectedTime) setTicketTime('')
+    setTicketConfirmation(null)
+  }
+
+  function handleMaxPlayersChange(value: number) {
+    setSessionMaxPlayers(value)
+
+    if (value < 8) {
+      setSessionArenaCount(1)
+    }
+  }
+
+  function handleArenaCountChange(value: number) {
+    if (value === 2 && sessionMaxPlayers < 8) {
+      setSessionMaxPlayers(8)
+    }
+
+    setSessionArenaCount(value)
+  }
+
+  function handleEditMaxPlayersChange(value: number) {
+    setEditSessionMaxPlayers(value)
+
+    if (editBookingType === 'ticket') {
+      const nextDuration = ticketDurationForPlayers(editTicketType, value)
+      setEditSessionDuration(nextDuration)
+      setEditSessionArenaCount(ticketArenaCountForPlayers())
+      setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration).totalPrice))
+      return
+    }
+
+    if (value < 8) {
+      setEditSessionArenaCount(1)
+    }
+  }
+
+  function handleEditArenaCountChange(value: number) {
+    if (editBookingType === 'ticket') {
+      setEditSessionArenaCount(ticketArenaCount)
+      return
+    }
+
+    if (value === 2 && editSessionMaxPlayers < 8) {
+      setEditSessionMaxPlayers(8)
+    }
+
+    setEditSessionArenaCount(value)
+  }
+
+  function durationRecommendation(maxPlayers: number, duration: number) {
+    if (maxPlayers > 8 && duration < 60) return text.durationRecommend60
+    if (maxPlayers > 4 && duration < 40) return text.durationRecommend40
+    return ''
+  }
+
+  function handleSessionClubChange(value: string) {
+    setSessionClubId(value)
+    if (value) {
+      setSessionVisibility('public')
+      setCreateStatus(text.clubOnlyCreateHint)
+    } else if (createStatus === text.clubOnlyCreateHint) {
+      setCreateStatus('')
+    }
   }
 
   const calendarWeekDays = useMemo(() => {
@@ -4710,7 +4764,7 @@ function handleSessionDateChange(value: string) {
       })
     })
     return availableKeys
-  }, [blockedTimes, calendarWeekDays, sessions, text.arenaAvailable, text.arenasAvailable])
+  }, [calendarWeekDays, getAvailableTimeOptions])
 
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
@@ -4810,7 +4864,7 @@ function handleSessionDateChange(value: string) {
         const right = b.created_at ? new Date(b.created_at).getTime() : 0
         return right - left || a.id.localeCompare(b.id)
       })
-  }, [sessionInvites, sessions, userId])
+  }, [sessionForInvite, sessionInvites, userId])
 
   const invitePopupInvite = useMemo(() => {
     if (!invitePopupInviteId) return undefined
@@ -4863,13 +4917,15 @@ function handleSessionDateChange(value: string) {
     return clubMembers(selectedClub).find((member) => member.profile_id === userId)
   }, [selectedClub, userId])
 
+  const canSeeSelectedClubPrivateData = canSeeClubPrivateData(selectedClub)
+
   const selectedClubSessions = useMemo(() => {
-    if (!selectedClub || !canSeeClubPrivateData(selectedClub)) return []
+    if (!selectedClub || !canSeeSelectedClubPrivateData) return []
     return sessions.filter((session) => {
       if (session.club_id !== selectedClub.id) return false
       return selectedClubSessionScope === 'past' ? isPastSession(session) : isUpcomingSession(session)
     })
-  }, [selectedClub, selectedClubSessionScope, sessions])
+  }, [canSeeSelectedClubPrivateData, selectedClub, selectedClubSessionScope, sessions])
 
   const selectedClubDayOptions = useMemo(() => {
     const uniqueDays = Array.from(new Set(selectedClubSessions.map((session) => session.date))).sort()
@@ -4892,22 +4948,26 @@ function handleSessionDateChange(value: string) {
   useEffect(() => {
     if (!selectedClub) return
 
-    const themeColor = clubTheme(selectedClub)
-    setClubEditName(selectedClub.name)
-    setClubEditMotto(selectedClub.motto || '')
-    setClubEditDescription(selectedClub.description || '')
-    setClubEditVisibility(selectedClub.visibility)
-    setClubEditThemeColor(themeColor)
-    setClubEditThemeColorDraft(themeColor)
-    setClubEditDefaultLanguage(isLanguageCode(selectedClub.default_language || '') ? selectedClub.default_language as LanguageCode : language)
-    setClubEditRankingCriterion(clubRankingCriterion(selectedClub))
-    setClubBannerFile(null)
-    setClubBannerPreview('')
+    return schedulePostEffectStateUpdate(() => {
+      const themeColor = clubTheme(selectedClub)
+      setClubEditName(selectedClub.name)
+      setClubEditMotto(selectedClub.motto || '')
+      setClubEditDescription(selectedClub.description || '')
+      setClubEditVisibility(selectedClub.visibility)
+      setClubEditThemeColor(themeColor)
+      setClubEditThemeColorDraft(themeColor)
+      setClubEditDefaultLanguage(isLanguageCode(selectedClub.default_language || '') ? selectedClub.default_language as LanguageCode : language)
+      setClubEditRankingCriterion(clubRankingCriterion(selectedClub))
+      setClubBannerFile(null)
+      setClubBannerPreview('')
+    })
   }, [language, selectedClub])
 
   useEffect(() => {
     if (!selectedClub || selectedClubTab !== 'messages') return
-    void loadClubMessages(selectedClub)
+    return schedulePostEffectStateUpdate(() => {
+      void loadClubMessagesRef.current(selectedClub)
+    })
   }, [selectedClub, selectedClubTab])
 
   const checkInSession = useMemo(() => {
@@ -5098,19 +5158,21 @@ function handleSessionDateChange(value: string) {
     ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
     : 0
   const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
+  const selectedClubHallId = selectedClub?.id ?? ''
+  const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
 
   useEffect(() => {
-    if (!selectedClub || selectedClubTab !== 'hall') return
+    if (!selectedClubHallId || selectedClubTab !== 'hall') return
 
     const nextQuery = {
       ...initialLeaderboardQuery(),
-      clubId: selectedClub.id,
-      criterion: isLeaderboardCriterion(selectedClub.ranking_criterion) ? selectedClub.ranking_criterion : 'totalScore',
+      clubId: selectedClubHallId,
+      criterion: isLeaderboardCriterion(selectedClubHallRankingCriterion) ? selectedClubHallRankingCriterion : 'totalScore',
     }
     leaderboardQueryRef.current = nextQuery
     leaderboardLoadedCountRef.current = 0
-    void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
-  }, [selectedClub?.id, selectedClub?.ranking_criterion, selectedClubTab, userId])
+    void loadLeaderboardPlayersRef.current(nextQuery, 0, 'replace', userId)
+  }, [selectedClubHallId, selectedClubHallRankingCriterion, selectedClubTab, userId])
 
   const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
@@ -5142,7 +5204,15 @@ function handleSessionDateChange(value: string) {
 
     for (const session of candidateSessions) {
       const participant = (session.session_participants ?? []).find((item) => item.profile_id === selectedPlayerId)
-      if (participant && canEditParticipantResult(session, participant)) return { session, participant }
+      const canEditSessionResult = Boolean(
+        userId
+        && (
+          isAdmin
+          || session.owner_id === userId
+          || tournamentData.editors.some((editor) => editor.session_id === session.id && editor.profile_id === userId)
+        )
+      )
+      if (participant && canEditSessionResult) return { session, participant }
     }
 
     return null
@@ -5742,18 +5812,19 @@ function handleSessionDateChange(value: string) {
   }
 
   useEffect(() => {
-    if (!checkInParticipant) {
-      setCheckInPaymentSplits([newParticipantPaymentSplit('cash')])
-      return
-    }
+    return schedulePostEffectStateUpdate(() => {
+      if (!checkInParticipant) {
+        setCheckInPaymentSplits([newParticipantPaymentSplit('cash')])
+        return
+      }
 
-    setCheckInPaymentSplits(paymentSplitsFromParticipant(checkInParticipant))
+      setCheckInPaymentSplits(paymentSplitsFromParticipant(checkInParticipant))
+    })
   }, [checkInParticipant])
 
   useEffect(() => {
     if (!userId || !canUseWebPush() || Notification.permission !== 'granted') {
-      setIsPushSubscribed(false)
-      return
+      return schedulePostEffectStateUpdate(() => setIsPushSubscribed(false))
     }
 
     let active = true
@@ -5789,14 +5860,14 @@ function handleSessionDateChange(value: string) {
 
         if (reminder.delay <= 0 && reminder.delay > -10 * 60 * 1000) {
           notifiedReminderKeys.current.add(reminderKey)
-          notifySession(session, reminder.label)
+          notifySessionRef.current(session, reminder.label)
           return
         }
 
         if (reminder.delay > 0 && reminder.delay < 24 * 60 * 60 * 1000) {
           const timer = window.setTimeout(() => {
             notifiedReminderKeys.current.add(reminderKey)
-            notifySession(session, reminder.label)
+            notifySessionRef.current(session, reminder.label)
           }, reminder.delay)
           timers.push(timer)
         }
@@ -5828,13 +5899,16 @@ function handleSessionDateChange(value: string) {
     const session = sessionForInvite(freshInvite)
     seen.add(freshInvite.id)
     window.localStorage.setItem(storageKey, JSON.stringify(Array.from(seen).slice(-80)))
-    setInvitePopupInviteId(freshInvite.id)
 
-    if (session) {
-      notifyInvite(session)
-      downloadSessionCalendar(session)
-    }
-  }, [language, pendingSessionInvites, userId])
+    return schedulePostEffectStateUpdate(() => {
+      setInvitePopupInviteId(freshInvite.id)
+
+      if (session) {
+        notifyInviteRef.current(session)
+        downloadSessionCalendar(session)
+      }
+    })
+  }, [pendingSessionInvites, sessionForInvite, userId])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !profile || !userId || !profileBirthday || !isBirthdayToday(profileBirthday)) return
@@ -5848,26 +5922,24 @@ function handleSessionDateChange(value: string) {
       // If localStorage is unavailable, still show the one-time in-memory popup for this mount.
     }
 
-    setBirthdayPopupOpen(true)
+    return schedulePostEffectStateUpdate(() => setBirthdayPopupOpen(true))
   }, [profile, profileBirthday, userId])
 
   useEffect(() => {
     if (!profile || !crownedTopPlayerId || crownedTopPlayerId !== userId) {
-      setChampionLoginOpen(false)
-      return
+      return schedulePostEffectStateUpdate(() => setChampionLoginOpen(false))
     }
     const storageKey = `vrena-crown-login:${userId}:${crownedTopPlayerScore}`
     const alreadyShown = window.sessionStorage.getItem(storageKey)
     if (alreadyShown === 'shown') return
     window.sessionStorage.setItem(storageKey, 'shown')
-    setChampionLoginOpen(true)
+    return schedulePostEffectStateUpdate(() => setChampionLoginOpen(true))
   }, [crownedTopPlayerId, crownedTopPlayerScore, profile, userId])
 
   useEffect(() => {
     const query = tournamentEditorEmail.trim()
     if (query.length < 2) {
-      setTournamentEditorResults([])
-      return
+      return schedulePostEffectStateUpdate(() => setTournamentEditorResults([]))
     }
 
     let cancelled = false
@@ -5908,7 +5980,7 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  function canEditParticipantResult(session: Session, participant: Participant) {
+  function canEditParticipantResult(session: Session) {
     if (!userId) return false
     if (isAdmin) return true
 
@@ -6577,7 +6649,7 @@ function handleSessionDateChange(value: string) {
     const resultContext = sessions.reduce<{ session: Session; participant: Participant } | null>((match, session) => {
       if (match) return match
       const participant = (session.session_participants ?? []).find((item) => item.id === participantId)
-      if (!participant || !canEditParticipantResult(session, participant)) return null
+      if (!participant || !canEditParticipantResult(session)) return null
       return { session, participant }
     }, null)
 
@@ -7732,7 +7804,7 @@ function handleSessionDateChange(value: string) {
     const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
     const ticketEditDuration = editSessionDuration
     const ticketEditArenaCount = editBookingType === 'ticket'
-      ? ticketArenaCountForPlayers(editTicketType, editSessionMaxPlayers)
+      ? ticketArenaCountForPlayers()
       : editSessionArenaCount
     const ticketEditPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, ticketEditDuration)
     const sanitizedTicketTotal = Math.max(0, Math.round(Number(editTicketTotalPrice) || ticketEditPricing.totalPrice))
@@ -8724,7 +8796,7 @@ function handleSessionDateChange(value: string) {
         }}
       >
         <div className="mini-session-title mini-session-title-with-image">
-          <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
+          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} unoptimized />
           <strong>{session.name}</strong>
           {isTicketSession(session) && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
           {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
@@ -8809,7 +8881,7 @@ function handleSessionDateChange(value: string) {
     return (
       <article className="mini-session invite-session" key={invite.id}>
         <div className="mini-session-title mini-session-title-with-image">
-          <img className="mini-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
+          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} unoptimized />
           <strong>{session.name}</strong>
           <span className="pill ok">{isChallenge ? text.challengeInviteLabel : text.invited}</span>
         </div>
@@ -9129,7 +9201,7 @@ function handleSessionDateChange(value: string) {
                         }
                       }}
                     >
-                      <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
+                      <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} unoptimized />
                       <div className="compact-session-main">
                         <div className="compact-session-title-row">
                           <h3>{session.name}</h3>
@@ -9402,7 +9474,7 @@ function handleSessionDateChange(value: string) {
                                           const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers)
                                           setEditTicketType(nextType)
                                           setEditSessionDuration(nextDuration)
-                                          setEditSessionArenaCount(ticketArenaCountForPlayers(nextType, editSessionMaxPlayers))
+                                          setEditSessionArenaCount(ticketArenaCountForPlayers())
                                           setEditTicketTotalPrice(String(ticketPricingSummary(nextType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration).totalPrice))
                                         }}
                                       >
@@ -9586,7 +9658,7 @@ function handleSessionDateChange(value: string) {
                                     onClick={() => toggleEditGame(game.id)}
                                     type="button"
                                   >
-                                    <img src={game.image} alt="" loading="lazy" decoding="async" />
+                                    <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
                                     <span>{game.title}</span>
                                     <strong>{game.category}</strong>
                                   </button>
@@ -10179,7 +10251,7 @@ function handleSessionDateChange(value: string) {
                                 onClick={() => voteForGame(session, gameId)}
                                 type="button"
                               >
-                                <img src={game.image} alt="" loading="lazy" decoding="async" />
+                                <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
                                 <span>{game.title}</span>
                                 <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                               </button>
@@ -10836,7 +10908,7 @@ function handleSessionDateChange(value: string) {
                         onClick={() => toggleGame(game.id)}
                         type="button"
                       >
-                        <img src={game.image} alt="" loading="lazy" decoding="async" />
+                        <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
                         <span>{game.title}</span>
                         <strong>{game.category}</strong>
                       </button>
@@ -10902,7 +10974,7 @@ function handleSessionDateChange(value: string) {
                     {profile?.anonymous_mode ? (
                       <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
                     ) : avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
-                      <img src={avatarPreview || profile?.avatar_url || ''} alt="" loading="lazy" decoding="async" />
+                      <NextImage src={avatarPreview || profile?.avatar_url || ''} alt="" width={112} height={112} unoptimized />
                     ) : avatarMode === 'emoji' ? (
                       <span className="avatar-emoji">{avatarEmoji}</span>
                     ) : avatarMode === 'initials' ? (
@@ -11524,7 +11596,7 @@ function handleSessionDateChange(value: string) {
               <div className="drawer-handle" />
               <div className={bannerUrl ? 'club-hero has-banner' : 'club-hero'}>
                 {bannerUrl ? (
-                  <img src={bannerUrl} alt="" loading="lazy" decoding="async" />
+                  <NextImage src={bannerUrl} alt="" fill sizes="(max-width: 720px) 100vw, 720px" unoptimized />
                 ) : (
                   <div className="club-banner-empty">
                     <strong>{text.clubBanner}</strong>
@@ -11825,7 +11897,7 @@ function handleSessionDateChange(value: string) {
                             }}
                           >
                             <div className="compact-session-card club-session-card">
-                              <img className="compact-session-image" src={coverGame.image} alt="" loading="lazy" decoding="async" />
+                              <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} unoptimized />
                               <div className="compact-session-main">
                                 <div className="compact-session-title-row">
                                   <h3>{session.name}</h3>
@@ -12066,7 +12138,7 @@ function handleSessionDateChange(value: string) {
                     <div className="full club-banner-field">
                       <label>{text.clubBanner}</label>
                       <label className="club-banner-upload">
-                        {bannerUrl ? <img src={bannerUrl} alt="" loading="lazy" decoding="async" /> : <span>{text.clubBannerHelp}</span>}
+                        {bannerUrl ? <NextImage src={bannerUrl} alt="" width={1600} height={600} unoptimized /> : <span>{text.clubBannerHelp}</span>}
                         <input accept="image/jpeg,image/png,image/webp" type="file" onChange={handleClubBannerChange} />
                       </label>
                       <p className="field-help">{text.clubBannerHelp}</p>

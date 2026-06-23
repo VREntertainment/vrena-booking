@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import type { ReactNode } from 'react'
 
 type LoginPromptModalProps = {
@@ -78,7 +79,7 @@ export function InvitePopupModal({
         <p>{body}</p>
         <div className="mini-session invite-session">
           <div className="mini-session-title mini-session-title-with-image">
-            <img className="mini-session-image" src={sessionImage} alt="" loading="lazy" decoding="async" />
+            <Image className="mini-session-image" src={sessionImage} alt="" width={84} height={84} unoptimized />
             <strong>{sessionName}</strong>
             <span className="pill ok">{invitedText}</span>
           </div>

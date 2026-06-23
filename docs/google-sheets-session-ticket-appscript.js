@@ -62,6 +62,7 @@ const MAIN_HEADERS = [
 
 const RAW_HEADERS = ['Received at', 'Event', 'Session ID', 'Raw JSON']
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Google Apps Script invokes this web-app entrypoint by name.
 function doPost(event) {
   try {
     assertConfigured()
