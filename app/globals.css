@@ -1861,6 +1861,125 @@ body {
   font-size: 18px;
 }
 
+.app .staff-operations-card .staff-card-heading p {
+  margin: 4px 0 0;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .staff-operations-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.app .staff-operations-actions label {
+  display: grid;
+  gap: 5px;
+  min-width: 160px;
+}
+
+.app .staff-operations-actions button {
+  min-height: var(--staff-control-height);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-operations-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.app .staff-operations-list {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-operation-session {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 12px;
+}
+
+.app .staff-operation-time {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.app .staff-operation-time strong {
+  font-size: 18px;
+}
+
+.app .staff-operation-time span,
+.app .staff-operation-meta span,
+.app .staff-operation-order span {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-operation-main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.app .staff-operation-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.app .staff-operation-title-row strong {
+  font-size: 16px;
+}
+
+.app .staff-operation-title-row span {
+  border-radius: 999px;
+  background: rgba(0, 174, 179, 0.12);
+  color: #0d7c51;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 9px;
+}
+
+.app .staff-operation-meta,
+.app .staff-operation-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.app .staff-operation-order {
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 7px;
+}
+
+.app .staff-operation-actions {
+  justify-content: flex-end;
+  max-width: 240px;
+}
+
+.app .staff-operations-orders {
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 10px;
+}
+
+.app .staff-operations-orders summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
 .app .staff-report-graphics {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
@@ -6463,6 +6582,28 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .staff-operations-actions {
+    justify-content: flex-start;
+  }
+
+  .app .staff-operations-actions label {
+    flex: 1 1 170px;
+  }
+
+  .app .staff-operations-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-operation-session {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .app .staff-operation-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
   .app .staff-report-graphics {
     grid-template-columns: 1fr;
   }
@@ -7219,6 +7360,19 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .staff-operations-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-operation-session {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-operation-time {
+    grid-template-columns: auto auto;
+    align-items: baseline;
+  }
+
   .app .ticket-service-grid {
     grid-template-columns: 1fr;
   }
@@ -7445,7 +7599,8 @@ body {
   .app .staff-payment-track,
   .app .staff-report-compare-label,
   .app .staff-chart-mode,
-  .app .staff-report-curve {
+  .app .staff-report-curve,
+  .app .staff-operation-session {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -7482,6 +7637,23 @@ body {
   .app .staff-comparison-list small,
   .app .staff-report-bar-group small {
     color: #aeb9bd;
+  }
+
+  .app .staff-operations-card .staff-card-heading p,
+  .app .staff-operation-time span,
+  .app .staff-operation-meta span,
+  .app .staff-operation-order span {
+    color: #aeb9bd;
+  }
+
+  .app .staff-operation-title-row span {
+    background: rgba(0, 174, 179, 0.18);
+    color: #8ce8b5;
+  }
+
+  .app .staff-operation-order,
+  .app .staff-operations-orders {
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   .app .staff-report-filter-row button,

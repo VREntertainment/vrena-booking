@@ -141,6 +141,38 @@ type StaffOrderPayment = {
   created_at: string
 }
 
+type StaffSessionParticipant = {
+  id: string
+  profile_id: string | null
+  display_name?: string | null
+  checked_in?: boolean | null
+  payment_status?: string | null
+  payment_amount?: number | null
+  payment_splits?: unknown
+}
+
+type StaffOperationSession = {
+  id: string
+  owner_id: string | null
+  name: string
+  date: string
+  start_time: string
+  duration_minutes: number
+  max_players: number
+  arena_count: number | null
+  game_options: string[] | null
+  confirmed_game_id?: string | null
+  visibility: 'public' | 'private'
+  status: 'open' | 'cancelled' | 'completed'
+  booking_type?: string | null
+  ticket_type?: string | null
+  ticket_player_count?: number | null
+  ticket_total_price?: number | null
+  ticket_status?: string | null
+  ticket_reference?: string | null
+  session_participants?: StaffSessionParticipant[]
+}
+
 type RoleSaveFeedback = {
   tone: 'saving' | 'success' | 'error'
   message: string
@@ -171,7 +203,7 @@ type SoftDeletedRecord = {
   delete_reason: string | null
 }
 
-type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'orders' | 'profiles' | 'audit' | 'restore' | 'report'
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'orders' | 'profiles' | 'audit' | 'restore' | 'report'
 
 type StaffReportSummary = {
   totalSales: number
@@ -358,6 +390,11 @@ const staffConsoleText = {
       shooting: 'shooting',
       tournament: 'tournament',
     } satisfies Record<StaffGame['game_type'], string>,
+    ticketTypes: {
+      birthday: 'Birthday',
+      corporate: 'Corporate',
+      individual: 'Individual',
+    } satisfies Record<string, string>,
     audienceOptions: {
       family_friendly: 'Family friendly',
       scary: 'Scary',
@@ -378,6 +415,8 @@ const staffConsoleText = {
       calculation: 'Calculation',
       cancelled: 'Cancelled',
       cash: 'Cash',
+      capacity: 'Capacity',
+      checkIns: 'Check-ins',
       codeOptional: 'Code (optional)',
       banAccount: 'Ban this account too',
       compare: 'Compare',
@@ -388,6 +427,7 @@ const staffConsoleText = {
       createPriceRule: 'Create price rule',
       createVoucher: 'Create voucher',
       current: 'current',
+      communitySession: 'Community session',
       customer: 'Customer',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
@@ -418,11 +458,14 @@ const staffConsoleText = {
       minimumSpend: 'Minimum spend',
       name: 'Name',
       newBooking: 'New booking',
+      noLinkedOrder: 'No linked order',
       noShows: 'No-shows',
       notes: 'Notes',
       order: 'Order',
       orderStatus: 'Order status',
       orders: 'Orders',
+      operationsCalendar: 'Operations calendar',
+      operationsDate: 'Operations date',
       paid: 'Paid',
       payment: 'Payment',
       paymentSplits: 'Payment splits',
@@ -433,6 +476,7 @@ const staffConsoleText = {
       players: 'Players',
       pointsEarned: 'Points earned',
       pointsExpireAfterDays: 'Points expire after days',
+      privateSession: 'Private session',
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
       priceRules: 'Price rules',
@@ -448,6 +492,7 @@ const staffConsoleText = {
       sales: 'Sales',
       salesTrend: 'Sales trend',
       searchUsers: 'Search users',
+      sessions: 'Sessions',
       sortBy: 'Sort by',
       slug: 'Slug',
       start: 'Start',
@@ -455,6 +500,7 @@ const staffConsoleText = {
       subtotal: 'Subtotal',
       summary: 'Summary',
       time: 'Time',
+      ticketBookings: 'Ticket bookings',
       total: 'Total',
       totalPaid: 'Total paid',
       totalSales: 'Total sales',
@@ -514,6 +560,8 @@ const staffConsoleText = {
       staffTooManyAttempts: 'Too many attempts. Please wait a moment and try again.',
       uniqueDiscountHelp: 'One-off discount for this booking only. It does not create a reusable voucher.',
       uploadGamePhoto: 'Uploading game photo...',
+      noOperationSessions: 'No sessions or ticket bookings for this day.',
+      operationsIntro: 'Today at the counter: sessions, ticket bookings, capacity, payments, and check-ins in one place.',
       voucherCodeRequired: 'Voucher code is required.',
       voucherSaved: 'Voucher saved.',
     },
@@ -686,6 +734,11 @@ const staffConsoleText = {
       shooting: 'bắn súng',
       tournament: 'giải đấu',
     } satisfies Record<StaffGame['game_type'], string>,
+    ticketTypes: {
+      birthday: 'Sinh nhật',
+      corporate: 'Doanh nghiệp',
+      individual: 'Cá nhân',
+    } satisfies Record<string, string>,
     audienceOptions: {
       family_friendly: 'Thân thiện gia đình',
       scary: 'Rùng rợn',
@@ -706,6 +759,8 @@ const staffConsoleText = {
       calculation: 'Cách tính',
       cancelled: 'Đã hủy',
       cash: 'Tiền mặt',
+      capacity: 'Sức chứa',
+      checkIns: 'Check-in',
       codeOptional: 'Mã (không bắt buộc)',
       banAccount: 'Cấm tài khoản này luôn',
       compare: 'So sánh',
@@ -716,6 +771,7 @@ const staffConsoleText = {
       createPriceRule: 'Tạo quy tắc giá',
       createVoucher: 'Tạo voucher',
       current: 'hiện tại',
+      communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
@@ -746,11 +802,14 @@ const staffConsoleText = {
       minimumSpend: 'Chi tiêu tối thiểu',
       name: 'Tên',
       newBooking: 'Đặt chỗ mới',
+      noLinkedOrder: 'Chưa có đơn liên kết',
       noShows: 'Không đến',
       notes: 'Ghi chú',
       order: 'Đơn',
       orderStatus: 'Trạng thái đơn',
       orders: 'Đơn hàng',
+      operationsCalendar: 'Lịch vận hành',
+      operationsDate: 'Ngày vận hành',
       paid: 'Đã trả',
       payment: 'Thanh toán',
       paymentSplits: 'Tách thanh toán',
@@ -761,6 +820,7 @@ const staffConsoleText = {
       players: 'Người chơi',
       pointsEarned: 'Điểm nhận được',
       pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
+      privateSession: 'Phiên riêng tư',
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
       priceRules: 'Quy tắc giá',
@@ -776,6 +836,7 @@ const staffConsoleText = {
       sales: 'Doanh thu',
       salesTrend: 'Xu hướng doanh thu',
       searchUsers: 'Tìm người dùng',
+      sessions: 'Phiên',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
       start: 'Bắt đầu',
@@ -783,6 +844,7 @@ const staffConsoleText = {
       subtotal: 'Tạm tính',
       summary: 'Tóm tắt',
       time: 'Giờ',
+      ticketBookings: 'Đặt vé',
       total: 'Tổng',
       totalPaid: 'Đã thanh toán',
       totalSales: 'Tổng doanh thu',
@@ -842,6 +904,8 @@ const staffConsoleText = {
       staffTooManyAttempts: 'Quá nhiều lần thử. Vui lòng chờ một chút rồi thử lại.',
       uniqueDiscountHelp: 'Ưu đãi dùng một lần cho đặt chỗ này. Không tạo voucher dùng lại.',
       uploadGamePhoto: 'Đang tải ảnh trò chơi...',
+      noOperationSessions: 'Không có phiên hoặc đặt vé trong ngày này.',
+      operationsIntro: 'Tại quầy hôm nay: phiên chơi, đặt vé, sức chứa, thanh toán và check-in trong một nơi.',
       voucherCodeRequired: 'Cần nhập mã voucher.',
       voucherSaved: 'Đã lưu voucher.',
     },
@@ -975,16 +1039,6 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onCha
       <span className="staff-picker-display">{displayValue || fallback}</span>
     </span>
   )
-}
-
-function openStaffPicker(input: HTMLInputElement | null) {
-  if (!input) return
-  input.focus()
-  try {
-    input.showPicker?.()
-  } catch {
-    input.click()
-  }
 }
 
 function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
@@ -1509,6 +1563,45 @@ function paymentStatusLabel(value: StaffOrder['payment_status'], text: StaffCons
   return value
 }
 
+function addMinutesToTime(value: string, minutes: number) {
+  const [hours, mins] = normalizeTime(value).split(':').map(Number)
+  const total = (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(mins) ? mins : 0) + minutes
+  const normalized = ((total % 1440) + 1440) % 1440
+  return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`
+}
+
+function ticketTypeName(value: string | null | undefined, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (value === 'birthday' || value === 'corporate' || value === 'individual') return text.ticketTypes[value]
+  return text.labels.ticketBookings
+}
+
+function sessionKindLabel(session: StaffOperationSession, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (session.booking_type === 'ticket') return `${text.labels.ticketBookings} · ${ticketTypeName(session.ticket_type, text)}`
+  if (session.visibility === 'private') return text.labels.privateSession
+  return text.labels.communitySession
+}
+
+function sessionGameName(session: StaffOperationSession, games: StaffGame[], text: StaffConsoleCopy = staffConsoleText.en) {
+  const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
+  return games.find((game) => game.slug === gameId || game.id === gameId)?.name || text.gameFallback
+}
+
+function sessionBookedPlayers(session: StaffOperationSession, order?: StaffOrder) {
+  return Math.max(
+    Number(order?.players_count || 0),
+    Number(session.ticket_player_count || 0),
+    session.session_participants?.length || 0
+  )
+}
+
+function sessionCapacity(session: StaffOperationSession, order?: StaffOrder) {
+  return Math.max(Number(session.max_players || 0), sessionBookedPlayers(session, order))
+}
+
+function sessionCheckedInCount(session: StaffOperationSession) {
+  return (session.session_participants || []).filter((participant) => participant.checked_in).length
+}
+
 function htmlCell(value: unknown) {
   const text = String(value ?? '')
   return text
@@ -1905,6 +1998,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [loyaltyRules, setLoyaltyRules] = useState<StaffLoyaltyRule[]>([])
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
+  const [operationSessions, setOperationSessions] = useState<StaffOperationSession[]>([])
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [auditLogs, setAuditLogs] = useState<StaffAuditLog[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
@@ -1915,6 +2009,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const [loyaltyForm, setLoyaltyForm] = useState(() => defaultLoyaltyForm())
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
+  const [operationsDate, setOperationsDate] = useState(todayString())
   const [compareEnabled, setCompareEnabled] = useState(false)
   const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
@@ -1980,11 +2075,52 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
 
-  const todayOrders = useMemo(() => {
-    const today = todayString()
-    return orders.filter((order) => order.booking_date === today)
-  }, [orders])
   const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
+  const operationOrders = useMemo(() => (
+    orders
+      .filter((order) => order.booking_date === operationsDate)
+      .sort((left, right) => left.booking_time.localeCompare(right.booking_time) || left.order_number.localeCompare(right.order_number))
+  ), [operationsDate, orders])
+  const operationOrderBySessionId = useMemo(() => {
+    const map = new Map<string, StaffOrder>()
+    operationOrders.forEach((order) => {
+      if (order.session_id) map.set(order.session_id, order)
+    })
+    return map
+  }, [operationOrders])
+  const unlinkedOperationOrders = useMemo(() => (
+    operationOrders.filter((order) => !order.session_id || !operationSessions.some((session) => session.id === order.session_id))
+  ), [operationOrders, operationSessions])
+  const operationSummary = useMemo(() => {
+    const linkedOrderSessionIds = new Set(operationOrders.map((order) => order.session_id).filter(Boolean))
+    const sessionOnlyPlayers = operationSessions.reduce((sum, session) => {
+      if (linkedOrderSessionIds.has(session.id)) return sum
+      return sum + sessionBookedPlayers(session)
+    }, 0)
+    const sessionOnlyCapacity = operationSessions.reduce((sum, session) => {
+      if (linkedOrderSessionIds.has(session.id)) return sum
+      return sum + sessionCapacity(session)
+    }, 0)
+    const orderPlayers = operationOrders.reduce((sum, order) => sum + order.players_count, 0)
+    const orderCapacity = operationOrders.reduce((sum, order) => {
+      const session = operationSessions.find((item) => item.id === order.session_id)
+      return sum + (session ? sessionCapacity(session, order) : order.players_count)
+    }, 0)
+    const checkedIn = operationSessions.reduce((sum, session) => sum + sessionCheckedInCount(session), 0)
+    const paid = operationOrders.reduce((sum, order) => sum + orderPaidAmount(order, orderPaymentsByOrderId), 0)
+    const total = operationOrders.reduce((sum, order) => sum + order.total, 0)
+
+    return {
+      sessions: operationSessions.length,
+      ticketBookings: operationSessions.filter((session) => session.booking_type === 'ticket').length,
+      bookedPlayers: orderPlayers + sessionOnlyPlayers,
+      capacity: orderCapacity + sessionOnlyCapacity,
+      checkedIn,
+      checkablePlayers: operationSessions.reduce((sum, session) => sum + Math.max(session.session_participants?.length || 0, sessionCheckedInCount(session)), 0),
+      paid,
+      unpaid: Math.max(0, total - paid),
+    }
+  }, [operationOrders, operationSessions, orderPaymentsByOrderId])
   const filteredRoleProfiles = useMemo(() => {
     const query = roleSearch.trim().toLowerCase()
     const rows = profiles.filter((item) => {
@@ -2048,7 +2184,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     currentTab === 'new'
       ? loadingData.games || loadingData.prices || loadingData.discounts || loadingData.profiles
       : currentTab === 'today'
-        ? loadingData.games || loadingData.today
+        ? loadingData.games || loadingData.today || loadingData.todaySessions
         : currentTab === 'games'
           ? loadingData.games
           : currentTab === 'prices'
@@ -2068,7 +2204,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     if (currentTab === 'new') {
       void Promise.all([loadGames(), loadPrices(), loadDiscounts(), loadProfiles()])
     } else if (currentTab === 'today') {
-      void Promise.all([loadGames(), loadTodayOrders()])
+      void Promise.all([loadGames(), loadTodayOrders(true), loadTodaySessions(true)])
     } else if (currentTab === 'games') {
       void loadGames()
     } else if (currentTab === 'prices') {
@@ -2086,7 +2222,7 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
     }
     // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, commerceTab])
+  }, [currentTab, commerceTab, operationsDate])
 
   useEffect(() => {
     if (currentTab !== 'report') return
@@ -2270,8 +2406,21 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   }
 
   async function loadTodayOrders(force = false) {
-    const today = todayString()
-    await loadOrdersForRange('today', today, today, force)
+    await loadOrdersForRange('today', operationsDate, operationsDate, force)
+  }
+
+  async function loadTodaySessions(force = false) {
+    await runStaffLoader('todaySessions', async () => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, session_participants(id, profile_id, display_name, checked_in, payment_status, payment_amount, payment_splits)')
+        .eq('date', operationsDate)
+        .is('session_participants.deleted_at', null)
+        .order('start_time', { ascending: true })
+
+      if (error) throw new Error(error.message)
+      setOperationSessions((data ?? []) as StaffOperationSession[])
+    }, force)
   }
 
   async function loadRecentOrders(force = false) {
@@ -3075,7 +3224,10 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                 aria-label={text.aria.openBookingCalendar}
                 className="staff-calendar-shortcut"
                 type="button"
-                onClick={() => openStaffPicker(bookingDateInputRef.current)}
+                onClick={() => {
+                  setOperationsDate(booking.date || todayString())
+                  setActiveTab('today')
+                }}
               >
                 {text.actions.calendar}
               </button>
@@ -3245,9 +3397,106 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
       )}
 
       {currentTab === 'today' && (
-        <div className="staff-card">
-          <h3>{text.tabs.today}</h3>
-          {orderRows(todayOrders)}
+        <div className="staff-card staff-card-wide staff-operations-card">
+          <div className="staff-card-heading">
+            <div>
+              <h3>{text.labels.operationsCalendar}</h3>
+              <p>{text.messages.operationsIntro}</p>
+            </div>
+            <div className="staff-operations-actions">
+              <label>
+                <span className="staff-field-label">{text.labels.operationsDate}</span>
+                <StaffPickerField
+                  ariaLabel={text.labels.operationsDate}
+                  placeholder={text.chooseDate}
+                  type="date"
+                  value={operationsDate}
+                  onChange={setOperationsDate}
+                />
+              </label>
+              <button type="button" onClick={() => setOperationsDate(todayString())}>{text.actions.today}</button>
+              {canCreateOrders && (
+                <button
+                  className="staff-calendar-shortcut"
+                  type="button"
+                  onClick={() => {
+                    setBooking((current) => ({ ...current, date: operationsDate }))
+                    setActiveTab('new')
+                  }}
+                >
+                  {text.tabs.new}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="staff-summary-grid staff-operations-summary">
+            <div><span>{text.labels.sessions}</span><strong>{operationSummary.sessions}</strong></div>
+            <div><span>{text.labels.ticketBookings}</span><strong>{operationSummary.ticketBookings}</strong></div>
+            <div><span>{text.labels.capacity}</span><strong>{operationSummary.bookedPlayers}/{operationSummary.capacity}</strong></div>
+            <div><span>{text.labels.checkIns}</span><strong>{operationSummary.checkedIn}/{operationSummary.checkablePlayers}</strong></div>
+            <div><span>{text.labels.totalPaid}</span><strong>{formatVnd(operationSummary.paid)}</strong></div>
+            <div><span>{text.unpaid}</span><strong>{formatVnd(operationSummary.unpaid)}</strong></div>
+          </div>
+
+          <div className="staff-operations-list">
+            {operationSessions.map((session) => {
+              const order = operationOrderBySessionId.get(session.id)
+              const participants = session.session_participants || []
+              const paidAmount = order ? orderPaidAmount(order, orderPaymentsByOrderId) : 0
+              const totalAmount = order?.total ?? Number(session.ticket_total_price || 0)
+              const paymentLabel = order
+                ? `${paymentStatusLabel(order.payment_status, text)} · ${formatVnd(paidAmount)}/${formatVnd(order.total)}`
+                : totalAmount > 0
+                  ? `${session.ticket_status || text.labels.noLinkedOrder} · ${formatVnd(totalAmount)}`
+                  : text.labels.noLinkedOrder
+              return (
+                <article className="staff-operation-session" key={session.id}>
+                  <div className="staff-operation-time">
+                    <strong>{normalizeTime(session.start_time)}</strong>
+                    <span>{addMinutesToTime(session.start_time, session.duration_minutes)}</span>
+                  </div>
+                  <div className="staff-operation-main">
+                    <div className="staff-operation-title-row">
+                      <strong>{session.name}</strong>
+                      <span>{sessionKindLabel(session, text)}</span>
+                    </div>
+                    <div className="staff-operation-meta">
+                      <span>{sessionGameName(session, games, text)}</span>
+                      <span>{session.duration_minutes} min</span>
+                      <span>{text.labels.capacity}: {sessionBookedPlayers(session, order)}/{sessionCapacity(session, order)}</span>
+                      <span>{text.labels.checkIns}: {sessionCheckedInCount(session)}/{Math.max(participants.length, sessionCheckedInCount(session))}</span>
+                      <span>{text.labels.payment}: {paymentLabel}</span>
+                    </div>
+                    {order && (
+                      <div className="staff-operation-order">
+                        <span>{order.order_number}</span>
+                        <span>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</span>
+                        <span>{orderPaymentLabel(order, orderPaymentsByOrderId, text)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {order && canCreateOrders && (
+                    <div className="staff-row-actions staff-operation-actions">
+                      <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>{text.actions.paid}</button>
+                      <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
+                      <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>{text.actions.noShow}</button>
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+            {operationSessions.length === 0 && (
+              <p className="notice">{text.messages.noOperationSessions}</p>
+            )}
+          </div>
+
+          {unlinkedOperationOrders.length > 0 && (
+            <details className="staff-operations-orders">
+              <summary>{text.labels.orders}</summary>
+              {orderRows(unlinkedOperationOrders)}
+            </details>
+          )}
         </div>
       )}
 
