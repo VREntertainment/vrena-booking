@@ -1103,6 +1103,10 @@ function compactDisplayName(value: string | null | undefined, fallback = 'Player
   return limitDisplayName(cleaned)
 }
 
+function playerCardLabel(value: string | null | undefined, fallback = 'Player') {
+  return `Open ${compactDisplayName(value, fallback)} player card`
+}
+
 function anonymousCallsignForId(profileId: string | null | undefined) {
   const value = profileId || 'private-player'
   let hash = 0
@@ -9922,6 +9926,7 @@ function handleSessionDateChange(value: string) {
                       {participants.map((participant) => (
                         <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
                           <button
+                            aria-label={canSeeSessionPlayers ? playerCardLabel(participant.display_name, text.player) : playerCardLabel(text.member, text.member)}
                             className={[
                               'player-avatar player-avatar-button',
                               participant.placement ? `place-${participant.placement}` : '',
@@ -10192,7 +10197,7 @@ function handleSessionDateChange(value: string) {
                                 {podium.map((participant) => (
                                   <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
                                     <span className="podium-medal">{rankEmoji(participant.placement)}</span>
-                                    <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
+                                    <button aria-label={playerCardLabel(participant.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
                                       {avatarNode(participant, 'P')}
                                     </button>
                                     <strong>{compactDisplayName(participant.display_name, text.player)}</strong>
@@ -10290,7 +10295,7 @@ function handleSessionDateChange(value: string) {
                                       const entryParticipant = participantById(session, entry.participant_id)
                                       return (
                                         <div className="player tournament-entry" key={entry.id}>
-                                          <button className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
+                                          <button aria-label={playerCardLabel(entryParticipant?.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
                                             {avatarNode(entryParticipant, 'P')}
                                             {crownedTopPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
                                           </button>
@@ -10656,6 +10661,7 @@ function handleSessionDateChange(value: string) {
                         {approvedMembers.map((member) => (
                           <div className="player" key={member.id}>
                             <button
+                              aria-label={playerCardLabel(member.display_name, text.player)}
                               className="player-avatar player-avatar-button"
                               onClick={(event) => {
                                 event.stopPropagation()
@@ -11941,7 +11947,7 @@ function handleSessionDateChange(value: string) {
 
                           return (
                             <article className="club-member-row" key={member.id}>
-                              <button className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
+                              <button aria-label={playerCardLabel(member.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
                                 {avatarNode(member, 'P')}
                               </button>
                               <div className="club-member-main">

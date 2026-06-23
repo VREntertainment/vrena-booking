@@ -121,6 +121,10 @@ function safeLeaderboardName(player: Pick<LeaderboardPlayer, 'displayName'>, fal
   return (typeof player.displayName === 'string' && player.displayName.trim()) || fallback
 }
 
+function playerCardLabel(player: Pick<LeaderboardPlayer, 'displayName'>, fallback: string) {
+  return `Open ${safeLeaderboardName(player, fallback)} player card`
+}
+
 function visibleClubMembers(club: LeaderboardClub | null) {
   if (!Array.isArray(club?.club_members)) return []
   return club.club_members.filter((member) => Boolean(member?.profile_id))
@@ -531,6 +535,7 @@ export default function LeaderboardPanel({
             <article className={isCurrentUser ? 'leaderboard-row current-user' : 'leaderboard-row'} key={player.profileId}>
               <div className="leaderboard-rank">#{rank}</div>
               <button
+                aria-label={playerCardLabel(player, text.player)}
                 className="player-avatar player-avatar-button leaderboard-avatar-button"
                 onClick={() => onOpenPlayerProfile(player.profileId)}
                 style={avatarStyleFor(player)}
