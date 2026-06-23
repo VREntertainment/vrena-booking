@@ -266,6 +266,7 @@ type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
   language?: string
+  onOpenSessionCalendar?: (dateValue: string) => void
 }
 
 type StaffConsoleLanguage = 'en' | 'vi'
@@ -331,6 +332,7 @@ const staffConsoleText = {
       savePrice: 'Save price',
       saveRole: 'Save role',
       saveVoucher: 'Save voucher',
+      sessionCalendar: 'Session Calendar',
       today: 'Today',
       yesterday: 'Yesterday',
       previousPeriod: 'Previous period',
@@ -339,6 +341,7 @@ const staffConsoleText = {
       bookingDate: 'Booking date',
       bookingTime: 'Booking time',
       openBookingCalendar: 'Open booking calendar',
+      openSessionCalendar: 'Open session calendar',
       compareEndDate: 'Compare end date',
       compareStartDate: 'Compare start date',
       discountValueUnit: 'Discount value unit',
@@ -675,6 +678,7 @@ const staffConsoleText = {
       savePrice: 'Lưu giá',
       saveRole: 'Lưu vai trò',
       saveVoucher: 'Lưu voucher',
+      sessionCalendar: 'Lịch phiên',
       today: 'Hôm nay',
       yesterday: 'Hôm qua',
       previousPeriod: 'Kỳ trước',
@@ -683,6 +687,7 @@ const staffConsoleText = {
       bookingDate: 'Ngày đặt chỗ',
       bookingTime: 'Giờ đặt chỗ',
       openBookingCalendar: 'Mở lịch đặt chỗ',
+      openSessionCalendar: 'Mở lịch phiên',
       compareEndDate: 'Ngày kết thúc so sánh',
       compareStartDate: 'Ngày bắt đầu so sánh',
       discountValueUnit: 'Đơn vị ưu đãi',
@@ -1982,7 +1987,7 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail, language }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, onOpenSessionCalendar }: StaffConsoleProps) {
   const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
@@ -3414,6 +3419,16 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
                   onChange={setOperationsDate}
                 />
               </label>
+              {onOpenSessionCalendar && (
+                <button
+                  aria-label={text.aria.openSessionCalendar}
+                  className="staff-calendar-shortcut"
+                  type="button"
+                  onClick={() => onOpenSessionCalendar(operationsDate)}
+                >
+                  {text.actions.sessionCalendar}
+                </button>
+              )}
               <button type="button" onClick={() => setOperationsDate(todayString())}>{text.actions.today}</button>
               {canCreateOrders && (
                 <button
