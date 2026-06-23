@@ -116,13 +116,11 @@ function getSupabase() {
 const FullBookingWidget = dynamic(() => import('./BookingWidget'), {
   ssr: false,
   loading: () => (
-    <div className="app">
-      <main>
-        <section className="section">
-          <p className="notice" aria-busy="true">...</p>
-        </section>
-      </main>
-    </div>
+    <main>
+      <section className="section">
+        <p className="notice" aria-busy="true">...</p>
+      </section>
+    </main>
   ),
 })
 
@@ -438,6 +436,18 @@ export default function FastHomeShell() {
     && !heavyTarget
     && !staffOnlyModeOpen
   )
+  const activeShellView = heavyTarget?.view ?? 'leaderboard'
+
+  const handleFullWidgetViewChange = useCallback((view: AppView) => {
+    setHeavyTarget((currentTarget) => {
+      if (!currentTarget || currentTarget.view === view) return currentTarget
+      return { ...currentTarget, view }
+    })
+  }, [])
+
+  const handleFullWidgetProfileChange = useCallback((nextProfile: Profile | null) => {
+    setProfile(nextProfile)
+  }, [])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(STAFF_MODE_MOBILE_QUERY)
@@ -453,12 +463,16 @@ export default function FastHomeShell() {
 
     return (
       <FullBookingWidget
+        embedded
+        externalLanguage={language}
         initialSelectedPlayerId={heavyTarget.profileId || ''}
         initialSelectedPlayerSessionId={heavyTarget.sessionId || ''}
         initialView={heavyTarget.view}
+        onActiveViewChange={handleFullWidgetViewChange}
+        onProfileChange={handleFullWidgetProfileChange}
       />
     )
-  }, [heavyTarget])
+  }, [handleFullWidgetProfileChange, handleFullWidgetViewChange, heavyTarget, language])
 
   useEffect(() => {
     let active = true
@@ -742,8 +756,6 @@ export default function FastHomeShell() {
     if (searchReloadTimeoutRef.current) window.clearTimeout(searchReloadTimeoutRef.current)
   }, [])
 
-  if (fullWidget) return fullWidget
-
   if (staffOnlyModeOpen && canAccessStaffConsole) {
     return (
       <div className="app staff-only-app">
@@ -814,7 +826,7 @@ export default function FastHomeShell() {
           <p className="muted">{text.tagline}</p>
         </div>
 
-        <button className="profile-chip" onClick={() => openFullApp('profile')} type="button">
+        <button className={activeShellView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => openFullApp('profile')} type="button">
           <div className="avatar" style={avatarStyle(avatarFields(profile))}>
             {avatarNode(profile ? {
               ...avatarFields(profile),
@@ -829,20 +841,20 @@ export default function FastHomeShell() {
         </button>
 
         <div className={canAccessStaffConsole ? 'tabs staff-tabs-visible' : 'tabs'}>
-          <button className="tab" onClick={() => openFullApp('sessions')} type="button">
+          <button className={activeShellView === 'sessions' || activeShellView === 'create' ? 'tab active' : 'tab'} onClick={() => openFullApp('sessions')} type="button">
             {text.sessions}
           </button>
-          <button className="tab" onClick={() => openFullApp('tickets')} type="button">
+          <button className={activeShellView === 'tickets' ? 'tab active' : 'tab'} onClick={() => openFullApp('tickets')} type="button">
             {text.tickets}
           </button>
-          <button className="tab active" type="button">
+          <button className={activeShellView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => heavyTarget && openFullApp('leaderboard')} type="button">
             {text.hallOfFame}
           </button>
-          <button className="tab" onClick={() => openFullApp(profile ? 'clubs' : 'profile')} type="button">
+          <button className={activeShellView === 'clubs' ? 'tab active' : 'tab'} onClick={() => openFullApp(profile ? 'clubs' : 'profile')} type="button">
             {text.clubs}
           </button>
           {canAccessStaffConsole && (
-            <button className="tab mobile-staff-tab" onClick={() => openFullApp('staff')} type="button">
+            <button className={activeShellView === 'staff' ? 'tab active mobile-staff-tab' : 'tab mobile-staff-tab'} onClick={() => openFullApp('staff')} type="button">
               Staff
             </button>
           )}
@@ -856,41 +868,43 @@ export default function FastHomeShell() {
         </div>
       </aside>
 
-      <main>
-        {isLeaderboardLoading && leaderboardPlayers.length === 0 && <p className="notice" aria-busy="true">...</p>}
-        {leaderboardStatus && leaderboardPlayers.length === 0 && <p className="notice">{leaderboardStatus}</p>}
-        <LeaderboardPanel
-          avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-            avatar_color: player.avatarColor,
-            avatar_text_color: player.avatarTextColor,
-          })}
-          canBypassPrivateClubPins={isAdmin}
-          clubs={clubs}
-          currentUserRankPlayer={currentUserRankPlayer}
-          hasMorePlayers={hasMoreLeaderboardPlayers}
-          isLoadingClubs={isLoadingClubs}
-          isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
-          onLeaderboardClubChange={handleLeaderboardClubChange}
-          onLeaderboardClubFilterOpen={loadClubs}
-          onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
-          onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
-          onLeaderboardSearchChange={handleLeaderboardSearchChange}
-          onLoadMorePlayers={loadMoreLeaderboardPlayers}
-          onOpenPlayerProfile={(profileId) => openFullApp('leaderboard', profileId)}
-          players={leaderboardPlayers}
-          renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-            avatar_url: player.avatarUrl,
-            avatar_emoji: player.avatarEmoji,
-            avatar_initials: player.avatarInitials,
-            display_name: player.displayName,
-          }, 'P')}
-          serverFiltered
-          showClubFilter
-          text={text}
-          useServerRanking
-          userId={userId}
-        />
-      </main>
+      {fullWidget ?? (
+        <main>
+          {isLeaderboardLoading && leaderboardPlayers.length === 0 && <p className="notice" aria-busy="true">...</p>}
+          {leaderboardStatus && leaderboardPlayers.length === 0 && <p className="notice">{leaderboardStatus}</p>}
+          <LeaderboardPanel
+            avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+              avatar_color: player.avatarColor,
+              avatar_text_color: player.avatarTextColor,
+            })}
+            canBypassPrivateClubPins={isAdmin}
+            clubs={clubs}
+            currentUserRankPlayer={currentUserRankPlayer}
+            hasMorePlayers={hasMoreLeaderboardPlayers}
+            isLoadingClubs={isLoadingClubs}
+            isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
+            onLeaderboardClubChange={handleLeaderboardClubChange}
+            onLeaderboardClubFilterOpen={loadClubs}
+            onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
+            onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+            onLeaderboardSearchChange={handleLeaderboardSearchChange}
+            onLoadMorePlayers={loadMoreLeaderboardPlayers}
+            onOpenPlayerProfile={(profileId) => openFullApp('leaderboard', profileId)}
+            players={leaderboardPlayers}
+            renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+              avatar_url: player.avatarUrl,
+              avatar_emoji: player.avatarEmoji,
+              avatar_initials: player.avatarInitials,
+              display_name: player.displayName,
+            }, 'P')}
+            serverFiltered
+            showClubFilter
+            text={text}
+            useServerRanking
+            userId={userId}
+          />
+        </main>
+      )}
     </div>
   )
 }
