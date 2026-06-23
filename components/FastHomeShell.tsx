@@ -862,6 +862,7 @@ export default function FastHomeShell() {
 
         <div className="shop-contact">
           <strong>VRena Vietnam</strong>
+          <a className="public-game-guide-shell-link" href={language === 'en' ? '/games' : `/games/${language}`}>{text.gameGuide}</a>
           <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
           <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
           <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
