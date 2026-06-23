@@ -2521,6 +2521,17 @@ export default function WidgetPage({
     void loadCalendarWeek(calendarWeekStart)
   }
 
+  function openCreateSessionCalendar(dateValue = localDateString()) {
+    const targetWeekStart = startOfWeekDateValue(dateValue)
+    setActiveView('create')
+    setCreateSessionMode('calendar')
+    setCalendarWeekStart(targetWeekStart)
+    void loadCalendarWeek(targetWeekStart)
+    window.setTimeout(() => {
+      document.querySelector('.calendar-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+  }
+
   function showCreateFormMode() {
     setCreateSessionMode('form')
   }
@@ -10720,7 +10731,12 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            <StaffConsole authEmail={authEmail} language={language} profile={profile} />
+            <StaffConsole
+              authEmail={authEmail}
+              language={language}
+              profile={profile}
+              onOpenSessionCalendar={openCreateSessionCalendar}
+            />
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
