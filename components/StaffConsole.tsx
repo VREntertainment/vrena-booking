@@ -3226,11 +3226,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
             <div className="staff-card-heading">
               <h3>{text.labels.newBooking}</h3>
               <button
-                aria-label={text.aria.openBookingCalendar}
+                aria-label={text.aria.openSessionCalendar}
                 className="staff-calendar-shortcut"
                 type="button"
                 onClick={() => {
-                  setOperationsDate(booking.date || todayString())
+                  const targetDate = booking.date || todayString()
+                  if (onOpenSessionCalendar) {
+                    onOpenSessionCalendar(targetDate)
+                    return
+                  }
+                  setOperationsDate(targetDate)
                   setActiveTab('today')
                 }}
               >
