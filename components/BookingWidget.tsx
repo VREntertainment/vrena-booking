@@ -78,6 +78,11 @@ function urlBase64ToUint8Array(base64String: string) {
   return output
 }
 
+function shouldSkipImageOptimization(source: string | null | undefined) {
+  const normalizedSource = source?.trim().toLowerCase() || ''
+  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || /\.gif($|\?)/.test(normalizedSource)
+}
+
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 const TicketBookingView = dynamic(() => import('./TicketBookingView'), {
@@ -2147,7 +2152,7 @@ export default function WidgetPage({
             alt=""
             fill
             sizes="96px"
-            unoptimized
+            unoptimized={shouldSkipImageOptimization(source.avatar_url)}
             style={{
               position: 'absolute',
               inset: 0,
@@ -8796,7 +8801,7 @@ function handleSessionDateChange(value: string) {
         }}
       >
         <div className="mini-session-title mini-session-title-with-image">
-          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} unoptimized />
+          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} />
           <strong>{session.name}</strong>
           {isTicketSession(session) && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
           {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
@@ -8881,7 +8886,7 @@ function handleSessionDateChange(value: string) {
     return (
       <article className="mini-session invite-session" key={invite.id}>
         <div className="mini-session-title mini-session-title-with-image">
-          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} unoptimized />
+          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} />
           <strong>{session.name}</strong>
           <span className="pill ok">{isChallenge ? text.challengeInviteLabel : text.invited}</span>
         </div>
@@ -9201,7 +9206,7 @@ function handleSessionDateChange(value: string) {
                         }
                       }}
                     >
-                      <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} unoptimized />
+                      <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} />
                       <div className="compact-session-main">
                         <div className="compact-session-title-row">
                           <h3>{session.name}</h3>
@@ -9658,7 +9663,7 @@ function handleSessionDateChange(value: string) {
                                     onClick={() => toggleEditGame(game.id)}
                                     type="button"
                                   >
-                                    <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
+                                    <NextImage src={game.image} alt="" width={240} height={240} />
                                     <span>{game.title}</span>
                                     <strong>{game.category}</strong>
                                   </button>
@@ -10251,7 +10256,7 @@ function handleSessionDateChange(value: string) {
                                 onClick={() => voteForGame(session, gameId)}
                                 type="button"
                               >
-                                <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
+                                <NextImage src={game.image} alt="" width={240} height={240} />
                                 <span>{game.title}</span>
                                 <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                               </button>
@@ -10908,7 +10913,7 @@ function handleSessionDateChange(value: string) {
                         onClick={() => toggleGame(game.id)}
                         type="button"
                       >
-                        <NextImage src={game.image} alt="" width={240} height={240} unoptimized />
+                        <NextImage src={game.image} alt="" width={240} height={240} />
                         <span>{game.title}</span>
                         <strong>{game.category}</strong>
                       </button>
@@ -10974,7 +10979,13 @@ function handleSessionDateChange(value: string) {
                     {profile?.anonymous_mode ? (
                       <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
                     ) : avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
-                      <NextImage src={avatarPreview || profile?.avatar_url || ''} alt="" width={112} height={112} unoptimized />
+                      <NextImage
+                        src={avatarPreview || profile?.avatar_url || ''}
+                        alt=""
+                        width={112}
+                        height={112}
+                        unoptimized={shouldSkipImageOptimization(avatarPreview || profile?.avatar_url)}
+                      />
                     ) : avatarMode === 'emoji' ? (
                       <span className="avatar-emoji">{avatarEmoji}</span>
                     ) : avatarMode === 'initials' ? (
@@ -11596,7 +11607,7 @@ function handleSessionDateChange(value: string) {
               <div className="drawer-handle" />
               <div className={bannerUrl ? 'club-hero has-banner' : 'club-hero'}>
                 {bannerUrl ? (
-                  <NextImage src={bannerUrl} alt="" fill sizes="(max-width: 720px) 100vw, 720px" unoptimized />
+                  <NextImage src={bannerUrl} alt="" fill sizes="(max-width: 720px) 100vw, 720px" />
                 ) : (
                   <div className="club-banner-empty">
                     <strong>{text.clubBanner}</strong>
@@ -11897,7 +11908,7 @@ function handleSessionDateChange(value: string) {
                             }}
                           >
                             <div className="compact-session-card club-session-card">
-                              <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} unoptimized />
+                              <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} />
                               <div className="compact-session-main">
                                 <div className="compact-session-title-row">
                                   <h3>{session.name}</h3>
@@ -12138,7 +12149,7 @@ function handleSessionDateChange(value: string) {
                     <div className="full club-banner-field">
                       <label>{text.clubBanner}</label>
                       <label className="club-banner-upload">
-                        {bannerUrl ? <NextImage src={bannerUrl} alt="" width={1600} height={600} unoptimized /> : <span>{text.clubBannerHelp}</span>}
+                        {bannerUrl ? <NextImage src={bannerUrl} alt="" width={1600} height={600} /> : <span>{text.clubBannerHelp}</span>}
                         <input accept="image/jpeg,image/png,image/webp" type="file" onChange={handleClubBannerChange} />
                       </label>
                       <p className="field-help">{text.clubBannerHelp}</p>
