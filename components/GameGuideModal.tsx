@@ -117,7 +117,7 @@ export default function GameGuideModal({
 
             return (
               <article className="game-guide-card" key={game.id}>
-                <Image src={game.image} alt="" width={240} height={240} unoptimized />
+                <Image src={game.image} alt="" width={240} height={240} />
                 <div className="game-guide-card-body">
                   <div className="game-guide-card-head">
                     <div>

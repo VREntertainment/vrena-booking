@@ -79,7 +79,7 @@ export function InvitePopupModal({
         <p>{body}</p>
         <div className="mini-session invite-session">
           <div className="mini-session-title mini-session-title-with-image">
-            <Image className="mini-session-image" src={sessionImage} alt="" width={84} height={84} unoptimized />
+            <Image className="mini-session-image" src={sessionImage} alt="" width={84} height={84} />
             <strong>{sessionName}</strong>
             <span className="pill ok">{invitedText}</span>
           </div>
