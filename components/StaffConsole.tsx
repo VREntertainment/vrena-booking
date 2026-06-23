@@ -1825,6 +1825,14 @@ function numericReportValue(value: unknown) {
   return Number(value ?? 0) || 0
 }
 
+function rpcFunctionMissing(error: { code?: string; message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() || ''
+  return error?.code === '42883'
+    || error?.code === 'PGRST202'
+    || message.includes('could not find the function')
+    || (message.includes('function') && message.includes('does not exist'))
+}
+
 function reportSummaryFromRpc(value: unknown, text: StaffConsoleCopy = staffConsoleText.en): StaffReportSummary {
   const row = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
   return {
@@ -1862,6 +1870,14 @@ function staffReportSnapshotFromRpc(value: unknown, text: StaffConsoleCopy = sta
     comparisonReport: reportSummaryFromRpc(payload.comparisonReport ?? payload.comparison_report, text),
     reportSeries: dailySeriesFromRpc(payload.reportSeries ?? payload.report_series),
     comparisonSeries: dailySeriesFromRpc(payload.comparisonSeries ?? payload.comparison_series),
+    orders: Array.isArray(payload.orders) ? payload.orders as StaffOrder[] : [],
+    payments: Array.isArray(payload.payments) ? payload.payments as StaffOrderPayment[] : [],
+  }
+}
+
+function staffOrdersPageFromRpc(value: unknown) {
+  const payload = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  return {
     orders: Array.isArray(payload.orders) ? payload.orders as StaffOrder[] : [],
     payments: Array.isArray(payload.payments) ? payload.payments as StaffOrderPayment[] : [],
   }
@@ -2155,6 +2171,25 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
 
   async function loadProfiles(force = false) {
     await runStaffLoader('profiles', async () => {
+      const rpcResult = await supabase.rpc('profile_search', {
+        p_search: null,
+        p_limit: 500,
+        p_offset: 0,
+        p_role: 'all',
+        p_include_demo: false,
+        p_sort: roleSort,
+      })
+
+      if (!rpcResult.error && rpcResult.data) {
+        setProfiles((rpcResult.data as StaffProfile[]).filter((item) => !isDemoProfile(item)))
+        setPendingRoleChanges({})
+        return
+      }
+
+      if (rpcResult.error && !rpcFunctionMissing(rpcResult.error)) {
+        throw new Error(rpcResult.error.message)
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, nickname, email, phone, role, is_seed_demo, seed_batch')
@@ -2194,6 +2229,28 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
   async function loadOrdersForRange(key: 'today' | 'orders', start: string, end: string, force = false) {
     const [from, to] = orderedRange(start, end)
     await runStaffLoader(key, async () => {
+      const rpcResult = await supabase.rpc('staff_orders_page', {
+        p_start_date: from,
+        p_end_date: to,
+        p_limit: key === 'today' ? 120 : 250,
+        p_offset: 0,
+        p_search: null,
+        p_status: null,
+      })
+
+      if (!rpcResult.error && rpcResult.data) {
+        const { orders: rows, payments } = staffOrdersPageFromRpc(rpcResult.data)
+        setOrders((current) => key === 'orders' ? rows : mergeById(current, rows))
+        setOrderPayments((current) => key === 'orders'
+          ? payments
+          : mergeOrderPayments(current, rows.map((order) => order.id), payments))
+        return
+      }
+
+      if (rpcResult.error && !rpcFunctionMissing(rpcResult.error)) {
+        throw new Error(rpcResult.error.message)
+      }
+
       const { data, error } = await supabase
         .from('staff_orders')
         .select('*')
@@ -2268,18 +2325,30 @@ export default function StaffConsole({ profile, authEmail, language }: StaffCons
 
   async function loadReportData(force = false) {
     await runStaffLoader('report', async () => {
-      const { data, error } = await supabase.rpc('get_staff_daily_report', {
+      const reportArgs = {
         p_start_date: reportStart,
         p_end_date: reportEnd,
         p_compare_start: compareEnabled ? compareStart : null,
         p_compare_end: compareEnabled ? compareEnd : null,
         p_order_limit: 120,
-      })
-      if (error) {
+      }
+      const { data, error } = await supabase.rpc('staff_report_summary', reportArgs)
+      if (!error) {
+        setReportSnapshot(staffReportSnapshotFromRpc(data, text))
+        return
+      }
+
+      if (!rpcFunctionMissing(error)) {
         await loadReportFallback()
         return
       }
-      setReportSnapshot(staffReportSnapshotFromRpc(data, text))
+
+      const legacyResult = await supabase.rpc('get_staff_daily_report', reportArgs)
+      if (legacyResult.error) {
+        await loadReportFallback()
+        return
+      }
+      setReportSnapshot(staffReportSnapshotFromRpc(legacyResult.data, text))
     }, force)
   }
 
