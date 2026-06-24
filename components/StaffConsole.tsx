@@ -2477,6 +2477,17 @@ function accountantSourcePendingRow(columns: string[], context: AccountantExport
   }, {})
 }
 
+function accountantBlankRow(columns: string[]) {
+  return columns.reduce<Record<string, unknown>>((row, column) => {
+    row[column] = ''
+    return row
+  }, {})
+}
+
+function accountantRowsOrBlank(rows: Array<Record<string, unknown>>, columns: string[]) {
+  return rows.length > 0 ? rows : [accountantBlankRow(columns)]
+}
+
 function accountantExportInfoRows(reportTitle: string, context: AccountantExportContext) {
   return [
     { Field: 'Report', Value: reportTitle },
@@ -2489,6 +2500,110 @@ function accountantExportInfoRows(reportTitle: string, context: AccountantExport
 }
 
 function buildAccountantExportRows(reportId: AccountantExportReportId, context: AccountantExportContext) {
+  const eInvoiceColumns = [
+    'Sale ID',
+    'Invoice issued?',
+    'E-invoice number',
+    'Invoice series/template',
+    'Invoice date',
+    'Buyer legal name',
+    'Buyer tax code',
+    'Buyer address',
+    'VAT rate',
+    'Invoice total',
+    'Tax authority code / QR ref',
+    'Invoice status',
+    'Difference vs app sale',
+  ]
+  const paymentColumns = [
+    'Payment ID',
+    'Sale/Booking ID',
+    'Payment date',
+    'Amount',
+    'Method',
+    'Bank account / wallet',
+    'Transaction reference',
+    'Cashier/staff',
+    'Reconciliation status',
+    'Bank fee',
+    'Net received',
+  ]
+  const refundColumns = [
+    'Original sale ID',
+    'Refund ID',
+    'Refund date',
+    'Refund reason',
+    'Amount refunded',
+    'Method',
+    'Approved by',
+    'Related invoice correction?',
+    'Corrected invoice number',
+    'Notes',
+  ]
+  const discountColumns = [
+    'Sale ID',
+    'Promotion name',
+    'Voucher code',
+    'Discount type',
+    'Discount amount',
+    'Approved automatically?',
+    'Manual override by',
+    'Reason',
+  ]
+  const dailyCashColumns = [
+    'Date',
+    'Store',
+    'Opening cash',
+    'Cash sales',
+    'Cash refunds',
+    'Cash expenses paid from drawer',
+    'Expected closing cash',
+    'Actual counted cash',
+    'Difference',
+    'Closed by',
+    'Approved by',
+  ]
+  const vatInputColumns = [
+    'Supplier tax code',
+    'Supplier name',
+    'Invoice number',
+    'Invoice date',
+    'Pre-VAT amount',
+    'VAT rate',
+    'VAT amount',
+    'Total',
+    'Paid by bank?',
+    'Eligible for VAT credit?',
+    'Issue flag',
+  ]
+  const payrollColumns = [
+    'Employee name',
+    'Role',
+    'Month',
+    'Working days',
+    'Hours worked',
+    'Gross salary',
+    'Allowance',
+    'Bonus / commission',
+    'Deductions',
+    'PIT withheld',
+    'Net salary',
+    'Payment date',
+    'Bank account',
+  ]
+  const inventoryColumns = [
+    'SKU',
+    'Product',
+    'Opening stock',
+    'Stock in',
+    'Stock out sold',
+    'Stock out gift',
+    'Damaged/lost',
+    'Closing stock',
+    'Unit cost',
+    'Stock value',
+  ]
+
   if (reportId === 'sales_revenue') {
     return context.orders.map((order) => {
       const paid = orderPaidAmount(order, context.paymentsByOrderId)
@@ -2512,139 +2627,127 @@ function buildAccountantExportRows(reportId: AccountantExportReportId, context: 
   }
 
   if (reportId === 'einvoice_reconciliation') {
-    return context.orders.map((order) => ({
-      Date: order.booking_date,
-      'Order number': order.order_number,
-      Customer: accountantCustomer(order, context.text),
-      'Company name': order.company_name || '',
-      'Tax code': order.tax_code || '',
-      'Invoice email': order.invoice_email || '',
-      'Invoice address': order.invoice_address || '',
-      'Invoice required?': order.invoice_required ? context.text.labels.yes : context.text.labels.no,
-      'Invoice status': order.invoice_status,
-      'External invoice ID': order.external_invoice_id || '',
-      Total: order.total,
-      Ref: order.order_number,
-    }))
+    return accountantRowsOrBlank(context.orders.map((order) => {
+      const invoiceIssued = Boolean(order.external_invoice_id) || order.invoice_status === 'issued'
+      return {
+        'Sale ID': order.order_number,
+        'Invoice issued?': invoiceIssued ? context.text.labels.yes : context.text.labels.no,
+        'E-invoice number': order.external_invoice_id || '',
+        'Invoice series/template': '',
+        'Invoice date': invoiceIssued ? order.booking_date : '',
+        'Buyer legal name': order.company_name || accountantCustomer(order, context.text),
+        'Buyer tax code': order.tax_code || '',
+        'Buyer address': order.invoice_address || '',
+        'VAT rate': '8%',
+        'Invoice total': order.total,
+        'Tax authority code / QR ref': '',
+        'Invoice status': order.invoice_status,
+        'Difference vs app sale': 0,
+      }
+    }), eInvoiceColumns)
   }
 
   if (reportId === 'payments_reconciliation') {
-    return context.orders.flatMap((order) => {
+    return accountantRowsOrBlank(context.orders.flatMap((order) => {
       const payments = staffOrderPaymentRows(order, context.paymentsByOrderId)
       if (payments.length > 0) {
+        const paidTotal = orderPaidAmount(order, context.paymentsByOrderId)
         return payments.map((payment) => ({
-          'Payment date/time': accountantDateTime(payment.created_at),
-          'Order number': order.order_number,
-          Customer: accountantCustomer(order, context.text),
-          Method: paymentMethodLabel(payment.payment_method, context.text),
+          'Payment ID': payment.id,
+          'Sale/Booking ID': order.order_number,
+          'Payment date': payment.created_at.slice(0, 10),
           Amount: payment.amount,
-          'Order total': order.total,
-          'Payment status': paymentStatusLabel(order.payment_status, context.text),
-          'Remaining balance': Math.max(order.total - orderPaidAmount(order, context.paymentsByOrderId), 0),
-          Ref: payment.id,
+          Method: paymentMethodLabel(payment.payment_method, context.text),
+          'Bank account / wallet': payment.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
+          'Transaction reference': '',
+          'Cashier/staff': payment.created_by || '',
+          'Reconciliation status': paidTotal === order.total ? 'Matched' : 'Partial',
+          'Bank fee': '',
+          'Net received': payment.amount,
         }))
       }
       const paid = orderPaidAmount(order, context.paymentsByOrderId)
       return [{
-        'Payment date/time': accountantDateTime(order.created_at),
-        'Order number': order.order_number,
-        Customer: accountantCustomer(order, context.text),
-        Method: paymentMethodLabel(order.payment_method, context.text),
+        'Payment ID': order.order_number ? `PAY-${order.order_number}` : '',
+        'Sale/Booking ID': order.order_number,
+        'Payment date': order.created_at.slice(0, 10),
         Amount: paid,
-        'Order total': order.total,
-        'Payment status': paymentStatusLabel(order.payment_status, context.text),
-        'Remaining balance': Math.max(order.total - paid, 0),
-        Ref: order.order_number,
+        Method: paymentMethodLabel(order.payment_method, context.text),
+        'Bank account / wallet': order.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
+        'Transaction reference': '',
+        'Cashier/staff': order.created_by || '',
+        'Reconciliation status': paid === order.total && paid > 0 ? 'Matched' : paid > 0 ? 'Partial' : 'Unmatched',
+        'Bank fee': '',
+        'Net received': paid,
       }]
-    })
+    }), paymentColumns)
   }
 
   if (reportId === 'refunds_adjustments') {
-    return context.orders
+    return accountantRowsOrBlank(context.orders
       .filter((order) => (
         order.order_status === 'cancelled'
         || order.order_status === 'refunded'
         || order.order_status === 'no_show'
         || order.payment_status === 'refunded'
-        || order.discount_total > 0
       ))
       .map((order) => ({
-        'Date/time': accountantDateTime(order.updated_at || order.created_at),
-        'Order number': order.order_number,
-        Customer: accountantCustomer(order, context.text),
-        Action: order.payment_status === 'refunded' || order.order_status === 'refunded'
-          ? 'Refund'
-          : order.order_status === 'cancelled'
-            ? 'Cancellation'
-            : order.discount_total > 0
-              ? 'Discount adjustment'
-              : context.text.orderStatuses[order.order_status],
-        Before: order.subtotal,
-        Adjustment: order.discount_total > 0 ? -order.discount_total : 0,
-        After: order.total,
-        'Payment status': paymentStatusLabel(order.payment_status, context.text),
-        'Order status': context.text.orderStatuses[order.order_status],
-        Reason: order.internal_note || '',
-        Ref: order.order_number,
-      }))
+        'Original sale ID': order.order_number,
+        'Refund ID': `RF-${order.order_number}`,
+        'Refund date': (order.updated_at || order.created_at).slice(0, 10),
+        'Refund reason': order.internal_note || context.text.orderStatuses[order.order_status],
+        'Amount refunded': orderPaidAmount(order, context.paymentsByOrderId) || order.total,
+        Method: orderPaymentLabel(order, context.paymentsByOrderId, context.text),
+        'Approved by': '',
+        'Related invoice correction?': order.external_invoice_id ? context.text.labels.yes : context.text.labels.no,
+        'Corrected invoice number': '',
+        Notes: paymentStatusLabel(order.payment_status, context.text),
+      })), refundColumns)
   }
 
   if (reportId === 'discounts_vouchers') {
-    const discountRows = context.discounts.map((discount) => ({
-      Source: 'Discount / voucher rule',
-      Code: discount.code || '',
-      Name: discount.name,
-      Type: context.text.discountTypes[discount.discount_type],
-      Value: discount.value,
-      'Value unit': discount.discount_type === 'fixed_amount' ? 'VND' : '%',
-      'Used count': discount.used_count,
-      'Max uses': discount.max_uses ?? '',
-      'Valid from': discount.valid_from,
-      'Valid until': discount.valid_until || '',
-      Active: discount.active ? context.text.active : context.text.inactive,
-      'Order number': '',
-      'Discount amount': '',
-      'Order total': '',
-    }))
-    const orderDiscountRows = context.orders
+    return accountantRowsOrBlank(context.orders
       .filter((order) => order.discount_total > 0 || order.discount_code)
-      .map((order) => ({
-        Source: 'Applied discount',
-        Code: order.discount_code || '',
-        Name: '',
-        Type: '',
-        Value: '',
-        'Value unit': '',
-        'Used count': '',
-        'Max uses': '',
-        'Valid from': '',
-        'Valid until': '',
-        Active: '',
-        'Order number': order.order_number,
-        'Discount amount': order.discount_total,
-        'Order total': order.total,
-      }))
-    return [...discountRows, ...orderDiscountRows]
+      .map((order) => {
+        const discountRule = context.discounts.find((discount) => discount.id === order.discount_rule_id)
+        return {
+          'Sale ID': order.order_number,
+          'Promotion name': discountRule?.name || order.discount_code || '',
+          'Voucher code': order.discount_code || discountRule?.code || '',
+          'Discount type': discountRule ? context.text.discountTypes[discountRule.discount_type] : 'Manual discount',
+          'Discount amount': order.discount_total,
+          'Approved automatically?': order.discount_rule_id ? context.text.labels.yes : context.text.labels.no,
+          'Manual override by': order.discount_rule_id ? '' : order.created_by || '',
+          Reason: order.internal_note || '',
+        }
+      }), discountColumns)
   }
 
   if (reportId === 'daily_cash_closing') {
-    return [{
+    const cashRefunds = context.orders
+      .filter((order) => order.payment_status === 'refunded' || order.order_status === 'refunded')
+      .reduce((sum, order) => {
+        const payments = staffOrderPaymentRows(order, context.paymentsByOrderId)
+        if (payments.length > 0) {
+          return sum + payments
+            .filter((payment) => payment.payment_method === 'cash')
+            .reduce((paymentSum, payment) => paymentSum + payment.amount, 0)
+        }
+        return sum + (order.payment_method === 'cash' ? order.total : 0)
+      }, 0)
+    return accountantRowsOrBlank([{
       Date: rangeLabel(context.reportStart, context.reportEnd),
       Store: context.storeLabel,
+      'Opening cash': '',
       'Cash sales': context.report.cashTotal,
-      'Bank transfer': context.report.bankTransferTotal,
-      'Total paid': context.report.totalPaid,
-      Unpaid: context.report.unpaidAmount,
-      Discounts: context.report.discounts,
-      Bookings: context.report.bookings,
-      Players: context.report.players,
-      Cancelled: context.report.cancelled,
-      'No-shows': context.report.noShows,
-      'Best-selling game': context.report.bestSellingGame,
-      'Cash counted': '',
+      'Cash refunds': cashRefunds,
+      'Cash expenses paid from drawer': '',
+      'Expected closing cash': Math.max(context.report.cashTotal - cashRefunds, 0),
+      'Actual counted cash': '',
       Difference: '',
       'Closed by': '',
-    }]
+      'Approved by': '',
+    }], dailyCashColumns)
   }
 
   if (reportId === 'expenses_purchases') {
@@ -2663,52 +2766,15 @@ function buildAccountantExportRows(reportId: AccountantExportReportId, context: 
   }
 
   if (reportId === 'vat_input_output') {
-    return context.orders.map((order) => {
-      const { net, vat } = accountantVatSplit(order.total)
-      return {
-        Date: order.booking_date,
-        Type: 'Output VAT',
-        'Order number': order.order_number,
-        Customer: accountantCustomer(order, context.text),
-        'Tax code': order.tax_code || '',
-        'Net amount': net,
-        'VAT amount': vat,
-        'Gross total': order.total,
-        'Invoice status': order.invoice_status,
-        Ref: order.external_invoice_id || order.order_number,
-      }
-    })
+    return [accountantBlankRow(vatInputColumns)]
   }
 
   if (reportId === 'payroll_staff') {
-    return [accountantSourcePendingRow([
-      'Staff',
-      'Role',
-      'Work date',
-      'Hours',
-      'Rate',
-      'Gross pay',
-      'Bonus',
-      'Deductions',
-      'Net pay',
-      'Notes',
-    ], context)]
+    return [accountantBlankRow(payrollColumns)]
   }
 
   if (reportId === 'inventory_movement') {
-    return [accountantSourcePendingRow([
-      'SKU',
-      'Product',
-      'Opening stock',
-      'Stock in',
-      'Stock out sold',
-      'Stock out gift',
-      'Damaged/lost',
-      'Closing stock',
-      'Unit cost',
-      'Stock value',
-      'Notes',
-    ], context)]
+    return [accountantBlankRow(inventoryColumns)]
   }
 
   if (reportId === 'deferred_revenue_bookings') {
