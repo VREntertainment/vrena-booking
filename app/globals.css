@@ -1826,12 +1826,14 @@ body {
   z-index: 70;
   top: calc(100% + 8px);
   right: 0;
-  width: min(760px, calc(100vw - 40px));
+  width: min(880px, calc(100vw - 40px));
+  max-height: min(78vh, 760px);
+  overflow: auto;
   display: grid;
-  gap: 12px;
+  gap: 14px;
   border: 1px solid rgba(7, 17, 18, 0.12);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 16px;
   background: #ffffff;
   color: #071112;
   box-shadow: 0 20px 42px rgba(7, 17, 18, 0.2);
@@ -1868,22 +1870,32 @@ body {
   color: #071112;
 }
 
-.app .staff-accountant-export-head button {
+.app .staff-accountant-export-head button.staff-accountant-export-close {
   width: 34px;
   min-height: 34px;
   padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: #637075;
   font-size: 24px;
   line-height: 1;
+  box-shadow: none;
+}
+
+.app .staff-accountant-export-head button.staff-accountant-export-close:hover {
+  background: #eef3f5;
+  color: #071112;
 }
 
 .app .staff-accountant-export-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
 
 .app .staff-accountant-export-grid .staff-report-range-button {
+  grid-column: span 2;
   min-width: 0;
 }
 
@@ -1898,6 +1910,25 @@ body {
   padding: 8px 10px;
   background: #f6f8f9;
   color: #071112;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-accountant-report-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 4px;
+}
+
+.app .staff-accountant-report-heading strong {
+  font-size: 13px;
+}
+
+.app .staff-accountant-report-heading span {
+  color: #637075;
   font-size: 12px;
   font-weight: 900;
 }
@@ -1919,15 +1950,59 @@ body {
 }
 
 .app .staff-accountant-report-list button {
+  position: relative;
   display: grid;
-  gap: 2px;
-  justify-items: start;
+  gap: 3px;
+  justify-items: stretch;
+  min-height: 58px;
+  padding: 10px 36px 10px 12px;
+  border-radius: 9px;
+  background: #f6f8f9;
+  color: #071112;
   text-align: left;
 }
 
+.app .staff-accountant-report-list button strong {
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.app .staff-accountant-report-list button span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-accountant-report-list button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(99, 112, 117, 0.34);
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
 .app .staff-accountant-report-list button.active {
-  border-color: rgba(48, 89, 255, 0.38);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(48, 89, 255, 0.14)), #f7fbff;
+  border-color: rgba(48, 89, 255, 0.5);
+  background: #eef4ff;
+  color: #071112;
+  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.1);
+}
+
+.app .staff-accountant-report-list button.active::after {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  border-color: #3059ff;
+  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .app .staff-accountant-download.primary {
@@ -8090,9 +8165,36 @@ body {
     color: #f6f7f9;
   }
 
+  .app .staff-accountant-export-head button.staff-accountant-export-close {
+    background: transparent;
+    border-color: transparent;
+    color: #aeb9bd;
+  }
+
+  .app .staff-accountant-export-head button.staff-accountant-export-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .app .staff-accountant-report-heading {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .app .staff-accountant-report-heading span {
+    color: #aeb9bd;
+  }
+
+  .app .staff-accountant-report-list button {
+    background: #10191b;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f6f7f9;
+  }
+
   .app .staff-accountant-report-list button.active {
-    border-color: rgba(104, 130, 255, 0.5);
-    background: linear-gradient(135deg, rgba(0, 174, 179, 0.2), rgba(48, 89, 255, 0.24)), #182225;
+    border-color: rgba(104, 130, 255, 0.68);
+    background: #142335;
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.16);
   }
 
   .app .staff-chart-mode button {

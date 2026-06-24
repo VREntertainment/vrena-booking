@@ -4906,7 +4906,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                             <strong>{text.labels.accountantExports}</strong>
                             <span>{text.messages.accountantExportHelp}</span>
                           </div>
-                          <button type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>×</button>
+                          <button className="staff-accountant-export-close" type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>×</button>
                         </div>
                         <div className="staff-accountant-export-grid">
                           <button className="staff-report-range-button compact" type="button" onClick={() => {
@@ -4920,7 +4920,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                             {text.labels.exportStore}
                             <select value={accountantExportStore} onChange={(event) => setAccountantExportStore(event.target.value)}>
                               {accountantExportStores.map((store) => (
-                                <option key={store.id} value={store.id}>{store.label[resolveStaffConsoleLanguage(language)]}</option>
+                                <option key={store.id} value={store.id}>{store.label[accountantExportLanguage]}</option>
                               ))}
                             </select>
                           </label>
@@ -4949,6 +4949,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                             {text.labels.includeAttachments}
                           </label>
                         </div>
+                        <div className="staff-accountant-report-heading">
+                          <strong>{text.labels.exportReport}</strong>
+                          <span>{accountantExportFormat === 'excel' ? '.xlsx' : '.csv'}</span>
+                        </div>
                         <div className="staff-accountant-report-list" role="radiogroup" aria-label={text.labels.exportReport}>
                           {accountantExportReports.map((reportOption) => (
                             <button
@@ -4959,8 +4963,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                               type="button"
                               onClick={() => setAccountantReportId(reportOption.id)}
                             >
-                              <strong>{reportOption.label[resolveStaffConsoleLanguage(language)]}</strong>
-                              <span>{reportOption.fileBase}.xlsx</span>
+                              <strong>{reportOption.label[accountantExportLanguage]}</strong>
+                              <span>{reportOption.fileBase}.{accountantExportFormat === 'excel' ? 'xlsx' : 'csv'}</span>
                             </button>
                           ))}
                         </div>
