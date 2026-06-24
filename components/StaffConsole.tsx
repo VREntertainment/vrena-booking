@@ -2016,15 +2016,6 @@ function sessionCheckedInCount(session: StaffOperationSession) {
   return (session.session_participants || []).filter((participant) => participant.checked_in).length
 }
 
-function htmlCell(value: unknown) {
-  const text = String(value ?? '')
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 function downloadBlob(filename: string, type: string, content: BlobPart) {
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
@@ -2035,30 +2026,261 @@ function downloadBlob(filename: string, type: string, content: BlobPart) {
   URL.revokeObjectURL(url)
 }
 
-function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>, text: StaffConsoleCopy = staffConsoleText.en) {
-  const tables = sections.map((section) => {
-    if (section.rows.length === 0) {
-      return `<h2>${htmlCell(section.title)}</h2><table><tbody><tr><td>${htmlCell(text.noData)}</td></tr></tbody></table>`
-    }
-    const headers = Object.keys(section.rows[0])
-    return `
-      <h2>${htmlCell(section.title)}</h2>
-      <table>
-        <thead><tr>${headers.map((header) => `<th>${htmlCell(header)}</th>`).join('')}</tr></thead>
-        <tbody>${section.rows.map((row) => (
-          `<tr>${headers.map((header) => `<td>${htmlCell(row[header])}</td>`).join('')}</tr>`
-        )).join('')}</tbody>
-      </table>
-    `
+function xmlCell(value: unknown) {
+  return String(value ?? '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function xlsxColumnName(index: number) {
+  let column = ''
+  let value = index
+  while (value > 0) {
+    const remainder = (value - 1) % 26
+    column = String.fromCharCode(65 + remainder) + column
+    value = Math.floor((value - 1) / 26)
+  }
+  return column
+}
+
+function xlsxSafeSheetName(name: string, usedNames: Set<string>) {
+  const cleaned = (name || 'Report').replace(/[\[\]:*?/\\]/g, ' ').replace(/\s+/g, ' ').trim() || 'Report'
+  const base = cleaned.slice(0, 31)
+  let candidate = base
+  let counter = 2
+  while (usedNames.has(candidate.toLowerCase())) {
+    const suffix = ` ${counter}`
+    candidate = `${base.slice(0, Math.max(1, 31 - suffix.length))}${suffix}`
+    counter += 1
+  }
+  usedNames.add(candidate.toLowerCase())
+  return candidate
+}
+
+function xlsxFilename(filename: string) {
+  return filename.replace(/\.(xls|xlsx)$/i, '') + '.xlsx'
+}
+
+function xlsxCellXml(value: unknown, rowIndex: number, columnIndex: number, styleId = 0) {
+  const reference = `${xlsxColumnName(columnIndex)}${rowIndex}`
+  const style = styleId > 0 ? ` s="${styleId}"` : ''
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `<c r="${reference}"${style}><v>${value}</v></c>`
+  }
+  return `<c r="${reference}" t="inlineStr"${style}><is><t>${xmlCell(value)}</t></is></c>`
+}
+
+function xlsxWorksheetXml(rows: Array<Record<string, unknown>>, text: StaffConsoleCopy) {
+  const sourceRows = rows.length > 0 ? rows : [{ note: text.noData }]
+  const sourceHeaders = Array.from(sourceRows.reduce<Set<string>>((keys, row) => {
+    Object.keys(row).forEach((key) => keys.add(key))
+    return keys
+  }, new Set<string>()))
+  const safeRows = sourceHeaders.length > 0 ? sourceRows : [{ note: text.noData }]
+  const headers = sourceHeaders.length > 0 ? sourceHeaders : ['note']
+  const headerRow = `<row r="1">${headers.map((header, index) => xlsxCellXml(header, 1, index + 1, 1)).join('')}</row>`
+  const dataRows = safeRows.map((row, rowIndex) => {
+    const excelRow = rowIndex + 2
+    return `<row r="${excelRow}">${headers.map((header, columnIndex) => xlsxCellXml(row[header], excelRow, columnIndex + 1)).join('')}</row>`
   }).join('')
-  const html = `
-    <!doctype html>
-    <html>
-      <head><meta charset="utf-8" /><style>body{font-family:Arial,sans-serif}h2{margin:18px 0 8px}table{border-collapse:collapse;margin-bottom:18px}th,td{border:1px solid #d7dee2;padding:6px 8px;text-align:left}th{background:#eef3f5}</style></head>
-      <body>${tables}</body>
-    </html>
-  `
-  downloadBlob(filename, 'application/vnd.ms-excel;charset=utf-8;', `\uFEFF${html}`)
+  const columnWidths = headers.map((header, index) => {
+    const maxWidth = Math.min(46, Math.max(
+      String(header).length,
+      ...safeRows.map((row) => String(row[header] ?? '').length)
+    ) + 2)
+    return `<col min="${index + 1}" max="${index + 1}" width="${Math.max(12, maxWidth)}" customWidth="1"/>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <cols>${columnWidths}</cols>
+  <sheetData>${headerRow}${dataRows}</sheetData>
+</worksheet>`
+}
+
+function xlsxWorkbookXml(sheetNames: string[]) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>${sheetNames.map((name, index) => `<sheet name="${xmlCell(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}</sheets>
+</workbook>`
+}
+
+function xlsxWorkbookRels(sheetCount: number) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${Array.from({ length: sheetCount }, (_, index) => (
+    `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`
+  )).join('')}
+  <Relationship Id="rId${sheetCount + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`
+}
+
+function xlsxContentTypes(sheetCount: number) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  ${Array.from({ length: sheetCount }, (_, index) => (
+    `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  )).join('')}
+</Types>`
+}
+
+function xlsxStylesXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2">
+    <font><sz val="11"/><name val="Arial"/></font>
+    <font><b/><sz val="11"/><name val="Arial"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEFF4F7"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="2">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+  </cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`
+}
+
+const xlsxCrcTable = (() => {
+  const table = new Uint32Array(256)
+  for (let index = 0; index < 256; index += 1) {
+    let crc = index
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1)
+    }
+    table[index] = crc >>> 0
+  }
+  return table
+})()
+
+function xlsxCrc32(bytes: Uint8Array) {
+  let crc = 0xFFFFFFFF
+  bytes.forEach((byte) => {
+    crc = xlsxCrcTable[(crc ^ byte) & 0xFF] ^ (crc >>> 8)
+  })
+  return (crc ^ 0xFFFFFFFF) >>> 0
+}
+
+function xlsxUint16(value: number) {
+  return Uint8Array.of(value & 0xFF, (value >>> 8) & 0xFF)
+}
+
+function xlsxUint32(value: number) {
+  return Uint8Array.of(value & 0xFF, (value >>> 8) & 0xFF, (value >>> 16) & 0xFF, (value >>> 24) & 0xFF)
+}
+
+function concatBytes(chunks: Uint8Array[]) {
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+  const output = new Uint8Array(totalLength)
+  let offset = 0
+  chunks.forEach((chunk) => {
+    output.set(chunk, offset)
+    offset += chunk.length
+  })
+  return output
+}
+
+function buildZipFile(files: Array<{ path: string; content: string }>) {
+  const encoder = new TextEncoder()
+  const localFiles: Uint8Array[] = []
+  const centralFiles: Uint8Array[] = []
+  let offset = 0
+
+  files.forEach((file) => {
+    const name = encoder.encode(file.path)
+    const content = encoder.encode(file.content)
+    const crc = xlsxCrc32(content)
+    const localHeader = concatBytes([
+      xlsxUint32(0x04034B50),
+      xlsxUint16(20),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint32(crc),
+      xlsxUint32(content.length),
+      xlsxUint32(content.length),
+      xlsxUint16(name.length),
+      xlsxUint16(0),
+      name,
+      content,
+    ])
+    localFiles.push(localHeader)
+    centralFiles.push(concatBytes([
+      xlsxUint32(0x02014B50),
+      xlsxUint16(20),
+      xlsxUint16(20),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint32(crc),
+      xlsxUint32(content.length),
+      xlsxUint32(content.length),
+      xlsxUint16(name.length),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint16(0),
+      xlsxUint32(0),
+      xlsxUint32(offset),
+      name,
+    ]))
+    offset += localHeader.length
+  })
+
+  const centralDirectory = concatBytes(centralFiles)
+  const endRecord = concatBytes([
+    xlsxUint32(0x06054B50),
+    xlsxUint16(0),
+    xlsxUint16(0),
+    xlsxUint16(files.length),
+    xlsxUint16(files.length),
+    xlsxUint32(centralDirectory.length),
+    xlsxUint32(offset),
+    xlsxUint16(0),
+  ])
+
+  return concatBytes([...localFiles, centralDirectory, endRecord])
+}
+
+function buildXlsxWorkbook(sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>, text: StaffConsoleCopy) {
+  const usedSheetNames = new Set<string>()
+  const sheets = sections.length > 0 ? sections : [{ title: 'Report', rows: [{ note: text.noData }] }]
+  const sheetNames = sheets.map((section) => xlsxSafeSheetName(section.title, usedSheetNames))
+  const files: Array<{ path: string; content: string }> = [
+    { path: '[Content_Types].xml', content: xlsxContentTypes(sheets.length) },
+    { path: '_rels/.rels', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+    { path: 'xl/workbook.xml', content: xlsxWorkbookXml(sheetNames) },
+    { path: 'xl/_rels/workbook.xml.rels', content: xlsxWorkbookRels(sheets.length) },
+    { path: 'xl/styles.xml', content: xlsxStylesXml() },
+    ...sheets.map((section, index) => ({
+      path: `xl/worksheets/sheet${index + 1}.xml`,
+      content: xlsxWorksheetXml(section.rows, text),
+    })),
+  ]
+  return buildZipFile(files)
+}
+
+function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>, text: StaffConsoleCopy = staffConsoleText.en) {
+  downloadBlob(
+    xlsxFilename(filename),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buildXlsxWorkbook(sections, text)
+  )
 }
 
 function csvCell(value: unknown) {
@@ -3703,7 +3925,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   }
 
   function exportExcelReport() {
-    downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xls`, [
+    downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xlsx`, [
       { title: `${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report, text) },
       { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, reportPaymentsByOrderId, text) },
     ], text)
@@ -3741,7 +3963,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       downloadCsv(`${reportDefinition.fileBase}_${suffix}.csv`, rows, exportText)
       return
     }
-    downloadExcel(`${reportDefinition.fileBase}_${suffix}.xls`, [
+    downloadExcel(`${reportDefinition.fileBase}_${suffix}.xlsx`, [
       { title: `${reportDefinition.label[accountantExportLanguage]} ${rangeLabel(reportStart, reportEnd)}`, rows },
     ], exportText)
   }
