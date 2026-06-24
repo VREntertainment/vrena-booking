@@ -1230,8 +1230,7 @@ body {
 .app .staff-price-lines span,
 .app .staff-table span,
 .app .staff-list-item span,
-.app .staff-summary-grid span,
-.app .staff-audit-list span {
+.app .staff-summary-grid span {
   color: #637075;
   font-size: 12px;
 }
@@ -2694,15 +2693,6 @@ body {
     transform: rotate(0) scale(1);
     opacity: 1;
   }
-}
-
-.app .staff-audit-title {
-  margin-top: 8px;
-}
-
-.app .staff-audit-list {
-  display: grid;
-  gap: 6px;
 }
 
 .app .profile-mobile-contact {
@@ -8116,7 +8106,6 @@ body {
   .app .staff-restore-row span,
   .app .staff-restore-row small,
   .app .staff-summary-grid span,
-  .app .staff-audit-list span,
   .app .staff-table th,
   .app .staff-report-graph-head span,
   .app .staff-report-compare-row > span,

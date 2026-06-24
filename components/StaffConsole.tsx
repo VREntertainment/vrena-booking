@@ -221,7 +221,7 @@ type SoftDeletedRecord = {
   delete_reason: string | null
 }
 
-type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'orders' | 'profiles' | 'audit' | 'restore' | 'report'
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'orders' | 'profiles' | 'restore' | 'report'
 
 type StaffReportSummary = {
   totalSales: number
@@ -517,7 +517,6 @@ const staffConsoleText = {
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
       priceRules: 'Price rules',
-      recentAuditLog: 'Recent audit log',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
       reportRange: 'Report range',
@@ -897,7 +896,6 @@ const staffConsoleText = {
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
       priceRules: 'Quy tắc giá',
-      recentAuditLog: 'Nhật ký gần đây',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
       reportRange: 'Khoảng báo cáo',
@@ -3116,7 +3114,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
   const [operationSessions, setOperationSessions] = useState<StaffOperationSession[]>([])
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
-  const [auditLogs, setAuditLogs] = useState<StaffAuditLog[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
@@ -3321,7 +3318,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                   ? loadingData.restore
                   : currentTab === 'orders'
                     ? loadingData.games || loadingData.orders
-                    : loadingData.games || loadingData.audit || loadingData.report
+                    : loadingData.games || loadingData.report
   )
 
   useEffect(() => {
@@ -3350,7 +3347,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
 
   useEffect(() => {
     if (currentTab !== 'report') return
-    void Promise.all([loadGames(), loadAuditLogs(), loadReportData(true)])
+    void Promise.all([loadGames(), loadReportData(true)])
     // Report data is intentionally refreshed only by visible range/filter state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTab, reportStart, reportEnd, compareEnabled, compareStart, compareEnd])
@@ -3462,16 +3459,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     }, force)
   }
 
-  async function loadAuditLogs(force = false) {
-    await runStaffLoader('audit', async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('id, actor_user_id, action, entity_type, entity_id, old_value, new_value, created_at')
-        .order('created_at', { ascending: false })
-        .limit(60)
-      if (error) throw new Error(error.message)
-      setAuditLogs((data ?? []) as StaffAuditLog[])
-    }, force)
+  async function fetchAuditLogs(limit = 60) {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('id, actor_user_id, action, entity_type, entity_id, old_value, new_value, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw new Error(error.message)
+    return (data ?? []) as StaffAuditLog[]
   }
 
   async function loadDeletedRecords(force = false) {
@@ -3697,7 +3692,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       .replace('{order}', order?.order_number || '')
       .replace('{total}', formatVnd(order?.total || quote.total)))
     setBooking(defaultBookingForm())
-    markStaffDataStale('today', 'orders', 'report', 'audit')
+    markStaffDataStale('today', 'orders', 'report')
     setSaving(false)
   }
 
@@ -3918,10 +3913,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     setStatus(error ? error.message : text.messages.orderUpdated)
     if (!error) {
       setOrders((items) => items.map((item) => item.id === order.id ? { ...item, ...patch } : item))
-      markStaffDataStale('today', 'orders', 'report', 'audit')
+      markStaffDataStale('today', 'orders', 'report')
       if (currentTab === 'today') await loadTodayOrders(true)
       if (currentTab === 'orders') await loadRecentOrders(true)
-      if (currentTab === 'report') await Promise.all([loadReportData(true), loadAuditLogs(true)])
+      if (currentTab === 'report') await loadReportData(true)
     }
     setSaving(false)
   }
@@ -3982,7 +3977,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
         delete next[profileId]
         return next
       })
-      markStaffDataStale('profiles', 'audit')
+      markStaffDataStale('profiles')
       setStatus(message)
       setRoleSaveFeedback((current) => ({
         ...current,
@@ -4042,7 +4037,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       setStatus(text.messages.accountDeleted)
       setProfileDeleteDraft(null)
       setProfiles((items) => items.filter((item) => item.id !== profileDeleteDraft.profile.id))
-      markStaffDataStale('profiles', 'restore', 'audit')
+      markStaffDataStale('profiles', 'restore')
       if (currentTab === 'restore') await loadDeletedRecords(true)
     }
     setSaving(false)
@@ -4058,7 +4053,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     })
     setStatus(error ? error.message : text.messages.recordRestored)
     if (!error) {
-      markStaffDataStale('restore', 'profiles', 'audit')
+      markStaffDataStale('restore', 'profiles')
       await Promise.all([loadDeletedRecords(true), loadProfiles(true)])
     }
     setSaving(false)
@@ -4225,10 +4220,19 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     )
   }
 
-  function downloadAccountantExport() {
+  async function downloadAccountantExport() {
     const reportDefinition = accountantExportReports.find((item) => item.id === accountantReportId) || accountantExportReports[0]
     const storeDefinition = accountantExportStores.find((item) => item.id === accountantExportStore) || accountantExportStores[0]
     const exportText = staffConsoleText[accountantExportLanguage]
+    let exportAuditLogs: StaffAuditLog[] = []
+    if (reportDefinition.id === 'audit_trail') {
+      try {
+        exportAuditLogs = await fetchAuditLogs(250)
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : String(error))
+        return
+      }
+    }
     const exportContext: AccountantExportContext = {
       report,
       orders: reportOrders,
@@ -4236,7 +4240,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       paymentsByOrderId: reportPaymentsByOrderId,
       discounts,
       loyaltyRules,
-      auditLogs,
+      auditLogs: exportAuditLogs,
       text: exportText,
       reportStart,
       reportEnd,
@@ -5260,7 +5264,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                             </button>
                           ))}
                         </div>
-                        <button className="primary staff-accountant-download" type="button" onClick={downloadAccountantExport}>
+                        <button className="primary staff-accountant-download" type="button" onClick={() => { void downloadAccountantExport() }}>
                           {text.actions.download}
                         </button>
                       </div>
@@ -5438,12 +5442,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
             </section>
           </div>
           {orderRows(reportOrders, reportPaymentsByOrderId)}
-          <h3 className="staff-audit-title">{text.labels.recentAuditLog}</h3>
-          <div className="staff-audit-list">
-            {auditLogs.map((log) => (
-              <span key={log.id}>{new Date(log.created_at).toLocaleString()} · {log.action} · {log.entity_type}</span>
-            ))}
-          </div>
         </div>
       )}
 
