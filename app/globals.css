@@ -1879,9 +1879,11 @@ body {
   justify-self: end;
 }
 
-.app .staff-report-date-modal {
+.app .login-modal.staff-report-date-modal {
   width: min(1040px, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
   max-height: min(86vh, 920px);
+  box-sizing: border-box;
   overflow: auto;
   padding: 18px;
 }
@@ -1940,6 +1942,7 @@ body {
   display: grid;
   gap: 14px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .app .staff-report-date-inputs,
@@ -1988,11 +1991,13 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  min-width: 0;
 }
 
 .app .staff-report-calendar-month {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .app .staff-report-calendar-month h4 {
@@ -2003,7 +2008,7 @@ body {
 .app .staff-report-calendar-weekdays,
 .app .staff-report-calendar-days {
   display: grid;
-  grid-template-columns: repeat(7, minmax(28px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -2017,6 +2022,7 @@ body {
 .app .staff-report-calendar-day {
   aspect-ratio: 1;
   min-height: 34px;
+  min-width: 0;
   border: 0;
   border-radius: 7px;
   background: #f1f4f6;
