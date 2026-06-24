@@ -12,6 +12,20 @@ type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' 
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
+type AccountantExportFormat = 'excel' | 'csv'
+type AccountantExportReportId =
+  | 'sales_revenue'
+  | 'einvoice_reconciliation'
+  | 'payments_reconciliation'
+  | 'refunds_adjustments'
+  | 'discounts_vouchers'
+  | 'daily_cash_closing'
+  | 'expenses_purchases'
+  | 'vat_input_output'
+  | 'payroll_staff'
+  | 'inventory_movement'
+  | 'deferred_revenue_bookings'
+  | 'audit_trail'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
 type StaffAudience = 'family_friendly' | 'scary' | 'fun' | 'quest' | 'teamwork' | 'beginner_friendly' | 'competitive'
@@ -328,6 +342,7 @@ const staffConsoleText = {
       cancel: 'Cancel',
       confirmDeleteAccount: 'Delete account',
       deleteAccount: 'Delete account',
+      download: 'Download',
       saveDiscount: 'Save discount',
       saveGame: 'Save game',
       saveLoyaltyRule: 'Save loyalty rule',
@@ -415,8 +430,10 @@ const staffConsoleText = {
     labels: {
       actions: 'Actions',
       active: 'Active',
+      accountantExports: 'Accountant exports',
       arena: 'Arena',
       arenaIds: 'Arena IDs',
+      attachmentList: 'Attachment list',
       bankTransfer: 'Bank transfer',
       bestSellingGame: 'Best-selling game',
       bookings: 'Bookings',
@@ -454,6 +471,10 @@ const staffConsoleText = {
       email: 'E-mail',
       end: 'End',
       endDate: 'End date',
+      exportFormat: 'Format',
+      exportLanguage: 'Language',
+      exportReport: 'Report',
+      exportStore: 'Store / location',
       filterByRole: 'Filter by role',
       game: 'Game',
       guideGameplay: 'GamePlay',
@@ -463,6 +484,7 @@ const staffConsoleText = {
       gamePhoto: 'Game photo',
       games: 'Games',
       imageUrl: 'Image URL',
+      includeAttachments: 'Include attachments list',
       internalNote: 'Internal note',
       maxPlayersArena: 'Max players / arena',
       maxUses: 'Max uses',
@@ -470,6 +492,7 @@ const staffConsoleText = {
       name: 'Name',
       newBooking: 'New booking',
       noLinkedOrder: 'No linked order',
+      no: 'No',
       noShows: 'No-shows',
       notes: 'Notes',
       order: 'Order',
@@ -527,6 +550,7 @@ const staffConsoleText = {
       validUntilHelp: 'optional, by default forever',
       voucherCodeRequired: 'Voucher code *',
       vouchers: 'Vouchers',
+      yes: 'Yes',
     },
     loyaltyCalculation: {
       per_booking: 'Per booking',
@@ -542,6 +566,8 @@ const staffConsoleText = {
       accountDeleted: 'Account deleted.',
       accountDeleting: 'Deleting account...',
       accountDeleteConfirmationHelp: 'Write DELETE exactly to unlock this action.',
+      accountantExportHelp: 'Choose filters, report type, and format, then download.',
+      accountantExportSourcePending: 'Detailed source table is not configured yet. This export includes the available report summary for the selected range.',
       discountSaved: 'Discount saved.',
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
@@ -696,6 +722,7 @@ const staffConsoleText = {
       cancel: 'Hủy',
       confirmDeleteAccount: 'Xóa tài khoản',
       deleteAccount: 'Xóa tài khoản',
+      download: 'Tải xuống',
       saveDiscount: 'Lưu ưu đãi',
       saveGame: 'Lưu trò chơi',
       saveLoyaltyRule: 'Lưu quy tắc điểm',
@@ -783,8 +810,10 @@ const staffConsoleText = {
     labels: {
       actions: 'Thao tác',
       active: 'Đang bật',
+      accountantExports: 'Xuất kế toán',
       arena: 'Arena',
       arenaIds: 'Mã arena',
+      attachmentList: 'Danh sách chứng từ',
       bankTransfer: 'Chuyển khoản',
       bestSellingGame: 'Trò chơi bán chạy nhất',
       bookings: 'Đặt chỗ',
@@ -822,6 +851,10 @@ const staffConsoleText = {
       email: 'E-mail',
       end: 'Kết thúc',
       endDate: 'Ngày kết thúc',
+      exportFormat: 'Định dạng',
+      exportLanguage: 'Ngôn ngữ',
+      exportReport: 'Báo cáo',
+      exportStore: 'Cơ sở',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
       guideGameplay: 'GamePlay',
@@ -831,6 +864,7 @@ const staffConsoleText = {
       gamePhoto: 'Ảnh trò chơi',
       games: 'Trò chơi',
       imageUrl: 'URL ảnh',
+      includeAttachments: 'Kèm danh sách chứng từ',
       internalNote: 'Ghi chú nội bộ',
       maxPlayersArena: 'Số người tối đa / arena',
       maxUses: 'Số lần dùng tối đa',
@@ -838,6 +872,7 @@ const staffConsoleText = {
       name: 'Tên',
       newBooking: 'Đặt chỗ mới',
       noLinkedOrder: 'Chưa có đơn liên kết',
+      no: 'Không',
       noShows: 'Không đến',
       notes: 'Ghi chú',
       order: 'Đơn',
@@ -895,6 +930,7 @@ const staffConsoleText = {
       validUntilHelp: 'không bắt buộc, mặc định là mãi mãi',
       voucherCodeRequired: 'Mã voucher *',
       vouchers: 'Voucher',
+      yes: 'Có',
     },
     loyaltyCalculation: {
       per_booking: 'Theo mỗi đặt chỗ',
@@ -910,6 +946,8 @@ const staffConsoleText = {
       accountDeleted: 'Đã xóa tài khoản.',
       accountDeleting: 'Đang xóa tài khoản...',
       accountDeleteConfirmationHelp: 'Nhập chính xác DELETE để mở khóa thao tác này.',
+      accountantExportHelp: 'Chọn bộ lọc, loại báo cáo và định dạng, rồi tải xuống.',
+      accountantExportSourcePending: 'Bảng dữ liệu chi tiết chưa được cấu hình. File này gồm phần tóm tắt báo cáo đang có cho khoảng đã chọn.',
       discountSaved: 'Đã lưu ưu đãi.',
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
@@ -1012,6 +1050,32 @@ const staffConsoleText = {
 } as const
 
 type StaffConsoleCopy = (typeof staffConsoleText)[StaffConsoleLanguage]
+
+const accountantExportReports = [
+  { id: 'sales_revenue', fileBase: 'Sales_Revenue_Report', label: { en: 'Sales revenue', vi: 'Doanh thu bán hàng' } },
+  { id: 'einvoice_reconciliation', fileBase: 'EInvoice_Reconciliation', label: { en: 'E-invoice reconciliation', vi: 'Đối soát hóa đơn điện tử' } },
+  { id: 'payments_reconciliation', fileBase: 'Payments_Reconciliation', label: { en: 'Payments reconciliation', vi: 'Đối soát thanh toán' } },
+  { id: 'refunds_adjustments', fileBase: 'Refunds_Adjustments', label: { en: 'Refunds and adjustments', vi: 'Hoàn tiền và điều chỉnh' } },
+  { id: 'discounts_vouchers', fileBase: 'Discounts_Vouchers', label: { en: 'Discounts and vouchers', vi: 'Ưu đãi và voucher' } },
+  { id: 'daily_cash_closing', fileBase: 'Daily_Cash_Closing', label: { en: 'Daily cash closing', vi: 'Chốt quỹ hằng ngày' } },
+  { id: 'expenses_purchases', fileBase: 'Expenses_Purchases', label: { en: 'Expenses and purchases', vi: 'Chi phí và mua hàng' } },
+  { id: 'vat_input_output', fileBase: 'VAT_Input_Output_Summary', label: { en: 'VAT input/output summary', vi: 'Tóm tắt VAT đầu vào/đầu ra' } },
+  { id: 'payroll_staff', fileBase: 'Payroll_Staff_Report', label: { en: 'Payroll and staff', vi: 'Lương và nhân sự' } },
+  { id: 'inventory_movement', fileBase: 'Inventory_Movement', label: { en: 'Inventory movement', vi: 'Biến động tồn kho' } },
+  { id: 'deferred_revenue_bookings', fileBase: 'Deferred_Revenue_Bookings', label: { en: 'Deferred revenue bookings', vi: 'Doanh thu chưa thực hiện' } },
+  { id: 'audit_trail', fileBase: 'Audit_Trail', label: { en: 'Audit trail', vi: 'Nhật ký kiểm toán' } },
+] satisfies Array<{
+  id: AccountantExportReportId
+  fileBase: string
+  label: Record<StaffConsoleLanguage, string>
+}>
+
+const accountantExportFormats: AccountantExportFormat[] = ['excel', 'csv']
+const accountantExportLanguages: StaffConsoleLanguage[] = ['vi', 'en']
+const accountantExportStores = [
+  { id: 'all', label: { en: 'All stores', vi: 'Tất cả cơ sở' } },
+  { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
+] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
 
 function resolveStaffConsoleLanguage(language?: string): StaffConsoleLanguage {
   return language === 'vi' ? 'vi' : 'en'
@@ -1997,6 +2061,25 @@ function downloadExcel(filename: string, sections: Array<{ title: string; rows: 
   downloadBlob(filename, 'application/vnd.ms-excel;charset=utf-8;', `\uFEFF${html}`)
 }
 
+function csvCell(value: unknown) {
+  const text = String(value ?? '').replace(/\r?\n/g, ' ')
+  if (/[",]/.test(text)) return `"${text.replace(/"/g, '""')}"`
+  return text
+}
+
+function downloadCsv(filename: string, rows: Array<Record<string, unknown>>, text: StaffConsoleCopy = staffConsoleText.en) {
+  const safeRows = rows.length > 0 ? rows : [{ note: text.noData }]
+  const headers = Array.from(safeRows.reduce<Set<string>>((keys, row) => {
+    Object.keys(row).forEach((key) => keys.add(key))
+    return keys
+  }, new Set<string>()))
+  const csv = [
+    headers.map(csvCell).join(','),
+    ...safeRows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
+  ].join('\n')
+  downloadBlob(filename, 'text/csv;charset=utf-8;', `\uFEFF${csv}`)
+}
+
 function pdfSafeText(value: unknown) {
   return String(value ?? '')
     .replace(/[đ₫]/gi, 'VND')
@@ -2092,6 +2175,181 @@ function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], payments
     payment_status: paymentStatusLabel(order.payment_status, text),
     order_status: text.orderStatuses[order.order_status],
   }))
+}
+
+type AccountantExportContext = {
+  report: StaffReportSummary
+  orders: StaffOrder[]
+  games: StaffGame[]
+  paymentsByOrderId: Map<string, StaffOrderPayment[]>
+  discounts: StaffDiscount[]
+  loyaltyRules: StaffLoyaltyRule[]
+  auditLogs: StaffAuditLog[]
+  text: StaffConsoleCopy
+  reportStart: string
+  reportEnd: string
+  storeLabel: string
+  language: StaffConsoleLanguage
+  includeAttachments: boolean
+}
+
+function withAccountantMeta(row: Record<string, unknown>, context: AccountantExportContext) {
+  return {
+    period: rangeLabel(context.reportStart, context.reportEnd),
+    store: context.storeLabel,
+    language: context.language.toUpperCase(),
+    attachments_included: context.includeAttachments ? context.text.labels.yes : context.text.labels.no,
+    ...row,
+  }
+}
+
+function accountantNoDetailedSourceRows(context: AccountantExportContext) {
+  return staffReportRows(context.report, context.text).map((row) => withAccountantMeta({
+    note: context.text.messages.accountantExportSourcePending,
+    metric: row.metric,
+    value: row.value,
+  }, context))
+}
+
+function buildAccountantExportRows(reportId: AccountantExportReportId, context: AccountantExportContext) {
+  const orderRows = staffOrderExportRows(context.orders, context.games, context.paymentsByOrderId, context.text)
+
+  if (reportId === 'sales_revenue') {
+    return [
+      ...staffReportRows(context.report, context.text).map((row) => withAccountantMeta({
+        section: context.text.labels.summary,
+        metric: row.metric,
+        value: row.value,
+      }, context)),
+      ...orderRows.map((row) => withAccountantMeta({ section: context.text.labels.orders, ...row }, context)),
+    ]
+  }
+
+  if (reportId === 'einvoice_reconciliation') {
+    return context.orders.map((order) => withAccountantMeta({
+      order_number: order.order_number,
+      customer: order.customer_name || order.customer_phone || order.customer_email || context.text.walkIn,
+      booking_date: order.booking_date,
+      total: formatVnd(order.total),
+      invoice_required: order.invoice_required ? context.text.labels.yes : context.text.labels.no,
+      invoice_status: order.invoice_status,
+      company_name: order.company_name || '',
+      tax_code: order.tax_code || '',
+      invoice_email: order.invoice_email || '',
+      external_invoice_id: order.external_invoice_id || '',
+    }, context))
+  }
+
+  if (reportId === 'payments_reconciliation') {
+    return context.orders.map((order) => {
+      const paid = orderPaidAmount(order, context.paymentsByOrderId)
+      return withAccountantMeta({
+        order_number: order.order_number,
+        booking_date: order.booking_date,
+        payment_method: orderPaymentLabel(order, context.paymentsByOrderId, context.text),
+        payment_status: paymentStatusLabel(order.payment_status, context.text),
+        total: formatVnd(order.total),
+        paid_amount: formatVnd(paid),
+        remaining: formatVnd(Math.max(order.total - paid, 0)),
+      }, context)
+    })
+  }
+
+  if (reportId === 'refunds_adjustments') {
+    const adjustedOrders = context.orders.filter((order) => (
+      order.order_status === 'cancelled'
+      || order.order_status === 'refunded'
+      || order.order_status === 'no_show'
+      || order.payment_status === 'refunded'
+      || order.discount_total > 0
+    ))
+    return (adjustedOrders.length > 0 ? adjustedOrders : context.orders.filter((order) => order.discount_total > 0)).map((order) => withAccountantMeta({
+      order_number: order.order_number,
+      booking_date: order.booking_date,
+      order_status: context.text.orderStatuses[order.order_status],
+      payment_status: paymentStatusLabel(order.payment_status, context.text),
+      discount: formatVnd(order.discount_total),
+      total: formatVnd(order.total),
+      note: order.internal_note || '',
+    }, context))
+  }
+
+  if (reportId === 'discounts_vouchers') {
+    const discountRows = context.discounts.map((discount) => withAccountantMeta({
+      section: context.text.labels.discounts,
+      code: discount.code || '',
+      name: discount.name,
+      type: context.text.discountTypes[discount.discount_type],
+      value: discount.discount_type === 'fixed_amount' ? formatVnd(discount.value) : `${discount.value}%`,
+      used_count: discount.used_count,
+      max_uses: discount.max_uses ?? '',
+      active: discount.active ? context.text.active : context.text.inactive,
+    }, context))
+    const orderDiscountRows = context.orders
+      .filter((order) => order.discount_total > 0 || order.discount_code)
+      .map((order) => withAccountantMeta({
+        section: context.text.labels.orders,
+        order_number: order.order_number,
+        discount_code: order.discount_code || '',
+        discount: formatVnd(order.discount_total),
+        total: formatVnd(order.total),
+      }, context))
+    return discountRows.length > 0 || orderDiscountRows.length > 0
+      ? [...discountRows, ...orderDiscountRows]
+      : [withAccountantMeta({ note: context.text.noData }, context)]
+  }
+
+  if (reportId === 'daily_cash_closing') {
+    return [
+      { metric: context.text.labels.cash, value: formatVnd(context.report.cashTotal) },
+      { metric: context.text.labels.bankTransfer, value: formatVnd(context.report.bankTransferTotal) },
+      { metric: context.text.labels.totalPaid, value: formatVnd(context.report.totalPaid) },
+      { metric: context.text.unpaid, value: formatVnd(context.report.unpaidAmount) },
+      { metric: context.text.labels.bookings, value: context.report.bookings },
+      { metric: context.text.labels.players, value: context.report.players },
+      { metric: context.text.labels.discounts, value: formatVnd(context.report.discounts) },
+    ].map((row) => withAccountantMeta(row, context))
+  }
+
+  if (reportId === 'deferred_revenue_bookings') {
+    const deferredOrders = context.orders.filter((order) => (
+      order.payment_status !== 'paid'
+      || order.order_status === 'draft'
+      || order.order_status === 'confirmed'
+      || order.booking_date > todayString()
+    ))
+    return deferredOrders.map((order) => withAccountantMeta({
+      order_number: order.order_number,
+      booking_date: order.booking_date,
+      payment_status: paymentStatusLabel(order.payment_status, context.text),
+      order_status: context.text.orderStatuses[order.order_status],
+      total: formatVnd(order.total),
+      paid_amount: formatVnd(orderPaidAmount(order, context.paymentsByOrderId)),
+      deferred_amount: formatVnd(Math.max(order.total - orderPaidAmount(order, context.paymentsByOrderId), 0)),
+    }, context))
+  }
+
+  if (reportId === 'audit_trail') {
+    return context.auditLogs.map((log) => withAccountantMeta({
+      created_at: new Date(log.created_at).toLocaleString(),
+      actor_user_id: log.actor_user_id || '',
+      action: log.action,
+      entity_type: log.entity_type,
+      entity_id: log.entity_id || '',
+    }, context))
+  }
+
+  if (reportId === 'payroll_staff') {
+    return context.loyaltyRules.map((rule) => withAccountantMeta({
+      note: context.text.messages.accountantExportSourcePending,
+      rule_name: rule.rule_name,
+      calculation: context.text.loyaltyCalculation[rule.calculation_type],
+      points: rule.points_value,
+      active: rule.active ? context.text.active : context.text.inactive,
+    }, context))
+  }
+
+  return accountantNoDetailedSourceRows(context)
 }
 
 function reportPdfLines(
@@ -2366,6 +2624,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   const [reportDatePickerOpen, setReportDatePickerOpen] = useState(false)
   const [reportDatePickerTarget, setReportDatePickerTarget] = useState<'report' | 'compare'>('report')
   const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
+  const [accountantExportOpen, setAccountantExportOpen] = useState(false)
+  const [accountantExportFormat, setAccountantExportFormat] = useState<AccountantExportFormat>('excel')
+  const [accountantExportLanguage, setAccountantExportLanguage] = useState<StaffConsoleLanguage>(() => resolveStaffConsoleLanguage(language))
+  const [accountantExportStore, setAccountantExportStore] = useState(accountantExportStores[0].id)
+  const [accountantIncludeAttachments, setAccountantIncludeAttachments] = useState(false)
+  const [accountantReportId, setAccountantReportId] = useState<AccountantExportReportId>('sales_revenue')
   const [status, setStatus] = useState('')
   const [loadingData, setLoadingData] = useState<Partial<Record<StaffDataKey, boolean>>>({})
   const loadedDataRef = useRef<Partial<Record<StaffDataKey, boolean>>>({})
@@ -3453,6 +3717,35 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     )
   }
 
+  function downloadAccountantExport() {
+    const reportDefinition = accountantExportReports.find((item) => item.id === accountantReportId) || accountantExportReports[0]
+    const storeDefinition = accountantExportStores.find((item) => item.id === accountantExportStore) || accountantExportStores[0]
+    const exportText = staffConsoleText[accountantExportLanguage]
+    const rows = buildAccountantExportRows(reportDefinition.id, {
+      report,
+      orders: reportOrders,
+      games,
+      paymentsByOrderId: reportPaymentsByOrderId,
+      discounts,
+      loyaltyRules,
+      auditLogs,
+      text: exportText,
+      reportStart,
+      reportEnd,
+      storeLabel: storeDefinition.label[accountantExportLanguage],
+      language: accountantExportLanguage,
+      includeAttachments: accountantIncludeAttachments,
+    })
+    const suffix = `${reportStart}_${reportEnd}`
+    if (accountantExportFormat === 'csv') {
+      downloadCsv(`${reportDefinition.fileBase}_${suffix}.csv`, rows, exportText)
+      return
+    }
+    downloadExcel(`${reportDefinition.fileBase}_${suffix}.xls`, [
+      { title: `${reportDefinition.label[accountantExportLanguage]} ${rangeLabel(reportStart, reportEnd)}`, rows },
+    ], exportText)
+  }
+
   function updateBookingPaymentSplit(splitId: string, patch: Partial<PaymentSplitDraft>) {
     setBooking((current) => ({
       ...current,
@@ -4376,6 +4669,85 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
                 <div className="staff-report-export-actions">
                   <button type="button" onClick={exportExcelReport}>{text.actions.excel}</button>
                   <button type="button" onClick={exportPdfReport}>{text.actions.pdf}</button>
+                  <div className="staff-accountant-export">
+                    <button
+                      className={accountantExportOpen ? 'active' : ''}
+                      type="button"
+                      onClick={() => setAccountantExportOpen((open) => !open)}
+                    >
+                      {text.labels.accountantExports}
+                    </button>
+                    {accountantExportOpen && (
+                      <div className="staff-accountant-export-panel">
+                        <div className="staff-accountant-export-head">
+                          <div>
+                            <strong>{text.labels.accountantExports}</strong>
+                            <span>{text.messages.accountantExportHelp}</span>
+                          </div>
+                          <button type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>×</button>
+                        </div>
+                        <div className="staff-accountant-export-grid">
+                          <button className="staff-report-range-button compact" type="button" onClick={() => {
+                            setReportDatePickerTarget('report')
+                            setReportDatePickerOpen(true)
+                          }}>
+                            <span>{text.labels.dateRange}</span>
+                            <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+                          </button>
+                          <label>
+                            {text.labels.exportStore}
+                            <select value={accountantExportStore} onChange={(event) => setAccountantExportStore(event.target.value)}>
+                              {accountantExportStores.map((store) => (
+                                <option key={store.id} value={store.id}>{store.label[resolveStaffConsoleLanguage(language)]}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            {text.labels.exportFormat}
+                            <select value={accountantExportFormat} onChange={(event) => setAccountantExportFormat(event.target.value as AccountantExportFormat)}>
+                              {accountantExportFormats.map((format) => (
+                                <option key={format} value={format}>{format === 'excel' ? text.actions.excel : 'CSV'}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            {text.labels.exportLanguage}
+                            <select value={accountantExportLanguage} onChange={(event) => setAccountantExportLanguage(event.target.value as StaffConsoleLanguage)}>
+                              {accountantExportLanguages.map((item) => (
+                                <option key={item} value={item}>{item === 'vi' ? 'Tiếng Việt' : 'English'}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="staff-accountant-export-check">
+                            <input
+                              type="checkbox"
+                              checked={accountantIncludeAttachments}
+                              onChange={(event) => setAccountantIncludeAttachments(event.target.checked)}
+                            />
+                            {text.labels.includeAttachments}
+                          </label>
+                        </div>
+                        <div className="staff-accountant-report-list" role="radiogroup" aria-label={text.labels.exportReport}>
+                          {accountantExportReports.map((reportOption) => (
+                            <button
+                              aria-checked={accountantReportId === reportOption.id}
+                              className={accountantReportId === reportOption.id ? 'active' : ''}
+                              key={reportOption.id}
+                              role="radio"
+                              type="button"
+                              onClick={() => setAccountantReportId(reportOption.id)}
+                            >
+                              <strong>{reportOption.label[resolveStaffConsoleLanguage(language)]}</strong>
+                              <span>{reportOption.fileBase}.xlsx</span>
+                            </button>
+                          ))}
+                        </div>
+                        <button className="primary staff-accountant-download" type="button" onClick={downloadAccountantExport}>
+                          {text.actions.download}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               {compareEnabled && (
