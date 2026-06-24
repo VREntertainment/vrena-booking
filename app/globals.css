@@ -1769,7 +1769,7 @@ body {
   font-size: 12px;
 }
 
-.app .staff-report-filter-row button,
+.app .staff-report-filter-row button:not(.staff-report-range-button),
 .app .staff-report-export-actions button,
 .app .staff-chart-mode button.active {
   background: linear-gradient(90deg, #00aeb3, #3059ff);
@@ -1840,6 +1840,235 @@ body {
   width: auto;
   min-width: 0;
   min-height: 0;
+}
+
+.app .staff-report-range-button {
+  min-height: 40px;
+  min-width: 170px;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  border: 1px solid rgba(7, 17, 18, 0.14);
+  border-radius: 8px;
+  background: #eef3f5;
+  color: #071112;
+  padding: 7px 12px;
+  text-align: left;
+}
+
+.app .staff-report-range-button span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.app .staff-report-range-button strong {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.app .staff-report-range-button.compact {
+  min-width: 220px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.app .staff-report-range-button.compact strong {
+  justify-self: end;
+}
+
+.app .staff-report-date-modal {
+  width: min(1040px, calc(100vw - 28px));
+  max-height: min(86vh, 920px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.app .staff-report-date-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 40px;
+}
+
+.app .staff-report-date-modal-head h3 {
+  margin: 0 0 4px;
+}
+
+.app .staff-report-date-modal-head p {
+  margin: 0;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-report-date-modal-body {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.34fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.app .staff-report-date-presets {
+  display: grid;
+  align-content: start;
+  border-right: 1px solid rgba(7, 17, 18, 0.08);
+  padding-right: 12px;
+}
+
+.app .staff-report-date-presets button {
+  min-height: 44px;
+  justify-content: flex-start;
+  border: 0;
+  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 0;
+  background: transparent;
+  color: #637075;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.app .staff-report-date-presets button.active {
+  background: #eef6ff;
+  color: #3059ff;
+}
+
+.app .staff-report-date-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.app .staff-report-date-inputs,
+.app .staff-report-date-compare-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app .staff-report-date-inputs label,
+.app .staff-report-date-compare-fields label {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-report-date-inputs label > span,
+.app .staff-report-date-compare-fields label > span {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-report-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .staff-report-calendar-nav button {
+  width: 34px;
+  min-height: 34px;
+  border-radius: 999px;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0;
+}
+
+.app .staff-report-calendar-nav span {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-report-calendar-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.app .staff-report-calendar-month {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-report-calendar-month h4 {
+  margin: 0;
+  text-align: center;
+}
+
+.app .staff-report-calendar-weekdays,
+.app .staff-report-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(28px, 1fr));
+  gap: 4px;
+}
+
+.app .staff-report-calendar-weekdays span {
+  color: #7b858b;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .staff-report-calendar-day {
+  aspect-ratio: 1;
+  min-height: 34px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f4f6;
+  color: #071112;
+  padding: 0;
+}
+
+.app .staff-report-calendar-day.outside {
+  opacity: 0.35;
+}
+
+.app .staff-report-calendar-day.in-range {
+  background: #dbeeff;
+}
+
+.app .staff-report-calendar-day.range-edge {
+  background: #0b6edb;
+  color: #ffffff;
+}
+
+.app .staff-report-calendar-day.compare-range {
+  box-shadow: inset 0 0 0 2px rgba(0, 174, 179, 0.36);
+}
+
+.app .staff-report-calendar-day.compare-edge {
+  box-shadow: inset 0 0 0 2px #00aeb3;
+}
+
+.app .staff-report-date-compare {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 12px;
+}
+
+.app .staff-report-date-compare-fields {
+  grid-template-columns: minmax(180px, 0.8fr) repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.app .staff-report-date-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  margin-top: 16px;
+  padding-top: 14px;
+}
+
+.app .staff-report-date-modal-actions button {
+  min-height: 40px;
+  padding: 8px 14px;
 }
 
 .app .staff-summary-grid {
@@ -6571,11 +6800,37 @@ body {
     justify-content: flex-start;
   }
 
+  .app .staff-report-range-button {
+    flex: 1 1 210px;
+  }
+
   .app .staff-report-filter-row input,
   .app .staff-report-compare-row input,
   .app .staff-report-filter-row .staff-picker-shell,
   .app .staff-report-compare-row .staff-picker-shell {
     flex: 1 1 150px;
+  }
+
+  .app .staff-report-date-modal-head,
+  .app .staff-report-date-modal-body {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-presets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+    padding-right: 0;
+    padding-bottom: 10px;
+  }
+
+  .app .staff-report-calendar-months {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-compare-fields {
+    grid-template-columns: 1fr;
   }
 
   .app .staff-summary-grid {
@@ -7595,6 +7850,10 @@ body {
   .app .staff-audience-option,
   .app .staff-arena-option,
   .app .staff-game-active-toggle,
+  .app .staff-report-range-button,
+  .app .staff-report-date-modal,
+  .app .staff-report-date-presets button,
+  .app .staff-report-calendar-day,
   .app .staff-report-bar-track,
   .app .staff-payment-track,
   .app .staff-report-compare-label,
@@ -7633,6 +7892,12 @@ body {
   .app .staff-table th,
   .app .staff-report-graph-head span,
   .app .staff-report-compare-row > span,
+  .app .staff-report-range-button span,
+  .app .staff-report-date-modal-head p,
+  .app .staff-report-date-inputs label > span,
+  .app .staff-report-date-compare-fields label > span,
+  .app .staff-report-calendar-nav span,
+  .app .staff-report-calendar-weekdays span,
   .app .staff-report-curve-legend,
   .app .staff-comparison-list small,
   .app .staff-report-bar-group small {
@@ -7656,7 +7921,7 @@ body {
     border-color: rgba(255, 255, 255, 0.1);
   }
 
-  .app .staff-report-filter-row button,
+  .app .staff-report-filter-row button:not(.staff-report-range-button),
   .app .staff-report-export-actions button,
   .app .staff-chart-mode button.active {
     background: linear-gradient(90deg, #00aeb3, #3059ff);
@@ -7675,6 +7940,27 @@ body {
 
   .app .staff-picker-shell.placeholder {
     color: #8a9498;
+  }
+
+  .app .staff-report-date-presets button.active {
+    background: rgba(48, 89, 255, 0.2);
+    color: #c7d5ff;
+  }
+
+  .app .staff-report-calendar-day.in-range {
+    background: rgba(48, 89, 255, 0.22);
+    color: #f6f7f9;
+  }
+
+  .app .staff-report-calendar-day.range-edge {
+    background: #3059ff;
+    color: #ffffff;
+  }
+
+  .app .staff-report-date-presets,
+  .app .staff-report-date-compare,
+  .app .staff-report-date-modal-actions {
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .app .staff-report-pie {
