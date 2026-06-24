@@ -25,6 +25,7 @@ type AccountantExportReportId =
   | 'payroll_staff'
   | 'inventory_movement'
   | 'deferred_revenue_bookings'
+  | 'accountant_journal'
   | 'audit_trail'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
@@ -206,6 +207,8 @@ type StaffAuditLog = {
   action: string
   entity_type: string
   entity_id: string | null
+  old_value?: unknown
+  new_value?: unknown
   created_at: string
 }
 
@@ -1063,6 +1066,7 @@ const accountantExportReports = [
   { id: 'payroll_staff', fileBase: 'Payroll_Staff_Report', label: { en: 'Payroll and staff', vi: 'Lương và nhân sự' } },
   { id: 'inventory_movement', fileBase: 'Inventory_Movement', label: { en: 'Inventory movement', vi: 'Biến động tồn kho' } },
   { id: 'deferred_revenue_bookings', fileBase: 'Deferred_Revenue_Bookings', label: { en: 'Deferred revenue bookings', vi: 'Doanh thu chưa thực hiện' } },
+  { id: 'accountant_journal', fileBase: 'Accountant_Journal_Export', label: { en: 'Accountant journal', vi: 'Bút toán kế toán' } },
   { id: 'audit_trail', fileBase: 'Audit_Trail', label: { en: 'Audit trail', vi: 'Nhật ký kiểm toán' } },
 ] satisfies Array<{
   id: AccountantExportReportId
@@ -2094,11 +2098,14 @@ function xlsxWorksheetXml(rows: Array<Record<string, unknown>>, text: StaffConso
     ) + 2)
     return `<col min="${index + 1}" max="${index + 1}" width="${Math.max(12, maxWidth)}" customWidth="1"/>`
   }).join('')
+  const filterRef = `A1:${xlsxColumnName(headers.length)}${safeRows.length + 1}`
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
   <cols>${columnWidths}</cols>
   <sheetData>${headerRow}${dataRows}</sheetData>
+  <autoFilter ref="${filterRef}"/>
 </worksheet>`
 }
 
@@ -2415,163 +2422,376 @@ type AccountantExportContext = {
   includeAttachments: boolean
 }
 
-function withAccountantMeta(row: Record<string, unknown>, context: AccountantExportContext) {
-  return {
-    period: rangeLabel(context.reportStart, context.reportEnd),
-    store: context.storeLabel,
-    language: context.language.toUpperCase(),
-    attachments_included: context.includeAttachments ? context.text.labels.yes : context.text.labels.no,
-    ...row,
+function accountantCustomer(order: StaffOrder, text: StaffConsoleCopy) {
+  return order.customer_name || order.customer_phone || order.customer_email || text.walkIn
+}
+
+function accountantGameName(order: StaffOrder, games: StaffGame[]) {
+  return games.find((game) => game.id === order.game_id)?.name || ''
+}
+
+function accountantDateTime(value: string | null | undefined) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return `${dateInputValue(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function accountantJsonValue(value: unknown) {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ''
   }
 }
 
-function accountantNoDetailedSourceRows(context: AccountantExportContext) {
-  return staffReportRows(context.report, context.text).map((row) => withAccountantMeta({
-    note: context.text.messages.accountantExportSourcePending,
-    metric: row.metric,
-    value: row.value,
-  }, context))
+function accountantFirstPayment(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+  return [...staffOrderPaymentRows(order, paymentsByOrderId)].sort((left, right) => (
+    new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+  ))[0] || null
+}
+
+function accountantPaymentDate(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>) {
+  return (accountantFirstPayment(order, paymentsByOrderId)?.created_at || order.created_at).slice(0, 10)
+}
+
+function accountantIsRecognized(order: StaffOrder) {
+  return order.order_status === 'completed' || order.booking_date <= todayString()
+}
+
+function accountantVatSplit(total: number) {
+  const net = Math.round(total / 1.08)
+  return { net, vat: Math.max(total - net, 0) }
+}
+
+function accountantSourcePendingRow(columns: string[], context: AccountantExportContext) {
+  const noteColumn = columns.includes('Notes') ? 'Notes' : columns[columns.length - 1]
+  return columns.reduce<Record<string, unknown>>((row, column, index) => {
+    row[column] = column === noteColumn || (index === 0 && !noteColumn)
+      ? context.text.messages.accountantExportSourcePending
+      : ''
+    return row
+  }, {})
+}
+
+function accountantExportInfoRows(reportTitle: string, context: AccountantExportContext) {
+  return [
+    { Field: 'Report', Value: reportTitle },
+    { Field: 'Period', Value: rangeLabel(context.reportStart, context.reportEnd) },
+    { Field: 'Store / location', Value: context.storeLabel },
+    { Field: 'Language', Value: context.language.toUpperCase() },
+    { Field: 'Attachments list included', Value: context.includeAttachments ? context.text.labels.yes : context.text.labels.no },
+    { Field: 'Exported at', Value: accountantDateTime(new Date().toISOString()) },
+  ]
 }
 
 function buildAccountantExportRows(reportId: AccountantExportReportId, context: AccountantExportContext) {
-  const orderRows = staffOrderExportRows(context.orders, context.games, context.paymentsByOrderId, context.text)
-
   if (reportId === 'sales_revenue') {
-    return [
-      ...staffReportRows(context.report, context.text).map((row) => withAccountantMeta({
-        section: context.text.labels.summary,
-        metric: row.metric,
-        value: row.value,
-      }, context)),
-      ...orderRows.map((row) => withAccountantMeta({ section: context.text.labels.orders, ...row }, context)),
-    ]
+    return context.orders.map((order) => {
+      const paid = orderPaidAmount(order, context.paymentsByOrderId)
+      return {
+        Date: order.booking_date,
+        'Order number': order.order_number,
+        Customer: accountantCustomer(order, context.text),
+        Game: accountantGameName(order, context.games),
+        Players: order.players_count,
+        Subtotal: order.subtotal,
+        Discount: order.discount_total,
+        'Total revenue': order.total,
+        'Paid amount': paid,
+        'Unpaid amount': Math.max(order.total - paid, 0),
+        'Payment method': orderPaymentLabel(order, context.paymentsByOrderId, context.text),
+        'Payment status': paymentStatusLabel(order.payment_status, context.text),
+        'Order status': context.text.orderStatuses[order.order_status],
+        Ref: order.order_number,
+      }
+    })
   }
 
   if (reportId === 'einvoice_reconciliation') {
-    return context.orders.map((order) => withAccountantMeta({
-      order_number: order.order_number,
-      customer: order.customer_name || order.customer_phone || order.customer_email || context.text.walkIn,
-      booking_date: order.booking_date,
-      total: formatVnd(order.total),
-      invoice_required: order.invoice_required ? context.text.labels.yes : context.text.labels.no,
-      invoice_status: order.invoice_status,
-      company_name: order.company_name || '',
-      tax_code: order.tax_code || '',
-      invoice_email: order.invoice_email || '',
-      external_invoice_id: order.external_invoice_id || '',
-    }, context))
+    return context.orders.map((order) => ({
+      Date: order.booking_date,
+      'Order number': order.order_number,
+      Customer: accountantCustomer(order, context.text),
+      'Company name': order.company_name || '',
+      'Tax code': order.tax_code || '',
+      'Invoice email': order.invoice_email || '',
+      'Invoice address': order.invoice_address || '',
+      'Invoice required?': order.invoice_required ? context.text.labels.yes : context.text.labels.no,
+      'Invoice status': order.invoice_status,
+      'External invoice ID': order.external_invoice_id || '',
+      Total: order.total,
+      Ref: order.order_number,
+    }))
   }
 
   if (reportId === 'payments_reconciliation') {
-    return context.orders.map((order) => {
+    return context.orders.flatMap((order) => {
+      const payments = staffOrderPaymentRows(order, context.paymentsByOrderId)
+      if (payments.length > 0) {
+        return payments.map((payment) => ({
+          'Payment date/time': accountantDateTime(payment.created_at),
+          'Order number': order.order_number,
+          Customer: accountantCustomer(order, context.text),
+          Method: paymentMethodLabel(payment.payment_method, context.text),
+          Amount: payment.amount,
+          'Order total': order.total,
+          'Payment status': paymentStatusLabel(order.payment_status, context.text),
+          'Remaining balance': Math.max(order.total - orderPaidAmount(order, context.paymentsByOrderId), 0),
+          Ref: payment.id,
+        }))
+      }
       const paid = orderPaidAmount(order, context.paymentsByOrderId)
-      return withAccountantMeta({
-        order_number: order.order_number,
-        booking_date: order.booking_date,
-        payment_method: orderPaymentLabel(order, context.paymentsByOrderId, context.text),
-        payment_status: paymentStatusLabel(order.payment_status, context.text),
-        total: formatVnd(order.total),
-        paid_amount: formatVnd(paid),
-        remaining: formatVnd(Math.max(order.total - paid, 0)),
-      }, context)
+      return [{
+        'Payment date/time': accountantDateTime(order.created_at),
+        'Order number': order.order_number,
+        Customer: accountantCustomer(order, context.text),
+        Method: paymentMethodLabel(order.payment_method, context.text),
+        Amount: paid,
+        'Order total': order.total,
+        'Payment status': paymentStatusLabel(order.payment_status, context.text),
+        'Remaining balance': Math.max(order.total - paid, 0),
+        Ref: order.order_number,
+      }]
     })
   }
 
   if (reportId === 'refunds_adjustments') {
-    const adjustedOrders = context.orders.filter((order) => (
-      order.order_status === 'cancelled'
-      || order.order_status === 'refunded'
-      || order.order_status === 'no_show'
-      || order.payment_status === 'refunded'
-      || order.discount_total > 0
-    ))
-    return (adjustedOrders.length > 0 ? adjustedOrders : context.orders.filter((order) => order.discount_total > 0)).map((order) => withAccountantMeta({
-      order_number: order.order_number,
-      booking_date: order.booking_date,
-      order_status: context.text.orderStatuses[order.order_status],
-      payment_status: paymentStatusLabel(order.payment_status, context.text),
-      discount: formatVnd(order.discount_total),
-      total: formatVnd(order.total),
-      note: order.internal_note || '',
-    }, context))
+    return context.orders
+      .filter((order) => (
+        order.order_status === 'cancelled'
+        || order.order_status === 'refunded'
+        || order.order_status === 'no_show'
+        || order.payment_status === 'refunded'
+        || order.discount_total > 0
+      ))
+      .map((order) => ({
+        'Date/time': accountantDateTime(order.updated_at || order.created_at),
+        'Order number': order.order_number,
+        Customer: accountantCustomer(order, context.text),
+        Action: order.payment_status === 'refunded' || order.order_status === 'refunded'
+          ? 'Refund'
+          : order.order_status === 'cancelled'
+            ? 'Cancellation'
+            : order.discount_total > 0
+              ? 'Discount adjustment'
+              : context.text.orderStatuses[order.order_status],
+        Before: order.subtotal,
+        Adjustment: order.discount_total > 0 ? -order.discount_total : 0,
+        After: order.total,
+        'Payment status': paymentStatusLabel(order.payment_status, context.text),
+        'Order status': context.text.orderStatuses[order.order_status],
+        Reason: order.internal_note || '',
+        Ref: order.order_number,
+      }))
   }
 
   if (reportId === 'discounts_vouchers') {
-    const discountRows = context.discounts.map((discount) => withAccountantMeta({
-      section: context.text.labels.discounts,
-      code: discount.code || '',
-      name: discount.name,
-      type: context.text.discountTypes[discount.discount_type],
-      value: discount.discount_type === 'fixed_amount' ? formatVnd(discount.value) : `${discount.value}%`,
-      used_count: discount.used_count,
-      max_uses: discount.max_uses ?? '',
-      active: discount.active ? context.text.active : context.text.inactive,
-    }, context))
+    const discountRows = context.discounts.map((discount) => ({
+      Source: 'Discount / voucher rule',
+      Code: discount.code || '',
+      Name: discount.name,
+      Type: context.text.discountTypes[discount.discount_type],
+      Value: discount.value,
+      'Value unit': discount.discount_type === 'fixed_amount' ? 'VND' : '%',
+      'Used count': discount.used_count,
+      'Max uses': discount.max_uses ?? '',
+      'Valid from': discount.valid_from,
+      'Valid until': discount.valid_until || '',
+      Active: discount.active ? context.text.active : context.text.inactive,
+      'Order number': '',
+      'Discount amount': '',
+      'Order total': '',
+    }))
     const orderDiscountRows = context.orders
       .filter((order) => order.discount_total > 0 || order.discount_code)
-      .map((order) => withAccountantMeta({
-        section: context.text.labels.orders,
-        order_number: order.order_number,
-        discount_code: order.discount_code || '',
-        discount: formatVnd(order.discount_total),
-        total: formatVnd(order.total),
-      }, context))
-    return discountRows.length > 0 || orderDiscountRows.length > 0
-      ? [...discountRows, ...orderDiscountRows]
-      : [withAccountantMeta({ note: context.text.noData }, context)]
+      .map((order) => ({
+        Source: 'Applied discount',
+        Code: order.discount_code || '',
+        Name: '',
+        Type: '',
+        Value: '',
+        'Value unit': '',
+        'Used count': '',
+        'Max uses': '',
+        'Valid from': '',
+        'Valid until': '',
+        Active: '',
+        'Order number': order.order_number,
+        'Discount amount': order.discount_total,
+        'Order total': order.total,
+      }))
+    return [...discountRows, ...orderDiscountRows]
   }
 
   if (reportId === 'daily_cash_closing') {
-    return [
-      { metric: context.text.labels.cash, value: formatVnd(context.report.cashTotal) },
-      { metric: context.text.labels.bankTransfer, value: formatVnd(context.report.bankTransferTotal) },
-      { metric: context.text.labels.totalPaid, value: formatVnd(context.report.totalPaid) },
-      { metric: context.text.unpaid, value: formatVnd(context.report.unpaidAmount) },
-      { metric: context.text.labels.bookings, value: context.report.bookings },
-      { metric: context.text.labels.players, value: context.report.players },
-      { metric: context.text.labels.discounts, value: formatVnd(context.report.discounts) },
-    ].map((row) => withAccountantMeta(row, context))
+    return [{
+      Date: rangeLabel(context.reportStart, context.reportEnd),
+      Store: context.storeLabel,
+      'Cash sales': context.report.cashTotal,
+      'Bank transfer': context.report.bankTransferTotal,
+      'Total paid': context.report.totalPaid,
+      Unpaid: context.report.unpaidAmount,
+      Discounts: context.report.discounts,
+      Bookings: context.report.bookings,
+      Players: context.report.players,
+      Cancelled: context.report.cancelled,
+      'No-shows': context.report.noShows,
+      'Best-selling game': context.report.bestSellingGame,
+      'Cash counted': '',
+      Difference: '',
+      'Closed by': '',
+    }]
   }
 
-  if (reportId === 'deferred_revenue_bookings') {
-    const deferredOrders = context.orders.filter((order) => (
-      order.payment_status !== 'paid'
-      || order.order_status === 'draft'
-      || order.order_status === 'confirmed'
-      || order.booking_date > todayString()
-    ))
-    return deferredOrders.map((order) => withAccountantMeta({
-      order_number: order.order_number,
-      booking_date: order.booking_date,
-      payment_status: paymentStatusLabel(order.payment_status, context.text),
-      order_status: context.text.orderStatuses[order.order_status],
-      total: formatVnd(order.total),
-      paid_amount: formatVnd(orderPaidAmount(order, context.paymentsByOrderId)),
-      deferred_amount: formatVnd(Math.max(order.total - orderPaidAmount(order, context.paymentsByOrderId), 0)),
-    }, context))
+  if (reportId === 'expenses_purchases') {
+    return [accountantSourcePendingRow([
+      'Expense date',
+      'Supplier',
+      'Category',
+      'Description',
+      'Amount',
+      'Input VAT',
+      'Payment method',
+      'Paid by',
+      'Receipt / attachment',
+      'Notes',
+    ], context)]
   }
 
-  if (reportId === 'audit_trail') {
-    return context.auditLogs.map((log) => withAccountantMeta({
-      created_at: new Date(log.created_at).toLocaleString(),
-      actor_user_id: log.actor_user_id || '',
-      action: log.action,
-      entity_type: log.entity_type,
-      entity_id: log.entity_id || '',
-    }, context))
+  if (reportId === 'vat_input_output') {
+    return context.orders.map((order) => {
+      const { net, vat } = accountantVatSplit(order.total)
+      return {
+        Date: order.booking_date,
+        Type: 'Output VAT',
+        'Order number': order.order_number,
+        Customer: accountantCustomer(order, context.text),
+        'Tax code': order.tax_code || '',
+        'Net amount': net,
+        'VAT amount': vat,
+        'Gross total': order.total,
+        'Invoice status': order.invoice_status,
+        Ref: order.external_invoice_id || order.order_number,
+      }
+    })
   }
 
   if (reportId === 'payroll_staff') {
-    return context.loyaltyRules.map((rule) => withAccountantMeta({
-      note: context.text.messages.accountantExportSourcePending,
-      rule_name: rule.rule_name,
-      calculation: context.text.loyaltyCalculation[rule.calculation_type],
-      points: rule.points_value,
-      active: rule.active ? context.text.active : context.text.inactive,
-    }, context))
+    return [accountantSourcePendingRow([
+      'Staff',
+      'Role',
+      'Work date',
+      'Hours',
+      'Rate',
+      'Gross pay',
+      'Bonus',
+      'Deductions',
+      'Net pay',
+      'Notes',
+    ], context)]
   }
 
-  return accountantNoDetailedSourceRows(context)
+  if (reportId === 'inventory_movement') {
+    return [accountantSourcePendingRow([
+      'SKU',
+      'Product',
+      'Opening stock',
+      'Stock in',
+      'Stock out sold',
+      'Stock out gift',
+      'Damaged/lost',
+      'Closing stock',
+      'Unit cost',
+      'Stock value',
+      'Notes',
+    ], context)]
+  }
+
+  if (reportId === 'deferred_revenue_bookings') {
+    return context.orders
+      .filter((order) => orderPaidAmount(order, context.paymentsByOrderId) > 0 || order.booking_date > todayString())
+      .map((order) => {
+        const paid = orderPaidAmount(order, context.paymentsByOrderId)
+        const recognized = accountantIsRecognized(order)
+        return {
+          'Booking ID': order.order_number,
+          'Payment date': accountantPaymentDate(order, context.paymentsByOrderId),
+          'Play date': order.booking_date,
+          'Amount paid': paid,
+          'Revenue recognized?': recognized ? context.text.labels.yes : context.text.labels.no,
+          'Recognized date': recognized ? order.booking_date : '',
+          Status: context.text.orderStatuses[order.order_status],
+          'Liability balance': recognized ? 0 : paid,
+        }
+      })
+  }
+
+  if (reportId === 'accountant_journal') {
+    return context.orders.flatMap((order) => {
+      const { net, vat } = accountantVatSplit(order.total)
+      const payments = staffOrderPaymentRows(order, context.paymentsByOrderId)
+      const paidRows = payments.length > 0
+        ? payments.map((payment) => ({
+          Date: payment.created_at.slice(0, 10),
+          'Journal type': 'Sales',
+          'Account code': payment.payment_method === 'bank_transfer' ? 'Bank' : 'Cash',
+          Debit: payment.amount,
+          Credit: '',
+          Description: `VR ticket sale - ${accountantGameName(order, context.games)}`,
+          Ref: order.order_number,
+        }))
+        : [{
+          Date: order.created_at.slice(0, 10),
+          'Journal type': 'Sales',
+          'Account code': order.payment_method === 'bank_transfer' ? 'Bank' : 'Cash',
+          Debit: orderPaidAmount(order, context.paymentsByOrderId),
+          Credit: '',
+          Description: `VR ticket sale - ${accountantGameName(order, context.games)}`,
+          Ref: order.order_number,
+        }]
+      return [
+        ...paidRows,
+        {
+          Date: order.booking_date,
+          'Journal type': 'Sales',
+          'Account code': 'Revenue',
+          Debit: '',
+          Credit: net,
+          Description: `VR ticket sale - ${accountantGameName(order, context.games)}`,
+          Ref: order.order_number,
+        },
+        {
+          Date: order.booking_date,
+          'Journal type': 'Sales',
+          'Account code': 'Output VAT',
+          Debit: '',
+          Credit: vat,
+          Description: 'VAT',
+          Ref: order.external_invoice_id || order.order_number,
+        },
+      ]
+    })
+  }
+
+  if (reportId === 'audit_trail') {
+    return context.auditLogs.map((log) => ({
+      'Date/time': accountantDateTime(log.created_at),
+      User: log.actor_user_id || '',
+      Role: '',
+      Action: log.action,
+      Before: accountantJsonValue(log.old_value),
+      After: accountantJsonValue(log.new_value),
+      'Reason required?': /delete|refund|cancel|price|discount|role/i.test(log.action) ? context.text.labels.yes : context.text.labels.no,
+      Approval: 'Recorded',
+      'IP/device': '',
+    }))
+  }
+
+  return []
 }
 
 function reportPdfLines(
@@ -3180,7 +3400,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     await runStaffLoader('audit', async () => {
       const { data, error } = await supabase
         .from('audit_logs')
-        .select('id, actor_user_id, action, entity_type, entity_id, created_at')
+        .select('id, actor_user_id, action, entity_type, entity_id, old_value, new_value, created_at')
         .order('created_at', { ascending: false })
         .limit(60)
       if (error) throw new Error(error.message)
@@ -3943,7 +4163,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
     const reportDefinition = accountantExportReports.find((item) => item.id === accountantReportId) || accountantExportReports[0]
     const storeDefinition = accountantExportStores.find((item) => item.id === accountantExportStore) || accountantExportStores[0]
     const exportText = staffConsoleText[accountantExportLanguage]
-    const rows = buildAccountantExportRows(reportDefinition.id, {
+    const exportContext: AccountantExportContext = {
       report,
       orders: reportOrders,
       games,
@@ -3957,14 +4177,20 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       storeLabel: storeDefinition.label[accountantExportLanguage],
       language: accountantExportLanguage,
       includeAttachments: accountantIncludeAttachments,
-    })
+    }
+    const reportTitle = reportDefinition.label[accountantExportLanguage]
+    const rows = buildAccountantExportRows(reportDefinition.id, exportContext)
     const suffix = `${reportStart}_${reportEnd}`
     if (accountantExportFormat === 'csv') {
       downloadCsv(`${reportDefinition.fileBase}_${suffix}.csv`, rows, exportText)
       return
     }
     downloadExcel(`${reportDefinition.fileBase}_${suffix}.xlsx`, [
-      { title: `${reportDefinition.label[accountantExportLanguage]} ${rangeLabel(reportStart, reportEnd)}`, rows },
+      { title: reportTitle, rows },
+      {
+        title: accountantExportLanguage === 'vi' ? 'Thông tin xuất file' : 'Export info',
+        rows: accountantExportInfoRows(reportTitle, exportContext),
+      },
     ], exportText)
   }
 
