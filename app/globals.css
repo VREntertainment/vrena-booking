@@ -940,7 +940,7 @@ body {
 
 .app .staff-console {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .app .staff-role-pill {
@@ -950,13 +950,13 @@ body {
   color: #0d7c51;
   font-size: 12px;
   font-weight: 900;
-  padding: 7px 10px;
+  padding: 5px 9px;
   text-transform: uppercase;
 }
 
 .app .staff-tabs {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
@@ -964,9 +964,12 @@ body {
 
 .app .staff-tabs button {
   flex: 0 0 auto;
+  min-height: 38px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   background: #ffffff;
   color: #071112;
+  padding: 7px 12px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -979,13 +982,13 @@ body {
 .app .staff-commerce-switcher {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
 }
 
 .app .staff-commerce-switcher button {
   width: 100%;
-  min-height: 42px;
+  min-height: 38px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   background: #ffffff;
   color: #071112;
@@ -1042,7 +1045,7 @@ body {
 }
 
 .app .staff-readonly-note {
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   color: #637075;
   font-size: 13px;
   font-weight: 800;
@@ -1050,7 +1053,7 @@ body {
 
 .app .staff-readonly-fieldset {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
   border: 0;
   margin: 0;
@@ -1102,24 +1105,24 @@ body {
 .app .staff-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
-  gap: 12px;
+  gap: 10px;
   align-items: start;
 }
 
 .app .staff-card {
   display: grid;
-  gap: 12px;
+  gap: 9px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 8px;
   background: #ffffff;
-  padding: 14px;
-  --staff-control-height: 46px;
+  padding: 12px;
+  --staff-control-height: 40px;
 }
 
 .app .staff-card .compact-form-grid > label {
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 0;
 }
 
@@ -1128,6 +1131,8 @@ body {
   height: var(--staff-control-height);
   min-height: var(--staff-control-height);
   padding-block: 0;
+  padding-inline: 10px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
@@ -1182,7 +1187,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 12px;
+  padding: 0 10px;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
@@ -1220,11 +1225,11 @@ body {
 .app .staff-price-lines {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 12px;
+  gap: 6px 10px;
   align-items: center;
   border-radius: 8px;
   background: #f0f4f6;
-  padding: 12px;
+  padding: 10px;
 }
 
 .app .staff-price-lines span,
@@ -1237,23 +1242,23 @@ body {
 
 .app .staff-price-lines strong:last-child {
   color: #3059ff;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .app .staff-note-field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .app .staff-manual-discount {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .app .staff-manual-discount > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(130px, 0.55fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-discount-value-field {
@@ -1263,7 +1268,7 @@ body {
 .app .staff-discount-value-control {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(86px, 0.36fr);
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -1275,13 +1280,13 @@ body {
 .app .staff-payment-splits,
 .app .staff-payment-split-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-payment-split-row {
   display: grid;
   grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 1fr) auto;
-  gap: 8px;
+  gap: 6px;
   align-items: end;
 }
 
@@ -1290,42 +1295,42 @@ body {
   color: #637075;
   font-size: 12px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .app .staff-game-photo-field {
   display: grid;
-  gap: 7px;
+  gap: 5px;
 }
 
 .app .staff-game-media-row {
   display: grid;
-  grid-template-columns: minmax(180px, 280px) minmax(180px, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(180px, 260px) minmax(180px, 1fr);
+  gap: 10px;
   align-items: start;
 }
 
 .app .staff-game-settings-panel {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   align-content: start;
   min-width: 0;
 }
 
 .app .staff-game-guide-editor {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
-  padding: 12px;
+  padding: 10px;
 }
 
 .app .staff-game-guide-head {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .app .staff-game-guide-head small {
@@ -1338,19 +1343,19 @@ body {
 
 .app .staff-game-guide-head label {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: min(180px, 100%);
 }
 
 .app .staff-game-guide-fields {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-game-guide-fields label {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   color: #637075;
   font-size: 12px;
@@ -1358,13 +1363,13 @@ body {
 }
 
 .app .staff-game-guide-fields textarea {
-  min-height: 112px;
+  min-height: 96px;
   resize: vertical;
 }
 
 .app .staff-arena-options {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-audience-menu {
@@ -1376,8 +1381,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 42px;
+  gap: 6px;
+  min-height: 38px;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
@@ -1385,7 +1390,7 @@ body {
   cursor: pointer;
   font-weight: 900;
   list-style: none;
-  padding: 8px 10px;
+  padding: 6px 9px;
 }
 
 .app .staff-audience-summary::-webkit-details-marker {
@@ -1407,7 +1412,7 @@ body {
 .app .staff-audience-value {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -1416,8 +1421,8 @@ body {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  min-height: 24px;
-  padding: 3px 8px;
+  min-height: 22px;
+  padding: 2px 7px;
 }
 
 .app .staff-audience-chip {
@@ -1436,14 +1441,14 @@ body {
   right: 0;
   left: 0;
   display: grid;
-  gap: 6px;
-  max-height: 260px;
+  gap: 5px;
+  max-height: 226px;
   overflow: auto;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 14px 30px rgba(7, 17, 18, 0.14);
-  padding: 8px;
+  padding: 6px;
 }
 
 .app .staff-audience-option,
@@ -1451,14 +1456,14 @@ body {
 .app .staff-game-active-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  gap: 7px;
+  min-height: 38px;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
   color: #071112;
   font-weight: 900;
-  padding: 8px 10px;
+  padding: 7px 9px;
 }
 
 .app .staff-audience-option input,
@@ -1478,7 +1483,7 @@ body {
 .app .staff-game-photo-upload {
   position: relative;
   display: grid;
-  width: min(100%, 280px);
+  width: min(100%, 260px);
   aspect-ratio: 1 / 1;
   place-items: center;
   min-height: 0;
@@ -1509,7 +1514,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-list-head h3 {
@@ -1518,15 +1523,15 @@ body {
 
 .app .staff-list-head button {
   width: auto;
-  min-height: 38px;
-  padding: 8px 12px;
+  min-height: 34px;
+  padding: 6px 10px;
   white-space: nowrap;
 }
 
 .app .staff-game-photo-upload > span {
   display: grid;
-  gap: 6px;
-  padding: 16px;
+  gap: 5px;
+  padding: 14px;
 }
 
 .app .staff-game-photo-upload strong {
@@ -1548,7 +1553,7 @@ body {
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
-  padding: 6px 9px;
+  padding: 5px 8px;
 }
 
 .app .staff-game-photo-upload input {
@@ -1561,8 +1566,8 @@ body {
 .app .checkbox-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  gap: 7px;
+  min-height: 38px;
 }
 
 .app .checkbox-row input {
@@ -1575,11 +1580,13 @@ body {
 
 .app .staff-list-item {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
+  min-height: 0;
   border: 1px solid rgba(7, 17, 18, 0.1);
   background: #f8fafb;
   color: #071112;
+  padding: 9px 10px;
   text-align: left;
 }
 
@@ -1610,23 +1617,23 @@ body {
   border-radius: 8px;
   background: #fff3f0;
   color: #9b1c14;
-  padding: 10px;
+  padding: 8px 10px;
   font-size: 13px;
   font-weight: 800;
 }
 
 .app .staff-role-help-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-role-help-item {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
-  padding: 10px;
+  padding: 8px;
 }
 
 .app .staff-role-help-item span {
@@ -1638,9 +1645,9 @@ body {
 .app .staff-role-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(150px, 220px);
-  gap: 10px;
+  gap: 8px;
   align-items: end;
-  margin: 10px 0 12px;
+  margin: 6px 0 8px;
 }
 
 .app .staff-role-tools label {
@@ -1653,12 +1660,12 @@ body {
 .app .staff-restore-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .app .staff-role-row > div,
@@ -1685,24 +1692,24 @@ body {
 
 .app .staff-role-action-cell {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .app .staff-role-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-role-actions button {
-  min-height: 38px;
-  padding: 8px 10px;
+  min-height: 34px;
+  padding: 6px 9px;
 }
 
 .app .staff-role-delete-button {
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
   border-color: rgba(180, 35, 24, 0.42);
   color: #b42318;
   font-weight: 900;
@@ -1710,7 +1717,7 @@ body {
 
 .app .staff-role-feedback {
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 5px 9px;
 }
 
 .app .staff-role-feedback.saving {
@@ -1743,7 +1750,7 @@ body {
 .app .staff-table th,
 .app .staff-table td {
   border-bottom: 1px solid rgba(7, 17, 18, 0.08);
-  padding: 9px 8px;
+  padding: 7px 8px;
   text-align: left;
   vertical-align: top;
 }
@@ -1763,8 +1770,8 @@ body {
 .app .staff-report-filter-row button,
 .app .staff-report-export-actions button,
 .app .staff-chart-mode button {
-  min-height: 32px;
-  padding: 6px 9px;
+  min-height: 30px;
+  padding: 5px 8px;
   font-size: 12px;
 }
 
@@ -1779,13 +1786,13 @@ body {
 .app .staff-report-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: start;
 }
 
 .app .staff-report-filters {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   justify-items: end;
   min-width: 0;
 }
@@ -1800,7 +1807,7 @@ body {
 .app .staff-report-compare-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-content: flex-end;
 }
@@ -1808,7 +1815,7 @@ body {
 .app .staff-report-export-actions {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-accountant-export {
@@ -1826,13 +1833,13 @@ body {
   top: calc(100% + 8px);
   right: 0;
   width: min(880px, calc(100vw - 40px));
-  max-height: min(78vh, 760px);
+  max-height: min(78vh, 720px);
   overflow: auto;
   display: grid;
-  gap: 14px;
+  gap: 10px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
   background: #ffffff;
   color: #071112;
   box-shadow: 0 20px 42px rgba(7, 17, 18, 0.2);
@@ -1842,7 +1849,7 @@ body {
 .app .staff-accountant-export-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: start;
 }
 
@@ -1863,15 +1870,15 @@ body {
 }
 
 .app .staff-accountant-export-panel button {
-  min-height: 36px;
+  min-height: 32px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   background: #eef3f5;
   color: #071112;
 }
 
 .app .staff-accountant-export-head button.staff-accountant-export-close {
-  width: 34px;
-  min-height: 34px;
+  width: 32px;
+  min-height: 32px;
   padding: 0;
   border-color: transparent;
   background: transparent;
@@ -1889,7 +1896,7 @@ body {
 .app .staff-accountant-export-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   align-items: end;
 }
 
@@ -1899,14 +1906,14 @@ body {
 }
 
 .app .staff-accountant-export-check {
-  min-height: 46px;
+  min-height: 40px;
   display: inline-flex;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
   margin: 0;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: #f6f8f9;
   color: #071112;
   font-size: 12px;
@@ -1916,7 +1923,7 @@ body {
 .app .staff-accountant-report-heading {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   border-top: 1px solid rgba(7, 17, 18, 0.08);
   padding-top: 4px;
@@ -1942,8 +1949,8 @@ body {
 .app .staff-accountant-report-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  max-height: min(42vh, 360px);
+  gap: 6px;
+  max-height: min(42vh, 320px);
   overflow: auto;
   padding-right: 2px;
 }
@@ -1951,10 +1958,10 @@ body {
 .app .staff-accountant-report-list button {
   position: relative;
   display: grid;
-  gap: 3px;
+  gap: 2px;
   justify-items: stretch;
-  min-height: 58px;
-  padding: 10px 36px 10px 12px;
+  min-height: 50px;
+  padding: 8px 34px 8px 10px;
   border-radius: 9px;
   background: #f6f8f9;
   color: #071112;
@@ -2023,13 +2030,13 @@ body {
 
 .app .staff-compare-toggle {
   width: auto;
-  min-height: 32px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 8px;
-  padding: 6px 9px;
+  padding: 5px 8px;
   color: #071112;
   font-size: 12px;
   font-weight: 900;
@@ -2042,8 +2049,8 @@ body {
 }
 
 .app .staff-report-range-button {
-  min-height: 40px;
-  min-width: 170px;
+  min-height: 36px;
+  min-width: 156px;
   display: grid;
   gap: 2px;
   justify-items: start;
@@ -2051,7 +2058,7 @@ body {
   border-radius: 8px;
   background: #eef3f5;
   color: #071112;
-  padding: 7px 12px;
+  padding: 6px 10px;
   text-align: left;
 }
 
@@ -2063,15 +2070,15 @@ body {
 }
 
 .app .staff-report-range-button strong {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.1;
 }
 
 .app .staff-report-range-button.compact {
-  min-width: 220px;
+  min-width: 190px;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .app .staff-report-range-button.compact strong {
@@ -2084,14 +2091,14 @@ body {
   max-height: min(86vh, 920px);
   box-sizing: border-box;
   overflow: auto;
-  padding: 18px;
+  padding: 14px;
 }
 
 .app .staff-report-date-modal-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   padding-right: 40px;
 }
 
@@ -2109,26 +2116,26 @@ body {
 .app .staff-report-date-modal-body {
   display: grid;
   grid-template-columns: minmax(160px, 0.34fr) minmax(0, 1fr);
-  gap: 16px;
-  margin-top: 16px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .app .staff-report-date-presets {
   display: grid;
   align-content: start;
   border-right: 1px solid rgba(7, 17, 18, 0.08);
-  padding-right: 12px;
+  padding-right: 10px;
 }
 
 .app .staff-report-date-presets button {
-  min-height: 44px;
+  min-height: 38px;
   justify-content: flex-start;
   border: 0;
   border-bottom: 1px solid rgba(7, 17, 18, 0.08);
   border-radius: 0;
   background: transparent;
   color: #637075;
-  padding: 8px 10px;
+  padding: 7px 9px;
   text-align: left;
 }
 
@@ -2139,7 +2146,7 @@ body {
 
 .app .staff-report-date-main {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
   overflow: hidden;
 }
@@ -2148,7 +2155,7 @@ body {
 .app .staff-report-date-compare-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .app .staff-report-date-inputs label,
@@ -2168,12 +2175,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-report-calendar-nav button {
-  width: 34px;
-  min-height: 34px;
+  width: 32px;
+  min-height: 32px;
   border-radius: 999px;
   font-size: 24px;
   line-height: 1;
@@ -2189,13 +2196,13 @@ body {
 .app .staff-report-calendar-months {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 
 .app .staff-report-calendar-month {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -2208,7 +2215,7 @@ body {
 .app .staff-report-calendar-days {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: 3px;
 }
 
 .app .staff-report-calendar-weekdays span {
@@ -2220,7 +2227,7 @@ body {
 
 .app .staff-report-calendar-day {
   aspect-ratio: 1;
-  min-height: 34px;
+  min-height: 30px;
   min-width: 0;
   border: 0;
   border-radius: 7px;
@@ -2252,9 +2259,9 @@ body {
 
 .app .staff-report-date-compare {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 .app .staff-report-date-compare-fields {
@@ -2265,38 +2272,38 @@ body {
 .app .staff-report-date-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
 }
 
 .app .staff-report-date-modal-actions button {
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 36px;
+  padding: 7px 12px;
 }
 
 .app .staff-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-summary-grid > div {
   display: grid;
-  gap: 6px;
-  min-height: 74px;
+  gap: 4px;
+  min-height: 62px;
   border-radius: 8px;
   background: #f0f4f6;
-  padding: 12px;
+  padding: 10px;
 }
 
 .app .staff-summary-grid strong {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .app .staff-operations-card .staff-card-heading p {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #637075;
   font-size: 13px;
   font-weight: 700;
@@ -2307,18 +2314,18 @@ body {
   flex-wrap: wrap;
   align-items: end;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-operations-actions label {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-width: 160px;
 }
 
 .app .staff-operations-actions button {
   min-height: var(--staff-control-height);
-  padding: 8px 12px;
+  padding: 7px 10px;
   font-size: 13px;
   font-weight: 900;
 }
@@ -2329,28 +2336,28 @@ body {
 
 .app .staff-operations-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-operation-session {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 10px;
   align-items: center;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
-  padding: 12px;
+  padding: 10px;
 }
 
 .app .staff-operation-time {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   justify-items: start;
 }
 
 .app .staff-operation-time strong {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .app .staff-operation-time span,
@@ -2363,14 +2370,14 @@ body {
 
 .app .staff-operation-main {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   min-width: 0;
 }
 
 .app .staff-operation-title-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -2384,19 +2391,19 @@ body {
   color: #0d7c51;
   font-size: 12px;
   font-weight: 900;
-  padding: 5px 9px;
+  padding: 4px 8px;
 }
 
 .app .staff-operation-meta,
 .app .staff-operation-order {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 5px 8px;
 }
 
 .app .staff-operation-order {
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  padding-top: 7px;
+  padding-top: 6px;
 }
 
 .app .staff-operation-actions {
@@ -2406,7 +2413,7 @@ body {
 
 .app .staff-operations-orders {
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 .app .staff-operations-orders summary {
@@ -2417,7 +2424,7 @@ body {
 .app .staff-report-graphics {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
-  gap: 12px;
+  gap: 10px;
   align-items: stretch;
 }
 
@@ -2427,29 +2434,29 @@ body {
 
 .app .staff-report-graph {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 .app .staff-report-graph-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
 
 .app .staff-report-graph-actions {
   display: grid;
   justify-items: end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app .staff-chart-mode {
   display: inline-flex;
   gap: 4px;
-  padding: 3px;
+  padding: 2px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 999px;
   background: #f6f8f9;
@@ -2478,24 +2485,24 @@ body {
 .app .staff-report-compare-label {
   border-radius: 999px;
   background: #eef3f5;
-  padding: 5px 8px;
+  padding: 4px 7px;
   white-space: nowrap;
 }
 
 .app .staff-report-bars {
-  min-height: 220px;
+  min-height: 190px;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(62px, 1fr);
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
 }
 
 .app .staff-report-bar-group {
   display: grid;
-  grid-template-rows: 150px auto auto;
-  gap: 6px;
+  grid-template-rows: 130px auto auto;
+  gap: 5px;
   min-width: 62px;
   text-align: center;
 }
@@ -2505,10 +2512,10 @@ body {
   align-items: end;
   justify-content: center;
   gap: 4px;
-  min-height: 150px;
+  min-height: 130px;
   border-radius: 8px;
   background: #f0f4f6;
-  padding: 8px;
+  padding: 6px;
 }
 
 .app .staff-report-bar {
@@ -2531,7 +2538,7 @@ body {
 .app .staff-comparison-list,
 .app .staff-payment-mix {
   display: grid;
-  gap: 9px;
+  gap: 7px;
 }
 
 .app .staff-comparison-list > div {
@@ -2547,7 +2554,7 @@ body {
 
 .app .staff-payment-row {
   display: grid;
-  gap: 7px;
+  gap: 5px;
 }
 
 .app .staff-payment-row > div:first-child {
@@ -2558,7 +2565,7 @@ body {
 
 .app .staff-payment-track {
   overflow: hidden;
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: #eef3f5;
 }
@@ -2574,12 +2581,12 @@ body {
 
 .app .staff-report-curve-wrap {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .app .staff-report-curve {
   width: 100%;
-  min-height: 220px;
+  min-height: 190px;
   border-radius: 8px;
   background: linear-gradient(180deg, #f6f8f9, #eef3f5);
 }
@@ -2610,7 +2617,7 @@ body {
 .app .staff-report-curve-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   color: #637075;
   font-size: 12px;
   font-weight: 800;
@@ -2639,12 +2646,12 @@ body {
 .app .staff-report-pie-wrap {
   display: grid;
   grid-template-columns: minmax(160px, 0.55fr) minmax(180px, 1fr);
-  gap: 14px;
+  gap: 10px;
   align-items: center;
 }
 
 .app .staff-report-pie {
-  width: min(100%, 210px);
+  width: min(100%, 184px);
   aspect-ratio: 1;
   border-radius: 999px;
   display: grid;
