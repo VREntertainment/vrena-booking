@@ -11,6 +11,7 @@ type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
+type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
 type StaffAudience = 'family_friendly' | 'scary' | 'fun' | 'quest' | 'teamwork' | 'beginner_friendly' | 'competitive'
@@ -313,6 +314,7 @@ const staffConsoleText = {
     walkIn: 'Walk-in / manual customer',
     actions: {
       addSplit: 'Add split',
+      apply: 'Apply',
       calendar: 'Calendar',
       confirmBooking: 'Confirm booking',
       done: 'Done',
@@ -340,6 +342,7 @@ const staffConsoleText = {
     aria: {
       bookingDate: 'Booking date',
       bookingTime: 'Booking time',
+      closeReportCalendar: 'Close report calendar',
       openBookingCalendar: 'Open booking calendar',
       openSessionCalendar: 'Open session calendar',
       compareEndDate: 'Compare end date',
@@ -350,10 +353,12 @@ const staffConsoleText = {
       graphDisplay: 'Graph display',
       loyaltyValidFrom: 'Loyalty valid from',
       loyaltyValidUntil: 'Loyalty valid until',
+      nextReportMonth: 'Next report month',
       paymentAmount: 'Payment amount',
       paymentMethod: 'Payment method',
       paymentMix: 'Payment mix',
       periodComparison: 'Period comparison',
+      previousReportMonth: 'Previous report month',
       priceEndTime: 'Price end time',
       priceStartTime: 'Price start time',
       priceValidFrom: 'Price valid from',
@@ -423,6 +428,7 @@ const staffConsoleText = {
       codeOptional: 'Code (optional)',
       banAccount: 'Ban this account too',
       compare: 'Compare',
+      compareRange: 'Compare range',
       confirmDeleteWord: 'Type DELETE to confirm',
       createDiscount: 'Create discount',
       createGame: 'Create game',
@@ -435,6 +441,7 @@ const staffConsoleText = {
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
       date: 'Date',
+      dateRange: 'Date range',
       dayType: 'Day type',
       deleteReason: 'Reason',
       description: 'Description',
@@ -446,6 +453,7 @@ const staffConsoleText = {
       duration: 'Duration',
       email: 'E-mail',
       end: 'End',
+      endDate: 'End date',
       filterByRole: 'Filter by role',
       game: 'Game',
       guideGameplay: 'GamePlay',
@@ -486,6 +494,7 @@ const staffConsoleText = {
       recentAuditLog: 'Recent audit log',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
+      reportRange: 'Report range',
       roleExplanation: 'Role explanation',
       roleFor: 'Role for',
       roles: 'Roles',
@@ -495,10 +504,12 @@ const staffConsoleText = {
       sales: 'Sales',
       salesTrend: 'Sales trend',
       searchUsers: 'Search users',
+      selectedRange: 'Selected range',
       sessions: 'Sessions',
       sortBy: 'Sort by',
       slug: 'Slug',
       start: 'Start',
+      startDate: 'Start date',
       status: 'Status',
       subtotal: 'Subtotal',
       summary: 'Summary',
@@ -598,6 +609,18 @@ const staffConsoleText = {
       role_asc: 'Role low-high',
       role_desc: 'Role high-low',
     } satisfies Record<StaffRoleSort, string>,
+    reportRangePresets: {
+      today: 'Today',
+      yesterday: 'Yesterday',
+      this_week: 'This week',
+      last_week: 'Last week',
+      this_month: 'This month',
+      last_month: 'Last month',
+      last_30: 'Last 30 days',
+      last_60: 'Last 60 days',
+      last_90: 'Last 90 days',
+    } satisfies Record<StaffReportRangePreset, string>,
+    reportWeekdays: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'],
     roleHelp: [
       { title: 'Owner', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
       { title: 'Admin', body: 'Full daily operations access and role management below Owner. Restore stays Owner only.' },
@@ -659,6 +682,7 @@ const staffConsoleText = {
     walkIn: 'Khách tại quầy / nhập tay',
     actions: {
       addSplit: 'Thêm phần thanh toán',
+      apply: 'Áp dụng',
       calendar: 'Lịch',
       confirmBooking: 'Xác nhận đặt chỗ',
       done: 'Hoàn tất',
@@ -686,6 +710,7 @@ const staffConsoleText = {
     aria: {
       bookingDate: 'Ngày đặt chỗ',
       bookingTime: 'Giờ đặt chỗ',
+      closeReportCalendar: 'Đóng lịch báo cáo',
       openBookingCalendar: 'Mở lịch đặt chỗ',
       openSessionCalendar: 'Mở lịch phiên',
       compareEndDate: 'Ngày kết thúc so sánh',
@@ -696,10 +721,12 @@ const staffConsoleText = {
       graphDisplay: 'Cách hiển thị biểu đồ',
       loyaltyValidFrom: 'Điểm hiệu lực từ',
       loyaltyValidUntil: 'Điểm hiệu lực đến',
+      nextReportMonth: 'Tháng báo cáo sau',
       paymentAmount: 'Số tiền thanh toán',
       paymentMethod: 'Phương thức thanh toán',
       paymentMix: 'Cơ cấu thanh toán',
       periodComparison: 'So sánh kỳ',
+      previousReportMonth: 'Tháng báo cáo trước',
       priceEndTime: 'Giờ kết thúc giá',
       priceStartTime: 'Giờ bắt đầu giá',
       priceValidFrom: 'Giá hiệu lực từ',
@@ -769,6 +796,7 @@ const staffConsoleText = {
       codeOptional: 'Mã (không bắt buộc)',
       banAccount: 'Cấm tài khoản này luôn',
       compare: 'So sánh',
+      compareRange: 'Khoảng so sánh',
       confirmDeleteWord: 'Nhập DELETE để xác nhận',
       createDiscount: 'Tạo ưu đãi',
       createGame: 'Tạo trò chơi',
@@ -781,6 +809,7 @@ const staffConsoleText = {
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
       date: 'Ngày',
+      dateRange: 'Khoảng ngày',
       dayType: 'Loại ngày',
       deleteReason: 'Lý do',
       description: 'Mô tả',
@@ -792,6 +821,7 @@ const staffConsoleText = {
       duration: 'Thời lượng',
       email: 'E-mail',
       end: 'Kết thúc',
+      endDate: 'Ngày kết thúc',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
       guideGameplay: 'GamePlay',
@@ -832,6 +862,7 @@ const staffConsoleText = {
       recentAuditLog: 'Nhật ký gần đây',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
+      reportRange: 'Khoảng báo cáo',
       roleExplanation: 'Giải thích vai trò',
       roleFor: 'Vai trò cho',
       roles: 'Vai trò',
@@ -841,10 +872,12 @@ const staffConsoleText = {
       sales: 'Doanh thu',
       salesTrend: 'Xu hướng doanh thu',
       searchUsers: 'Tìm người dùng',
+      selectedRange: 'Khoảng đã chọn',
       sessions: 'Phiên',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
       start: 'Bắt đầu',
+      startDate: 'Ngày bắt đầu',
       status: 'Trạng thái',
       subtotal: 'Tạm tính',
       summary: 'Tóm tắt',
@@ -944,6 +977,18 @@ const staffConsoleText = {
       role_asc: 'Vai trò thấp-cao',
       role_desc: 'Vai trò cao-thấp',
     } satisfies Record<StaffRoleSort, string>,
+    reportRangePresets: {
+      today: 'Hôm nay',
+      yesterday: 'Hôm qua',
+      this_week: 'Tuần này',
+      last_week: 'Tuần trước',
+      this_month: 'Tháng này',
+      last_month: 'Tháng trước',
+      last_30: '30 ngày qua',
+      last_60: '60 ngày qua',
+      last_90: '90 ngày qua',
+    } satisfies Record<StaffReportRangePreset, string>,
+    reportWeekdays: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
     roleHelp: [
       { title: 'Owner', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
       { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner. Khôi phục chỉ dành cho Owner.' },
@@ -979,6 +1024,8 @@ const todayString = () => {
 
 const shortDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
 const staffDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: '2-digit' })
+const staffMonthFormatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
+const staffReportPresetOptions: StaffReportRangePreset[] = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'last_30', 'last_60', 'last_90']
 
 function dateInputValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -995,12 +1042,106 @@ function addDays(value: string, days: number) {
   return dateInputValue(date)
 }
 
+function addMonths(value: string, months: number) {
+  const date = dateFromInput(value)
+  date.setMonth(date.getMonth() + months)
+  return dateInputValue(date)
+}
+
 function daysBetween(start: string, end: string) {
   return Math.round((dateFromInput(end).getTime() - dateFromInput(start).getTime()) / 86400000)
 }
 
 function orderedRange(start: string, end: string) {
   return start <= end ? [start, end] : [end, start]
+}
+
+function startOfWeek(value: string) {
+  const date = dateFromInput(value)
+  const weekday = date.getDay()
+  const diff = weekday === 0 ? -6 : 1 - weekday
+  date.setDate(date.getDate() + diff)
+  return dateInputValue(date)
+}
+
+function startOfMonth(value: string) {
+  const date = dateFromInput(value)
+  return dateInputValue(new Date(date.getFullYear(), date.getMonth(), 1))
+}
+
+function endOfMonth(value: string) {
+  const date = dateFromInput(value)
+  return dateInputValue(new Date(date.getFullYear(), date.getMonth() + 1, 0))
+}
+
+function previousPeriodRange(start: string, end: string) {
+  const [from, to] = orderedRange(start, end)
+  const periodDays = Math.max(1, daysBetween(from, to) + 1)
+  const previousEnd = addDays(from, -1)
+  const previousStart = addDays(previousEnd, -(periodDays - 1))
+  return [previousStart, previousEnd] as const
+}
+
+function reportPresetRange(preset: StaffReportRangePreset, anchor = todayString()) {
+  if (preset === 'today') return [anchor, anchor] as const
+  if (preset === 'yesterday') {
+    const yesterday = addDays(anchor, -1)
+    return [yesterday, yesterday] as const
+  }
+  if (preset === 'this_week') {
+    const start = startOfWeek(anchor)
+    return [start, addDays(start, 6)] as const
+  }
+  if (preset === 'last_week') {
+    const end = addDays(startOfWeek(anchor), -1)
+    return [addDays(end, -6), end] as const
+  }
+  if (preset === 'this_month') return [startOfMonth(anchor), endOfMonth(anchor)] as const
+  if (preset === 'last_month') {
+    const previousMonth = addMonths(startOfMonth(anchor), -1)
+    return [startOfMonth(previousMonth), endOfMonth(previousMonth)] as const
+  }
+  if (preset === 'last_60') return [addDays(anchor, -59), anchor] as const
+  if (preset === 'last_90') return [addDays(anchor, -89), anchor] as const
+  return [addDays(anchor, -29), anchor] as const
+}
+
+function monthLabel(value: string) {
+  return staffMonthFormatter.format(dateFromInput(value))
+}
+
+type StaffReportCalendarCell = {
+  date: string
+  day: number
+  inMonth: boolean
+}
+
+function reportCalendarCells(monthValue: string) {
+  const monthStart = startOfMonth(monthValue)
+  const monthDate = dateFromInput(monthStart)
+  const year = monthDate.getFullYear()
+  const month = monthDate.getMonth()
+  const firstWeekday = (monthDate.getDay() + 6) % 7
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const cells: StaffReportCalendarCell[] = []
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    const date = addDays(monthStart, index - firstWeekday)
+    cells.push({ date, day: dateFromInput(date).getDate(), inMonth: false })
+  }
+
+  for (let day = 1; day <= lastDay; day += 1) {
+    const date = dateInputValue(new Date(year, month, day))
+    cells.push({ date, day, inMonth: true })
+  }
+
+  while (cells.length % 7 !== 0) {
+    const previous = cells[cells.length - 1]?.date || monthStart
+    const date = addDays(previous, 1)
+    cells.push({ date, day: dateFromInput(date).getDate(), inMonth: false })
+  }
+
+  return cells
 }
 
 function shortDateLabel(value: string) {
@@ -1043,6 +1184,210 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onCha
       />
       <span className="staff-picker-display">{displayValue || fallback}</span>
     </span>
+  )
+}
+
+type StaffReportDateRangeModalProps = {
+  text: StaffConsoleCopy
+  reportStart: string
+  reportEnd: string
+  compareEnabled: boolean
+  compareStart: string
+  compareEnd: string
+  initialRangeTarget: 'report' | 'compare'
+  onApply: (reportStart: string, reportEnd: string, compareEnabled: boolean, compareStart: string, compareEnd: string) => void
+  onClose: () => void
+}
+
+function StaffReportDateRangeModal({
+  text,
+  reportStart,
+  reportEnd,
+  compareEnabled,
+  compareStart,
+  compareEnd,
+  initialRangeTarget,
+  onApply,
+  onClose,
+}: StaffReportDateRangeModalProps) {
+  const [draftStart, setDraftStart] = useState(reportStart)
+  const [draftEnd, setDraftEnd] = useState(reportEnd)
+  const [draftCompareEnabled, setDraftCompareEnabled] = useState(compareEnabled)
+  const [draftCompareStart, setDraftCompareStart] = useState(compareStart)
+  const [draftCompareEnd, setDraftCompareEnd] = useState(compareEnd)
+  const [visibleMonth, setVisibleMonth] = useState(startOfMonth(reportStart))
+  const [rangeTarget, setRangeTarget] = useState<'report' | 'compare'>(initialRangeTarget)
+  const nextMonth = addMonths(visibleMonth, 1)
+  const [orderedStart, orderedEnd] = orderedRange(draftStart, draftEnd)
+  const [orderedCompareStart, orderedCompareEnd] = orderedRange(draftCompareStart, draftCompareEnd)
+
+  function updateReportRange(start: string, end: string) {
+    const [from, to] = orderedRange(start, end)
+    setDraftStart(from)
+    setDraftEnd(to)
+    const [previousStart, previousEnd] = previousPeriodRange(from, to)
+    setDraftCompareStart(previousStart)
+    setDraftCompareEnd(previousEnd)
+  }
+
+  function selectDate(date: string) {
+    if (rangeTarget === 'compare') {
+      if (date < orderedCompareStart || draftCompareStart !== draftCompareEnd) {
+        setDraftCompareStart(date)
+        setDraftCompareEnd(date)
+      } else {
+        const [from, to] = orderedRange(draftCompareStart, date)
+        setDraftCompareStart(from)
+        setDraftCompareEnd(to)
+      }
+      return
+    }
+
+    if (date < orderedStart || draftStart !== draftEnd) {
+      updateReportRange(date, date)
+    } else {
+      updateReportRange(draftStart, date)
+    }
+  }
+
+  function applyPreset(preset: StaffReportRangePreset) {
+    const [from, to] = reportPresetRange(preset)
+    updateReportRange(from, to)
+    setVisibleMonth(startOfMonth(from))
+    setRangeTarget('report')
+  }
+
+  function renderCalendarMonth(monthValue: string) {
+    return (
+      <div className="staff-report-calendar-month" key={monthValue}>
+        <h4>{monthLabel(monthValue)}</h4>
+        <div className="staff-report-calendar-weekdays" aria-hidden="true">
+          {text.reportWeekdays.map((weekday) => (
+            <span key={`${monthValue}-${weekday}`}>{weekday}</span>
+          ))}
+        </div>
+        <div className="staff-report-calendar-days">
+          {reportCalendarCells(monthValue).map((cell) => {
+            const inReportRange = cell.date >= orderedStart && cell.date <= orderedEnd
+            const isReportEdge = cell.date === orderedStart || cell.date === orderedEnd
+            const inCompareRange = draftCompareEnabled && cell.date >= orderedCompareStart && cell.date <= orderedCompareEnd
+            const isCompareEdge = draftCompareEnabled && (cell.date === orderedCompareStart || cell.date === orderedCompareEnd)
+            return (
+              <button
+                className={[
+                  'staff-report-calendar-day',
+                  cell.inMonth ? '' : 'outside',
+                  inReportRange ? 'in-range' : '',
+                  isReportEdge ? 'range-edge' : '',
+                  inCompareRange ? 'compare-range' : '',
+                  isCompareEdge ? 'compare-edge' : '',
+                ].filter(Boolean).join(' ')}
+                key={cell.date}
+                type="button"
+                onClick={() => selectDate(cell.date)}
+              >
+                {cell.day}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="staff-report-date-modal-title" onClick={onClose}>
+      <div className="login-modal staff-report-date-modal" onClick={(event) => event.stopPropagation()}>
+        <button className="modal-close" type="button" aria-label={text.aria.closeReportCalendar} onClick={onClose}>
+          ×
+        </button>
+        <div className="staff-report-date-modal-head">
+          <div>
+            <h3 id="staff-report-date-modal-title">{text.labels.reportRange}</h3>
+            <p>{text.labels.selectedRange}: {rangeLabel(orderedStart, orderedEnd)}</p>
+          </div>
+          <button className="staff-report-range-button" type="button" onClick={() => setRangeTarget('report')}>
+            <span>{text.labels.dateRange}</span>
+            <strong>{rangeLabel(orderedStart, orderedEnd)}</strong>
+          </button>
+        </div>
+
+        <div className="staff-report-date-modal-body">
+          <div className="staff-report-date-presets">
+            {staffReportPresetOptions.map((preset) => {
+              const [from, to] = reportPresetRange(preset)
+              const active = from === orderedStart && to === orderedEnd
+              return (
+                <button className={active ? 'active' : ''} key={preset} type="button" onClick={() => applyPreset(preset)}>
+                  {text.reportRangePresets[preset]}
+                </button>
+              )
+            })}
+          </div>
+          <div className="staff-report-date-main">
+            <div className="staff-report-date-inputs">
+              <label>
+                <span>{text.labels.startDate}</span>
+                <StaffPickerField ariaLabel={text.aria.reportStartDate} placeholder={text.chooseDate} type="date" value={draftStart} onChange={(value) => updateReportRange(value, draftEnd)} />
+              </label>
+              <label>
+                <span>{text.labels.endDate}</span>
+                <StaffPickerField ariaLabel={text.aria.reportEndDate} placeholder={text.chooseDate} type="date" value={draftEnd} onChange={(value) => updateReportRange(draftStart, value)} />
+              </label>
+            </div>
+            <div className="staff-report-calendar-nav">
+              <button type="button" aria-label={text.aria.previousReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>‹</button>
+              <span>{monthLabel(visibleMonth)} / {monthLabel(nextMonth)}</span>
+              <button type="button" aria-label={text.aria.nextReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>›</button>
+            </div>
+            <div className="staff-report-calendar-months">
+              {renderCalendarMonth(visibleMonth)}
+              {renderCalendarMonth(nextMonth)}
+            </div>
+            <div className="staff-report-date-compare">
+              <label className="staff-compare-toggle">
+                <input
+                  type="checkbox"
+                  checked={draftCompareEnabled}
+                  onChange={(event) => {
+                    setDraftCompareEnabled(event.target.checked)
+                    if (event.target.checked) setRangeTarget('compare')
+                  }}
+                />
+                {text.labels.compare}
+              </label>
+              {draftCompareEnabled && (
+                <div className="staff-report-date-compare-fields">
+                  <button className="staff-report-range-button compact" type="button" onClick={() => setRangeTarget('compare')}>
+                    <span>{text.labels.compareRange}</span>
+                    <strong>{rangeLabel(orderedCompareStart, orderedCompareEnd)}</strong>
+                  </button>
+                  <label>
+                    <span>{text.labels.startDate}</span>
+                    <StaffPickerField ariaLabel={text.aria.compareStartDate} placeholder={text.chooseDate} type="date" value={draftCompareStart} onChange={setDraftCompareStart} />
+                  </label>
+                  <label>
+                    <span>{text.labels.endDate}</span>
+                    <StaffPickerField ariaLabel={text.aria.compareEndDate} placeholder={text.chooseDate} type="date" value={draftCompareEnd} onChange={setDraftCompareEnd} />
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="staff-report-date-modal-actions">
+          <button className="secondary" type="button" onClick={onClose}>{text.actions.cancel}</button>
+          <button
+            className="primary"
+            type="button"
+            onClick={() => onApply(orderedStart, orderedEnd, draftCompareEnabled, orderedCompareStart, orderedCompareEnd)}
+          >
+            {text.actions.apply}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -2018,6 +2363,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   const [compareEnabled, setCompareEnabled] = useState(false)
   const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
+  const [reportDatePickerOpen, setReportDatePickerOpen] = useState(false)
+  const [reportDatePickerTarget, setReportDatePickerTarget] = useState<'report' | 'compare'>('report')
   const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
   const [status, setStatus] = useState('')
   const [loadingData, setLoadingData] = useState<Partial<Record<StaffDataKey, boolean>>>({})
@@ -3074,13 +3421,21 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   }
 
   function applyPreviousPeriodComparison() {
-    const [from, to] = orderedRange(reportStart, reportEnd)
-    const periodDays = Math.max(1, daysBetween(from, to) + 1)
-    const previousEnd = addDays(from, -1)
-    const previousStart = addDays(previousEnd, -(periodDays - 1))
+    const [previousStart, previousEnd] = previousPeriodRange(reportStart, reportEnd)
     setCompareStart(previousStart)
     setCompareEnd(previousEnd)
     setCompareEnabled(true)
+  }
+
+  function applyReportDateRange(nextStart: string, nextEnd: string, nextCompareEnabled: boolean, nextCompareStart: string, nextCompareEnd: string) {
+    const [from, to] = orderedRange(nextStart, nextEnd)
+    const [compareFrom, compareTo] = orderedRange(nextCompareStart, nextCompareEnd)
+    setReportStart(from)
+    setReportEnd(to)
+    setCompareEnabled(nextCompareEnabled)
+    setCompareStart(compareFrom)
+    setCompareEnd(compareTo)
+    setReportDatePickerOpen(false)
   }
 
   function exportExcelReport() {
@@ -3996,16 +4351,23 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
             <h3>{text.tabs.report}</h3>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
-                <button type="button" onClick={() => { const date = todayString(); setReportStart(date); setReportEnd(date) }}>{text.actions.today}</button>
                 <button type="button" onClick={() => {
-                  const date = new Date()
-                  date.setDate(date.getDate() - 1)
-                  const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                  setReportStart(value)
-                  setReportEnd(value)
+                  const [from, to] = reportPresetRange('today')
+                  setReportStart(from)
+                  setReportEnd(to)
+                }}>{text.actions.today}</button>
+                <button type="button" onClick={() => {
+                  const [from, to] = reportPresetRange('yesterday')
+                  setReportStart(from)
+                  setReportEnd(to)
                 }}>{text.actions.yesterday}</button>
-                <StaffPickerField ariaLabel={text.aria.reportStartDate} placeholder={text.chooseDate} type="date" value={reportStart} onChange={setReportStart} />
-                <StaffPickerField ariaLabel={text.aria.reportEndDate} placeholder={text.chooseDate} type="date" value={reportEnd} onChange={setReportEnd} />
+                <button className="staff-report-range-button" type="button" onClick={() => {
+                  setReportDatePickerTarget('report')
+                  setReportDatePickerOpen(true)
+                }}>
+                  <span>{text.labels.dateRange}</span>
+                  <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+                </button>
                 <button type="button" onClick={applyPreviousPeriodComparison}>{text.actions.previousPeriod}</button>
                 <label className="staff-compare-toggle">
                   <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
@@ -4019,8 +4381,13 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
               {compareEnabled && (
                 <div className="staff-report-compare-row">
                   <span>{text.compareWith}</span>
-                  <StaffPickerField ariaLabel={text.aria.compareStartDate} placeholder={text.chooseDate} type="date" value={compareStart} onChange={setCompareStart} />
-                  <StaffPickerField ariaLabel={text.aria.compareEndDate} placeholder={text.chooseDate} type="date" value={compareEnd} onChange={setCompareEnd} />
+                  <button className="staff-report-range-button compact" type="button" onClick={() => {
+                    setReportDatePickerTarget('compare')
+                    setReportDatePickerOpen(true)
+                  }}>
+                    <span>{text.labels.compareRange}</span>
+                    <strong>{rangeLabel(compareStart, compareEnd)}</strong>
+                  </button>
                 </div>
               )}
             </div>
@@ -4188,6 +4555,20 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
             ))}
           </div>
         </div>
+      )}
+
+      {reportDatePickerOpen && (
+        <StaffReportDateRangeModal
+          text={text}
+          reportStart={reportStart}
+          reportEnd={reportEnd}
+          compareEnabled={compareEnabled}
+          compareStart={compareStart}
+          compareEnd={compareEnd}
+          initialRangeTarget={reportDatePickerTarget}
+          onApply={applyReportDateRange}
+          onClose={() => setReportDatePickerOpen(false)}
+        />
       )}
 
       {profileDeleteDraft && (
