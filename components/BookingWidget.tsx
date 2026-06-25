@@ -2006,6 +2006,7 @@ export default function WidgetPage({
   const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
+  const [highlightedSessionId, setHighlightedSessionId] = useState('')
   const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
   const [profilePastExpanded, setProfilePastExpanded] = useState(false)
   const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
@@ -2063,6 +2064,7 @@ export default function WidgetPage({
   const leaderboardLoadedCountRef = useRef(0)
   const leaderboardQueryRef = useRef<LeaderboardQuery>(initialLeaderboardQuery())
   const leaderboardSearchReloadTimeoutRef = useRef<number | null>(null)
+  const highlightedSessionTimeoutRef = useRef<number | null>(null)
   const sessionsLoadedRef = useRef(false)
   const upcomingSessionsThroughRef = useRef('')
   const loadingSessionRangeRef = useRef(false)
@@ -2556,6 +2558,15 @@ export default function WidgetPage({
     if (session.session_type === 'tournament') ensureTournamentDataLoaded()
   }
 
+  function highlightSessionCard(sessionId: string) {
+    setHighlightedSessionId(sessionId)
+    if (highlightedSessionTimeoutRef.current) window.clearTimeout(highlightedSessionTimeoutRef.current)
+    highlightedSessionTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedSessionId('')
+      highlightedSessionTimeoutRef.current = null
+    }, 5000)
+  }
+
   function openSessionFromProfile(sessionId: string) {
     const targetSession = sessions.find((session) => session.id === sessionId)
 
@@ -2563,6 +2574,7 @@ export default function WidgetPage({
     setSelectedSessionDate('')
     setIsSearchOpen(false)
     setActiveView('sessions')
+    highlightSessionCard(sessionId)
     setExpandedSessions((current) => ({ ...current, [sessionId]: true }))
     void loadSessionDetail(sessionId)
     void loadSessionMessages(sessionId)
@@ -2571,7 +2583,7 @@ export default function WidgetPage({
       if (targetSession.session_type === 'tournament') ensureTournamentDataLoaded()
     }
     window.setTimeout(() => {
-      document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
   }
 
@@ -4474,6 +4486,7 @@ export default function WidgetPage({
 
   useEffect(() => () => {
     if (leaderboardSearchReloadTimeoutRef.current) window.clearTimeout(leaderboardSearchReloadTimeoutRef.current)
+    if (highlightedSessionTimeoutRef.current) window.clearTimeout(highlightedSessionTimeoutRef.current)
   }, [])
 
   useEffect(() => {
@@ -5420,6 +5433,7 @@ function handleSessionDateChange(value: string) {
     ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
     : 0
   const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
+  const canStaffExpandTicketSessions = Boolean(profile && staffAccessRank >= 50)
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
 
@@ -9400,8 +9414,9 @@ function handleSessionDateChange(value: string) {
                 const isTicket = isTicketSession(session)
                 const isChallenge = isChallengeSession(session)
                 const canManage = canManageSession(session)
+                const canExpandTicketSession = isSessionCreator(session) || canStaffExpandTicketSessions
                 const canExpandDetails = isTicket
-                  ? isSessionCreator(session)
+                  ? canExpandTicketSession
                   : isChallenge
                     ? Boolean(isSessionOwner || isAdmin || alreadyJoined || session.challenge_target_id === userId)
                     : true
@@ -9412,6 +9427,7 @@ function handleSessionDateChange(value: string) {
                 const canJoinThisSession = canAccessClubSession(session)
                 const canSeeSessionPlayers = canSeeClubPrivateData(sessionClub)
                 const isExpanded = canExpandDetails && Boolean(expandedSessions[session.id])
+                const isHighlighted = highlightedSessionId === session.id
                 const isPast = isPastSession(session)
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
@@ -9452,7 +9468,15 @@ function handleSessionDateChange(value: string) {
                 )
 
                 return (
-                  <article className={isExpanded ? 'session expanded-session' : 'session'} id={`session-${session.id}`} key={session.id}>
+                  <article
+                    className={[
+                      'session',
+                      isExpanded ? 'expanded-session' : '',
+                      isHighlighted ? 'session-highlighted' : '',
+                    ].filter(Boolean).join(' ')}
+                    id={`session-${session.id}`}
+                    key={session.id}
+                  >
                     <div
                       className={isExpanded ? 'compact-session-card compact-session-card-expanded' : 'compact-session-card'}
                       onClick={(event) => {
@@ -10967,6 +10991,7 @@ function handleSessionDateChange(value: string) {
                             })}
                             {daySessions.map((session) => {
                               const coverGame = sessionCoverGame(session)
+                              const isTicket = isTicketSession(session)
                               const start = timeToMinutes(session.start_time)
                               const end = start + session.duration_minutes
                               const visibleStart = Math.max(start, OPEN_MINUTES)
@@ -10976,18 +11001,38 @@ function handleSessionDateChange(value: string) {
                                 4,
                                 ((visibleEnd - visibleStart) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
                               )
+                              const participantCount = session.session_participants?.length ?? 0
+                              const capacity = isTicket ? session.ticket_player_count || session.max_players : session.max_players
+                              const sessionKind = isTicket
+                                ? text.privateTicketSession
+                                : session.visibility === 'private'
+                                  ? text.private
+                                  : text.public
+                              const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
+                              const calendarSessionLabel = `${session.name}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
 
                               return (
                                 <button
-                                  className={isTicketSession(session) ? 'calendar-session-block ticket' : 'calendar-session-block'}
+                                  aria-label={calendarSessionLabel}
+                                  className={isTicket ? 'calendar-session-block ticket' : 'calendar-session-block'}
                                   key={session.id}
                                   style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
+                                  title={calendarSessionLabel}
                                   type="button"
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
-                                  <strong>{session.name}</strong>
-                                  <span>{session.start_time.slice(0, 5)}-{minutesToTime(end)}</span>
-                                  <small>{coverGame.title}</small>
+                                  <span className="calendar-session-compact">
+                                    <strong>{session.name}</strong>
+                                    <span>{timeRangeLabel}</span>
+                                    <small>{coverGame.title}</small>
+                                  </span>
+                                  <span className="calendar-session-popover" aria-hidden="true">
+                                    <strong>{session.name}</strong>
+                                    <span>{formatShortDate(session.date, language)} · {timeRangeLabel}</span>
+                                    <span>{coverGame.title}</span>
+                                    <span>{session.duration_minutes} min · {sessionKind}</span>
+                                    <span>{participantCount}/{capacity} {text.players}</span>
+                                  </span>
                                 </button>
                               )
                             })}
