@@ -85,7 +85,7 @@ const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
-const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px)'
+const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px), (pointer: coarse)'
 
 type LeaderboardQuery = {
   clubId: string
@@ -400,7 +400,7 @@ export default function FastHomeShell() {
   const [text, setText] = useState<TranslationMap>(() => getFallbackTranslation())
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [isStaffModeMobile, setIsStaffModeMobile] = useState(false)
+  const [isStaffModeMobile, setIsStaffModeMobile] = useState(() => isStaffModeMobileViewport())
   const [staffModeChoiceResolved, setStaffModeChoiceResolved] = useState(false)
   const [staffOnlyModeOpen, setStaffOnlyModeOpen] = useState(false)
   const [userId, setUserId] = useState('')
@@ -437,6 +437,14 @@ export default function FastHomeShell() {
     && !staffOnlyModeOpen
   )
   const activeShellView = heavyTarget?.view ?? 'leaderboard'
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setStaffModeChoiceResolved(false)
+    }, 0)
+
+    return () => window.clearTimeout(handle)
+  }, [staffAccessRank, userId])
 
   const handleFullWidgetViewChange = useCallback((view: AppView) => {
     setHeavyTarget((currentTarget) => {
