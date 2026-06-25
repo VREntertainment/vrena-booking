@@ -1675,6 +1675,46 @@ body {
   min-width: 0;
 }
 
+.app .staff-role-person {
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+}
+
+.app .staff-role-person > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-role-avatar {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(48, 89, 255, 0.24);
+  border-radius: 999px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.app .staff-role-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app .staff-role-avatar-emoji {
+  font-size: 22px;
+}
+
+.app .staff-role-avatar-initials {
+  font-size: 16px;
+}
+
 .app .staff-role-row span,
 .app .staff-role-row small,
 .app .staff-restore-row span,
@@ -8064,6 +8104,7 @@ body {
   .app .staff-summary-grid > div,
   .app .staff-list-item,
   .app .staff-role-row,
+  .app .staff-role-avatar,
   .app .staff-restore-row,
   .app .staff-role-help-item,
   .app .staff-game-photo-upload,

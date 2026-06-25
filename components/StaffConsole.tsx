@@ -1,5 +1,6 @@
 'use client'
 
+import NextImage from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
 import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
@@ -47,6 +48,13 @@ type StaffProfile = {
   nickname?: string | null
   email?: string | null
   phone?: string | null
+  avatar_url?: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_color?: string | null
+  avatar_text_color?: string | null
+  anonymous_mode?: boolean | null
+  anonymous_callsign?: string | null
   role?: string | null
   is_seed_demo?: boolean | null
   seed_batch?: string | null
@@ -1561,6 +1569,8 @@ const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 'role_asc', 'email_asc']
+const staffProfileSelect = 'id, full_name, nickname, email, phone, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -1962,6 +1972,39 @@ function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], tex
 
 function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
+}
+
+function staffRoleAvatarInitials(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
+  const source = profile.avatar_initials || customerName(profile, text)
+  return Array.from(source.trim()).slice(0, 2).join('').toUpperCase() || '?'
+}
+
+function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: StaffConsoleCopy }) {
+  const name = customerName(profile, text)
+  const imageUrl = profile.avatar_url?.trim()
+  const emoji = profile.avatar_emoji?.trim()
+  const style = {
+    background: profile.avatar_color || '#3059ff',
+    color: profile.avatar_text_color || '#ffffff',
+  }
+
+  return (
+    <span className="staff-role-avatar" style={style}>
+      {imageUrl ? (
+        <NextImage
+          alt={`${name} profile photo`}
+          height={42}
+          loading="lazy"
+          src={imageUrl}
+          width={42}
+        />
+      ) : (
+        <span className={emoji ? 'staff-role-avatar-emoji' : 'staff-role-avatar-initials'}>
+          {emoji || staffRoleAvatarInitials(profile, text)}
+        </span>
+      )}
+    </span>
+  )
 }
 
 function paymentMethodLabel(value: string, text: StaffConsoleCopy = staffConsoleText.en) {
@@ -3428,6 +3471,32 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
 
   async function loadProfiles(force = false) {
     await runStaffLoader('profiles', async () => {
+      async function hydrateProfileAvatars(rows: StaffProfile[]) {
+        const missingAvatarRows = rows.filter((item) => (
+          !item.avatar_url
+          && !item.avatar_emoji
+          && !item.avatar_initials
+          && !item.avatar_color
+          && !item.avatar_text_color
+        ))
+
+        if (missingAvatarRows.length === 0) return rows
+
+        const profileIds = missingAvatarRows.map((item) => item.id).filter(Boolean)
+        if (profileIds.length === 0) return rows
+
+        const { data } = await supabase
+          .from('profiles')
+          .select(staffProfileAvatarSelect)
+          .in('id', profileIds)
+
+        const avatarById = new Map((data ?? []).map((item) => [item.id, item as StaffProfile]))
+        return rows.map((item) => ({
+          ...item,
+          ...(avatarById.get(item.id) ?? {}),
+        }))
+      }
+
       const rpcResult = await supabase.rpc('profile_search', {
         p_search: null,
         p_limit: 500,
@@ -3438,7 +3507,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
       })
 
       if (!rpcResult.error && rpcResult.data) {
-        setProfiles((rpcResult.data as StaffProfile[]).filter((item) => !isDemoProfile(item)))
+        const rows = (rpcResult.data as StaffProfile[]).filter((item) => !isDemoProfile(item))
+        setProfiles(await hydrateProfileAvatars(rows))
         setPendingRoleChanges({})
         return
       }
@@ -3449,7 +3519,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, nickname, email, phone, role, is_seed_demo, seed_batch')
+        .select(staffProfileSelect)
         .is('deleted_at', null)
         .order('full_name', { ascending: true })
         .limit(500)
@@ -5065,10 +5135,13 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
               const rowFeedback = roleSaveFeedback[item.id]
               return (
                 <div className="staff-role-row" key={item.id}>
-                  <div>
-                    <strong>{customerName(item, text)}</strong>
-                    <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
-                    {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
+                  <div className="staff-role-person">
+                    <StaffRoleAvatar profile={item} text={text} />
+                    <div>
+                      <strong>{customerName(item, text)}</strong>
+                      <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
+                      {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
+                    </div>
                   </div>
                   <div className="staff-role-action-cell">
                     <select
