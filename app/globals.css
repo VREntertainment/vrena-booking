@@ -2458,6 +2458,116 @@ body {
   font-weight: 900;
 }
 
+.app .staff-attendance-card .staff-card-heading p {
+  margin: 2px 0 0;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .staff-attendance-range {
+  margin: 6px 0 10px;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-attendance-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.app .staff-attendance-tabs {
+  margin: 12px 0;
+}
+
+.app .staff-attendance-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.app .staff-attendance-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-attendance-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 10px;
+}
+
+.app .staff-attendance-person {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.app .staff-attendance-person .staff-role-avatar {
+  flex: 0 0 auto;
+}
+
+.app .staff-attendance-person div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .staff-attendance-person strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-attendance-person span,
+.app .staff-attendance-meta span {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-attendance-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  min-width: 0;
+}
+
+.app .staff-attendance-row-actions {
+  justify-content: flex-end;
+  max-width: 260px;
+}
+
+.app .staff-attendance-form {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.app .staff-attendance-form h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.app .staff-attendance-settings {
+  max-width: 980px;
+}
+
+.app .staff-attendance-table td,
+.app .staff-attendance-table th {
+  white-space: nowrap;
+}
+
 .app .staff-report-graphics {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
@@ -7195,6 +7305,27 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .staff-attendance-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-attendance-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-attendance-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-attendance-row-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .app .staff-attendance-actions {
+    justify-content: flex-start;
+  }
+
   .app .staff-operation-session {
     grid-template-columns: 72px minmax(0, 1fr);
   }
@@ -8201,6 +8332,8 @@ body {
   .app .staff-accountant-export-panel,
   .app .staff-accountant-export-check,
   .app .staff-accountant-export-panel button,
+  .app .staff-attendance-form,
+  .app .staff-attendance-row,
   .app .staff-report-date-modal,
   .app .staff-report-date-presets button,
   .app .staff-report-calendar-day,
@@ -8256,6 +8389,10 @@ body {
   }
 
   .app .staff-operations-card .staff-card-heading p,
+  .app .staff-attendance-card .staff-card-heading p,
+  .app .staff-attendance-range,
+  .app .staff-attendance-person span,
+  .app .staff-attendance-meta span,
   .app .staff-operation-time span,
   .app .staff-operation-meta span,
   .app .staff-operation-order span {
