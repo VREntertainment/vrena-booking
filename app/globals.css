@@ -2616,7 +2616,6 @@ body {
 
 .app .staff-planning-grid {
   display: grid;
-  grid-template-columns: minmax(136px, 0.8fr) repeat(7, minmax(126px, 1fr));
   gap: 4px;
   min-width: 1040px;
 }
@@ -2646,10 +2645,22 @@ body {
 
 .app .staff-planning-staff {
   display: flex;
-  gap: 7px;
+  gap: 10px;
   align-items: center;
   min-width: 0;
   font-weight: 900;
+}
+
+.app .staff-planning-staff .staff-role-avatar {
+  --avatar-size: 42px;
+  --avatar-emoji-size: 24px;
+  --avatar-text-size: 15px;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  overflow: hidden;
 }
 
 .app .staff-planning-staff > span {
