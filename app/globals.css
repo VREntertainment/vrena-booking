@@ -2652,10 +2652,27 @@ body {
   font-weight: 900;
 }
 
-.app .staff-planning-staff span {
+.app .staff-planning-staff > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.app .staff-planning-staff strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app .staff-planning-staff small {
+  color: #637075;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app .staff-planning-staff.inactive {
+  opacity: 0.72;
 }
 
 .app .staff-planning-cell {
@@ -2822,6 +2839,10 @@ body {
   border-color: rgba(48, 89, 255, 0.45);
 }
 
+.app .staff-employee-row.inactive:not(.active) {
+  opacity: 0.72;
+}
+
 .app .staff-employee-row > span,
 .app .staff-employee-selected > div {
   display: grid;
@@ -2863,10 +2884,27 @@ body {
 
 .app .staff-checkbox-row {
   align-items: center;
+  background: #f8fafb;
+  border: 1px solid #d8dde0;
+  border-radius: 8px;
   color: #071112;
-  display: flex;
+  display: inline-flex;
   font-weight: 900;
   gap: 8px;
+  line-height: 1.15;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  width: fit-content;
+}
+
+.app .staff-checkbox-row input {
+  flex: 0 0 auto;
+}
+
+.app .staff-checkbox-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .app .staff-attendance-settings {
@@ -8729,6 +8767,7 @@ body {
   .app .staff-planning-title span,
   .app .staff-planning-toolbar label,
   .app .staff-planning-day span,
+  .app .staff-planning-staff small,
   .app .staff-employee-list > .staff-helper-text,
   .app .staff-employee-row small,
   .app .staff-employee-selected span,
@@ -8738,6 +8777,8 @@ body {
   }
 
   .app .staff-checkbox-row {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.12);
     color: #f4f8f8;
   }
 
