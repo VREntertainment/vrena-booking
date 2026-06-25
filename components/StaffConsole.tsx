@@ -9,13 +9,14 @@ import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
-type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'settings'
+type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
 type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
+type StaffEmploymentType = 'full_time' | 'part_time' | 'contractor' | 'intern' | 'probation'
 type AccountantExportReportId =
   | 'sales_revenue'
   | 'einvoice_reconciliation'
@@ -177,6 +178,30 @@ type StaffLeaveRequest = {
   requested_by: string | null
   reviewed_by: string | null
   reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+type StaffEmployeeProfile = {
+  profile_id: string
+  employee_code: string | null
+  legal_name: string | null
+  personal_phone: string | null
+  personal_email: string | null
+  job_title: string | null
+  employment_type: StaffEmploymentType
+  start_date: string | null
+  end_date: string | null
+  base_salary_vnd: number
+  hourly_rate_vnd: number
+  bank_name: string | null
+  bank_account_number: string | null
+  tax_code: string | null
+  social_insurance_number: string | null
+  emergency_contact: string | null
+  payroll_note: string | null
+  active: boolean
+  created_by: string | null
   created_at: string
   updated_at: string
 }
@@ -440,6 +465,7 @@ const staffConsoleText = {
       download: 'Download',
       saveAttendance: 'Save attendance',
       saveDiscount: 'Save discount',
+      saveEmployeeProfile: 'Save employee profile',
       saveGame: 'Save game',
       saveLoyaltyRule: 'Save loyalty rule',
       savePrice: 'Save price',
@@ -505,6 +531,7 @@ const staffConsoleText = {
       clock: 'Clock-in log',
       timesheet: 'Timesheet',
       leave: 'Leave',
+      employee: 'Employee profile',
       settings: 'Rules',
     } satisfies Record<StaffAttendanceTab, string>,
     shiftStatuses: {
@@ -540,6 +567,13 @@ const staffConsoleText = {
       rejected: 'rejected',
       requested: 'requested',
     } satisfies Record<StaffLeaveStatus, string>,
+    employmentTypes: {
+      full_time: 'Full-time',
+      part_time: 'Part-time',
+      contractor: 'Contractor',
+      intern: 'Intern',
+      probation: 'Probation',
+    } satisfies Record<StaffEmploymentType, string>,
     dayTypes: {
       custom: 'custom',
       holiday: 'holiday',
@@ -577,6 +611,7 @@ const staffConsoleText = {
     labels: {
       actions: 'Actions',
       active: 'Active',
+      activeEmployee: 'Active employee',
       accountantExports: 'Accountant exports',
       arena: 'Arena',
       arenaIds: 'Arena IDs',
@@ -585,7 +620,10 @@ const staffConsoleText = {
       attendance: 'Attendance',
       attendanceDate: 'Attendance date',
       attendanceSchedule: 'Attendance & work schedule',
+      bankAccount: 'Bank account',
+      bankName: 'Bank name',
       bankTransfer: 'Bank transfer',
+      baseSalary: 'Base salary (đ)',
       bestSellingGame: 'Best-selling game',
       bookings: 'Bookings',
       breakMinutes: 'Break minutes',
@@ -621,14 +659,19 @@ const staffConsoleText = {
       discounts: 'Discounts',
       duration: 'Duration',
       email: 'E-mail',
+      employeeCode: 'Employee code',
+      employmentType: 'Employment type',
       end: 'End',
       endDate: 'End date',
+      emergencyContact: 'Emergency contact',
+      estimatedPayroll: 'Estimated payroll',
       exportFormat: 'Format',
       exportLanguage: 'Language',
       exportReport: 'Report',
       exportStore: 'Store / location',
       holidayHours: 'Holiday hours',
       hours: 'Hours',
+      hourlyRate: 'Hourly rate (đ)',
       filterByRole: 'Filter by role',
       game: 'Game',
       guideGameplay: 'GamePlay',
@@ -640,7 +683,9 @@ const staffConsoleText = {
       imageUrl: 'Image URL',
       includeAttachments: 'Include attachments list',
       internalNote: 'Internal note',
+      jobTitle: 'Job title',
       lateNoShow: 'Late / no-show',
+      legalName: 'Legal name',
       leaveHours: 'Leave hours',
       leaveType: 'Leave type',
       location: 'Location',
@@ -666,8 +711,12 @@ const staffConsoleText = {
       paymentSplits: 'Payment splits',
       paymentStatus: 'Payment status',
       paymentMix: 'Payment mix',
+      payrollLink: 'Attendance / payroll link',
+      payrollNote: 'Payroll note',
       perVndSpent: 'Per VND spent',
       phone: 'Phone',
+      personalEmail: 'Personal e-mail',
+      personalPhone: 'Personal phone',
       players: 'Players',
       pointsEarned: 'Points earned',
       pointsExpireAfterDays: 'Points expire after days',
@@ -675,6 +724,7 @@ const staffConsoleText = {
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
       priceRules: 'Price rules',
+      privateEmployeeProfile: 'Private employee profile',
       regularHours: 'Regular hours',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
@@ -703,8 +753,10 @@ const staffConsoleText = {
       startDate: 'Start date',
       status: 'Status',
       staffMember: 'Staff member',
+      socialInsurance: 'Social insurance number',
       subtotal: 'Subtotal',
       summary: 'Summary',
+      taxCodeEmployee: 'Tax code',
       time: 'Time',
       ticketBookings: 'Ticket bookings',
       total: 'Total',
@@ -748,6 +800,10 @@ const staffConsoleText = {
       attendanceRulesSaved: 'Attendance rules saved.',
       attendanceSaved: 'Attendance saved.',
       discountSaved: 'Discount saved.',
+      draftShiftCreated: 'Draft shift created.',
+      draftShiftExists: 'That draft already exists for this staff member and day.',
+      employeeProfileIntro: 'Private HR details linked to attendance and payroll. Visible to managers, admins, and owners only.',
+      employeeProfileSaved: 'Employee profile saved.',
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
       gamePhotoUploaded: 'Game photo uploaded. Save the game to keep it.',
@@ -930,6 +986,7 @@ const staffConsoleText = {
       download: 'Tải xuống',
       saveAttendance: 'Lưu chấm công',
       saveDiscount: 'Lưu ưu đãi',
+      saveEmployeeProfile: 'Lưu hồ sơ nhân viên',
       saveGame: 'Lưu trò chơi',
       saveLoyaltyRule: 'Lưu quy tắc điểm',
       savePrice: 'Lưu giá',
@@ -995,6 +1052,7 @@ const staffConsoleText = {
       clock: 'Chấm công',
       timesheet: 'Bảng công',
       leave: 'Nghỉ phép',
+      employee: 'Hồ sơ nhân viên',
       settings: 'Quy định',
     } satisfies Record<StaffAttendanceTab, string>,
     shiftStatuses: {
@@ -1030,6 +1088,13 @@ const staffConsoleText = {
       rejected: 'từ chối',
       requested: 'đang chờ',
     } satisfies Record<StaffLeaveStatus, string>,
+    employmentTypes: {
+      full_time: 'Toàn thời gian',
+      part_time: 'Bán thời gian',
+      contractor: 'Cộng tác viên',
+      intern: 'Thực tập',
+      probation: 'Thử việc',
+    } satisfies Record<StaffEmploymentType, string>,
     dayTypes: {
       custom: 'tùy chỉnh',
       holiday: 'ngày lễ',
@@ -1067,6 +1132,7 @@ const staffConsoleText = {
     labels: {
       actions: 'Thao tác',
       active: 'Đang bật',
+      activeEmployee: 'Nhân viên đang làm',
       accountantExports: 'Xuất kế toán',
       arena: 'Arena',
       arenaIds: 'Mã arena',
@@ -1075,7 +1141,10 @@ const staffConsoleText = {
       attendance: 'Chấm công',
       attendanceDate: 'Ngày chấm công',
       attendanceSchedule: 'Chấm công & lịch làm',
+      bankAccount: 'Số tài khoản',
+      bankName: 'Ngân hàng',
       bankTransfer: 'Chuyển khoản',
+      baseSalary: 'Lương cơ bản (đ)',
       bestSellingGame: 'Trò chơi bán chạy nhất',
       bookings: 'Đặt chỗ',
       breakMinutes: 'Phút nghỉ',
@@ -1111,14 +1180,19 @@ const staffConsoleText = {
       discounts: 'Ưu đãi',
       duration: 'Thời lượng',
       email: 'E-mail',
+      employeeCode: 'Mã nhân viên',
+      employmentType: 'Loại hợp đồng',
       end: 'Kết thúc',
       endDate: 'Ngày kết thúc',
+      emergencyContact: 'Liên hệ khẩn cấp',
+      estimatedPayroll: 'Lương tạm tính',
       exportFormat: 'Định dạng',
       exportLanguage: 'Ngôn ngữ',
       exportReport: 'Báo cáo',
       exportStore: 'Cơ sở',
       holidayHours: 'Giờ ngày lễ',
       hours: 'Giờ',
+      hourlyRate: 'Lương theo giờ (đ)',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
       guideGameplay: 'GamePlay',
@@ -1130,7 +1204,9 @@ const staffConsoleText = {
       imageUrl: 'URL ảnh',
       includeAttachments: 'Kèm danh sách chứng từ',
       internalNote: 'Ghi chú nội bộ',
+      jobTitle: 'Chức danh',
       lateNoShow: 'Đi trễ / không đến',
+      legalName: 'Tên pháp lý',
       leaveHours: 'Giờ nghỉ',
       leaveType: 'Loại nghỉ',
       location: 'Cơ sở',
@@ -1156,8 +1232,12 @@ const staffConsoleText = {
       paymentSplits: 'Tách thanh toán',
       paymentStatus: 'Trạng thái thanh toán',
       paymentMix: 'Cơ cấu thanh toán',
+      payrollLink: 'Liên kết chấm công / lương',
+      payrollNote: 'Ghi chú lương',
       perVndSpent: 'Theo VND chi tiêu',
       phone: 'Điện thoại',
+      personalEmail: 'Email cá nhân',
+      personalPhone: 'SĐT cá nhân',
       players: 'Người chơi',
       pointsEarned: 'Điểm nhận được',
       pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
@@ -1165,6 +1245,7 @@ const staffConsoleText = {
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
       priceRules: 'Quy tắc giá',
+      privateEmployeeProfile: 'Hồ sơ nhân viên riêng tư',
       regularHours: 'Giờ thường',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
@@ -1193,8 +1274,10 @@ const staffConsoleText = {
       startDate: 'Ngày bắt đầu',
       status: 'Trạng thái',
       staffMember: 'Nhân viên',
+      socialInsurance: 'Mã BHXH',
       subtotal: 'Tạm tính',
       summary: 'Tóm tắt',
+      taxCodeEmployee: 'Mã số thuế',
       time: 'Giờ',
       ticketBookings: 'Đặt vé',
       total: 'Tổng',
@@ -1238,6 +1321,10 @@ const staffConsoleText = {
       attendanceRulesSaved: 'Đã lưu quy định chấm công.',
       attendanceSaved: 'Đã lưu chấm công.',
       discountSaved: 'Đã lưu ưu đãi.',
+      draftShiftCreated: 'Đã tạo ca nháp.',
+      draftShiftExists: 'Ca nháp này đã tồn tại cho nhân viên và ngày này.',
+      employeeProfileIntro: 'Thông tin nhân sự riêng tư được liên kết với chấm công và tính lương. Chỉ quản lý, admin và owner xem được.',
+      employeeProfileSaved: 'Đã lưu hồ sơ nhân viên.',
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
       gamePhotoUploaded: 'Đã tải ảnh. Lưu trò chơi để giữ ảnh.',
@@ -2133,6 +2220,27 @@ const defaultLeaveForm = () => ({
   reason: '',
 })
 
+const defaultEmployeeForm = () => ({
+  profile_id: '',
+  employee_code: '',
+  legal_name: '',
+  personal_phone: '',
+  personal_email: '',
+  job_title: '',
+  employment_type: 'part_time' as StaffEmploymentType,
+  start_date: '',
+  end_date: '',
+  base_salary_vnd: '',
+  hourly_rate_vnd: '',
+  bank_name: '',
+  bank_account_number: '',
+  tax_code: '',
+  social_insurance_number: '',
+  emergency_contact: '',
+  payroll_note: '',
+  active: true,
+})
+
 const paymentMethods = ['cash', 'bank_transfer'] as const
 const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
 const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
@@ -2140,10 +2248,11 @@ const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
 const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
-const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'settings']
+const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'employee', 'settings']
 const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed', 'cancelled']
 const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
 const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
+const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'contractor', 'intern', 'probation']
 const ownerEmails = ['emilejacquet@icloud.com']
 const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const adminEmails = [...ownerEmails, ...adminOnlyEmails]
@@ -3757,6 +3866,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [attendanceShifts, setAttendanceShifts] = useState<StaffScheduleShift[]>([])
   const [attendanceLogs, setAttendanceLogs] = useState<StaffAttendanceLog[]>([])
   const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([])
+  const [employeeProfiles, setEmployeeProfiles] = useState<StaffEmployeeProfile[]>([])
   const [attendanceSettings, setAttendanceSettings] = useState<StaffAttendanceSettings>(() => defaultAttendanceSettings())
   const [selectedShiftTemplate, setSelectedShiftTemplate] = useState<StaffShiftTemplateId>('opening')
   const [draggingShiftId, setDraggingShiftId] = useState('')
@@ -3773,6 +3883,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [shiftForm, setShiftForm] = useState(() => defaultShiftForm())
   const [attendanceLogForm, setAttendanceLogForm] = useState(() => defaultAttendanceLogForm())
   const [leaveForm, setLeaveForm] = useState(() => defaultLeaveForm())
+  const [employeeForm, setEmployeeForm] = useState(() => defaultEmployeeForm())
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
   const [operationsDate, setOperationsDate] = useState(todayString())
@@ -3902,6 +4013,26 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   ), [profiles])
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const firstStaffProfileId = staffProfileOptions[0]?.id || ''
+  const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
+  const selectedEmployeeStaffId = employeeForm.profile_id || firstStaffProfileId
+  const selectedEmployeeStaffProfile = selectedEmployeeStaffId
+    ? profileById.get(selectedEmployeeStaffId) || staffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
+    : null
+  const employeePayrollSummary = useMemo(() => {
+    const staffId = employeeForm.profile_id || firstStaffProfileId
+    const scheduledMinutes = attendanceShifts
+      .filter((shift) => shift.staff_profile_id === staffId && shift.status !== 'cancelled')
+      .reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
+    const workedMinutes = attendanceLogs
+      .filter((log) => log.staff_profile_id === staffId)
+      .reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
+    const hourlyRate = parseDong(employeeForm.hourly_rate_vnd)
+    return {
+      scheduledMinutes,
+      workedMinutes,
+      estimatedPayroll: Math.round((workedMinutes / 60) * hourlyRate),
+    }
+  }, [attendanceLogs, attendanceShifts, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstStaffProfileId])
   const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
@@ -4276,7 +4407,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   async function loadAttendanceData(force = false) {
     await runStaffLoader('attendance', async () => {
       const [weekStart, weekEnd] = attendanceWeekRange(attendanceDate)
-      const [shiftsResult, logsResult, leaveResult, settingsResult] = await Promise.all([
+      const [shiftsResult, logsResult, leaveResult, settingsResult, employeeResult] = await Promise.all([
         supabase
           .from('staff_schedule_shifts')
           .select('*')
@@ -4305,17 +4436,30 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           .select('*')
           .eq('id', 'default')
           .maybeSingle(),
+        supabase
+          .from('staff_employee_profiles')
+          .select('*')
+          .is('deleted_at', null)
+          .order('legal_name', { ascending: true }),
       ])
 
       if (shiftsResult.error) throw new Error(shiftsResult.error.message)
       if (logsResult.error) throw new Error(logsResult.error.message)
       if (leaveResult.error) throw new Error(leaveResult.error.message)
       if (settingsResult.error) throw new Error(settingsResult.error.message)
+      const employeeUnavailable = Boolean(employeeResult.error && (
+        employeeResult.error.code === '42P01' ||
+        employeeResult.error.code === '42501' ||
+        employeeResult.error.message.toLowerCase().includes('permission denied') ||
+        employeeResult.error.message.includes('staff_employee_profiles')
+      ))
+      if (employeeResult.error && !employeeUnavailable) throw new Error(employeeResult.error.message)
 
       setAttendanceShifts((shiftsResult.data ?? []) as StaffScheduleShift[])
       setAttendanceLogs((logsResult.data ?? []) as StaffAttendanceLog[])
       setLeaveRequests((leaveResult.data ?? []) as StaffLeaveRequest[])
       setAttendanceSettings((settingsResult.data as StaffAttendanceSettings | null) ?? defaultAttendanceSettings())
+      setEmployeeProfiles(employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[])
     }, force)
   }
 
@@ -4747,21 +4891,117 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     })
   }
 
-  function startShiftForCell(staffProfileId: string, shiftDate: string) {
-    if (!canManageAttendance) return
+  async function startShiftForCell(staffProfileId: string, shiftDate: string) {
+    if (!canManageAttendance || saving) return
     const template = staffShiftTemplates.find((item) => item.id === selectedShiftTemplate) || staffShiftTemplates[0]
-    setShiftForm({
-      ...defaultShiftForm(),
+    const payload = {
       staff_profile_id: staffProfileId,
       location: attendanceSettings.location || 'VRena',
       shift_role: template.shift_role,
       shift_date: shiftDate,
-      start_time: template.start_time,
-      end_time: template.end_time,
-      break_minutes: template.break_minutes,
-      status: 'draft',
+      start_time: normalizeTime(template.start_time) || '09:00',
+      end_time: normalizeTime(template.end_time) || '18:00',
+      break_minutes: Number(template.break_minutes) || 0,
+      status: 'draft' as StaffShiftStatus,
+      notes: null as string | null,
+      created_by: profile?.id || null,
+    }
+
+    setShiftForm({
+      ...defaultShiftForm(),
+      ...payload,
+      break_minutes: String(payload.break_minutes),
+      notes: '',
     })
     setAttendanceTab('schedule')
+
+    const duplicate = attendanceShifts.some((shift) => (
+      shift.staff_profile_id === staffProfileId &&
+      shift.shift_date === shiftDate &&
+      normalizeTime(shift.start_time) === payload.start_time &&
+      normalizeTime(shift.end_time) === payload.end_time &&
+      shift.shift_role === payload.shift_role &&
+      shift.status !== 'cancelled'
+    ))
+    if (duplicate) {
+      setStatus(text.messages.draftShiftExists)
+      return
+    }
+
+    setSaving(true)
+    const { error } = await supabase.from('staff_schedule_shifts').insert(payload)
+    setStatus(error ? error.message : text.messages.draftShiftCreated)
+    if (!error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
+    }
+    setSaving(false)
+  }
+
+  function employeeFormForProfile(staffProfile: StaffProfile, employee?: StaffEmployeeProfile) {
+    return {
+      profile_id: staffProfile.id,
+      employee_code: employee?.employee_code || '',
+      legal_name: employee?.legal_name || staffProfile.full_name || '',
+      personal_phone: employee?.personal_phone || staffProfile.phone || '',
+      personal_email: employee?.personal_email || staffProfile.email || '',
+      job_title: employee?.job_title || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text),
+      employment_type: (employee?.employment_type || 'part_time') as StaffEmploymentType,
+      start_date: employee?.start_date || '',
+      end_date: employee?.end_date || '',
+      base_salary_vnd: employee?.base_salary_vnd ? String(employee.base_salary_vnd) : '',
+      hourly_rate_vnd: employee?.hourly_rate_vnd ? String(employee.hourly_rate_vnd) : '',
+      bank_name: employee?.bank_name || '',
+      bank_account_number: employee?.bank_account_number || '',
+      tax_code: employee?.tax_code || '',
+      social_insurance_number: employee?.social_insurance_number || '',
+      emergency_contact: employee?.emergency_contact || '',
+      payroll_note: employee?.payroll_note || '',
+      active: employee?.active ?? true,
+    }
+  }
+
+  function editEmployeeProfile(staffProfile: StaffProfile) {
+    setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
+    setAttendanceTab('employee')
+  }
+
+  async function saveEmployeeProfile() {
+    if (!canManageAttendance) return
+    const staffProfileId = employeeForm.profile_id || firstStaffProfileId
+    if (!staffProfileId) return
+    const selectedStaff = profileById.get(staffProfileId) || staffProfileOptions.find((item) => item.id === staffProfileId) || null
+    setSaving(true)
+    const payload = {
+      profile_id: staffProfileId,
+      employee_code: employeeForm.employee_code.trim() || null,
+      legal_name: employeeForm.legal_name.trim() || selectedStaff?.full_name || null,
+      personal_phone: employeeForm.personal_phone.trim() || selectedStaff?.phone || null,
+      personal_email: employeeForm.personal_email.trim() || selectedStaff?.email || null,
+      job_title: employeeForm.job_title.trim() || null,
+      employment_type: employeeForm.employment_type,
+      start_date: employeeForm.start_date || null,
+      end_date: employeeForm.end_date || null,
+      base_salary_vnd: parseDong(employeeForm.base_salary_vnd),
+      hourly_rate_vnd: parseDong(employeeForm.hourly_rate_vnd),
+      bank_name: employeeForm.bank_name.trim() || null,
+      bank_account_number: employeeForm.bank_account_number.trim() || null,
+      tax_code: employeeForm.tax_code.trim() || null,
+      social_insurance_number: employeeForm.social_insurance_number.trim() || null,
+      emergency_contact: employeeForm.emergency_contact.trim() || null,
+      payroll_note: employeeForm.payroll_note.trim() || null,
+      active: employeeForm.active,
+      created_by: profile?.id || null,
+    }
+    const { error } = await supabase
+      .from('staff_employee_profiles')
+      .upsert(payload, { onConflict: 'profile_id' })
+    setStatus(error ? error.message : text.messages.employeeProfileSaved)
+    if (!error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
+    }
+    setSaving(false)
   }
 
   async function copyPreviousAttendanceWeek() {
@@ -5896,8 +6136,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                                     <button
                                       aria-label={`${text.aria.draftShift}: ${customerName(staffProfile, text)} ${shortDateLabel(dateValue)}`}
                                       className="staff-planning-cell-button"
+                                      disabled={saving}
                                       type="button"
-                                      onClick={() => startShiftForCell(staffProfile.id, dateValue)}
+                                      onClick={() => void startShiftForCell(staffProfile.id, dateValue)}
                                     >
                                       +
                                     </button>
@@ -6168,6 +6409,94 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label className="full">{text.labels.deleteReason}<textarea value={leaveForm.reason} onChange={(event) => setLeaveForm({ ...leaveForm, reason: event.target.value })} /></label>
                     </div>
                     <button className="primary" type="button" disabled={saving || !(leaveForm.staff_profile_id || firstStaffProfileId)} onClick={submitLeaveRequest}>{text.actions.submitLeave}</button>
+                  </fieldset>
+                </div>
+              )}
+
+              {attendanceTab === 'employee' && (
+                <div className="staff-attendance-layout staff-employee-layout">
+                  <div className="staff-attendance-list staff-employee-list">
+                    <h4>{text.labels.privateEmployeeProfile}</h4>
+                    <p className="staff-helper-text">{text.messages.employeeProfileIntro}</p>
+                    {staffProfileOptions.map((staffProfile) => {
+                      const employee = employeeProfileById.get(staffProfile.id)
+                      const isSelected = (employeeForm.profile_id || firstStaffProfileId) === staffProfile.id
+                      return (
+                        <button
+                          className={`staff-employee-row ${isSelected ? 'active' : ''}`}
+                          key={staffProfile.id}
+                          type="button"
+                          onClick={() => editEmployeeProfile(staffProfile)}
+                        >
+                          <StaffRoleAvatar profile={staffProfile} text={text} />
+                          <span>
+                            <strong>{customerName(staffProfile, text)}</strong>
+                            <small>{employee?.employee_code || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text)} · {employee?.job_title || text.labels.staffMember}</small>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form" disabled={!canManageAttendance || !selectedEmployeeStaffProfile}>
+                    <h4>{text.labels.payrollLink}</h4>
+                    {selectedEmployeeStaffProfile && (
+                      <div className="staff-employee-selected">
+                        <StaffRoleAvatar profile={selectedEmployeeStaffProfile} text={text} />
+                        <div>
+                          <strong>{customerName(selectedEmployeeStaffProfile, text)}</strong>
+                          <span>{selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone || text.noContact}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="staff-summary-grid staff-employee-summary">
+                      <div><span>{text.labels.scheduledHours}</span><strong>{hoursLabel(employeePayrollSummary.scheduledMinutes)}</strong></div>
+                      <div><span>{text.labels.workedHours}</span><strong>{hoursLabel(employeePayrollSummary.workedMinutes)}</strong></div>
+                      <div><span>{text.labels.estimatedPayroll}</span><strong>{formatVnd(employeePayrollSummary.estimatedPayroll)}</strong></div>
+                    </div>
+                    <div className="form-grid compact-form-grid">
+                      <label>
+                        {text.labels.staffMember}
+                        <select value={employeeForm.profile_id || firstStaffProfileId} onChange={(event) => {
+                          const staffProfile = profileById.get(event.target.value) || staffProfileOptions.find((item) => item.id === event.target.value)
+                          if (staffProfile) setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
+                        }}>
+                          {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                        </select>
+                      </label>
+                      <label>{text.labels.employeeCode}<input value={employeeForm.employee_code} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_code: event.target.value })} /></label>
+                      <label>{text.labels.legalName}<input value={employeeForm.legal_name} onChange={(event) => setEmployeeForm({ ...employeeForm, legal_name: event.target.value })} /></label>
+                      <label>{text.labels.jobTitle}<input value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
+                      <label>
+                        {text.labels.employmentType}
+                        <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: event.target.value as StaffEmploymentType })}>
+                          {staffEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
+                        </select>
+                      </label>
+                      <label>{text.labels.personalPhone}<input value={employeeForm.personal_phone} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_phone: event.target.value })} /></label>
+                      <label>{text.labels.personalEmail}<input value={employeeForm.personal_email} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_email: event.target.value })} /></label>
+                      <label>
+                        {text.labels.startDate}
+                        <StaffPickerField ariaLabel={text.labels.startDate} placeholder={text.chooseDate} type="date" value={employeeForm.start_date} onChange={(value) => setEmployeeForm({ ...employeeForm, start_date: value })} />
+                      </label>
+                      <label>
+                        {text.labels.endDate}
+                        <StaffPickerField ariaLabel={text.labels.endDate} placeholder={text.chooseDate} type="date" value={employeeForm.end_date} onChange={(value) => setEmployeeForm({ ...employeeForm, end_date: value })} />
+                      </label>
+                      <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
+                      <label>{text.labels.baseSalary}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
+                      <label>{text.labels.bankName}<input value={employeeForm.bank_name} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_name: event.target.value })} /></label>
+                      <label>{text.labels.bankAccount}<input value={employeeForm.bank_account_number} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_account_number: event.target.value })} /></label>
+                      <label>{text.labels.taxCodeEmployee}<input value={employeeForm.tax_code} onChange={(event) => setEmployeeForm({ ...employeeForm, tax_code: event.target.value })} /></label>
+                      <label>{text.labels.socialInsurance}<input value={employeeForm.social_insurance_number} onChange={(event) => setEmployeeForm({ ...employeeForm, social_insurance_number: event.target.value })} /></label>
+                      <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
+                      <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
+                    </div>
+                    <label className="staff-checkbox-row">
+                      <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
+                      {text.labels.activeEmployee}
+                    </label>
+                    <button className="primary" type="button" disabled={saving || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>{text.actions.saveEmployeeProfile}</button>
                   </fieldset>
                 </div>
               )}
