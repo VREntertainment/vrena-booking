@@ -16,7 +16,7 @@ type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
 type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
-type StaffEmploymentType = 'full_time' | 'part_time' | 'contractor' | 'intern' | 'probation'
+type StaffEmploymentType = 'full_time' | 'part_time' | 'contractor' | 'intern' | 'probation' | 'probation_full_time' | 'probation_part_time'
 type AccountantExportReportId =
   | 'sales_revenue'
   | 'einvoice_reconciliation'
@@ -573,6 +573,8 @@ const staffConsoleText = {
       contractor: 'Contractor',
       intern: 'Intern',
       probation: 'Probation',
+      probation_full_time: 'Probation full-time',
+      probation_part_time: 'Probation part-time',
     } satisfies Record<StaffEmploymentType, string>,
     dayTypes: {
       custom: 'custom',
@@ -672,7 +674,8 @@ const staffConsoleText = {
       exportStore: 'Store / location',
       holidayHours: 'Holiday hours',
       hours: 'Hours',
-      hourlyRate: 'Hourly rate (đ)',
+      hourlyRate: 'Gross hourly rate (đ)',
+      monthlyGross: 'Monthly gross (đ)',
       filterByRole: 'Filter by role',
       game: 'Game',
       guideGameplay: 'GamePlay',
@@ -1096,6 +1099,8 @@ const staffConsoleText = {
       contractor: 'Cộng tác viên',
       intern: 'Thực tập',
       probation: 'Thử việc',
+      probation_full_time: 'Thử việc toàn thời gian',
+      probation_part_time: 'Thử việc bán thời gian',
     } satisfies Record<StaffEmploymentType, string>,
     dayTypes: {
       custom: 'tùy chỉnh',
@@ -1195,7 +1200,8 @@ const staffConsoleText = {
       exportStore: 'Cơ sở',
       holidayHours: 'Giờ ngày lễ',
       hours: 'Giờ',
-      hourlyRate: 'Lương theo giờ (đ)',
+      hourlyRate: 'Lương gross theo giờ (đ)',
+      monthlyGross: 'Lương gross tháng (đ)',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
       guideGameplay: 'GamePlay',
@@ -2256,7 +2262,7 @@ const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timeshe
 const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed', 'cancelled']
 const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
 const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
-const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'contractor', 'intern', 'probation']
+const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'probation_full_time', 'probation_part_time', 'contractor', 'intern']
 const ownerEmails = ['emilejacquet@icloud.com']
 const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const adminEmails = [...ownerEmails, ...adminOnlyEmails]
@@ -2268,6 +2274,16 @@ const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials,
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+
+function normalizeStaffEmploymentType(value: StaffEmploymentType | string | null | undefined): StaffEmploymentType {
+  if (value === 'probation') return 'probation_part_time'
+  return staffEmploymentTypes.includes(value as StaffEmploymentType) ? (value as StaffEmploymentType) : 'part_time'
+}
+
+function isMonthlyGrossEmployment(value: StaffEmploymentType | string | null | undefined) {
+  const normalizedType = normalizeStaffEmploymentType(value)
+  return normalizedType === 'full_time' || normalizedType === 'probation_full_time'
+}
 const staffAudienceOptions: StaffAudience[] = [
   'family_friendly',
   'scary',
@@ -4036,6 +4052,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
     ? profileById.get(selectedEmployeeStaffId) || allStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
+  const employeeUsesMonthlyGross = isMonthlyGrossEmployment(employeeForm.employment_type)
   const employeePayrollSummary = useMemo(() => {
     const staffId = employeeForm.profile_id || firstEmployeeStaffProfileId
     const scheduledMinutes = attendanceShifts
@@ -4045,12 +4062,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       .filter((log) => log.staff_profile_id === staffId)
       .reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
     const hourlyRate = parseDong(employeeForm.hourly_rate_vnd)
+    const monthlyGross = parseDong(employeeForm.base_salary_vnd)
+    const estimatedPayroll = isMonthlyGrossEmployment(employeeForm.employment_type)
+      ? monthlyGross
+      : Math.round((workedMinutes / 60) * hourlyRate)
     return {
       scheduledMinutes,
       workedMinutes,
-      estimatedPayroll: Math.round((workedMinutes / 60) * hourlyRate),
+      estimatedPayroll,
     }
-  }, [attendanceLogs, attendanceShifts, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
+  }, [attendanceLogs, attendanceShifts, employeeForm.base_salary_vnd, employeeForm.employment_type, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
   const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
@@ -4974,7 +4995,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       personal_phone: employee?.personal_phone || staffProfile.phone || '',
       personal_email: employee?.personal_email || staffProfile.email || '',
       job_title: employee?.job_title || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text),
-      employment_type: (employee?.employment_type || 'part_time') as StaffEmploymentType,
+      employment_type: normalizeStaffEmploymentType(employee?.employment_type),
       start_date: employee?.start_date || '',
       end_date: employee?.end_date || '',
       base_salary_vnd: employee?.base_salary_vnd ? String(employee.base_salary_vnd) : '',
@@ -4996,9 +5017,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function saveEmployeeProfile() {
     if (!canManageAttendance) return
-    const staffProfileId = employeeForm.profile_id || firstStaffProfileId
+    const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
     if (!staffProfileId) return
-    const selectedStaff = profileById.get(staffProfileId) || staffProfileOptions.find((item) => item.id === staffProfileId) || null
+    const selectedStaff = profileById.get(staffProfileId) || allStaffProfileOptions.find((item) => item.id === staffProfileId) || null
     setSaving(true)
     const payload = {
       profile_id: staffProfileId,
@@ -5007,7 +5028,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       personal_phone: employeeForm.personal_phone.trim() || selectedStaff?.phone || null,
       personal_email: employeeForm.personal_email.trim() || selectedStaff?.email || null,
       job_title: employeeForm.job_title.trim() || null,
-      employment_type: employeeForm.employment_type,
+      employment_type: normalizeStaffEmploymentType(employeeForm.employment_type),
       start_date: employeeForm.start_date || null,
       end_date: employeeForm.end_date || null,
       base_salary_vnd: parseDong(employeeForm.base_salary_vnd),
@@ -6513,7 +6534,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>{text.labels.jobTitle}<input value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
                       <label>
                         {text.labels.employmentType}
-                        <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: event.target.value as StaffEmploymentType })}>
+                        <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: normalizeStaffEmploymentType(event.target.value) })}>
                           {staffEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                         </select>
                       </label>
@@ -6527,8 +6548,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         {text.labels.endDate}
                         <StaffPickerField ariaLabel={text.labels.endDate} placeholder={text.chooseDate} type="date" value={employeeForm.end_date} onChange={(value) => setEmployeeForm({ ...employeeForm, end_date: value })} />
                       </label>
-                      <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
-                      <label>{text.labels.baseSalary}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
+                      {employeeUsesMonthlyGross ? (
+                        <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
+                      ) : (
+                        <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
+                      )}
                       <label>{text.labels.bankName}<input value={employeeForm.bank_name} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_name: event.target.value })} /></label>
                       <label>{text.labels.bankAccount}<input value={employeeForm.bank_account_number} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_account_number: event.target.value })} /></label>
                       <label>{text.labels.taxCodeEmployee}<input value={employeeForm.tax_code} onChange={(event) => setEmployeeForm({ ...employeeForm, tax_code: event.target.value })} /></label>
