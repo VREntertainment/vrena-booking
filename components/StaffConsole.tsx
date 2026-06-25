@@ -1,7 +1,7 @@
 'use client'
 
 import NextImage from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
 import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
@@ -15,6 +15,7 @@ type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'emai
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
+type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
 type AccountantExportReportId =
   | 'sales_revenue'
   | 'einvoice_reconciliation'
@@ -417,6 +418,7 @@ const staffConsoleText = {
       approve: 'Approve',
       confirmBooking: 'Confirm booking',
       complete: 'Complete',
+      copyPreviousWeek: 'Copy previous week',
       done: 'Done',
       edit: 'Edit',
       excel: 'Excel',
@@ -427,6 +429,7 @@ const staffConsoleText = {
       pdf: 'PDF',
       previousWeek: 'Previous week',
       publish: 'Publish',
+      publishWeek: 'Publish week',
       reject: 'Reject',
       remove: 'Remove',
       restore: 'Restore',
@@ -468,6 +471,7 @@ const staffConsoleText = {
       discountValueUnit: 'Discount value unit',
       discountValidFrom: 'Discount valid from',
       discountValidUntil: 'Discount valid until',
+      draftShift: 'Draft shift',
       graphDisplay: 'Graph display',
       loyaltyValidFrom: 'Loyalty valid from',
       loyaltyValidUntil: 'Loyalty valid until',
@@ -509,6 +513,12 @@ const staffConsoleText = {
       draft: 'draft',
       published: 'published',
     } satisfies Record<StaffShiftStatus, string>,
+    shiftTemplates: {
+      afternoon: 'Afternoon',
+      evening: 'Evening',
+      full_day: 'Full day',
+      opening: 'Opening',
+    } satisfies Record<StaffShiftTemplateId, string>,
     attendanceStatuses: {
       absent: 'absent',
       holiday: 'holiday',
@@ -682,7 +692,9 @@ const staffConsoleText = {
       sessions: 'Sessions',
       scheduledHours: 'Scheduled hours',
       shiftDate: 'Shift date',
+      shiftList: 'Shift list',
       shiftRole: 'Shift role',
+      shiftTemplate: 'Shift template',
       sortBy: 'Sort by',
       slug: 'Slug',
       standardDay: 'Standard day',
@@ -772,6 +784,14 @@ const staffConsoleText = {
       roleUpdating: 'Updating role...',
       shiftSaved: 'Shift saved.',
       staffTooManyAttempts: 'Too many attempts. Please wait a moment and try again.',
+      planningConflictDailyLimit: 'Above standard daily hours.',
+      planningConflictLeave: 'Approved leave on this day.',
+      planningConflictOverlap: 'Overlaps another shift.',
+      planningGridHelp: 'Click a cell to draft a shift. Drag chips to move them.',
+      previousWeekCopied: 'Previous week copied as draft shifts.',
+      previousWeekEmpty: 'No shifts found in previous week.',
+      previousWeekNoNew: 'Previous week already exists here. Nothing copied.',
+      weekPublished: 'Week published.',
       uniqueDiscountHelp: 'One-off discount for this booking only. It does not create a reusable voucher.',
       uploadGamePhoto: 'Uploading game photo...',
       noOperationSessions: 'No sessions or ticket bookings for this day.',
@@ -888,6 +908,7 @@ const staffConsoleText = {
       approve: 'Duyệt',
       confirmBooking: 'Xác nhận đặt chỗ',
       complete: 'Hoàn tất',
+      copyPreviousWeek: 'Sao chép tuần trước',
       done: 'Hoàn tất',
       edit: 'Sửa',
       excel: 'Excel',
@@ -898,6 +919,7 @@ const staffConsoleText = {
       pdf: 'PDF',
       previousWeek: 'Tuần trước',
       publish: 'Công bố',
+      publishWeek: 'Công bố tuần',
       reject: 'Từ chối',
       remove: 'Xóa',
       restore: 'Khôi phục',
@@ -939,6 +961,7 @@ const staffConsoleText = {
       discountValueUnit: 'Đơn vị ưu đãi',
       discountValidFrom: 'Ưu đãi hiệu lực từ',
       discountValidUntil: 'Ưu đãi hiệu lực đến',
+      draftShift: 'Tạo ca nháp',
       graphDisplay: 'Cách hiển thị biểu đồ',
       loyaltyValidFrom: 'Điểm hiệu lực từ',
       loyaltyValidUntil: 'Điểm hiệu lực đến',
@@ -980,6 +1003,12 @@ const staffConsoleText = {
       draft: 'nháp',
       published: 'đã công bố',
     } satisfies Record<StaffShiftStatus, string>,
+    shiftTemplates: {
+      afternoon: 'Ca chiều',
+      evening: 'Ca tối',
+      full_day: 'Cả ngày',
+      opening: 'Ca mở cửa',
+    } satisfies Record<StaffShiftTemplateId, string>,
     attendanceStatuses: {
       absent: 'vắng',
       holiday: 'ngày lễ',
@@ -1153,7 +1182,9 @@ const staffConsoleText = {
       sessions: 'Phiên',
       scheduledHours: 'Giờ đã xếp',
       shiftDate: 'Ngày ca',
+      shiftList: 'Danh sách ca',
       shiftRole: 'Vị trí ca',
+      shiftTemplate: 'Mẫu ca',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
       standardDay: 'Ngày chuẩn',
@@ -1243,6 +1274,14 @@ const staffConsoleText = {
       roleUpdating: 'Đang cập nhật vai trò...',
       shiftSaved: 'Đã lưu ca làm.',
       staffTooManyAttempts: 'Quá nhiều lần thử. Vui lòng chờ một chút rồi thử lại.',
+      planningConflictDailyLimit: 'Vượt giờ chuẩn trong ngày.',
+      planningConflictLeave: 'Có nghỉ phép đã duyệt trong ngày này.',
+      planningConflictOverlap: 'Trùng ca khác.',
+      planningGridHelp: 'Bấm ô để tạo ca nháp. Kéo thẻ ca để chuyển ngày/người.',
+      previousWeekCopied: 'Đã sao chép tuần trước thành ca nháp.',
+      previousWeekEmpty: 'Không có ca nào trong tuần trước.',
+      previousWeekNoNew: 'Tuần này đã có các ca đó. Không sao chép thêm.',
+      weekPublished: 'Đã công bố tuần.',
       uniqueDiscountHelp: 'Ưu đãi dùng một lần cho đặt chỗ này. Không tạo voucher dùng lại.',
       uploadGamePhoto: 'Đang tải ảnh trò chơi...',
       noOperationSessions: 'Không có phiên hoặc đặt vé trong ngày này.',
@@ -1343,6 +1382,18 @@ const accountantExportStores = [
   { id: 'all', label: { en: 'All stores', vi: 'Tất cả cơ sở' } },
   { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
 ] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
+const staffShiftTemplates = [
+  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Cashier' },
+  { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Game Master' },
+  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Cashier' },
+  { id: 'full_day', start_time: '09:00', end_time: '18:00', break_minutes: '60', shift_role: 'Staff' },
+] satisfies Array<{
+  id: StaffShiftTemplateId
+  start_time: string
+  end_time: string
+  break_minutes: string
+  shift_role: string
+}>
 
 function resolveStaffConsoleLanguage(language?: string): StaffConsoleLanguage {
   return language === 'vi' ? 'vi' : 'en'
@@ -1527,6 +1578,65 @@ function minutesBetween(startIso?: string | null, endIso?: string | null, breakM
 function hoursLabel(minutes: number) {
   const hours = minutes / 60
   return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`
+}
+
+function weekDateKeys(start: string) {
+  return Array.from({ length: 7 }, (_, index) => addDays(start, index))
+}
+
+function activeShift(shift: StaffScheduleShift) {
+  return shift.status !== 'cancelled'
+}
+
+function timeRangesOverlap(
+  leftStart: string | null | undefined,
+  leftEnd: string | null | undefined,
+  rightStart: string | null | undefined,
+  rightEnd: string | null | undefined
+) {
+  const leftStartMinutes = parseMinutesTime(leftStart)
+  let leftEndMinutes = parseMinutesTime(leftEnd)
+  const rightStartMinutes = parseMinutesTime(rightStart)
+  let rightEndMinutes = parseMinutesTime(rightEnd)
+  if (leftEndMinutes <= leftStartMinutes) leftEndMinutes += 24 * 60
+  if (rightEndMinutes <= rightStartMinutes) rightEndMinutes += 24 * 60
+  return leftStartMinutes < rightEndMinutes && rightStartMinutes < leftEndMinutes
+}
+
+function shiftConflictWarnings(
+  shift: StaffScheduleShift,
+  shifts: StaffScheduleShift[],
+  requests: StaffLeaveRequest[],
+  settings: StaffAttendanceSettings,
+  text: StaffConsoleCopy
+) {
+  if (!activeShift(shift)) return []
+  const warnings: string[] = []
+  const hasOverlap = shifts.some((item) => (
+    item.id !== shift.id
+    && activeShift(item)
+    && item.staff_profile_id === shift.staff_profile_id
+    && item.shift_date === shift.shift_date
+    && timeRangesOverlap(shift.start_time, shift.end_time, item.start_time, item.end_time)
+  ))
+  if (hasOverlap) warnings.push(text.messages.planningConflictOverlap)
+
+  const hasApprovedLeave = requests.some((item) => (
+    item.status === 'approved'
+    && item.staff_profile_id === shift.staff_profile_id
+    && item.start_date <= shift.shift_date
+    && item.end_date >= shift.shift_date
+  ))
+  if (hasApprovedLeave) warnings.push(text.messages.planningConflictLeave)
+
+  const scheduledMinutes = shifts
+    .filter((item) => activeShift(item) && item.staff_profile_id === shift.staff_profile_id && item.shift_date === shift.shift_date)
+    .reduce((sum, item) => sum + minutesBetweenTimes(item.start_time, item.end_time, item.break_minutes), 0)
+  if (settings.standard_daily_minutes > 0 && scheduledMinutes > settings.standard_daily_minutes) {
+    warnings.push(text.messages.planningConflictDailyLimit)
+  }
+
+  return Array.from(new Set(warnings))
 }
 
 type StaffPickerFieldProps = {
@@ -3648,6 +3758,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [attendanceLogs, setAttendanceLogs] = useState<StaffAttendanceLog[]>([])
   const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([])
   const [attendanceSettings, setAttendanceSettings] = useState<StaffAttendanceSettings>(() => defaultAttendanceSettings())
+  const [selectedShiftTemplate, setSelectedShiftTemplate] = useState<StaffShiftTemplateId>('opening')
+  const [draggingShiftId, setDraggingShiftId] = useState('')
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
   const [operationSessions, setOperationSessions] = useState<StaffOperationSession[]>([])
@@ -3790,6 +3902,29 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   ), [profiles])
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const firstStaffProfileId = staffProfileOptions[0]?.id || ''
+  const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
+  const attendanceShiftsByCell = useMemo(() => {
+    const map = new Map<string, StaffScheduleShift[]>()
+    attendanceShifts.forEach((shift) => {
+      const key = `${shift.staff_profile_id}:${shift.shift_date}`
+      const shifts = map.get(key) || []
+      shifts.push(shift)
+      map.set(key, shifts)
+    })
+    map.forEach((shifts) => {
+      shifts.sort((left, right) => left.start_time.localeCompare(right.start_time) || left.end_time.localeCompare(right.end_time))
+    })
+    return map
+  }, [attendanceShifts])
+  const shiftWarningsById = useMemo(() => {
+    const map = new Map<string, string[]>()
+    attendanceShifts.forEach((shift) => {
+      const warnings = shiftConflictWarnings(shift, attendanceShifts, leaveRequests, attendanceSettings, text)
+      if (warnings.length > 0) map.set(shift.id, warnings)
+    })
+    return map
+  }, [attendanceSettings, attendanceShifts, leaveRequests, text])
+  const draftShiftCount = useMemo(() => attendanceShifts.filter((shift) => shift.status === 'draft').length, [attendanceShifts])
   const attendanceSummary = useMemo(() => {
     const scheduledMinutes = attendanceShifts.reduce((sum, shift) => (
       shift.status === 'cancelled'
@@ -4592,6 +4727,131 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     if (!canManageAttendance) return
     setSaving(true)
     const { error } = await supabase.from('staff_schedule_shifts').update({ status }).eq('id', shift.id)
+    setStatus(error ? error.message : text.messages.shiftSaved)
+    if (!error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
+    }
+    setSaving(false)
+  }
+
+  function applyShiftTemplate(templateId: StaffShiftTemplateId) {
+    const template = staffShiftTemplates.find((item) => item.id === templateId) || staffShiftTemplates[0]
+    setSelectedShiftTemplate(templateId)
+    setShiftForm({
+      ...shiftForm,
+      start_time: template.start_time,
+      end_time: template.end_time,
+      break_minutes: template.break_minutes,
+      shift_role: template.shift_role,
+    })
+  }
+
+  function startShiftForCell(staffProfileId: string, shiftDate: string) {
+    if (!canManageAttendance) return
+    const template = staffShiftTemplates.find((item) => item.id === selectedShiftTemplate) || staffShiftTemplates[0]
+    setShiftForm({
+      ...defaultShiftForm(),
+      staff_profile_id: staffProfileId,
+      location: attendanceSettings.location || 'VRena',
+      shift_role: template.shift_role,
+      shift_date: shiftDate,
+      start_time: template.start_time,
+      end_time: template.end_time,
+      break_minutes: template.break_minutes,
+      status: 'draft',
+    })
+    setAttendanceTab('schedule')
+  }
+
+  async function copyPreviousAttendanceWeek() {
+    if (!canManageAttendance) return
+    setSaving(true)
+    const previousStart = addDays(attendanceWeekStart, -7)
+    const previousEnd = addDays(attendanceWeekEnd, -7)
+    const { data, error } = await supabase
+      .from('staff_schedule_shifts')
+      .select('*')
+      .gte('shift_date', previousStart)
+      .lte('shift_date', previousEnd)
+      .is('deleted_at', null)
+      .order('shift_date', { ascending: true })
+      .order('start_time', { ascending: true })
+
+    if (error) {
+      setStatus(error.message)
+      setSaving(false)
+      return
+    }
+
+    const previousShifts = (data ?? []) as StaffScheduleShift[]
+    if (previousShifts.length === 0) {
+      setStatus(text.messages.previousWeekEmpty)
+      setSaving(false)
+      return
+    }
+
+    const existingKeys = new Set(attendanceShifts.map((shift) => (
+      `${shift.staff_profile_id}:${shift.shift_date}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
+    )))
+    const rows = previousShifts.flatMap((shift) => {
+      const nextDate = addDays(shift.shift_date, 7)
+      const key = `${shift.staff_profile_id}:${nextDate}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
+      if (existingKeys.has(key)) return []
+      return [{
+        staff_profile_id: shift.staff_profile_id,
+        location: shift.location || attendanceSettings.location || 'VRena',
+        shift_role: shift.shift_role || 'Staff',
+        shift_date: nextDate,
+        start_time: normalizeTime(shift.start_time) || '09:00',
+        end_time: normalizeTime(shift.end_time) || '18:00',
+        break_minutes: shift.break_minutes || 0,
+        status: 'draft' as StaffShiftStatus,
+        notes: shift.notes,
+        created_by: profile?.id || null,
+      }]
+    })
+
+    if (rows.length === 0) {
+      setStatus(text.messages.previousWeekNoNew)
+      setSaving(false)
+      return
+    }
+
+    const insertResult = await supabase.from('staff_schedule_shifts').insert(rows)
+    setStatus(insertResult.error ? insertResult.error.message : text.messages.previousWeekCopied)
+    if (!insertResult.error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
+    }
+    setSaving(false)
+  }
+
+  async function publishAttendanceWeek() {
+    if (!canManageAttendance) return
+    const draftIds = attendanceShifts.filter((shift) => shift.status === 'draft').map((shift) => shift.id)
+    if (draftIds.length === 0) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('staff_schedule_shifts')
+      .update({ status: 'published' })
+      .in('id', draftIds)
+    setStatus(error ? error.message : text.messages.weekPublished)
+    if (!error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
+    }
+    setSaving(false)
+  }
+
+  async function moveShiftToCell(shift: StaffScheduleShift, staffProfileId: string, shiftDate: string) {
+    if (!canManageAttendance) return
+    if (shift.staff_profile_id === staffProfileId && shift.shift_date === shiftDate) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('staff_schedule_shifts')
+      .update({ staff_profile_id: staffProfileId, shift_date: shiftDate })
+      .eq('id', shift.id)
     setStatus(error ? error.message : text.messages.shiftSaved)
     if (!error) {
       markStaffDataStale('attendance')
@@ -5576,69 +5836,167 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           ) : (
             <>
               {attendanceTab === 'schedule' && (
-                <div className="staff-attendance-layout">
-                  <div className="staff-attendance-list">
-                    {attendanceShifts.map((shift) => {
-                      const staffProfile = profileById.get(shift.staff_profile_id)
-                      return (
-                        <article className="staff-attendance-row" key={shift.id}>
-                          <div className="staff-attendance-person">
-                            {staffProfile && <StaffRoleAvatar profile={staffProfile} text={text} />}
-                            <div>
-                              <strong>{staffProfile ? customerName(staffProfile, text) : text.customerFallback}</strong>
-                              <span>{staffDateLabel(shift.shift_date)} · {normalizeTime(shift.start_time)}-{normalizeTime(shift.end_time)}</span>
-                            </div>
-                          </div>
-                          <div className="staff-attendance-meta">
-                            <span>{shift.shift_role}</span>
-                            <span>{shift.location}</span>
-                            <span>{text.shiftStatuses[shift.status]}</span>
-                            <span>{text.labels.breakMinutes}: {shift.break_minutes}</span>
-                          </div>
-                          {canManageAttendance && (
-                            <div className="staff-row-actions staff-attendance-row-actions">
-                              <button type="button" onClick={() => editShift(shift)}>{text.actions.edit}</button>
-                              {shift.status === 'draft' && <button type="button" onClick={() => updateShiftStatus(shift, 'published')}>{text.actions.publish}</button>}
-                              {shift.status !== 'completed' && <button type="button" onClick={() => updateShiftStatus(shift, 'completed')}>{text.actions.done}</button>}
-                              {shift.status !== 'cancelled' && <button type="button" onClick={() => updateShiftStatus(shift, 'cancelled')}>{text.actions.cancelShift}</button>}
-                            </div>
-                          )}
-                        </article>
-                      )
-                    })}
-                    {attendanceShifts.length === 0 && <p className="notice">{text.messages.noShifts}</p>}
-                  </div>
-
-                  <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
-                    <h4>{text.labels.weeklySchedule}</h4>
-                    <div className="form-grid compact-form-grid">
+                <>
+                  <section className="staff-planning-panel" aria-label={text.labels.weeklySchedule}>
+                    <div className="staff-planning-toolbar">
+                      <div className="staff-planning-title">
+                        <strong>{text.labels.weeklySchedule}</strong>
+                        <span>{text.messages.planningGridHelp}</span>
+                      </div>
                       <label>
-                        {text.labels.staffMember}
-                        <select value={shiftForm.staff_profile_id || firstStaffProfileId} onChange={(event) => setShiftForm({ ...shiftForm, staff_profile_id: event.target.value })}>
-                          {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                        {text.labels.shiftTemplate}
+                        <select value={selectedShiftTemplate} onChange={(event) => applyShiftTemplate(event.target.value as StaffShiftTemplateId)} disabled={!canManageAttendance}>
+                          {staffShiftTemplates.map((template) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
                         </select>
                       </label>
-                      <label>
-                        {text.labels.shiftDate}
-                        <StaffPickerField ariaLabel={text.labels.shiftDate} placeholder={text.chooseDate} type="date" value={shiftForm.shift_date} onChange={(value) => setShiftForm({ ...shiftForm, shift_date: value })} />
-                      </label>
-                      <label>
-                        {text.labels.start}
-                        <StaffPickerField ariaLabel={text.labels.start} placeholder={text.chooseTime} type="time" value={shiftForm.start_time} onChange={(value) => setShiftForm({ ...shiftForm, start_time: value })} />
-                      </label>
-                      <label>
-                        {text.labels.end}
-                        <StaffPickerField ariaLabel={text.labels.end} placeholder={text.chooseTime} type="time" value={shiftForm.end_time} onChange={(value) => setShiftForm({ ...shiftForm, end_time: value })} />
-                      </label>
-                      <label>{text.labels.breakMinutes}<input min={0} type="number" value={shiftForm.break_minutes} onChange={(event) => setShiftForm({ ...shiftForm, break_minutes: event.target.value })} /></label>
-                      <label>{text.labels.shiftRole}<input value={shiftForm.shift_role} onChange={(event) => setShiftForm({ ...shiftForm, shift_role: event.target.value })} /></label>
-                      <label>{text.labels.location}<input value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })} /></label>
-                      <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value as StaffShiftStatus })}>{staffShiftStatuses.map((status) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
-                      <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
+                      {canManageAttendance && (
+                        <div className="staff-planning-actions">
+                          <button type="button" onClick={copyPreviousAttendanceWeek} disabled={saving}>{text.actions.copyPreviousWeek}</button>
+                          <button type="button" onClick={publishAttendanceWeek} disabled={saving || draftShiftCount === 0}>
+                            {text.actions.publishWeek}{draftShiftCount > 0 ? ` (${draftShiftCount})` : ''}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <button className="primary" type="button" disabled={saving || !(shiftForm.staff_profile_id || firstStaffProfileId)} onClick={saveShift}>{text.actions.saveShift}</button>
-                  </fieldset>
-                </div>
+
+                    <div className="staff-planning-grid-shell">
+                      <div className="staff-planning-grid" role="grid" aria-label={text.labels.weeklySchedule}>
+                        <div className="staff-planning-corner" role="columnheader">{text.labels.staffMember}</div>
+                        {attendanceWeekDates.map((dateValue) => (
+                          <div className="staff-planning-day" role="columnheader" key={dateValue}>
+                            <strong>{shortDateLabel(dateValue)}</strong>
+                            <span>{text.reportWeekdays[(dateFromInput(dateValue).getDay() + 6) % 7]}</span>
+                          </div>
+                        ))}
+                        {staffProfileOptions.map((staffProfile) => (
+                          <Fragment key={staffProfile.id}>
+                            <div className="staff-planning-staff" role="rowheader">
+                              <StaffRoleAvatar profile={staffProfile} text={text} />
+                              <span>{customerName(staffProfile, text)}</span>
+                            </div>
+                            {attendanceWeekDates.map((dateValue) => {
+                              const cellShifts = attendanceShiftsByCell.get(`${staffProfile.id}:${dateValue}`) || []
+                              return (
+                                <div
+                                  className="staff-planning-cell"
+                                  key={`${staffProfile.id}:${dateValue}`}
+                                  role="gridcell"
+                                  onDragOver={(event) => {
+                                    if (!canManageAttendance) return
+                                    event.preventDefault()
+                                  }}
+                                  onDrop={(event) => {
+                                    event.preventDefault()
+                                    const shift = attendanceShifts.find((item) => item.id === draggingShiftId)
+                                    if (shift) void moveShiftToCell(shift, staffProfile.id, dateValue)
+                                    setDraggingShiftId('')
+                                  }}
+                                >
+                                  {canManageAttendance && (
+                                    <button
+                                      aria-label={`${text.aria.draftShift}: ${customerName(staffProfile, text)} ${shortDateLabel(dateValue)}`}
+                                      className="staff-planning-cell-button"
+                                      type="button"
+                                      onClick={() => startShiftForCell(staffProfile.id, dateValue)}
+                                    >
+                                      +
+                                    </button>
+                                  )}
+                                  {cellShifts.map((shift) => {
+                                    const warnings = shiftWarningsById.get(shift.id) || []
+                                    return (
+                                      <button
+                                        className={`staff-shift-chip ${warnings.length > 0 ? 'has-warning' : ''}`}
+                                        draggable={canManageAttendance}
+                                        key={shift.id}
+                                        type="button"
+                                        onClick={() => editShift(shift)}
+                                        onDragStart={() => setDraggingShiftId(shift.id)}
+                                        onDragEnd={() => setDraggingShiftId('')}
+                                      >
+                                        <span>{normalizeTime(shift.start_time)}-{normalizeTime(shift.end_time)}</span>
+                                        <strong>{shift.shift_role}</strong>
+                                        <small>{text.shiftStatuses[shift.status]}</small>
+                                        {warnings.length > 0 && <em>{warnings[0]}</em>}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })}
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+
+                  <div className="staff-attendance-layout">
+                    <div className="staff-attendance-list">
+                      <h4>{text.labels.shiftList}</h4>
+                      {attendanceShifts.map((shift) => {
+                        const staffProfile = profileById.get(shift.staff_profile_id)
+                        const warnings = shiftWarningsById.get(shift.id) || []
+                        return (
+                          <article className="staff-attendance-row" key={shift.id}>
+                            <div className="staff-attendance-person">
+                              {staffProfile && <StaffRoleAvatar profile={staffProfile} text={text} />}
+                              <div>
+                                <strong>{staffProfile ? customerName(staffProfile, text) : text.customerFallback}</strong>
+                                <span>{staffDateLabel(shift.shift_date)} · {normalizeTime(shift.start_time)}-{normalizeTime(shift.end_time)}</span>
+                              </div>
+                            </div>
+                            <div className="staff-attendance-meta">
+                              <span>{shift.shift_role}</span>
+                              <span>{shift.location}</span>
+                              <span>{text.shiftStatuses[shift.status]}</span>
+                              <span>{text.labels.breakMinutes}: {shift.break_minutes}</span>
+                              {warnings.map((warning) => <span className="staff-warning-text" key={warning}>{warning}</span>)}
+                            </div>
+                            {canManageAttendance && (
+                              <div className="staff-row-actions staff-attendance-row-actions">
+                                <button type="button" onClick={() => editShift(shift)}>{text.actions.edit}</button>
+                                {shift.status === 'draft' && <button type="button" onClick={() => updateShiftStatus(shift, 'published')}>{text.actions.publish}</button>}
+                                {shift.status !== 'completed' && <button type="button" onClick={() => updateShiftStatus(shift, 'completed')}>{text.actions.done}</button>}
+                                {shift.status !== 'cancelled' && <button type="button" onClick={() => updateShiftStatus(shift, 'cancelled')}>{text.actions.cancelShift}</button>}
+                              </div>
+                            )}
+                          </article>
+                        )
+                      })}
+                      {attendanceShifts.length === 0 && <p className="notice">{text.messages.noShifts}</p>}
+                    </div>
+
+                    <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
+                      <h4>{text.labels.weeklySchedule}</h4>
+                      <div className="form-grid compact-form-grid">
+                        <label>
+                          {text.labels.staffMember}
+                          <select value={shiftForm.staff_profile_id || firstStaffProfileId} onChange={(event) => setShiftForm({ ...shiftForm, staff_profile_id: event.target.value })}>
+                            {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          {text.labels.shiftDate}
+                          <StaffPickerField ariaLabel={text.labels.shiftDate} placeholder={text.chooseDate} type="date" value={shiftForm.shift_date} onChange={(value) => setShiftForm({ ...shiftForm, shift_date: value })} />
+                        </label>
+                        <label>
+                          {text.labels.start}
+                          <StaffPickerField ariaLabel={text.labels.start} placeholder={text.chooseTime} type="time" value={shiftForm.start_time} onChange={(value) => setShiftForm({ ...shiftForm, start_time: value })} />
+                        </label>
+                        <label>
+                          {text.labels.end}
+                          <StaffPickerField ariaLabel={text.labels.end} placeholder={text.chooseTime} type="time" value={shiftForm.end_time} onChange={(value) => setShiftForm({ ...shiftForm, end_time: value })} />
+                        </label>
+                        <label>{text.labels.breakMinutes}<input min={0} type="number" value={shiftForm.break_minutes} onChange={(event) => setShiftForm({ ...shiftForm, break_minutes: event.target.value })} /></label>
+                        <label>{text.labels.shiftRole}<input value={shiftForm.shift_role} onChange={(event) => setShiftForm({ ...shiftForm, shift_role: event.target.value })} /></label>
+                        <label>{text.labels.location}<input value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })} /></label>
+                        <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value as StaffShiftStatus })}>{staffShiftStatuses.map((status) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
+                        <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
+                      </div>
+                      <button className="primary" type="button" disabled={saving || !(shiftForm.staff_profile_id || firstStaffProfileId)} onClick={saveShift}>{text.actions.saveShift}</button>
+                    </fieldset>
+                  </div>
+                </>
               )}
 
               {attendanceTab === 'clock' && (
