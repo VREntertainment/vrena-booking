@@ -612,6 +612,7 @@ const staffConsoleText = {
       actions: 'Actions',
       active: 'Active',
       activeEmployee: 'Active employee',
+      inactiveEmployee: 'Inactive employee',
       accountantExports: 'Accountant exports',
       arena: 'Arena',
       arenaIds: 'Arena IDs',
@@ -804,6 +805,7 @@ const staffConsoleText = {
       draftShiftExists: 'That draft already exists for this staff member and day.',
       employeeProfileIntro: 'Private HR details linked to attendance and payroll. Visible to managers, admins, and owners only.',
       employeeProfileSaved: 'Employee profile saved.',
+      inactiveEmployeePlanningBlocked: 'Inactive employee: reactivate this employee profile before planning new shifts.',
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
       gamePhotoUploaded: 'Game photo uploaded. Save the game to keep it.',
@@ -1133,6 +1135,7 @@ const staffConsoleText = {
       actions: 'Thao tác',
       active: 'Đang bật',
       activeEmployee: 'Nhân viên đang làm',
+      inactiveEmployee: 'Nhân viên ngưng làm',
       accountantExports: 'Xuất kế toán',
       arena: 'Arena',
       arenaIds: 'Mã arena',
@@ -1325,6 +1328,7 @@ const staffConsoleText = {
       draftShiftExists: 'Ca nháp này đã tồn tại cho nhân viên và ngày này.',
       employeeProfileIntro: 'Thông tin nhân sự riêng tư được liên kết với chấm công và tính lương. Chỉ quản lý, admin và owner xem được.',
       employeeProfileSaved: 'Đã lưu hồ sơ nhân viên.',
+      inactiveEmployeePlanningBlocked: 'Nhân viên ngưng làm: bật lại hồ sơ nhân viên trước khi xếp ca mới.',
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
       gamePhotoUploaded: 'Đã tải ảnh. Lưu trò chơi để giữ ảnh.',
@@ -4008,18 +4012,32 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
   }, [operationOrders, operationSessions, orderPaymentsByOrderId])
   const [attendanceWeekStart, attendanceWeekEnd] = useMemo(() => attendanceWeekRange(attendanceDate), [attendanceDate])
-  const staffProfileOptions = useMemo(() => (
+  const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
+  const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
+  const allStaffProfileOptions = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && staffRank(item.role, item.email) >= 50)
   ), [profiles])
-  const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
+  const attendanceWeekStaffIds = useMemo(() => {
+    const ids = new Set<string>()
+    attendanceShifts.forEach((shift) => ids.add(shift.staff_profile_id))
+    attendanceLogs.forEach((log) => ids.add(log.staff_profile_id))
+    leaveRequests.forEach((leave) => ids.add(leave.staff_profile_id))
+    return ids
+  }, [attendanceLogs, attendanceShifts, leaveRequests])
+  const staffProfileOptions = useMemo(() => (
+    allStaffProfileOptions.filter((item) => {
+      const employee = employeeProfileById.get(item.id)
+      return employee?.active !== false || attendanceWeekStaffIds.has(item.id)
+    })
+  ), [allStaffProfileOptions, attendanceWeekStaffIds, employeeProfileById])
   const firstStaffProfileId = staffProfileOptions[0]?.id || ''
-  const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
-  const selectedEmployeeStaffId = employeeForm.profile_id || firstStaffProfileId
+  const firstEmployeeStaffProfileId = allStaffProfileOptions[0]?.id || ''
+  const selectedEmployeeStaffId = employeeForm.profile_id || firstEmployeeStaffProfileId
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
-    ? profileById.get(selectedEmployeeStaffId) || staffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
+    ? profileById.get(selectedEmployeeStaffId) || allStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
   const employeePayrollSummary = useMemo(() => {
-    const staffId = employeeForm.profile_id || firstStaffProfileId
+    const staffId = employeeForm.profile_id || firstEmployeeStaffProfileId
     const scheduledMinutes = attendanceShifts
       .filter((shift) => shift.staff_profile_id === staffId && shift.status !== 'cancelled')
       .reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
@@ -4032,7 +4050,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       workedMinutes,
       estimatedPayroll: Math.round((workedMinutes / 60) * hourlyRate),
     }
-  }, [attendanceLogs, attendanceShifts, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstStaffProfileId])
+  }, [attendanceLogs, attendanceShifts, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
   const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
@@ -4825,9 +4843,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function saveShift() {
     if (!canManageAttendance) return
+    const staffProfileId = shiftForm.staff_profile_id || firstStaffProfileId
+    if (!staffProfileId) return
+    if (!shiftForm.id && employeeProfileById.get(staffProfileId)?.active === false) {
+      setStatus(text.messages.inactiveEmployeePlanningBlocked)
+      return
+    }
     setSaving(true)
     const payload = {
-      staff_profile_id: shiftForm.staff_profile_id || firstStaffProfileId,
+      staff_profile_id: staffProfileId,
       location: shiftForm.location.trim() || attendanceSettings.location || 'VRena',
       shift_role: shiftForm.shift_role.trim() || 'Staff',
       shift_date: shiftForm.shift_date,
@@ -4893,6 +4917,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function startShiftForCell(staffProfileId: string, shiftDate: string) {
     if (!canManageAttendance || saving) return
+    if (employeeProfileById.get(staffProfileId)?.active === false) {
+      setStatus(text.messages.inactiveEmployeePlanningBlocked)
+      return
+    }
     const template = staffShiftTemplates.find((item) => item.id === selectedShiftTemplate) || staffShiftTemplates[0]
     const payload = {
       staff_profile_id: staffProfileId,
@@ -5087,6 +5115,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   async function moveShiftToCell(shift: StaffScheduleShift, staffProfileId: string, shiftDate: string) {
     if (!canManageAttendance) return
     if (shift.staff_profile_id === staffProfileId && shift.shift_date === shiftDate) return
+    if (employeeProfileById.get(staffProfileId)?.active === false) {
+      setStatus(text.messages.inactiveEmployeePlanningBlocked)
+      return
+    }
     setSaving(true)
     const { error } = await supabase
       .from('staff_schedule_shifts')
@@ -6071,7 +6103,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             ))}
           </div>
 
-          {staffProfileOptions.length === 0 ? (
+          {(attendanceTab === 'employee' ? allStaffProfileOptions.length : staffProfileOptions.length) === 0 ? (
             <p className="notice">{text.messages.noStaffProfiles}</p>
           ) : (
             <>
@@ -6108,11 +6140,17 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                             <span>{text.reportWeekdays[(dateFromInput(dateValue).getDay() + 6) % 7]}</span>
                           </div>
                         ))}
-                        {staffProfileOptions.map((staffProfile) => (
+                        {staffProfileOptions.map((staffProfile) => {
+                          const employee = employeeProfileById.get(staffProfile.id)
+                          const isInactiveEmployee = employee?.active === false
+                          return (
                           <Fragment key={staffProfile.id}>
-                            <div className="staff-planning-staff" role="rowheader">
+                            <div className={`staff-planning-staff ${isInactiveEmployee ? 'inactive' : ''}`} role="rowheader">
                               <StaffRoleAvatar profile={staffProfile} text={text} />
-                              <span>{customerName(staffProfile, text)}</span>
+                              <span>
+                                <strong>{customerName(staffProfile, text)}</strong>
+                                {isInactiveEmployee && <small>{text.labels.inactiveEmployee}</small>}
+                              </span>
                             </div>
                             {attendanceWeekDates.map((dateValue) => {
                               const cellShifts = attendanceShiftsByCell.get(`${staffProfile.id}:${dateValue}`) || []
@@ -6122,11 +6160,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                                   key={`${staffProfile.id}:${dateValue}`}
                                   role="gridcell"
                                   onDragOver={(event) => {
-                                    if (!canManageAttendance) return
+                                    if (!canManageAttendance || isInactiveEmployee) return
                                     event.preventDefault()
                                   }}
                                   onDrop={(event) => {
                                     event.preventDefault()
+                                    if (isInactiveEmployee) return
                                     const shift = attendanceShifts.find((item) => item.id === draggingShiftId)
                                     if (shift) void moveShiftToCell(shift, staffProfile.id, dateValue)
                                     setDraggingShiftId('')
@@ -6136,7 +6175,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                                     <button
                                       aria-label={`${text.aria.draftShift}: ${customerName(staffProfile, text)} ${shortDateLabel(dateValue)}`}
                                       className="staff-planning-cell-button"
-                                      disabled={saving}
+                                      disabled={saving || isInactiveEmployee}
                                       type="button"
                                       onClick={() => void startShiftForCell(staffProfile.id, dateValue)}
                                     >
@@ -6166,7 +6205,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                               )
                             })}
                           </Fragment>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   </section>
@@ -6418,12 +6458,13 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <div className="staff-attendance-list staff-employee-list">
                     <h4>{text.labels.privateEmployeeProfile}</h4>
                     <p className="staff-helper-text">{text.messages.employeeProfileIntro}</p>
-                    {staffProfileOptions.map((staffProfile) => {
+                    {allStaffProfileOptions.map((staffProfile) => {
                       const employee = employeeProfileById.get(staffProfile.id)
-                      const isSelected = (employeeForm.profile_id || firstStaffProfileId) === staffProfile.id
+                      const isInactiveEmployee = employee?.active === false
+                      const isSelected = (employeeForm.profile_id || firstEmployeeStaffProfileId) === staffProfile.id
                       return (
                         <button
-                          className={`staff-employee-row ${isSelected ? 'active' : ''}`}
+                          className={`staff-employee-row ${isSelected ? 'active' : ''} ${isInactiveEmployee ? 'inactive' : ''}`}
                           key={staffProfile.id}
                           type="button"
                           onClick={() => editEmployeeProfile(staffProfile)}
@@ -6431,7 +6472,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           <StaffRoleAvatar profile={staffProfile} text={text} />
                           <span>
                             <strong>{customerName(staffProfile, text)}</strong>
-                            <small>{employee?.employee_code || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text)} · {employee?.job_title || text.labels.staffMember}</small>
+                            <small>
+                              {employee?.employee_code || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text)} · {employee?.job_title || text.labels.staffMember}
+                              {isInactiveEmployee ? ` · ${text.labels.inactiveEmployee}` : ''}
+                            </small>
                           </span>
                         </button>
                       )
@@ -6457,11 +6501,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     <div className="form-grid compact-form-grid">
                       <label>
                         {text.labels.staffMember}
-                        <select value={employeeForm.profile_id || firstStaffProfileId} onChange={(event) => {
-                          const staffProfile = profileById.get(event.target.value) || staffProfileOptions.find((item) => item.id === event.target.value)
+                        <select value={employeeForm.profile_id || firstEmployeeStaffProfileId} onChange={(event) => {
+                          const staffProfile = profileById.get(event.target.value) || allStaffProfileOptions.find((item) => item.id === event.target.value)
                           if (staffProfile) setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
                         }}>
-                          {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          {allStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                         </select>
                       </label>
                       <label>{text.labels.employeeCode}<input value={employeeForm.employee_code} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_code: event.target.value })} /></label>
@@ -6494,7 +6538,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     </div>
                     <label className="staff-checkbox-row">
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
-                      {text.labels.activeEmployee}
+                      <span>{text.labels.activeEmployee}</span>
                     </label>
                     <button className="primary" type="button" disabled={saving || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>{text.actions.saveEmployeeProfile}</button>
                   </fieldset>
