@@ -1676,43 +1676,40 @@ body {
 }
 
 .app .staff-role-person {
-  grid-template-columns: 42px minmax(0, 1fr);
+  display: grid;
+  grid-template-columns: var(--avatar-sm) minmax(0, 1fr);
   align-items: center;
   gap: 9px;
+  min-width: 0;
 }
 
-.app .staff-role-person > div {
+.app button.staff-role-person {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.app button.staff-role-person:hover,
+.app button.staff-role-person:focus-visible {
+  color: inherit;
+}
+
+.app .staff-role-person-text {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
 .app .staff-role-avatar {
-  display: inline-grid;
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  place-items: center;
-  overflow: hidden;
+  --avatar-size: var(--avatar-sm);
+  --avatar-emoji-size: var(--avatar-sm-emoji);
+  --avatar-text-size: var(--avatar-sm-text);
   border: 1px solid rgba(48, 89, 255, 0.24);
-  border-radius: 999px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.app .staff-role-avatar img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.app .staff-role-avatar-emoji {
-  font-size: 22px;
-}
-
-.app .staff-role-avatar-initials {
-  font-size: 16px;
 }
 
 .app .staff-role-row span,
