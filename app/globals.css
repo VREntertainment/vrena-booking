@@ -2792,6 +2792,83 @@ body {
   font-size: 16px;
 }
 
+.app .staff-employee-list {
+  align-content: start;
+}
+
+.app .staff-employee-list > .staff-helper-text {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.app .staff-employee-row {
+  align-items: center;
+  background: #f8fafb;
+  border: 1px solid #d8dde0;
+  border-radius: 8px;
+  color: inherit;
+  display: flex;
+  gap: 8px;
+  min-height: 54px;
+  padding: 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.app .staff-employee-row.active {
+  background: linear-gradient(120deg, rgba(0, 184, 184, 0.12), rgba(48, 89, 255, 0.12));
+  border-color: rgba(48, 89, 255, 0.45);
+}
+
+.app .staff-employee-row > span,
+.app .staff-employee-selected > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .staff-employee-row strong,
+.app .staff-employee-selected strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-employee-row small,
+.app .staff-employee-selected span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-employee-selected {
+  align-items: center;
+  background: #f8fafb;
+  border: 1px solid #d8dde0;
+  border-radius: 8px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+}
+
+.app .staff-employee-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app .staff-employee-form textarea {
+  min-height: 68px;
+}
+
+.app .staff-checkbox-row {
+  align-items: center;
+  color: #071112;
+  display: flex;
+  font-weight: 900;
+  gap: 8px;
+}
+
 .app .staff-attendance-settings {
   max-width: 980px;
 }
@@ -7560,6 +7637,10 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .staff-employee-summary {
+    grid-template-columns: 1fr;
+  }
+
   .app .staff-attendance-row {
     grid-template-columns: 1fr;
   }
@@ -8588,6 +8669,8 @@ body {
   .app .staff-shift-chip,
   .app .staff-attendance-form,
   .app .staff-attendance-row,
+  .app .staff-employee-row,
+  .app .staff-employee-selected,
   .app .staff-report-date-modal,
   .app .staff-report-date-presets button,
   .app .staff-report-calendar-day,
@@ -8609,6 +8692,11 @@ body {
 
   .app .staff-audience-placeholder {
     color: #aeb9bd;
+  }
+
+  .app .staff-employee-row.active {
+    background: linear-gradient(120deg, rgba(0, 184, 184, 0.18), rgba(48, 89, 255, 0.18));
+    border-color: rgba(90, 130, 255, 0.55);
   }
 
   .app .staff-account-delete-warning {
@@ -8641,9 +8729,16 @@ body {
   .app .staff-planning-title span,
   .app .staff-planning-toolbar label,
   .app .staff-planning-day span,
+  .app .staff-employee-list > .staff-helper-text,
+  .app .staff-employee-row small,
+  .app .staff-employee-selected span,
   .app .staff-shift-chip small,
   .app .staff-report-bar-group small {
     color: #aeb9bd;
+  }
+
+  .app .staff-checkbox-row {
+    color: #f4f8f8;
   }
 
   .app .staff-operations-card .staff-card-heading p,
