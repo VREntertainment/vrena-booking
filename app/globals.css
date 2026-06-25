@@ -2553,6 +2553,166 @@ body {
   margin: 12px 0;
 }
 
+.app .staff-planning-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.app .staff-planning-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.app .staff-planning-title {
+  display: grid;
+  gap: 2px;
+  min-width: min(100%, 280px);
+}
+
+.app .staff-planning-title strong {
+  font-size: 16px;
+}
+
+.app .staff-planning-title span,
+.app .staff-shift-chip small,
+.app .staff-shift-chip em {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-planning-toolbar label {
+  display: grid;
+  gap: 3px;
+  min-width: 180px;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-planning-toolbar select {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.app .staff-planning-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app .staff-planning-grid-shell {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.app .staff-planning-grid {
+  display: grid;
+  grid-template-columns: minmax(136px, 0.8fr) repeat(7, minmax(126px, 1fr));
+  gap: 4px;
+  min-width: 1040px;
+}
+
+.app .staff-planning-corner,
+.app .staff-planning-day,
+.app .staff-planning-staff,
+.app .staff-planning-cell {
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 8px;
+}
+
+.app .staff-planning-day {
+  display: grid;
+  gap: 1px;
+  text-align: center;
+}
+
+.app .staff-planning-day span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app .staff-planning-staff {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  font-weight: 900;
+}
+
+.app .staff-planning-staff span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-planning-cell {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 92px;
+}
+
+.app .staff-planning-cell-button {
+  min-height: 28px;
+  border-style: dashed;
+  border-color: rgba(48, 89, 255, 0.3);
+  background: rgba(48, 89, 255, 0.06);
+  color: #3059ff;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app .staff-shift-chip {
+  display: grid;
+  gap: 1px;
+  min-height: 0;
+  border-color: rgba(0, 174, 179, 0.24);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(48, 89, 255, 0.1));
+  padding: 6px;
+  text-align: left;
+}
+
+.app .staff-shift-chip span {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-shift-chip strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-shift-chip.has-warning {
+  border-color: rgba(185, 40, 31, 0.3);
+  background: rgba(185, 40, 31, 0.08);
+}
+
+.app .staff-shift-chip em,
+.app .staff-warning-text {
+  color: #b9281f;
+  font-style: normal;
+}
+
+.app .staff-attendance-list h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
 .app .staff-attendance-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
@@ -7382,6 +7542,20 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .staff-planning-toolbar {
+    align-items: stretch;
+  }
+
+  .app .staff-planning-toolbar label,
+  .app .staff-planning-actions,
+  .app .staff-planning-actions button {
+    flex: 1 1 100%;
+  }
+
+  .app .staff-planning-grid {
+    min-width: 900px;
+  }
+
   .app .staff-attendance-layout {
     grid-template-columns: 1fr;
   }
@@ -8405,6 +8579,13 @@ body {
   .app .staff-accountant-export-panel,
   .app .staff-accountant-export-check,
   .app .staff-accountant-export-panel button,
+  .app .staff-planning-panel,
+  .app .staff-planning-corner,
+  .app .staff-planning-day,
+  .app .staff-planning-staff,
+  .app .staff-planning-cell,
+  .app .staff-planning-cell-button,
+  .app .staff-shift-chip,
   .app .staff-attendance-form,
   .app .staff-attendance-row,
   .app .staff-report-date-modal,
@@ -8457,6 +8638,10 @@ body {
   .app .staff-report-calendar-weekdays span,
   .app .staff-report-curve-legend,
   .app .staff-comparison-list small,
+  .app .staff-planning-title span,
+  .app .staff-planning-toolbar label,
+  .app .staff-planning-day span,
+  .app .staff-shift-chip small,
   .app .staff-report-bar-group small {
     color: #aeb9bd;
   }
@@ -8470,6 +8655,16 @@ body {
   .app .staff-operation-meta span,
   .app .staff-operation-order span {
     color: #aeb9bd;
+  }
+
+  .app .staff-shift-chip.has-warning {
+    background: rgba(255, 123, 113, 0.12);
+    border-color: rgba(255, 123, 113, 0.28);
+  }
+
+  .app .staff-shift-chip em,
+  .app .staff-warning-text {
+    color: #ffb8ae;
   }
 
   .app .staff-operation-title-row span {
