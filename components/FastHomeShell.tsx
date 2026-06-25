@@ -6,6 +6,7 @@ import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
+import type { StaffProfile } from './StaffConsole'
 
 type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
@@ -706,6 +707,11 @@ export default function FastHomeShell() {
     setHeavyTarget({ profileId, view })
   }
 
+  function openStaffProfileInFullApp(staffProfile: StaffProfile) {
+    setStaffOnlyModeOpen(false)
+    setHeavyTarget({ profileId: staffProfile.id, view: 'leaderboard' })
+  }
+
   function chooseMobileStaffMode(view: 'client' | 'staff') {
     setStaffModeChoiceResolved(true)
     if (view === 'staff') setStaffOnlyModeOpen(true)
@@ -768,7 +774,12 @@ export default function FastHomeShell() {
     return (
       <div className="app staff-only-app">
         <main>
-          <StaffConsolePanel authEmail={authEmail} language={language} profile={profile} />
+          <StaffConsolePanel
+            authEmail={authEmail}
+            language={language}
+            profile={profile}
+            onOpenPlayerProfile={openStaffProfileInFullApp}
+          />
         </main>
       </div>
     )

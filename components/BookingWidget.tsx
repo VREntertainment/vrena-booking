@@ -6,6 +6,7 @@ import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, use
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
+import type { StaffProfile } from './StaffConsole'
 
 const ARENA_COUNT = 2
 const OPEN_MINUTES = 9 * 60
@@ -1186,6 +1187,42 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
   }
 }
 
+function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: string): LeaderboardPlayer {
+  const isAnonymous = Boolean(profile.anonymous_mode)
+  const name = isAnonymous
+    ? anonymousProfileName({
+      id: profile.id,
+      nickname: profile.nickname || null,
+      anonymous_callsign: profile.anonymous_callsign || null,
+    })
+    : compactDisplayName(profile.nickname || profile.full_name || profile.phone || profile.email, fallbackName)
+
+  return {
+    profileId: profile.id,
+    displayName: name,
+    avatarUrl: isAnonymous ? null : profile.avatar_url || null,
+    avatarEmoji: isAnonymous ? ANONYMOUS_MASK_EMOJI : profile.avatar_emoji || null,
+    avatarInitials: isAnonymous ? null : profile.avatar_initials || null,
+    avatarColor: isAnonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || null,
+    avatarTextColor: isAnonymous ? ANONYMOUS_MASK_TEXT_COLOR : profile.avatar_text_color || null,
+    profileMotto: isAnonymous ? null : profile.profile_motto || null,
+    sessionsJoined: 0,
+    gamesJoined: 0,
+    wins: 0,
+    bestPerformerCount: 0,
+    baseTotalScore: 0,
+    totalScore: 0,
+    scoreAdjustment: 0,
+    totalAccuracy: 0,
+    accuracyCount: 0,
+    totalProjectiles: 0,
+    averageAccuracy: null,
+    reliabilityScore: 0,
+    bestEscapeDurationSeconds: null,
+    bestByGame: [],
+  }
+}
+
 function compactInitials(value: string) {
   return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
 }
@@ -1965,6 +2002,7 @@ export default function WidgetPage({
   const [checkInPaymentSplits, setCheckInPaymentSplits] = useState<ParticipantPaymentSplitDraft[]>(() => [newParticipantPaymentSplit('cash')])
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
+  const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
   const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
@@ -2007,6 +2045,9 @@ export default function WidgetPage({
   const networkDataLoadingRef = useRef(false)
   const allProfilesLoadedRef = useRef(false)
   const allProfilesLoadingRef = useRef(false)
+  const selectedPlayerIdRef = useRef(initialSelectedPlayerId)
+  const selectedPlayerStatsFetchedRef = useRef<Set<string>>(new Set())
+  const selectedPlayerStatsLoadingRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
   const sessionMessagesLoadedRef = useRef<Set<string>>(new Set())
@@ -2092,16 +2133,58 @@ export default function WidgetPage({
     return text.challengePending
   }
 
-  function openPlayerProfile(profileId: string, sessionId = '') {
+  const loadSelectedPlayerStats = useCallback(async (profileId: string, force = false) => {
+    if (!profileId) return
+    if (!force && selectedPlayerStatsFetchedRef.current.has(profileId)) return
+    if (selectedPlayerStatsLoadingRef.current.has(profileId)) return
+
+    selectedPlayerStatsLoadingRef.current.add(profileId)
+
+    try {
+      const { data, error } = await (await getSupabase()).rpc(
+        'get_leaderboard_players_page',
+        leaderboardRpcArgs(leaderboardQueryRef.current, 0, 1, profileId)
+      )
+
+      if (error) throw error
+
+      const player = ((data ?? []) as LeaderboardRpcRow[])
+        .map((row) => leaderboardPlayerFromRpcRow(row, text.player))[0]
+
+      selectedPlayerStatsFetchedRef.current.add(profileId)
+      if (player && selectedPlayerIdRef.current === profileId) {
+        setSelectedPlayerStatsOverride(player)
+        setProfileScoreAdjustments((current) => ({
+          ...current,
+          [player.profileId]: player.scoreAdjustment,
+        }))
+      }
+    } catch {
+      selectedPlayerStatsFetchedRef.current.add(profileId)
+    } finally {
+      selectedPlayerStatsLoadingRef.current.delete(profileId)
+    }
+  }, [text.player])
+
+  function openPlayerProfile(profileId: string, sessionId = '', seedStats?: LeaderboardPlayer) {
+    selectedPlayerIdRef.current = profileId
     setSelectedPlayerId(profileId)
     setSelectedPlayerSessionId(sessionId)
+    setSelectedPlayerStatsOverride((current) => seedStats ?? (current?.profileId === profileId ? current : null))
     setSelectedPlayerScoreEdit(null)
     if (sessionId) void loadSessionDetail(sessionId)
+    else void loadSelectedPlayerStats(profileId, true)
+  }
+
+  function openStaffPlayerProfile(staffProfile: StaffProfile) {
+    openPlayerProfile(staffProfile.id, '', leaderboardPlayerFromStaffProfile(staffProfile, text.player))
   }
 
   function closePlayerProfile() {
+    selectedPlayerIdRef.current = ''
     setSelectedPlayerId('')
     setSelectedPlayerSessionId('')
+    setSelectedPlayerStatsOverride(null)
     setSelectedPlayerScoreEdit(null)
     setChallengeTargetId('')
     setChallengeStatus('')
@@ -5357,8 +5440,15 @@ function handleSessionDateChange(value: string) {
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
   const crownedTopPlayerId = crownedTopPlayer?.profileId ?? ''
   const crownedTopPlayerScore = crownedTopPlayer?.totalScore ?? 0
-  const selectedPlayerStats = leaderboardPlayerStats.find((item) => item.profileId === selectedPlayerId)
+  const selectedPlayerStatsFromLoadedData = leaderboardPlayerStats.find((item) => item.profileId === selectedPlayerId)
     ?? (currentUserRankPlayer?.profileId === selectedPlayerId ? currentUserRankPlayer : undefined)
+  const selectedPlayerStats = selectedPlayerStatsFromLoadedData
+    ?? (selectedPlayerStatsOverride?.profileId === selectedPlayerId ? selectedPlayerStatsOverride : undefined)
+  useEffect(() => {
+    if (!selectedPlayerId || selectedPlayerStatsFromLoadedData || selectedPlayerStatsFetchedRef.current.has(selectedPlayerId)) return
+    void loadSelectedPlayerStats(selectedPlayerId)
+  }, [loadSelectedPlayerStats, selectedPlayerId, selectedPlayerStatsFromLoadedData])
+
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
 
@@ -10735,6 +10825,7 @@ function handleSessionDateChange(value: string) {
               authEmail={authEmail}
               language={language}
               profile={profile}
+              onOpenPlayerProfile={openStaffPlayerProfile}
               onOpenSessionCalendar={openCreateSessionCalendar}
             />
           ) : (

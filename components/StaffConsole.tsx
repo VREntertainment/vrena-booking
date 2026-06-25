@@ -42,7 +42,7 @@ type PaymentSplitPayload = {
   amount: number
 }
 
-type StaffProfile = {
+export type StaffProfile = {
   id: string
   full_name?: string | null
   nickname?: string | null
@@ -53,6 +53,7 @@ type StaffProfile = {
   avatar_initials?: string | null
   avatar_color?: string | null
   avatar_text_color?: string | null
+  profile_motto?: string | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
   role?: string | null
@@ -292,6 +293,7 @@ type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
   language?: string
+  onOpenPlayerProfile?: (profile: StaffProfile) => void
   onOpenSessionCalendar?: (dateValue: string) => void
 }
 
@@ -1569,7 +1571,7 @@ const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, full_name, nickname, email, phone, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileSelect = 'id, full_name, nickname, email, phone, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
@@ -1971,36 +1973,52 @@ function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], tex
 }
 
 function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (profile.anonymous_mode) return profile.nickname || profile.anonymous_callsign || text.customerFallback
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
-function staffRoleAvatarInitials(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
-  const source = profile.avatar_initials || customerName(profile, text)
-  return Array.from(source.trim()).slice(0, 2).join('').toUpperCase() || '?'
+function staffRoleAvatarInitials(value: string) {
+  return Array.from(value.trim()).slice(0, 2).join('').toUpperCase() || '?'
+}
+
+function shouldSkipStaffImageOptimization(source: string | null | undefined) {
+  const normalizedSource = source?.trim().toLowerCase() || ''
+  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || /\.gif($|\?)/.test(normalizedSource)
 }
 
 function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: StaffConsoleCopy }) {
   const name = customerName(profile, text)
-  const imageUrl = profile.avatar_url?.trim()
-  const emoji = profile.avatar_emoji?.trim()
+  const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim()
+  const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
+  const initials = profile.anonymous_mode ? '' : profile.avatar_initials?.trim()
   const style = {
-    background: profile.avatar_color || '#3059ff',
-    color: profile.avatar_text_color || '#ffffff',
+    background: profile.anonymous_mode ? '#11181b' : profile.avatar_color || '#3059ff',
+    color: profile.anonymous_mode ? '#ffffff' : profile.avatar_text_color || '#ffffff',
   }
 
   return (
-    <span className="staff-role-avatar" style={style}>
+    <span aria-hidden="true" className="avatar staff-role-avatar" style={style}>
       {imageUrl ? (
-        <NextImage
-          alt={`${name} profile photo`}
-          height={42}
-          loading="lazy"
-          src={imageUrl}
-          width={42}
-        />
+        <span className="avatar-photo">
+          <NextImage
+            alt=""
+            fill
+            loading="lazy"
+            sizes="42px"
+            src={imageUrl}
+            style={{
+              borderRadius: 999,
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              width: '100%',
+            }}
+            unoptimized={shouldSkipStaffImageOptimization(imageUrl)}
+          />
+        </span>
       ) : (
-        <span className={emoji ? 'staff-role-avatar-emoji' : 'staff-role-avatar-initials'}>
-          {emoji || staffRoleAvatarInitials(profile, text)}
+        <span className={emoji ? 'avatar-emoji' : 'avatar-text'}>
+          {emoji || staffRoleAvatarInitials(initials || name)}
         </span>
       )}
     </span>
@@ -3139,7 +3157,7 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail, language, onOpenSessionCalendar }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
   const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
@@ -3147,6 +3165,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
   const canCreateOrders = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
+  const canOpenRoleProfiles = rank >= 50 && Boolean(onOpenPlayerProfile)
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [games, setGames] = useState<StaffGame[]>([])
@@ -5133,16 +5152,32 @@ export default function StaffConsole({ profile, authEmail, language, onOpenSessi
               const hasPendingRoleChange = selectedRole !== storedRole
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
               const rowFeedback = roleSaveFeedback[item.id]
+              const rolePersonContent = (
+                <>
+                  <StaffRoleAvatar profile={item} text={text} />
+                  <span className="staff-role-person-text">
+                    <strong>{customerName(item, text)}</strong>
+                    <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
+                    {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
+                  </span>
+                </>
+              )
               return (
                 <div className="staff-role-row" key={item.id}>
-                  <div className="staff-role-person">
-                    <StaffRoleAvatar profile={item} text={text} />
-                    <div>
-                      <strong>{customerName(item, text)}</strong>
-                      <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
-                      {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
+                  {canOpenRoleProfiles ? (
+                    <button
+                      aria-label={`Open ${customerName(item, text)} player card`}
+                      className="staff-role-person"
+                      type="button"
+                      onClick={() => onOpenPlayerProfile?.(item)}
+                    >
+                      {rolePersonContent}
+                    </button>
+                  ) : (
+                    <div className="staff-role-person">
+                      {rolePersonContent}
                     </div>
-                  </div>
+                  )}
                   <div className="staff-role-action-cell">
                     <select
                       aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
