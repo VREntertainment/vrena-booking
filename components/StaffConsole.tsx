@@ -1642,6 +1642,28 @@ function attendanceWeekRange(anchor: string) {
   return [start, addDays(start, 6)] as const
 }
 
+function attendanceDateRange(start: string, end: string) {
+  const normalizedStart = start || todayString()
+  const normalizedEnd = end || normalizedStart
+  const [orderedStart, orderedEnd] = normalizedStart <= normalizedEnd
+    ? [normalizedStart, normalizedEnd]
+    : [normalizedEnd, normalizedStart]
+  const maxEnd = addDays(orderedStart, 30)
+  return [orderedStart, orderedEnd > maxEnd ? maxEnd : orderedEnd] as const
+}
+
+function attendanceRangeLength(start: string, end: string) {
+  const startTime = dateFromInput(start).getTime()
+  const endTime = dateFromInput(end).getTime()
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return 7
+  return Math.max(1, Math.min(31, Math.round((endTime - startTime) / 86400000) + 1))
+}
+
+function attendanceDateKeys(start: string, end: string) {
+  const dayCount = attendanceRangeLength(start, end)
+  return Array.from({ length: dayCount }, (_, index) => addDays(start, index))
+}
+
 function localDateTimeIso(dateValue: string, timeValue: string) {
   const normalized = normalizeTime(timeValue) || '00:00'
   return new Date(`${dateValue}T${normalized}:00`).toISOString()
@@ -1677,10 +1699,6 @@ function minutesBetween(startIso?: string | null, endIso?: string | null, breakM
 function hoursLabel(minutes: number) {
   const hours = minutes / 60
   return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`
-}
-
-function weekDateKeys(start: string) {
-  return Array.from({ length: 7 }, (_, index) => addDays(start, index))
 }
 
 function activeShift(shift: StaffScheduleShift) {
@@ -3919,7 +3937,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
   const [operationsDate, setOperationsDate] = useState(todayString())
-  const [attendanceDate, setAttendanceDate] = useState(todayString())
+  const [attendanceRangeStart, setAttendanceRangeStart] = useState(() => startOfWeek(todayString()))
+  const [attendanceRangeEnd, setAttendanceRangeEnd] = useState(() => {
+    const start = startOfWeek(todayString())
+    return addDays(start, 6)
+  })
   const [compareEnabled, setCompareEnabled] = useState(false)
   const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
@@ -4047,7 +4069,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       unpaid: Math.max(0, total - paid),
     }
   }, [operationOrders, operationSessions, orderPaymentsByOrderId])
-  const [attendanceWeekStart, attendanceWeekEnd] = useMemo(() => attendanceWeekRange(attendanceDate), [attendanceDate])
+  const [attendanceWeekStart, attendanceWeekEnd] = useMemo(
+    () => attendanceDateRange(attendanceRangeStart, attendanceRangeEnd),
+    [attendanceRangeEnd, attendanceRangeStart]
+  )
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
   const allStaffProfileOptions = useMemo(() => (
@@ -4117,7 +4142,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       estimatedPayroll,
     }
   }, [attendanceLogs, attendanceShifts, employeeForm.base_salary_vnd, employeeForm.employment_type, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
-  const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
+  const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
+  const attendanceGridStyle = useMemo(() => ({
+    gridTemplateColumns: `minmax(188px, 0.85fr) repeat(${attendanceWeekDates.length}, minmax(126px, 1fr))`,
+    minWidth: `${188 + attendanceWeekDates.length * 130}px`,
+  }), [attendanceWeekDates.length])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
     visibleAttendanceShifts.forEach((shift) => {
@@ -4262,7 +4291,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
     // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, commerceTab, operationsDate, attendanceDate])
+  }, [currentTab, commerceTab, operationsDate, attendanceWeekEnd, attendanceWeekStart])
 
   useEffect(() => {
     if (currentTab !== 'report') return
@@ -4490,7 +4519,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function loadAttendanceData(force = false) {
     await runStaffLoader('attendance', async () => {
-      const [weekStart, weekEnd] = attendanceWeekRange(attendanceDate)
+      const weekStart = attendanceWeekStart
+      const weekEnd = attendanceWeekEnd
       const [shiftsResult, logsResult, leaveResult, settingsResult, employeeResult] = await Promise.all([
         supabase
           .from('staff_schedule_shifts')
@@ -5103,11 +5133,28 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     setSaving(false)
   }
 
+  function setAttendanceRange(start: string, end: string) {
+    const [nextStart, nextEnd] = attendanceDateRange(start, end)
+    markStaffDataStale('attendance')
+    setAttendanceRangeStart(nextStart)
+    setAttendanceRangeEnd(nextEnd)
+  }
+
+  function shiftAttendanceRange(dayOffset: number) {
+    setAttendanceRange(addDays(attendanceWeekStart, dayOffset), addDays(attendanceWeekEnd, dayOffset))
+  }
+
+  function resetAttendanceRangeToThisWeek() {
+    const [start, end] = attendanceWeekRange(todayString())
+    setAttendanceRange(start, end)
+  }
+
   async function copyPreviousAttendanceWeek() {
     if (!canManageAttendance) return
     setSaving(true)
-    const previousStart = addDays(attendanceWeekStart, -7)
-    const previousEnd = addDays(attendanceWeekEnd, -7)
+    const rangeDays = attendanceRangeLength(attendanceWeekStart, attendanceWeekEnd)
+    const previousStart = addDays(attendanceWeekStart, -rangeDays)
+    const previousEnd = addDays(attendanceWeekEnd, -rangeDays)
     const { data, error } = await supabase
       .from('staff_schedule_shifts')
       .select('*')
@@ -5134,7 +5181,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       `${shift.staff_profile_id}:${shift.shift_date}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
     )))
     const rows = previousShifts.flatMap((shift) => {
-      const nextDate = addDays(shift.shift_date, 7)
+      const nextDate = addDays(shift.shift_date, rangeDays)
       const key = `${shift.staff_profile_id}:${nextDate}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
       if (existingKeys.has(key)) return []
       return [{
@@ -6131,19 +6178,29 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               <p>{text.messages.attendanceIntro}</p>
             </div>
             <div className="staff-operations-actions staff-attendance-actions">
-              <button type="button" onClick={() => setAttendanceDate(addDays(attendanceWeekStart, -7))}>{text.actions.previousWeek}</button>
+              <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>{text.actions.previousWeek}</button>
               <label>
-                <span className="staff-field-label">{text.labels.weeklyRange}</span>
+                <span className="staff-field-label">{text.labels.startDate}</span>
                 <StaffPickerField
-                  ariaLabel={text.aria.attendanceDate}
+                  ariaLabel={text.labels.startDate}
                   placeholder={text.chooseDate}
                   type="date"
-                  value={attendanceDate}
-                  onChange={setAttendanceDate}
+                  value={attendanceWeekStart}
+                  onChange={(value) => setAttendanceRange(value, attendanceWeekEnd)}
                 />
               </label>
-              <button type="button" onClick={() => setAttendanceDate(todayString())}>{text.actions.today}</button>
-              <button type="button" onClick={() => setAttendanceDate(addDays(attendanceWeekStart, 7))}>{text.actions.nextWeek}</button>
+              <label>
+                <span className="staff-field-label">{text.labels.endDate}</span>
+                <StaffPickerField
+                  ariaLabel={text.labels.endDate}
+                  placeholder={text.chooseDate}
+                  type="date"
+                  value={attendanceWeekEnd}
+                  onChange={(value) => setAttendanceRange(attendanceWeekStart, value)}
+                />
+              </label>
+              <button type="button" onClick={resetAttendanceRangeToThisWeek}>{text.actions.today}</button>
+              <button type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>{text.actions.nextWeek}</button>
             </div>
           </div>
 
@@ -6203,7 +6260,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     </div>
 
                     <div className="staff-planning-grid-shell">
-                      <div className="staff-planning-grid" role="grid" aria-label={text.labels.weeklySchedule}>
+                      <div className="staff-planning-grid" role="grid" aria-label={text.labels.weeklySchedule} style={attendanceGridStyle}>
                         <div className="staff-planning-corner" role="columnheader">{text.labels.staffMember}</div>
                         {attendanceWeekDates.map((dateValue) => (
                           <div className="staff-planning-day" role="columnheader" key={dateValue}>
