@@ -876,7 +876,7 @@ const staffConsoleText = {
     } satisfies Record<StaffPaymentMethod, string>,
     roles: {
       admin: 'Admin',
-      cashier: 'Cashier',
+      cashier: 'Office Staff',
       manager: 'Manager',
       owner: 'Owner',
       player: 'Player',
@@ -906,7 +906,8 @@ const staffConsoleText = {
       { title: 'Owner', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
       { title: 'Admin', body: 'Full daily operations access and role management below Owner. Restore stays Owner only.' },
       { title: 'Manager', body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.' },
-      { title: 'Staff / Cashier', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports.' },
+      { title: 'Staff', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports. In Attendance, Staff only sees their own employee profile.' },
+      { title: 'Office Staff', body: 'Viewer access plus editable reports and full Attendance edit access.' },
       { title: 'Viewer', body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.' },
       { title: 'Player', body: 'Client app only. No Staff Console access.' },
     ],
@@ -1402,7 +1403,7 @@ const staffConsoleText = {
     } satisfies Record<StaffPaymentMethod, string>,
     roles: {
       admin: 'Admin',
-      cashier: 'Thu ngân',
+      cashier: 'Nhân viên văn phòng',
       manager: 'Quản lý',
       owner: 'Owner',
       player: 'Player',
@@ -1432,7 +1433,8 @@ const staffConsoleText = {
       { title: 'Owner', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
       { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner. Khôi phục chỉ dành cho Owner.' },
       { title: 'Manager', body: 'Quản lý trò chơi, giá, ưu đãi, voucher, điểm thưởng, đặt chỗ, đơn hàng và báo cáo.' },
-      { title: 'Staff / Cashier', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo.' },
+      { title: 'Staff', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo. Trong chấm công, Staff chỉ thấy hồ sơ nhân viên của chính mình.' },
+      { title: 'Office Staff', body: 'Quyền xem như Viewer, được chỉnh báo cáo và toàn quyền chỉnh Chấm công.' },
       { title: 'Viewer', body: 'Dùng app như người chơi, xem toàn bộ Staff Console, chỉnh hoặc tải báo cáo. Dữ liệu staff còn lại chỉ xem.' },
       { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
     ],
@@ -1480,9 +1482,9 @@ const accountantExportStores = [
   { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
 ] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
 const staffShiftTemplates = [
-  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Cashier' },
+  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Office Staff' },
   { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Game Master' },
-  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Cashier' },
+  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Office Staff' },
   { id: 'full_day', start_time: '09:00', end_time: '18:00', break_minutes: '60', shift_role: 'Staff' },
 ] satisfies Array<{
   id: StaffShiftTemplateId
@@ -2195,7 +2197,7 @@ const defaultShiftForm = () => ({
   id: '',
   staff_profile_id: '',
   location: 'VRena',
-  shift_role: 'Cashier',
+  shift_role: 'Office Staff',
   shift_date: todayString(),
   start_time: '09:00',
   end_time: '18:00',
@@ -2481,17 +2483,19 @@ function staffRank(role?: string | null, email?: string | null) {
   if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
   if (normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
-  if (normalizedRole === 'viewer') return 20
+  if (normalizedRole === 'staff') return 50
+  if (normalizedRole === 'cashier' || normalizedRole === 'viewer') return 20
   return 0
 }
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
+  const normalizedRole = role?.toLowerCase()
   const rank = staffRank(role, email)
   if (rank >= 120) return 'owner'
   if (rank >= 100) return 'admin'
   if (rank >= 80) return 'manager'
-  if (rank >= 50) return role?.toLowerCase() === 'cashier' ? 'cashier' : 'staff'
+  if (normalizedRole === 'cashier') return 'cashier'
+  if (rank >= 50) return 'staff'
   if (rank >= 20) return 'viewer'
   return 'player'
 }
@@ -3290,7 +3294,7 @@ function buildAccountantExportRows(reportId: AccountantExportReportId, context: 
     'Method',
     'Bank account / wallet',
     'Transaction reference',
-    'Cashier/staff',
+    'Office staff',
     'Reconciliation status',
     'Bank fee',
     'Net received',
@@ -3427,7 +3431,7 @@ function buildAccountantExportRows(reportId: AccountantExportReportId, context: 
           Method: paymentMethodLabel(payment.payment_method, context.text),
           'Bank account / wallet': payment.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
           'Transaction reference': '',
-          'Cashier/staff': payment.created_by || '',
+          'Office staff': payment.created_by || '',
           'Reconciliation status': paidTotal === order.total ? 'Matched' : 'Partial',
           'Bank fee': '',
           'Net received': payment.amount,
@@ -3442,7 +3446,7 @@ function buildAccountantExportRows(reportId: AccountantExportReportId, context: 
         Method: paymentMethodLabel(order.payment_method, context.text),
         'Bank account / wallet': order.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
         'Transaction reference': '',
-        'Cashier/staff': order.created_by || '',
+        'Office staff': order.created_by || '',
         'Reconciliation status': paid === order.total && paid > 0 ? 'Matched' : paid > 0 ? 'Partial' : 'Unmatched',
         'Bank fee': '',
         'Net received': paid,
@@ -3873,9 +3877,17 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const canCreateOrders = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
-  const canManageAttendance = rank >= 80
-  const canEditAttendance = rank >= 50
-  const canOpenRoleProfiles = rank >= 50 && Boolean(onOpenPlayerProfile)
+  const isOwnerOrAdmin = role === 'owner' || role === 'admin'
+  const isOfficeStaff = role === 'cashier'
+  const isStaffOnly = role === 'staff'
+  const canManageAttendance = isOwnerOrAdmin || isOfficeStaff
+  const canEditAttendance = canManageAttendance
+  const canViewAllEmployeeProfiles = canManageAttendance || role === 'manager' || role === 'viewer'
+  const canEditEmployeeProfiles = canManageAttendance
+  const canViewAttendanceClock = !isStaffOnly
+  const canViewAttendanceSettings = !isStaffOnly
+  const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
+  const currentProfileId = profile?.id || ''
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [attendanceTab, setAttendanceTab] = useState<StaffAttendanceTab>('schedule')
@@ -3944,6 +3956,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }, [rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
   const canEditCommerceTab = commerceTab === 'loyalty' ? canManageConfig : canCreateOrders
+  const visibleAttendanceTabs = useMemo(() => staffAttendanceTabs.filter((item) => {
+    if (item === 'clock' && !canViewAttendanceClock) return false
+    if (item === 'settings' && !canViewAttendanceSettings) return false
+    return true
+  }), [canViewAttendanceClock, canViewAttendanceSettings])
+  const currentAttendanceTab = visibleAttendanceTabs.includes(attendanceTab)
+    ? attendanceTab
+    : visibleAttendanceTabs[0] || 'schedule'
 
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
@@ -4031,7 +4051,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
   const allStaffProfileOptions = useMemo(() => (
-    profiles.filter((item) => !isDemoProfile(item) && staffRank(item.role, item.email) >= 50)
+    profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) !== 'player')
   ), [profiles])
   const attendanceWeekStaffIds = useMemo(() => {
     const ids = new Set<string>()
@@ -4046,11 +4066,36 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       return employee?.active !== false || attendanceWeekStaffIds.has(item.id)
     })
   ), [allStaffProfileOptions, attendanceWeekStaffIds, employeeProfileById])
-  const firstStaffProfileId = staffProfileOptions[0]?.id || ''
-  const firstEmployeeStaffProfileId = allStaffProfileOptions[0]?.id || ''
+  const visibleAllStaffProfileOptions = useMemo(() => (
+    canViewAllEmployeeProfiles
+      ? allStaffProfileOptions
+      : allStaffProfileOptions.filter((item) => item.id === currentProfileId)
+  ), [allStaffProfileOptions, canViewAllEmployeeProfiles, currentProfileId])
+  const visibleStaffProfileOptions = useMemo(() => (
+    canViewAllEmployeeProfiles
+      ? staffProfileOptions
+      : staffProfileOptions.filter((item) => item.id === currentProfileId)
+  ), [canViewAllEmployeeProfiles, currentProfileId, staffProfileOptions])
+  const visibleAttendanceShifts = useMemo(() => (
+    canViewAllEmployeeProfiles
+      ? attendanceShifts
+      : attendanceShifts.filter((shift) => shift.staff_profile_id === currentProfileId)
+  ), [attendanceShifts, canViewAllEmployeeProfiles, currentProfileId])
+  const visibleAttendanceLogs = useMemo(() => (
+    canViewAllEmployeeProfiles
+      ? attendanceLogs
+      : attendanceLogs.filter((log) => log.staff_profile_id === currentProfileId)
+  ), [attendanceLogs, canViewAllEmployeeProfiles, currentProfileId])
+  const visibleLeaveRequests = useMemo(() => (
+    canViewAllEmployeeProfiles
+      ? leaveRequests
+      : leaveRequests.filter((leave) => leave.staff_profile_id === currentProfileId)
+  ), [canViewAllEmployeeProfiles, currentProfileId, leaveRequests])
+  const firstStaffProfileId = visibleStaffProfileOptions[0]?.id || ''
+  const firstEmployeeStaffProfileId = visibleAllStaffProfileOptions[0]?.id || ''
   const selectedEmployeeStaffId = employeeForm.profile_id || firstEmployeeStaffProfileId
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
-    ? profileById.get(selectedEmployeeStaffId) || allStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
+    ? visibleAllStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
   const employeeUsesMonthlyGross = isMonthlyGrossEmployment(employeeForm.employment_type)
   const employeePayrollSummary = useMemo(() => {
@@ -4075,7 +4120,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const attendanceWeekDates = useMemo(() => weekDateKeys(attendanceWeekStart), [attendanceWeekStart])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
-    attendanceShifts.forEach((shift) => {
+    visibleAttendanceShifts.forEach((shift) => {
       const key = `${shift.staff_profile_id}:${shift.shift_date}`
       const shifts = map.get(key) || []
       shifts.push(shift)
@@ -4085,7 +4130,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       shifts.sort((left, right) => left.start_time.localeCompare(right.start_time) || left.end_time.localeCompare(right.end_time))
     })
     return map
-  }, [attendanceShifts])
+  }, [visibleAttendanceShifts])
   const shiftWarningsById = useMemo(() => {
     const map = new Map<string, string[]>()
     attendanceShifts.forEach((shift) => {
@@ -4096,22 +4141,22 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }, [attendanceSettings, attendanceShifts, leaveRequests, text])
   const draftShiftCount = useMemo(() => attendanceShifts.filter((shift) => shift.status === 'draft').length, [attendanceShifts])
   const attendanceSummary = useMemo(() => {
-    const scheduledMinutes = attendanceShifts.reduce((sum, shift) => (
+    const scheduledMinutes = visibleAttendanceShifts.reduce((sum, shift) => (
       shift.status === 'cancelled'
         ? sum
         : sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes)
     ), 0)
-    const workedMinutes = attendanceLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
-    const regularMinutes = attendanceLogs.reduce((sum, log) => sum + log.regular_minutes, 0)
-    const overtimeMinutes = attendanceLogs.reduce((sum, log) => sum + log.overtime_minutes, 0)
-    const nightMinutes = attendanceLogs.reduce((sum, log) => sum + log.night_minutes, 0)
-    const holidayMinutes = attendanceLogs.reduce((sum, log) => sum + log.holiday_minutes, 0)
-    const leaveHours = leaveRequests
+    const workedMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
+    const regularMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.regular_minutes, 0)
+    const overtimeMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.overtime_minutes, 0)
+    const nightMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.night_minutes, 0)
+    const holidayMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.holiday_minutes, 0)
+    const leaveHours = visibleLeaveRequests
       .filter((item) => item.status === 'approved')
       .reduce((sum, item) => sum + Number(item.hours || 0), 0)
 
     return { scheduledMinutes, workedMinutes, regularMinutes, overtimeMinutes, nightMinutes, holidayMinutes, leaveHours }
-  }, [attendanceLogs, attendanceShifts, leaveRequests])
+  }, [visibleAttendanceLogs, visibleAttendanceShifts, visibleLeaveRequests])
   const filteredRoleProfiles = useMemo(() => {
     const query = roleSearch.trim().toLowerCase()
     const rows = profiles.filter((item) => {
@@ -4485,7 +4530,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       if (shiftsResult.error) throw new Error(shiftsResult.error.message)
       if (logsResult.error) throw new Error(logsResult.error.message)
       if (leaveResult.error) throw new Error(leaveResult.error.message)
-      if (settingsResult.error) throw new Error(settingsResult.error.message)
+      const settingsUnavailable = Boolean(settingsResult.error && (
+        settingsResult.error.code === '42501' ||
+        settingsResult.error.message.toLowerCase().includes('permission denied') ||
+        settingsResult.error.message.includes('staff_attendance_settings')
+      ))
+      if (settingsResult.error && !settingsUnavailable) throw new Error(settingsResult.error.message)
       const employeeUnavailable = Boolean(employeeResult.error && (
         employeeResult.error.code === '42P01' ||
         employeeResult.error.code === '42501' ||
@@ -4497,7 +4547,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       setAttendanceShifts((shiftsResult.data ?? []) as StaffScheduleShift[])
       setAttendanceLogs((logsResult.data ?? []) as StaffAttendanceLog[])
       setLeaveRequests((leaveResult.data ?? []) as StaffLeaveRequest[])
-      setAttendanceSettings((settingsResult.data as StaffAttendanceSettings | null) ?? defaultAttendanceSettings())
+      setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : ((settingsResult.data as StaffAttendanceSettings | null) ?? defaultAttendanceSettings()))
       setEmployeeProfiles(employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[])
     }, force)
   }
@@ -5016,10 +5066,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }
 
   async function saveEmployeeProfile() {
-    if (!canManageAttendance) return
+    if (!canEditEmployeeProfiles) return
     const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
     if (!staffProfileId) return
-    const selectedStaff = profileById.get(staffProfileId) || allStaffProfileOptions.find((item) => item.id === staffProfileId) || null
+    const selectedStaff = visibleAllStaffProfileOptions.find((item) => item.id === staffProfileId) || null
     setSaving(true)
     const payload = {
       profile_id: staffProfileId,
@@ -6110,10 +6160,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           </div>
 
           <div className="staff-commerce-switcher staff-attendance-tabs" role="tablist" aria-label={text.tabs.attendance}>
-            {staffAttendanceTabs.map((item) => (
+            {visibleAttendanceTabs.map((item) => (
               <button
-                aria-selected={attendanceTab === item}
-                className={attendanceTab === item ? 'active' : ''}
+                aria-selected={currentAttendanceTab === item}
+                className={currentAttendanceTab === item ? 'active' : ''}
                 key={item}
                 role="tab"
                 type="button"
@@ -6124,11 +6174,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             ))}
           </div>
 
-          {(attendanceTab === 'employee' ? allStaffProfileOptions.length : staffProfileOptions.length) === 0 ? (
+          {(currentAttendanceTab === 'employee' ? visibleAllStaffProfileOptions.length : visibleStaffProfileOptions.length) === 0 ? (
             <p className="notice">{text.messages.noStaffProfiles}</p>
           ) : (
             <>
-              {attendanceTab === 'schedule' && (
+              {currentAttendanceTab === 'schedule' && (
                 <>
                   <section className="staff-planning-panel" aria-label={text.labels.weeklySchedule}>
                     <div className="staff-planning-toolbar">
@@ -6161,7 +6211,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                             <span>{text.reportWeekdays[(dateFromInput(dateValue).getDay() + 6) % 7]}</span>
                           </div>
                         ))}
-                        {staffProfileOptions.map((staffProfile) => {
+                        {visibleStaffProfileOptions.map((staffProfile) => {
                           const employee = employeeProfileById.get(staffProfile.id)
                           const isInactiveEmployee = employee?.active === false
                           return (
@@ -6187,7 +6237,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                                   onDrop={(event) => {
                                     event.preventDefault()
                                     if (isInactiveEmployee) return
-                                    const shift = attendanceShifts.find((item) => item.id === draggingShiftId)
+                                    const shift = visibleAttendanceShifts.find((item) => item.id === draggingShiftId)
                                     if (shift) void moveShiftToCell(shift, staffProfile.id, dateValue)
                                     setDraggingShiftId('')
                                   }}
@@ -6235,7 +6285,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <div className="staff-attendance-layout">
                     <div className="staff-attendance-list">
                       <h4>{text.labels.shiftList}</h4>
-                      {attendanceShifts.map((shift) => {
+                      {visibleAttendanceShifts.map((shift) => {
                         const staffProfile = profileById.get(shift.staff_profile_id)
                         const warnings = shiftWarningsById.get(shift.id) || []
                         return (
@@ -6265,7 +6315,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           </article>
                         )
                       })}
-                      {attendanceShifts.length === 0 && <p className="notice">{text.messages.noShifts}</p>}
+                      {visibleAttendanceShifts.length === 0 && <p className="notice">{text.messages.noShifts}</p>}
                     </div>
 
                     <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
@@ -6274,7 +6324,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         <label>
                           {text.labels.staffMember}
                           <select value={shiftForm.staff_profile_id || firstStaffProfileId} onChange={(event) => setShiftForm({ ...shiftForm, staff_profile_id: event.target.value })}>
-                            {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                            {visibleStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                           </select>
                         </label>
                         <label>
@@ -6301,10 +6351,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </>
               )}
 
-              {attendanceTab === 'clock' && (
+              {currentAttendanceTab === 'clock' && (
                 <div className="staff-attendance-layout">
                   <div className="staff-attendance-list">
-                    {attendanceLogs.map((log) => {
+                    {visibleAttendanceLogs.map((log) => {
                       const staffProfile = profileById.get(log.staff_profile_id)
                       return (
                         <article className="staff-attendance-row" key={log.id}>
@@ -6329,7 +6379,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         </article>
                       )
                     })}
-                    {attendanceLogs.length === 0 && <p className="notice">{text.messages.noAttendanceLogs}</p>}
+                    {visibleAttendanceLogs.length === 0 && <p className="notice">{text.messages.noAttendanceLogs}</p>}
                   </div>
 
                   <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canEditAttendance}>
@@ -6338,14 +6388,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>
                         {text.labels.staffMember}
                         <select value={attendanceLogForm.staff_profile_id || firstStaffProfileId} onChange={(event) => setAttendanceLogForm({ ...attendanceLogForm, staff_profile_id: event.target.value })}>
-                          {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          {visibleStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                         </select>
                       </label>
                       <label>
                         {text.labels.shiftRole}
                         <select value={attendanceLogForm.shift_id} onChange={(event) => setAttendanceLogForm({ ...attendanceLogForm, shift_id: event.target.value })}>
                           <option value="">{text.any}</option>
-                          {attendanceShifts
+                          {visibleAttendanceShifts
                             .filter((shift) => !(attendanceLogForm.staff_profile_id || firstStaffProfileId) || shift.staff_profile_id === (attendanceLogForm.staff_profile_id || firstStaffProfileId))
                             .map((shift) => <option key={shift.id} value={shift.id}>{staffDateLabel(shift.shift_date)} · {normalizeTime(shift.start_time)}-{normalizeTime(shift.end_time)}</option>)}
                         </select>
@@ -6375,7 +6425,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </div>
               )}
 
-              {attendanceTab === 'timesheet' && (
+              {currentAttendanceTab === 'timesheet' && (
                 <div className="staff-table-wrap">
                   <table className="staff-table staff-attendance-table">
                     <thead>
@@ -6391,7 +6441,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </tr>
                     </thead>
                     <tbody>
-                      {attendanceLogs.map((log) => {
+                      {visibleAttendanceLogs.map((log) => {
                         const staffProfile = profileById.get(log.staff_profile_id)
                         return (
                           <tr key={log.id}>
@@ -6406,7 +6456,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           </tr>
                         )
                       })}
-                      {attendanceLogs.length === 0 && (
+                      {visibleAttendanceLogs.length === 0 && (
                         <tr>
                           <td colSpan={8}>{text.messages.noAttendanceLogs}</td>
                         </tr>
@@ -6416,10 +6466,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </div>
               )}
 
-              {attendanceTab === 'leave' && (
+              {currentAttendanceTab === 'leave' && (
                 <div className="staff-attendance-layout">
                   <div className="staff-attendance-list">
-                    {leaveRequests.map((leave) => {
+                    {visibleLeaveRequests.map((leave) => {
                       const staffProfile = profileById.get(leave.staff_profile_id)
                       return (
                         <article className="staff-attendance-row" key={leave.id}>
@@ -6445,7 +6495,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         </article>
                       )
                     })}
-                    {leaveRequests.length === 0 && <p className="notice">{text.messages.noLeaveRequests}</p>}
+                    {visibleLeaveRequests.length === 0 && <p className="notice">{text.messages.noLeaveRequests}</p>}
                   </div>
 
                   <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canEditAttendance}>
@@ -6454,7 +6504,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>
                         {text.labels.staffMember}
                         <select value={leaveForm.staff_profile_id || firstStaffProfileId} onChange={(event) => setLeaveForm({ ...leaveForm, staff_profile_id: event.target.value })}>
-                          {staffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          {visibleStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                         </select>
                       </label>
                       <label>{text.labels.leaveType}<select value={leaveForm.leave_type} onChange={(event) => setLeaveForm({ ...leaveForm, leave_type: event.target.value as StaffLeaveType })}>{staffLeaveTypes.map((type) => <option key={type} value={type}>{text.leaveTypes[type]}</option>)}</select></label>
@@ -6474,12 +6524,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </div>
               )}
 
-              {attendanceTab === 'employee' && (
+              {currentAttendanceTab === 'employee' && (
                 <div className="staff-attendance-layout staff-employee-layout">
                   <div className="staff-attendance-list staff-employee-list">
                     <h4>{text.labels.privateEmployeeProfile}</h4>
                     <p className="staff-helper-text">{text.messages.employeeProfileIntro}</p>
-                    {allStaffProfileOptions.map((staffProfile) => {
+                    {visibleAllStaffProfileOptions.map((staffProfile) => {
                       const employee = employeeProfileById.get(staffProfile.id)
                       const isInactiveEmployee = employee?.active === false
                       const isSelected = (employeeForm.profile_id || firstEmployeeStaffProfileId) === staffProfile.id
@@ -6503,7 +6553,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     })}
                   </div>
 
-                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form" disabled={!canManageAttendance || !selectedEmployeeStaffProfile}>
+                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     <h4>{text.labels.payrollLink}</h4>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
@@ -6523,10 +6573,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>
                         {text.labels.staffMember}
                         <select value={employeeForm.profile_id || firstEmployeeStaffProfileId} onChange={(event) => {
-                          const staffProfile = profileById.get(event.target.value) || allStaffProfileOptions.find((item) => item.id === event.target.value)
+                          const staffProfile = visibleAllStaffProfileOptions.find((item) => item.id === event.target.value)
                           if (staffProfile) setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
                         }}>
-                          {allStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          {visibleAllStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                         </select>
                       </label>
                       <label>{text.labels.employeeCode}<input value={employeeForm.employee_code} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_code: event.target.value })} /></label>
@@ -6564,12 +6614,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
                       <span>{text.labels.activeEmployee}</span>
                     </label>
-                    <button className="primary" type="button" disabled={saving || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>{text.actions.saveEmployeeProfile}</button>
+                    <button className="primary" type="button" disabled={saving || !canEditEmployeeProfiles || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>{text.actions.saveEmployeeProfile}</button>
                   </fieldset>
                 </div>
               )}
 
-              {attendanceTab === 'settings' && (
+              {currentAttendanceTab === 'settings' && (
                 <fieldset className="staff-readonly-fieldset staff-attendance-form staff-attendance-settings" disabled={!canManageAttendance}>
                   <h4>{text.attendanceTabs.settings}</h4>
                   <div className="form-grid compact-form-grid">
