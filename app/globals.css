@@ -1205,6 +1205,10 @@ body {
   z-index: 30;
 }
 
+.app .staff-picker-shell.staff-time-picker:focus-within {
+  z-index: 110;
+}
+
 .app .staff-time-trigger {
   width: 100%;
   min-height: var(--staff-control-height);
@@ -3000,6 +3004,8 @@ body {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+  overflow: visible;
+  position: relative;
 }
 
 .app .staff-standard-shifts > strong {
@@ -3016,6 +3022,13 @@ body {
   gap: 8px;
   grid-template-columns: minmax(92px, 0.75fr) repeat(3, minmax(110px, 1fr));
   padding: 8px;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.app .staff-standard-shift-row:focus-within {
+  z-index: 100;
 }
 
 .app .staff-standard-shift-row > strong {
