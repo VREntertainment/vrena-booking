@@ -356,12 +356,25 @@ type StaffReportSnapshot = {
   reportSeries: StaffDailyPoint[]
   comparisonSeries: StaffDailyPoint[]
   orders: StaffOrder[]
+  comparisonOrders: StaffOrder[]
   payments: StaffOrderPayment[]
 }
 
 const emptyStaffOrders: StaffOrder[] = []
 const emptyStaffPayments: StaffOrderPayment[] = []
 const emptyStaffDailySeries: StaffDailyPoint[] = []
+
+type StaffWeekdayRevenuePoint = {
+  key: string
+  label: string
+  sales: number
+}
+
+type StaffHourlyRevenuePoint = {
+  hour: number
+  label: string
+  sales: number
+}
 
 type BookingForm = {
   customerId: string
@@ -395,6 +408,11 @@ type StaffConsoleProps = {
 }
 
 type StaffConsoleLanguage = 'en' | 'vi'
+
+const staffWeekdayLabels = {
+  en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  vi: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+} satisfies Record<StaffConsoleLanguage, string[]>
 
 const staffConsoleText = {
   en: {
@@ -513,6 +531,8 @@ const staffConsoleText = {
       priceValidUntil: 'Price valid until',
       reportEndDate: 'Report end date',
       reportStartDate: 'Report start date',
+      revenueByDayOfWeek: 'Revenue by day of week',
+      revenueByHour: 'Revenue by hour',
       salesByDay: 'Sales by day',
       staffConsole: 'Staff Console',
     },
@@ -741,6 +761,8 @@ const staffConsoleText = {
       ruleName: 'Rule name',
       sales: 'Sales',
       salesTrend: 'Sales trend',
+      revenueByDayOfWeek: 'Revenue by day of week',
+      revenueByHour: 'Revenue by hour',
       searchUsers: 'Search users',
       selectedRange: 'Selected range',
       sessions: 'Sessions',
@@ -1040,6 +1062,8 @@ const staffConsoleText = {
       priceValidUntil: 'Giá hiệu lực đến',
       reportEndDate: 'Ngày kết thúc báo cáo',
       reportStartDate: 'Ngày bắt đầu báo cáo',
+      revenueByDayOfWeek: 'Doanh thu theo ngày trong tuần',
+      revenueByHour: 'Doanh thu theo giờ',
       salesByDay: 'Doanh thu theo ngày',
       staffConsole: 'Bảng nhân viên',
     },
@@ -1268,6 +1292,8 @@ const staffConsoleText = {
       ruleName: 'Tên quy tắc',
       sales: 'Doanh thu',
       salesTrend: 'Xu hướng doanh thu',
+      revenueByDayOfWeek: 'Doanh thu theo ngày trong tuần',
+      revenueByHour: 'Doanh thu theo giờ',
       searchUsers: 'Tìm người dùng',
       selectedRange: 'Khoảng đã chọn',
       sessions: 'Phiên',
@@ -2553,6 +2579,16 @@ function formatVnd(value: number) {
   return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
 }
 
+function formatVndCompact(value: number) {
+  const amount = Math.max(0, Number(value) || 0)
+  if (amount >= 1000000) {
+    const millions = amount / 1000000
+    return `${Number(millions.toFixed(millions >= 10 || Number.isInteger(millions) ? 0 : 1)).toLocaleString('vi-VN')}M`
+  }
+  if (amount >= 1000) return `${Math.round(amount / 1000).toLocaleString('vi-VN')}k`
+  return `${amount.toLocaleString('vi-VN')} đ`
+}
+
 function dongDigits(value: string | number | null | undefined) {
   return String(value ?? '').replace(/\D/g, '')
 }
@@ -3701,6 +3737,56 @@ function paymentPieItems(report: StaffReportSummary, text: StaffConsoleCopy = st
   ]
 }
 
+function buildWeekdayRevenue(orders: StaffOrder[], language: StaffConsoleLanguage): StaffWeekdayRevenuePoint[] {
+  const labels = staffWeekdayLabels[language]
+  const buckets = labels.map((label, index) => ({ key: String(index), label, sales: 0 }))
+
+  orders.forEach((order) => {
+    if (!order.booking_date) return
+    const day = dateFromInput(order.booking_date).getDay()
+    const mondayFirstIndex = day === 0 ? 6 : day - 1
+    buckets[mondayFirstIndex].sales += Number(order.total) || 0
+  })
+
+  return buckets
+}
+
+function buildHourlyRevenue(orders: StaffOrder[]): StaffHourlyRevenuePoint[] {
+  const buckets = Array.from({ length: 24 }, (_, hour) => ({ hour, label: `${hour}h`, sales: 0 }))
+
+  orders.forEach((order) => {
+    const match = String(order.booking_time || '').match(/^(\d{1,2})/)
+    const hour = match ? Number(match[1]) : Number.NaN
+    if (!Number.isFinite(hour) || hour < 0 || hour > 23) return
+    buckets[hour].sales += Number(order.total) || 0
+  })
+
+  return buckets
+}
+
+function buildSmoothLineChartPath(series: Array<{ sales: number }>, max: number) {
+  if (series.length === 0) return ''
+  const safeMax = Math.max(1, max)
+  const points = series.map((point, index) => {
+    const x = series.length === 1 ? 50 : 4 + (index / (series.length - 1)) * 92
+    const y = 92 - (point.sales / safeMax) * 74
+    return { x, y }
+  })
+
+  if (points.length === 1) return `M 4 ${points[0].y.toFixed(2)} L 96 ${points[0].y.toFixed(2)}`
+
+  return points.reduce((path, point, index) => {
+    if (index === 0) return `M ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+    const previous = points[index - 1]
+    const midX = (previous.x + point.x) / 2
+    return `${path} C ${midX.toFixed(2)} ${previous.y.toFixed(2)}, ${midX.toFixed(2)} ${point.y.toFixed(2)}, ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+  }, '')
+}
+
+function buildChartAreaPath(linePath: string) {
+  return linePath ? `${linePath} L 96 94 L 4 94 Z` : ''
+}
+
 function emptyStaffReport(text: StaffConsoleCopy = staffConsoleText.en): StaffReportSummary {
   return {
     totalSales: 0,
@@ -3863,12 +3949,14 @@ function dailySeriesFromRpc(value: unknown): StaffDailyPoint[] {
 
 function staffReportSnapshotFromRpc(value: unknown, text: StaffConsoleCopy = staffConsoleText.en): StaffReportSnapshot {
   const payload = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  const comparisonOrders = payload.comparisonOrders ?? payload.comparison_orders
   return {
     report: reportSummaryFromRpc(payload.report, text),
     comparisonReport: reportSummaryFromRpc(payload.comparisonReport ?? payload.comparison_report, text),
     reportSeries: dailySeriesFromRpc(payload.reportSeries ?? payload.report_series),
     comparisonSeries: dailySeriesFromRpc(payload.comparisonSeries ?? payload.comparison_series),
     orders: Array.isArray(payload.orders) ? payload.orders as StaffOrder[] : [],
+    comparisonOrders: Array.isArray(comparisonOrders) ? comparisonOrders as StaffOrder[] : [],
     payments: Array.isArray(payload.payments) ? payload.payments as StaffOrderPayment[] : [],
   }
 }
@@ -3888,7 +3976,8 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
 }
 
 export default function StaffConsole({ profile, authEmail, language, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
-  const text = staffConsoleText[resolveStaffConsoleLanguage(language)]
+  const resolvedLanguage = resolveStaffConsoleLanguage(language)
+  const text = staffConsoleText[resolvedLanguage]
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
@@ -4218,12 +4307,40 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   const emptyReport = useMemo(() => emptyStaffReport(text), [text])
   const reportOrders = reportSnapshot?.orders ?? emptyStaffOrders
+  const comparisonOrders = compareEnabled ? reportSnapshot?.comparisonOrders ?? emptyStaffOrders : emptyStaffOrders
   const reportPayments = reportSnapshot?.payments ?? emptyStaffPayments
   const reportPaymentsByOrderId = useMemo(() => paymentMapFromRows(reportPayments), [reportPayments])
   const report = reportSnapshot?.report || emptyReport
   const comparisonReport = compareEnabled ? reportSnapshot?.comparisonReport || emptyReport : emptyReport
   const reportSeries = reportSnapshot?.reportSeries ?? emptyStaffDailySeries
   const comparisonSeries = compareEnabled ? reportSnapshot?.comparisonSeries ?? emptyStaffDailySeries : emptyStaffDailySeries
+  const weekdayRevenue = useMemo(() => buildWeekdayRevenue(reportOrders, resolvedLanguage), [reportOrders, resolvedLanguage])
+  const comparisonWeekdayRevenue = useMemo(
+    () => compareEnabled ? buildWeekdayRevenue(comparisonOrders, resolvedLanguage) : [],
+    [compareEnabled, comparisonOrders, resolvedLanguage]
+  )
+  const weekdayRevenueMax = useMemo(() => Math.max(
+    1,
+    ...weekdayRevenue.map((point) => point.sales),
+    ...comparisonWeekdayRevenue.map((point) => point.sales)
+  ), [comparisonWeekdayRevenue, weekdayRevenue])
+  const hourlyRevenue = useMemo(() => buildHourlyRevenue(reportOrders), [reportOrders])
+  const comparisonHourlyRevenue = useMemo(
+    () => compareEnabled ? buildHourlyRevenue(comparisonOrders) : [],
+    [compareEnabled, comparisonOrders]
+  )
+  const hourlyRevenueMax = useMemo(() => Math.max(
+    1,
+    ...hourlyRevenue.map((point) => point.sales),
+    ...comparisonHourlyRevenue.map((point) => point.sales)
+  ), [comparisonHourlyRevenue, hourlyRevenue])
+  const hourlyLinePath = useMemo(() => buildSmoothLineChartPath(hourlyRevenue, hourlyRevenueMax), [hourlyRevenue, hourlyRevenueMax])
+  const comparisonHourlyLinePath = useMemo(
+    () => buildSmoothLineChartPath(comparisonHourlyRevenue, hourlyRevenueMax),
+    [comparisonHourlyRevenue, hourlyRevenueMax]
+  )
+  const hourlyAreaPath = useMemo(() => buildChartAreaPath(hourlyLinePath), [hourlyLinePath])
+  const comparisonHourlyAreaPath = useMemo(() => buildChartAreaPath(comparisonHourlyLinePath), [comparisonHourlyLinePath])
   const reportChartMax = useMemo(() => Math.max(
     1,
     ...reportSeries.map((point) => point.sales),
@@ -4627,22 +4744,41 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       reportSeries: buildDailySeries(reportRows, reportFrom, reportTo),
       comparisonSeries: compareEnabled ? buildDailySeries(comparisonRows, compareFrom, compareTo) : [],
       orders: reportRows,
+      comparisonOrders: comparisonRows,
       payments,
     })
   }
 
   async function loadReportData(force = false) {
     await runStaffLoader('report', async () => {
+      const withComparisonOrders = async (snapshot: StaffReportSnapshot) => {
+        if (!compareEnabled || snapshot.comparisonOrders.length > 0) return snapshot
+
+        const [compareFrom, compareTo] = orderedRange(compareStart, compareEnd)
+        const { data, error } = await supabase
+          .from('staff_orders')
+          .select('*')
+          .gte('booking_date', compareFrom)
+          .lte('booking_date', compareTo)
+          .order('booking_date', { ascending: false })
+          .order('booking_time', { ascending: false })
+          .limit(500)
+
+        if (error) return snapshot
+        return { ...snapshot, comparisonOrders: (data ?? []) as StaffOrder[] }
+      }
+
       const reportArgs = {
         p_start_date: reportStart,
         p_end_date: reportEnd,
         p_compare_start: compareEnabled ? compareStart : null,
         p_compare_end: compareEnabled ? compareEnd : null,
-        p_order_limit: 120,
+        p_order_limit: 500,
       }
       const { data, error } = await supabase.rpc('staff_report_summary', reportArgs)
       if (!error) {
-        setReportSnapshot(staffReportSnapshotFromRpc(data, text))
+        const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(data, text))
+        setReportSnapshot(snapshot)
         return
       }
 
@@ -4656,7 +4792,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         await loadReportFallback()
         return
       }
-      setReportSnapshot(staffReportSnapshotFromRpc(legacyResult.data, text))
+      const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(legacyResult.data, text))
+      setReportSnapshot(snapshot)
     }, force)
   }
 
@@ -7336,6 +7473,93 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             <div><span>{text.labels.bestSellingGame}</span><strong>{report.bestSellingGame}</strong></div>
           </div>
           <div className="staff-report-graphics">
+            <div className="staff-report-revenue-grid">
+              <section className="staff-report-graph staff-report-weekday-graph" aria-label={text.aria.revenueByDayOfWeek}>
+                <div className="staff-report-graph-head">
+                  <div>
+                    <h4>{text.labels.revenueByDayOfWeek}</h4>
+                    <span>{rangeLabel(reportStart, reportEnd)}</span>
+                  </div>
+                  {compareEnabled && <span className="staff-report-compare-label">vs {rangeLabel(compareStart, compareEnd)}</span>}
+                </div>
+                <div className="staff-weekday-bars">
+                  {weekdayRevenue.map((point, index) => {
+                    const comparePoint = comparisonWeekdayRevenue[index]
+                    const currentHeight = `${Math.round((point.sales / weekdayRevenueMax) * 100)}%`
+                    const compareHeight = `${Math.round(((comparePoint?.sales || 0) / weekdayRevenueMax) * 100)}%`
+
+                    return (
+                      <div className="staff-weekday-bar-group" key={point.key}>
+                        <div className="staff-weekday-bar-track">
+                          <div className="staff-weekday-bar-pair">
+                            {compareEnabled && (
+                              <span
+                                className="staff-weekday-bar compare"
+                                style={{ height: compareHeight }}
+                                title={`${point.label} ${rangeLabel(compareStart, compareEnd)}: ${formatVnd(comparePoint?.sales || 0)}`}
+                              />
+                            )}
+                            <span
+                              className="staff-weekday-bar current"
+                              style={{ height: currentHeight }}
+                              title={`${point.label} ${rangeLabel(reportStart, reportEnd)}: ${formatVnd(point.sales)}`}
+                            />
+                          </div>
+                        </div>
+                        <strong>{point.label}</strong>
+                        <small>{formatVndCompact(point.sales)}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+
+              <section className="staff-report-graph staff-report-hourly-graph" aria-label={text.aria.revenueByHour}>
+                <div className="staff-report-graph-head">
+                  <div>
+                    <h4>{text.labels.revenueByHour}</h4>
+                    <span>{rangeLabel(reportStart, reportEnd)}</span>
+                  </div>
+                  <div className="staff-report-curve-legend">
+                    <span><i className="current" /> {rangeLabel(reportStart, reportEnd)}</span>
+                    {compareEnabled && <span><i className="hourly-compare" /> {rangeLabel(compareStart, compareEnd)}</span>}
+                  </div>
+                </div>
+                <div className="staff-hourly-chart-wrap">
+                  <svg className="staff-hourly-chart" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="staffHourlyCurrentArea" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#0b6fb8" stopOpacity="0.38" />
+                        <stop offset="100%" stopColor="#0b6fb8" stopOpacity="0.08" />
+                      </linearGradient>
+                      <linearGradient id="staffHourlyCompareArea" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#ff9824" stopOpacity="0.32" />
+                        <stop offset="100%" stopColor="#ff9824" stopOpacity="0.07" />
+                      </linearGradient>
+                    </defs>
+                    {[0.25, 0.5, 0.75, 1].map((ratio) => {
+                      const y = 92 - ratio * 74
+                      return (
+                        <g key={ratio}>
+                          <line className="staff-hourly-grid" x1="4" x2="96" y1={y.toFixed(2)} y2={y.toFixed(2)} />
+                          <text className="staff-hourly-grid-label" x="1.1" y={(y + 1.4).toFixed(2)}>
+                            {formatVndCompact(hourlyRevenueMax * ratio)}
+                          </text>
+                        </g>
+                      )
+                    })}
+                    {compareEnabled && comparisonHourlyAreaPath && <path className="staff-hourly-area compare" d={comparisonHourlyAreaPath} />}
+                    {hourlyAreaPath && <path className="staff-hourly-area current" d={hourlyAreaPath} />}
+                    {compareEnabled && comparisonHourlyLinePath && <path className="staff-hourly-line compare" d={comparisonHourlyLinePath} />}
+                    {hourlyLinePath && <path className="staff-hourly-line current" d={hourlyLinePath} />}
+                  </svg>
+                  <div className="staff-hourly-axis">
+                    {[0, 3, 6, 9, 12, 15, 18, 21, 23].map((hour) => <span key={hour}>{hour}h</span>)}
+                  </div>
+                </div>
+              </section>
+            </div>
+
             <section className="staff-report-graph staff-report-sales-graph" aria-label={text.aria.salesByDay}>
               <div className="staff-report-graph-head">
                 <div>
