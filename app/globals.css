@@ -2962,7 +2962,7 @@ body {
   max-width: 100%;
   min-height: 40px;
   padding: 8px 10px;
-  width: fit-content;
+  width: max-content;
 }
 
 .app .staff-checkbox-row input {
@@ -2970,12 +2970,46 @@ body {
 }
 
 .app .staff-checkbox-row span {
-  min-width: 0;
-  overflow-wrap: anywhere;
+  min-width: max-content;
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+}
+
+.app .staff-employee-active-row {
+  width: min(240px, 100%);
 }
 
 .app .staff-attendance-settings {
   max-width: 980px;
+}
+
+.app .staff-standard-shifts {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.app .staff-standard-shifts > strong {
+  color: #637075;
+  font-size: 13px;
+}
+
+.app .staff-standard-shift-row {
+  align-items: end;
+  background: #f8fafb;
+  border: 1px solid #d8dde0;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(92px, 0.75fr) repeat(4, minmax(110px, 1fr));
+  padding: 8px;
+}
+
+.app .staff-standard-shift-row > strong {
+  align-self: center;
+  color: #071112;
+  font-size: 13px;
 }
 
 .app .staff-attendance-table td,
@@ -7869,6 +7903,10 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .app .staff-standard-shift-row {
+    grid-template-columns: 1fr;
+  }
+
   .app .staff-planning-toolbar {
     align-items: stretch;
   }
@@ -8933,6 +8971,7 @@ body {
   .app .staff-attendance-row,
   .app .staff-employee-row,
   .app .staff-employee-selected,
+  .app .staff-standard-shift-row,
   .app .staff-report-date-modal,
   .app .staff-report-date-presets button,
   .app .staff-report-calendar-day,
@@ -8998,6 +9037,7 @@ body {
   .app .staff-employee-list > .staff-helper-text,
   .app .staff-employee-row small,
   .app .staff-employee-selected span,
+  .app .staff-standard-shifts > strong,
   .app .staff-shift-chip small,
   .app .staff-report-bar-group small,
   .app .staff-weekday-bar-group small {
@@ -9015,6 +9055,10 @@ body {
   .app .staff-checkbox-row {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
+    color: #f4f8f8;
+  }
+
+  .app .staff-standard-shift-row > strong {
     color: #f4f8f8;
   }
 
