@@ -1521,9 +1521,9 @@ const accountantExportStores = [
   { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
 ] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
 const defaultStaffShiftTemplates = [
-  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Office Staff' },
-  { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Game Master' },
-  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Office Staff' },
+  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Staff' },
+  { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Staff' },
+  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Staff' },
   { id: 'full_day', start_time: '09:00', end_time: '18:00', break_minutes: '60', shift_role: 'Staff' },
 ] satisfies StaffShiftTemplate[]
 
@@ -1549,7 +1549,7 @@ function normalizeStaffShiftTemplates(value: unknown, standardBreakMinutes = 60)
       start_time: startTime,
       end_time: endTime,
       break_minutes: String(breakMinutes),
-      shift_role: String(incoming?.shift_role || fallback.shift_role).trim() || fallback.shift_role,
+      shift_role: 'Staff',
     }
   })
 }
@@ -1830,14 +1830,14 @@ type StaffPickerFieldProps = {
   onChange: (value: string) => void
 }
 
-const staffTimeOptions = Array.from({ length: 48 }, (_, index) => {
-  const hour = Math.floor(index / 2)
-  const minute = index % 2 === 0 ? '00' : '30'
+const staffTimeOptions = Array.from({ length: 96 }, (_, index) => {
+  const hour = Math.floor(index / 4)
+  const minute = String((index % 4) * 15).padStart(2, '0')
   return `${String(hour).padStart(2, '0')}:${minute}`
 })
 
 function normalizeTypedStaffTime(value: string) {
-  const trimmed = value.trim()
+  const trimmed = value.trim().toLowerCase().replace(/[h.]/, ':')
   const colonMatch = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/)
   if (colonMatch) return `${colonMatch[1].padStart(2, '0')}:${colonMatch[2]}`
 
@@ -1911,6 +1911,7 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onCha
           <span className="staff-time-panel">
             <input
               aria-label={`${ariaLabel}: type a specific time`}
+              autoFocus
               className="staff-time-manual"
               inputMode="numeric"
               placeholder="HH:mm"
@@ -2303,7 +2304,7 @@ const defaultShiftForm = (settings?: StaffAttendanceSettings) => ({
   id: '',
   staff_profile_id: '',
   location: settings?.location || 'VRena',
-  shift_role: 'Office Staff',
+  shift_role: 'Staff',
   shift_date: todayString(),
   start_time: '09:00',
   end_time: '18:00',
@@ -5157,7 +5158,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     const payload = {
       staff_profile_id: staffProfileId,
       location: shiftForm.location.trim() || attendanceSettings.location || 'VRena',
-      shift_role: shiftForm.shift_role.trim() || 'Staff',
+      shift_role: 'Staff',
       shift_date: shiftForm.shift_date,
       start_time: normalizeTime(shiftForm.start_time) || '09:00',
       end_time: normalizeTime(shiftForm.end_time) || '18:00',
@@ -5184,7 +5185,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       id: shift.id,
       staff_profile_id: shift.staff_profile_id,
       location: shift.location,
-      shift_role: shift.shift_role,
+      shift_role: 'Staff',
       shift_date: shift.shift_date,
       start_time: normalizeTime(shift.start_time),
       end_time: normalizeTime(shift.end_time),
@@ -5215,7 +5216,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       start_time: template.start_time,
       end_time: template.end_time,
       break_minutes: template.break_minutes,
-      shift_role: template.shift_role,
     }))
   }
 
@@ -5241,7 +5241,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     const payload = {
       staff_profile_id: staffProfileId,
       location: attendanceSettings.location || 'VRena',
-      shift_role: template.shift_role,
+      shift_role: 'Staff',
       shift_date: shiftDate,
       start_time: normalizeTime(template.start_time) || '09:00',
       end_time: normalizeTime(template.end_time) || '18:00',
@@ -5264,7 +5264,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       shift.shift_date === shiftDate &&
       normalizeTime(shift.start_time) === payload.start_time &&
       normalizeTime(shift.end_time) === payload.end_time &&
-      shift.shift_role === payload.shift_role &&
       shift.status !== 'cancelled'
     ))
     if (duplicate) {
@@ -5393,16 +5392,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
 
     const existingKeys = new Set(attendanceShifts.map((shift) => (
-      `${shift.staff_profile_id}:${shift.shift_date}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
+      `${shift.staff_profile_id}:${shift.shift_date}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}`
     )))
     const rows = previousShifts.flatMap((shift) => {
       const nextDate = addDays(shift.shift_date, rangeDays)
-      const key = `${shift.staff_profile_id}:${nextDate}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}:${shift.shift_role}`
+      const key = `${shift.staff_profile_id}:${nextDate}:${normalizeTime(shift.start_time)}:${normalizeTime(shift.end_time)}`
       if (existingKeys.has(key)) return []
       return [{
         staff_profile_id: shift.staff_profile_id,
         location: shift.location || attendanceSettings.location || 'VRena',
-        shift_role: shift.shift_role || 'Staff',
+        shift_role: 'Staff',
         shift_date: nextDate,
         start_time: normalizeTime(shift.start_time) || '09:00',
         end_time: normalizeTime(shift.end_time) || '18:00',
@@ -6538,7 +6537,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                                         onDragEnd={() => setDraggingShiftId('')}
                                       >
                                         <span>{normalizeTime(shift.start_time)}-{normalizeTime(shift.end_time)}</span>
-                                        <strong>{shift.shift_role}</strong>
                                         <small>{text.shiftStatuses[shift.status]}</small>
                                         {warnings.length > 0 && <em>{warnings[0]}</em>}
                                       </button>
@@ -6570,7 +6568,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                               </div>
                             </div>
                             <div className="staff-attendance-meta">
-                              <span>{shift.shift_role}</span>
                               <span>{shift.location}</span>
                               <span>{text.shiftStatuses[shift.status]}</span>
                               <span>{text.labels.breakMinutes}: {shift.break_minutes}</span>
@@ -6612,7 +6609,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           <StaffPickerField ariaLabel={text.labels.end} placeholder={text.chooseTime} type="time" value={shiftForm.end_time} onChange={(value) => setShiftForm({ ...shiftForm, end_time: value })} />
                         </label>
                         <label>{text.labels.breakMinutes}<input min={0} type="number" value={shiftForm.break_minutes} onChange={(event) => setShiftForm({ ...shiftForm, break_minutes: event.target.value })} /></label>
-                        <label>{text.labels.shiftRole}<input value={shiftForm.shift_role} onChange={(event) => setShiftForm({ ...shiftForm, shift_role: event.target.value })} /></label>
                         <label>{text.labels.location}<input value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })} /></label>
                         <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value as StaffShiftStatus })}>{staffShiftStatuses.map((status) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
                         <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
@@ -6664,7 +6660,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         </select>
                       </label>
                       <label>
-                        {text.labels.shiftRole}
+                        {text.labels.shiftList}
                         <select value={attendanceLogForm.shift_id} onChange={(event) => setAttendanceLogForm({ ...attendanceLogForm, shift_id: event.target.value })}>
                           <option value="">{text.any}</option>
                           {visibleAttendanceShifts
@@ -6937,7 +6933,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           />
                         </label>
                         <label>{text.labels.breakMinutes}<input min={0} step="1" type="number" value={template.break_minutes} onChange={(event) => updateAttendanceShiftTemplate(template.id, { break_minutes: event.target.value })} /></label>
-                        <label>{text.labels.shiftRole}<input value={template.shift_role} onChange={(event) => updateAttendanceShiftTemplate(template.id, { shift_role: event.target.value })} /></label>
                       </div>
                     ))}
                   </div>
