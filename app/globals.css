@@ -2967,6 +2967,12 @@ body {
 
 .app .staff-checkbox-row input {
   flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  accent-color: #1683ff;
 }
 
 .app .staff-checkbox-row span {
@@ -2977,7 +2983,8 @@ body {
 }
 
 .app .staff-employee-active-row {
-  width: min(240px, 100%);
+  align-self: start;
+  width: max-content;
 }
 
 .app .staff-attendance-settings {
