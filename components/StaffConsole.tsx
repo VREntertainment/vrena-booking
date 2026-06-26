@@ -16,6 +16,13 @@ type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
 type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
+type StaffShiftTemplate = {
+  id: StaffShiftTemplateId
+  start_time: string
+  end_time: string
+  break_minutes: string
+  shift_role: string
+}
 type StaffEmploymentType = 'full_time' | 'part_time' | 'contractor' | 'intern' | 'probation' | 'probation_full_time' | 'probation_part_time'
 type AccountantExportReportId =
   | 'sales_revenue'
@@ -211,11 +218,13 @@ type StaffAttendanceSettings = {
   location: string
   standard_daily_minutes: number
   standard_weekly_minutes: number
+  standard_break_minutes: number
   overtime_monthly_cap_minutes: number
   overtime_yearly_cap_minutes: number
   night_start: string
   night_end: string
   annual_leave_days: number
+  shift_templates: StaffShiftTemplate[]
   updated_by: string | null
   updated_at: string | null
 }
@@ -774,6 +783,8 @@ const staffConsoleText = {
       sortBy: 'Sort by',
       slug: 'Slug',
       standardDay: 'Standard day',
+      standardBreakMinutes: 'Standard break (minutes)',
+      standardShiftTemplates: 'Standard shifts',
       standardWeek: 'Standard week',
       start: 'Start',
       startDate: 'Start date',
@@ -1305,6 +1316,8 @@ const staffConsoleText = {
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
       standardDay: 'Ngày chuẩn',
+      standardBreakMinutes: 'Phút nghỉ chuẩn',
+      standardShiftTemplates: 'Mẫu ca chuẩn',
       standardWeek: 'Tuần chuẩn',
       start: 'Bắt đầu',
       startDate: 'Ngày bắt đầu',
@@ -1507,18 +1520,44 @@ const accountantExportStores = [
   { id: 'all', label: { en: 'All stores', vi: 'Tất cả cơ sở' } },
   { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
 ] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
-const staffShiftTemplates = [
+const defaultStaffShiftTemplates = [
   { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Office Staff' },
   { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Game Master' },
   { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Office Staff' },
   { id: 'full_day', start_time: '09:00', end_time: '18:00', break_minutes: '60', shift_role: 'Staff' },
-] satisfies Array<{
-  id: StaffShiftTemplateId
-  start_time: string
-  end_time: string
-  break_minutes: string
-  shift_role: string
-}>
+] satisfies StaffShiftTemplate[]
+
+function normalizeStaffShiftTemplates(value: unknown, standardBreakMinutes = 60): StaffShiftTemplate[] {
+  const source = Array.isArray(value) ? value : []
+  return defaultStaffShiftTemplates.map((fallback) => {
+    const incoming = source.find((item) => {
+      if (!item || typeof item !== 'object') return false
+      return (item as Partial<StaffShiftTemplate>).id === fallback.id
+    }) as Partial<StaffShiftTemplate> | undefined
+    const startTime = normalizeTime(incoming?.start_time) || fallback.start_time
+    const endTime = normalizeTime(incoming?.end_time) || fallback.end_time
+    const rawBreakMinutes = incoming?.break_minutes ?? fallback.break_minutes ?? standardBreakMinutes
+    const parsedBreakMinutes = Number(rawBreakMinutes)
+    const fallbackBreakMinutes = Number(fallback.break_minutes)
+    const breakMinutes = Number.isFinite(parsedBreakMinutes)
+      ? Math.max(0, Math.round(parsedBreakMinutes))
+      : Number.isFinite(fallbackBreakMinutes)
+        ? Math.max(0, Math.round(fallbackBreakMinutes))
+        : Math.max(0, Math.round(Number(standardBreakMinutes) || 0))
+    return {
+      id: fallback.id,
+      start_time: startTime,
+      end_time: endTime,
+      break_minutes: String(breakMinutes),
+      shift_role: String(incoming?.shift_role || fallback.shift_role).trim() || fallback.shift_role,
+    }
+  })
+}
+
+function minutesSetting(value: unknown, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : fallback
+}
 
 function resolveStaffConsoleLanguage(language?: string): StaffConsoleLanguage {
   return language === 'vi' ? 'vi' : 'en'
@@ -2228,24 +2267,47 @@ const defaultAttendanceSettings = (): StaffAttendanceSettings => ({
   location: 'VRena',
   standard_daily_minutes: 480,
   standard_weekly_minutes: 2880,
+  standard_break_minutes: 60,
   overtime_monthly_cap_minutes: 2400,
   overtime_yearly_cap_minutes: 12000,
   night_start: '22:00',
   night_end: '06:00',
   annual_leave_days: 12,
+  shift_templates: normalizeStaffShiftTemplates(defaultStaffShiftTemplates, 60),
   updated_by: null,
   updated_at: null,
 })
 
-const defaultShiftForm = () => ({
+function normalizeAttendanceSettings(value?: Partial<StaffAttendanceSettings> | null): StaffAttendanceSettings {
+  const fallback = defaultAttendanceSettings()
+  const standardBreakMinutes = minutesSetting(value?.standard_break_minutes, fallback.standard_break_minutes)
+  return {
+    ...fallback,
+    ...(value || {}),
+    location: String(value?.location || fallback.location),
+    standard_daily_minutes: minutesSetting(value?.standard_daily_minutes, fallback.standard_daily_minutes),
+    standard_weekly_minutes: minutesSetting(value?.standard_weekly_minutes, fallback.standard_weekly_minutes),
+    standard_break_minutes: standardBreakMinutes,
+    overtime_monthly_cap_minutes: minutesSetting(value?.overtime_monthly_cap_minutes, fallback.overtime_monthly_cap_minutes),
+    overtime_yearly_cap_minutes: minutesSetting(value?.overtime_yearly_cap_minutes, fallback.overtime_yearly_cap_minutes),
+    night_start: normalizeTime(value?.night_start) || fallback.night_start,
+    night_end: normalizeTime(value?.night_end) || fallback.night_end,
+    annual_leave_days: Math.max(0, Number(value?.annual_leave_days ?? fallback.annual_leave_days) || 0),
+    shift_templates: normalizeStaffShiftTemplates(value?.shift_templates, standardBreakMinutes),
+    updated_by: value?.updated_by ?? fallback.updated_by,
+    updated_at: value?.updated_at ?? fallback.updated_at,
+  }
+}
+
+const defaultShiftForm = (settings?: StaffAttendanceSettings) => ({
   id: '',
   staff_profile_id: '',
-  location: 'VRena',
+  location: settings?.location || 'VRena',
   shift_role: 'Office Staff',
   shift_date: todayString(),
   start_time: '09:00',
   end_time: '18:00',
-  break_minutes: '60',
+  break_minutes: String(settings?.standard_break_minutes ?? 60),
   status: 'published' as StaffShiftStatus,
   notes: '',
 })
@@ -4075,6 +4137,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const currentAttendanceTab = visibleAttendanceTabs.includes(attendanceTab)
     ? attendanceTab
     : visibleAttendanceTabs[0] || 'schedule'
+  const effectiveShiftTemplates = useMemo(
+    () => normalizeStaffShiftTemplates(attendanceSettings.shift_templates, attendanceSettings.standard_break_minutes),
+    [attendanceSettings.shift_templates, attendanceSettings.standard_break_minutes],
+  )
 
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
@@ -4694,7 +4760,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       setAttendanceShifts((shiftsResult.data ?? []) as StaffScheduleShift[])
       setAttendanceLogs((logsResult.data ?? []) as StaffAttendanceLog[])
       setLeaveRequests((leaveResult.data ?? []) as StaffLeaveRequest[])
-      setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : ((settingsResult.data as StaffAttendanceSettings | null) ?? defaultAttendanceSettings()))
+      setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : normalizeAttendanceSettings(settingsResult.data as Partial<StaffAttendanceSettings> | null))
       setEmployeeProfiles(employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[])
     }, force)
   }
@@ -5106,7 +5172,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     const { error } = await request
     setStatus(error ? error.message : text.messages.shiftSaved)
     if (!error) {
-      setShiftForm({ ...defaultShiftForm(), staff_profile_id: payload.staff_profile_id, location: payload.location })
+      setShiftForm({ ...defaultShiftForm(attendanceSettings), staff_profile_id: payload.staff_profile_id, location: payload.location })
       markStaffDataStale('attendance')
       await loadAttendanceData(true)
     }
@@ -5142,14 +5208,26 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }
 
   function applyShiftTemplate(templateId: StaffShiftTemplateId) {
-    const template = staffShiftTemplates.find((item) => item.id === templateId) || staffShiftTemplates[0]
-    setSelectedShiftTemplate(templateId)
-    setShiftForm({
-      ...shiftForm,
+    const template = effectiveShiftTemplates.find((item) => item.id === templateId) || effectiveShiftTemplates[0] || defaultStaffShiftTemplates[0]
+    setSelectedShiftTemplate(template.id)
+    setShiftForm((current) => ({
+      ...current,
       start_time: template.start_time,
       end_time: template.end_time,
       break_minutes: template.break_minutes,
       shift_role: template.shift_role,
+    }))
+  }
+
+  function updateAttendanceShiftTemplate(templateId: StaffShiftTemplateId, patch: Partial<Omit<StaffShiftTemplate, 'id'>>) {
+    setAttendanceSettings((current) => {
+      const templates = normalizeStaffShiftTemplates(current.shift_templates, current.standard_break_minutes)
+      return {
+        ...current,
+        shift_templates: templates.map((template) => (
+          template.id === templateId ? { ...template, ...patch } : template
+        )),
+      }
     })
   }
 
@@ -5159,7 +5237,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       setStatus(text.messages.inactiveEmployeePlanningBlocked)
       return
     }
-    const template = staffShiftTemplates.find((item) => item.id === selectedShiftTemplate) || staffShiftTemplates[0]
+    const template = effectiveShiftTemplates.find((item) => item.id === selectedShiftTemplate) || effectiveShiftTemplates[0] || defaultStaffShiftTemplates[0]
     const payload = {
       staff_profile_id: staffProfileId,
       location: attendanceSettings.location || 'VRena',
@@ -5174,7 +5252,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
 
     setShiftForm({
-      ...defaultShiftForm(),
+      ...defaultShiftForm(attendanceSettings),
       ...payload,
       break_minutes: String(payload.break_minutes),
       notes: '',
@@ -5499,23 +5577,27 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   async function saveAttendanceSettings() {
     if (!canManageAttendance) return
     setSaving(true)
+    const standardBreakMinutes = minutesSetting(attendanceSettings.standard_break_minutes, 60)
+    const shiftTemplates = normalizeStaffShiftTemplates(attendanceSettings.shift_templates, standardBreakMinutes)
     const payload = {
       id: 'default',
       location: attendanceSettings.location.trim() || 'VRena',
-      standard_daily_minutes: attendanceSettings.standard_daily_minutes,
-      standard_weekly_minutes: attendanceSettings.standard_weekly_minutes,
-      overtime_monthly_cap_minutes: attendanceSettings.overtime_monthly_cap_minutes,
-      overtime_yearly_cap_minutes: attendanceSettings.overtime_yearly_cap_minutes,
+      standard_daily_minutes: minutesSetting(attendanceSettings.standard_daily_minutes, 480),
+      standard_weekly_minutes: minutesSetting(attendanceSettings.standard_weekly_minutes, 2880),
+      standard_break_minutes: standardBreakMinutes,
+      overtime_monthly_cap_minutes: minutesSetting(attendanceSettings.overtime_monthly_cap_minutes, 2400),
+      overtime_yearly_cap_minutes: minutesSetting(attendanceSettings.overtime_yearly_cap_minutes, 12000),
       night_start: normalizeTime(attendanceSettings.night_start) || '22:00',
       night_end: normalizeTime(attendanceSettings.night_end) || '06:00',
       annual_leave_days: attendanceSettings.annual_leave_days,
+      shift_templates: shiftTemplates,
       updated_by: profile?.id || null,
       updated_at: new Date().toISOString(),
     }
     const { error } = await supabase.from('staff_attendance_settings').upsert(payload, { onConflict: 'id' })
     setStatus(error ? error.message : text.messages.attendanceRulesSaved)
     if (!error) {
-      setAttendanceSettings(payload)
+      setAttendanceSettings(normalizeAttendanceSettings(payload))
       markStaffDataStale('attendance')
       await loadAttendanceData(true)
     }
@@ -6379,7 +6461,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>
                         {text.labels.shiftTemplate}
                         <select value={selectedShiftTemplate} onChange={(event) => applyShiftTemplate(event.target.value as StaffShiftTemplateId)} disabled={!canManageAttendance}>
-                          {staffShiftTemplates.map((template) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
+                          {effectiveShiftTemplates.map((template) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
                         </select>
                       </label>
                       {canManageAttendance && (
@@ -6800,7 +6882,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
                       <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
                     </div>
-                    <label className="staff-checkbox-row">
+                    <label className="staff-checkbox-row staff-employee-active-row">
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
                       <span>{text.labels.activeEmployee}</span>
                     </label>
@@ -6816,6 +6898,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     <label>{text.labels.location}<input value={attendanceSettings.location} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, location: event.target.value })} /></label>
                     <label>{text.labels.standardDay}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_daily_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                     <label>{text.labels.standardWeek}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_weekly_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_weekly_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                    <label>{text.labels.standardBreakMinutes}<input min={0} step="1" type="number" value={attendanceSettings.standard_break_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_break_minutes: Math.max(0, Math.round(Number(event.target.value) || 0)) })} /></label>
                     <label>{text.labels.overtimeMonthlyCap}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_monthly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_monthly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                     <label>{text.labels.overtimeYearlyCap}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_yearly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_yearly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                     <label>
@@ -6827,6 +6910,36 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <StaffPickerField ariaLabel={text.aria.nightEnd} placeholder={text.chooseTime} type="time" value={normalizeTime(attendanceSettings.night_end)} onChange={(value) => setAttendanceSettings({ ...attendanceSettings, night_end: value })} />
                     </label>
                     <label>{text.labels.annualLeaveDays}<input min={0} step="0.5" type="number" value={attendanceSettings.annual_leave_days} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, annual_leave_days: Number(event.target.value) || 0 })} /></label>
+                  </div>
+                  <div className="staff-standard-shifts">
+                    <strong>{text.labels.standardShiftTemplates}</strong>
+                    {effectiveShiftTemplates.map((template) => (
+                      <div className="staff-standard-shift-row" key={template.id}>
+                        <strong>{text.shiftTemplates[template.id]}</strong>
+                        <label>
+                          {text.labels.start}
+                          <StaffPickerField
+                            ariaLabel={`${text.shiftTemplates[template.id]} ${text.labels.start}`}
+                            placeholder={text.chooseTime}
+                            type="time"
+                            value={template.start_time}
+                            onChange={(value) => updateAttendanceShiftTemplate(template.id, { start_time: value })}
+                          />
+                        </label>
+                        <label>
+                          {text.labels.end}
+                          <StaffPickerField
+                            ariaLabel={`${text.shiftTemplates[template.id]} ${text.labels.end}`}
+                            placeholder={text.chooseTime}
+                            type="time"
+                            value={template.end_time}
+                            onChange={(value) => updateAttendanceShiftTemplate(template.id, { end_time: value })}
+                          />
+                        </label>
+                        <label>{text.labels.breakMinutes}<input min={0} step="1" type="number" value={template.break_minutes} onChange={(event) => updateAttendanceShiftTemplate(template.id, { break_minutes: event.target.value })} /></label>
+                        <label>{text.labels.shiftRole}<input value={template.shift_role} onChange={(event) => updateAttendanceShiftTemplate(template.id, { shift_role: event.target.value })} /></label>
+                      </div>
+                    ))}
                   </div>
                   <button className="primary" type="button" disabled={saving} onClick={saveAttendanceSettings}>{text.actions.saveRules}</button>
                 </fieldset>
