@@ -4233,8 +4233,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }, [attendanceLogs, attendanceShifts, employeeForm.base_salary_vnd, employeeForm.employment_type, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
   const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
   const attendanceGridStyle = useMemo(() => ({
-    gridTemplateColumns: `minmax(188px, 0.85fr) repeat(${attendanceWeekDates.length}, minmax(126px, 1fr))`,
-    minWidth: `${188 + attendanceWeekDates.length * 130}px`,
+    gridTemplateColumns: `minmax(156px, 0.75fr) repeat(${attendanceWeekDates.length}, minmax(108px, 1fr))`,
+    minWidth: `${156 + attendanceWeekDates.length * 112}px`,
   }), [attendanceWeekDates.length])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
@@ -6310,10 +6310,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       {currentTab === 'attendance' && (
         <div className="staff-card staff-card-wide staff-attendance-card">
           <div className="staff-card-heading">
-            <div>
-              <h3>{text.labels.attendanceSchedule}</h3>
-              <p>{text.messages.attendanceIntro}</p>
-            </div>
             <div className="staff-operations-actions staff-attendance-actions">
               <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>{text.actions.previousWeek}</button>
               <label>
