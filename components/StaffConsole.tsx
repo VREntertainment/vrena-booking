@@ -8,6 +8,7 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
+type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
@@ -228,6 +229,14 @@ type StaffAttendanceSettings = {
   updated_by: string | null
   updated_at: string | null
 }
+
+const staffTabGroups: Array<{ id: StaffTabGroupId; tabs: StaffTab[] }> = [
+  { id: 'operate', tabs: ['new', 'today', 'orders'] },
+  { id: 'reports', tabs: ['report'] },
+  { id: 'team', tabs: ['attendance', 'roles'] },
+  { id: 'setup', tabs: ['games', 'prices', 'discounts'] },
+  { id: 'admin', tabs: ['restore'] },
+]
 
 type StaffOrder = {
   id: string
@@ -945,7 +954,7 @@ const staffConsoleText = {
       { title: 'Player', body: 'Client app only. No Staff Console access.' },
     ],
     tabs: {
-      discounts: 'Discounts / Vouchers',
+      discounts: 'Offers',
       attendance: 'Attendance',
       games: 'Games',
       new: 'New Booking',
@@ -956,6 +965,13 @@ const staffConsoleText = {
       roles: 'Roles',
       today: 'Today',
     } satisfies Record<StaffTab, string>,
+    tabGroups: {
+      admin: 'Admin',
+      operate: 'Operate',
+      reports: 'Reports',
+      setup: 'Setup',
+      team: 'Team',
+    } satisfies Record<StaffTabGroupId, string>,
   },
   vi: {
     accessRequired: 'Cần quyền nhân viên.',
@@ -1478,7 +1494,7 @@ const staffConsoleText = {
       { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
     ],
     tabs: {
-      discounts: 'Ưu đãi / Voucher',
+      discounts: 'Ưu đãi',
       attendance: 'Chấm công',
       games: 'Trò chơi',
       new: 'Đặt chỗ mới',
@@ -1489,6 +1505,13 @@ const staffConsoleText = {
       roles: 'Vai trò',
       today: 'Hôm nay',
     } satisfies Record<StaffTab, string>,
+    tabGroups: {
+      admin: 'Admin',
+      operate: 'Vận hành',
+      reports: 'Báo cáo',
+      setup: 'Thiết lập',
+      team: 'Nhân sự',
+    } satisfies Record<StaffTabGroupId, string>,
   },
 } as const
 
@@ -4130,12 +4153,17 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
-    const staffTabs: StaffTab[] = ['new', 'today', 'attendance', 'games', 'prices', 'discounts', 'roles', 'orders', 'report']
-    if (rank >= 120) return ['new', 'today', 'attendance', 'games', 'prices', 'discounts', 'roles', 'restore', 'orders', 'report']
+    const staffTabs: StaffTab[] = ['new', 'today', 'orders', 'report', 'attendance', 'roles', 'games', 'prices', 'discounts']
+    if (rank >= 120) return [...staffTabs, 'restore']
     if (rank >= 20) return staffTabs
     return ['report']
   }, [rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
+  const visibleTabGroups = useMemo(() => staffTabGroups.map((group) => ({
+    ...group,
+    tabs: group.tabs.filter((tab) => allowedTabs.includes(tab)),
+  })).filter((group) => group.tabs.length > 0), [allowedTabs])
+  const currentTabGroup = visibleTabGroups.find((group) => group.tabs.includes(currentTab))?.id || visibleTabGroups[0]?.id || 'reports'
   const canEditCommerceTab = commerceTab === 'loyalty' ? canManageConfig : canCreateOrders
   const visibleAttendanceTabs = useMemo(() => staffAttendanceTabs.filter((item) => {
     if (item === 'clock' && !canViewAttendanceClock) return false
@@ -6009,11 +6037,23 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   const tabButton = (tab: StaffTab, label: string) => (
     allowedTabs.includes(tab) && (
-      <button className={currentTab === tab ? 'active' : ''} type="button" onClick={() => setActiveTab(tab)}>
+      <button
+        aria-selected={currentTab === tab}
+        className={currentTab === tab ? 'active' : ''}
+        role="tab"
+        type="button"
+        onClick={() => setActiveTab(tab)}
+      >
         {label}
       </button>
     )
   )
+
+  const openTabGroup = (groupId: StaffTabGroupId) => {
+    const group = visibleTabGroups.find((item) => item.id === groupId)
+    const firstTab = group?.tabs[0]
+    if (firstTab) setActiveTab(firstTab)
+  }
 
   const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
     <div className="staff-table-wrap">
@@ -6079,17 +6119,33 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         <span className="staff-role-pill">{staffRoleName(role, text)}</span>
       </div>
 
-      <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
-        {tabButton('new', text.tabs.new)}
-        {tabButton('today', text.tabs.today)}
-        {tabButton('attendance', text.tabs.attendance)}
-        {tabButton('games', text.tabs.games)}
-        {tabButton('prices', text.tabs.prices)}
-        {tabButton('discounts', text.tabs.discounts)}
-        {tabButton('roles', text.tabs.roles)}
-        {tabButton('restore', text.tabs.restore)}
-        {tabButton('orders', text.tabs.orders)}
-        {tabButton('report', text.tabs.report)}
+      <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
+        <div className="staff-tab-categories" role="tablist" aria-label={text.aria.staffConsole}>
+          {visibleTabGroups.map((group) => (
+            <button
+              aria-selected={currentTabGroup === group.id}
+              className={currentTabGroup === group.id ? 'active' : ''}
+              key={group.id}
+              role="tab"
+              type="button"
+              onClick={() => openTabGroup(group.id)}
+            >
+              {text.tabGroups[group.id]}
+            </button>
+          ))}
+        </div>
+        <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
+          {visibleTabGroups.map((group) => (
+            <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id}>
+              <span className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
+              <div className="staff-tab-group-buttons">
+                {group.tabs.map((tab) => (
+                  <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
