@@ -782,7 +782,7 @@ const staffConsoleText = {
       shiftTemplate: 'Shift template',
       sortBy: 'Sort by',
       slug: 'Slug',
-      standardDay: 'Standard day',
+      standardDay: 'Standard day (HH:mm)',
       standardBreakMinutes: 'Standard break (minutes)',
       standardShiftTemplates: 'Standard shifts',
       standardWeek: 'Standard week',
@@ -1315,7 +1315,7 @@ const staffConsoleText = {
       shiftTemplate: 'Mẫu ca',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
-      standardDay: 'Ngày chuẩn',
+      standardDay: 'Ngày chuẩn (HH:mm)',
       standardBreakMinutes: 'Phút nghỉ chuẩn',
       standardShiftTemplates: 'Mẫu ca chuẩn',
       standardWeek: 'Tuần chuẩn',
@@ -1744,6 +1744,13 @@ function timeValueFromIso(value?: string | null) {
 function parseMinutesTime(value?: string | null) {
   const [hour, minute] = normalizeTime(value).split(':').map(Number)
   return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : 0
+}
+
+function durationTimeValue(minutes: number) {
+  const safeMinutes = Math.max(0, Math.min(23 * 60 + 59, Math.round(Number(minutes) || 0)))
+  const hours = Math.floor(safeMinutes / 60)
+  const minute = safeMinutes % 60
+  return `${String(hours).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 function minutesBetweenTimes(start?: string | null, end?: string | null, breakMinutes = 0) {
@@ -6892,7 +6899,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <h4>{text.attendanceTabs.settings}</h4>
                   <div className="form-grid compact-form-grid">
                     <label>{text.labels.location}<input value={attendanceSettings.location} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, location: event.target.value })} /></label>
-                    <label>{text.labels.standardDay}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_daily_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                    <label>
+                      {text.labels.standardDay}
+                      <StaffPickerField
+                        ariaLabel={text.labels.standardDay}
+                        placeholder="08:00"
+                        type="time"
+                        value={durationTimeValue(attendanceSettings.standard_daily_minutes)}
+                        onChange={(value) => setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: parseMinutesTime(value) })}
+                      />
+                    </label>
                     <label>{text.labels.standardWeek}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_weekly_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_weekly_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                     <label>{text.labels.standardBreakMinutes}<input min={0} step="1" type="number" value={attendanceSettings.standard_break_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_break_minutes: Math.max(0, Math.round(Number(event.target.value) || 0)) })} /></label>
                     <label>{text.labels.overtimeMonthlyCap}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_monthly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_monthly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
