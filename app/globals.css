@@ -10318,3 +10318,475 @@ body {
     background: rgba(98, 133, 255, 0.12);
   }
 }
+
+/* Player-side refinement: quieter Apple-like surfaces without touching Staff Console. */
+.app {
+  --player-surface: rgba(255, 255, 255, 0.94);
+  --player-surface-soft: rgba(246, 248, 250, 0.88);
+  --player-surface-raised: #ffffff;
+  --player-border: rgba(7, 17, 18, 0.09);
+  --player-border-strong: rgba(48, 89, 255, 0.22);
+  --player-text-muted: #637075;
+  --player-shadow: 0 10px 30px rgba(7, 17, 18, 0.06);
+  --player-shadow-soft: 0 5px 16px rgba(7, 17, 18, 0.045);
+  --player-radius: 14px;
+  --player-radius-sm: 11px;
+}
+
+.app .section:not(.staff-console),
+.app .session,
+.app .club-card,
+.app .mini-session,
+.app .profile-chip,
+.app .profile-photo-panel,
+.app .login-modal,
+.app .club-drawer,
+.app .player-profile-panel,
+.app .tournament-panel,
+.app .match-card,
+.app .tournament-create-box,
+.app .club-session-preview,
+.app .public-leaderboard,
+.app .queue-board,
+.app .audit-log,
+.app .ticket-login-panel,
+.app .ticket-confirmation,
+.app .ticket-admin-box {
+  border-color: var(--player-border);
+  border-radius: var(--player-radius);
+  box-shadow: var(--player-shadow-soft);
+}
+
+.app .section:not(.staff-console) {
+  padding: 14px;
+  background: var(--player-surface);
+}
+
+.app .section-head {
+  margin-bottom: 10px;
+}
+
+.app .section-head h2,
+.app .section-head h3 {
+  letter-spacing: 0;
+}
+
+.app .section-copy,
+.app .notes,
+.app .field-help {
+  color: var(--player-text-muted);
+}
+
+.app .tab,
+.app .segmented,
+.app .sub-tabs,
+.app .language-picker > button {
+  border-color: var(--player-border);
+  box-shadow: none;
+}
+
+.app .tab,
+.app .segmented button,
+.app .sub-tabs button,
+.app .section:not(.staff-console) button.secondary,
+.app .language-picker > button,
+.app .country-button,
+.app .day-chip,
+.app .game-guide-link,
+.app .compact-join,
+.app .compact-expand,
+.app .compact-code,
+.app .club-card-actions button,
+.app .join-row button {
+  border-radius: var(--player-radius-sm);
+}
+
+.app .tab,
+.app .sub-tabs button,
+.app .segmented button {
+  min-height: 40px;
+}
+
+.app .tab.active,
+.app .sub-tabs button.active,
+.app .segmented button.active {
+  background: #071112;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.app .section:not(.staff-console) input,
+.app .section:not(.staff-console) select,
+.app .section:not(.staff-console) textarea,
+.app .section:not(.staff-console) .date-input-shell,
+.app .section:not(.staff-console) .date-input-native,
+.app .section:not(.staff-console) .rich-note-editor,
+.app .club-drawer input,
+.app .club-drawer select,
+.app .club-drawer textarea,
+.app .player-profile-panel input,
+.app .player-profile-panel select,
+.app .player-profile-panel textarea,
+.app .login-modal input,
+.app .login-modal select,
+.app .login-modal textarea,
+.app .ticket-login-panel input,
+.app .ticket-login-panel select,
+.app .ticket-login-panel textarea,
+.app .ticket-admin-box input,
+.app .ticket-admin-box select,
+.app .ticket-admin-box textarea {
+  border-color: rgba(7, 17, 18, 0.12);
+  border-radius: var(--player-radius-sm);
+  background: var(--player-surface-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.app .sessions-section {
+  gap: 10px;
+}
+
+.app .compact-session-card {
+  padding: 11px;
+  border: 1px solid var(--player-border);
+  border-radius: var(--player-radius);
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
+}
+
+.app .compact-session-card-expanded {
+  border-color: rgba(48, 89, 255, 0.18);
+  box-shadow: var(--player-shadow);
+}
+
+.app .session-highlighted .compact-session-card {
+  border-color: rgba(48, 89, 255, 0.48);
+  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12), var(--player-shadow);
+}
+
+.app .compact-session-image {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.app .compact-session-title-row h3 {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.app .row-meta span,
+.app .compact-meta span,
+.app .pill,
+.app .status-pill,
+.app .host-pill {
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid rgba(7, 17, 18, 0.045);
+  background: rgba(7, 17, 18, 0.045);
+  color: var(--player-text-muted);
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.app .compact-session-actions {
+  gap: 6px;
+}
+
+.app .compact-join,
+.app .compact-expand,
+.app .compact-code {
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.app .ticket-service-card {
+  gap: 6px;
+  padding: 13px;
+  border-color: var(--player-border);
+  border-radius: var(--player-radius);
+  background: var(--player-surface-raised);
+  box-shadow: none;
+}
+
+.app .ticket-service-card.active {
+  border-color: rgba(48, 89, 255, 0.36);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.1)), #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(48, 89, 255, 0.08);
+}
+
+.app .ticket-service-card strong {
+  font-size: 16px;
+}
+
+.app .ticket-price-summary {
+  gap: 8px;
+}
+
+.app .ticket-price-summary > div,
+.app .ticket-confirmation-grid span,
+.app .ticket-session-summary span {
+  border: 1px solid rgba(7, 17, 18, 0.045);
+  border-radius: var(--player-radius-sm);
+  background: var(--player-surface-soft);
+}
+
+.app .ticket-price-summary > div {
+  min-height: 82px;
+  padding: 10px 11px;
+}
+
+.app .leaderboard-section {
+  gap: 12px;
+}
+
+.app .leaderboard-controls label {
+  gap: 4px;
+}
+
+.app .leaderboard-search {
+  min-height: 42px;
+}
+
+.app .current-rank-card {
+  border-color: rgba(48, 89, 255, 0.18);
+  border-radius: var(--player-radius);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.07), rgba(48, 89, 255, 0.09)), #ffffff;
+  box-shadow: var(--player-shadow-soft);
+}
+
+.app .rank-mini span {
+  background: rgba(7, 17, 18, 0.055);
+}
+
+.app .leaderboard-row {
+  min-height: 122px;
+  padding: 14px 12px 12px;
+  border-color: var(--player-border);
+  border-radius: var(--player-radius);
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
+}
+
+.app .leaderboard-row.current-user {
+  border-color: rgba(48, 89, 255, 0.32);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.075), rgba(48, 89, 255, 0.11)), #ffffff;
+}
+
+.app .leaderboard-rank {
+  color: var(--player-text-muted);
+}
+
+.app .leaderboard-player strong,
+.app .leaderboard-metric strong {
+  letter-spacing: 0;
+}
+
+.app .leaderboard-progress {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(7, 17, 18, 0.07);
+}
+
+.app .leaderboard-progress span {
+  border-radius: inherit;
+}
+
+.app .club-card {
+  padding: 13px;
+  background: var(--player-surface-raised);
+}
+
+.app .club-card.clickable:hover,
+.app .compact-session-card:hover,
+.app .game-card:hover {
+  box-shadow: var(--player-shadow);
+}
+
+.app .club-card-motto {
+  color: var(--player-text-muted);
+}
+
+.app .profile-photo-panel {
+  padding: 13px;
+  background: var(--player-surface-raised);
+}
+
+.app .game-card {
+  border-width: 1px;
+  border-color: var(--player-border);
+  border-radius: var(--player-radius-sm);
+  background: var(--player-surface-raised);
+  box-shadow: none;
+}
+
+.app .game-card.selected {
+  border-color: rgba(0, 174, 179, 0.44);
+  box-shadow: 0 0 0 3px rgba(0, 174, 179, 0.12);
+}
+
+.app .game-card img {
+  border-radius: 10px;
+}
+
+.app .game-guide-link {
+  background: rgba(48, 89, 255, 0.06);
+}
+
+.app .player-profile-panel {
+  padding: 18px;
+  border-color: var(--player-border);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 24px 60px rgba(7, 17, 18, 0.16);
+}
+
+.app .player-profile-panel h3 {
+  margin-top: 6px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.app .player-profile-panel .stats {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app .player-profile-panel .stats > span,
+.app .stats div,
+.app .stats > span {
+  border-color: var(--player-border);
+  border-radius: var(--player-radius-sm);
+  background: var(--player-surface-raised);
+  box-shadow: none;
+}
+
+.app .stat-card strong,
+.app .stats strong {
+  letter-spacing: 0;
+}
+
+.app .score-context-card {
+  border-color: rgba(0, 174, 179, 0.16);
+  border-radius: var(--player-radius);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.05), rgba(48, 89, 255, 0.06)), #ffffff;
+}
+
+@media (max-width: 760px) {
+  .app .section:not(.staff-console) {
+    padding: 12px;
+  }
+
+  .app .compact-session-card {
+    padding: 10px;
+  }
+
+  .app .compact-session-title-row h3 {
+    font-size: 15px;
+  }
+
+  .app .leaderboard-row {
+    min-height: 104px;
+    gap: 9px;
+    padding: 14px 10px 10px;
+  }
+
+  .app .ticket-price-summary > div {
+    min-height: 74px;
+  }
+
+  .app .player-profile-panel {
+    padding: 14px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app {
+    --player-surface: rgba(14, 23, 25, 0.94);
+    --player-surface-soft: rgba(22, 34, 37, 0.9);
+    --player-surface-raised: #10191b;
+    --player-border: rgba(255, 255, 255, 0.1);
+    --player-border-strong: rgba(98, 133, 255, 0.32);
+    --player-text-muted: #aeb9bd;
+    --player-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+    --player-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.18);
+  }
+
+  .app .section:not(.staff-console),
+  .app .compact-session-card,
+  .app .ticket-service-card,
+  .app .current-rank-card,
+  .app .leaderboard-row,
+  .app .club-card,
+  .app .profile-photo-panel,
+  .app .game-card,
+  .app .player-profile-panel,
+  .app .score-context-card {
+    background: var(--player-surface-raised);
+    border-color: var(--player-border);
+  }
+
+  .app .compact-session-card-expanded,
+  .app .leaderboard-row.current-user,
+  .app .current-rank-card,
+  .app .score-context-card,
+  .app .ticket-service-card.active {
+    background: linear-gradient(135deg, rgba(0, 174, 179, 0.11), rgba(48, 89, 255, 0.12)), #10191b;
+  }
+
+  .app .section:not(.staff-console) input,
+  .app .section:not(.staff-console) select,
+  .app .section:not(.staff-console) textarea,
+  .app .section:not(.staff-console) .date-input-shell,
+  .app .section:not(.staff-console) .date-input-native,
+  .app .section:not(.staff-console) .rich-note-editor,
+  .app .club-drawer input,
+  .app .club-drawer select,
+  .app .club-drawer textarea,
+  .app .player-profile-panel input,
+  .app .player-profile-panel select,
+  .app .player-profile-panel textarea,
+  .app .login-modal input,
+  .app .login-modal select,
+  .app .login-modal textarea,
+  .app .ticket-login-panel input,
+  .app .ticket-login-panel select,
+  .app .ticket-login-panel textarea,
+  .app .ticket-admin-box input,
+  .app .ticket-admin-box select,
+  .app .ticket-admin-box textarea,
+  .app .ticket-price-summary > div,
+  .app .ticket-confirmation-grid span,
+  .app .ticket-session-summary span {
+    background: var(--player-surface-soft);
+    border-color: var(--player-border);
+    color: #f6f7f9;
+  }
+
+  .app .row-meta span,
+  .app .compact-meta span,
+  .app .pill,
+  .app .status-pill,
+  .app .host-pill,
+  .app .rank-mini span {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--player-text-muted);
+  }
+
+  .app .section-copy,
+  .app .notes,
+  .app .field-help,
+  .app .club-card-motto,
+  .app .leaderboard-rank,
+  .app .ticket-service-card span,
+  .app .ticket-service-card small,
+  .app .ticket-price-summary span,
+  .app .ticket-price-summary small,
+  .app .stats span,
+  .app .stat-label {
+    color: var(--player-text-muted);
+  }
+
+  .app .leaderboard-progress {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
