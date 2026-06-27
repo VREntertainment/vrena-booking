@@ -1759,9 +1759,9 @@ body {
 
 .app .staff-role-person {
   display: grid;
-  grid-template-columns: var(--avatar-sm) minmax(0, 1fr);
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
+  column-gap: 12px;
   min-width: 0;
 }
 
@@ -1785,6 +1785,7 @@ body {
   display: grid;
   gap: 3px;
   min-width: 0;
+  align-content: center;
 }
 
 .app .staff-role-avatar {
@@ -1792,9 +1793,13 @@ body {
   --avatar-emoji-size: var(--avatar-sm-emoji);
   --avatar-text-size: var(--avatar-sm-text);
   border: 1px solid rgba(48, 89, 255, 0.24);
+  grid-column: 1;
+  justify-self: start;
+  flex: 0 0 var(--avatar-size);
+  z-index: 1;
 }
 
-.app .staff-role-row span,
+.app .staff-role-row span:not(.staff-role-avatar):not(.avatar-photo):not(.avatar-emoji):not(.avatar-text),
 .app .staff-role-row small,
 .app .staff-restore-row span,
 .app .staff-restore-row small {
@@ -9361,7 +9366,7 @@ body {
   .app .staff-price-lines span,
   .app .staff-table span,
   .app .staff-list-item span,
-  .app .staff-role-row span,
+  .app .staff-role-row span:not(.staff-role-avatar):not(.avatar-photo):not(.avatar-emoji):not(.avatar-text),
   .app .staff-role-help-item span,
   .app .staff-restore-row span,
   .app .staff-restore-row small,
