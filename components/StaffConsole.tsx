@@ -2826,21 +2826,21 @@ function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: Staff
   }
 
   return (
-    <span aria-hidden="true" className="avatar staff-role-avatar" style={style}>
+    <span aria-hidden="true" className="player-avatar staff-role-avatar" style={style}>
       {imageUrl ? (
-        <span className="avatar-photo">
+        <span
+          className="avatar-photo"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        >
           <NextImage
             alt=""
             fill
             loading="lazy"
-            sizes="42px"
+            sizes="64px"
             src={imageUrl}
             style={{
-              borderRadius: 999,
-              height: '100%',
               objectFit: 'cover',
               objectPosition: 'center',
-              width: '100%',
             }}
             unoptimized={shouldSkipStaffImageOptimization(imageUrl)}
           />
