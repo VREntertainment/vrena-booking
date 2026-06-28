@@ -379,6 +379,7 @@ export const fr = {
   thirdPlace: '🥉 3e',
   stats: 'Stats joueur',
   gamesCheckedIn: 'parties check-in',
+  loyaltyPoints: 'points fidélité',
   wins: 'victoires',
   totalScore: 'score total',
   adminTotalScore: 'Score total admin',

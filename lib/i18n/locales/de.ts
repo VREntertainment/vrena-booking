@@ -379,6 +379,7 @@ export const de = {
   thirdPlace: '🥉 3.',
   stats: 'Spielerstat.',
   gamesCheckedIn: 'Games check-in',
+  loyaltyPoints: 'Treuepunkte',
   wins: 'wins',
   totalScore: 'Gesamtscore',
   adminTotalScore: 'Admin-Gesamtscore',

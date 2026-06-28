@@ -1854,6 +1854,17 @@ body {
   min-width: 0;
 }
 
+.app .staff-loyalty-points-edit {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-loyalty-points-edit input {
+  min-height: 34px;
+  padding: 6px 9px;
+}
+
 .app .staff-role-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

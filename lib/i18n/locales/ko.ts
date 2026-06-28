@@ -379,6 +379,7 @@ export const ko = {
   thirdPlace: '🥉 3위',
   stats: '플레이어 통계',
   gamesCheckedIn: '체크인 게임',
+  loyaltyPoints: '리워드 포인트',
   wins: '승',
   totalScore: '총점',
   adminTotalScore: '관리자 총점',

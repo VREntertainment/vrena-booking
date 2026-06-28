@@ -379,6 +379,7 @@ export const vi = {
   thirdPlace: '🥉 3',
   stats: 'Thống kê',
   gamesCheckedIn: 'game đã check-in',
+  loyaltyPoints: 'điểm thưởng',
   wins: 'thắng',
   totalScore: 'tổng điểm',
   adminTotalScore: 'Tổng điểm admin',

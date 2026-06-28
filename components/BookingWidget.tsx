@@ -253,6 +253,7 @@ type Profile = {
   profile_motto?: string | null
   role?: string | null
   score_adjustment?: number | null
+  loyalty_points_total?: number | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
   marketing_consent?: boolean | null
@@ -293,7 +294,7 @@ const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'
 const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
 const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
-const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
 
 function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
@@ -1211,9 +1212,10 @@ function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: 
     wins: 0,
     bestPerformerCount: 0,
     baseTotalScore: 0,
-    totalScore: 0,
-    scoreAdjustment: 0,
-    totalAccuracy: 0,
+        totalScore: 0,
+        scoreAdjustment: 0,
+    loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
+        totalAccuracy: 0,
     accuracyCount: 0,
     totalProjectiles: 0,
     averageAccuracy: null,
@@ -5274,6 +5276,7 @@ function handleSessionDateChange(value: string) {
       baseTotalScore: number
       totalScore: number
       scoreAdjustment: number
+      loyaltyPoints?: number
       totalAccuracy: number
       accuracyCount: number
       totalProjectiles: number
@@ -5299,6 +5302,7 @@ function handleSessionDateChange(value: string) {
         baseTotalScore: 0,
         totalScore: 0,
         scoreAdjustment: 0,
+        loyaltyPoints: Math.max(0, Math.floor(Number(playerProfile.loyalty_points_total ?? 0) || 0)),
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
@@ -5327,6 +5331,7 @@ function handleSessionDateChange(value: string) {
           baseTotalScore: 0,
           totalScore: 0,
           scoreAdjustment: 0,
+          loyaltyPoints: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -5417,6 +5422,7 @@ function handleSessionDateChange(value: string) {
     baseTotalScore: 0,
     totalScore: profileScoreAdjustments[userId] ?? 0,
     scoreAdjustment: profileScoreAdjustments[userId] ?? 0,
+    loyaltyPoints: Math.max(0, Math.floor(Number(profile?.loyalty_points_total ?? 0) || 0)),
     totalAccuracy: 0,
     accuracyCount: 0,
     totalProjectiles: 0,
@@ -5560,6 +5566,7 @@ function handleSessionDateChange(value: string) {
           avatarColor: profileAvatar.avatar_color,
           avatarTextColor: profileAvatar.avatar_text_color,
           profileMotto: profile.profile_motto || null,
+          loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
         }
       }
 
@@ -5593,6 +5600,7 @@ function handleSessionDateChange(value: string) {
         baseTotalScore: 0,
         totalScore: profileScoreAdjustments[profile.id] ?? 0,
         scoreAdjustment: profileScoreAdjustments[profile.id] ?? 0,
+        loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
@@ -5622,6 +5630,7 @@ function handleSessionDateChange(value: string) {
           baseTotalScore: 0,
           totalScore: profileScoreAdjustments[participant.profile_id] ?? 0,
           scoreAdjustment: profileScoreAdjustments[participant.profile_id] ?? 0,
+          loyaltyPoints: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -5652,6 +5661,7 @@ function handleSessionDateChange(value: string) {
           baseTotalScore: 0,
           totalScore: profileScoreAdjustments[member.profile_id] ?? 0,
           scoreAdjustment: profileScoreAdjustments[member.profile_id] ?? 0,
+          loyaltyPoints: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
@@ -5934,6 +5944,7 @@ function handleSessionDateChange(value: string) {
             </>
           ),
         },
+    { key: 'loyalty-points', value: <><span className="stat-label">{text.loyaltyPoints}</span><strong>{selectedPlayerProfile.loyaltyPoints ?? 0}</strong></> },
     selectedPlayerSessionIsEscape && selectedPlayerMetricParticipant
       ? {
           key: 'escape-time',
