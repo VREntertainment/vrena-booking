@@ -12064,6 +12064,8 @@ function handleSessionDateChange(value: string) {
           ]}
           offerLimit={text.sessionOfferLimit}
           paymentText={text.sessionTariffPayment}
+          loyaltyTitle={text.sessionTariffLoyaltyTitle}
+          loyaltyText={text.sessionTariffLoyaltyText}
           zaloText={text.zaloContact}
           disclaimer={text.sessionTariffDisclaimer}
           onClose={() => setTariffPaymentOpen(false)}
