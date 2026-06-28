@@ -4996,6 +4996,36 @@ body {
   color: #0f766e;
 }
 
+.app .ticket-loyalty-redemption {
+  grid-column: 1 / -1;
+}
+
+.app .ticket-loyalty-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #071112;
+  font-weight: 800;
+}
+
+.app .ticket-loyalty-toggle input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: #071112;
+}
+
+.app .ticket-loyalty-input {
+  display: grid;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.app .ticket-loyalty-input input {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
 .app .ticket-total-line strong {
   color: #3059ff;
 }
@@ -10128,6 +10158,14 @@ body {
 
   .app .ticket-discount-line strong {
     color: #5eead4;
+  }
+
+  .app .ticket-loyalty-toggle {
+    color: #f6f7f9;
+  }
+
+  .app .ticket-loyalty-toggle input {
+    accent-color: #5eead4;
   }
 
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message {
