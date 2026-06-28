@@ -9093,8 +9093,40 @@ body {
 
 .app .staff-card .compact-form-grid > label,
 .app .staff-attendance-form .compact-form-grid > label,
+.app .staff-attendance-form .compact-form-grid > .staff-duration-field,
 .app .staff-standard-shift-row label {
   gap: 3px;
+}
+
+.app .staff-duration-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-duration-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.app .staff-duration-presets button {
+  min-height: 28px;
+  width: auto;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 9px;
+  box-shadow: none;
+}
+
+.app .staff-duration-presets button.active {
+  border-color: rgba(48, 89, 255, 0.28);
+  background: rgba(48, 89, 255, 0.08);
+  color: #3059ff;
 }
 
 .app .staff-card label,
@@ -9614,6 +9646,18 @@ body {
 
   .app .staff-accountant-export-grid label {
     color: #aeb9bd;
+  }
+
+  .app .staff-duration-presets button {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #aeb9bd;
+  }
+
+  .app .staff-duration-presets button.active {
+    border-color: rgba(98, 133, 255, 0.38);
+    background: rgba(48, 89, 255, 0.18);
+    color: #c7d5ff;
   }
 
   .app .staff-accountant-report-list button {

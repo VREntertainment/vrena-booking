@@ -791,7 +791,9 @@ const staffConsoleText = {
       shiftTemplate: 'Shift template',
       sortBy: 'Sort by',
       slug: 'Slug',
-      standardDay: 'Standard day (HH:mm)',
+      standardDay: 'Standard day length',
+      standardDayHelp: 'Use HH:mm. Example: 07:15 = 7h 15m.',
+      standardDayPresets: 'Standard day presets',
       standardBreakMinutes: 'Standard break (minutes)',
       standardShiftTemplates: 'Standard shifts',
       standardWeek: 'Standard week',
@@ -1331,7 +1333,9 @@ const staffConsoleText = {
       shiftTemplate: 'Mẫu ca',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
-      standardDay: 'Ngày chuẩn (HH:mm)',
+      standardDay: 'Độ dài ngày chuẩn',
+      standardDayHelp: 'Dùng HH:mm. Ví dụ: 07:15 = 7 giờ 15 phút.',
+      standardDayPresets: 'Mẫu ngày chuẩn',
       standardBreakMinutes: 'Phút nghỉ chuẩn',
       standardShiftTemplates: 'Mẫu ca chuẩn',
       standardWeek: 'Tuần chuẩn',
@@ -1855,6 +1859,7 @@ type StaffPickerFieldProps = {
   ariaLabel: string
   type: 'date' | 'time'
   value: string
+  mode?: 'clock' | 'duration'
   placeholder?: string
   inputRef?: RefObject<HTMLInputElement | null>
   onChange: (value: string) => void
@@ -1880,7 +1885,21 @@ function normalizeTypedStaffTime(value: string) {
   return ''
 }
 
-function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onChange }: StaffPickerFieldProps) {
+function normalizeTypedStaffDuration(value: string) {
+  const trimmed = value.trim().toLowerCase()
+  const decimalMatch = trimmed.match(/^(\d{1,2})(?:[.,](\d{1,2}))$/)
+  if (decimalMatch) {
+    const hours = Number(decimalMatch[1])
+    const fraction = Number(`0.${decimalMatch[2]}`)
+    if (Number.isFinite(hours) && Number.isFinite(fraction)) {
+      return durationTimeValue((hours * 60) + Math.round(fraction * 60))
+    }
+  }
+
+  return normalizeTypedStaffTime(value)
+}
+
+function StaffPickerField({ ariaLabel, type, value, mode = 'clock', placeholder, inputRef, onChange }: StaffPickerFieldProps) {
   const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
   const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
   const [timeOpen, setTimeOpen] = useState(false)
@@ -1917,7 +1936,9 @@ function StaffPickerField({ ariaLabel, type, value, placeholder, inputRef, onCha
 
     const commitManualTime = () => {
       if (timeDraft === null) return
-      const normalizedDraft = normalizeTypedStaffTime(timeDraft)
+      const normalizedDraft = mode === 'duration'
+        ? normalizeTypedStaffDuration(timeDraft)
+        : normalizeTypedStaffTime(timeDraft)
       if (normalizedDraft) onChange(normalizedDraft)
       setTimeDraft(null)
       setTimeOpen(false)
@@ -6955,16 +6976,32 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <h4>{text.attendanceTabs.settings}</h4>
                   <div className="form-grid compact-form-grid">
                     <label>{text.labels.location}<input value={attendanceSettings.location} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, location: event.target.value })} /></label>
-                    <label>
-                      {text.labels.standardDay}
+                    <div className="staff-duration-field">
+                      <span className="staff-label-line">
+                        <span>{text.labels.standardDay}</span>
+                        <small>{text.labels.standardDayHelp}</small>
+                      </span>
                       <StaffPickerField
                         ariaLabel={text.labels.standardDay}
+                        mode="duration"
                         placeholder="08:00"
                         type="time"
                         value={durationTimeValue(attendanceSettings.standard_daily_minutes)}
                         onChange={(value) => setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: parseMinutesTime(value) })}
                       />
-                    </label>
+                      <span className="staff-duration-presets" aria-label={text.labels.standardDayPresets}>
+                        {['07:15', '08:00', '08:30'].map((preset) => (
+                          <button
+                            className={durationTimeValue(attendanceSettings.standard_daily_minutes) === preset ? 'active' : ''}
+                            key={preset}
+                            type="button"
+                            onClick={() => setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: parseMinutesTime(preset) })}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </span>
+                    </div>
                     <label>{text.labels.standardWeek}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_weekly_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_weekly_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                     <label>{text.labels.standardBreakMinutes}<input min={0} step="1" type="number" value={attendanceSettings.standard_break_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_break_minutes: Math.max(0, Math.round(Number(event.target.value) || 0)) })} /></label>
                     <label>{text.labels.overtimeMonthlyCap}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_monthly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_monthly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
