@@ -4401,7 +4401,6 @@ body {
 }
 
 .app .club-invite-box,
-.app .club-ranking-box,
 .app .club-member-row {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 10px;
@@ -4416,8 +4415,7 @@ body {
   padding: 10px;
 }
 
-.app .club-invite-box span,
-.app .club-ranking-box span {
+.app .club-invite-box span {
   color: #637075;
   font-weight: 800;
 }
@@ -4440,12 +4438,6 @@ body {
 
 .app .club-hall-panel .leaderboard-section {
   box-shadow: none;
-}
-
-.app .club-ranking-box {
-  display: grid;
-  gap: 4px;
-  padding: 10px;
 }
 
 .app .club-member-list {
@@ -9432,7 +9424,7 @@ body {
     color: #f6f7f9;
   }
 
-  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-ranking-box, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-tab-categories button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
+  .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-tab-categories button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
@@ -9819,7 +9811,6 @@ body {
   }
 
   .app .club-invite-box span,
-  .app .club-ranking-box span,
   .app .club-banner-empty,
   .app .club-card-motto {
     color: #aeb9bd;
