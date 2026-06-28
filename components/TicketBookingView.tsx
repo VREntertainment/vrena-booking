@@ -74,6 +74,8 @@ export type TicketBookingViewProps = {
   ticketDiscountStatus: string
   ticketDiscountSource: 'automatic' | 'voucher'
   loyaltyDiscountAmount: number
+  loyaltyEstimatedNextReduction: number
+  loyaltyEstimatedPointsEarned: number
   loyaltyPointsBalance: number
   loyaltyPointsToRedeem: string
   loyaltyRedeemValue: number
@@ -125,6 +127,8 @@ export default function TicketBookingView({
   ticketDiscountStatus,
   ticketDiscountSource,
   loyaltyDiscountAmount,
+  loyaltyEstimatedNextReduction,
+  loyaltyEstimatedPointsEarned,
   loyaltyPointsBalance,
   loyaltyPointsToRedeem,
   loyaltyRedeemValue,
@@ -147,6 +151,10 @@ export default function TicketBookingView({
   ticketTypeDescription,
   ticketUnitFormulaText,
 }: TicketBookingViewProps) {
+  const loyaltyEarnMessage = text.ticketLoyaltyEarnEstimate
+    .replace('{points}', String(loyaltyEstimatedPointsEarned))
+    .replace('{amount}', formatVnd(loyaltyEstimatedNextReduction))
+
   return (
     <section className="section tickets-section">
       <div className="ticket-explainer" role="note">
@@ -289,7 +297,7 @@ export default function TicketBookingView({
                 )}
                 <div className="ticket-loyalty-redemption">
                   {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
-                    <p className="ticket-loyalty-zero">{text.ticketLoyaltyZeroMessage}</p>
+                    <p className="ticket-loyalty-zero">{loyaltyEarnMessage}</p>
                   ) : (
                     <>
                       <div>
@@ -302,6 +310,9 @@ export default function TicketBookingView({
                               ? text.ticketLoyaltyLoading
                               : text.ticketLoyaltyUnavailable}
                         </small>
+                        {!isLoadingTicketLoyalty && (
+                          <small>{loyaltyEarnMessage}</small>
+                        )}
                       </div>
                       <label className="ticket-loyalty-toggle">
                         <input
@@ -346,7 +357,6 @@ export default function TicketBookingView({
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
               )}
-              <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>
 
               <button
                 className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}

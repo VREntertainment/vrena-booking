@@ -266,6 +266,8 @@ type Profile = {
 }
 
 type TicketLoyaltyRedemption = {
+  estimated_next_reduction_vnd: number
+  estimated_points_earned: number
   loyalty_points_total: number
   redeem_value_vnd_per_point: number
 }
@@ -4907,6 +4909,8 @@ export default function WidgetPage({
     Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
   )
   const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
+  const ticketEstimatedPointsEarned = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.estimated_points_earned ?? 0) || 0))
+  const ticketEstimatedNextReduction = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.estimated_next_reduction_vnd ?? 0) || 0))
   const canUseTicketLoyaltyPoints = !hasTicketVoucherDiscount
   const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
     ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
@@ -5161,6 +5165,8 @@ function handleSessionDateChange(value: string) {
       .then((client) => client.rpc('ticket_loyalty_redemption_settings', {
         p_booking_date: ticketDate,
         p_game_id: activeTicketService.defaultGame,
+        p_paid_total: currentTicketTotalPrice,
+        p_player_count: ticketPlayers,
       }))
       .then(({ data, error }) => {
         if (!active) return
@@ -5172,9 +5178,13 @@ function handleSessionDateChange(value: string) {
         }
 
         const row = Array.isArray(data) ? data[0] : null
+        const estimatedPointsEarned = Math.max(0, Math.floor(Number(row?.estimated_points_earned ?? 0) || 0))
+        const estimatedNextReduction = Math.max(0, Math.floor(Number(row?.estimated_next_reduction_vnd ?? 0) || 0))
         const pointsTotal = Math.max(0, Math.floor(Number(row?.loyalty_points_total ?? profile.loyalty_points_total ?? 0) || 0))
         const redeemValue = Math.max(0, Math.floor(Number(row?.redeem_value_vnd_per_point ?? 0) || 0))
         setTicketLoyaltyRedemption({
+          estimated_next_reduction_vnd: estimatedNextReduction,
+          estimated_points_earned: estimatedPointsEarned,
           loyalty_points_total: pointsTotal,
           redeem_value_vnd_per_point: redeemValue,
         })
@@ -5192,7 +5202,7 @@ function handleSessionDateChange(value: string) {
     return () => {
       active = false
     }
-  }, [activeTicketService.defaultGame, activeView, profile, ticketDate])
+  }, [activeTicketService.defaultGame, activeView, currentTicketTotalPrice, profile, ticketDate, ticketPlayers])
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
@@ -7725,7 +7735,12 @@ function handleSessionDateChange(value: string) {
       syncProfileEverywhere(nextProfile)
       setTicketLoyaltyRedemption((current) => current
         ? { ...current, loyalty_points_total: nextPointsTotal }
-        : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
+        : {
+          estimated_next_reduction_vnd: ticketEstimatedNextReduction,
+          estimated_points_earned: ticketEstimatedPointsEarned,
+          loyalty_points_total: nextPointsTotal,
+          redeem_value_vnd_per_point: ticketLoyaltyRedeemValue,
+        })
     }
 
     setTicketConfirmation(confirmation)
@@ -11186,6 +11201,8 @@ function handleSessionDateChange(value: string) {
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
             loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
+            loyaltyEstimatedNextReduction={ticketEstimatedNextReduction}
+            loyaltyEstimatedPointsEarned={ticketEstimatedPointsEarned}
             loyaltyPointsBalance={ticketLoyaltyBalance}
             loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}
             loyaltyRedeemValue={ticketLoyaltyRedeemValue}

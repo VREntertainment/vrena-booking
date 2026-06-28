@@ -82,6 +82,7 @@ export const en = {
   ticketLoyaltyLoading: 'Checking loyalty points...',
   ticketLoyaltyUnavailable: 'No redemption value is active right now.',
   ticketLoyaltyZeroMessage: 'Book now, earn points after payment, and let those points trim your next bill. Nice little trick.',
+  ticketLoyaltyEarnEstimate: 'Book this one, earn {points} points after payment, and shave {amount} off next time.',
   ticketUseLoyaltyPoints: 'Use loyalty points for this ticket',
   ticketLoyaltyPointsToUse: 'Points to use',
   ticketLoyaltyMax: 'Max {points} points for this ticket.',

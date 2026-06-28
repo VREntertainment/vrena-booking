@@ -84,6 +84,7 @@ export const it = {
   ticketLoyaltyLoading: 'Controllo punti fedeltà...',
   ticketLoyaltyUnavailable: 'Nessun valore di riscatto attivo al momento.',
   ticketLoyaltyZeroMessage: 'Prenota ora, guadagna punti dopo il pagamento e lascia che alleggeriscano il prossimo conto. Bel trucchetto.',
+  ticketLoyaltyEarnEstimate: 'Prenota questo ticket, guadagna {points} punti dopo il pagamento e togli {amount} la prossima volta.',
   ticketUseLoyaltyPoints: 'Usa punti fedeltà per questo ticket',
   ticketLoyaltyPointsToUse: 'Punti da usare',
   ticketLoyaltyMax: 'Massimo {points} punti per questo ticket.',
