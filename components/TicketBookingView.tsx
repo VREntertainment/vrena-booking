@@ -25,6 +25,7 @@ type TicketTimeOption = {
 type TicketPricingSummary = {
   unitPrice: number
   durationBlocks: number
+  chargedPlayersPerBlock: number
   chargedPlayerSpots: number
   discountRate: number
   discountAmount: number
@@ -58,7 +59,6 @@ export type TicketBookingViewProps = {
   ticketDurationOptions: number[]
   ticketTimeOptions: TicketTimeOption[]
   ticketPlayerOptions: number[]
-  ticketArenaCapacityPerSlot: number
   activeTicketDuration: number
   currentTicketPricing: TicketPricingSummary
   currentTicketUnitPrice: number
@@ -95,7 +95,6 @@ export default function TicketBookingView({
   ticketDurationOptions,
   ticketTimeOptions,
   ticketPlayerOptions,
-  ticketArenaCapacityPerSlot,
   activeTicketDuration,
   currentTicketPricing,
   currentTicketUnitPrice,
@@ -223,7 +222,7 @@ export default function TicketBookingView({
                 <div>
                   <span>{text.reservedPlayerSpots}</span>
                   <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
-                  <small>{currentTicketPricing.durationBlocks} x {ticketArenaCapacityPerSlot} {text.players}</small>
+                  <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
                 </div>
                 {currentTicketPricing.discountRate > 0 && (
                   <div className="ticket-discount-line">
