@@ -4903,26 +4903,51 @@ body {
 
 .app .tickets-section {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .app .ticket-explainer {
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border: 1px solid rgba(48, 89, 255, 0.18);
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 181, 184, 0.08), rgba(48, 89, 255, 0.08)), #f7fafb;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 12px;
+  background: rgba(246, 248, 250, 0.78);
 }
 
 .app .ticket-explainer strong {
   color: #071112;
   font-size: 15px;
+  line-height: 1.2;
 }
 
 .app .ticket-explainer span {
+  flex: 1 1 360px;
   color: #65727a;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+.app .ticket-game-guide-link {
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.app .ticket-tariff-link {
+  width: 100%;
+  min-height: 38px;
+  margin: 0;
+  justify-content: flex-start;
+  padding: 8px 11px;
+  border-color: rgba(7, 17, 18, 0.08);
+  border-radius: 12px;
+  background: rgba(246, 248, 250, 0.78);
+  color: #3059ff;
+  font-size: 14px;
+  box-shadow: none;
 }
 
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
@@ -4940,79 +4965,102 @@ body {
 
 .app .ticket-flow-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: minmax(220px, 0.66fr) minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
 .app .ticket-type-list {
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .app .ticket-service-grid {
   display: grid;
-  gap: 9px;
+  gap: 7px;
 }
 
 .app .ticket-service-card {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   width: 100%;
-  padding: 13px;
+  min-height: 0;
+  padding: 11px 12px;
   text-align: left;
   color: #071112;
-  background: #f7fafb;
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(7, 17, 18, 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
 .app .ticket-service-card strong {
   color: #071112;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.18;
 }
 
 .app .ticket-service-card span, .app .ticket-service-card small {
   color: #65727a;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .app .ticket-service-card.active {
-  background: linear-gradient(135deg, rgba(0, 181, 184, 0.12), rgba(48, 89, 255, 0.12)), #ffffff;
-  border-color: rgba(48, 89, 255, 0.3);
+  background: rgba(246, 249, 255, 0.96);
+  border-color: rgba(48, 89, 255, 0.28);
 }
 
 .app .ticket-form-panel {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   padding: 0;
   border: 0;
   background: transparent;
 }
 
 .app .ticket-form-panel .ticket-form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
   align-items: end;
+}
+
+.app .ticket-control {
+  min-width: 0;
+}
+
+.app .ticket-control label {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.app .ticket-control input,
+.app .ticket-control select,
+.app .ticket-control .date-input-shell {
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: 15px;
 }
 
 .app .ticket-price-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .app .ticket-price-summary > div {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  padding: 10px;
-  background: #f0f4f6;
-  border-radius: 8px;
+  min-height: 0;
+  padding: 9px 10px;
+  background: rgba(246, 248, 250, 0.82);
+  border-radius: 12px;
 }
 
 .app .ticket-price-summary span, .app .ticket-confirmation span, .app .ticket-admin-head span {
   color: #65727a;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .app .ticket-price-summary small {
@@ -5027,6 +5075,10 @@ body {
 
 .app .ticket-loyalty-redemption {
   grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
 }
 
 .app .ticket-loyalty-toggle {
@@ -5053,6 +5105,10 @@ body {
 .app .ticket-loyalty-input input {
   min-height: 38px;
   border-radius: 8px;
+}
+
+.app .ticket-total-line {
+  align-content: center;
 }
 
 .app .ticket-total-line strong {
@@ -8206,7 +8262,19 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .app .ticket-form-grid, .app .ticket-price-summary, .app .ticket-confirmation-grid {
+  .app .ticket-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-price-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-confirmation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-loyalty-redemption {
     grid-template-columns: 1fr;
   }
 
@@ -10777,26 +10845,26 @@ body {
 }
 
 .app .ticket-service-card {
-  gap: 6px;
-  padding: 13px;
+  gap: 3px;
+  padding: 11px 12px;
   border-color: var(--player-border);
-  border-radius: var(--player-radius);
+  border-radius: var(--player-radius-sm);
   background: var(--player-surface-raised);
   box-shadow: none;
 }
 
 .app .ticket-service-card.active {
   border-color: rgba(48, 89, 255, 0.36);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.1)), #ffffff;
+  background: rgba(246, 249, 255, 0.96);
   box-shadow: inset 0 0 0 1px rgba(48, 89, 255, 0.08);
 }
 
 .app .ticket-service-card strong {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .app .ticket-price-summary {
-  gap: 8px;
+  gap: 7px;
 }
 
 .app .ticket-price-summary > div,
@@ -10808,8 +10876,8 @@ body {
 }
 
 .app .ticket-price-summary > div {
-  min-height: 82px;
-  padding: 10px 11px;
+  min-height: 0;
+  padding: 9px 10px;
 }
 
 .app .leaderboard-section {
@@ -10952,6 +11020,25 @@ body {
     padding: 12px;
   }
 
+  .app .tickets-section {
+    gap: 10px;
+  }
+
+  .app .ticket-explainer {
+    padding: 10px;
+  }
+
+  .app .ticket-form-panel .ticket-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .app .ticket-control label {
+    min-height: 28px;
+    display: flex;
+    align-items: flex-end;
+  }
+
   .app .compact-session-card {
     padding: 10px;
   }
@@ -10967,7 +11054,16 @@ body {
   }
 
   .app .ticket-price-summary > div {
-    min-height: 74px;
+    min-height: 0;
+    padding: 8px 9px;
+  }
+
+  .app .ticket-price-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-total-line {
+    grid-column: 1 / -1;
   }
 
   .app .player-profile-panel {
