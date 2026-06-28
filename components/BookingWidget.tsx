@@ -1010,6 +1010,12 @@ function ticketMinimumDurationBlocks(players: number) {
   return ticketRequiredSlots(players)
 }
 
+function ticketBillablePlayersPerBlock(players: number) {
+  const playerCount = Math.max(1, players)
+  if (playerCount <= ticketArenaCapacityPerSlot) return playerCount
+  return ticketArenaCapacityPerSlot
+}
+
 function ticketPricingSummary(
   ticketType: TicketType,
   dateValue: string,
@@ -1020,7 +1026,8 @@ function ticketPricingSummary(
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
   const requiredSlots = ticketMinimumDurationBlocks(players)
   const durationBlocks = Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
-  const chargedPlayerSpots = durationBlocks * ticketArenaCapacityPerSlot
+  const chargedPlayersPerBlock = ticketBillablePlayersPerBlock(players)
+  const chargedPlayerSpots = durationBlocks * chargedPlayersPerBlock
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
   const discountRate = Math.max(ticketGroupDiscountRate(players), ticketTypeDiscountRate(ticketType))
@@ -1031,6 +1038,7 @@ function ticketPricingSummary(
     unitPrice,
     requiredSlots,
     durationBlocks,
+    chargedPlayersPerBlock,
     chargedPlayerSpots,
     grossPrice,
     discountRate,
@@ -10903,7 +10911,6 @@ function handleSessionDateChange(value: string) {
             ticketDate={ticketDate}
             ticketDurationMessage={ticketDurationMessage}
             ticketDurationOptions={ticketDurationOptions}
-            ticketArenaCapacityPerSlot={ticketArenaCapacityPerSlot}
             ticketPlayerOptions={ticketPlayerOptions}
             ticketPlayers={ticketPlayers}
             ticketServices={ticketServices}
