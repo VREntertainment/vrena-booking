@@ -224,6 +224,7 @@ export const de = {
   visibility: 'Sichtbarkeit',
   clubsTitle: 'Clubs',
   clubsHint: 'Erstelle offene Clubs oder private mit Freigabe.',
+  clubLoginHint: 'Melde dich an, um Clubs zu erstellen, Beitritte anzufragen oder Mitgliedschaften zu verwalten.',
   clubName: 'Clubname',
   clubMotto: 'Clubmotto',
   clubMottoPlaceholder: 'Kleiner Schlachtruf',

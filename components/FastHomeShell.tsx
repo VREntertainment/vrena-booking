@@ -869,7 +869,7 @@ export default function FastHomeShell() {
           <button className={activeShellView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => heavyTarget && openFullApp('leaderboard')} type="button">
             {text.hallOfFame}
           </button>
-          <button className={activeShellView === 'clubs' ? 'tab active' : 'tab'} onClick={() => openFullApp(profile ? 'clubs' : 'profile')} type="button">
+          <button className={activeShellView === 'clubs' ? 'tab active' : 'tab'} onClick={() => openFullApp('clubs')} type="button">
             {text.clubs}
           </button>
           {canAccessStaffConsole && (

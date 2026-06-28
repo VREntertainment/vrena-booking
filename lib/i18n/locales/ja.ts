@@ -224,6 +224,7 @@ export const ja = {
   visibility: '公開設定',
   clubsTitle: 'クラブ',
   clubsHint: '公開クラブ、または承認メンバーのみの非公開クラブを作成',
+  clubLoginHint: 'クラブ作成、参加申請、メンバー管理にはログインしてください。',
   clubName: 'クラブ名',
   clubMotto: 'クラブモットー',
   clubMottoPlaceholder: '小さな合言葉',
