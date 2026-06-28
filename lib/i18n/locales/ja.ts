@@ -9,8 +9,6 @@ export const ja = {
   clubs: 'クラブ',
   hallOfFame: '殿堂',
   tickets: 'Tickets',
-  ticketsTitle: 'Book tickets',
-  ticketsHint: 'Normal customer bookings create a private ticket session and reserve arena availability.',
   ticketsExplainerTitle: 'Ticketsはプライベート予約です',
   ticketsExplainerBody: 'Ticketsは自分やグループのVRena枠を予約する場所です。Sessionsは他のプレイヤーとコミュニティゲームに参加・作成する場所です。',
   gameGuide: 'ゲームガイド',

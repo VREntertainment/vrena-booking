@@ -9,8 +9,6 @@ export const it = {
   clubs: 'Club',
   hallOfFame: 'Hall of Fame',
   tickets: 'Tickets',
-  ticketsTitle: 'Book tickets',
-  ticketsHint: 'Normal customer bookings create a private ticket session and reserve arena availability.',
   ticketsExplainerTitle: 'I Tickets sono prenotazioni private',
   ticketsExplainerBody: 'Usa Tickets per prenotare VRena per te o il tuo gruppo. Usa Partite per unirti o creare giochi community con altri giocatori.',
   gameGuide: 'Guida giochi',

@@ -9,8 +9,6 @@ export const ko = {
   clubs: '클럽',
   hallOfFame: '명예의 전당',
   tickets: 'Tickets',
-  ticketsTitle: 'Book tickets',
-  ticketsHint: 'Normal customer bookings create a private ticket session and reserve arena availability.',
   ticketsExplainerTitle: 'Tickets는 개인 예약입니다',
   ticketsExplainerBody: 'Tickets로 나 또는 그룹의 VRena 자리를 예약하세요. Sessions는 다른 플레이어와 커뮤니티 게임에 참여하거나 만드는 곳입니다.',
   gameGuide: '게임 가이드',
