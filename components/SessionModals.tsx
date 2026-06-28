@@ -162,6 +162,8 @@ type TariffPaymentModalProps = {
   discounts: string[]
   offerLimit: string
   paymentText: string
+  loyaltyTitle: string
+  loyaltyText: string
   zaloText: string
   disclaimer: string
   onClose: () => void
@@ -175,6 +177,8 @@ export function TariffPaymentModal({
   discounts,
   offerLimit,
   paymentText,
+  loyaltyTitle,
+  loyaltyText,
   zaloText,
   disclaimer,
   onClose,
@@ -208,6 +212,10 @@ export function TariffPaymentModal({
                 {zaloText}
               </a>
             </p>
+          </div>
+          <div className="tariff-payment-section tariff-loyalty-section">
+            <h4>{loyaltyTitle}</h4>
+            <p>{loyaltyText}</p>
           </div>
           <div className="tariff-payment-disclaimer">
             <p>{disclaimer}</p>

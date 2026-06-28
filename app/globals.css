@@ -4758,6 +4758,13 @@ body {
   line-height: 1.45;
 }
 
+.app .tariff-payment-section h4 {
+  margin: 0;
+  color: #071112;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
 .app .tariff-payment-section a {
   color: #3059ff;
   font-weight: 900;
@@ -10228,6 +10235,10 @@ body {
   .app .tariff-payment-section p,
   .app .tariff-payment-disclaimer p {
     color: #aeb9bd;
+  }
+
+  .app .tariff-payment-section h4 {
+    color: #f6f7f9;
   }
 
   .app .tariff-payment-section a {
