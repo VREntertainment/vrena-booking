@@ -1775,13 +1775,20 @@ body {
 .app .staff-role-row,
 .app .staff-restore-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
   gap: 10px;
   align-items: center;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
   padding: 8px 10px;
+}
+
+.app .staff-role-row {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 440px);
+}
+
+.app .staff-restore-row {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
 }
 
 .app .staff-role-row > div,
@@ -1850,19 +1857,22 @@ body {
 
 .app .staff-role-action-cell {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
-.app .staff-loyalty-points-edit {
+.app .staff-role-primary-actions {
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
   min-width: 0;
 }
 
-.app .staff-loyalty-points-edit input {
-  min-height: 34px;
-  padding: 6px 9px;
+.app .staff-role-primary-actions select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 34px 7px 10px;
 }
 
 .app .staff-role-actions {
@@ -1877,11 +1887,14 @@ body {
 }
 
 .app .staff-role-delete-button {
-  width: 100%;
-  min-height: 34px;
+  width: auto;
+  min-width: 132px;
+  min-height: 38px;
   border-color: rgba(180, 35, 24, 0.42);
   color: #b42318;
   font-weight: 900;
+  padding-inline: 14px;
+  white-space: nowrap;
 }
 
 .app .staff-role-feedback {
@@ -7933,6 +7946,15 @@ body {
   .app .staff-role-row,
   .app .staff-restore-row {
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-role-primary-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(108px, max-content);
+  }
+
+  .app .staff-role-delete-button {
+    min-width: 108px;
+    padding-inline: 10px;
   }
 
   .app .staff-role-tools {
