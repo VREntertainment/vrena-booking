@@ -4152,12 +4152,14 @@ body {
   flex: 0 0 auto;
 }
 
-.app .session-network-share {
+.app .session-network-share,
+.app .session-invite-share {
   width: 36px;
   height: 36px;
 }
 
-.app .session-network-share .share-symbol-image {
+.app .session-network-share .share-symbol-image,
+.app .session-invite-share .share-symbol-image {
   width: 24px;
   height: 24px;
 }
@@ -4178,6 +4180,10 @@ body {
 
 .app .session-invite-modal-head p {
   margin: 4px 0 0;
+}
+
+.app .session-invite-share {
+  margin: 4px 0 8px;
 }
 
 .app .invite-search-results {
