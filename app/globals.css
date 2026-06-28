@@ -11563,7 +11563,7 @@ body {
 
 .app .sessions-section .players {
   padding-top: 10px;
-  border-top: 1px solid var(--player-border);
+  border-top: 0;
   gap: 10px;
 }
 
