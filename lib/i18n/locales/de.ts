@@ -75,6 +75,7 @@ export const de = {
   ticketLoyaltyRedeemRate: '{value} pro Punkt',
   ticketLoyaltyLoading: 'Treuepunkte werden geprüft...',
   ticketLoyaltyUnavailable: 'Aktuell ist kein Einlösewert aktiv.',
+  ticketLoyaltyZeroMessage: 'Buche jetzt, sammle Punkte nach der Zahlung und lass sie deine nächste Rechnung kürzen. Kleiner Trick, großer Nutzen.',
   ticketUseLoyaltyPoints: 'Treuepunkte für dieses Ticket nutzen',
   ticketLoyaltyPointsToUse: 'Punkte verwenden',
   ticketLoyaltyMax: 'Max. {points} Punkte für dieses Ticket.',

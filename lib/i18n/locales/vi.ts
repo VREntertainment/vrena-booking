@@ -75,6 +75,7 @@ export const vi = {
   ticketLoyaltyRedeemRate: '{value} mỗi điểm',
   ticketLoyaltyLoading: 'Đang kiểm tra điểm...',
   ticketLoyaltyUnavailable: 'Hiện chưa có giá trị đổi điểm đang bật.',
+  ticketLoyaltyZeroMessage: 'Đặt vé ngay, nhận điểm sau khi thanh toán, rồi dùng điểm để giảm hóa đơn lần sau. Một mẹo nhỏ rất vui.',
   ticketUseLoyaltyPoints: 'Dùng điểm thưởng cho vé này',
   ticketLoyaltyPointsToUse: 'Số điểm dùng',
   ticketLoyaltyMax: 'Tối đa {points} điểm cho vé này.',

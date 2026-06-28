@@ -252,39 +252,45 @@ export default function TicketBookingView({
                   </div>
                 )}
                 <div className="ticket-loyalty-redemption">
-                  <div>
-                    <span>{text.ticketLoyaltyBalance}</span>
-                    <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
-                    <small>
-                      {loyaltyRedeemValue > 0
-                        ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
-                        : isLoadingTicketLoyalty
-                          ? text.ticketLoyaltyLoading
-                          : text.ticketLoyaltyUnavailable}
-                    </small>
-                  </div>
-                  <label className="ticket-loyalty-toggle">
-                    <input
-                      checked={useLoyaltyPoints}
-                      disabled={maxLoyaltyPointsToRedeem <= 0}
-                      onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
-                      type="checkbox"
-                    />
-                    <span>{text.ticketUseLoyaltyPoints}</span>
-                  </label>
-                  {useLoyaltyPoints && (
-                    <label className="ticket-loyalty-input">
-                      <span>{text.ticketLoyaltyPointsToUse}</span>
-                      <input
-                        inputMode="numeric"
-                        max={maxLoyaltyPointsToRedeem}
-                        min={0}
-                        onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
-                        type="number"
-                        value={loyaltyPointsToRedeem}
-                      />
-                      <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
-                    </label>
+                  {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
+                    <p className="ticket-loyalty-zero">{text.ticketLoyaltyZeroMessage}</p>
+                  ) : (
+                    <>
+                      <div>
+                        <span>{text.ticketLoyaltyBalance}</span>
+                        <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
+                        <small>
+                          {loyaltyRedeemValue > 0
+                            ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
+                            : isLoadingTicketLoyalty
+                              ? text.ticketLoyaltyLoading
+                              : text.ticketLoyaltyUnavailable}
+                        </small>
+                      </div>
+                      <label className="ticket-loyalty-toggle">
+                        <input
+                          checked={useLoyaltyPoints}
+                          disabled={maxLoyaltyPointsToRedeem <= 0}
+                          onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
+                          type="checkbox"
+                        />
+                        <span>{text.ticketUseLoyaltyPoints}</span>
+                      </label>
+                      {useLoyaltyPoints && (
+                        <label className="ticket-loyalty-input">
+                          <span>{text.ticketLoyaltyPointsToUse}</span>
+                          <input
+                            inputMode="numeric"
+                            max={maxLoyaltyPointsToRedeem}
+                            min={0}
+                            onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
+                            type="number"
+                            value={loyaltyPointsToRedeem}
+                          />
+                          <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
+                        </label>
+                      )}
+                    </>
                   )}
                 </div>
                 {loyaltyDiscountAmount > 0 && (
