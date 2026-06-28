@@ -2056,6 +2056,8 @@ export default function WidgetPage({
   const [profilePastExpanded, setProfilePastExpanded] = useState(false)
   const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
   const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
+  const [inviteModalSessionId, setInviteModalSessionId] = useState('')
+  const [inviteSearch, setInviteSearch] = useState('')
   const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
   const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
   const [anonymousConfirmOpen, setAnonymousConfirmOpen] = useState(false)
@@ -2855,6 +2857,7 @@ export default function WidgetPage({
     const people = new Map<string, ReturnType<typeof socialAvatarFields> & { profile_id: string }>()
 
     sessions.forEach((pastSession) => {
+      if (!isPastSession(pastSession)) return
       const playedWithMe = (pastSession.session_participants ?? []).some((participant) => participant.profile_id === userId)
       if (!playedWithMe) return
 
@@ -9766,7 +9769,15 @@ function handleSessionDateChange(value: string) {
                 const inviteTargets = [...friendInviteTargets, ...previousInviteTargets]
                   .filter((target, index, list) => list.findIndex((item) => item.profile_id === target.profile_id) === index)
                   .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
-                  .slice(0, 10)
+                const normalizedInviteSearch = inviteModalSessionId === session.id ? inviteSearch.trim().toLocaleLowerCase() : ''
+                const filteredInviteTargets = normalizedInviteSearch
+                  ? inviteTargets.filter((target) => {
+                    const displayName = compactDisplayName(target.display_name, text.player).toLocaleLowerCase()
+                    const motto = (target.profile_motto || '').toLocaleLowerCase()
+                    return displayName.includes(normalizedInviteSearch) || motto.includes(normalizedInviteSearch)
+                  })
+                  : inviteTargets
+                const visibleInviteTargets = filteredInviteTargets.slice(0, 24)
                 const sessionMessageRows = messagesForSession(session)
                 const sessionMessagePage = sessionMessagePages[session.id]
                 const isSessionMessagesLoading = Boolean(sessionMessagePage?.loading)
@@ -10316,41 +10327,87 @@ function handleSessionDateChange(value: string) {
 
                     {!isTicket && !isChallenge && networkTablesReady && (alreadyJoined || canManage) && (
                       <div className="network-panel">
-                        <div className="section-head compact-head">
+                        <div className="section-head compact-head network-head">
                           <div>
                             <h3>{text.sessionNetwork}</h3>
                             <p className="muted">{text.sessionNetworkHint}</p>
                           </div>
-                        </div>
-                        {inviteTargets.length === 0 ? (
-                          <p className="notice">{text.noInviteTargets}</p>
-                        ) : (
-                          <div className="invite-scroll">
-                            {inviteTargets.map((target) => {
-                              const inviteKey = `${session.id}-${target.profile_id}`
-                              const isInvited = invitedIds.has(target.profile_id)
-
-                              return (
-                                <button
-                                  className="invite-chip"
-                                  disabled={isInvited || busyInviteKey === inviteKey}
-                                  key={target.profile_id}
-                                  type="button"
-                                  onClick={() => invitePlayerToSession(session, target)}
-                                >
-                                  <span className="player-avatar tiny-avatar" style={avatarStyle(target)}>
-                                    {avatarNode(target, 'P')}
-                                  </span>
-                                  <span>{compactDisplayName(target.display_name, text.player)}</span>
-                                  <small>{isInvited ? text.invited : text.invite}</small>
-                                </button>
-                              )
-                            })}
+                          <div className="network-actions">
+                            <button
+                              className="secondary small-button"
+                              type="button"
+                              onClick={() => {
+                                setInviteSearch('')
+                                setInviteModalSessionId(session.id)
+                              }}
+                            >
+                              {text.invitePlayer}
+                            </button>
+                            <button
+                              aria-label={text.share}
+                              className={sharedKey === session.id ? 'share-icon-button session-network-share copied' : 'share-icon-button session-network-share'}
+                              title={text.share}
+                              type="button"
+                              onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
+                            >
+                              <ShareSymbol />
+                            </button>
                           </div>
-                        )}
+                        </div>
                         {canManage && sessionInviteRows.length > 0 && (
                           <p className="muted">{text.sentInvites}: {sessionInviteRows.length}</p>
                         )}
+                      </div>
+                    )}
+
+                    {inviteModalSessionId === session.id && (
+                      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby={`invite-session-title-${session.id}`} onClick={() => setInviteModalSessionId('')}>
+                        <div className="login-modal session-invite-modal" onClick={(event) => event.stopPropagation()}>
+                          <button className="modal-close" type="button" onClick={() => setInviteModalSessionId('')} aria-label={text.close}>
+                            &times;
+                          </button>
+                          <div className="session-invite-modal-head">
+                            <h3 id={`invite-session-title-${session.id}`}>{text.invitePlayer}</h3>
+                            <p>{text.sessionNetworkHint}</p>
+                          </div>
+                          <input
+                            aria-label={text.invitePlayerSearch}
+                            autoFocus
+                            placeholder={text.invitePlayerSearchPlaceholder}
+                            type="search"
+                            value={inviteSearch}
+                            onChange={(event) => setInviteSearch(event.target.value)}
+                          />
+                          {visibleInviteTargets.length === 0 ? (
+                            <p className="notice">{text.noInviteTargets}</p>
+                          ) : (
+                            <div className="invite-search-results">
+                              {visibleInviteTargets.map((target) => {
+                                const inviteKey = `${session.id}-${target.profile_id}`
+                                const isInvited = invitedIds.has(target.profile_id)
+
+                                return (
+                                  <button
+                                    className="invite-result-row"
+                                    disabled={isInvited || busyInviteKey === inviteKey}
+                                    key={target.profile_id}
+                                    type="button"
+                                    onClick={() => invitePlayerToSession(session, target)}
+                                  >
+                                    <span className="player-avatar tiny-avatar" style={avatarStyle(target)}>
+                                      {avatarNode(target, 'P')}
+                                    </span>
+                                    <span className="invite-result-copy">
+                                      <strong>{compactDisplayName(target.display_name, text.player)}</strong>
+                                      {target.profile_motto && <small>{target.profile_motto}</small>}
+                                    </span>
+                                    <small>{isInvited ? text.invited : text.invite}</small>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 

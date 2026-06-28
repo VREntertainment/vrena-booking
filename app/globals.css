@@ -4140,6 +4140,93 @@ body {
   font-weight: 800;
 }
 
+.app .network-head {
+  align-items: center;
+}
+
+.app .network-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.app .session-network-share {
+  width: 36px;
+  height: 36px;
+}
+
+.app .session-network-share .share-symbol-image {
+  width: 24px;
+  height: 24px;
+}
+
+.app .session-invite-modal {
+  width: min(520px, 100%);
+  max-height: min(680px, calc(100vh - 36px));
+  overflow: hidden;
+}
+
+.app .session-invite-modal-head {
+  padding-right: 34px;
+}
+
+.app .session-invite-modal-head h3 {
+  margin: 0;
+}
+
+.app .session-invite-modal-head p {
+  margin: 4px 0 0;
+}
+
+.app .invite-search-results {
+  display: grid;
+  gap: 7px;
+  max-height: min(390px, 52vh);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.app .invite-result-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #071112;
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.app .invite-result-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.app .invite-result-copy strong,
+.app .invite-result-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .invite-result-copy small {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.app .invite-result-row > small {
+  color: #315dff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .app .message-compose {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -11457,6 +11544,10 @@ body {
   margin: 0;
 }
 
+.app .sessions-section .network-actions {
+  margin-left: auto;
+}
+
 .app .sessions-section .invite-chip {
   min-width: 126px;
   border: 0 !important;
@@ -11534,6 +11625,20 @@ body {
   .app .sessions-section .confirm-game-panel {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .app .sessions-section .network-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .app .sessions-section .network-head .muted {
+    display: none;
+  }
+
+  .app .sessions-section .network-actions {
+    margin-left: 0;
   }
 
   .app .sessions-section .players {
