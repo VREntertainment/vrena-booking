@@ -146,7 +146,7 @@ export const fr = {
   sessionTariffGroups: '1 arène: 4 places par 20 min. 5-8 joueurs: -10%. 9-16 joueurs: -15%.',
   sessionOfferLimit: 'Une seule offre ou un seul voucher peut être utilisé par réservation.',
   sessionTariffPayment: 'Paiement sur place à la réception. Besoin d’aide?',
-  sessionTariffDisclaimer: 'Note: la durée de réservation est le temps réservé pour tout le groupe. Pour les grands groupes, les joueurs tournent pendant le temps d’arène réservé. Le temps de jeu réel par personne peut varier selon le nombre de joueurs et la durée choisie. Le prix est calculé selon le temps d’arène réservé, pas seulement selon le nombre de joueurs.',
+  sessionTariffDisclaimer: 'Le prix est calculé selon le nombre de joueurs choisi pour 1-4 joueurs, puis selon le temps d’arène réservé pour les groupes plus grands. Les points fidélité sont attribués après confirmation du paiement, sur le prix payé par le client, arrondi à l’entier inférieur.',
   zaloContact: 'Contactez-nous sur Zalo',
   softOpeningHighlights: 'Temps forts soft opening',
   searchPlaceholder: 'Chercher partie, profil, jeu, code privé',

@@ -146,7 +146,7 @@ export const vi = {
   sessionTariffGroups: '1 arena: 4 suất mỗi 20 phút. 5-8 người: giảm 10%. 9-16 người: giảm 15%.',
   sessionOfferLimit: 'Chỉ dùng một ưu đãi hoặc voucher cho mỗi booking.',
   sessionTariffPayment: 'Thanh toán tại quầy lễ tân. Cần hỗ trợ?',
-  sessionTariffDisclaimer: 'Lưu ý: Thời lượng booking là thời gian giữ chỗ cho cả nhóm. Với nhóm đông, người chơi sẽ xoay lượt trong thời gian đã đặt. Thời gian chơi thực tế mỗi người có thể khác nhau tùy số người và thời lượng đã chọn. Giá được tính theo thời gian giữ arena, không chỉ theo số người chơi.',
+  sessionTariffDisclaimer: 'Giá được tính theo số người đã chọn cho 1-4 người, sau đó theo thời gian giữ arena cho nhóm lớn hơn. Điểm thưởng được cộng sau khi thanh toán được xác nhận, dựa trên giá khách thực trả và làm tròn xuống thành điểm nguyên.',
   zaloContact: 'Liên hệ Zalo',
   softOpeningHighlights: 'Điểm nhấn khai trương',
   searchPlaceholder: 'Tìm tên phiên, tên hồ sơ, game, mã riêng tư',

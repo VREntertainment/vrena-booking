@@ -146,7 +146,7 @@ export const de = {
   sessionTariffGroups: '1 Arena: 4 Plätze pro 20 Min. 5-8 Spieler: 10% Rabatt. 9-16 Spieler: 15% Rabatt.',
   sessionOfferLimit: 'Pro Buchung kann nur ein Angebot oder Gutschein verwendet werden.',
   sessionTariffPayment: 'Zahlung erfolgt vor Ort an der Rezeption. Hilfe nötig?',
-  sessionTariffDisclaimer: 'Hinweis: Die Buchungsdauer ist die reservierte Zeit für die ganze Gruppe. Bei größeren Gruppen wechseln sich die Spieler während der reservierten Arena-Zeit ab. Die tatsächliche Spielzeit pro Person kann je nach Spielerzahl und gewählter Buchungsdauer variieren. Der Preis basiert auf der reservierten Arena-Zeit, nicht nur auf der Spielerzahl.',
+  sessionTariffDisclaimer: 'Der Preis wird bei 1-4 Spielern nach der gewählten Spielerzahl berechnet, danach nach reservierter Arena-Zeit für größere Gruppen. Treuepunkte werden nach bestätigter Zahlung auf Basis des vom Kunden bezahlten Preises vergeben und auf ganze Punkte abgerundet.',
   zaloContact: 'Kontaktiere uns auf Zalo',
   softOpeningHighlights: 'Soft-Opening-Highlights',
   searchPlaceholder: 'Runde, Profil, Spiel, Privatcode suchen',

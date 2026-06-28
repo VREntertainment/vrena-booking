@@ -769,8 +769,6 @@ const staffConsoleText = {
       pointsEarned: 'Points earned',
       pointsExpireAfterDays: 'Points expire after days',
       redeemValue: 'Redeem value',
-      earnTrigger: 'Earn trigger',
-      roundingRule: 'Rounding',
       privateSession: 'Private session',
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
@@ -868,8 +866,6 @@ const staffConsoleText = {
       gameGuideHelp: 'Select a language, then edit the summary, GamePlay, and tips for this game only. Use one line per GamePlay item or tip.',
       gameSaved: 'Game saved.',
       loyaltyIntro: 'Define how customers earn points. Redemption will use these rules later.',
-      loyaltyEarnTriggerHelp: 'Points are awarded only after payment is confirmed on a session-linked order.',
-      loyaltyRoundingHelp: 'Airline-style rounding: customer-facing paid price earns whole points, rounded down.',
       loyaltyRuleSaved: 'Loyalty rule saved.',
       loyaltyPointsUpdated: 'Loyalty points updated.',
       loyaltyPointsUpdating: 'Updating loyalty points...',
@@ -1320,8 +1316,6 @@ const staffConsoleText = {
       pointsEarned: 'Điểm nhận được',
       pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
       redeemValue: 'Giá trị đổi điểm',
-      earnTrigger: 'Điều kiện cộng điểm',
-      roundingRule: 'Làm tròn',
       privateSession: 'Phiên riêng tư',
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
@@ -1419,8 +1413,6 @@ const staffConsoleText = {
       gameGuideHelp: 'Chọn ngôn ngữ, rồi sửa tóm tắt, GamePlay và mẹo chỉ cho trò chơi này. Mỗi dòng là một mục GamePlay hoặc mẹo.',
       gameSaved: 'Đã lưu trò chơi.',
       loyaltyIntro: 'Thiết lập cách khách hàng nhận điểm. Đổi điểm sẽ dùng các quy tắc này sau.',
-      loyaltyEarnTriggerHelp: 'Chỉ cộng điểm khi thanh toán đã xác nhận trên đơn có liên kết phiên.',
-      loyaltyRoundingHelp: 'Làm tròn kiểu hàng không: tính trên giá khách trả và làm tròn xuống thành điểm nguyên.',
       loyaltyRuleSaved: 'Đã lưu quy tắc điểm.',
       loyaltyPointsUpdated: 'Đã cập nhật điểm thưởng.',
       loyaltyPointsUpdating: 'Đang cập nhật điểm thưởng...',
@@ -7363,8 +7355,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label>{text.labels.perVndSpent}<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
                   <label>{text.labels.minimumSpend}<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
                   <label>{text.labels.redeemValue}<input min={0} type="number" value={loyaltyForm.redeem_value_vnd_per_point} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, redeem_value_vnd_per_point: Number(event.target.value) })} /></label>
-                  <label>{text.labels.earnTrigger}<input readOnly value={text.messages.loyaltyEarnTriggerHelp} /></label>
-                  <label>{text.labels.roundingRule}<input readOnly value={text.messages.loyaltyRoundingHelp} /></label>
                   <label>{text.labels.pointsExpireAfterDays}<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
                   <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.loyaltyValidFrom} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
                   <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.loyaltyValidUntil} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
