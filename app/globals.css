@@ -11203,3 +11203,317 @@ body {
     background: rgba(255, 255, 255, 0.12);
   }
 }
+
+/* Lean session list: open layout, fewer nested boxes, faster scanning. */
+.app .sessions-section {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 14px;
+}
+
+.app .sessions-filter-head {
+  align-items: start;
+  gap: 16px;
+  padding: 0 0 8px;
+}
+
+.app .sessions-section .list {
+  gap: 0;
+  border-top: 1px solid var(--player-border);
+}
+
+.app .sessions-section .session {
+  gap: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .session:last-child {
+  border-bottom: 0;
+}
+
+.app .sessions-section .compact-session-card {
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .compact-session-card:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--player-surface-soft) 52%, transparent) !important;
+}
+
+.app .sessions-section .compact-session-card-expanded {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .compact-session-image {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+}
+
+.app .sessions-section .compact-session-title-row {
+  gap: 8px;
+  row-gap: 3px;
+}
+
+.app .sessions-section .compact-session-title-row h3 {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.app .sessions-section .row-meta,
+.app .sessions-section .compact-meta {
+  gap: 9px;
+  row-gap: 3px;
+}
+
+.app .sessions-section .row-meta span,
+.app .sessions-section .compact-meta span,
+.app .sessions-section .pill,
+.app .sessions-section .status-pill,
+.app .sessions-section .host-pill {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--player-text-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.app .sessions-section .pill.ok {
+  color: #138060;
+}
+
+.app .sessions-section .pill.private {
+  color: #b45a1c;
+}
+
+.app .sessions-section .ticket-pill,
+.app .sessions-section .challenge-pill,
+.app .sessions-section .soft-opening-pill {
+  color: #3059ff;
+}
+
+.app .sessions-section .compact-game-guide-link,
+.app .sessions-section .confirm-game-guide-link {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2d7ff9;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.app .sessions-section .session-tariff-link {
+  min-height: auto;
+  margin: 2px 18px 4px 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: #70dfff;
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs {
+  width: fit-content;
+  gap: 20px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs button {
+  min-height: 32px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--player-text-muted);
+  padding: 5px 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs button.active {
+  border-bottom-color: #70dfff !important;
+  color: #071112;
+}
+
+.app .sessions-section .compact-session-actions {
+  gap: 8px;
+}
+
+.app .sessions-section .compact-join {
+  min-height: 34px;
+  border-radius: 9px;
+  padding: 6px 13px;
+  white-space: nowrap;
+}
+
+.app .sessions-section .compact-expand,
+.app .sessions-section .compact-session-actions .compact-expand {
+  width: auto;
+  min-height: auto;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--player-text-muted) !important;
+  padding: 4px 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .compact-expand:hover {
+  color: #3059ff !important;
+  transform: none;
+}
+
+.app .sessions-section .compact-share {
+  width: 34px;
+  height: 34px;
+  color: var(--player-text-muted);
+}
+
+.app .sessions-section .session-expanded {
+  gap: 10px;
+  padding: 0 0 14px 64px;
+}
+
+.app .sessions-section .notes-block,
+.app .sessions-section .manage-row,
+.app .sessions-section .confirm-game-panel,
+.app .sessions-section .invite-code,
+.app .sessions-section .network-panel,
+.app .sessions-section .session-comms,
+.app .sessions-section .ticket-session-summary {
+  padding: 10px 0 0;
+  border: 0 !important;
+  border-top: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .confirm-game-panel {
+  grid-template-columns: minmax(120px, 180px) minmax(180px, 1fr) auto auto;
+  align-items: center;
+}
+
+.app .sessions-section .network-panel .section-head {
+  margin: 0;
+}
+
+.app .sessions-section .invite-chip {
+  min-width: 126px;
+  border: 0 !important;
+  background: var(--player-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .players {
+  padding-top: 10px;
+  border-top: 1px solid var(--player-border);
+  gap: 10px;
+}
+
+@media (min-width: 961px) {
+  .app .tabs {
+    gap: 3px;
+  }
+
+  .app .tab {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--player-text-muted);
+    padding: 9px 10px;
+  }
+
+  .app .tab.active {
+    background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent) !important;
+    color: #071112;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .sessions-filter-head {
+    gap: 10px;
+  }
+
+  .app .sessions-section .compact-session-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 9px;
+    min-height: 0;
+    padding: 10px 0 !important;
+  }
+
+  .app .sessions-section .compact-session-image {
+    width: 46px;
+    height: 46px;
+  }
+
+  .app .sessions-section .compact-session-title-row h3 {
+    font-size: 15px;
+  }
+
+  .app .sessions-section .compact-session-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    padding-left: 55px;
+  }
+
+  .app .sessions-section .compact-session-actions .compact-code {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .sessions-section .compact-session-actions .compact-join {
+    width: 100%;
+    min-height: 38px;
+  }
+
+  .app .sessions-section .session-expanded {
+    padding: 0 0 12px;
+  }
+
+  .app .sessions-section .confirm-game-panel {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .app .sessions-section .players {
+    gap: 8px;
+  }
+}
+
+@media (prefers-color-scheme: dark) and (min-width: 961px) {
+  .app .tab.active {
+    color: #f6f7f9;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .sessions-section .sub-tabs button.active {
+    color: #f6f7f9;
+  }
+}
