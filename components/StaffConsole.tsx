@@ -6147,7 +6147,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   if (rank < 20) {
     return (
-      <section className="section staff-console">
+      <section className="section staff-console" data-testid="staff-console">
         <h2>{text.title}</h2>
         <p className="notice">{text.accessRequired}</p>
       </section>
@@ -6155,7 +6155,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }
 
   return (
-    <section className="section staff-console">
+    <section className="section staff-console" data-testid="staff-console">
       <div className="section-head">
         <div>
           <h2>{text.title}</h2>
