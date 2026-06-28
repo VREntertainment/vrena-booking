@@ -134,7 +134,7 @@ export default function PublicGameGuidePage({
         </header>
 
         <div className="game-guide-scroll public-game-guide-list">
-          {games.map((game) => {
+          {games.map((game, index) => {
             const staffGuide = staffGuideBySlug.get(game.id)
             const fallbackLanguage = isStaffGuideLanguage(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
             const summary = normalizedGuideText(staffGuide?.guide_summary, language, fallbackLanguage, fallbackSummary(game, text))
@@ -143,7 +143,7 @@ export default function PublicGameGuidePage({
 
             return (
               <article className="game-guide-card public-game-guide-card" key={game.id}>
-                <Image src={game.image} alt={game.title} width={240} height={240} priority={game.id === games[0]?.id} sizes="(max-width: 720px) 96px, 140px" />
+                <Image src={game.image} alt={game.title} width={240} height={240} priority={index < 2} sizes="(max-width: 720px) 96px, 140px" />
                 <div className="game-guide-card-body">
                   <div className="game-guide-card-head">
                     <div>
