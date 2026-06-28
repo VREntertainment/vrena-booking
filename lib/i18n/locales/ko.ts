@@ -224,6 +224,7 @@ export const ko = {
   visibility: '공개 설정',
   clubsTitle: '클럽',
   clubsHint: '공개 클럽 또는 승인 멤버만의 비공개 클럽을 만드세요.',
+  clubLoginHint: '클럽을 만들거나 가입을 요청하고 멤버십을 관리하려면 로그인하세요.',
   clubName: '클럽명',
   clubMotto: '클럽 모토',
   clubMottoPlaceholder: '작은 구호',

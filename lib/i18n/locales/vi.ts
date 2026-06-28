@@ -224,6 +224,7 @@ export const vi = {
   visibility: 'Hiển thị',
   clubsTitle: 'CLB',
   clubsHint: 'Tạo CLB công khai hoặc riêng tư, chỉ cho thành viên đã duyệt.',
+  clubLoginHint: 'Đăng nhập để tạo CLB, xin tham gia hoặc quản lý thành viên.',
   clubName: 'Tên CLB',
   clubMotto: 'Khẩu hiệu CLB',
   clubMottoPlaceholder: 'Câu hô nhỏ',

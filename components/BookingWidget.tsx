@@ -9430,7 +9430,7 @@ function handleSessionDateChange(value: string) {
           <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => setActiveView('leaderboard')}>
             {text.hallOfFame}
           </button>
-          <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => (profile ? setActiveView('clubs') : promptLogin())}>
+          <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => setActiveView('clubs')}>
             {text.clubs}
           </button>
           {canAccessStaffConsole && (
@@ -10852,29 +10852,40 @@ function handleSessionDateChange(value: string) {
               </div>
             </div>
 
-            <div className="segmented form-segmented">
-              <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
-                {text.public}
-              </button>
-              <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
-                {text.private}
-              </button>
-            </div>
+            {profile ? (
+              <>
+                <div className="segmented form-segmented">
+                  <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
+                    {text.public}
+                  </button>
+                  <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
+                    {text.private}
+                  </button>
+                </div>
 
-            <div className="form-grid club-form">
-              <div>
-                <label>{text.clubName} <span className="required">*</span></label>
-                <input value={clubName} onChange={(event) => setClubName(event.target.value)} placeholder="VRena Friday Club" />
-              </div>
-              <div>
-                <label>{text.clubDescription}</label>
-                <input value={clubDescription} onChange={(event) => setClubDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
-              </div>
-            </div>
+                <div className="form-grid club-form">
+                  <div>
+                    <label>{text.clubName} <span className="required">*</span></label>
+                    <input value={clubName} onChange={(event) => setClubName(event.target.value)} placeholder="VRena Friday Club" />
+                  </div>
+                  <div>
+                    <label>{text.clubDescription}</label>
+                    <input value={clubDescription} onChange={(event) => setClubDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
+                  </div>
+                </div>
 
-            <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={createClub} type="button">
-              {isCreatingClub ? text.creatingClub : text.createClub}
-            </button>
+                <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={createClub} type="button">
+                  {isCreatingClub ? text.creatingClub : text.createClub}
+                </button>
+              </>
+            ) : (
+              <div className="notice club-login-notice">
+                <span>{text.clubLoginHint}</span>
+                <button className="secondary small-button" type="button" onClick={promptLogin}>
+                  {text.logIn}
+                </button>
+              </div>
+            )}
             {clubStatus && <p className="notice">{clubStatus}</p>}
 
             <div className="club-list">

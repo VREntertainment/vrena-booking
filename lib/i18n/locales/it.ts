@@ -224,6 +224,7 @@ export const it = {
   visibility: 'Visibilità',
   clubsTitle: 'Club',
   clubsHint: 'Crea club pubblico o privato con membri approvati.',
+  clubLoginHint: 'Accedi per creare un club, chiedere di entrare o gestire le iscrizioni.',
   clubName: 'Nome club',
   clubMotto: 'Motto club',
   clubMottoPlaceholder: 'Piccolo grido',

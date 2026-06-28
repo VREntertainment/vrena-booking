@@ -224,6 +224,7 @@ export const fr = {
   visibility: 'Visibilité',
   clubsTitle: 'Clubs',
   clubsHint: 'Crée un club public ou privé.',
+  clubLoginHint: 'Connecte-toi pour créer un club, demander à rejoindre ou gérer tes adhésions.',
   clubName: 'Nom club',
   clubMotto: 'Devise club',
   clubMottoPlaceholder: 'Cri de ralliement',

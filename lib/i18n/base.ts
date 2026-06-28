@@ -222,6 +222,7 @@ export const en = {
   visibility: 'Visibility',
   clubsTitle: 'Clubs',
   clubsHint: 'Create a public or a private club.',
+  clubLoginHint: 'Log in to create a club, request to join, or manage your memberships.',
   clubName: 'Club Name',
   clubMotto: 'Club motto',
   clubMottoPlaceholder: 'Tiny banner cry',
