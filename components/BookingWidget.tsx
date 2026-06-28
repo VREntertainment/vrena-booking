@@ -60,13 +60,7 @@ const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M4 19C6.5 13.8 10.2 11.2 16 11.2" />
-      <path d="M13 5L20 12L13 19" />
-      <path d="M13 5V9H9C5.7 9 3.5 11.2 3.5 14.5" />
-    </svg>
-  )
+  return <span aria-hidden="true" className="share-symbol-image" />
 }
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
