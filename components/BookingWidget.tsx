@@ -58,6 +58,16 @@ const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
+
+function ShareSymbol() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 19C6.5 13.8 10.2 11.2 16 11.2" />
+      <path d="M13 5L20 12L13 19" />
+      <path d="M13 5V9H9C5.7 9 3.5 11.2 3.5 14.5" />
+    </svg>
+  )
+}
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
@@ -9526,8 +9536,14 @@ function handleSessionDateChange(value: string) {
                 </div>
               )}
             </div>
-            <button className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'} type="button" onClick={() => shareLink('app', 'VRena Sessions')}>
-              {sharedKey === 'app' ? text.shared : text.shareApp}
+            <button
+              aria-label={sharedKey === 'app' ? text.shared : text.shareApp}
+              className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'}
+              title={sharedKey === 'app' ? text.shared : text.shareApp}
+              type="button"
+              onClick={() => shareLink('app', 'VRena Sessions')}
+            >
+              <ShareSymbol />
             </button>
           </div>
           <h1 className="sr-only">VRena Sessions</h1>
@@ -9909,11 +9925,7 @@ function handleSessionDateChange(value: string) {
                             shareLink(session.id, session.name, `#session-${session.id}`)
                           }}
                         >
-                          <svg aria-hidden="true" viewBox="0 0 24 24">
-                            <path d="M12 5V16" />
-                            <path d="M8 9L12 5L16 9" />
-                            <path d="M5 13V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V13" />
-                          </svg>
+                          <ShareSymbol />
                         </button>
                         {canExpandDetails && (
                           <button
@@ -10877,11 +10889,7 @@ function handleSessionDateChange(value: string) {
                         type="button"
                         onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
                       >
-                        <svg aria-hidden="true" viewBox="0 0 24 24">
-                          <path d="M12 5V16" />
-                          <path d="M8 9L12 5L16 9" />
-                          <path d="M5 13V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V13" />
-                        </svg>
+                        <ShareSymbol />
                       </button>
                     </div>
                     )}

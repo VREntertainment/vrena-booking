@@ -88,6 +88,16 @@ const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
 const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px), (pointer: coarse)'
 
+function ShareSymbol() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 19C6.5 13.8 10.2 11.2 16 11.2" />
+      <path d="M13 5L20 12L13 19" />
+      <path d="M13 5V9H9C5.7 9 3.5 11.2 3.5 14.5" />
+    </svg>
+  )
+}
+
 type LeaderboardQuery = {
   clubId: string
   clubPin: string
@@ -837,8 +847,14 @@ export default function FastHomeShell() {
                 </div>
               )}
             </div>
-            <button className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'} type="button" onClick={shareApp}>
-              {sharedKey === 'app' ? text.shared : text.shareApp}
+            <button
+              aria-label={sharedKey === 'app' ? text.shared : text.shareApp}
+              className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'}
+              title={sharedKey === 'app' ? text.shared : text.shareApp}
+              type="button"
+              onClick={shareApp}
+            >
+              <ShareSymbol />
             </button>
           </div>
           <h1 className="sr-only">VRena Sessions</h1>
