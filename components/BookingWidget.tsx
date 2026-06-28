@@ -10344,15 +10344,6 @@ function handleSessionDateChange(value: string) {
                             >
                               {text.invitePlayer}
                             </button>
-                            <button
-                              aria-label={text.share}
-                              className={sharedKey === session.id ? 'share-icon-button session-network-share copied' : 'share-icon-button session-network-share'}
-                              title={text.share}
-                              type="button"
-                              onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
-                            >
-                              <ShareSymbol />
-                            </button>
                           </div>
                         </div>
                         {canManage && sessionInviteRows.length > 0 && (
@@ -10371,6 +10362,15 @@ function handleSessionDateChange(value: string) {
                             <h3 id={`invite-session-title-${session.id}`}>{text.invitePlayer}</h3>
                             <p>{text.sessionNetworkHint}</p>
                           </div>
+                          <button
+                            aria-label={text.share}
+                            className={sharedKey === session.id ? 'share-icon-button session-invite-share copied' : 'share-icon-button session-invite-share'}
+                            title={text.share}
+                            type="button"
+                            onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
+                          >
+                            <ShareSymbol />
+                          </button>
                           <input
                             aria-label={text.invitePlayerSearch}
                             autoFocus
