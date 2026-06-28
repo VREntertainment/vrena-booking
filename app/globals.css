@@ -5268,9 +5268,9 @@ body {
 
 .app .confirm-game-panel {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) minmax(180px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) auto;
   gap: 8px;
-  align-items: end;
+  align-items: center;
   padding: 10px;
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
@@ -7412,7 +7412,29 @@ body {
 
 .app .game-strip {
   grid-template-columns: repeat(auto-fill, minmax(118px, 150px));
-  align-items: start;
+  align-items: stretch;
+  scrollbar-width: none;
+}
+
+.app .game-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.app .game-strip .strip-game-card-shell {
+  grid-template-rows: 1fr;
+}
+
+.app .game-strip .game-card {
+  grid-template-rows: auto minmax(2.4em, auto) auto;
+  height: 100%;
+}
+
+.app .game-strip .game-card span {
+  display: -webkit-box;
+  min-height: 2.4em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .app .game-picker-head {
@@ -11268,6 +11290,7 @@ body {
 
 .app .sessions-section .compact-session-card-expanded {
   border: 0 !important;
+  outline: none !important;
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -11419,14 +11442,14 @@ body {
 .app .sessions-section .ticket-session-summary {
   padding: 10px 0 0;
   border: 0 !important;
-  border-top: 1px solid var(--player-border) !important;
+  border-top: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
 .app .sessions-section .confirm-game-panel {
-  grid-template-columns: minmax(120px, 180px) minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(180px, 1fr) auto;
   align-items: center;
 }
 

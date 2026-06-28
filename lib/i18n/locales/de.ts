@@ -218,6 +218,7 @@ export const de = {
   expandDetails: 'Mehr',
   hideDetails: 'Zu',
   confirmPlayedGame: 'Gespieltes Spiel ok',
+  playedGameConfirmed: 'Spiel bestätigt',
   confirmedPlayedGame: 'Spiel gespeichert.',
   playedGame: 'Gespieltes Spiel',
   notConfirmed: 'Unbestätigt',
