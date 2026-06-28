@@ -116,12 +116,6 @@ export default function TicketBookingView({
 }: TicketBookingViewProps) {
   return (
     <section className="section tickets-section">
-      <div className="section-head">
-        <div>
-          <h2>{text.ticketsTitle}</h2>
-          <p className="muted">{text.ticketsHint}</p>
-        </div>
-      </div>
       <div className="ticket-explainer" role="note">
         <strong>{text.ticketsExplainerTitle}</strong>
         <span>{text.ticketsExplainerBody}</span>

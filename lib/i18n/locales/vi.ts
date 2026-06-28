@@ -9,8 +9,6 @@ export const vi = {
   clubs: 'CLB',
   hallOfFame: 'Vinh danh',
   tickets: 'Tickets',
-  ticketsTitle: 'Book tickets',
-  ticketsHint: 'Normal customer bookings create a private ticket session and reserve arena availability.',
   ticketsExplainerTitle: 'Tickets là đặt chỗ riêng',
   ticketsExplainerBody: 'Dùng Tickets để giữ chỗ VRena cho bạn hoặc nhóm. Dùng Phiên để tham gia hoặc tạo game cộng đồng với người chơi khác.',
   gameGuide: 'Hướng dẫn game',
