@@ -238,6 +238,8 @@ type TicketBookingConfirmation = {
   totalPrice: number
   loyaltyPointsRedeemed?: number
   loyaltyDiscountAmount?: number
+  discountCode?: string
+  discountAmount?: number
 }
 
 type Profile = {
@@ -266,6 +268,12 @@ type Profile = {
 type TicketLoyaltyRedemption = {
   loyalty_points_total: number
   redeem_value_vnd_per_point: number
+}
+
+type TicketDiscountQuote = {
+  discount_code: string
+  discount_name: string
+  discount_amount: number
 }
 
 type LeaderboardRpcRow = {
@@ -1955,6 +1963,10 @@ export default function WidgetPage({
   const [ticketLoyaltyPointsToRedeem, setTicketLoyaltyPointsToRedeem] = useState('')
   const [ticketLoyaltyRedemption, setTicketLoyaltyRedemption] = useState<TicketLoyaltyRedemption | null>(null)
   const [isLoadingTicketLoyalty, setIsLoadingTicketLoyalty] = useState(false)
+  const [ticketDiscountCode, setTicketDiscountCode] = useState('')
+  const [ticketDiscountQuote, setTicketDiscountQuote] = useState<TicketDiscountQuote | null>(null)
+  const [ticketDiscountStatus, setTicketDiscountStatus] = useState('')
+  const [isCheckingTicketDiscount, setIsCheckingTicketDiscount] = useState(false)
   const [gameGuideOpen, setGameGuideOpen] = useState(false)
   const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
   const [staffGameGuides, setStaffGameGuides] = useState<Partial<Record<GameId, StaffGameGuide>>>({})
@@ -4885,28 +4897,36 @@ export default function WidgetPage({
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
+  const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
+  const hasTicketVoucherDiscount = ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
+  const activeTicketDiscountAmount = Math.max(currentTicketPricing.discountAmount, ticketVoucherDiscountAmount)
+  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > currentTicketPricing.discountAmount ? 'voucher' : 'automatic'
+  const currentTicketPriceBeforeLoyalty = Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
   const ticketLoyaltyBalance = Math.max(
     0,
     Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
   )
   const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
-  const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0)) : 0
+  const canUseTicketLoyaltyPoints = !hasTicketVoucherDiscount
+  const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
+    ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
+    : 0
   const maxTicketLoyaltyPoints = clampTicketLoyaltyRedemption(
     ticketLoyaltyBalance,
     ticketLoyaltyBalance,
     ticketLoyaltyRedeemValue,
-    currentTicketPricing.totalPrice
+    currentTicketPriceBeforeLoyalty
   )
-  const appliedTicketLoyaltyPoints = ticketUseLoyaltyPoints
+  const appliedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
     ? clampTicketLoyaltyRedemption(
       requestedTicketLoyaltyPoints,
       ticketLoyaltyBalance,
       ticketLoyaltyRedeemValue,
-      currentTicketPricing.totalPrice
+      currentTicketPriceBeforeLoyalty
     )
     : 0
   const ticketLoyaltyDiscountAmount = appliedTicketLoyaltyPoints * ticketLoyaltyRedeemValue
-  const currentTicketTotalPrice = Math.max(0, currentTicketPricing.totalPrice - ticketLoyaltyDiscountAmount)
+  const currentTicketTotalPrice = Math.max(0, currentTicketPriceBeforeLoyalty - ticketLoyaltyDiscountAmount)
   const gameGuideGames = useMemo(() => {
     if (!gameGuideGameId) return games
     const focusedGame = games.find((game) => game.id === gameGuideGameId)
@@ -4950,6 +4970,82 @@ export default function WidgetPage({
       }
     })
   }, [activeTicketDuration, ticketDurationOptions, ticketTime])
+
+  const ticketDiscountCodeInvalidText = text.ticketDiscountCodeInvalid
+  const ticketDiscountCodeAppliedText = text.ticketDiscountCodeApplied
+  const ticketDiscountBestReductionText = text.ticketDiscountBestReductionMessage
+  const ticketDiscountCodeCheckingText = text.ticketDiscountCodeChecking
+
+  useEffect(() => {
+    const normalizedCode = ticketDiscountCode.trim().toUpperCase()
+
+    if (!normalizedCode) {
+      return schedulePostEffectStateUpdate(() => {
+        setTicketDiscountQuote(null)
+        setTicketDiscountStatus('')
+        setIsCheckingTicketDiscount(false)
+      })
+    }
+
+    let active = true
+    const timeoutId = window.setTimeout(() => {
+      setIsCheckingTicketDiscount(true)
+      void getSupabase()
+        .then((client) => client.rpc('ticket_discount_code_quote', {
+          p_code: normalizedCode,
+          p_booking_date: ticketDate,
+          p_subtotal: currentTicketPricing.grossPrice,
+          p_unit_price: currentTicketUnitPrice,
+        }))
+        .then(({ data, error }) => {
+          if (!active) return
+          if (error) {
+            setTicketDiscountQuote(null)
+            setTicketDiscountStatus(error.message || ticketDiscountCodeInvalidText)
+            return
+          }
+
+          const row = Array.isArray(data) ? data[0] : null
+          const discountAmount = Math.max(0, Math.floor(Number(row?.discount_amount ?? 0) || 0))
+          if (!row || discountAmount <= 0) {
+            setTicketDiscountQuote(null)
+            setTicketDiscountStatus(ticketDiscountCodeInvalidText)
+            return
+          }
+
+          setTicketDiscountQuote({
+            discount_code: String(row.discount_code || normalizedCode),
+            discount_name: String(row.discount_name || ''),
+            discount_amount: discountAmount,
+          })
+          setTicketDiscountStatus(currentTicketPricing.discountAmount > 0
+            ? ticketDiscountBestReductionText
+            : ticketDiscountCodeAppliedText.replace('{amount}', formatVnd(discountAmount)))
+        })
+        .catch(() => {
+          if (!active) return
+          setTicketDiscountQuote(null)
+          setTicketDiscountStatus(ticketDiscountCodeInvalidText)
+        })
+        .finally(() => {
+          if (active) setIsCheckingTicketDiscount(false)
+        })
+    }, 300)
+
+    return () => {
+      active = false
+      window.clearTimeout(timeoutId)
+    }
+  }, [currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText])
+
+  useEffect(() => {
+    if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
+    return schedulePostEffectStateUpdate(() => {
+      setTicketUseLoyaltyPoints(false)
+      setTicketLoyaltyPointsToRedeem('')
+      setTicketStatus(ticketDiscountBestReductionText)
+    })
+  }, [hasTicketVoucherDiscount, ticketDiscountBestReductionText, ticketUseLoyaltyPoints])
 
   useEffect(() => {
     if (!ticketUseLoyaltyPoints) return
@@ -5015,6 +5111,12 @@ function handleSessionDateChange(value: string) {
   }
 
   function handleTicketUseLoyaltyPointsChange(checked: boolean) {
+    if (checked && hasTicketVoucherDiscount) {
+      setTicketUseLoyaltyPoints(false)
+      setTicketLoyaltyPointsToRedeem('')
+      setTicketStatus(ticketDiscountBestReductionText)
+      return
+    }
     setTicketUseLoyaltyPoints(checked)
     setTicketConfirmation(null)
     if (checked) {
@@ -5032,6 +5134,13 @@ function handleSessionDateChange(value: string) {
     const requested = Math.max(0, Math.floor(Number(value) || 0))
     const nextPoints = maxTicketLoyaltyPoints > 0 ? Math.min(requested, maxTicketLoyaltyPoints) : 0
     setTicketLoyaltyPointsToRedeem(value === '' ? '' : String(nextPoints))
+    setTicketConfirmation(null)
+  }
+
+  function handleTicketDiscountCodeChange(value: string) {
+    setTicketDiscountCode(value.toUpperCase())
+    setTicketDiscountQuote(null)
+    setTicketDiscountStatus('')
     setTicketConfirmation(null)
   }
 
@@ -7549,6 +7658,17 @@ function handleSessionDateChange(value: string) {
       return
     }
 
+    const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
+    if (normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+      setTicketStatus(ticketDiscountCodeCheckingText)
+      return
+    }
+
+    if (normalizedTicketDiscountCode && !ticketDiscountQuote) {
+      setTicketStatus(ticketDiscountCodeInvalidText)
+      return
+    }
+
     const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, setTicketStatus)
     if (!allowed) return
 
@@ -7567,6 +7687,7 @@ function handleSessionDateChange(value: string) {
       p_unit_price: currentTicketUnitPrice,
       p_total_price: currentTicketTotalPrice,
       p_loyalty_points_to_redeem: appliedTicketLoyaltyPoints,
+      p_discount_code: ticketDiscountQuote ? normalizedTicketDiscountCode : null,
     })
 
     if (error) {
@@ -7575,7 +7696,13 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const booking = (data || {}) as { session_id?: string; ticket_reference?: string; loyalty_points_total?: number | null }
+    const booking = (data || {}) as {
+      discount_amount?: number | null
+      discount_code?: string | null
+      loyalty_points_total?: number | null
+      session_id?: string
+      ticket_reference?: string
+    }
     const confirmation: TicketBookingConfirmation = {
       sessionId: booking.session_id || '',
       reference: booking.ticket_reference || '',
@@ -7585,6 +7712,8 @@ function handleSessionDateChange(value: string) {
       time: ticketTime,
       players: ticketPlayers,
       totalPrice: currentTicketTotalPrice,
+      discountCode: booking.discount_code || undefined,
+      discountAmount: Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)),
       loyaltyPointsRedeemed: appliedTicketLoyaltyPoints,
       loyaltyDiscountAmount: ticketLoyaltyDiscountAmount,
     }
@@ -7604,6 +7733,9 @@ function handleSessionDateChange(value: string) {
     setTicketTime('')
     setTicketUseLoyaltyPoints(false)
     setTicketLoyaltyPointsToRedeem('')
+    setTicketDiscountCode('')
+    setTicketDiscountQuote(null)
+    setTicketDiscountStatus('')
     await loadSessions({ focusDate: ticketDate })
     setIsBookingTickets(false)
   }
@@ -11050,6 +11182,7 @@ function handleSessionDateChange(value: string) {
             formatVnd={formatVnd}
             gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
             isBookingTickets={isBookingTickets}
+            isCheckingTicketDiscount={isCheckingTicketDiscount}
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
             loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
@@ -11060,6 +11193,7 @@ function handleSessionDateChange(value: string) {
             language={language}
             onBookTickets={bookTickets}
             onPromptLogin={promptLogin}
+            onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
             onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
             onTicketDateChange={(value) => {
               setTicketDate(value)
@@ -11078,6 +11212,10 @@ function handleSessionDateChange(value: string) {
             text={looseText}
             ticketConfirmation={ticketConfirmation}
             ticketDate={ticketDate}
+            ticketDiscountAmount={ticketVoucherDiscountAmount}
+            ticketDiscountCode={ticketDiscountCode}
+            ticketDiscountSource={activeTicketDiscountSource}
+            ticketDiscountStatus={ticketDiscountStatus}
             ticketDurationMessage={ticketDurationMessage}
             ticketDurationOptions={ticketDurationOptions}
             ticketPlayerOptions={ticketPlayerOptions}

@@ -42,6 +42,8 @@ type TicketBookingConfirmation = {
   totalPrice: number
   loyaltyPointsRedeemed?: number
   loyaltyDiscountAmount?: number
+  discountCode?: string
+  discountAmount?: number
 }
 
 export type TicketBookingViewProps = {
@@ -66,6 +68,11 @@ export type TicketBookingViewProps = {
   currentTicketPricing: TicketPricingSummary
   currentTicketUnitPrice: number
   currentTicketTotalPrice: number
+  isCheckingTicketDiscount: boolean
+  ticketDiscountAmount: number
+  ticketDiscountCode: string
+  ticketDiscountStatus: string
+  ticketDiscountSource: 'automatic' | 'voucher'
   loyaltyDiscountAmount: number
   loyaltyPointsBalance: number
   loyaltyPointsToRedeem: string
@@ -78,6 +85,7 @@ export type TicketBookingViewProps = {
   onTicketTimeChange: (value: string) => void
   onTicketDurationChange: (value: number) => void
   onTicketPlayersChange: (value: number) => void
+  onTicketDiscountCodeChange: (value: string) => void
   onTicketUseLoyaltyPointsChange: (checked: boolean) => void
   onTicketLoyaltyPointsChange: (value: string) => void
   onBookTickets: () => void
@@ -111,6 +119,11 @@ export default function TicketBookingView({
   currentTicketPricing,
   currentTicketUnitPrice,
   currentTicketTotalPrice,
+  isCheckingTicketDiscount,
+  ticketDiscountAmount,
+  ticketDiscountCode,
+  ticketDiscountStatus,
+  ticketDiscountSource,
   loyaltyDiscountAmount,
   loyaltyPointsBalance,
   loyaltyPointsToRedeem,
@@ -123,6 +136,7 @@ export default function TicketBookingView({
   onTicketTimeChange,
   onTicketDurationChange,
   onTicketPlayersChange,
+  onTicketDiscountCodeChange,
   onTicketUseLoyaltyPointsChange,
   onTicketLoyaltyPointsChange,
   onBookTickets,
@@ -225,6 +239,21 @@ export default function TicketBookingView({
                 </div>
               </div>
 
+              <label className="ticket-discount-code-field">
+                <span>{text.ticketDiscountCodeLabel}</span>
+                <input
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  inputMode="text"
+                  placeholder={text.ticketDiscountCodePlaceholder}
+                  value={ticketDiscountCode}
+                  onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
+                />
+                {(isCheckingTicketDiscount || ticketDiscountStatus) && (
+                  <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
+                )}
+              </label>
+
               <div className="ticket-price-summary">
                 <div>
                   <span>{text.ticketType}</span>
@@ -249,6 +278,13 @@ export default function TicketBookingView({
                     <span>{text.discount}</span>
                     <strong>{Math.round(currentTicketPricing.discountRate * 100)}%</strong>
                     <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
+                  </div>
+                )}
+                {ticketDiscountAmount > 0 && (
+                  <div className="ticket-discount-line">
+                    <span>{text.ticketDiscountCodeSummary}</span>
+                    <strong>{ticketDiscountSource === 'voucher' ? `-${formatVnd(ticketDiscountAmount)}` : text.ticketDiscountNotUsed}</strong>
+                    <small>{ticketDiscountCode.trim().toUpperCase()}</small>
                   </div>
                 )}
                 <div className="ticket-loyalty-redemption">
@@ -339,6 +375,11 @@ export default function TicketBookingView({
               {Boolean(ticketConfirmation.loyaltyPointsRedeemed && ticketConfirmation.loyaltyDiscountAmount) && (
                 <p>
                   {text.ticketLoyaltyRedeemed}: <strong>{ticketConfirmation.loyaltyPointsRedeemed} {text.loyaltyPoints}</strong> (-{formatVnd(ticketConfirmation.loyaltyDiscountAmount || 0)})
+                </p>
+              )}
+              {Boolean(ticketConfirmation.discountCode && ticketConfirmation.discountAmount) && (
+                <p>
+                  {text.ticketDiscountCodeSummary}: <strong>{ticketConfirmation.discountCode}</strong> (-{formatVnd(ticketConfirmation.discountAmount || 0)})
                 </p>
               )}
               {ticketConfirmation.reference && (
