@@ -4671,6 +4671,14 @@ body {
   box-shadow: 0 8px 20px rgba(11, 21, 24, 0.14);
 }
 
+.app .sub-tabs.club-page-tabs {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 8px;
+}
+
 .app .session-tariff-link {
   display: inline-flex;
   align-items: center;
