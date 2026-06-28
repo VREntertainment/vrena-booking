@@ -77,6 +77,8 @@ export type TicketBookingViewProps = {
   loyaltyPointsBalance: number
   loyaltyPointsToRedeem: string
   loyaltyRedeemValue: number
+  estimatedLoyaltyPointsEarned: number
+  estimatedLoyaltyReductionValue: number
   maxLoyaltyPointsToRedeem: number
   ticketDurationMessage: string
   useLoyaltyPoints: boolean
@@ -128,6 +130,8 @@ export default function TicketBookingView({
   loyaltyPointsBalance,
   loyaltyPointsToRedeem,
   loyaltyRedeemValue,
+  estimatedLoyaltyPointsEarned,
+  estimatedLoyaltyReductionValue,
   maxLoyaltyPointsToRedeem,
   ticketDurationMessage,
   useLoyaltyPoints,
@@ -288,8 +292,15 @@ export default function TicketBookingView({
                   </div>
                 )}
                 <div className="ticket-loyalty-redemption">
+                  <p className="ticket-loyalty-zero">
+                    {estimatedLoyaltyPointsEarned > 0
+                      ? text.ticketLoyaltyEarnEstimate
+                        .replace('{points}', String(estimatedLoyaltyPointsEarned))
+                        .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
+                      : text.ticketLoyaltyEarnZero}
+                  </p>
                   {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
-                    <p className="ticket-loyalty-zero">{text.ticketLoyaltyZeroMessage}</p>
+                    null
                   ) : (
                     <>
                       <div>

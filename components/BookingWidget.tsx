@@ -274,6 +274,12 @@ type TicketLoyaltyRedemption = {
   redeem_value_vnd_per_point: number
 }
 
+type TicketLoyaltyEarnQuote = {
+  estimated_points: number
+  estimated_reduction_vnd: number
+  redeem_value_vnd_per_point: number
+}
+
 type TicketDiscountQuote = {
   discount_code: string
   discount_name: string
@@ -1966,6 +1972,7 @@ export default function WidgetPage({
   const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(false)
   const [ticketLoyaltyPointsToRedeem, setTicketLoyaltyPointsToRedeem] = useState('')
   const [ticketLoyaltyRedemption, setTicketLoyaltyRedemption] = useState<TicketLoyaltyRedemption | null>(null)
+  const [ticketLoyaltyEarnQuote, setTicketLoyaltyEarnQuote] = useState<TicketLoyaltyEarnQuote | null>(null)
   const [isLoadingTicketLoyalty, setIsLoadingTicketLoyalty] = useState(false)
   const [ticketDiscountCode, setTicketDiscountCode] = useState('')
   const [ticketDiscountQuote, setTicketDiscountQuote] = useState<TicketDiscountQuote | null>(null)
@@ -4934,6 +4941,8 @@ export default function WidgetPage({
     : 0
   const ticketLoyaltyDiscountAmount = appliedTicketLoyaltyPoints * ticketLoyaltyRedeemValue
   const currentTicketTotalPrice = Math.max(0, currentTicketPriceBeforeLoyalty - ticketLoyaltyDiscountAmount)
+  const estimatedTicketLoyaltyPointsEarned = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_points ?? 0) || 0))
+  const estimatedTicketLoyaltyReductionValue = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_reduction_vnd ?? 0) || 0))
   const gameGuideGames = useMemo(() => {
     if (!gameGuideGameId) return games
     const focusedGame = games.find((game) => game.id === gameGuideGameId)
@@ -5157,6 +5166,7 @@ function handleSessionDateChange(value: string) {
     if (!profile || activeView !== 'tickets') {
       return schedulePostEffectStateUpdate(() => {
         setTicketLoyaltyRedemption(null)
+        setTicketLoyaltyEarnQuote(null)
         setTicketUseLoyaltyPoints(false)
         setTicketLoyaltyPointsToRedeem('')
         setIsLoadingTicketLoyalty(false)
@@ -5200,6 +5210,43 @@ function handleSessionDateChange(value: string) {
       active = false
     }
   }, [activeTicketService.defaultGame, activeView, profile, ticketDate])
+
+  useEffect(() => {
+    let active = true
+
+    if (!profile || activeView !== 'tickets') {
+      return schedulePostEffectStateUpdate(() => setTicketLoyaltyEarnQuote(null))
+    }
+
+    void getSupabase()
+      .then((client) => client.rpc('ticket_loyalty_earn_quote', {
+        p_booking_date: ticketDate,
+        p_game_id: activeTicketService.defaultGame,
+        p_paid_total: currentTicketTotalPrice,
+        p_player_count: ticketPlayers,
+      }))
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) {
+          setTicketLoyaltyEarnQuote(null)
+          return
+        }
+
+        const row = Array.isArray(data) ? data[0] : null
+        setTicketLoyaltyEarnQuote({
+          estimated_points: Math.max(0, Math.floor(Number(row?.estimated_points ?? 0) || 0)),
+          estimated_reduction_vnd: Math.max(0, Math.floor(Number(row?.estimated_reduction_vnd ?? 0) || 0)),
+          redeem_value_vnd_per_point: Math.max(0, Math.floor(Number(row?.redeem_value_vnd_per_point ?? 0) || 0)),
+        })
+      })
+      .catch(() => {
+        if (active) setTicketLoyaltyEarnQuote(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [activeTicketService.defaultGame, activeView, currentTicketTotalPrice, profile, ticketDate, ticketPlayers])
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
@@ -11233,6 +11280,8 @@ function handleSessionDateChange(value: string) {
             isCheckingTicketDiscount={isCheckingTicketDiscount}
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
+            estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
+            estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
             loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
             loyaltyPointsBalance={ticketLoyaltyBalance}
             loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}

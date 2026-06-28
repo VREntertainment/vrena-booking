@@ -84,6 +84,8 @@ export const vi = {
   ticketLoyaltyLoading: 'Đang kiểm tra điểm...',
   ticketLoyaltyUnavailable: 'Hiện chưa có giá trị đổi điểm đang bật.',
   ticketLoyaltyZeroMessage: 'Đặt vé ngay, nhận điểm sau khi thanh toán, rồi dùng điểm để giảm hóa đơn lần sau. Một mẹo nhỏ rất vui.',
+  ticketLoyaltyEarnEstimate: 'Vé này nhận {points} điểm sau khi xác nhận thanh toán, trị giá {value} cho lần sau.',
+  ticketLoyaltyEarnZero: 'Vé này nhận 0 điểm với thiết lập hiện tại. Đổi booking là bộ đếm nhỏ này chạy theo ngay.',
   ticketUseLoyaltyPoints: 'Dùng điểm thưởng cho vé này',
   ticketLoyaltyPointsToUse: 'Số điểm dùng',
   ticketLoyaltyMax: 'Tối đa {points} điểm cho vé này.',
