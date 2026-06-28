@@ -40,6 +40,8 @@ type TicketBookingConfirmation = {
   time: string
   players: number
   totalPrice: number
+  loyaltyPointsRedeemed?: number
+  loyaltyDiscountAmount?: number
 }
 
 export type TicketBookingViewProps = {
@@ -55,6 +57,7 @@ export type TicketBookingViewProps = {
   ticketPlayers: number
   ticketStatus: string
   isBookingTickets: boolean
+  isLoadingTicketLoyalty: boolean
   ticketConfirmation: TicketBookingConfirmation | null
   ticketDurationOptions: number[]
   ticketTimeOptions: TicketTimeOption[]
@@ -63,12 +66,20 @@ export type TicketBookingViewProps = {
   currentTicketPricing: TicketPricingSummary
   currentTicketUnitPrice: number
   currentTicketTotalPrice: number
+  loyaltyDiscountAmount: number
+  loyaltyPointsBalance: number
+  loyaltyPointsToRedeem: string
+  loyaltyRedeemValue: number
+  maxLoyaltyPointsToRedeem: number
   ticketDurationMessage: string
+  useLoyaltyPoints: boolean
   onTicketTypeChange: (value: TicketType) => void
   onTicketDateChange: (value: string) => void
   onTicketTimeChange: (value: string) => void
   onTicketDurationChange: (value: number) => void
   onTicketPlayersChange: (value: number) => void
+  onTicketUseLoyaltyPointsChange: (checked: boolean) => void
+  onTicketLoyaltyPointsChange: (value: string) => void
   onBookTickets: () => void
   onPromptLogin: () => void
   formatShortDate: (dateValue: string, language: LanguageCode) => string
@@ -91,6 +102,7 @@ export default function TicketBookingView({
   ticketPlayers,
   ticketStatus,
   isBookingTickets,
+  isLoadingTicketLoyalty,
   ticketConfirmation,
   ticketDurationOptions,
   ticketTimeOptions,
@@ -99,12 +111,20 @@ export default function TicketBookingView({
   currentTicketPricing,
   currentTicketUnitPrice,
   currentTicketTotalPrice,
+  loyaltyDiscountAmount,
+  loyaltyPointsBalance,
+  loyaltyPointsToRedeem,
+  loyaltyRedeemValue,
+  maxLoyaltyPointsToRedeem,
   ticketDurationMessage,
+  useLoyaltyPoints,
   onTicketTypeChange,
   onTicketDateChange,
   onTicketTimeChange,
   onTicketDurationChange,
   onTicketPlayersChange,
+  onTicketUseLoyaltyPointsChange,
+  onTicketLoyaltyPointsChange,
   onBookTickets,
   onPromptLogin,
   formatShortDate,
@@ -231,6 +251,49 @@ export default function TicketBookingView({
                     <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
                   </div>
                 )}
+                <div className="ticket-loyalty-redemption">
+                  <div>
+                    <span>{text.ticketLoyaltyBalance}</span>
+                    <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
+                    <small>
+                      {loyaltyRedeemValue > 0
+                        ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
+                        : isLoadingTicketLoyalty
+                          ? text.ticketLoyaltyLoading
+                          : text.ticketLoyaltyUnavailable}
+                    </small>
+                  </div>
+                  <label className="ticket-loyalty-toggle">
+                    <input
+                      checked={useLoyaltyPoints}
+                      disabled={maxLoyaltyPointsToRedeem <= 0}
+                      onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>{text.ticketUseLoyaltyPoints}</span>
+                  </label>
+                  {useLoyaltyPoints && (
+                    <label className="ticket-loyalty-input">
+                      <span>{text.ticketLoyaltyPointsToUse}</span>
+                      <input
+                        inputMode="numeric"
+                        max={maxLoyaltyPointsToRedeem}
+                        min={0}
+                        onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
+                        type="number"
+                        value={loyaltyPointsToRedeem}
+                      />
+                      <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
+                    </label>
+                  )}
+                </div>
+                {loyaltyDiscountAmount > 0 && (
+                  <div className="ticket-discount-line">
+                    <span>{text.ticketLoyaltyDiscount}</span>
+                    <strong>-{formatVnd(loyaltyDiscountAmount)}</strong>
+                    <small>{loyaltyPointsToRedeem || 0} {text.loyaltyPoints}</small>
+                  </div>
+                )}
                 <div className="ticket-total-line">
                   <span>{text.totalPrice}</span>
                   <strong>{formatVnd(currentTicketTotalPrice)}</strong>
@@ -267,6 +330,11 @@ export default function TicketBookingView({
                 <span>{ticketConfirmation.players} {text.players}</span>
                 <span>{formatVnd(ticketConfirmation.totalPrice)}</span>
               </div>
+              {Boolean(ticketConfirmation.loyaltyPointsRedeemed && ticketConfirmation.loyaltyDiscountAmount) && (
+                <p>
+                  {text.ticketLoyaltyRedeemed}: <strong>{ticketConfirmation.loyaltyPointsRedeemed} {text.loyaltyPoints}</strong> (-{formatVnd(ticketConfirmation.loyaltyDiscountAmount || 0)})
+                </p>
+              )}
               {ticketConfirmation.reference && (
                 <p>
                   {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
