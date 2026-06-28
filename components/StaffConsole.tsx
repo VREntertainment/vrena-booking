@@ -4113,7 +4113,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
-  const canEditLoyaltyPoints = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
   const isOwnerOrAdmin = role === 'owner' || role === 'admin'
@@ -4186,7 +4185,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [roleSort, setRoleSort] = useState<StaffRoleSort>('name_asc')
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
-  const [pendingLoyaltyPointChanges, setPendingLoyaltyPointChanges] = useState<Record<string, string>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
@@ -4674,7 +4672,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         const rows = (rpcResult.data as StaffProfile[]).filter((item) => !isDemoProfile(item))
         setProfiles(await hydrateProfileAvatars(rows))
         setPendingRoleChanges({})
-        setPendingLoyaltyPointChanges({})
         return
       }
 
@@ -4691,7 +4688,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       if (error) throw new Error(error.message)
       setProfiles(((data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
       setPendingRoleChanges({})
-      setPendingLoyaltyPointChanges({})
     }, force)
   }
 
@@ -5783,65 +5779,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       delete next[profileId]
       return next
     })
-  }
-
-  function stageProfileLoyaltyPoints(profileId: string, value: string) {
-    setPendingLoyaltyPointChanges((current) => ({ ...current, [profileId]: value }))
-  }
-
-  function clearStagedProfileLoyaltyPoints(profileId: string) {
-    setPendingLoyaltyPointChanges((current) => {
-      const next = { ...current }
-      delete next[profileId]
-      return next
-    })
-  }
-
-  async function updateProfileLoyaltyPoints(profileId: string, value: string) {
-    if (!canEditLoyaltyPoints) return
-    const points = Number(value)
-    if (!Number.isInteger(points) || points < 0) {
-      setRoleSaveFeedback((current) => ({
-        ...current,
-        [profileId]: { tone: 'error', message: text.messages.loyaltyPointsUpdated },
-      }))
-      return
-    }
-
-    setSaving(true)
-    setStatus(text.messages.loyaltyPointsUpdating)
-    setRoleSaveFeedback((current) => ({
-      ...current,
-      [profileId]: { tone: 'saving', message: text.messages.loyaltyPointsUpdating },
-    }))
-
-    const { data, error } = await supabase.rpc('set_profile_loyalty_points', {
-      p_profile_id: profileId,
-      p_points: points,
-      p_reason: 'Staff Console manual balance edit',
-    })
-
-    if (error) {
-      setStatus(error.message)
-      setRoleSaveFeedback((current) => ({
-        ...current,
-        [profileId]: { tone: 'error', message: error.message },
-      }))
-    } else {
-      const savedRow = Array.isArray(data) ? data[0] : data
-      const savedPoints = Number((savedRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? points)
-      const nextPoints = Number.isFinite(savedPoints) ? savedPoints : points
-      setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, loyalty_points_total: nextPoints } : item))
-      clearStagedProfileLoyaltyPoints(profileId)
-      markStaffDataStale('profiles')
-      setStatus(text.messages.loyaltyPointsUpdated)
-      setRoleSaveFeedback((current) => ({
-        ...current,
-        [profileId]: { tone: 'success', message: text.messages.loyaltyPointsUpdated },
-      }))
-    }
-
-    setSaving(false)
   }
 
   function canDeleteProfileAccount(item: StaffProfile) {
@@ -7517,9 +7454,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               const storedRole = storedRoleValue(item.role, item.email)
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
-              const storedLoyaltyPoints = Math.max(0, Math.floor(Number(item.loyalty_points_total ?? 0) || 0))
-              const selectedLoyaltyPoints = pendingLoyaltyPointChanges[item.id] ?? String(storedLoyaltyPoints)
-              const hasPendingLoyaltyPointChange = selectedLoyaltyPoints !== String(storedLoyaltyPoints)
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
               const rowFeedback = roleSaveFeedback[item.id]
               const rolePersonContent = (
@@ -7549,50 +7483,30 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     </div>
                   )}
                   <div className="staff-role-action-cell">
-                    <label className="staff-loyalty-points-edit">
-                      <span className="staff-field-label">{text.labels.loyaltyPoints}</span>
-                      <input
-                        disabled={!canEditLoyaltyPoints || saving}
-                        inputMode="numeric"
-                        min={0}
-                        step={1}
-                        type="number"
-                        value={selectedLoyaltyPoints}
-                        onChange={(event) => stageProfileLoyaltyPoints(item.id, event.target.value)}
-                      />
-                    </label>
-                    {hasPendingLoyaltyPointChange && (
-                      <div className="staff-role-actions">
+                    <div className="staff-role-primary-actions">
+                      <select
+                        aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
+                        disabled={!canManageRoles || saving}
+                        value={selectedRole}
+                        onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
+                      >
+                        {staffRoleOptions.filter((option) => (
+                          canRestoreDeleted || option !== 'owner' || option === storedRole
+                        )).map((option) => (
+                          <option key={option} value={option}>{staffRoleName(option, text)}</option>
+                        ))}
+                      </select>
+                      {canDeleteProfileAccount(item) && (
                         <button
-                          className="primary"
-                          disabled={!canEditLoyaltyPoints || saving}
-                          type="button"
-                          onClick={() => updateProfileLoyaltyPoints(item.id, selectedLoyaltyPoints)}
-                        >
-                          {text.actions.save}
-                        </button>
-                        <button
-                          className="secondary"
+                          className="danger small-button staff-role-delete-button"
                           disabled={saving}
                           type="button"
-                          onClick={() => clearStagedProfileLoyaltyPoints(item.id)}
+                          onClick={() => openProfileDeleteDialog(item)}
                         >
-                          {text.actions.cancel}
+                          {text.actions.deleteAccount}
                         </button>
-                      </div>
-                    )}
-                    <select
-                      aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
-                      disabled={!canManageRoles || saving}
-                      value={selectedRole}
-                      onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
-                    >
-                      {staffRoleOptions.filter((option) => (
-                        canRestoreDeleted || option !== 'owner' || option === storedRole
-                      )).map((option) => (
-                        <option key={option} value={option}>{staffRoleName(option, text)}</option>
-                      ))}
-                    </select>
+                      )}
+                    </div>
                     {hasPendingRoleChange && (
                       <div className="staff-role-actions">
                         <button
@@ -7612,16 +7526,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           {text.actions.cancel}
                         </button>
                       </div>
-                    )}
-                    {canDeleteProfileAccount(item) && (
-                      <button
-                        className="danger small-button staff-role-delete-button"
-                        disabled={saving}
-                        type="button"
-                        onClick={() => openProfileDeleteDialog(item)}
-                      >
-                        {text.actions.deleteAccount}
-                      </button>
                     )}
                     {rowFeedback && (
                       <small className={`staff-role-feedback ${rowFeedback.tone}`}>
