@@ -218,6 +218,7 @@ export const ja = {
   expandDetails: '展開',
   hideDetails: '隠す',
   confirmPlayedGame: 'プレイ済みゲーム確認',
+  playedGameConfirmed: 'プレイ済みゲーム確認済み',
   confirmedPlayedGame: 'プレイゲーム保存済み。',
   playedGame: 'プレイゲーム',
   notConfirmed: '未確認',

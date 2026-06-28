@@ -218,6 +218,7 @@ export const vi = {
   expandDetails: 'Mở ra',
   hideDetails: 'Ẩn',
   confirmPlayedGame: 'Xác nhận game chơi',
+  playedGameConfirmed: 'Đã xác nhận game chơi',
   confirmedPlayedGame: 'Đã lưu game chơi.',
   playedGame: 'Game đã chơi',
   notConfirmed: 'Chưa xác nhận',

@@ -218,6 +218,7 @@ export const fr = {
   expandDetails: 'Ouvrir',
   hideDetails: 'Masquer',
   confirmPlayedGame: 'Confirmer jeu joué',
+  playedGameConfirmed: 'Jeu joué confirmé',
   confirmedPlayedGame: 'Jeu joué sauvé.',
   playedGame: 'Jeu joué',
   notConfirmed: 'Non confirmé',

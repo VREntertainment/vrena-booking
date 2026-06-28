@@ -218,6 +218,7 @@ export const ko = {
   expandDetails: '펼치기',
   hideDetails: '숨김',
   confirmPlayedGame: '플레이 게임 확인',
+  playedGameConfirmed: '플레이 게임 확인됨',
   confirmedPlayedGame: '플레이 게임 저장됨.',
   playedGame: '플레이 게임',
   notConfirmed: '미확인',

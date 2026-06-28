@@ -9743,6 +9743,7 @@ function handleSessionDateChange(value: string) {
                 const canMutatePastSession = !isPast || canManage
                 const coverGame = sessionCoverGame(session)
                 const confirmedGameDraft = confirmedGameDrafts[session.id] ?? session.confirmed_game_id ?? ''
+                const confirmedGameSaved = Boolean(session.confirmed_game_id) && confirmedGameDraft === session.confirmed_game_id
                 const confirmedGameOptions = isTicket || isChallenge
                   ? games
                   : session.game_options
@@ -9991,8 +9992,8 @@ function handleSessionDateChange(value: string) {
 
                     {canManage && (
                       <div className="confirm-game-panel">
-                        <label>{text.playedGame}</label>
                         <select
+                          aria-label={text.playedGame}
                           value={confirmedGameDraft}
                           onChange={(event) => {
                             setConfirmedGameDrafts((current) => ({ ...current, [session.id]: event.target.value }))
@@ -10009,9 +10010,8 @@ function handleSessionDateChange(value: string) {
                           type="button"
                           onClick={() => confirmPlayedGame(session)}
                         >
-                          {text.confirmPlayedGame}
+                          {confirmedGameSaved ? text.playedGameConfirmed : text.confirmPlayedGame}
                         </button>
-                        {renderGameGuideTrigger((confirmedGameDraft || coverGame.id) as GameId, 'confirm-game-guide-link')}
                       </div>
                     )}
 
@@ -10857,33 +10857,21 @@ function handleSessionDateChange(value: string) {
                                 <span>{game.title}</span>
                                 <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                               </button>
-                              {renderGameGuideTrigger(game.id, 'game-card-guide')}
                             </div>
                           )
                         })}
                       </div>
                     )}
 
-                    {!isPast && !isChallenge && (
+                    {!isPast && !isChallenge && alreadyJoined && !isSessionOwner && canMutatePastSession && (
                     <div className="join-row">
-                      {alreadyJoined && !isSessionOwner && canMutatePastSession && (
-                        <button
-                          className={busySessionId === session.id ? 'secondary loading' : 'secondary'}
-                          disabled={busySessionId === session.id}
-                          onClick={() => leaveSession(session)}
-                          type="button"
-                        >
-                          {text.leaveSession}
-                        </button>
-                      )}
                       <button
-                        aria-label={text.share}
-                        className={sharedKey === session.id ? 'share-icon-button expanded-mobile-share copied' : 'share-icon-button expanded-mobile-share'}
-                        title={text.share}
+                        className={busySessionId === session.id ? 'secondary loading' : 'secondary'}
+                        disabled={busySessionId === session.id}
+                        onClick={() => leaveSession(session)}
                         type="button"
-                        onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
                       >
-                        <ShareSymbol />
+                        {text.leaveSession}
                       </button>
                     </div>
                     )}

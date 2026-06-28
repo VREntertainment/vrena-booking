@@ -218,6 +218,7 @@ export const it = {
   expandDetails: 'Apri',
   hideDetails: 'Nascondi',
   confirmPlayedGame: 'Conferma gioco',
+  playedGameConfirmed: 'Gioco confermato',
   confirmedPlayedGame: 'Gioco salvato.',
   playedGame: 'Gioco fatto',
   notConfirmed: 'Non ok',

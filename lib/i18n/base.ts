@@ -216,6 +216,7 @@ export const en = {
   expandDetails: 'Expand',
   hideDetails: 'Hide',
   confirmPlayedGame: 'Confirm Played Game',
+  playedGameConfirmed: 'Played game confirmed',
   confirmedPlayedGame: 'Played game saved.',
   playedGame: 'Played game',
   notConfirmed: 'Not confirmed',
