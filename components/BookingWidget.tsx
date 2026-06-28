@@ -10047,7 +10047,7 @@ function handleSessionDateChange(value: string) {
                         <div className="form-grid">
                           <div className="full">
                             <label>{text.sessionName} <span className="required">*</span></label>
-                            <input value={editSessionName} onChange={(event) => setEditSessionName(event.target.value)} />
+                            <input data-testid="edit-session-name" value={editSessionName} onChange={(event) => setEditSessionName(event.target.value)} />
                           </div>
                           {isAdmin && (
                             <div className="full ticket-admin-box">
@@ -10297,6 +10297,7 @@ function handleSessionDateChange(value: string) {
                         </div>
                         <div className="action-row">
                           <button
+                            data-testid="edit-session-submit"
                             className={isUpdatingSession ? 'primary loading create-button' : 'primary create-button'}
                             disabled={isUpdatingSession}
                             type="button"
@@ -11421,7 +11422,7 @@ function handleSessionDateChange(value: string) {
             <div className="form-grid">
               <div className="full">
                 <label>{text.sessionName} <span className="required">*</span></label>
-                <input placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
+                <input data-testid="create-session-name" placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
               </div>
               <div className="full session-mode-row">
                 <div>
@@ -11547,7 +11548,7 @@ function handleSessionDateChange(value: string) {
                 </div>
                 <div>
                   <label>{text.availableTime} <span className="required">*</span></label>
-                  <select value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
+                  <select data-testid="create-session-time" value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
                     <option value="">{text.chooseTime}</option>
                     {timeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -11558,7 +11559,7 @@ function handleSessionDateChange(value: string) {
                 </div>
                 <div>
                   <label>{text.duration}</label>
-                  <select value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
+                  <select data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
                     {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
                       <option value={duration} key={duration}>
                         {duration} min
@@ -11570,7 +11571,7 @@ function handleSessionDateChange(value: string) {
               <div className="full session-capacity-row">
                 <div>
                   <label>{text.maxPlayers}</label>
-                  <select value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
+                  <select data-testid="create-session-max-players" value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
                     {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
                       <option value={count} key={count}>
                         {count} player{count === 1 ? '' : 's'}
@@ -11630,7 +11631,7 @@ function handleSessionDateChange(value: string) {
               </div>
             </div>
 
-            <button className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
+            <button data-testid="create-session-submit" className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
               {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
             </button>
               </div>
