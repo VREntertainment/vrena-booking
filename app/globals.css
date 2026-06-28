@@ -5114,6 +5114,15 @@ body {
   border-radius: 8px;
 }
 
+.app .ticket-loyalty-zero {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #65727a;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .app .ticket-total-line {
   align-content: center;
 }
@@ -10269,7 +10278,7 @@ body {
     border-color: rgba(98, 211, 255, 0.28);
   }
 
-  .app .ticket-service-card span, .app .ticket-service-card small, .app .ticket-price-summary span, .app .ticket-price-summary small, .app .ticket-confirmation span, .app .ticket-admin-head span, .app .ticket-session-summary span {
+  .app .ticket-service-card span, .app .ticket-service-card small, .app .ticket-price-summary span, .app .ticket-price-summary small, .app .ticket-confirmation span, .app .ticket-admin-head span, .app .ticket-session-summary span, .app .ticket-loyalty-zero {
     color: #aeb9bd;
   }
 

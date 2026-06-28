@@ -75,6 +75,7 @@ export const ja = {
   ticketLoyaltyRedeemRate: '1ポイント = {value}',
   ticketLoyaltyLoading: 'ポイントを確認中...',
   ticketLoyaltyUnavailable: '現在、有効な交換レートはありません。',
+  ticketLoyaltyZeroMessage: '今予約すると支払い後にポイント獲得。次回のチケットで料金を少し軽くできます。ちょっとした良いトリック。',
   ticketUseLoyaltyPoints: 'このチケットにポイントを使う',
   ticketLoyaltyPointsToUse: '使うポイント',
   ticketLoyaltyMax: 'このチケットで最大{points}ポイントまで使えます。',
