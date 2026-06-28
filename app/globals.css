@@ -4862,9 +4862,10 @@ body {
 .app .compact-session-title-row h3 {
   min-width: 0;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
   font-size: 18px;
 }
 
