@@ -475,15 +475,17 @@ body {
   padding: 0;
 }
 
-.app .share-button svg,
-.app .share-icon-button svg {
+.app .share-symbol-image {
+  display: block;
   width: 26px;
   height: 26px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  background: center / contain no-repeat url('/share-arrow-light.png');
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .share-symbol-image {
+    background-image: url('/share-arrow-dark.png');
+  }
 }
 
 .app .share-icon-button.copied {
@@ -5226,7 +5228,7 @@ body {
   height: 34px;
 }
 
-.app .compact-share svg {
+.app .compact-share .share-symbol-image {
   width: 24px;
   height: 24px;
 }
@@ -6802,6 +6804,16 @@ body {
 .app button:focus-visible {
   outline: 3px solid rgba(48, 89, 255, 0.28);
   outline-offset: 2px;
+}
+
+.app .share-button:focus,
+.app .share-icon-button:focus {
+  outline: none;
+}
+
+.app .share-button:focus-visible .share-symbol-image,
+.app .share-icon-button:focus-visible .share-symbol-image {
+  filter: drop-shadow(0 0 0 rgba(48, 89, 255, 0.6)) drop-shadow(0 0 4px rgba(48, 89, 255, 0.45));
 }
 
 .app button:disabled {
