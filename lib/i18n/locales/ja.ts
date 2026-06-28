@@ -379,6 +379,7 @@ export const ja = {
   thirdPlace: '🥉 3位',
   stats: 'プレイヤー統計',
   gamesCheckedIn: 'チェックインゲーム',
+  loyaltyPoints: 'ロイヤルティポイント',
   wins: '勝ち',
   totalScore: '総スコア',
   adminTotalScore: '管理者用総スコア',

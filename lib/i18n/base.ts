@@ -377,6 +377,7 @@ export const en = {
   thirdPlace: '🥉 3rd',
   stats: 'Player stats',
   gamesCheckedIn: 'games checked in',
+  loyaltyPoints: 'loyalty points',
   wins: 'wins',
   totalScore: 'total score',
   adminTotalScore: 'Admin total score',

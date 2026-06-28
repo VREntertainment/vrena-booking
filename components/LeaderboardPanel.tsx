@@ -19,6 +19,7 @@ export type LeaderboardPlayer = {
   baseTotalScore: number
   totalScore: number
   scoreAdjustment: number
+  loyaltyPoints?: number
   totalAccuracy: number
   accuracyCount: number
   totalProjectiles: number

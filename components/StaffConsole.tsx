@@ -68,6 +68,7 @@ export type StaffProfile = {
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
   role?: string | null
+  loyalty_points_total?: number | null
   is_seed_demo?: boolean | null
   seed_batch?: string | null
 }
@@ -127,6 +128,9 @@ type StaffLoyaltyRule = {
   points_value: number
   spend_amount: number
   min_order_total: number
+  redeem_value_vnd_per_point: number
+  earn_trigger: 'session_payment_confirmed'
+  rounding_rule: 'floor_whole_points'
   point_expiry_days: number | null
   valid_from: string
   valid_until: string | null
@@ -494,6 +498,7 @@ const staffConsoleText = {
       reject: 'Reject',
       remove: 'Remove',
       restore: 'Restore',
+      save: 'Save',
       cancel: 'Cancel',
       cancelShift: 'Cancel shift',
       confirmDeleteAccount: 'Delete account',
@@ -760,8 +765,12 @@ const staffConsoleText = {
       personalEmail: 'Personal e-mail',
       personalPhone: 'Personal phone',
       players: 'Players',
+      loyaltyPoints: 'Loyalty points',
       pointsEarned: 'Points earned',
       pointsExpireAfterDays: 'Points expire after days',
+      redeemValue: 'Redeem value',
+      earnTrigger: 'Earn trigger',
+      roundingRule: 'Rounding',
       privateSession: 'Private session',
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
@@ -859,7 +868,11 @@ const staffConsoleText = {
       gameGuideHelp: 'Select a language, then edit the summary, GamePlay, and tips for this game only. Use one line per GamePlay item or tip.',
       gameSaved: 'Game saved.',
       loyaltyIntro: 'Define how customers earn points. Redemption will use these rules later.',
+      loyaltyEarnTriggerHelp: 'Points are awarded only after payment is confirmed on a session-linked order.',
+      loyaltyRoundingHelp: 'Airline-style rounding: customer-facing paid price earns whole points, rounded down.',
       loyaltyRuleSaved: 'Loyalty rule saved.',
+      loyaltyPointsUpdated: 'Loyalty points updated.',
+      loyaltyPointsUpdating: 'Updating loyalty points...',
       leaveSaved: 'Leave request saved.',
       leaveUpdated: 'Leave request updated.',
       noAttendanceLogs: 'No clock-in logs for this week.',
@@ -1036,6 +1049,7 @@ const staffConsoleText = {
       reject: 'Từ chối',
       remove: 'Xóa',
       restore: 'Khôi phục',
+      save: 'Lưu',
       cancel: 'Hủy',
       cancelShift: 'Hủy ca',
       confirmDeleteAccount: 'Xóa tài khoản',
@@ -1302,8 +1316,12 @@ const staffConsoleText = {
       personalEmail: 'Email cá nhân',
       personalPhone: 'SĐT cá nhân',
       players: 'Người chơi',
+      loyaltyPoints: 'Điểm thưởng',
       pointsEarned: 'Điểm nhận được',
       pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
+      redeemValue: 'Giá trị đổi điểm',
+      earnTrigger: 'Điều kiện cộng điểm',
+      roundingRule: 'Làm tròn',
       privateSession: 'Phiên riêng tư',
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
@@ -1401,7 +1419,11 @@ const staffConsoleText = {
       gameGuideHelp: 'Chọn ngôn ngữ, rồi sửa tóm tắt, GamePlay và mẹo chỉ cho trò chơi này. Mỗi dòng là một mục GamePlay hoặc mẹo.',
       gameSaved: 'Đã lưu trò chơi.',
       loyaltyIntro: 'Thiết lập cách khách hàng nhận điểm. Đổi điểm sẽ dùng các quy tắc này sau.',
+      loyaltyEarnTriggerHelp: 'Chỉ cộng điểm khi thanh toán đã xác nhận trên đơn có liên kết phiên.',
+      loyaltyRoundingHelp: 'Làm tròn kiểu hàng không: tính trên giá khách trả và làm tròn xuống thành điểm nguyên.',
       loyaltyRuleSaved: 'Đã lưu quy tắc điểm.',
+      loyaltyPointsUpdated: 'Đã cập nhật điểm thưởng.',
+      loyaltyPointsUpdating: 'Đang cập nhật điểm thưởng...',
       leaveSaved: 'Đã lưu yêu cầu nghỉ phép.',
       leaveUpdated: 'Đã cập nhật yêu cầu nghỉ phép.',
       noAttendanceLogs: 'Chưa có chấm công trong tuần này.',
@@ -2307,6 +2329,9 @@ const defaultLoyaltyForm = () => ({
   points_value: 1,
   spend_amount: 100000,
   min_order_total: 0,
+  redeem_value_vnd_per_point: 0,
+  earn_trigger: 'session_payment_confirmed' as StaffLoyaltyRule['earn_trigger'],
+  rounding_rule: 'floor_whole_points' as StaffLoyaltyRule['rounding_rule'],
   point_expiry_days: '365',
   valid_from: todayString(),
   valid_until: '',
@@ -2429,7 +2454,7 @@ const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, full_name, nickname, email, phone, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileSelect = 'id, full_name, nickname, email, phone, role, loyalty_points_total, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
@@ -4096,6 +4121,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
+  const canEditLoyaltyPoints = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
   const isOwnerOrAdmin = role === 'owner' || role === 'admin'
@@ -4168,6 +4194,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [roleSort, setRoleSort] = useState<StaffRoleSort>('name_asc')
   const [roleHelpOpen, setRoleHelpOpen] = useState(false)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, StaffRole>>({})
+  const [pendingLoyaltyPointChanges, setPendingLoyaltyPointChanges] = useState<Record<string, string>>({})
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
@@ -4655,6 +4682,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         const rows = (rpcResult.data as StaffProfile[]).filter((item) => !isDemoProfile(item))
         setProfiles(await hydrateProfileAvatars(rows))
         setPendingRoleChanges({})
+        setPendingLoyaltyPointChanges({})
         return
       }
 
@@ -4671,6 +4699,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       if (error) throw new Error(error.message)
       setProfiles(((data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
       setPendingRoleChanges({})
+      setPendingLoyaltyPointChanges({})
     }, force)
   }
 
@@ -5182,6 +5211,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       points_value: Number(loyaltyForm.points_value) || 0,
       spend_amount: Number(loyaltyForm.spend_amount) || 0,
       min_order_total: Number(loyaltyForm.min_order_total) || 0,
+      redeem_value_vnd_per_point: Number(loyaltyForm.redeem_value_vnd_per_point) || 0,
+      earn_trigger: loyaltyForm.earn_trigger,
+      rounding_rule: loyaltyForm.rounding_rule,
       point_expiry_days: loyaltyForm.point_expiry_days ? Number(loyaltyForm.point_expiry_days) : null,
       valid_from: loyaltyForm.valid_from,
       valid_until: loyaltyForm.valid_until || null,
@@ -5761,6 +5793,65 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     })
   }
 
+  function stageProfileLoyaltyPoints(profileId: string, value: string) {
+    setPendingLoyaltyPointChanges((current) => ({ ...current, [profileId]: value }))
+  }
+
+  function clearStagedProfileLoyaltyPoints(profileId: string) {
+    setPendingLoyaltyPointChanges((current) => {
+      const next = { ...current }
+      delete next[profileId]
+      return next
+    })
+  }
+
+  async function updateProfileLoyaltyPoints(profileId: string, value: string) {
+    if (!canEditLoyaltyPoints) return
+    const points = Number(value)
+    if (!Number.isInteger(points) || points < 0) {
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'error', message: text.messages.loyaltyPointsUpdated },
+      }))
+      return
+    }
+
+    setSaving(true)
+    setStatus(text.messages.loyaltyPointsUpdating)
+    setRoleSaveFeedback((current) => ({
+      ...current,
+      [profileId]: { tone: 'saving', message: text.messages.loyaltyPointsUpdating },
+    }))
+
+    const { data, error } = await supabase.rpc('set_profile_loyalty_points', {
+      p_profile_id: profileId,
+      p_points: points,
+      p_reason: 'Staff Console manual balance edit',
+    })
+
+    if (error) {
+      setStatus(error.message)
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'error', message: error.message },
+      }))
+    } else {
+      const savedRow = Array.isArray(data) ? data[0] : data
+      const savedPoints = Number((savedRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? points)
+      const nextPoints = Number.isFinite(savedPoints) ? savedPoints : points
+      setProfiles((items) => items.map((item) => item.id === profileId ? { ...item, loyalty_points_total: nextPoints } : item))
+      clearStagedProfileLoyaltyPoints(profileId)
+      markStaffDataStale('profiles')
+      setStatus(text.messages.loyaltyPointsUpdated)
+      setRoleSaveFeedback((current) => ({
+        ...current,
+        [profileId]: { tone: 'success', message: text.messages.loyaltyPointsUpdated },
+      }))
+    }
+
+    setSaving(false)
+  }
+
   function canDeleteProfileAccount(item: StaffProfile) {
     if (!canManageRoles) return false
     if (item.id === profile?.id) return false
@@ -5936,6 +6027,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       points_value: rule.points_value,
       spend_amount: rule.spend_amount,
       min_order_total: rule.min_order_total,
+      redeem_value_vnd_per_point: rule.redeem_value_vnd_per_point ?? 0,
+      earn_trigger: rule.earn_trigger ?? 'session_payment_confirmed',
+      rounding_rule: rule.rounding_rule ?? 'floor_whole_points',
       point_expiry_days: rule.point_expiry_days === null ? '' : String(rule.point_expiry_days),
       valid_from: rule.valid_from,
       valid_until: rule.valid_until || '',
@@ -7268,6 +7362,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label>{text.labels.pointsEarned}<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
                   <label>{text.labels.perVndSpent}<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
                   <label>{text.labels.minimumSpend}<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
+                  <label>{text.labels.redeemValue}<input min={0} type="number" value={loyaltyForm.redeem_value_vnd_per_point} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, redeem_value_vnd_per_point: Number(event.target.value) })} /></label>
+                  <label>{text.labels.earnTrigger}<input readOnly value={text.messages.loyaltyEarnTriggerHelp} /></label>
+                  <label>{text.labels.roundingRule}<input readOnly value={text.messages.loyaltyRoundingHelp} /></label>
                   <label>{text.labels.pointsExpireAfterDays}<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
                   <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.loyaltyValidFrom} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
                   <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.loyaltyValidUntil} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
@@ -7359,6 +7456,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       {rule.points_value} pts
                       {rule.calculation_type === 'per_vnd_spent' ? ` / ${formatVnd(rule.spend_amount)}` : ''}
                       {' · '}
+                      {text.labels.redeemValue} {formatVnd(rule.redeem_value_vnd_per_point ?? 0)}
+                      {' · '}
                       {rule.point_expiry_days ? `${rule.point_expiry_days} ${text.days}` : text.noExpiry}
                       {' · '}
                       {rule.active ? text.active : text.inactive}
@@ -7428,6 +7527,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               const storedRole = storedRoleValue(item.role, item.email)
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
+              const storedLoyaltyPoints = Math.max(0, Math.floor(Number(item.loyalty_points_total ?? 0) || 0))
+              const selectedLoyaltyPoints = pendingLoyaltyPointChanges[item.id] ?? String(storedLoyaltyPoints)
+              const hasPendingLoyaltyPointChange = selectedLoyaltyPoints !== String(storedLoyaltyPoints)
               const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
               const rowFeedback = roleSaveFeedback[item.id]
               const rolePersonContent = (
@@ -7457,6 +7559,38 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     </div>
                   )}
                   <div className="staff-role-action-cell">
+                    <label className="staff-loyalty-points-edit">
+                      <span className="staff-field-label">{text.labels.loyaltyPoints}</span>
+                      <input
+                        disabled={!canEditLoyaltyPoints || saving}
+                        inputMode="numeric"
+                        min={0}
+                        step={1}
+                        type="number"
+                        value={selectedLoyaltyPoints}
+                        onChange={(event) => stageProfileLoyaltyPoints(item.id, event.target.value)}
+                      />
+                    </label>
+                    {hasPendingLoyaltyPointChange && (
+                      <div className="staff-role-actions">
+                        <button
+                          className="primary"
+                          disabled={!canEditLoyaltyPoints || saving}
+                          type="button"
+                          onClick={() => updateProfileLoyaltyPoints(item.id, selectedLoyaltyPoints)}
+                        >
+                          {text.actions.save}
+                        </button>
+                        <button
+                          className="secondary"
+                          disabled={saving}
+                          type="button"
+                          onClick={() => clearStagedProfileLoyaltyPoints(item.id)}
+                        >
+                          {text.actions.cancel}
+                        </button>
+                      </div>
+                    )}
                     <select
                       aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
                       disabled={!canManageRoles || saving}
