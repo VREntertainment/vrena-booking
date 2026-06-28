@@ -12082,13 +12082,6 @@ function handleSessionDateChange(value: string) {
                           userId={userId}
                         />
                       </LocalErrorBoundary>
-                      {canManageSelectedClub && (
-                        <div className="club-ranking-box">
-                          <strong>{text.clubRankingSystem}</strong>
-                          <span>{text.clubDefaultRanking}</span>
-                          <p className="muted">{text.clubCustomRankingHint}</p>
-                        </div>
-                      )}
                       {selectedClubApprovedMembers.length === 0 && <p className="notice">{text.noTrophiesYet}</p>}
                     </>
                   )}
