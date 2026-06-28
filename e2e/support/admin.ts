@@ -37,14 +37,15 @@ export async function loginAsAdmin(page: Page) {
   await stubHCaptcha(page)
   await page.goto('/book')
 
-  await page.getByRole('button', { name: /no profile|click login|profile|phantom/i }).first().click()
-  await expect(page.getByRole('button', { name: /^Log In$/i })).toBeVisible()
-  await expect(page.locator('.captcha-box')).toBeVisible()
+  await page.locator('.profile-chip').click()
+  const profileSection = page.locator('section').filter({ has: page.getByRole('heading', { name: /profile/i }) }).first()
+  await expect(profileSection).toBeVisible()
+  await expect(profileSection.locator('.captcha-box')).toBeVisible()
   await page.waitForFunction(() => Boolean((window as Window & { hcaptcha?: unknown }).hcaptcha))
 
-  await page.locator('input[type="email"]').fill(adminEmail)
-  await page.locator('input[type="password"]').fill(adminPassword)
-  await page.getByRole('button', { name: /^Log In$/i }).click()
+  await profileSection.locator('input[type="email"]').fill(adminEmail)
+  await profileSection.locator('input[type="password"]').fill(adminPassword)
+  await profileSection.getByRole('button', { name: /^Log In$/i }).last().click()
 
   await expect(page.getByRole('button', { name: /log out/i })).toBeVisible()
 }

@@ -10,6 +10,18 @@ Required environment variables:
 
 Do not use production credentials. The test env guard blocks the known production hosts.
 
+Create the dedicated admin on local/staging only:
+
+```sql
+select public.vrena_e2e_prepare_admin(
+  'e2e-admin@vrena.local',
+  'replace-with-a-long-test-only-password',
+  true
+);
+```
+
+The helper lives in `supabase/e2e/create-admin-user.sql`. It is intentionally not a migration.
+
 Run locally:
 
 ```bash
@@ -26,9 +38,9 @@ E2E_ENABLE_WEBKIT=1 npm run test:e2e
 
 ## CAPTCHA and OTP Strategy
 
-The current login flow supports email and password. The Playwright helper stubs the browser hCaptcha script so local/staging UI tests can reach the real Supabase password login flow without manual CAPTCHA interaction.
+The current login flow supports email and password. The Playwright helper stubs the browser hCaptcha script so local UI tests can reach the real Supabase password login flow without manual CAPTCHA interaction when server-side CAPTCHA enforcement is disabled.
 
-If Supabase CAPTCHA enforcement is enabled server-side for the staging project, use a staging-only hCaptcha test key or disable CAPTCHA only for that staging test project. Do not add a production bypass.
+If Supabase CAPTCHA enforcement is enabled server-side for the staging project, use a staging-only hCaptcha test key or disable CAPTCHA only for that staging test project. Creating the SQL user alone is not enough when Supabase rejects missing or fake CAPTCHA tokens. Do not add a production bypass.
 
 If the app ever moves to OTP-only login, use a test-only strategy with all of these gates:
 
