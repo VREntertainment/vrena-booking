@@ -146,7 +146,7 @@ export const ko = {
   sessionTariffGroups: '아레나 1개: 20분마다 4자리. 5-8명: 10% 할인. 9-16명: 15% 할인.',
   sessionOfferLimit: '예약당 오퍼 또는 바우처는 하나만 사용할 수 있습니다.',
   sessionTariffPayment: '결제는 리셉션에서 현장 결제합니다. 도움이 필요하신가요?',
-  sessionTariffDisclaimer: '참고: 예약 시간은 그룹 전체가 확보한 시간입니다. 인원이 많은 그룹은 예약된 아레나 시간 안에서 번갈아 플레이합니다. 실제 1인 플레이 시간은 인원수와 선택한 예약 시간에 따라 달라질 수 있습니다. 가격은 인원수만이 아니라 예약된 아레나 시간을 기준으로 계산됩니다.',
+  sessionTariffDisclaimer: '요금은 1-4명까지 선택한 인원수로 계산하고, 더 큰 그룹은 예약된 아레나 시간을 기준으로 계산합니다. 포인트는 결제 확인 후 지급되며 고객이 실제로 지불한 금액을 기준으로 정수 포인트로 내림합니다.',
   zaloContact: 'Zalo로 문의',
   softOpeningHighlights: '소프트 오픈 하이라이트',
   searchPlaceholder: '세션명, 프로필명, 게임, 비공개 코드 검색',

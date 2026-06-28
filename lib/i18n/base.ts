@@ -144,7 +144,7 @@ export const en = {
   sessionTariffGroups: 'One arena: 4 spots per 20 min. 5-8 players: 10% off. 9-16 players: 15% off.',
   sessionOfferLimit: 'Only one offer or voucher can be used per booking.',
   sessionTariffPayment: 'Payment is made onsite at reception. Need help?',
-  sessionTariffDisclaimer: 'Please note: The booking duration is the time reserved for the whole group. For larger groups, players rotate during the reserved arena time. The actual playtime per person may vary depending on the number of players and the selected booking duration. The price is calculated based on the reserved arena time, not only the number of players.',
+  sessionTariffDisclaimer: 'Price is calculated from the selected player count for 1-4 players, then from reserved arena time for larger groups. Loyalty points are awarded after payment is confirmed, based on the customer-facing paid price, rounded down to whole points.',
   zaloContact: 'Contact us on Zalo',
   softOpeningHighlights: 'Soft Opening Highlights',
   searchPlaceholder: 'Search session name, profile name, game, private code',
