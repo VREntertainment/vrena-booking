@@ -175,7 +175,7 @@ export default function TicketBookingView({
 
             <div className="ticket-form-panel">
               <div className="form-grid compact-form-grid ticket-form-grid">
-                <div>
+                <div className="ticket-control ticket-control-date">
                   <label>{text.date} <span className="required">*</span></label>
                   <ShortDateInput
                     ariaLabel={text.date}
@@ -185,7 +185,7 @@ export default function TicketBookingView({
                     value={ticketDate}
                   />
                 </div>
-                <div>
+                <div className="ticket-control ticket-control-time">
                   <label>{text.availableTime} <span className="required">*</span></label>
                   <select value={ticketTime} onChange={(event) => onTicketTimeChange(event.target.value)}>
                     <option value="">{text.chooseTime}</option>
@@ -196,7 +196,7 @@ export default function TicketBookingView({
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="ticket-control ticket-control-duration">
                   <label>{text.duration}</label>
                   <select
                     disabled={ticketDurationOptions.length === 0}
@@ -213,7 +213,7 @@ export default function TicketBookingView({
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="ticket-control ticket-control-players">
                   <label>{text.numberOfPlayers} <span className="required">*</span></label>
                   <select value={ticketPlayers} onChange={(event) => onTicketPlayersChange(Number(event.target.value))}>
                     {ticketPlayerOptions.map((count) => (
