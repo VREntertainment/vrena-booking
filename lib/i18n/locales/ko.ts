@@ -84,6 +84,8 @@ export const ko = {
   ticketLoyaltyLoading: '포인트 확인 중...',
   ticketLoyaltyUnavailable: '현재 활성화된 사용 금액이 없습니다.',
   ticketLoyaltyZeroMessage: '지금 예약하면 결제 후 포인트가 쌓이고, 다음 티켓 값을 살짝 줄일 수 있어요. 꽤 괜찮은 장난이죠.',
+  ticketLoyaltyEarnEstimate: '이 티켓은 결제 확인 후 {points}포인트를 적립하고, 다음번에 {value}만큼 사용할 수 있어요.',
+  ticketLoyaltyEarnZero: '현재 설정에서는 이 티켓이 0포인트를 적립해요. 예약을 바꾸면 이 작은 카운터도 따라갑니다.',
   ticketUseLoyaltyPoints: '이 티켓에 포인트 사용',
   ticketLoyaltyPointsToUse: '사용할 포인트',
   ticketLoyaltyMax: '이 티켓에 최대 {points}포인트 사용 가능.',

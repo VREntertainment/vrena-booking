@@ -84,6 +84,8 @@ export const fr = {
   ticketLoyaltyLoading: 'Vérification des points...',
   ticketLoyaltyUnavailable: 'Aucune valeur de redemption active pour le moment.',
   ticketLoyaltyZeroMessage: 'Réserve maintenant, gagne des points après paiement, et laisse-les alléger ta prochaine note. Petit tour malin.',
+  ticketLoyaltyEarnEstimate: 'Ce ticket rapporte {points} points après confirmation du paiement, soit {value} pour la prochaine fois.',
+  ticketLoyaltyEarnZero: 'Ce ticket rapporte 0 point avec les réglages actuels. Change la réservation et ce petit compteur suit.',
   ticketUseLoyaltyPoints: 'Utiliser des points fidélité pour ce ticket',
   ticketLoyaltyPointsToUse: 'Points à utiliser',
   ticketLoyaltyMax: 'Max {points} points pour ce ticket.',
