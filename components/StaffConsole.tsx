@@ -2891,18 +2891,6 @@ function paymentStatusFromAmount(total: number, paidTotal: number): StaffOrder['
   return paidTotal >= total ? 'paid' : 'partially_paid'
 }
 
-function shouldFallbackRoleUpdate(error: { code?: string; message?: string } | null, savedRole: StaffRole, nextRole: StaffRole) {
-  if (!error && savedRole !== nextRole) return true
-  const message = (error?.message || '').toLowerCase()
-  return Boolean(error && (
-    error.code === 'PGRST202'
-    || message.includes('schema cache')
-    || message.includes('could not find the function')
-    || (message.includes('digest(') && message.includes('does not exist'))
-    || message.includes('set_staff_profile_role')
-  ))
-}
-
 function normalizeTime(value: string | null | undefined) {
   return (value || '').slice(0, 5)
 }
@@ -6007,25 +5995,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       p_role: nextRole,
     })
 
-    let savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || '')
-    let saveError = error?.message || ''
-
-    if (shouldFallbackRoleUpdate(error, savedRole, nextRole)) {
-      const directUpdate = await supabase
-        .from('profiles')
-        .update({ role: nextRole, updated_at: new Date().toISOString() })
-        .eq('id', profileId)
-        .is('deleted_at', null)
-        .select('id, role')
-        .maybeSingle()
-
-      if (directUpdate.error) {
-        saveError = `${error?.message ? `${error.message} ` : ''}${directUpdate.error.message}`.trim()
-      } else {
-        savedRole = storedRoleValue(directUpdate.data?.role || '')
-        saveError = ''
-      }
-    }
+    const savedRole = storedRoleValue((data as { role?: string | null } | null)?.role || '')
+    const saveError = error?.message || ''
 
     if (saveError) {
       const message = saveError || text.messages.roleSaveFailed
