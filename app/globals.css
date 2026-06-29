@@ -1766,46 +1766,66 @@ body {
 
 .app .staff-customer-invite-panel {
   display: grid;
-  gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
-  border-radius: 8px;
-  background: #f8fafb;
-  padding: 10px;
-  margin: 4px 0 10px;
+  gap: 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 10px;
 }
 
 .app .staff-customer-invite-copy {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: baseline;
   flex-wrap: wrap;
 }
 
 .app .staff-customer-invite-copy strong {
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.15;
 }
 
 .app .staff-customer-invite-copy span {
   color: #637075;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .app .staff-customer-invite-form {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(170px, max-content);
-  gap: 8px;
+  grid-template-columns: minmax(130px, 1fr) minmax(180px, 1.15fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) max-content;
+  gap: 7px;
   align-items: end;
 }
 
 .app .staff-customer-invite-form label {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
+  margin: 0;
+}
+
+.app .staff-customer-invite-form .staff-field-label {
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.app .staff-customer-invite-form input {
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: 15px;
+  line-height: 1.15;
 }
 
 .app .staff-customer-invite-form button {
+  align-self: end;
+  height: 38px;
   min-height: 38px;
-  padding: 7px 16px;
+  border-radius: 9px;
+  padding: 7px 13px;
+  font-size: 15px;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -9828,7 +9848,6 @@ body {
   .app .staff-price-lines,
   .app .staff-summary-grid > div,
   .app .staff-list-item,
-  .app .staff-customer-invite-panel,
   .app .staff-role-row,
   .app .staff-role-avatar,
   .app .staff-restore-row,
