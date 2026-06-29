@@ -867,6 +867,7 @@ const staffConsoleText = {
       gameSaved: 'Game saved.',
       loyaltyIntro: 'Define how customers earn points. Redemption will use these rules later.',
       loyaltyRuleSaved: 'Loyalty rule saved.',
+      loyaltySingleActiveConfirm: 'Only one loyalty rule can be active. Saving this rule will deactivate {rule} but keep it for analytics. Continue?',
       loyaltyPointsUpdated: 'Loyalty points updated.',
       loyaltyPointsUpdating: 'Updating loyalty points...',
       leaveSaved: 'Leave request saved.',
@@ -1414,6 +1415,7 @@ const staffConsoleText = {
       gameSaved: 'Đã lưu trò chơi.',
       loyaltyIntro: 'Thiết lập cách khách hàng nhận điểm. Đổi điểm sẽ dùng các quy tắc này sau.',
       loyaltyRuleSaved: 'Đã lưu quy tắc điểm.',
+      loyaltySingleActiveConfirm: 'Chỉ một quy tắc điểm được active. Lưu quy tắc này sẽ tắt {rule} nhưng vẫn giữ lại để phân tích. Tiếp tục?',
       loyaltyPointsUpdated: 'Đã cập nhật điểm thưởng.',
       loyaltyPointsUpdating: 'Đang cập nhật điểm thưởng...',
       leaveSaved: 'Đã lưu yêu cầu nghỉ phép.',
@@ -5191,7 +5193,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function saveLoyaltyRule() {
     if (!canManageConfig) return
-    setSaving(true)
     const payload = {
       rule_name: loyaltyForm.rule_name.trim(),
       game_id: loyaltyForm.game_id || null,
@@ -5209,6 +5210,18 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       notes: loyaltyForm.notes.trim() || null,
       created_by: profile?.id || null,
     }
+
+    const activeRulesToDeactivate = payload.active
+      ? loyaltyRules.filter((rule) => rule.active && rule.id !== loyaltyForm.id)
+      : []
+
+    if (activeRulesToDeactivate.length > 0) {
+      const ruleNames = activeRulesToDeactivate.map((rule) => rule.rule_name).join(', ')
+      const confirmed = window.confirm(text.messages.loyaltySingleActiveConfirm.replace('{rule}', ruleNames))
+      if (!confirmed) return
+    }
+
+    setSaving(true)
     const request = loyaltyForm.id
       ? supabase.from('staff_loyalty_rules').update(payload).eq('id', loyaltyForm.id)
       : supabase.from('staff_loyalty_rules').insert(payload)
