@@ -41,6 +41,8 @@ type AccountantExportReportId =
   | 'audit_trail'
 type StaffPaymentMethod = 'cash' | 'bank_transfer'
 type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
+type StaffDiscountDayScope = 'all' | 'weekday' | 'weekend' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+type StaffDiscountTicketType = 'all' | 'individual' | 'birthday' | 'corporate'
 type StaffAudience = 'family_friendly' | 'scary' | 'fun' | 'quest' | 'teamwork' | 'beginner_friendly' | 'competitive'
 type StaffGuideTextMap = Partial<Record<LanguageCode, string>>
 type PaymentSplitDraft = {
@@ -112,6 +114,15 @@ type StaffDiscount = {
   code: string | null
   name: string
   game_id: string | null
+  min_players: number | null
+  max_players: number | null
+  day_scope: StaffDiscountDayScope
+  time_start: string | null
+  time_end: string | null
+  ticket_type: StaffDiscountTicketType
+  min_order_total: number
+  max_discount_amount: number | null
+  per_customer_limit: number | null
   discount_type: 'percentage' | 'fixed_amount' | 'free_ticket' | 'birthday' | 'resident' | 'group'
   value: number
   valid_from: string
@@ -437,6 +448,9 @@ const staffWeekdayLabels = {
   vi: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
 } satisfies Record<StaffConsoleLanguage, string[]>
 
+const staffDiscountDayScopes: StaffDiscountDayScope[] = ['all', 'weekday', 'weekend', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const staffDiscountTicketTypes: StaffDiscountTicketType[] = ['all', 'individual', 'birthday', 'corporate']
+
 const staffConsoleText = {
   en: {
     accessRequired: 'Staff access required.',
@@ -626,6 +640,24 @@ const staffConsoleText = {
       weekday: 'weekday',
       weekend: 'weekend',
     } satisfies Record<StaffPriceRule['day_type'], string>,
+    discountDayScopes: {
+      all: 'All days',
+      fri: 'Friday',
+      mon: 'Monday',
+      sat: 'Saturday',
+      sun: 'Sunday',
+      thu: 'Thursday',
+      tue: 'Tuesday',
+      wed: 'Wednesday',
+      weekday: 'Weekdays',
+      weekend: 'Weekend',
+    } satisfies Record<StaffDiscountDayScope, string>,
+    discountTicketTypes: {
+      all: 'All ticket types',
+      birthday: 'Birthday / Events',
+      corporate: 'Corporate',
+      individual: 'Individual',
+    } satisfies Record<StaffDiscountTicketType, string>,
     discountTypes: {
       birthday: 'birthday',
       fixed_amount: 'fixed amount',
@@ -701,6 +733,8 @@ const staffConsoleText = {
       description: 'Description',
       audience: 'Audience',
       discount: 'Discount',
+      discountRuleHelp: 'Discounts apply automatically when their rules match. Vouchers work when the customer enters the voucher code.',
+      discountConditions: 'Conditions',
       discountType: 'Discount type',
       discountVoucher: 'Discount / voucher',
       discounts: 'Discounts',
@@ -739,7 +773,10 @@ const staffConsoleText = {
       location: 'Location',
       managerNote: 'Manager note',
       maxPlayersArena: 'Max players / arena',
+      maxPlayers: 'Max players',
+      maxDiscountAmount: 'Max discount amount',
       maxUses: 'Max uses',
+      minPlayers: 'Min players',
       minimumSpend: 'Minimum spend',
       name: 'Name',
       newBooking: 'New booking',
@@ -761,6 +798,7 @@ const staffConsoleText = {
       paymentMix: 'Payment mix',
       payrollLink: 'Attendance / payroll link',
       payrollNote: 'Payroll note',
+      perCustomerLimit: 'Per customer limit',
       perVndSpent: 'Per VND spent',
       phone: 'Phone',
       personalEmail: 'Personal e-mail',
@@ -815,6 +853,7 @@ const staffConsoleText = {
       taxCodeEmployee: 'Tax code',
       time: 'Time',
       ticketBookings: 'Ticket bookings',
+      ticketType: 'Ticket type',
       total: 'Total',
       totalPaid: 'Total paid',
       totalSales: 'Total sales',
@@ -829,6 +868,8 @@ const staffConsoleText = {
       vouchers: 'Vouchers',
       weeklyRange: 'Week',
       weeklySchedule: 'Weekly schedule',
+      allDays: 'All days',
+      allTicketTypes: 'All ticket types',
       overtimeHours: 'Overtime hours',
       overtimeMonthlyCap: 'Monthly overtime cap',
       overtimeYearlyCap: 'Yearly overtime cap',
@@ -1174,6 +1215,24 @@ const staffConsoleText = {
       weekday: 'ngày thường',
       weekend: 'cuối tuần',
     } satisfies Record<StaffPriceRule['day_type'], string>,
+    discountDayScopes: {
+      all: 'Tất cả ngày',
+      fri: 'Thứ Sáu',
+      mon: 'Thứ Hai',
+      sat: 'Thứ Bảy',
+      sun: 'Chủ Nhật',
+      thu: 'Thứ Năm',
+      tue: 'Thứ Ba',
+      wed: 'Thứ Tư',
+      weekday: 'Ngày thường',
+      weekend: 'Cuối tuần',
+    } satisfies Record<StaffDiscountDayScope, string>,
+    discountTicketTypes: {
+      all: 'Tất cả loại vé',
+      birthday: 'Sinh nhật / sự kiện',
+      corporate: 'Doanh nghiệp',
+      individual: 'Cá nhân',
+    } satisfies Record<StaffDiscountTicketType, string>,
     discountTypes: {
       birthday: 'sinh nhật',
       fixed_amount: 'số tiền cố định',
@@ -1249,6 +1308,8 @@ const staffConsoleText = {
       description: 'Mô tả',
       audience: 'Đối tượng',
       discount: 'Ưu đãi',
+      discountRuleHelp: 'Ưu đãi được áp dụng tự động khi khớp quy tắc. Voucher hoạt động khi khách nhập mã voucher.',
+      discountConditions: 'Điều kiện',
       discountType: 'Loại ưu đãi',
       discountVoucher: 'Ưu đãi / voucher',
       discounts: 'Ưu đãi',
@@ -1287,7 +1348,10 @@ const staffConsoleText = {
       location: 'Cơ sở',
       managerNote: 'Ghi chú quản lý',
       maxPlayersArena: 'Số người tối đa / arena',
+      maxPlayers: 'Số người tối đa',
+      maxDiscountAmount: 'Giảm tối đa',
       maxUses: 'Số lần dùng tối đa',
+      minPlayers: 'Số người tối thiểu',
       minimumSpend: 'Chi tiêu tối thiểu',
       name: 'Tên',
       newBooking: 'Đặt chỗ mới',
@@ -1309,6 +1373,7 @@ const staffConsoleText = {
       paymentMix: 'Cơ cấu thanh toán',
       payrollLink: 'Liên kết chấm công / lương',
       payrollNote: 'Ghi chú lương',
+      perCustomerLimit: 'Giới hạn / khách',
       perVndSpent: 'Theo VND chi tiêu',
       phone: 'Điện thoại',
       personalEmail: 'Email cá nhân',
@@ -1363,6 +1428,7 @@ const staffConsoleText = {
       taxCodeEmployee: 'Mã số thuế',
       time: 'Giờ',
       ticketBookings: 'Đặt vé',
+      ticketType: 'Loại vé',
       total: 'Tổng',
       totalPaid: 'Đã thanh toán',
       totalSales: 'Tổng doanh thu',
@@ -1377,6 +1443,8 @@ const staffConsoleText = {
       vouchers: 'Voucher',
       weeklyRange: 'Tuần',
       weeklySchedule: 'Lịch tuần',
+      allDays: 'Tất cả ngày',
+      allTicketTypes: 'Tất cả loại vé',
       overtimeHours: 'Giờ tăng ca',
       overtimeMonthlyCap: 'Giới hạn tăng ca / tháng',
       overtimeYearlyCap: 'Giới hạn tăng ca / năm',
@@ -2309,6 +2377,15 @@ const defaultDiscountForm = () => ({
   code: '',
   name: '',
   game_id: '',
+  min_players: '',
+  max_players: '',
+  day_scope: 'all' as StaffDiscountDayScope,
+  time_start: '',
+  time_end: '',
+  ticket_type: 'all' as StaffDiscountTicketType,
+  min_order_total: 0,
+  max_discount_amount: '',
+  per_customer_limit: '',
   discount_type: 'percentage' as StaffDiscount['discount_type'],
   value: 10,
   valid_from: todayString(),
@@ -2815,6 +2892,53 @@ function isTimeInRule(timeValue: string, rule: StaffPriceRule) {
   return (!start || time >= start) && (!end || time < end)
 }
 
+function weekdayScopeFor(dateValue: string): StaffDiscountDayScope {
+  const day = new Date(`${dateValue}T12:00:00`).getDay()
+  return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][day] as StaffDiscountDayScope
+}
+
+function isDayInDiscountScope(dateValue: string, scope: StaffDiscountDayScope) {
+  if (scope === 'all') return true
+  const weekday = weekdayScopeFor(dateValue)
+  if (scope === 'weekday') return !['sun', 'sat'].includes(weekday)
+  if (scope === 'weekend') return ['sun', 'sat'].includes(weekday)
+  return weekday === scope
+}
+
+function isTimeInDiscount(timeValue: string, discount: Pick<StaffDiscount, 'time_start' | 'time_end'>) {
+  const time = normalizeTime(timeValue)
+  const start = normalizeTime(discount.time_start)
+  const end = normalizeTime(discount.time_end)
+  if (!start && !end) return true
+  if (!time) return false
+  if (start && end && start > end) return time >= start || time < end
+  return (!start || time >= start) && (!end || time < end)
+}
+
+function discountMatchesContext(
+  discount: StaffDiscount,
+  context: {
+    date: string
+    gameId: string | null
+    players: number
+    subtotal: number
+    ticketType?: StaffDiscountTicketType
+    time: string
+  },
+) {
+  if (!discount.active) return false
+  if (discount.max_uses !== null && discount.used_count >= discount.max_uses) return false
+  if (discount.game_id && discount.game_id !== context.gameId) return false
+  if (!isDateInRange(context.date, discount.valid_from, discount.valid_until)) return false
+  if (!isDayInDiscountScope(context.date, discount.day_scope || 'all')) return false
+  if (!isTimeInDiscount(context.time, discount)) return false
+  if (discount.min_players !== null && context.players < discount.min_players) return false
+  if (discount.max_players !== null && context.players > discount.max_players) return false
+  if ((discount.min_order_total ?? 0) > 0 && context.subtotal < discount.min_order_total) return false
+  if (discount.ticket_type && discount.ticket_type !== 'all' && discount.ticket_type !== context.ticketType) return false
+  return true
+}
+
 function selectPricingRule(rules: StaffPriceRule[], gameId: string, dateValue: string, timeValue: string) {
   const dayType = dayTypeFor(dateValue)
   return rules
@@ -2835,14 +2959,16 @@ function selectPricingRule(rules: StaffPriceRule[], gameId: string, dateValue: s
 }
 
 function calculateDiscount(discount: StaffDiscount | null, subtotal: number, unitPrice: number) {
-  if (!discount || !discount.active) return 0
-  if (discount.max_uses !== null && discount.used_count >= discount.max_uses) return 0
-
+  if (!discount) return 0
   let amount = 0
   if (discount.discount_type === 'fixed_amount') amount = discount.value
   if (discount.discount_type === 'free_ticket') amount = unitPrice
   if (['percentage', 'birthday', 'resident', 'group'].includes(discount.discount_type)) {
     amount = subtotal * Math.min(discount.value, 100) / 100
+  }
+
+  if (discount.max_discount_amount !== null) {
+    amount = Math.min(amount, discount.max_discount_amount)
   }
 
   return Math.min(subtotal, Math.max(0, Math.round(amount)))
@@ -2852,6 +2978,34 @@ function formatDiscountRuleValue(discount: Pick<StaffDiscount, 'discount_type' |
   if (discount.discount_type === 'fixed_amount') return formatVnd(discount.value)
   if (discount.discount_type === 'free_ticket') return text.discountTypes.free_ticket
   return `${formatPercentInput(discount.value) || '0'}%`
+}
+
+function formatDiscountRuleConditions(
+  discount: StaffDiscount,
+  gameName: string,
+  text: StaffConsoleCopy = staffConsoleText.en,
+) {
+  const conditions = [gameName]
+  if (discount.min_players !== null || discount.max_players !== null) {
+    conditions.push(`${discount.min_players ?? 1}-${discount.max_players ?? text.any} ${text.labels.players}`)
+  }
+  conditions.push(text.discountDayScopes[discount.day_scope || 'all'])
+  if (discount.time_start || discount.time_end) {
+    conditions.push(`${normalizeTime(discount.time_start) || '00:00'}-${normalizeTime(discount.time_end) || '24:00'}`)
+  }
+  if (discount.ticket_type && discount.ticket_type !== 'all') {
+    conditions.push(text.discountTicketTypes[discount.ticket_type])
+  }
+  if ((discount.min_order_total ?? 0) > 0) {
+    conditions.push(`${text.labels.minimumSpend} ${formatVnd(discount.min_order_total)}`)
+  }
+  if (discount.max_discount_amount !== null) {
+    conditions.push(`${text.labels.maxDiscountAmount} ${formatVnd(discount.max_discount_amount)}`)
+  }
+  if (discount.per_customer_limit !== null) {
+    conditions.push(`${text.labels.perCustomerLimit} ${discount.per_customer_limit}`)
+  }
+  return conditions.join(' · ')
 }
 
 function calculateManualDiscount(type: BookingForm['manualDiscountType'], value: number, subtotal: number) {
@@ -4224,27 +4378,35 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
   const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
   const selectedGame = useMemo(() => activeGames.find((game) => game.id === booking.gameId) || activeGames[0] || null, [activeGames, booking.gameId])
-  const availableBookingDiscounts = useMemo(() => (
-    discounts.filter((discount) => discount.active && (!discount.game_id || discount.game_id === selectedGame?.id))
-  ), [discounts, selectedGame])
-  const selectedDiscount = useMemo(() => availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null, [availableBookingDiscounts, booking.discountId])
   const selectedRule = useMemo(() => {
     if (!selectedGame) return null
     return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
   }, [booking.date, booking.time, prices, selectedGame])
+  const bookingUnitPrice = selectedRule?.price_per_player || 200000
+  const bookingDurationBlocks = Math.max(1, Math.ceil((selectedGame?.duration_minutes || 20) / 20))
+  const bookingSubtotal = selectedRule?.price_per_arena_slot
+    ? selectedRule.price_per_arena_slot * bookingDurationBlocks
+    : bookingUnitPrice * booking.players
+  const availableBookingDiscounts = useMemo(() => (
+    discounts.filter((discount) => discountMatchesContext(discount, {
+      date: booking.date,
+      gameId: selectedGame?.id || null,
+      players: booking.players,
+      subtotal: bookingSubtotal,
+      ticketType: 'all',
+      time: booking.time,
+    }))
+  ), [booking.date, booking.players, booking.time, bookingSubtotal, discounts, selectedGame])
+  const selectedDiscount = useMemo(() => availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null, [availableBookingDiscounts, booking.discountId])
 
   const quote = useMemo(() => {
-    const unitPrice = selectedRule?.price_per_player || 200000
-    const durationBlocks = Math.max(1, Math.ceil((selectedGame?.duration_minutes || 20) / 20))
-    const subtotal = selectedRule?.price_per_arena_slot
-      ? selectedRule.price_per_arena_slot * durationBlocks
-      : unitPrice * booking.players
+    const subtotal = bookingSubtotal
     const manualDiscountTotal = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, subtotal)
     const discountTotal = manualDiscountTotal > 0
       ? manualDiscountTotal
-      : calculateDiscount(selectedDiscount, subtotal, unitPrice)
+      : calculateDiscount(selectedDiscount, subtotal, bookingUnitPrice)
     return {
-      unitPrice,
+      unitPrice: bookingUnitPrice,
       subtotal,
       discountTotal,
       discountLabel: manualDiscountTotal > 0
@@ -4254,7 +4416,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       ruleName: selectedRule?.rule_name || text.defaultWalkInRate,
       duration: selectedGame?.duration_minutes || 20,
     }
-  }, [booking.manualDiscountType, booking.manualDiscountValue, booking.players, selectedDiscount, selectedGame, selectedRule, text])
+  }, [booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
@@ -5146,6 +5308,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       code: discountForm.code.trim() || null,
       name: discountForm.name.trim(),
       game_id: discountForm.game_id || null,
+      min_players: discountForm.min_players ? Number(discountForm.min_players) : null,
+      max_players: discountForm.max_players ? Number(discountForm.max_players) : null,
+      day_scope: discountForm.day_scope,
+      time_start: discountForm.time_start || null,
+      time_end: discountForm.time_end || null,
+      ticket_type: discountForm.ticket_type,
+      min_order_total: Number(discountForm.min_order_total) || 0,
+      max_discount_amount: discountForm.max_discount_amount ? Number(discountForm.max_discount_amount) : null,
+      per_customer_limit: discountForm.per_customer_limit ? Number(discountForm.per_customer_limit) : null,
       discount_type: discountForm.discount_type,
       value: Number(discountForm.value) || 0,
       valid_from: discountForm.valid_from,
@@ -5958,6 +6129,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       code: discount.code || '',
       name: discount.name,
       game_id: discount.game_id || '',
+      min_players: discount.min_players === null ? '' : String(discount.min_players),
+      max_players: discount.max_players === null ? '' : String(discount.max_players),
+      day_scope: discount.day_scope || 'all',
+      time_start: normalizeTime(discount.time_start),
+      time_end: normalizeTime(discount.time_end),
+      ticket_type: discount.ticket_type || 'all',
+      min_order_total: discount.min_order_total ?? 0,
+      max_discount_amount: discount.max_discount_amount === null ? '' : String(discount.max_discount_amount),
+      per_customer_limit: discount.per_customer_limit === null ? '' : String(discount.per_customer_limit),
       discount_type: discount.discount_type,
       value: discount.value,
       valid_from: discount.valid_from,
@@ -7329,6 +7509,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     ? (commerceTab === 'vouchers' ? text.editVoucher : text.editDiscount)
                     : (commerceTab === 'vouchers' ? text.labels.createVoucher : text.labels.createDiscount)}
                 </h3>
+                <p className="muted">{text.labels.discountRuleHelp}</p>
                 <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
                 <div className="form-grid compact-form-grid">
                   <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
@@ -7365,6 +7546,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </select>
                     </span>
                   </label>
+                  <div className="full staff-form-section-label">{text.labels.discountConditions}</div>
+                  <label>{text.labels.minPlayers}<input min={1} type="number" value={discountForm.min_players} onChange={(event) => setDiscountForm({ ...discountForm, min_players: event.target.value })} /></label>
+                  <label>{text.labels.maxPlayers}<input min={1} type="number" value={discountForm.max_players} onChange={(event) => setDiscountForm({ ...discountForm, max_players: event.target.value })} /></label>
+                  <label>{text.labels.dayType}<select value={discountForm.day_scope} onChange={(event) => setDiscountForm({ ...discountForm, day_scope: event.target.value as StaffDiscountDayScope })}>{staffDiscountDayScopes.map((scope) => <option key={scope} value={scope}>{text.discountDayScopes[scope]}</option>)}</select></label>
+                  <label>{text.labels.ticketType}<select value={discountForm.ticket_type} onChange={(event) => setDiscountForm({ ...discountForm, ticket_type: event.target.value as StaffDiscountTicketType })}>{staffDiscountTicketTypes.map((ticketType) => <option key={ticketType} value={ticketType}>{text.discountTicketTypes[ticketType]}</option>)}</select></label>
+                  <label>{text.labels.start}<input type="time" value={discountForm.time_start} onChange={(event) => setDiscountForm({ ...discountForm, time_start: event.target.value })} /></label>
+                  <label>{text.labels.end}<input type="time" value={discountForm.time_end} onChange={(event) => setDiscountForm({ ...discountForm, time_end: event.target.value })} /></label>
+                  <label>{text.labels.minimumSpend}<input min={0} type="number" value={discountForm.min_order_total} onChange={(event) => setDiscountForm({ ...discountForm, min_order_total: Number(event.target.value) || 0 })} /></label>
+                  <label>{text.labels.maxDiscountAmount}<input min={0} type="number" value={discountForm.max_discount_amount} onChange={(event) => setDiscountForm({ ...discountForm, max_discount_amount: event.target.value })} /></label>
+                  <label>{text.labels.perCustomerLimit}<input min={1} type="number" value={discountForm.per_customer_limit} onChange={(event) => setDiscountForm({ ...discountForm, per_customer_limit: event.target.value })} /></label>
                   <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.discountValidFrom} placeholder={text.chooseDate} type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
                   <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.discountValidUntil} placeholder={text.chooseDate} type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
                   <label>{text.labels.maxUses}<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
@@ -7421,7 +7612,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
                   <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                     <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                    <span>{discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames} · {text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                    <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {formatDiscountRuleConditions(discount, discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
                   </button>
                 ))}
                 {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">{text.messages.noVouchers}</p>}
