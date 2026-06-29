@@ -553,6 +553,8 @@ const staffConsoleText = {
       compareEndDate: 'Compare end date',
       compareStartDate: 'Compare start date',
       discountValueUnit: 'Discount value unit',
+      discountStartTime: 'Discount start time',
+      discountEndTime: 'Discount end time',
       discountValidFrom: 'Discount valid from',
       discountValidUntil: 'Discount valid until',
       draftShift: 'Draft shift',
@@ -778,6 +780,7 @@ const staffConsoleText = {
       maxPlayers: 'Max players',
       maxDiscountAmount: 'Max discount amount',
       maxUses: 'Max uses',
+      limitByHour: 'Limit by hour',
       minPlayers: 'Min players',
       minimumSpend: 'Minimum spend',
       name: 'Name',
@@ -1130,6 +1133,8 @@ const staffConsoleText = {
       compareEndDate: 'Ngày kết thúc so sánh',
       compareStartDate: 'Ngày bắt đầu so sánh',
       discountValueUnit: 'Đơn vị ưu đãi',
+      discountStartTime: 'Giờ bắt đầu ưu đãi',
+      discountEndTime: 'Giờ kết thúc ưu đãi',
       discountValidFrom: 'Ưu đãi hiệu lực từ',
       discountValidUntil: 'Ưu đãi hiệu lực đến',
       draftShift: 'Tạo ca nháp',
@@ -1355,6 +1360,7 @@ const staffConsoleText = {
       maxPlayers: 'Số người tối đa',
       maxDiscountAmount: 'Giảm tối đa',
       maxUses: 'Số lần dùng tối đa',
+      limitByHour: 'Giới hạn theo giờ',
       minPlayers: 'Số người tối thiểu',
       minimumSpend: 'Chi tiêu tối thiểu',
       name: 'Tên',
@@ -4683,6 +4689,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const selectedGameAudiences = useMemo(() => normalizeStaffAudience(gameForm.audience), [gameForm.audience])
   const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
   const selectedDiscountValueUnit = discountValueUnit(discountForm.discount_type)
+  const discountHasHourLimit = Boolean(discountForm.time_start || discountForm.time_end)
   const currentTabLoading = Boolean(
     currentTab === 'new'
       ? loadingData.games || loadingData.prices || loadingData.discounts || loadingData.profiles
@@ -7565,8 +7572,24 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label>{text.labels.maxPlayers}<input min={1} type="number" value={discountForm.max_players} onChange={(event) => setDiscountForm({ ...discountForm, max_players: event.target.value })} /></label>
                   <label>{text.labels.dayType}<select value={discountForm.day_scope} onChange={(event) => setDiscountForm({ ...discountForm, day_scope: event.target.value as StaffDiscountDayScope })}>{staffDiscountDayScopes.map((scope) => <option key={scope} value={scope}>{text.discountDayScopes[scope]}</option>)}</select></label>
                   <label>{text.labels.ticketType}<select value={discountForm.ticket_type} onChange={(event) => setDiscountForm({ ...discountForm, ticket_type: event.target.value as StaffDiscountTicketType })}>{staffDiscountTicketTypes.map((ticketType) => <option key={ticketType} value={ticketType}>{text.discountTicketTypes[ticketType]}</option>)}</select></label>
-                  <label>{text.labels.start}<input type="time" value={discountForm.time_start} onChange={(event) => setDiscountForm({ ...discountForm, time_start: event.target.value })} /></label>
-                  <label>{text.labels.end}<input type="time" value={discountForm.time_end} onChange={(event) => setDiscountForm({ ...discountForm, time_end: event.target.value })} /></label>
+                  <label className="checkbox-row full">
+                    <input
+                      checked={discountHasHourLimit}
+                      type="checkbox"
+                      onChange={(event) => setDiscountForm({
+                        ...discountForm,
+                        time_start: event.target.checked ? (discountForm.time_start || '09:00') : '',
+                        time_end: event.target.checked ? (discountForm.time_end || '22:00') : '',
+                      })}
+                    />
+                    {text.labels.limitByHour}
+                  </label>
+                  {discountHasHourLimit && (
+                    <>
+                      <label>{text.labels.start}<StaffPickerField ariaLabel={text.aria.discountStartTime} placeholder={text.chooseTime} type="time" value={discountForm.time_start} onChange={(value) => setDiscountForm({ ...discountForm, time_start: value })} /></label>
+                      <label>{text.labels.end}<StaffPickerField ariaLabel={text.aria.discountEndTime} placeholder={text.chooseTime} type="time" value={discountForm.time_end} onChange={(value) => setDiscountForm({ ...discountForm, time_end: value })} /></label>
+                    </>
+                  )}
                   <label>{text.labels.minimumSpend}<input min={0} type="number" value={discountForm.min_order_total} onChange={(event) => setDiscountForm({ ...discountForm, min_order_total: Number(event.target.value) || 0 })} /></label>
                   <label>{text.labels.maxDiscountAmount}<input min={0} type="number" value={discountForm.max_discount_amount} onChange={(event) => setDiscountForm({ ...discountForm, max_discount_amount: event.target.value })} /></label>
                   <label>{text.labels.perCustomerLimit}<input min={1} type="number" value={discountForm.per_customer_limit} onChange={(event) => setDiscountForm({ ...discountForm, per_customer_limit: event.target.value })} /></label>
