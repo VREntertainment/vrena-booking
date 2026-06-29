@@ -71,6 +71,7 @@ export type TicketBookingViewProps = {
   isCheckingTicketDiscount: boolean
   ticketDiscountAmount: number
   ticketDiscountCode: string
+  ticketDiscountName: string
   ticketDiscountStatus: string
   ticketDiscountSource: 'automatic' | 'voucher'
   loyaltyDiscountAmount: number
@@ -124,6 +125,7 @@ export default function TicketBookingView({
   isCheckingTicketDiscount,
   ticketDiscountAmount,
   ticketDiscountCode,
+  ticketDiscountName,
   ticketDiscountStatus,
   ticketDiscountSource,
   loyaltyDiscountAmount,
@@ -286,9 +288,9 @@ export default function TicketBookingView({
                 )}
                 {ticketDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
-                    <span>{text.ticketDiscountCodeSummary}</span>
-                    <strong>{ticketDiscountSource === 'voucher' ? `-${formatVnd(ticketDiscountAmount)}` : text.ticketDiscountNotUsed}</strong>
-                    <small>{ticketDiscountCode.trim().toUpperCase()}</small>
+                    <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
+                    <strong>-{formatVnd(ticketDiscountAmount)}</strong>
+                    <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName}</small>
                   </div>
                 )}
                 <div className="ticket-loyalty-redemption">

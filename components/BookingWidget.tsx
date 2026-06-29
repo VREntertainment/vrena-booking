@@ -281,7 +281,8 @@ type TicketLoyaltyEarnQuote = {
 }
 
 type TicketDiscountQuote = {
-  discount_code: string
+  discount_rule_id?: string
+  discount_code?: string
   discount_name: string
   discount_amount: number
 }
@@ -1016,16 +1017,6 @@ function ticketUnitPrice(_ticketType: TicketType, dateValue: string, timeValue: 
   return individualTicketUnitPrice(dateValue, timeValue)
 }
 
-function ticketGroupDiscountRate(players: number) {
-  if (players > 8) return 0.15
-  if (players > 4) return 0.1
-  return 0
-}
-
-function ticketTypeDiscountRate(ticketType: TicketType) {
-  return ticketType === 'birthday' ? 0.1 : 0
-}
-
 function ticketRequiredSlots(players: number) {
   return Math.max(1, Math.ceil(Math.max(1, players) / ticketArenaCapacityPerSlot))
 }
@@ -1055,7 +1046,7 @@ function ticketPricingSummary(
   const chargedPlayerSpots = durationBlocks * chargedPlayersPerBlock
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = Math.max(ticketGroupDiscountRate(players), ticketTypeDiscountRate(ticketType))
+  const discountRate = 0
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {
@@ -1976,6 +1967,7 @@ export default function WidgetPage({
   const [isLoadingTicketLoyalty, setIsLoadingTicketLoyalty] = useState(false)
   const [ticketDiscountCode, setTicketDiscountCode] = useState('')
   const [ticketDiscountQuote, setTicketDiscountQuote] = useState<TicketDiscountQuote | null>(null)
+  const [ticketAutomaticDiscountQuote, setTicketAutomaticDiscountQuote] = useState<TicketDiscountQuote | null>(null)
   const [ticketDiscountStatus, setTicketDiscountStatus] = useState('')
   const [isCheckingTicketDiscount, setIsCheckingTicketDiscount] = useState(false)
   const [gameGuideOpen, setGameGuideOpen] = useState(false)
@@ -4912,9 +4904,10 @@ export default function WidgetPage({
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
+  const ticketAutomaticDiscountAmount = Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
   const hasTicketVoucherDiscount = ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
-  const activeTicketDiscountAmount = Math.max(currentTicketPricing.discountAmount, ticketVoucherDiscountAmount)
-  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > currentTicketPricing.discountAmount ? 'voucher' : 'automatic'
+  const activeTicketDiscountAmount = Math.max(ticketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
+  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > ticketAutomaticDiscountAmount ? 'voucher' : 'automatic'
   const currentTicketPriceBeforeLoyalty = Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
   const ticketLoyaltyBalance = Math.max(
     0,
@@ -4993,6 +4986,48 @@ export default function WidgetPage({
   const ticketDiscountCodeCheckingText = text.ticketDiscountCodeChecking
 
   useEffect(() => {
+    if (!ticketDate || currentTicketPricing.grossPrice <= 0) {
+      return schedulePostEffectStateUpdate(() => setTicketAutomaticDiscountQuote(null))
+    }
+
+    let active = true
+    void getSupabase()
+      .then((client) => client.rpc('ticket_automatic_discount_quote', {
+        p_booking_date: ticketDate,
+        p_game_id: activeTicketService.defaultGame,
+        p_player_count: ticketPlayers,
+        p_start_time: ticketTime ? `${ticketTime}:00` : null,
+        p_subtotal: currentTicketPricing.grossPrice,
+        p_ticket_type: ticketType,
+        p_unit_price: currentTicketUnitPrice,
+      }))
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) {
+          setTicketAutomaticDiscountQuote(null)
+          return
+        }
+
+        const row = Array.isArray(data) ? data[0] : null
+        const discountAmount = Math.max(0, Math.floor(Number(row?.discount_amount ?? 0) || 0))
+        setTicketAutomaticDiscountQuote(row && discountAmount > 0
+          ? {
+            discount_rule_id: String(row.discount_rule_id || ''),
+            discount_name: String(row.discount_name || ''),
+            discount_amount: discountAmount,
+          }
+          : null)
+      })
+      .catch(() => {
+        if (active) setTicketAutomaticDiscountQuote(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketPlayers, ticketTime, ticketType])
+
+  useEffect(() => {
     const normalizedCode = ticketDiscountCode.trim().toUpperCase()
 
     if (!normalizedCode) {
@@ -5038,7 +5073,7 @@ export default function WidgetPage({
             discount_name: String(row.discount_name || ''),
             discount_amount: discountAmount,
           })
-          setTicketDiscountStatus(currentTicketPricing.discountAmount > 0
+          setTicketDiscountStatus(ticketAutomaticDiscountAmount > 0 && discountAmount <= ticketAutomaticDiscountAmount
             ? ticketDiscountBestReductionText
             : ticketDiscountCodeAppliedText.replace('{amount}', formatVnd(discountAmount)))
         })
@@ -5056,7 +5091,7 @@ export default function WidgetPage({
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
@@ -11313,8 +11348,9 @@ function handleSessionDateChange(value: string) {
             text={looseText}
             ticketConfirmation={ticketConfirmation}
             ticketDate={ticketDate}
-            ticketDiscountAmount={ticketVoucherDiscountAmount}
+            ticketDiscountAmount={activeTicketDiscountAmount}
             ticketDiscountCode={ticketDiscountCode}
+            ticketDiscountName={ticketAutomaticDiscountQuote?.discount_name || ticketDiscountQuote?.discount_name || ''}
             ticketDiscountSource={activeTicketDiscountSource}
             ticketDiscountStatus={ticketDiscountStatus}
             ticketDurationMessage={ticketDurationMessage}

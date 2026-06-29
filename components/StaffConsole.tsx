@@ -114,6 +114,7 @@ type StaffDiscount = {
   code: string | null
   name: string
   game_id: string | null
+  price_rule_id: string | null
   min_players: number | null
   max_players: number | null
   day_scope: StaffDiscountDayScope
@@ -457,6 +458,7 @@ const staffConsoleText = {
     active: 'active',
     inactive: 'inactive',
     allGames: 'All games',
+    allPriceRules: 'All price rules',
     allRoles: 'All roles',
     any: 'any',
     chooseDate: 'Choose date',
@@ -811,6 +813,7 @@ const staffConsoleText = {
       privateSession: 'Private session',
       priceArenaSlot: 'Price / arena slot (đ)',
       pricePlayer: 'Price / player (đ)',
+      priceRule: 'Price rule',
       priceRules: 'Price rules',
       privateEmployeeProfile: 'Private employee profile',
       regularHours: 'Regular hours',
@@ -1032,6 +1035,7 @@ const staffConsoleText = {
     active: 'đang bật',
     inactive: 'đã tắt',
     allGames: 'Tất cả trò chơi',
+    allPriceRules: 'Tất cả quy tắc giá',
     allRoles: 'Tất cả vai trò',
     any: 'bất kỳ',
     chooseDate: 'Chọn ngày',
@@ -1386,6 +1390,7 @@ const staffConsoleText = {
       privateSession: 'Phiên riêng tư',
       priceArenaSlot: 'Giá / slot arena (đ)',
       pricePlayer: 'Giá / người (đ)',
+      priceRule: 'Quy tắc giá',
       priceRules: 'Quy tắc giá',
       privateEmployeeProfile: 'Hồ sơ nhân viên riêng tư',
       regularHours: 'Giờ thường',
@@ -2377,6 +2382,7 @@ const defaultDiscountForm = () => ({
   code: '',
   name: '',
   game_id: '',
+  price_rule_id: '',
   min_players: '',
   max_players: '',
   day_scope: 'all' as StaffDiscountDayScope,
@@ -2921,6 +2927,7 @@ function discountMatchesContext(
     date: string
     gameId: string | null
     players: number
+    priceRuleId?: string | null
     subtotal: number
     ticketType?: StaffDiscountTicketType
     time: string
@@ -2929,6 +2936,7 @@ function discountMatchesContext(
   if (!discount.active) return false
   if (discount.max_uses !== null && discount.used_count >= discount.max_uses) return false
   if (discount.game_id && discount.game_id !== context.gameId) return false
+  if (discount.price_rule_id && discount.price_rule_id !== context.priceRuleId) return false
   if (!isDateInRange(context.date, discount.valid_from, discount.valid_until)) return false
   if (!isDayInDiscountScope(context.date, discount.day_scope || 'all')) return false
   if (!isTimeInDiscount(context.time, discount)) return false
@@ -2983,9 +2991,10 @@ function formatDiscountRuleValue(discount: Pick<StaffDiscount, 'discount_type' |
 function formatDiscountRuleConditions(
   discount: StaffDiscount,
   gameName: string,
+  priceRuleName: string,
   text: StaffConsoleCopy = staffConsoleText.en,
 ) {
-  const conditions = [gameName]
+  const conditions = [gameName, priceRuleName]
   if (discount.min_players !== null || discount.max_players !== null) {
     conditions.push(`${discount.min_players ?? 1}-${discount.max_players ?? text.any} ${text.labels.players}`)
   }
@@ -4392,11 +4401,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       date: booking.date,
       gameId: selectedGame?.id || null,
       players: booking.players,
+      priceRuleId: selectedRule?.id || null,
       subtotal: bookingSubtotal,
       ticketType: 'all',
       time: booking.time,
     }))
-  ), [booking.date, booking.players, booking.time, bookingSubtotal, discounts, selectedGame])
+  ), [booking.date, booking.players, booking.time, bookingSubtotal, discounts, selectedGame, selectedRule])
   const selectedDiscount = useMemo(() => availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null, [availableBookingDiscounts, booking.discountId])
 
   const quote = useMemo(() => {
@@ -4473,6 +4483,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   )
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
+  const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
   const allStaffProfileOptions = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) !== 'player')
@@ -4684,7 +4695,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             : currentTab === 'prices'
               ? loadingData.games || loadingData.prices
               : currentTab === 'discounts'
-                ? loadingData.games || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
+                ? loadingData.games || loadingData.prices || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
                 : currentTab === 'roles'
                   ? loadingData.profiles
                   : currentTab === 'restore'
@@ -4706,7 +4717,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     } else if (currentTab === 'prices') {
       void Promise.all([loadGames(), loadPrices()])
     } else if (currentTab === 'discounts') {
-      const loaders: Array<Promise<void>> = [loadGames(), loadDiscounts()]
+      const loaders: Array<Promise<void>> = [loadGames(), loadPrices(), loadDiscounts()]
       if (commerceTab === 'loyalty') loaders.push(loadLoyaltyRules())
       void Promise.all(loaders)
     } else if (currentTab === 'roles') {
@@ -5308,6 +5319,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       code: discountForm.code.trim() || null,
       name: discountForm.name.trim(),
       game_id: discountForm.game_id || null,
+      price_rule_id: discountForm.price_rule_id || null,
       min_players: discountForm.min_players ? Number(discountForm.min_players) : null,
       max_players: discountForm.max_players ? Number(discountForm.max_players) : null,
       day_scope: discountForm.day_scope,
@@ -6129,6 +6141,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       code: discount.code || '',
       name: discount.name,
       game_id: discount.game_id || '',
+      price_rule_id: discount.price_rule_id || '',
       min_players: discount.min_players === null ? '' : String(discount.min_players),
       max_players: discount.max_players === null ? '' : String(discount.max_players),
       day_scope: discount.day_scope || 'all',
@@ -7515,6 +7528,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
                   <label>{text.labels.name}<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
                   <label>{text.labels.game}<select value={discountForm.game_id} onChange={(event) => setDiscountForm({ ...discountForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
+                  <label>{text.labels.priceRule}<select value={discountForm.price_rule_id} onChange={(event) => setDiscountForm({ ...discountForm, price_rule_id: event.target.value })}><option value="">{text.allPriceRules}</option>{prices.map((rule) => <option key={rule.id} value={rule.id}>{rule.rule_name}</option>)}</select></label>
                   <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => updateDiscountType(event.target.value as StaffDiscount['discount_type'])}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
                   <label className="staff-discount-value-field">
                     <span className="staff-label-line">
@@ -7612,7 +7626,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
                   <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                     <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                    <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {formatDiscountRuleConditions(discount, discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                    <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {formatDiscountRuleConditions(discount, discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames, discount.price_rule_id ? priceRuleNameById.get(discount.price_rule_id) || text.labels.priceRule : text.allPriceRules, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
                   </button>
                 ))}
                 {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">{text.messages.noVouchers}</p>}
