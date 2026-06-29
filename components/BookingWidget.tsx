@@ -1436,6 +1436,7 @@ function escapeHtml(value: string) {
 function formatNotesHtml(value: string) {
   if (/<\/?(strong|b|em|i|u|s|strike|br|div|p)\b/i.test(value)) {
     return value
+      .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<(\/?)(strong|b|em|i|u|s|strike|br|div|p)(?:\s[^>]*)?>/gi, '<$1$2>')
       .replace(/<(?!\/?(strong|b|em|i|u|s|strike|br|div|p)\b)[^>]*>/gi, '')
   }
@@ -7974,9 +7975,11 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (session.visibility === 'private' && !hasSessionInvite(session.id, userId)) {
+    const joinsWithPrivateCode = session.visibility === 'private' && !hasSessionInvite(session.id, userId)
+
+    if (joinsWithPrivateCode) {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
-      if (typedCode !== session.invite_code) {
+      if (!typedCode) {
         setCreateStatus(text.privateIncorrect)
         return
       }
@@ -7995,15 +7998,28 @@ function handleSessionDateChange(value: string) {
 
     setBusySessionId(session.id)
 
-    const { error } = await (await getSupabase()).from('session_participants').insert({
-      session_id: session.id,
-      profile_id: userId,
-      display_name: displayName(activeProfile),
-      ...avatarFields(activeProfile),
-    })
+    const avatarPayload = avatarFields(activeProfile)
+    const joinResult = joinsWithPrivateCode
+      ? await (await getSupabase()).rpc('join_private_session_with_code', {
+        p_session_id: session.id,
+        p_invite_code: (joinCodes[session.id] || '').trim().toUpperCase(),
+        p_display_name: displayName(activeProfile),
+        p_avatar_url: avatarPayload.avatar_url,
+        p_avatar_emoji: avatarPayload.avatar_emoji,
+        p_avatar_initials: avatarPayload.avatar_initials,
+        p_avatar_color: avatarPayload.avatar_color,
+        p_avatar_text_color: avatarPayload.avatar_text_color,
+        p_profile_motto: avatarPayload.profile_motto,
+      })
+      : await (await getSupabase()).from('session_participants').insert({
+        session_id: session.id,
+        profile_id: userId,
+        display_name: displayName(activeProfile),
+        ...avatarPayload,
+      })
 
-    if (error) {
-      setCreateStatus(error.message)
+    if (joinResult.error) {
+      setCreateStatus(joinResult.error.message)
       setBusySessionId('')
       return
     }
@@ -8049,9 +8065,11 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (session.visibility === 'private' && !hasSessionInvite(session.id, userId)) {
+    const waitlistsWithPrivateCode = session.visibility === 'private' && !hasSessionInvite(session.id, userId)
+
+    if (waitlistsWithPrivateCode) {
       const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
-      if (typedCode !== session.invite_code) {
+      if (!typedCode) {
         setCreateStatus(text.privateIncorrect)
         return
       }
@@ -8066,15 +8084,28 @@ function handleSessionDateChange(value: string) {
 
     setBusySessionId(session.id)
 
-    const { error } = await (await getSupabase()).from('session_waitlist').insert({
-      session_id: session.id,
-      profile_id: userId,
-      display_name: displayName(activeProfile),
-      ...avatarFields(activeProfile),
-    })
+    const avatarPayload = avatarFields(activeProfile)
+    const waitlistResult = waitlistsWithPrivateCode
+      ? await (await getSupabase()).rpc('join_private_session_waitlist_with_code', {
+        p_session_id: session.id,
+        p_invite_code: (joinCodes[session.id] || '').trim().toUpperCase(),
+        p_display_name: displayName(activeProfile),
+        p_avatar_url: avatarPayload.avatar_url,
+        p_avatar_emoji: avatarPayload.avatar_emoji,
+        p_avatar_initials: avatarPayload.avatar_initials,
+        p_avatar_color: avatarPayload.avatar_color,
+        p_avatar_text_color: avatarPayload.avatar_text_color,
+        p_profile_motto: avatarPayload.profile_motto,
+      })
+      : await (await getSupabase()).from('session_waitlist').insert({
+        session_id: session.id,
+        profile_id: userId,
+        display_name: displayName(activeProfile),
+        ...avatarPayload,
+      })
 
-    if (error) {
-      setCreateStatus(error.message)
+    if (waitlistResult.error) {
+      setCreateStatus(waitlistResult.error.message)
       setBusySessionId('')
       return
     }
