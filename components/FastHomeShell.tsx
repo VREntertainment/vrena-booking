@@ -156,8 +156,10 @@ function hasRecoveryParams() {
     hashParams.get('access_token')
     || hashParams.get('refresh_token')
     || hashParams.get('type') === 'recovery'
+    || hashParams.get('type') === 'invite'
     || searchParams.get('code')
     || searchParams.get('type') === 'recovery'
+    || searchParams.get('type') === 'invite'
     || hashParams.get('error_description')
     || searchParams.get('error_description')
   )

@@ -1764,6 +1764,51 @@ body {
   line-height: 1.35;
 }
 
+.app .staff-customer-invite-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+  padding: 10px;
+  margin: 4px 0 10px;
+}
+
+.app .staff-customer-invite-copy {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.app .staff-customer-invite-copy strong {
+  font-size: 16px;
+}
+
+.app .staff-customer-invite-copy span {
+  color: #637075;
+  font-size: 13px;
+}
+
+.app .staff-customer-invite-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(170px, max-content);
+  gap: 8px;
+  align-items: end;
+}
+
+.app .staff-customer-invite-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .staff-customer-invite-form button {
+  min-height: 38px;
+  padding: 7px 16px;
+  white-space: nowrap;
+}
+
 .app .staff-role-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(150px, 220px);
@@ -8204,6 +8249,12 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .staff-customer-invite-copy,
+  .app .staff-customer-invite-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .app .staff-summary-card {
     position: static;
   }
@@ -9777,6 +9828,7 @@ body {
   .app .staff-price-lines,
   .app .staff-summary-grid > div,
   .app .staff-list-item,
+  .app .staff-customer-invite-panel,
   .app .staff-role-row,
   .app .staff-role-avatar,
   .app .staff-restore-row,
@@ -9842,6 +9894,7 @@ body {
   .app .staff-price-lines span,
   .app .staff-table span,
   .app .staff-list-item span,
+  .app .staff-customer-invite-copy span,
   .app .staff-role-row span:not(.staff-role-avatar):not(.avatar-photo):not(.avatar-emoji):not(.avatar-text),
   .app .staff-role-help-item span,
   .app .staff-restore-row span,
