@@ -3146,7 +3146,7 @@ export default function WidgetPage({
       setAvatarTextColor(fallbackProfile.avatar_text_color || avatarTextColors[0])
       setAvatarTextColorDraft(fallbackProfile.avatar_text_color || avatarTextColors[0])
 
-      const repairResult = await (await getSupabase()).from('profiles').upsert({
+      const repairResult = await (await getSupabase()).from('profiles').insert({
         id: authUser.id,
         phone: phone || '+84000000000',
         full_name: fullName || null,
@@ -3355,7 +3355,7 @@ export default function WidgetPage({
           avatar_text_color: avatarTextColor,
         }
 
-        const profileUpsert = await (await getSupabase()).from('profiles').upsert({
+        const profileUpsert = await (await getSupabase()).from('profiles').insert({
           id: authUser.id,
           full_name: fullName,
           phone: fullPhone,
@@ -3753,11 +3753,14 @@ export default function WidgetPage({
     if (allProfilesLoadingRef.current) return false
 
     allProfilesLoadingRef.current = true
-    const { data, error } = await (await getSupabase())
-      .from('profiles')
-      .select(PROFILE_SELECT)
-      .is('deleted_at', null)
-      .order('full_name', { ascending: true })
+    const { data, error } = await (await getSupabase()).rpc('profile_search', {
+      p_search: null,
+      p_limit: 500,
+      p_offset: 0,
+      p_role: 'all',
+      p_include_demo: false,
+      p_sort: 'name_asc',
+    })
 
     allProfilesLoadingRef.current = false
 
@@ -6577,11 +6580,10 @@ function handleSessionDateChange(value: string) {
     let cancelled = false
     const timer = window.setTimeout(async () => {
       const safe = query.replace(/[%_,]/g, '')
-      const { data } = await (await getSupabase())
-        .from('profiles')
-        .select(PROFILE_SELECT)
-        .or(`full_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
-        .limit(6)
+      const { data } = await (await getSupabase()).rpc('public_profile_search', {
+        p_search: safe,
+        p_limit: 6,
+      })
 
       if (!cancelled) setTournamentEditorResults((data ?? []) as Profile[])
     }, 250)
@@ -7350,19 +7352,17 @@ function handleSessionDateChange(value: string) {
     }
 
     const scoreAdjustment = totalScore - baseTotalScore
-    const { data, error } = await (await getSupabase())
-      .from('profiles')
-      .update({ score_adjustment: scoreAdjustment })
-      .eq('id', profileId)
-      .select('id, score_adjustment')
-      .single()
+    const { data, error } = await (await getSupabase()).rpc('set_profile_score_adjustment', {
+      p_profile_id: profileId,
+      p_score_adjustment: scoreAdjustment,
+    })
 
     if (error) {
       setCreateStatus(error.message)
       return
     }
 
-    const savedAdjustment = Number((data as Pick<Profile, 'score_adjustment'>).score_adjustment ?? scoreAdjustment)
+    const savedAdjustment = Number((data as { score_adjustment?: number | null } | null)?.score_adjustment ?? scoreAdjustment)
     setProfileScoreAdjustments((current) => ({
       ...current,
       [profileId]: Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment,
@@ -7548,12 +7548,10 @@ function handleSessionDateChange(value: string) {
     }
 
     const row = {
-      id: userId,
       full_name: fullName,
       phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
       profile_motto: cleanMotto || null,
       nickname: nickname || null,
-      email: profileEmail.trim() || null,
       birthday: profileBirthday || null,
       ...marketingConsentValues(marketingConsent, profile),
       ...avatarPayload,
@@ -7562,7 +7560,8 @@ function handleSessionDateChange(value: string) {
 
     const { data, error } = await (await getSupabase())
       .from('profiles')
-      .upsert(row)
+      .update(row)
+      .eq('id', userId)
       .select(PROFILE_SELECT)
       .single()
 
@@ -8636,12 +8635,10 @@ function handleSessionDateChange(value: string) {
     setBusyTournamentId(session.id)
     const profileLookup = selectedEditor
       ? { data: selectedEditor, error: null }
-      : await (await getSupabase())
-        .from('profiles')
-        .select(PROFILE_SELECT)
-        .or(`email.eq.${email},nickname.ilike.%${email}%,full_name.ilike.%${email}%`)
-        .limit(1)
-        .maybeSingle()
+      : await (await getSupabase()).rpc('public_profile_search', {
+        p_search: email,
+        p_limit: 1,
+      }).then(({ data, error }) => ({ data: (data ?? [])[0] as Profile | undefined, error }))
 
     const editorProfile = profileLookup.data
     if (profileLookup.error || !editorProfile) {
