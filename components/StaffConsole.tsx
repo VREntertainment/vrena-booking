@@ -434,6 +434,13 @@ type BookingForm = {
   note: string
 }
 
+type CustomerInviteForm = {
+  fullName: string
+  email: string
+  phone: string
+  nickname: string
+}
+
 type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
@@ -531,6 +538,7 @@ const staffConsoleText = {
       saveRules: 'Save rules',
       saveShift: 'Save shift',
       saveVoucher: 'Save voucher',
+      sendPasswordRequest: 'Send password request',
       sessionCalendar: 'Session Calendar',
       submitLeave: 'Submit leave',
       today: 'Today',
@@ -720,6 +728,7 @@ const staffConsoleText = {
       compare: 'Compare',
       compareRange: 'Compare range',
       confirmDeleteWord: 'Type DELETE to confirm',
+      createCustomerAccount: 'Create customer account',
       createDiscount: 'Create discount',
       createGame: 'Create game',
       createLoyaltyRule: 'Create loyalty rule',
@@ -728,6 +737,7 @@ const staffConsoleText = {
       current: 'current',
       communitySession: 'Community session',
       customer: 'Customer',
+      customerAccountHelp: 'Create a customer profile and email them a secure link to set their password.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
       date: 'Date',
@@ -785,6 +795,7 @@ const staffConsoleText = {
       minimumSpend: 'Minimum spend',
       name: 'Name',
       newBooking: 'New booking',
+      nickname: 'Nickname',
       noLinkedOrder: 'No linked order',
       no: 'No',
       noShows: 'No-shows',
@@ -902,6 +913,9 @@ const staffConsoleText = {
       attendanceReadOnly: 'Read-only view. Viewer can inspect attendance, but cannot save changes.',
       attendanceRulesSaved: 'Attendance rules saved.',
       attendanceSaved: 'Attendance saved.',
+      customerAccountEmailRequired: 'Enter a customer email.',
+      customerAccountInvited: 'Customer account created. Password request sent.',
+      customerAccountNameRequired: 'Enter the customer name.',
       discountSaved: 'Discount saved.',
       draftShiftCreated: 'Draft shift created.',
       draftShiftExists: 'That draft already exists for this staff member and day.',
@@ -1111,6 +1125,7 @@ const staffConsoleText = {
       saveRules: 'Lưu quy định',
       saveShift: 'Lưu ca',
       saveVoucher: 'Lưu voucher',
+      sendPasswordRequest: 'Gửi yêu cầu tạo mật khẩu',
       sessionCalendar: 'Lịch phiên',
       submitLeave: 'Gửi nghỉ phép',
       today: 'Hôm nay',
@@ -1300,6 +1315,7 @@ const staffConsoleText = {
       compare: 'So sánh',
       compareRange: 'Khoảng so sánh',
       confirmDeleteWord: 'Nhập DELETE để xác nhận',
+      createCustomerAccount: 'Tạo tài khoản khách hàng',
       createDiscount: 'Tạo ưu đãi',
       createGame: 'Tạo trò chơi',
       createLoyaltyRule: 'Tạo quy tắc điểm',
@@ -1308,6 +1324,7 @@ const staffConsoleText = {
       current: 'hiện tại',
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
+      customerAccountHelp: 'Tạo hồ sơ khách hàng và gửi email bảo mật để họ đặt mật khẩu.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
       date: 'Ngày',
@@ -1365,6 +1382,7 @@ const staffConsoleText = {
       minimumSpend: 'Chi tiêu tối thiểu',
       name: 'Tên',
       newBooking: 'Đặt chỗ mới',
+      nickname: 'Biệt danh',
       noLinkedOrder: 'Chưa có đơn liên kết',
       no: 'Không',
       noShows: 'Không đến',
@@ -1482,6 +1500,9 @@ const staffConsoleText = {
       attendanceReadOnly: 'Chế độ chỉ xem. Viewer có thể xem chấm công nhưng không thể lưu thay đổi.',
       attendanceRulesSaved: 'Đã lưu quy định chấm công.',
       attendanceSaved: 'Đã lưu chấm công.',
+      customerAccountEmailRequired: 'Nhập email khách hàng.',
+      customerAccountInvited: 'Đã tạo tài khoản khách hàng. Đã gửi yêu cầu tạo mật khẩu.',
+      customerAccountNameRequired: 'Nhập tên khách hàng.',
       discountSaved: 'Đã lưu ưu đãi.',
       draftShiftCreated: 'Đã tạo ca nháp.',
       draftShiftExists: 'Ca nháp này đã tồn tại cho nhân viên và ngày này.',
@@ -2348,6 +2369,13 @@ const defaultBookingForm = (): BookingForm => ({
   invoiceEmail: '',
   invoiceAddress: '',
   note: '',
+})
+
+const defaultCustomerInviteForm = (): CustomerInviteForm => ({
+  fullName: '',
+  email: '',
+  phone: '',
+  nickname: '',
 })
 
 const defaultGameForm = () => ({
@@ -4286,6 +4314,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
+  const canCreateCustomerAccounts = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
   const isOwnerOrAdmin = role === 'owner' || role === 'admin'
@@ -4319,6 +4348,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
+  const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
+  const [customerInviteStatus, setCustomerInviteStatus] = useState('')
+  const [isCustomerInviteSaving, setIsCustomerInviteSaving] = useState(false)
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
   const [priceForm, setPriceForm] = useState(() => defaultPriceForm())
   const [discountForm, setDiscountForm] = useState(() => defaultDiscountForm())
@@ -5906,6 +5938,59 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       if (currentTab === 'report') await loadReportData(true)
     }
     setSaving(false)
+  }
+
+  async function createCustomerAccount() {
+    if (!canCreateCustomerAccounts || isCustomerInviteSaving) return
+
+    const fullName = customerInviteForm.fullName.trim()
+    const email = customerInviteForm.email.trim()
+    if (!fullName) {
+      setCustomerInviteStatus(text.messages.customerAccountNameRequired)
+      return
+    }
+    if (!email) {
+      setCustomerInviteStatus(text.messages.customerAccountEmailRequired)
+      return
+    }
+
+    setIsCustomerInviteSaving(true)
+    setCustomerInviteStatus('')
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    if (sessionError || !accessToken) {
+      setCustomerInviteStatus(sessionError?.message || text.messages.readOnlyBooking)
+      setIsCustomerInviteSaving(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/staff/customers/invite', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          phone: customerInviteForm.phone.trim(),
+          nickname: customerInviteForm.nickname.trim(),
+        }),
+      })
+      const payload = await response.json().catch(() => ({})) as { error?: string; message?: string }
+      if (!response.ok) throw new Error(payload.error || 'Could not create customer account.')
+
+      setCustomerInviteForm(defaultCustomerInviteForm())
+      setCustomerInviteStatus(text.messages.customerAccountInvited)
+      setStatus(text.messages.customerAccountInvited)
+      markStaffDataStale('profiles')
+      await loadProfiles(true)
+    } catch (error) {
+      setCustomerInviteStatus(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsCustomerInviteSaving(false)
+    }
   }
 
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
@@ -7668,6 +7753,61 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               {text.labels.roleExplanation}
             </button>
           </div>
+          {canCreateCustomerAccounts && (
+            <div className="staff-customer-invite-panel">
+              <div className="staff-customer-invite-copy">
+                <strong>{text.labels.createCustomerAccount}</strong>
+                <span>{text.labels.customerAccountHelp}</span>
+              </div>
+              <div className="staff-customer-invite-form">
+                <label>
+                  <span className="staff-field-label">{text.labels.name}</span>
+                  <input
+                    autoComplete="name"
+                    value={customerInviteForm.fullName}
+                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, fullName: event.target.value }))}
+                    placeholder="Nguyen Van A"
+                  />
+                </label>
+                <label>
+                  <span className="staff-field-label">{text.labels.email}</span>
+                  <input
+                    autoComplete="email"
+                    type="email"
+                    value={customerInviteForm.email}
+                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, email: event.target.value }))}
+                    placeholder="customer@example.com"
+                  />
+                </label>
+                <label>
+                  <span className="staff-field-label">{text.labels.phone}</span>
+                  <input
+                    autoComplete="tel"
+                    value={customerInviteForm.phone}
+                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder="0981152315"
+                  />
+                </label>
+                <label>
+                  <span className="staff-field-label">{text.labels.nickname}</span>
+                  <input
+                    value={customerInviteForm.nickname}
+                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, nickname: event.target.value }))}
+                    placeholder="Phantom"
+                  />
+                </label>
+                <button
+                  className={isCustomerInviteSaving ? 'primary loading' : 'primary'}
+                  disabled={isCustomerInviteSaving}
+                  type="button"
+                  onClick={createCustomerAccount}
+                >
+                  {text.actions.sendPasswordRequest}
+                </button>
+              </div>
+              {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
+            </div>
+          )}
           <div className="staff-role-tools">
             <label>
               <span className="staff-field-label">{text.labels.searchUsers}</span>

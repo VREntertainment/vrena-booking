@@ -1771,7 +1771,7 @@ function passwordRecoveryUrlParams() {
   const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
   const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token')
   const errorDescription = hashParams.get('error_description') || searchParams.get('error_description')
-  const isRecovery = type === 'recovery' || Boolean(accessToken && refreshToken) || Boolean(code)
+  const isRecovery = type === 'recovery' || type === 'invite' || Boolean(accessToken && refreshToken) || Boolean(code)
 
   if (!isRecovery && !errorDescription) return null
 
