@@ -111,6 +111,7 @@ type StaffDiscount = {
   id: string
   code: string | null
   name: string
+  game_id: string | null
   discount_type: 'percentage' | 'fixed_amount' | 'free_ticket' | 'birthday' | 'resident' | 'group'
   value: number
   valid_from: string
@@ -2307,6 +2308,7 @@ const defaultDiscountForm = () => ({
   id: '',
   code: '',
   name: '',
+  game_id: '',
   discount_type: 'percentage' as StaffDiscount['discount_type'],
   value: 10,
   valid_from: todayString(),
@@ -4222,7 +4224,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
   const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
   const selectedGame = useMemo(() => activeGames.find((game) => game.id === booking.gameId) || activeGames[0] || null, [activeGames, booking.gameId])
-  const selectedDiscount = useMemo(() => discounts.find((discount) => discount.id === booking.discountId) || null, [booking.discountId, discounts])
+  const availableBookingDiscounts = useMemo(() => (
+    discounts.filter((discount) => discount.active && (!discount.game_id || discount.game_id === selectedGame?.id))
+  ), [discounts, selectedGame])
+  const selectedDiscount = useMemo(() => availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null, [availableBookingDiscounts, booking.discountId])
   const selectedRule = useMemo(() => {
     if (!selectedGame) return null
     return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
@@ -4305,6 +4310,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     [attendanceRangeEnd, attendanceRangeStart]
   )
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
+  const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
   const allStaffProfileOptions = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) !== 'player')
@@ -4516,7 +4522,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             : currentTab === 'prices'
               ? loadingData.games || loadingData.prices
               : currentTab === 'discounts'
-                ? loadingData.discounts || (commerceTab === 'loyalty' && (loadingData.games || loadingData.loyalty))
+                ? loadingData.games || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
                 : currentTab === 'roles'
                   ? loadingData.profiles
                   : currentTab === 'restore'
@@ -4538,8 +4544,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     } else if (currentTab === 'prices') {
       void Promise.all([loadGames(), loadPrices()])
     } else if (currentTab === 'discounts') {
-      const loaders: Array<Promise<void>> = [loadDiscounts()]
-      if (commerceTab === 'loyalty') loaders.push(loadGames(), loadLoyaltyRules())
+      const loaders: Array<Promise<void>> = [loadGames(), loadDiscounts()]
+      if (commerceTab === 'loyalty') loaders.push(loadLoyaltyRules())
       void Promise.all(loaders)
     } else if (currentTab === 'roles') {
       void loadProfiles()
@@ -4987,7 +4993,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       p_booking_time: `${booking.time}:00`,
       p_players_count: booking.players,
       p_arena_id: booking.arenaId || null,
-      p_discount_rule_id: hasManualDiscount ? null : booking.discountId || null,
+      p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
       p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
       p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
       p_payment_splits: paymentSplits,
@@ -5139,6 +5145,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     const payload = {
       code: discountForm.code.trim() || null,
       name: discountForm.name.trim(),
+      game_id: discountForm.game_id || null,
       discount_type: discountForm.discount_type,
       value: Number(discountForm.value) || 0,
       valid_from: discountForm.valid_from,
@@ -5950,6 +5957,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       id: discount.id,
       code: discount.code || '',
       name: discount.name,
+      game_id: discount.game_id || '',
       discount_type: discount.discount_type,
       value: discount.value,
       valid_from: discount.valid_from,
@@ -6294,7 +6302,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   })}
                 >
                   <option value="">{text.noDiscount}</option>
-                  {discounts.filter((discount) => discount.active).map((discount) => (
+                  {availableBookingDiscounts.map((discount) => (
                     <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</option>
                   ))}
                 </select>
@@ -7325,6 +7333,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 <div className="form-grid compact-form-grid">
                   <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
                   <label>{text.labels.name}<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
+                  <label>{text.labels.game}<select value={discountForm.game_id} onChange={(event) => setDiscountForm({ ...discountForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
                   <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => updateDiscountType(event.target.value as StaffDiscount['discount_type'])}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
                   <label className="staff-discount-value-field">
                     <span className="staff-label-line">
@@ -7412,7 +7421,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
                   <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                     <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
-                    <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
+                    <span>{discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames} · {text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
                   </button>
                 ))}
                 {commerceTab === 'vouchers' && voucherRules.length === 0 && <p className="notice">{text.messages.noVouchers}</p>}

@@ -5010,6 +5010,7 @@ export default function WidgetPage({
         .then((client) => client.rpc('ticket_discount_code_quote', {
           p_code: normalizedCode,
           p_booking_date: ticketDate,
+          p_game_id: activeTicketService.defaultGame,
           p_subtotal: currentTicketPricing.grossPrice,
           p_unit_price: currentTicketUnitPrice,
         }))
@@ -5052,7 +5053,7 @@ export default function WidgetPage({
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText])
+  }, [activeTicketService.defaultGame, currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText])
 
   useEffect(() => {
     if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
