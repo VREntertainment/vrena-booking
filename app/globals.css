@@ -1327,6 +1327,14 @@ body {
   font-weight: 700;
 }
 
+.app .staff-form-section-label {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
 .app .staff-card-wide {
   min-width: 0;
 }

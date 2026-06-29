@@ -5011,7 +5011,10 @@ export default function WidgetPage({
           p_code: normalizedCode,
           p_booking_date: ticketDate,
           p_game_id: activeTicketService.defaultGame,
+          p_player_count: ticketPlayers,
+          p_start_time: ticketTime ? `${ticketTime}:00` : null,
           p_subtotal: currentTicketPricing.grossPrice,
+          p_ticket_type: ticketType,
           p_unit_price: currentTicketUnitPrice,
         }))
         .then(({ data, error }) => {
@@ -5053,7 +5056,7 @@ export default function WidgetPage({
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText])
+  }, [activeTicketService.defaultGame, currentTicketPricing.discountAmount, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
