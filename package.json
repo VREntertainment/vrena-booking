@@ -10,6 +10,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
+    "test:security": "playwright test e2e/security-rest.spec.ts --project=chromium",
     "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
     "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs"
   },
