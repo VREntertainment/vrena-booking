@@ -481,6 +481,8 @@ export const ko = {
   hidePassword: '숨김',
   rememberMe: '로그인 유지',
   authOr: '또는',
+  continueWithEmail: '계속',
+  changeEmail: '변경',
   continueWithPasskey: '패스키로 계속',
   continueWithGoogle: 'Google로 계속',
   addPasskey: '패스키 추가',

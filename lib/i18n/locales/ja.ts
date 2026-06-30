@@ -481,6 +481,8 @@ export const ja = {
   hidePassword: '非表示',
   rememberMe: 'ログインを保持',
   authOr: 'または',
+  continueWithEmail: '続行',
+  changeEmail: '変更',
   continueWithPasskey: 'パスキーで続行',
   continueWithGoogle: 'Googleで続行',
   addPasskey: 'パスキーを追加',

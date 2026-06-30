@@ -481,6 +481,8 @@ export const it = {
   hidePassword: 'Nascondi',
   rememberMe: 'Ricordami',
   authOr: 'o',
+  continueWithEmail: 'Continua',
+  changeEmail: 'Cambia',
   continueWithPasskey: 'Continua con passkey',
   continueWithGoogle: 'Continua con Google',
   addPasskey: 'Aggiungi passkey',

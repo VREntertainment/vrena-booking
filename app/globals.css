@@ -6761,6 +6761,10 @@ body {
   margin-bottom: 20px;
 }
 
+.app .profile-auth-section .credential-method-stack {
+  margin: 2px 0 0;
+}
+
 .app .profile-auth-section .auth-divider {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -6790,7 +6794,7 @@ body {
   gap: 15px;
 }
 
-.app .profile-form.login-profile-form .email-field, .app .profile-form.login-profile-form .password-field, .app .profile-form.login-profile-form .captcha-field {
+.app .profile-form.login-profile-form .email-field, .app .profile-form.login-profile-form .password-field, .app .profile-form.login-profile-form .captcha-field, .app .profile-form.login-profile-form .auth-email-review, .app .profile-form.login-profile-form .credential-method-stack {
   grid-column: 1;
   max-width: none;
 }
@@ -6846,6 +6850,28 @@ body {
   color: #7a858a;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.app .profile-auth-section .auth-email-review {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 12px;
+  background: #f8fafb;
+  padding: 10px 12px;
+  color: #071112;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.app .profile-auth-section .auth-email-review span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app .profile-auth-section .auth-inline-link {

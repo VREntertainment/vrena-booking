@@ -479,6 +479,8 @@ export const en = {
   hidePassword: 'Hide',
   rememberMe: 'Remember me',
   authOr: 'or',
+  continueWithEmail: 'Continue',
+  changeEmail: 'Change',
   continueWithPasskey: 'Continue with passkey',
   continueWithGoogle: 'Continue with Google',
   addPasskey: 'Add passkey',
