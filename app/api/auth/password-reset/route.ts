@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
+import { UNKNOWN_CLIENT_IP, trustedClientIp } from '@/lib/security/requestIp'
 
 export const runtime = 'nodejs'
 
@@ -21,12 +22,6 @@ function normalizeEmail(value: unknown) {
   return cleanString(value).toLowerCase()
 }
 
-function requestIp(request: NextRequest) {
-  return (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown')
-    .split(',')[0]
-    .trim()
-}
-
 async function verifyCaptcha(token: string, ip: string) {
   const secret = process.env.HCAPTCHA_SECRET
   if (!secret) {
@@ -39,7 +34,7 @@ async function verifyCaptcha(token: string, ip: string) {
     body: new URLSearchParams({
       secret,
       response: token,
-      remoteip: ip,
+      ...(ip === UNKNOWN_CLIENT_IP ? {} : { remoteip: ip }),
     }),
   })
 
@@ -74,7 +69,7 @@ export async function POST(request: NextRequest) {
   const email = normalizeEmail(body.email)
   const captchaToken = cleanString(body.captchaToken)
   const redirect = resolveTrustedAppRedirect(body.redirectTo)
-  const ip = requestIp(request)
+  const ip = trustedClientIp(request.headers)
 
   if (!redirect.ok) {
     return jsonError(redirect.message, redirect.status)
