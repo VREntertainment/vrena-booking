@@ -121,11 +121,11 @@ begin
     and p_source_id is not null
     and exists (
       select 1
-      from public.loyalty_point_transactions
-      where profile_id = p_profile_id
-        and source_type = p_source_type
-        and source_id = p_source_id
-        and rule_id is not distinct from p_rule_id
+      from public.loyalty_point_transactions lpt
+      where lpt.profile_id = p_profile_id
+        and lpt.source_type = p_source_type
+        and lpt.source_id = p_source_id
+        and lpt.rule_id is not distinct from p_rule_id
     )
   then
     return query select p_profile_id, coalesce(v_current, 0);
