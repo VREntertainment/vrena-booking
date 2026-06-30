@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
+import { trustedClientIp } from '@/lib/security/requestIp'
 
 export const runtime = 'nodejs'
 
@@ -44,12 +45,6 @@ function errorMessage(value: unknown) {
   if (value instanceof Error) return value.message
   if (value && typeof value === 'object' && 'message' in value) return String((value as { message?: unknown }).message || '')
   return ''
-}
-
-function requestIp(request: NextRequest) {
-  return (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown')
-    .split(',')[0]
-    .trim()
 }
 
 export async function POST(request: NextRequest) {
@@ -105,7 +100,7 @@ export async function POST(request: NextRequest) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Enter a valid customer email.', 400)
   if (!fullName) return jsonError('Enter the customer name.', 400)
 
-  const ip = requestIp(request)
+  const ip = trustedClientIp(request.headers)
   const { error: actorRateLimitError } = await adminClient.rpc('consume_rate_limit', {
     p_action: 'customer_invite_actor',
     p_limit: 10,
