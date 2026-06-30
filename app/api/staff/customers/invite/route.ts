@@ -104,11 +104,23 @@ export async function POST(request: NextRequest) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Enter a valid customer email.', 400)
   if (!fullName) return jsonError('Enter the customer name.', 400)
 
+  const ip = requestIp(request)
+  const { error: actorRateLimitError } = await adminClient.rpc('consume_rate_limit', {
+    p_action: 'customer_invite_actor',
+    p_limit: 10,
+    p_window_seconds: 10 * 60,
+    p_subject: `staff:${userData.user.id}:ip:${ip}`,
+  })
+
+  if (actorRateLimitError) {
+    return jsonError(actorRateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
+  }
+
   const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
     p_action: 'customer_invite',
     p_limit: 5,
     p_window_seconds: 10 * 60,
-    p_subject: `${userData.user.id}:${email}:${requestIp(request)}`,
+    p_subject: `staff:${userData.user.id}:email:${email}:ip:${ip}`,
   })
 
   if (rateLimitError) {
