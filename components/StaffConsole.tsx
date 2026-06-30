@@ -7,7 +7,7 @@ import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
 
-type StaffTab = 'new' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
+type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
@@ -248,7 +248,7 @@ type StaffAttendanceSettings = {
 }
 
 const staffTabGroups: Array<{ id: StaffTabGroupId; tabs: StaffTab[] }> = [
-  { id: 'operate', tabs: ['new', 'today', 'orders'] },
+  { id: 'operate', tabs: ['new', 'clientProfile', 'today', 'orders'] },
   { id: 'reports', tabs: ['report'] },
   { id: 'team', tabs: ['attendance', 'roles'] },
   { id: 'setup', tabs: ['games', 'prices', 'discounts'] },
@@ -1028,6 +1028,7 @@ const staffConsoleText = {
       { title: 'Player', body: 'Client app only. No Staff Console access.' },
     ],
     tabs: {
+      clientProfile: 'Client Profile',
       discounts: 'Offers',
       attendance: 'Attendance',
       games: 'Games',
@@ -1615,6 +1616,7 @@ const staffConsoleText = {
       { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
     ],
     tabs: {
+      clientProfile: 'Hồ sơ khách',
       discounts: 'Ưu đãi',
       attendance: 'Chấm công',
       games: 'Trò chơi',
@@ -4384,11 +4386,22 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
-    const staffTabs: StaffTab[] = ['new', 'today', 'orders', 'report', 'attendance', 'roles', 'games', 'prices', 'discounts']
+    const staffTabs: StaffTab[] = [
+      'new',
+      ...(canCreateCustomerAccounts ? (['clientProfile'] satisfies StaffTab[]) : []),
+      'today',
+      'orders',
+      'report',
+      'attendance',
+      'roles',
+      'games',
+      'prices',
+      'discounts',
+    ]
     if (rank >= 120) return [...staffTabs, 'restore']
     if (rank >= 20) return staffTabs
     return ['report']
-  }, [rank])
+  }, [canCreateCustomerAccounts, rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
   const visibleTabGroups = useMemo(() => staffTabGroups.map((group) => ({
     ...group,
@@ -4713,23 +4726,25 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const currentTabLoading = Boolean(
     currentTab === 'new'
       ? loadingData.games || loadingData.prices || loadingData.discounts || loadingData.profiles
-      : currentTab === 'today'
-        ? loadingData.games || loadingData.today || loadingData.todaySessions
-        : currentTab === 'attendance'
-          ? loadingData.profiles || loadingData.attendance
-          : currentTab === 'games'
-            ? loadingData.games
-            : currentTab === 'prices'
-              ? loadingData.games || loadingData.prices
-              : currentTab === 'discounts'
-                ? loadingData.games || loadingData.prices || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
-                : currentTab === 'roles'
-                  ? loadingData.profiles
-                  : currentTab === 'restore'
-                    ? loadingData.restore
-                    : currentTab === 'orders'
-                      ? loadingData.games || loadingData.orders
-                      : loadingData.games || loadingData.report
+      : currentTab === 'clientProfile'
+        ? false
+        : currentTab === 'today'
+          ? loadingData.games || loadingData.today || loadingData.todaySessions
+          : currentTab === 'attendance'
+            ? loadingData.profiles || loadingData.attendance
+            : currentTab === 'games'
+              ? loadingData.games
+              : currentTab === 'prices'
+                ? loadingData.games || loadingData.prices
+                : currentTab === 'discounts'
+                  ? loadingData.games || loadingData.prices || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
+                  : currentTab === 'roles'
+                    ? loadingData.profiles
+                    : currentTab === 'restore'
+                      ? loadingData.restore
+                      : currentTab === 'orders'
+                        ? loadingData.games || loadingData.orders
+                        : loadingData.games || loadingData.report
   )
 
   useEffect(() => {
@@ -7725,6 +7740,67 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         </div>
       )}
 
+      {currentTab === 'clientProfile' && canCreateCustomerAccounts && (
+        <div className="staff-card staff-card-wide">
+          <div className="staff-card-heading">
+            <h3>{text.labels.createCustomerAccount}</h3>
+          </div>
+          <div className="staff-customer-invite-panel">
+            <div className="staff-customer-invite-copy">
+              <strong>{text.labels.createCustomerAccount}</strong>
+              <span>{text.labels.customerAccountHelp}</span>
+            </div>
+            <div className="staff-customer-invite-form">
+              <label>
+                <span className="staff-field-label">{text.labels.name}</span>
+                <input
+                  autoComplete="name"
+                  value={customerInviteForm.fullName}
+                  onChange={(event) => setCustomerInviteForm((current) => ({ ...current, fullName: event.target.value }))}
+                  placeholder="Nguyen Van A"
+                />
+              </label>
+              <label>
+                <span className="staff-field-label">{text.labels.email}</span>
+                <input
+                  autoComplete="email"
+                  type="email"
+                  value={customerInviteForm.email}
+                  onChange={(event) => setCustomerInviteForm((current) => ({ ...current, email: event.target.value }))}
+                  placeholder="customer@example.com"
+                />
+              </label>
+              <label>
+                <span className="staff-field-label">{text.labels.phone}</span>
+                <input
+                  autoComplete="tel"
+                  value={customerInviteForm.phone}
+                  onChange={(event) => setCustomerInviteForm((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="0981152315"
+                />
+              </label>
+              <label>
+                <span className="staff-field-label">{text.labels.nickname}</span>
+                <input
+                  value={customerInviteForm.nickname}
+                  onChange={(event) => setCustomerInviteForm((current) => ({ ...current, nickname: event.target.value }))}
+                  placeholder="Phantom"
+                />
+              </label>
+              <button
+                className={isCustomerInviteSaving ? 'primary loading' : 'primary'}
+                disabled={isCustomerInviteSaving}
+                type="button"
+                onClick={createCustomerAccount}
+              >
+                {text.actions.sendPasswordRequest}
+              </button>
+            </div>
+            {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
+          </div>
+        </div>
+      )}
+
       {currentTab === 'roles' && (
         <div className="staff-card staff-card-wide">
           <div className="staff-card-heading">
@@ -7733,61 +7809,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               {text.labels.roleExplanation}
             </button>
           </div>
-          {canCreateCustomerAccounts && (
-            <div className="staff-customer-invite-panel">
-              <div className="staff-customer-invite-copy">
-                <strong>{text.labels.createCustomerAccount}</strong>
-                <span>{text.labels.customerAccountHelp}</span>
-              </div>
-              <div className="staff-customer-invite-form">
-                <label>
-                  <span className="staff-field-label">{text.labels.name}</span>
-                  <input
-                    autoComplete="name"
-                    value={customerInviteForm.fullName}
-                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, fullName: event.target.value }))}
-                    placeholder="Nguyen Van A"
-                  />
-                </label>
-                <label>
-                  <span className="staff-field-label">{text.labels.email}</span>
-                  <input
-                    autoComplete="email"
-                    type="email"
-                    value={customerInviteForm.email}
-                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, email: event.target.value }))}
-                    placeholder="customer@example.com"
-                  />
-                </label>
-                <label>
-                  <span className="staff-field-label">{text.labels.phone}</span>
-                  <input
-                    autoComplete="tel"
-                    value={customerInviteForm.phone}
-                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, phone: event.target.value }))}
-                    placeholder="0981152315"
-                  />
-                </label>
-                <label>
-                  <span className="staff-field-label">{text.labels.nickname}</span>
-                  <input
-                    value={customerInviteForm.nickname}
-                    onChange={(event) => setCustomerInviteForm((current) => ({ ...current, nickname: event.target.value }))}
-                    placeholder="Phantom"
-                  />
-                </label>
-                <button
-                  className={isCustomerInviteSaving ? 'primary loading' : 'primary'}
-                  disabled={isCustomerInviteSaving}
-                  type="button"
-                  onClick={createCustomerAccount}
-                >
-                  {text.actions.sendPasswordRequest}
-                </button>
-              </div>
-              {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
-            </div>
-          )}
           <div className="staff-role-tools">
             <label>
               <span className="staff-field-label">{text.labels.searchUsers}</span>
