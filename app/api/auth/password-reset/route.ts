@@ -57,8 +57,9 @@ async function verifyCaptcha(token: string, ip: string) {
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return jsonError('Password reset is not configured on this environment.', 500)
   }
 
@@ -81,28 +82,9 @@ export async function POST(request: NextRequest) {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
-
-  const { error: emailRateLimitError } = await supabase.rpc('consume_rate_limit', {
-    p_action: 'password_reset',
-    p_limit: 3,
-    p_window_seconds: 10 * 60,
-    p_subject: `email:${email}`,
+  const rateLimitClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
   })
-
-  if (emailRateLimitError) {
-    return jsonError(emailRateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
-  }
-
-  const { error: ipRateLimitError } = await supabase.rpc('consume_rate_limit', {
-    p_action: 'password_reset_ip',
-    p_limit: 10,
-    p_window_seconds: 10 * 60,
-    p_subject: `ip:${ip}`,
-  })
-
-  if (ipRateLimitError) {
-    return jsonError(ipRateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
-  }
 
   const authorization = request.headers.get('authorization') || ''
   const accessToken = authorization.replace(/^Bearer\s+/i, '').trim()
@@ -118,6 +100,15 @@ export async function POST(request: NextRequest) {
 
     const captcha = await verifyCaptcha(captchaToken, ip)
     if (!captcha.ok) return jsonError(captcha.message, 400)
+  }
+
+  const { error: rateLimitError } = await rateLimitClient.rpc('consume_password_reset_rate_limit', {
+    p_email: email,
+    p_ip: ip,
+  })
+
+  if (rateLimitError) {
+    return jsonError(rateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
