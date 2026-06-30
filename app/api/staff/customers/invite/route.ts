@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 
 export const runtime = 'nodejs'
 
@@ -127,9 +128,13 @@ export async function POST(request: NextRequest) {
     return jsonError(rateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
   }
 
-  const redirectTo = `${request.nextUrl.origin}/login`
+  const redirect = resolveTrustedAppRedirect('/login')
+  if (!redirect.ok) {
+    return jsonError(redirect.message, redirect.status)
+  }
+
   const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
+    redirectTo: redirect.url,
     data: {
       full_name: fullName,
       name: fullName,
