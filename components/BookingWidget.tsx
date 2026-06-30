@@ -3550,6 +3550,9 @@ export default function WidgetPage({
       return
     }
 
+    const allowed = await consumeAppRateLimit('password_reset', email, setProfileStatus)
+    if (!allowed) return
+
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
     const resetOptions = {
