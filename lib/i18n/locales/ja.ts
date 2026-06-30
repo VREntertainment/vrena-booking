@@ -248,6 +248,8 @@ export const ja = {
   clubBannerHelp: 'JPG、PNG、WEBP。最大2MB。推奨1600x600。',
   clubBannerTypeError: 'クラブバナーはJPG、PNG、WEBPを使用してください。',
   clubBannerSizeError: 'クラブバナーは2MB以下にしてください。',
+  avatarPhotoTypeError: 'プロフィール写真はJPG、PNG、WebPを使用してください。',
+  avatarPhotoSizeError: 'プロフィール写真は2MB以下にしてください。',
   clubThemeColor: 'クラブカラー',
   clubPrivacy: 'クラブ公開設定',
   clubDefaultLanguage: '既定言語',

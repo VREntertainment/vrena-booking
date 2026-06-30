@@ -248,6 +248,8 @@ export const vi = {
   clubBannerHelp: 'JPG, PNG, WEBP. Tối đa 2 MB. Gợi ý 1600x600.',
   clubBannerTypeError: 'Dùng JPG, PNG hoặc WEBP cho banner CLB.',
   clubBannerSizeError: 'Banner CLB phải từ 2 MB trở xuống.',
+  avatarPhotoTypeError: 'Dùng JPG, PNG hoặc WebP cho ảnh đại diện.',
+  avatarPhotoSizeError: 'Ảnh đại diện phải từ 2 MB trở xuống.',
   clubThemeColor: 'Màu CLB',
   clubPrivacy: 'Chế độ CLB',
   clubDefaultLanguage: 'Ngôn ngữ mặc định',

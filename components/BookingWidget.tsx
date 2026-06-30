@@ -56,6 +56,8 @@ const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name, author
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+const AVATAR_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
 
@@ -7703,7 +7705,10 @@ function handleSessionDateChange(value: string) {
 
     const safeName = avatarFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
     const path = `${ownerId}/${Date.now()}-${safeName}`
-    const upload = await (await getSupabase()).storage.from('avatars').upload(path, avatarFile, { upsert: true })
+    const upload = await (await getSupabase()).storage.from('avatars').upload(path, avatarFile, {
+      contentType: avatarFile.type,
+      upsert: true,
+    })
 
     if (upload.error) {
       setProfileStatus(upload.error.message)
@@ -7717,9 +7722,33 @@ function handleSessionDateChange(value: string) {
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] || null
+
+    if (!file) {
+      setAvatarFile(null)
+      setAvatarPreview('')
+      return
+    }
+
+    if (!AVATAR_IMAGE_TYPES.includes(file.type)) {
+      setProfileStatus(text.avatarPhotoTypeError)
+      setAvatarFile(null)
+      setAvatarPreview('')
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > AVATAR_IMAGE_MAX_BYTES) {
+      setProfileStatus(text.avatarPhotoSizeError)
+      setAvatarFile(null)
+      setAvatarPreview('')
+      event.target.value = ''
+      return
+    }
+
     setAvatarFile(file)
-    setAvatarPreview(file ? URL.createObjectURL(file) : '')
-    if (file) setAvatarMode('photo')
+    setAvatarPreview(URL.createObjectURL(file))
+    setAvatarMode('photo')
+    setProfileStatus('')
   }
 
   function toggleGame(gameId: GameId) {
@@ -11808,7 +11837,7 @@ function handleSessionDateChange(value: string) {
                     ) : (
                       <span className="avatar-text">{displayName(profile).slice(0, 1)}</span>
                     )}
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} />
                   </label>
                   <div>
                     <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
