@@ -481,6 +481,8 @@ export const vi = {
   hidePassword: 'Ẩn',
   rememberMe: 'Ghi nhớ tôi',
   authOr: 'hoặc',
+  continueWithEmail: 'Tiếp tục',
+  changeEmail: 'Đổi',
   continueWithPasskey: 'Tiếp tục bằng passkey',
   continueWithGoogle: 'Tiếp tục với Google',
   addPasskey: 'Thêm passkey',

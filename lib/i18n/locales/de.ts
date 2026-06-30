@@ -481,6 +481,8 @@ export const de = {
   hidePassword: 'Ausblenden',
   rememberMe: 'Angemeldet bleiben',
   authOr: 'oder',
+  continueWithEmail: 'Weiter',
+  changeEmail: 'Ändern',
   continueWithPasskey: 'Mit Passkey weiter',
   continueWithGoogle: 'Mit Google weiter',
   addPasskey: 'Passkey hinzufügen',

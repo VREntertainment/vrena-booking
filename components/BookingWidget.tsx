@@ -20,6 +20,7 @@ const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const DEFAULT_APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
+const HCAPTCHA_READY_CALLBACK = '__vrenaHcaptchaReady'
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
@@ -1896,6 +1897,7 @@ export default function WidgetPage({
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
   const [authMode, setAuthMode] = useState<'login' | 'create' | 'reset'>('login')
+  const [authStep, setAuthStep] = useState<'email' | 'credentials'>('email')
   const [profileCountryCode, setProfileCountryCode] = useState('+84')
   const [countryPickerOpen, setCountryPickerOpen] = useState(false)
   const [countrySearch, setCountrySearch] = useState('')
@@ -2458,6 +2460,7 @@ export default function WidgetPage({
 
   function goToLogin() {
     setAuthMode('login')
+    setAuthStep('email')
     setActiveView('profile')
     setProfileStatus(text.loginToContinue)
     setLoginPromptOpen(false)
@@ -2697,6 +2700,35 @@ export default function WidgetPage({
     if (hcaptcha && captchaWidgetId.current) {
       hcaptcha.reset(captchaWidgetId.current)
     }
+  }
+
+  function updateAuthMode(nextMode: 'login' | 'create') {
+    setAuthMode(nextMode)
+    setAuthStep('email')
+    setProfilePassword('')
+    setProfileStatus('')
+    resetCaptcha()
+  }
+
+  function continueAuthFromEmail() {
+    const loginEmail = profileEmail.trim().toLowerCase()
+
+    if (!loginEmail || !loginEmail.includes('@')) {
+      setProfileStatus(text.emailRequired)
+      return
+    }
+
+    setProfileEmail(loginEmail)
+    setProfileStatus('')
+    resetCaptcha()
+    setAuthStep('credentials')
+  }
+
+  function editAuthEmail() {
+    setAuthStep('email')
+    setProfilePassword('')
+    setProfileStatus('')
+    resetCaptcha()
   }
 
   async function shareLink(key: string, title: string, path = '') {
@@ -3236,6 +3268,11 @@ export default function WidgetPage({
 
   async function handleAuth() {
     try {
+      if (!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email') {
+        continueAuthFromEmail()
+        return
+      }
+
       const localPhone = profilePhone.replace(/\D/g, '')
       const loginEmail = profileEmail.trim().toLowerCase()
       const fullName = profileName.trim()
@@ -3323,6 +3360,7 @@ export default function WidgetPage({
         if (!signUpResult.data.user) {
           setProfileStatus(text.loginRequired)
           setAuthMode('login')
+          setAuthStep('credentials')
           setIsSavingProfile(false)
           return
         }
@@ -3369,6 +3407,7 @@ export default function WidgetPage({
       if (!signInResult.data.user) {
         setProfileStatus(text.loginRequired)
         setAuthMode('login')
+        setAuthStep('credentials')
         setIsSavingProfile(false)
         return
       }
@@ -3393,6 +3432,7 @@ export default function WidgetPage({
     setAuthEmail('')
     setProfile(null)
     setProfilePassword('')
+    setAuthStep('email')
     setNewPassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.loggedOut)
@@ -3529,6 +3569,7 @@ export default function WidgetPage({
 
     setActiveView('profile')
     setAuthMode('login')
+    setAuthStep('email')
 
     if (recoveryParams.errorDescription) {
       setIsRecoveryMode(false)
@@ -4608,6 +4649,7 @@ export default function WidgetPage({
           setIsRecoveryMode(true)
           setActiveView('profile')
           setAuthMode('login')
+          setAuthStep('email')
           setProfileStatus(resetPasswordReadyTextRef.current)
         }
       })
@@ -4696,7 +4738,9 @@ export default function WidgetPage({
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile' || (authMode !== 'create' && authMode !== 'reset')) return
+    const shouldShowCaptcha = authMode === 'reset' || (authMode === 'create' && authStep === 'credentials')
+
+    if (typeof window === 'undefined' || profile || activeView !== 'profile' || !shouldShowCaptcha) return
 
     let cancelled = false
 
@@ -4714,6 +4758,9 @@ export default function WidgetPage({
     }
 
     const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+    const browserWindow = window as Window & { [HCAPTCHA_READY_CALLBACK]?: () => void }
+
+    browserWindow[HCAPTCHA_READY_CALLBACK] = renderCaptcha
 
     if (getHCaptcha()) {
       renderCaptcha()
@@ -4722,10 +4769,9 @@ export default function WidgetPage({
     } else {
       const script = document.createElement('script')
       script.id = 'hcaptcha-script'
-      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit'
+      script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
       script.async = true
       script.defer = true
-      script.addEventListener('load', renderCaptcha, { once: true })
       document.body.appendChild(script)
     }
 
@@ -4744,8 +4790,12 @@ export default function WidgetPage({
       }
 
       captchaWidgetId.current = null
+
+      if (browserWindow[HCAPTCHA_READY_CALLBACK] === renderCaptcha) {
+        delete browserWindow[HCAPTCHA_READY_CALLBACK]
+      }
     }
-  }, [activeView, authMode, profile])
+  }, [activeView, authMode, authStep, profile])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -11748,19 +11798,14 @@ function handleSessionDateChange(value: string) {
               <div className="segmented auth-toggle">
                 <button
                   className={authMode === 'login' ? 'active' : ''}
-                  onClick={() => {
-                    setAuthMode('login')
-                    resetCaptcha()
-                  }}
+                  onClick={() => updateAuthMode('login')}
                   type="button"
                 >
                   {text.logIn}
                 </button>
                 <button
                   className={authMode === 'create' ? 'active' : ''}
-                  onClick={() => {
-                    setAuthMode('create')
-                  }}
+                  onClick={() => updateAuthMode('create')}
                   type="button"
                 >
                   {text.createAccountTab}
@@ -11768,24 +11813,8 @@ function handleSessionDateChange(value: string) {
               </div>
             )}
 
-            {!profile && !isRecoveryMode && authMode !== 'reset' && (
+            {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
               <div className="auth-method-stack">
-                {authMode === 'login' && (
-                  <button
-                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
-                    disabled={isPasskeyLoading}
-                    onClick={signInWithPasskey}
-                    type="button"
-                  >
-                    <span className="passkey-mark" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
-                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
-                      </svg>
-                    </span>
-                    {text.continueWithPasskey}
-                  </button>
-                )}
                 <button
                   className={isOAuthLoading ? 'secondary create-button google-auth-button loading' : 'secondary create-button google-auth-button'}
                   disabled={isOAuthLoading}
@@ -11810,7 +11839,7 @@ function handleSessionDateChange(value: string) {
 
             <div className={[
               'form-grid profile-form',
-              !profile && (authMode === 'login' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
+              !profile && (authMode === 'login' || authMode === 'create' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
             ].join(' ').trim()}>
               {showProfileFields && (
@@ -11988,15 +12017,25 @@ function handleSessionDateChange(value: string) {
                   </div>
                 </>
               )}
-              <div className="email-field">
-                <label>{text.email} <span className="required">*</span></label>
-                <input
-                  type="email"
-                  value={profileEmail}
-                  onChange={(event) => setProfileEmail(event.target.value)}
-                  placeholder="contact@vre-vietnam.com"
-                />
-              </div>
+              {(profile || authMode === 'reset' || isRecoveryMode || authStep === 'email') && (
+                <div className="email-field">
+                  <label>{text.email} <span className="required">*</span></label>
+                  <input
+                    type="email"
+                    value={profileEmail}
+                    onChange={(event) => setProfileEmail(event.target.value)}
+                    placeholder="contact@vre-vietnam.com"
+                  />
+                </div>
+              )}
+              {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'credentials' && (
+                <div className="auth-email-review">
+                  <span>{profileEmail}</span>
+                  <button className="auth-inline-link" onClick={editAuthEmail} type="button">
+                    {text.changeEmail}
+                  </button>
+                </div>
+              )}
               {showProfileFields && (
                 <div className="name-field">
                   <label>{text.name} <span className="required">*</span></label>
@@ -12058,7 +12097,7 @@ function handleSessionDateChange(value: string) {
                   </span>
                 </label>
               )}
-              {!profile && authMode === 'create' && (
+              {!profile && authMode === 'create' && authStep === 'credentials' && (
                 <label className="consent-field">
                   <input
                     checked={personalDataConsent}
@@ -12074,7 +12113,28 @@ function handleSessionDateChange(value: string) {
                   </span>
                 </label>
               )}
-              {!profile && !isRecoveryMode && authMode !== 'reset' && (
+              {!profile && !isRecoveryMode && authMode === 'login' && authStep === 'credentials' && (
+                <div className="auth-method-stack credential-method-stack">
+                  <button
+                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
+                    disabled={isPasskeyLoading}
+                    onClick={signInWithPasskey}
+                    type="button"
+                  >
+                    <span className="passkey-mark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
+                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
+                      </svg>
+                    </span>
+                    {text.continueWithPasskey}
+                  </button>
+                  <div className="auth-divider">
+                    <span>{text.authOr}</span>
+                  </div>
+                </div>
+              )}
+              {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'credentials' && (
                 <div className="password-field">
                   <label>{text.password} <span className="required">*</span></label>
                   <div className="password-control">
@@ -12103,6 +12163,7 @@ function handleSessionDateChange(value: string) {
                         className="auth-inline-link"
                         onClick={() => {
                           setAuthMode('reset')
+                          setAuthStep('email')
                           setProfileStatus('')
                           resetCaptcha()
                         }}
@@ -12114,7 +12175,7 @@ function handleSessionDateChange(value: string) {
                   )}
                 </div>
               )}
-              {!profile && !isRecoveryMode && (authMode === 'create' || authMode === 'reset') && (
+              {!profile && !isRecoveryMode && (authMode === 'reset' || (authMode === 'create' && authStep === 'credentials')) && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
@@ -12154,6 +12215,7 @@ function handleSessionDateChange(value: string) {
                   className="secondary create-button"
                   onClick={() => {
                     setAuthMode('login')
+                    setAuthStep('email')
                     setProfileStatus('')
                     resetCaptcha()
                   }}
@@ -12178,7 +12240,8 @@ function handleSessionDateChange(value: string) {
                 <button
                   className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
                   disabled={isSavingProfile}
-                  onClick={profile ? saveProfile : handleAuth}
+                  onClick={profile ? saveProfile : authStep === 'email' && authMode !== 'reset' ? continueAuthFromEmail : handleAuth}
+                  type="button"
                 >
                   {isSavingProfile
                     ? profile
@@ -12188,6 +12251,8 @@ function handleSessionDateChange(value: string) {
                         : text.creating
                     : profile
                       ? text.saveProfile
+                      : authStep === 'email' && authMode !== 'reset'
+                        ? text.continueWithEmail
                       : authMode === 'login'
                         ? text.logIn
                         : text.createAccount}
