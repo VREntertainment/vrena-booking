@@ -5,7 +5,7 @@ import webpush from 'npm:web-push@3.6.7'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+  'Access-Control-Allow-Headers': 'x-client-info, apikey, content-type, x-cron-secret',
   'Access-Control-Max-Age': '86400',
 }
 
@@ -39,13 +39,9 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   })
 }
 
-function isAuthorized(request: Request, serviceRoleKey: string) {
-  const cronSecret = Deno.env.get('PUSH_CRON_SECRET')
+function isAuthorized(request: Request, cronSecret: string) {
   const requestSecret = request.headers.get('x-cron-secret')
-  if (cronSecret && requestSecret === cronSecret) return true
-
-  const authorization = request.headers.get('authorization') || ''
-  return Boolean(serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`)
+  return Boolean(cronSecret && requestSecret === cronSecret)
 }
 
 function errorMessage(error: unknown) {
@@ -68,11 +64,16 @@ serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  const cronSecret = Deno.env.get('PUSH_CRON_SECRET') || ''
   const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') || ''
   const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') || ''
   const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:contact@vre-vietnam.com'
 
-  if (!isAuthorized(request, serviceRoleKey)) {
+  if (!cronSecret) {
+    return jsonResponse({ error: 'Missing push cron secret configuration' }, 500)
+  }
+
+  if (!isAuthorized(request, cronSecret)) {
     return jsonResponse({ error: 'Unauthorized' }, 401)
   }
 
