@@ -3550,21 +3550,28 @@ export default function WidgetPage({
       return
     }
 
-    const allowed = await consumeAppRateLimit('password_reset', email, setProfileStatus)
-    if (!allowed) return
-
     setIsResettingPassword(true)
     const redirectTo = appRedirectUrl()
-    const resetOptions = {
-      redirectTo,
-      captchaToken: captchaToken || undefined,
-    }
-    const { error } = await (await getSupabase()).auth.resetPasswordForEmail(email, resetOptions)
+    const supabase = await getSupabase()
+    const { data: sessionData } = await supabase.auth.getSession()
+    const response = await fetch('/api/auth/password-reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
+      },
+      body: JSON.stringify({
+        email,
+        redirectTo,
+        captchaToken: captchaToken || undefined,
+      }),
+    })
+    const resetResult = (await response.json().catch(() => ({}))) as { error?: string }
 
     resetCaptcha()
 
-    if (error) {
-      setProfileStatus(error.message)
+    if (!response.ok) {
+      setProfileStatus(resetResult.error || 'Could not send password reset email.')
       setIsResettingPassword(false)
       return
     }
