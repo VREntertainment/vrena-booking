@@ -6723,6 +6723,8 @@ body {
 }
 
 .app .profile-auth-section .auth-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
   margin: 20px 0 18px;
   border: 1px solid rgba(7, 17, 18, 0.08);
@@ -6815,6 +6817,25 @@ body {
   color: #7a858a;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.app .profile-auth-section .auth-inline-link {
+  width: fit-content;
+  min-height: 0;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #3059ff;
+  padding: 0;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.app .profile-auth-section .auth-inline-link:hover {
+  text-decoration: underline;
 }
 
 .app .profile-auth-section .consent-field {
