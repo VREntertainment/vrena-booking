@@ -1901,6 +1901,7 @@ export default function WidgetPage({
   const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
+  const [rememberLogin, setRememberLogin] = useState(true)
   const [captchaToken, setCaptchaToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
@@ -1924,6 +1925,7 @@ export default function WidgetPage({
   const [profileStatus, setProfileStatus] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
@@ -3394,6 +3396,67 @@ export default function WidgetPage({
     setNewPassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.loggedOut)
+  }
+
+  function passkeysAvailable() {
+    return typeof window !== 'undefined' && 'PublicKeyCredential' in window
+  }
+
+  async function signInWithPasskey() {
+    if (!passkeysAvailable()) {
+      setProfileStatus(text.passkeyUnavailable)
+      return
+    }
+
+    try {
+      setIsPasskeyLoading(true)
+      setProfileStatus(text.passkeyStarting)
+      const client = await getSupabase()
+      const { data, error } = await client.auth.signInWithPasskey()
+
+      if (error) {
+        setProfileStatus(error.message)
+        setIsPasskeyLoading(false)
+        return
+      }
+
+      const nextUserId = data.user?.id || data.session?.user.id || ''
+      if (nextUserId) setUserId(nextUserId)
+      await loadProfile()
+      setProfileStatus(text.loggedIn)
+      setActiveView('leaderboard')
+      setIsPasskeyLoading(false)
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : String(error))
+      setIsPasskeyLoading(false)
+    }
+  }
+
+  async function registerPasskey() {
+    if (!profile) return
+
+    if (!passkeysAvailable()) {
+      setProfileStatus(text.passkeyUnavailable)
+      return
+    }
+
+    try {
+      setIsPasskeyLoading(true)
+      setProfileStatus(text.passkeyStarting)
+      const { error } = await (await getSupabase()).auth.registerPasskey()
+
+      if (error) {
+        setProfileStatus(error.message)
+        setIsPasskeyLoading(false)
+        return
+      }
+
+      setProfileStatus(text.passkeyAdded)
+      setIsPasskeyLoading(false)
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : String(error))
+      setIsPasskeyLoading(false)
+    }
   }
 
   async function signInWithGoogle() {
@@ -11681,7 +11744,7 @@ function handleSessionDateChange(value: string) {
               </p>
             )}
 
-            {!profile && !isRecoveryMode && (
+            {!profile && !isRecoveryMode && authMode !== 'reset' && (
               <div className="segmented auth-toggle">
                 <button
                   className={authMode === 'login' ? 'active' : ''}
@@ -11702,17 +11765,46 @@ function handleSessionDateChange(value: string) {
                 >
                   {text.createAccountTab}
                 </button>
+              </div>
+            )}
+
+            {!profile && !isRecoveryMode && authMode !== 'reset' && (
+              <div className="auth-method-stack">
+                {authMode === 'login' && (
+                  <button
+                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
+                    disabled={isPasskeyLoading}
+                    onClick={signInWithPasskey}
+                    type="button"
+                  >
+                    <span className="passkey-mark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
+                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
+                      </svg>
+                    </span>
+                    {text.continueWithPasskey}
+                  </button>
+                )}
                 <button
-                  className={authMode === 'reset' ? 'active' : ''}
-                  onClick={() => {
-                    setAuthMode('reset')
-                    setProfileStatus('')
-                    resetCaptcha()
-                  }}
+                  className={isOAuthLoading ? 'secondary create-button google-auth-button loading' : 'secondary create-button google-auth-button'}
+                  disabled={isOAuthLoading}
+                  onClick={signInWithGoogle}
                   type="button"
                 >
-                  {text.resetPasswordTab}
+                  <span className="google-mark" aria-hidden="true">
+                    <svg viewBox="0 0 18 18" focusable="false">
+                      <path fill="#4285f4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" />
+                      <path fill="#34a853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.35 0-4.34-1.58-5.05-3.72H.93v2.33A9 9 0 0 0 9 18Z" />
+                      <path fill="#fbbc05" d="M3.95 10.7a5.41 5.41 0 0 1 0-3.4V4.97H.93a9 9 0 0 0 0 8.06l3.02-2.33Z" />
+                      <path fill="#ea4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0 9 9 0 0 0 .93 4.97L3.95 7.3C4.66 5.16 6.65 3.58 9 3.58Z" />
+                    </svg>
+                  </span>
+                  {text.continueWithGoogle}
                 </button>
+                <div className="auth-divider">
+                  <span>{text.authOr}</span>
+                </div>
               </div>
             )}
 
@@ -11996,19 +12088,29 @@ function handleSessionDateChange(value: string) {
                       {showPassword ? text.hidePassword : text.showPassword}
                     </button>
                   </div>
-                  <p className="field-help">{authMode === 'create' ? text.passwordHelp : text.passwordLoginHelp}</p>
+                  {authMode === 'create' && <p className="field-help">{text.passwordHelp}</p>}
                   {authMode === 'login' && (
-                    <button
-                      className="auth-inline-link"
-                      onClick={() => {
-                        setAuthMode('reset')
-                        setProfileStatus('')
-                        resetCaptcha()
-                      }}
-                      type="button"
-                    >
-                      {text.forgotPassword}
-                    </button>
+                    <div className="auth-utility-row">
+                      <label className="remember-field">
+                        <input
+                          checked={rememberLogin}
+                          onChange={(event) => setRememberLogin(event.target.checked)}
+                          type="checkbox"
+                        />
+                        <span>{text.rememberMe}</span>
+                      </label>
+                      <button
+                        className="auth-inline-link"
+                        onClick={() => {
+                          setAuthMode('reset')
+                          setProfileStatus('')
+                          resetCaptcha()
+                        }}
+                        type="button"
+                      >
+                        {text.forgotPassword}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -12090,24 +12192,6 @@ function handleSessionDateChange(value: string) {
                         ? text.logIn
                         : text.createAccount}
                 </button>
-                {!profile && !isRecoveryMode && (
-                  <button
-                    className={isOAuthLoading ? 'secondary create-button google-auth-button loading' : 'secondary create-button google-auth-button'}
-                    disabled={isOAuthLoading}
-                    onClick={signInWithGoogle}
-                    type="button"
-                  >
-                    <span className="google-mark" aria-hidden="true">
-                      <svg viewBox="0 0 18 18" focusable="false">
-                        <path fill="#4285f4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" />
-                        <path fill="#34a853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.35 0-4.34-1.58-5.05-3.72H.93v2.33A9 9 0 0 0 9 18Z" />
-                        <path fill="#fbbc05" d="M3.95 10.7a5.41 5.41 0 0 1 0-3.4V4.97H.93a9 9 0 0 0 0 8.06l3.02-2.33Z" />
-                        <path fill="#ea4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0 9 9 0 0 0 .93 4.97L3.95 7.3C4.66 5.16 6.65 3.58 9 3.58Z" />
-                      </svg>
-                    </span>
-                    {text.continueWithGoogle}
-                  </button>
-                )}
                 {profile && canAccessStaffConsole && (
                   <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
                     Staff Console
@@ -12122,6 +12206,9 @@ function handleSessionDateChange(value: string) {
             )}
             {profile && (
               <div className="account-links">
+                <button className="link-button" disabled={isPasskeyLoading} onClick={registerPasskey} type="button">
+                  {isPasskeyLoading ? text.saving : text.addPasskey}
+                </button>
                 <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
                   {isResettingPassword ? text.saving : text.resetPassword}
                 </button>

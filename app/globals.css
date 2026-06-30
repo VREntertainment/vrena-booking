@@ -6696,13 +6696,13 @@ body {
 .app .profile-auth-section {
   display: grid;
   align-content: center;
-  width: min(100%, 520px);
+  width: min(100%, 560px);
   margin: 0 auto;
   border: 1px solid rgba(7, 17, 18, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 28px;
-  box-shadow: 0 24px 70px rgba(7, 17, 18, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 30px;
+  box-shadow: 0 22px 58px rgba(7, 17, 18, 0.13);
 }
 
 .app .profile-auth-section h2 {
@@ -6726,12 +6726,12 @@ body {
 
 .app .profile-auth-section .auth-toggle {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
-  margin: 20px 0 18px;
+  margin: 22px 0 20px;
   border: 1px solid rgba(7, 17, 18, 0.08);
   border-radius: 12px;
-  background: #f5f7f8;
+  background: #ffffff;
   padding: 3px;
 }
 
@@ -6750,9 +6750,33 @@ body {
 }
 
 .app .profile-auth-section .auth-toggle button.active {
-  background: #ffffff;
-  color: #071112;
-  box-shadow: 0 6px 16px rgba(7, 17, 18, 0.08);
+  background: #071112;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(7, 17, 18, 0.16);
+}
+
+.app .profile-auth-section .auth-method-stack {
+  display: grid;
+  gap: 11px;
+  margin-bottom: 20px;
+}
+
+.app .profile-auth-section .auth-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  color: #7a858a;
+  font-size: 13px;
+  font-weight: 650;
+  margin: 2px 0 4px;
+}
+
+.app .profile-auth-section .auth-divider::before,
+.app .profile-auth-section .auth-divider::after {
+  content: "";
+  height: 1px;
+  background: rgba(7, 17, 18, 0.12);
 }
 
 .app .profile-form {
@@ -6763,7 +6787,7 @@ body {
 .app .profile-form.login-profile-form {
   grid-template-columns: minmax(0, 1fr);
   max-width: none;
-  gap: 13px;
+  gap: 15px;
 }
 
 .app .profile-form.login-profile-form .email-field, .app .profile-form.login-profile-form .password-field, .app .profile-form.login-profile-form .captcha-field {
@@ -6827,7 +6851,6 @@ body {
 .app .profile-auth-section .auth-inline-link {
   width: fit-content;
   min-height: 0;
-  margin-top: 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -6857,16 +6880,43 @@ body {
   padding: 10px 11px;
 }
 
+.app .profile-auth-section .auth-utility-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 11px;
+}
+
+.app .profile-auth-section .remember-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: #637075;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .profile-auth-section .remember-field input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  border-radius: 5px;
+  margin: 0;
+  padding: 0;
+}
+
 .app .profile-auth-section .action-row {
   display: grid;
   grid-template-columns: 1fr;
   justify-items: center;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 22px;
 }
 
 .app .profile-auth-section .action-row .create-button {
-  width: min(100%, 360px);
+  width: 100%;
   min-height: 48px;
   border-radius: 12px;
   font-size: 15px;
@@ -6885,6 +6935,44 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
+}
+
+.app .profile-auth-section .auth-method-stack .create-button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.app .profile-auth-section .auth-method-stack .secondary.create-button {
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  background: #ffffff;
+  color: #071112;
+  box-shadow: none;
+}
+
+.app .profile-auth-section .passkey-auth-button,
+.app .profile-auth-section .google-auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.app .profile-auth-section .passkey-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  color: #071112;
+  flex: 0 0 auto;
+}
+
+.app .profile-auth-section .passkey-mark svg {
+  display: block;
+  width: 19px;
+  height: 19px;
 }
 
 .app .profile-auth-section .google-mark {
