@@ -461,7 +461,6 @@ export const en = {
   profile: 'Profile',
   profileUpdateHint: 'Update your profile details.',
   authWelcomeTitle: 'Welcome to VRena',
-  profileLoginHint: 'Log in with your password or continue with Google. Phone is kept for payments.',
   logIn: 'Log In',
   createAccount: 'Create Account',
   createAccountTab: 'Create',

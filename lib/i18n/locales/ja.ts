@@ -463,7 +463,6 @@ export const ja = {
   profile: 'プロフィール',
   profileUpdateHint: 'プロフィール情報を更新。',
   authWelcomeTitle: 'VRenaへようこそ',
-  profileLoginHint: 'パスワードまたはGoogleでログイン。電話は支払い用に保持。',
   logIn: 'ログイン',
   createAccount: 'アカウント作成',
   createAccountTab: '作成',

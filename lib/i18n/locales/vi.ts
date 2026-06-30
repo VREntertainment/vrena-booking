@@ -463,7 +463,6 @@ export const vi = {
   profile: 'Hồ sơ',
   profileUpdateHint: 'Cập nhật thông tin hồ sơ.',
   authWelcomeTitle: 'Chào mừng đến VRena',
-  profileLoginHint: 'Đăng nhập bằng mật khẩu hoặc Google. SĐT để dùng khi thanh toán.',
   logIn: 'Đăng nhập',
   createAccount: 'Tạo tài khoản',
   createAccountTab: 'Tạo',

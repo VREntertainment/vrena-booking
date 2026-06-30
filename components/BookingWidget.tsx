@@ -11671,15 +11671,15 @@ function handleSessionDateChange(value: string) {
         {activeView === 'profile' && (
           <section className={!profile ? 'section profile-auth-section' : 'section'}>
             <h2>{profile ? text.profile : isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
-            <p className="muted">
-              {profile
-                ? text.profileUpdateHint
-                : isRecoveryMode
-                  ? text.setNewPasswordIntro
-                  : authMode === 'reset'
-                    ? text.resetPasswordIntro
-                : text.profileLoginHint}
-            </p>
+            {(profile || isRecoveryMode || authMode === 'reset') && (
+              <p className="muted">
+                {profile
+                  ? text.profileUpdateHint
+                  : isRecoveryMode
+                    ? text.setNewPasswordIntro
+                    : text.resetPasswordIntro}
+              </p>
+            )}
 
             {!profile && !isRecoveryMode && (
               <div className="segmented auth-toggle">
