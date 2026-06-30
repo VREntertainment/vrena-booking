@@ -246,6 +246,8 @@ export const en = {
   clubBannerHelp: 'JPG, PNG, WEBP. Max 2 MB. Recommended 1600x600.',
   clubBannerTypeError: 'Use JPG, PNG, or WEBP for the club banner.',
   clubBannerSizeError: 'Club banner must be 2 MB or smaller.',
+  avatarPhotoTypeError: 'Use a JPG, PNG, or WebP profile photo.',
+  avatarPhotoSizeError: 'Profile photo must be 2 MB or smaller.',
   clubThemeColor: 'Club color',
   clubPrivacy: 'Club privacy',
   clubDefaultLanguage: 'Default language',

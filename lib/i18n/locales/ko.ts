@@ -248,6 +248,8 @@ export const ko = {
   clubBannerHelp: 'JPG, PNG, WEBP. 최대 2MB. 권장 1600x600.',
   clubBannerTypeError: '클럽 배너는 JPG, PNG 또는 WEBP를 사용하세요.',
   clubBannerSizeError: '클럽 배너는 2MB 이하여야 합니다.',
+  avatarPhotoTypeError: '프로필 사진은 JPG, PNG 또는 WebP를 사용하세요.',
+  avatarPhotoSizeError: '프로필 사진은 2MB 이하여야 합니다.',
   clubThemeColor: '클럽 색상',
   clubPrivacy: '클럽 공개 설정',
   clubDefaultLanguage: '기본 언어',
