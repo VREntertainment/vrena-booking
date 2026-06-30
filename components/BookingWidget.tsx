@@ -1900,8 +1900,7 @@ export default function WidgetPage({
   const [countryPickerOpen, setCountryPickerOpen] = useState(false)
   const [countrySearch, setCountrySearch] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
-  const [pendingOtpEmail, setPendingOtpEmail] = useState('')
-  const [authOtpCode, setAuthOtpCode] = useState('')
+  const [profilePassword, setProfilePassword] = useState('')
   const [captchaToken, setCaptchaToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
@@ -2175,7 +2174,7 @@ export default function WidgetPage({
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
-  const showProfileFields = Boolean(profile || authMode === 'create')
+  const showProfileFields = Boolean(profile)
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
   function challengeStatusLabel(status?: ChallengeStatus | null) {
@@ -3051,6 +3050,10 @@ export default function WidgetPage({
         setUserId('')
         setAuthEmail('')
         setProfile(null)
+        if (/auth session missing/i.test(userError.message)) {
+          setProfileStatus('')
+          return
+        }
         setProfileStatus(userError.message)
         return
       }
@@ -3153,7 +3156,7 @@ export default function WidgetPage({
 
       const repairResult = await (await getSupabase()).from('profiles').insert({
         id: authUser.id,
-        phone: phone || '+84000000000',
+        phone: phone || null,
         full_name: fullName || null,
         nickname: nickname || null,
         email,
@@ -3231,38 +3234,26 @@ export default function WidgetPage({
 
   async function handleAuth() {
     try {
-      const countryCode = resolveCountryCode(profileCountryCode)
       const localPhone = profilePhone.replace(/\D/g, '')
-      const fullPhone = `${countryCode}${localPhone}`
       const loginEmail = profileEmail.trim().toLowerCase()
       const fullName = profileName.trim()
-      const cleanMotto = limitMotto(profileMotto.trim())
-      const cleanOtpCode = authOtpCode.replace(/\D/g, '')
-      const hasPendingEmailOtp = pendingOtpEmail === loginEmail
 
       authDebug('handleAuth:attempt', {
         mode: authMode,
         email: loginEmail,
         isAdminEmail: isAdminEmail(loginEmail),
         hasCaptcha: Boolean(captchaToken),
-        hasPendingEmailOtp,
-        hasOtpCode: Boolean(cleanOtpCode),
         localPhoneLength: localPhone.length,
         hasFullName: Boolean(fullName),
       })
 
-      if (authMode === 'create' && fullPhone.length < 8) {
-        setProfileStatus(text.phoneRequired)
-        return
-      }
-
-      if (authMode === 'create' && !fullName) {
-        setProfileStatus(text.nameRequired)
-        return
-      }
-
       if (!loginEmail || !loginEmail.includes('@')) {
         setProfileStatus(text.emailRequired)
+        return
+      }
+
+      if (profilePassword.length < 6) {
+        setProfileStatus(text.passwordRequired)
         return
       }
 
@@ -3271,235 +3262,119 @@ export default function WidgetPage({
         return
       }
 
-      if (!hasPendingEmailOtp && !captchaToken) {
+      if (authMode === 'create' && !captchaToken) {
         setProfileStatus(text.captchaRequired)
         return
       }
 
-      if (authMode === 'login' && !hasPendingEmailOtp) {
+      if (authMode === 'login') {
         const allowed = await consumeAppRateLimit('login_attempt', loginEmail, setProfileStatus)
         if (!allowed) return
       }
 
       setIsSavingProfile(true)
-      setProfileStatus(hasPendingEmailOtp ? text.verifyingCode : text.sendingCode)
+      setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
       const nickname = limitDisplayName(profileNickname.trim())
       const display = nickname || compactDisplayName(fullName || loginEmail.split('@')[0])
       const consentAt = new Date().toISOString()
-      const createAccountData = authMode === 'create'
-        ? {
-            display_name: display,
-            full_name: fullName,
-            name: display,
-            nickname: nickname || null,
-            profile_motto: cleanMotto || null,
-            birthday: profileBirthday || null,
-            phone: fullPhone,
-            avatar_text_color: avatarTextColor,
-            marketing_consent: marketingConsent,
-            marketing_consent_at: marketingConsent ? consentAt : null,
-            marketing_opted_out_at: marketingConsent ? null : consentAt,
-            personal_data_consent: personalDataConsent,
-            personal_data_consent_at: consentAt,
-            privacy_policy_url: PRIVACY_POLICY_URL,
-          }
-        : undefined
 
-      if (!hasPendingEmailOtp) {
-        const otpResult = await (await getSupabase()).auth.signInWithOtp({
+      if (authMode === 'create') {
+        const signUpResult = await (await getSupabase()).auth.signUp({
           email: loginEmail,
+          password: profilePassword,
           options: {
-            shouldCreateUser: authMode === 'create',
-            emailRedirectTo: appRedirectUrl(),
-            data: createAccountData,
+            data: {
+              display_name: display,
+              name: display,
+              marketing_consent: marketingConsent,
+              marketing_consent_at: marketingConsent ? consentAt : null,
+              marketing_opted_out_at: marketingConsent ? null : consentAt,
+              personal_data_consent: personalDataConsent,
+              personal_data_consent_at: consentAt,
+              privacy_policy_url: PRIVACY_POLICY_URL,
+            },
             captchaToken,
           },
         })
 
-        authDebug('handleAuth:signInWithOtpResponse', {
-          error: otpResult.error,
-          mode: authMode,
-          shouldCreateUser: authMode === 'create',
+        authDebug('handleAuth:signUpResponse', {
+          error: signUpResult.error,
+          hasSession: Boolean(signUpResult.data.session),
+          user: signUpResult.data.user ? {
+            id: signUpResult.data.user.id,
+            email: signUpResult.data.user.email,
+            emailConfirmedAt: signUpResult.data.user.email_confirmed_at,
+            appMetadata: signUpResult.data.user.app_metadata,
+            userMetadata: signUpResult.data.user.user_metadata,
+          } : null,
         })
 
         resetCaptcha()
 
-        if (otpResult.error) {
-          setProfileStatus(otpResult.error.message)
+        if (signUpResult.error) {
+          setProfileStatus(signUpResult.error.message)
           setIsSavingProfile(false)
           return
         }
 
-        setPendingOtpEmail(loginEmail)
-        setAuthOtpCode('')
-        setProfileStatus(text.emailOtpSent)
+        if (!signUpResult.data.user) {
+          setProfileStatus(text.loginRequired)
+          setAuthMode('login')
+          setIsSavingProfile(false)
+          return
+        }
+
+        setUserId(signUpResult.data.user.id)
+        setPersonalDataConsent(false)
+        setProfilePassword('')
+        await loadProfile()
+        setProfileStatus(text.accountCreated)
+        setActiveView('profile')
         setIsSavingProfile(false)
         return
       }
 
-      if (cleanOtpCode.length < 6) {
-        setProfileStatus(text.emailOtpRequired)
-        setIsSavingProfile(false)
-        return
-      }
-
-      const verifyResult = await (await getSupabase()).auth.verifyOtp({
+      authDebug('handleAuth:signInWithPassword:start', {
         email: loginEmail,
-        token: cleanOtpCode,
-        type: 'email',
+        isAdminEmail: isAdminEmail(loginEmail),
       })
 
-      authDebug('handleAuth:verifyEmailOtpResponse', {
-        error: verifyResult.error,
-        hasSession: Boolean(verifyResult.data.session),
-        user: verifyResult.data.user ? {
-          id: verifyResult.data.user.id,
-          email: verifyResult.data.user.email,
-          emailConfirmedAt: verifyResult.data.user.email_confirmed_at,
-          lastSignInAt: verifyResult.data.user.last_sign_in_at,
-          appMetadata: verifyResult.data.user.app_metadata,
-          userMetadata: verifyResult.data.user.user_metadata,
+      const signInResult = await (await getSupabase()).auth.signInWithPassword({
+        email: loginEmail,
+        password: profilePassword,
+      })
+
+      authDebug('handleAuth:signInWithPassword:response', {
+        error: signInResult.error,
+        hasSession: Boolean(signInResult.data.session),
+        user: signInResult.data.user ? {
+          id: signInResult.data.user.id,
+          email: signInResult.data.user.email,
+          emailConfirmedAt: signInResult.data.user.email_confirmed_at,
+          lastSignInAt: signInResult.data.user.last_sign_in_at,
+          appMetadata: signInResult.data.user.app_metadata,
+          userMetadata: signInResult.data.user.user_metadata,
         } : null,
       })
 
-      if (verifyResult.error) {
-        setProfileStatus(verifyResult.error.message)
+      if (signInResult.error) {
+        setProfileStatus(signInResult.error.message)
         setIsSavingProfile(false)
         return
       }
 
-      const authUser = verifyResult.data.user
-
-      if (!authUser) {
+      if (!signInResult.data.user) {
         setProfileStatus(text.loginRequired)
         setAuthMode('login')
         setIsSavingProfile(false)
         return
       }
 
-      setUserId(authUser.id)
-
-      if (authMode === 'create') {
-        const existingProfileResult = await (await getSupabase())
-          .from('profiles')
-          .select('avatar_url, nickname, anonymous_callsign')
-          .eq('id', authUser.id)
-          .is('deleted_at', null)
-          .maybeSingle()
-        const existingProfile = existingProfileResult.data
-
-        authDebug('handleAuth:existingProfileQuery', {
-          error: existingProfileResult.error,
-          profile: existingProfile,
-        })
-
-        const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(authUser.id, existingProfile?.avatar_url || null) : null
-
-        if (avatarUrl === false) {
-          resetCaptcha()
-          setIsSavingProfile(false)
-          return
-        }
-
-        const avatarPayload = {
-          avatar_url: avatarMode === 'photo' ? avatarUrl : null,
-          avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
-          avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
-          avatar_color: avatarColor,
-          avatar_text_color: avatarTextColor,
-        }
-
-        const profileUpsert = await (await getSupabase()).from('profiles').upsert({
-          id: authUser.id,
-          full_name: fullName,
-          phone: fullPhone,
-          nickname: nickname || existingProfile?.nickname || null,
-          email: loginEmail,
-          birthday: profileBirthday || null,
-          profile_motto: cleanMotto || null,
-          ...marketingConsentValues(marketingConsent, null, consentAt),
-          ...avatarPayload,
-          personal_data_consent: personalDataConsent,
-          personal_data_consent_at: consentAt,
-          privacy_policy_url: PRIVACY_POLICY_URL,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' })
-
-        authDebug('handleAuth:createProfileUpsert', {
-          error: profileUpsert.error,
-          authUserId: authUser.id,
-          email: loginEmail,
-        })
-
-        if (profileUpsert.error) {
-          resetCaptcha()
-          setProfileStatus(profileUpsert.error.message)
-          setIsSavingProfile(false)
-          return
-        }
-
-        const marketingListError = await syncMarketingListForProfile({
-          id: authUser.id,
-          full_name: fullName,
-          phone: fullPhone,
-          nickname: nickname || existingProfile?.nickname || null,
-          email: loginEmail,
-          birthday: profileBirthday || null,
-          profile_motto: cleanMotto || null,
-          role: defaultRoleForEmail(loginEmail),
-          anonymous_mode: false,
-          anonymous_callsign: existingProfile?.anonymous_callsign || null,
-          ...marketingConsentValues(marketingConsent, null, consentAt),
-          ...avatarPayload,
-        }, marketingConsent)
-
-        if (marketingListError) {
-          resetCaptcha()
-          setProfileStatus(marketingListError)
-          setIsSavingProfile(false)
-          return
-        }
-
-        const metadataUpdate = await (await getSupabase()).auth.updateUser({
-          data: {
-            display_name: display,
-            full_name: fullName,
-            name: display,
-            nickname: nickname || null,
-            birthday: profileBirthday || null,
-            phone: fullPhone,
-            avatar_url: avatarPayload.avatar_url,
-            avatar_emoji: avatarPayload.avatar_emoji,
-            avatar_initials: avatarPayload.avatar_initials,
-            avatar_color: avatarPayload.avatar_color,
-            avatar_text_color: avatarPayload.avatar_text_color,
-            profile_motto: cleanMotto || null,
-            marketing_consent: marketingConsent,
-            marketing_consent_at: marketingConsent ? consentAt : null,
-            marketing_opted_out_at: marketingConsent ? null : consentAt,
-            personal_data_consent: personalDataConsent,
-            personal_data_consent_at: consentAt,
-            privacy_policy_url: PRIVACY_POLICY_URL,
-          },
-        })
-
-        authDebug('handleAuth:updateUserMetadata', { error: metadataUpdate.error })
-
-        if (metadataUpdate.error) {
-          resetCaptcha()
-          setProfileStatus(metadataUpdate.error.message)
-          setIsSavingProfile(false)
-          return
-        }
-
-        setPersonalDataConsent(false)
-      }
-
-      setPendingOtpEmail('')
-      setAuthOtpCode('')
+      setUserId(signInResult.data.user.id)
+      setProfilePassword('')
       await loadProfile()
-      setProfileStatus(authMode === 'create' ? text.accountCreated : text.loggedIn)
+      setProfileStatus(text.loggedIn)
       setActiveView('leaderboard')
       setIsSavingProfile(false)
     } catch (error) {
@@ -3515,8 +3390,7 @@ export default function WidgetPage({
     setUserId('')
     setAuthEmail('')
     setProfile(null)
-    setPendingOtpEmail('')
-    setAuthOtpCode('')
+    setProfilePassword('')
     setNewPassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.loggedOut)
@@ -4759,7 +4633,7 @@ export default function WidgetPage({
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile' || pendingOtpEmail) return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile' || authMode !== 'create') return
 
     let cancelled = false
 
@@ -4808,7 +4682,7 @@ export default function WidgetPage({
 
       captchaWidgetId.current = null
     }
-  }, [activeView, authMode, pendingOtpEmail, profile])
+  }, [activeView, authMode, profile])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -11795,8 +11669,8 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'profile' && (
-          <section className="section">
-            <h2>{text.profile}</h2>
+          <section className={!profile && !isRecoveryMode ? 'section profile-auth-section' : 'section'}>
+            <h2>{profile || isRecoveryMode ? text.profile : text.authWelcomeTitle}</h2>
             <p className="muted">
               {profile
                 ? text.profileUpdateHint
@@ -11809,8 +11683,7 @@ function handleSessionDateChange(value: string) {
                   className={authMode === 'login' ? 'active' : ''}
                   onClick={() => {
                     setAuthMode('login')
-                    setPendingOtpEmail('')
-                    setAuthOtpCode('')
+                    resetCaptcha()
                   }}
                   type="button"
                 >
@@ -11820,8 +11693,6 @@ function handleSessionDateChange(value: string) {
                   className={authMode === 'create' ? 'active' : ''}
                   onClick={() => {
                     setAuthMode('create')
-                    setPendingOtpEmail('')
-                    setAuthOtpCode('')
                   }}
                   type="button"
                 >
@@ -12015,11 +11886,7 @@ function handleSessionDateChange(value: string) {
                 <input
                   type="email"
                   value={profileEmail}
-                  onChange={(event) => {
-                    setProfileEmail(event.target.value)
-                    setPendingOtpEmail('')
-                    setAuthOtpCode('')
-                  }}
+                  onChange={(event) => setProfileEmail(event.target.value)}
                   placeholder="contact@vre-vietnam.com"
                 />
               </div>
@@ -12100,31 +11967,24 @@ function handleSessionDateChange(value: string) {
                   </span>
                 </label>
               )}
-              {!profile && !isRecoveryMode && Boolean(pendingOtpEmail) && pendingOtpEmail === profileEmail.trim().toLowerCase() && (
+              {!profile && !isRecoveryMode && (
                 <div className="password-field">
-                  <label>{text.emailOtpCode} <span className="required">*</span></label>
-                  <input
-                    inputMode="numeric"
-                    maxLength={8}
-                    value={authOtpCode}
-                    onChange={(event) => setAuthOtpCode(event.target.value.replace(/\D/g, ''))}
-                    placeholder={text.emailOtpPlaceholder}
-                  />
-                  <p className="field-help">{text.emailOtpHelp}</p>
-                  <button
-                    className="link-button"
-                    disabled={isSavingProfile}
-                    onClick={() => {
-                      setPendingOtpEmail('')
-                      setAuthOtpCode('')
-                    }}
-                    type="button"
-                  >
-                    {text.emailOtpResend}
-                  </button>
+                  <label>{text.password} <span className="required">*</span></label>
+                  <div className="password-control">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={profilePassword}
+                      onChange={(event) => setProfilePassword(event.target.value)}
+                      placeholder={text.passwordPlaceholder}
+                    />
+                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
+                      {showPassword ? text.hidePassword : text.showPassword}
+                    </button>
+                  </div>
+                  <p className="field-help">{authMode === 'create' ? text.passwordHelp : text.passwordLoginHelp}</p>
                 </div>
               )}
-              {!profile && !isRecoveryMode && (!pendingOtpEmail || pendingOtpEmail !== profileEmail.trim().toLowerCase()) && (
+              {!profile && !isRecoveryMode && authMode === 'create' && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
@@ -12163,14 +12023,14 @@ function handleSessionDateChange(value: string) {
                   {isSavingProfile
                     ? profile
                       ? text.saving
-                      : pendingOtpEmail && pendingOtpEmail === profileEmail.trim().toLowerCase()
-                        ? text.verifyingCode
-                        : text.sendingCode
+                      : authMode === 'login'
+                        ? text.loggingIn
+                        : text.creating
                     : profile
                       ? text.saveProfile
-                      : pendingOtpEmail && pendingOtpEmail === profileEmail.trim().toLowerCase()
-                        ? text.verifyLoginCode
-                        : text.sendLoginCode}
+                      : authMode === 'login'
+                        ? text.logIn
+                        : text.createAccount}
                 </button>
                 {!profile && !isRecoveryMode && (
                   <button

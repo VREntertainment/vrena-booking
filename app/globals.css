@@ -6691,19 +6691,172 @@ body {
   white-space: normal;
 }
 
+.app .profile-auth-section {
+  display: grid;
+  align-content: center;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 28px;
+  box-shadow: 0 24px 70px rgba(7, 17, 18, 0.12);
+}
+
+.app .profile-auth-section h2 {
+  margin: 0;
+  color: #071112;
+  font-size: 29px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.08;
+  text-align: center;
+}
+
+.app .profile-auth-section > .muted {
+  max-width: 340px;
+  margin: 8px auto 0;
+  color: #667176;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.app .profile-auth-section .auth-toggle {
+  width: 100%;
+  margin: 20px 0 18px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 12px;
+  background: #f5f7f8;
+  padding: 3px;
+}
+
+.app .profile-auth-section .auth-toggle button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #667176;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.app .profile-auth-section .auth-toggle button.active {
+  background: #ffffff;
+  color: #071112;
+  box-shadow: 0 6px 16px rgba(7, 17, 18, 0.08);
+}
+
 .app .profile-form {
   grid-template-columns: 150px minmax(260px, 1fr) minmax(260px, 1fr);
   align-items: start;
 }
 
 .app .profile-form.login-profile-form {
-  grid-template-columns: minmax(320px, 560px);
-  max-width: 620px;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  gap: 13px;
 }
 
 .app .profile-form.login-profile-form .email-field, .app .profile-form.login-profile-form .password-field, .app .profile-form.login-profile-form .captcha-field {
   grid-column: 1;
-  max-width: 560px;
+  max-width: none;
+}
+
+.app .profile-auth-section label {
+  color: #4f5b60;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.app .profile-auth-section input {
+  min-height: 48px;
+  border-color: rgba(7, 17, 18, 0.1);
+  border-radius: 12px;
+  background: #f8fafb;
+  padding: 12px 13px;
+  font-size: 15px;
+}
+
+.app .profile-auth-section input:focus {
+  border-color: rgba(48, 89, 255, 0.42);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(48, 89, 255, 0.1);
+}
+
+.app .profile-auth-section .password-control {
+  display: block;
+  position: relative;
+}
+
+.app .profile-auth-section .password-control input {
+  padding-right: 78px;
+}
+
+.app .profile-auth-section .password-control button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: auto;
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #3059ff;
+  padding: 0 9px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .profile-auth-section .field-help {
+  margin-top: 6px;
+  color: #7a858a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .profile-auth-section .consent-field {
+  grid-column: 1;
+  max-width: none;
+  border-radius: 12px;
+  background: #f8fafb;
+  padding: 10px 11px;
+}
+
+.app .profile-auth-section .captcha-field {
+  border-radius: 12px;
+  background: #f8fafb;
+  padding: 10px 11px;
+}
+
+.app .profile-auth-section .action-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.app .profile-auth-section .action-row .create-button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.app .profile-auth-section .action-row .secondary.create-button {
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  background: #ffffff;
+  color: #071112;
+  box-shadow: none;
+}
+
+.app .profile-auth-section .notice {
+  margin-top: 14px;
+  border-radius: 12px;
+  text-align: center;
 }
 
 .app .profile-form .profile-photo-panel {
@@ -6862,6 +7015,29 @@ body {
   padding: 10px 11px;
   font: inherit;
   outline: none;
+}
+
+@media (max-width: 960px) {
+  .app .profile-auth-section.section {
+    width: min(100%, 480px);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 18px 48px rgba(7, 17, 18, 0.12);
+  }
+
+  .app .profile-auth-section h2 {
+    font-size: 25px;
+  }
+}
+
+@media (max-width: 420px) {
+  .app .profile-auth-section.section {
+    padding: 18px;
+  }
+
+  .app .profile-auth-section h2 {
+    font-size: 23px;
+  }
 }
 
 .app .country-picker {
