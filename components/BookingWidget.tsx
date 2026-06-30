@@ -1895,7 +1895,7 @@ export default function WidgetPage({
   const [isClubSearchOpen, setIsClubSearchOpen] = useState(false)
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
-  const [authMode, setAuthMode] = useState<'login' | 'create'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'create' | 'reset'>('login')
   const [profileCountryCode, setProfileCountryCode] = useState('+84')
   const [countryPickerOpen, setCountryPickerOpen] = useState(false)
   const [countrySearch, setCountrySearch] = useState('')
@@ -4633,7 +4633,7 @@ export default function WidgetPage({
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile' || authMode !== 'create') return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile' || (authMode !== 'create' && authMode !== 'reset')) return
 
     let cancelled = false
 
@@ -11669,11 +11669,15 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'profile' && (
-          <section className={!profile && !isRecoveryMode ? 'section profile-auth-section' : 'section'}>
-            <h2>{profile || isRecoveryMode ? text.profile : text.authWelcomeTitle}</h2>
+          <section className={!profile ? 'section profile-auth-section' : 'section'}>
+            <h2>{profile ? text.profile : isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
             <p className="muted">
               {profile
                 ? text.profileUpdateHint
+                : isRecoveryMode
+                  ? text.setNewPasswordIntro
+                  : authMode === 'reset'
+                    ? text.resetPasswordIntro
                 : text.profileLoginHint}
             </p>
 
@@ -11696,14 +11700,25 @@ function handleSessionDateChange(value: string) {
                   }}
                   type="button"
                 >
-                  {text.createAccount}
+                  {text.createAccountTab}
+                </button>
+                <button
+                  className={authMode === 'reset' ? 'active' : ''}
+                  onClick={() => {
+                    setAuthMode('reset')
+                    setProfileStatus('')
+                    resetCaptcha()
+                  }}
+                  type="button"
+                >
+                  {text.resetPasswordTab}
                 </button>
               </div>
             )}
 
             <div className={[
               'form-grid profile-form',
-              !profile && authMode === 'login' ? 'login-profile-form' : '',
+              !profile && (authMode === 'login' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
             ].join(' ').trim()}>
               {showProfileFields && (
@@ -11967,7 +11982,7 @@ function handleSessionDateChange(value: string) {
                   </span>
                 </label>
               )}
-              {!profile && !isRecoveryMode && (
+              {!profile && !isRecoveryMode && authMode !== 'reset' && (
                 <div className="password-field">
                   <label>{text.password} <span className="required">*</span></label>
                   <div className="password-control">
@@ -11982,13 +11997,26 @@ function handleSessionDateChange(value: string) {
                     </button>
                   </div>
                   <p className="field-help">{authMode === 'create' ? text.passwordHelp : text.passwordLoginHelp}</p>
+                  {authMode === 'login' && (
+                    <button
+                      className="auth-inline-link"
+                      onClick={() => {
+                        setAuthMode('reset')
+                        setProfileStatus('')
+                        resetCaptcha()
+                      }}
+                      type="button"
+                    >
+                      {text.forgotPassword}
+                    </button>
+                  )}
                 </div>
               )}
-              {!profile && !isRecoveryMode && authMode === 'create' && (
+              {!profile && !isRecoveryMode && (authMode === 'create' || authMode === 'reset') && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
-                  <p className="field-help">{text.captchaHelp}</p>
+                  <p className="field-help">{authMode === 'reset' ? text.resetPasswordCaptchaHelp : text.captchaHelp}</p>
                 </div>
               )}
               {isRecoveryMode && (
@@ -12002,18 +12030,48 @@ function handleSessionDateChange(value: string) {
                       placeholder={text.passwordPlaceholder}
                     />
                     <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
-                      {showPassword ? '🙈' : '👁️'}
+                      {showPassword ? text.hidePassword : text.showPassword}
                     </button>
                   </div>
                   <p className="field-help">{text.resetPasswordReady}</p>
-                  <button className="link-button" disabled={isResettingPassword} onClick={updatePasswordFromRecovery} type="button">
-                    {isResettingPassword ? text.saving : text.updatePassword}
-                  </button>
                 </div>
               )}
             </div>
 
-            {(!isRecoveryMode || profile) && (
+            {(authMode === 'reset' && !profile && !isRecoveryMode) ? (
+              <div className="action-row">
+                <button
+                  className={isResettingPassword ? 'primary loading create-button' : 'primary create-button'}
+                  disabled={isResettingPassword}
+                  onClick={sendPasswordReset}
+                  type="button"
+                >
+                  {isResettingPassword ? text.saving : text.resetPasswordCta}
+                </button>
+                <button
+                  className="secondary create-button"
+                  onClick={() => {
+                    setAuthMode('login')
+                    setProfileStatus('')
+                    resetCaptcha()
+                  }}
+                  type="button"
+                >
+                  {text.backToLogin}
+                </button>
+              </div>
+            ) : isRecoveryMode ? (
+              <div className="action-row">
+                <button
+                  className={isResettingPassword ? 'primary loading create-button' : 'primary create-button'}
+                  disabled={isResettingPassword}
+                  onClick={updatePasswordFromRecovery}
+                  type="button"
+                >
+                  {isResettingPassword ? text.saving : text.updatePassword}
+                </button>
+              </div>
+            ) : (
               <div className="action-row">
                 <button
                   className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
