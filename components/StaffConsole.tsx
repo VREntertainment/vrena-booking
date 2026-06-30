@@ -5262,6 +5262,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function saveGame() {
     if (!canManageConfig) return
+    const allowed = await consumeStaffRateLimit('staff_config_write', `game:${gameForm.id || gameForm.slug || gameForm.name}`)
+    if (!allowed) return
     setSaving(true)
     const audience = normalizeStaffAudience(gameForm.audience)
     const payload = {
@@ -5307,6 +5309,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function savePrice() {
     if (!canManageConfig) return
+    const allowed = await consumeStaffRateLimit('staff_config_write', `price:${priceForm.id || priceForm.rule_name}`)
+    if (!allowed) return
     setSaving(true)
     const payload = {
       rule_name: priceForm.rule_name.trim(),
@@ -5340,6 +5344,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       setStatus(text.messages.voucherCodeRequired)
       return
     }
+    const allowed = await consumeStaffRateLimit('staff_config_write', `discount:${discountForm.id || discountForm.code || discountForm.name}`)
+    if (!allowed) return
     setSaving(true)
     const isVoucher = Boolean(discountForm.code.trim())
     const payload = {
@@ -5437,6 +5443,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       const confirmed = window.confirm(text.messages.loyaltySingleActiveConfirm.replace('{rule}', ruleNames))
       if (!confirmed) return
     }
+
+    const allowed = await consumeStaffRateLimit('staff_config_write', `loyalty:${loyaltyForm.id || loyaltyForm.rule_name}`)
+    if (!allowed) return
 
     setSaving(true)
     const request = loyaltyForm.id

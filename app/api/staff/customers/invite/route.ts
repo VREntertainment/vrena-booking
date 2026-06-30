@@ -45,6 +45,12 @@ function errorMessage(value: unknown) {
   return ''
 }
 
+function requestIp(request: NextRequest) {
+  return (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown')
+    .split(',')[0]
+    .trim()
+}
+
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -97,6 +103,17 @@ export async function POST(request: NextRequest) {
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Enter a valid customer email.', 400)
   if (!fullName) return jsonError('Enter the customer name.', 400)
+
+  const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
+    p_action: 'customer_invite',
+    p_limit: 5,
+    p_window_seconds: 10 * 60,
+    p_subject: `${userData.user.id}:${email}:${requestIp(request)}`,
+  })
+
+  if (rateLimitError) {
+    return jsonError(rateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
+  }
 
   const redirectTo = `${request.nextUrl.origin}/login`
   const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {

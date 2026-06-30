@@ -91,6 +91,10 @@ function moderationScore(categoryScores: Record<string, unknown>) {
   return Math.max(...values)
 }
 
+function rateLimitResponse(message?: string) {
+  return jsonResponse({ error: message || 'Too many attempts. Please wait a moment and try again.' }, 429)
+}
+
 async function moderateText(input: string, trustedAuthor: boolean): Promise<ModerationResult> {
   if (trustedAuthor) {
     return {
@@ -208,6 +212,17 @@ async function handleRequest(request: Request) {
 
   if (body.length < 1 || body.length > 500) {
     return jsonResponse({ error: 'Message must be between 1 and 500 characters.' }, 400)
+  }
+
+  const { error: rateLimitError } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'session_message',
+    p_limit: 6,
+    p_window_seconds: 60,
+    p_subject: `${authUser.id}:${sessionId}:${messageType}`,
+  })
+
+  if (rateLimitError) {
+    return rateLimitResponse(rateLimitError.message)
   }
 
   const [{ data: profile }, { data: session }] = await Promise.all([
