@@ -8371,7 +8371,6 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await (await getSupabase()).rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.leftSession)
     setBusySessionId('')
@@ -8616,7 +8615,6 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await (await getSupabase()).rpc('promote_session_waitlist', { p_session_id: session.id })
     await loadSessions()
     setCreateStatus(text.playerRemoved)
     setBusySessionId('')
