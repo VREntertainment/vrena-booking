@@ -3182,6 +3182,19 @@ export default function WidgetPage({
     subject: string,
     setStatus: (message: string) => void = setCreateStatus
   ) {
+    if (action === 'login_attempt') {
+      const { error } = await (await getSupabase()).rpc('consume_login_attempt_rate_limit', {
+        p_email: subject || null,
+      })
+
+      if (error) {
+        setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
+        return false
+      }
+
+      return true
+    }
+
     const rule = RATE_LIMITS[action]
     const { error } = await (await getSupabase()).rpc('consume_rate_limit', {
       p_action: action,
