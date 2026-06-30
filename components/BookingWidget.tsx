@@ -166,11 +166,16 @@ type HCaptchaApi = {
     container: HTMLElement,
     options: {
       sitekey: string
+      size?: 'invisible'
       callback: (token: string) => void
       'expired-callback': () => void
       'error-callback': () => void
     }
   ) => string
+  execute?: (
+    widgetId?: string,
+    options?: { async?: boolean }
+  ) => void | Promise<string | { response?: string }>
   reset: (widgetId?: string) => void
   remove?: (widgetId: string) => void
 }
@@ -1928,6 +1933,7 @@ export default function WidgetPage({
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
+  const [isPasskeyCaptchaReady, setIsPasskeyCaptchaReady] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
@@ -2090,6 +2096,10 @@ export default function WidgetPage({
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
+  const passkeyCaptchaContainerRef = useRef<HTMLDivElement | null>(null)
+  const passkeyCaptchaWidgetId = useRef<string | null>(null)
+  const passkeyCaptchaResolveRef = useRef<((token: string) => void) | null>(null)
+  const passkeyCaptchaRejectRef = useRef<((error: Error) => void) | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
   const clubsLoadedRef = useRef(false)
   const clubsLoadingRef = useRef(false)
@@ -2700,6 +2710,62 @@ export default function WidgetPage({
     if (hcaptcha && captchaWidgetId.current) {
       hcaptcha.reset(captchaWidgetId.current)
     }
+  }
+
+  function resetPasskeyCaptcha() {
+    passkeyCaptchaResolveRef.current = null
+    passkeyCaptchaRejectRef.current = null
+
+    const hcaptcha = getHCaptcha()
+
+    if (hcaptcha && passkeyCaptchaWidgetId.current) {
+      hcaptcha.reset(passkeyCaptchaWidgetId.current)
+    }
+  }
+
+  async function executePasskeyCaptcha() {
+    const hcaptcha = getHCaptcha()
+    const widgetId = passkeyCaptchaWidgetId.current
+
+    if (!hcaptcha || !widgetId || !hcaptcha.execute) return ''
+
+    return new Promise<string>((resolve, reject) => {
+      let settled = false
+      const settle = (token: string) => {
+        if (settled) return
+        settled = true
+        passkeyCaptchaResolveRef.current = null
+        passkeyCaptchaRejectRef.current = null
+        resolve(token)
+      }
+      const fail = (error: Error) => {
+        if (settled) return
+        settled = true
+        passkeyCaptchaResolveRef.current = null
+        passkeyCaptchaRejectRef.current = null
+        reject(error)
+      }
+
+      passkeyCaptchaResolveRef.current = settle
+      passkeyCaptchaRejectRef.current = fail
+
+      try {
+        const result = hcaptcha.execute?.(widgetId, { async: true })
+
+        if (result && typeof (result as Promise<string | { response?: string }>).then === 'function') {
+          ;(result as Promise<string | { response?: string }>).then((value) => {
+            const token = typeof value === 'string' ? value : value.response || ''
+
+            if (token) settle(token)
+            else fail(new Error(text.captchaRequired))
+          }).catch(fail)
+        }
+      } catch (error) {
+        passkeyCaptchaResolveRef.current = null
+        passkeyCaptchaRejectRef.current = null
+        fail(error instanceof Error ? error : new Error(String(error)))
+      }
+    })
   }
 
   function updateAuthMode(nextMode: 'login' | 'create') {
@@ -3451,8 +3517,19 @@ export default function WidgetPage({
     try {
       setIsPasskeyLoading(true)
       setProfileStatus(text.passkeyStarting)
+      const captchaTokenForPasskey = await executePasskeyCaptcha()
+
+      if (!captchaTokenForPasskey) {
+        setProfileStatus(text.captchaRequired)
+        setIsPasskeyLoading(false)
+        return
+      }
+
       const client = await getSupabase()
-      const { data, error } = await client.auth.signInWithPasskey()
+      const { data, error } = await client.auth.signInWithPasskey({
+        options: { captchaToken: captchaTokenForPasskey },
+      })
+      resetPasskeyCaptcha()
 
       if (error) {
         setProfileStatus(error.message)
@@ -3467,6 +3544,7 @@ export default function WidgetPage({
       setActiveView('leaderboard')
       setIsPasskeyLoading(false)
     } catch (error) {
+      resetPasskeyCaptcha()
       setProfileStatus(error instanceof Error ? error.message : String(error))
       setIsPasskeyLoading(false)
     }
@@ -4796,6 +4874,76 @@ export default function WidgetPage({
       }
     }
   }, [activeView, authMode, authStep, profile])
+
+  useEffect(() => {
+    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login' && authStep === 'credentials'
+
+    if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
+
+    let cancelled = false
+    setIsPasskeyCaptchaReady(false)
+
+    function renderPasskeyCaptcha() {
+      const hcaptcha = getHCaptcha()
+
+      if (cancelled || !passkeyCaptchaContainerRef.current || !hcaptcha || passkeyCaptchaWidgetId.current) return
+
+      passkeyCaptchaWidgetId.current = hcaptcha.render(passkeyCaptchaContainerRef.current, {
+        sitekey: HCAPTCHA_SITE_KEY,
+        size: 'invisible',
+        callback: (token) => {
+          passkeyCaptchaResolveRef.current?.(token)
+        },
+        'expired-callback': () => {
+          passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
+        },
+        'error-callback': () => {
+          passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
+        },
+      })
+      setIsPasskeyCaptchaReady(true)
+    }
+
+    const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+    const browserWindow = window as Window & { [HCAPTCHA_READY_CALLBACK]?: () => void }
+
+    browserWindow[HCAPTCHA_READY_CALLBACK] = renderPasskeyCaptcha
+
+    if (getHCaptcha()) {
+      renderPasskeyCaptcha()
+    } else if (existingScript) {
+      existingScript.addEventListener('load', renderPasskeyCaptcha, { once: true })
+    } else {
+      const script = document.createElement('script')
+      script.id = 'hcaptcha-script'
+      script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
+      script.async = true
+      script.defer = true
+      document.body.appendChild(script)
+    }
+
+    return () => {
+      cancelled = true
+      setIsPasskeyCaptchaReady(false)
+      resetPasskeyCaptcha()
+
+      const hcaptcha = getHCaptcha()
+
+      if (hcaptcha && passkeyCaptchaWidgetId.current) {
+        try {
+          hcaptcha.remove?.(passkeyCaptchaWidgetId.current)
+        } catch {
+          hcaptcha.reset(passkeyCaptchaWidgetId.current)
+        }
+      }
+
+      passkeyCaptchaWidgetId.current = null
+
+      if (browserWindow[HCAPTCHA_READY_CALLBACK] === renderPasskeyCaptcha) {
+        delete browserWindow[HCAPTCHA_READY_CALLBACK]
+      }
+    }
+  }, [activeView, authMode, authStep, isRecoveryMode, profile, text.captchaRequired])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -12117,7 +12265,7 @@ function handleSessionDateChange(value: string) {
                 <div className="auth-method-stack credential-method-stack">
                   <button
                     className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
-                    disabled={isPasskeyLoading}
+                    disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
                     onClick={signInWithPasskey}
                     type="button"
                   >
@@ -12132,6 +12280,7 @@ function handleSessionDateChange(value: string) {
                   <div className="auth-divider">
                     <span>{text.authOr}</span>
                   </div>
+                  <div className="passkey-captcha-box" ref={passkeyCaptchaContainerRef} aria-hidden="true" />
                 </div>
               )}
               {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'credentials' && (
