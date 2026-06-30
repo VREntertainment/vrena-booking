@@ -1923,6 +1923,7 @@ export default function WidgetPage({
   const [avatarTextColorDraft, setAvatarTextColorDraft] = useState(avatarTextColors[0])
   const [profileStatus, setProfileStatus] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
@@ -2173,7 +2174,7 @@ export default function WidgetPage({
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
-  const showProfileFields = Boolean(profile || authMode === 'create')
+  const showProfileFields = Boolean(profile)
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
   function challengeStatusLabel(status?: ChallengeStatus | null) {
@@ -3049,6 +3050,10 @@ export default function WidgetPage({
         setUserId('')
         setAuthEmail('')
         setProfile(null)
+        if (/auth session missing/i.test(userError.message)) {
+          setProfileStatus('')
+          return
+        }
         setProfileStatus(userError.message)
         return
       }
@@ -3151,7 +3156,7 @@ export default function WidgetPage({
 
       const repairResult = await (await getSupabase()).from('profiles').insert({
         id: authUser.id,
-        phone: phone || '+84000000000',
+        phone: phone || null,
         full_name: fullName || null,
         nickname: nickname || null,
         email,
@@ -3229,12 +3234,9 @@ export default function WidgetPage({
 
   async function handleAuth() {
     try {
-      const countryCode = resolveCountryCode(profileCountryCode)
       const localPhone = profilePhone.replace(/\D/g, '')
-      const fullPhone = `${countryCode}${localPhone}`
       const loginEmail = profileEmail.trim().toLowerCase()
       const fullName = profileName.trim()
-      const cleanMotto = limitMotto(profileMotto.trim())
 
       authDebug('handleAuth:attempt', {
         mode: authMode,
@@ -3244,16 +3246,6 @@ export default function WidgetPage({
         localPhoneLength: localPhone.length,
         hasFullName: Boolean(fullName),
       })
-
-      if (authMode === 'create' && fullPhone.length < 8) {
-        setProfileStatus(text.phoneRequired)
-        return
-      }
-
-      if (authMode === 'create' && !fullName) {
-        setProfileStatus(text.nameRequired)
-        return
-      }
 
       if (!loginEmail || !loginEmail.includes('@')) {
         setProfileStatus(text.emailRequired)
@@ -3270,7 +3262,7 @@ export default function WidgetPage({
         return
       }
 
-      if (!captchaToken) {
+      if (authMode === 'create' && !captchaToken) {
         setProfileStatus(text.captchaRequired)
         return
       }
@@ -3283,23 +3275,18 @@ export default function WidgetPage({
       setIsSavingProfile(true)
       setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
 
+      const nickname = limitDisplayName(profileNickname.trim())
+      const display = nickname || compactDisplayName(fullName || loginEmail.split('@')[0])
+      const consentAt = new Date().toISOString()
+
       if (authMode === 'create') {
-        const nickname = limitDisplayName(profileNickname.trim())
-        const display = nickname || compactDisplayName(fullName)
-        const consentAt = new Date().toISOString()
         const signUpResult = await (await getSupabase()).auth.signUp({
           email: loginEmail,
           password: profilePassword,
           options: {
             data: {
               display_name: display,
-              full_name: fullName,
               name: display,
-              nickname: nickname || null,
-              profile_motto: cleanMotto || null,
-              birthday: profileBirthday || null,
-              phone: fullPhone,
-              avatar_text_color: avatarTextColor,
               marketing_consent: marketingConsent,
               marketing_consent_at: marketingConsent ? consentAt : null,
               marketing_opted_out_at: marketingConsent ? null : consentAt,
@@ -3323,143 +3310,27 @@ export default function WidgetPage({
           } : null,
         })
 
+        resetCaptcha()
+
         if (signUpResult.error) {
-          resetCaptcha()
           setProfileStatus(signUpResult.error.message)
           setIsSavingProfile(false)
           return
         }
 
-        const authUser = signUpResult.data.user
-
-        if (!authUser) {
-          resetCaptcha()
+        if (!signUpResult.data.user) {
           setProfileStatus(text.loginRequired)
           setAuthMode('login')
           setIsSavingProfile(false)
           return
         }
 
-        setUserId(authUser.id)
-
-        const existingProfileResult = await (await getSupabase())
-          .from('profiles')
-          .select('avatar_url, nickname, anonymous_callsign')
-          .eq('id', authUser.id)
-          .is('deleted_at', null)
-          .maybeSingle()
-        const existingProfile = existingProfileResult.data
-
-        authDebug('handleAuth:existingProfileQuery', {
-          error: existingProfileResult.error,
-          profile: existingProfile,
-        })
-
-        const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(authUser.id, existingProfile?.avatar_url || null) : null
-
-        if (avatarUrl === false) {
-          resetCaptcha()
-          setIsSavingProfile(false)
-          return
-        }
-
-        const avatarPayload = {
-          avatar_url: avatarMode === 'photo' ? avatarUrl : null,
-          avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
-          avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || display) : null,
-          avatar_color: avatarColor,
-          avatar_text_color: avatarTextColor,
-        }
-
-        const profileUpsert = await (await getSupabase()).from('profiles').insert({
-          id: authUser.id,
-          full_name: fullName,
-          phone: fullPhone,
-          nickname: nickname || existingProfile?.nickname || null,
-          email: loginEmail,
-          birthday: profileBirthday || null,
-          profile_motto: cleanMotto || null,
-          ...marketingConsentValues(marketingConsent, null, consentAt),
-          ...avatarPayload,
-          personal_data_consent: personalDataConsent,
-          personal_data_consent_at: consentAt,
-          privacy_policy_url: PRIVACY_POLICY_URL,
-          updated_at: new Date().toISOString(),
-        })
-
-        authDebug('handleAuth:createProfileUpsert', {
-          error: profileUpsert.error,
-          authUserId: authUser.id,
-          email: loginEmail,
-        })
-
-        if (profileUpsert.error) {
-          resetCaptcha()
-          setProfileStatus(profileUpsert.error.message)
-          setIsSavingProfile(false)
-          return
-        }
-
-        const marketingListError = await syncMarketingListForProfile({
-          id: authUser.id,
-          full_name: fullName,
-          phone: fullPhone,
-          nickname: nickname || existingProfile?.nickname || null,
-          email: loginEmail,
-          birthday: profileBirthday || null,
-          profile_motto: cleanMotto || null,
-          role: defaultRoleForEmail(loginEmail),
-          anonymous_mode: false,
-          anonymous_callsign: existingProfile?.anonymous_callsign || null,
-          ...marketingConsentValues(marketingConsent, null, consentAt),
-          ...avatarPayload,
-        }, marketingConsent)
-
-        if (marketingListError) {
-          resetCaptcha()
-          setProfileStatus(marketingListError)
-          setIsSavingProfile(false)
-          return
-        }
-
-        const metadataUpdate = await (await getSupabase()).auth.updateUser({
-          data: {
-            display_name: display,
-            full_name: fullName,
-            name: display,
-            nickname: nickname || null,
-            birthday: profileBirthday || null,
-            phone: fullPhone,
-            avatar_url: avatarPayload.avatar_url,
-            avatar_emoji: avatarPayload.avatar_emoji,
-            avatar_initials: avatarPayload.avatar_initials,
-            avatar_color: avatarPayload.avatar_color,
-            avatar_text_color: avatarPayload.avatar_text_color,
-            profile_motto: cleanMotto || null,
-            marketing_consent: marketingConsent,
-            marketing_consent_at: marketingConsent ? consentAt : null,
-            marketing_opted_out_at: marketingConsent ? null : consentAt,
-            personal_data_consent: personalDataConsent,
-            personal_data_consent_at: consentAt,
-            privacy_policy_url: PRIVACY_POLICY_URL,
-          },
-        })
-
-        authDebug('handleAuth:updateUserMetadata', { error: metadataUpdate.error })
-
-        if (metadataUpdate.error) {
-          resetCaptcha()
-          setProfileStatus(metadataUpdate.error.message)
-          setIsSavingProfile(false)
-          return
-        }
-
-        resetCaptcha()
-        setProfilePassword('')
+        setUserId(signUpResult.data.user.id)
         setPersonalDataConsent(false)
+        setProfilePassword('')
         await loadProfile()
         setProfileStatus(text.accountCreated)
-        setActiveView('leaderboard')
+        setActiveView('profile')
         setIsSavingProfile(false)
         return
       }
@@ -3467,15 +3338,11 @@ export default function WidgetPage({
       authDebug('handleAuth:signInWithPassword:start', {
         email: loginEmail,
         isAdminEmail: isAdminEmail(loginEmail),
-        hasCaptcha: Boolean(captchaToken),
       })
 
       const signInResult = await (await getSupabase()).auth.signInWithPassword({
         email: loginEmail,
         password: profilePassword,
-        options: {
-          captchaToken,
-        },
       })
 
       authDebug('handleAuth:signInWithPassword:response', {
@@ -3491,43 +3358,20 @@ export default function WidgetPage({
         } : null,
       })
 
-      resetCaptcha()
-
       if (signInResult.error) {
         setProfileStatus(signInResult.error.message)
         setIsSavingProfile(false)
         return
       }
 
-      const { data: verifiedUserData, error: verifiedUserError } = await (await getSupabase()).auth.getUser()
-      const authUser = verifiedUserData.user
-
-      authDebug('handleAuth:getUserAfterLogin', {
-        error: verifiedUserError,
-        user: authUser ? {
-          id: authUser.id,
-          email: authUser.email,
-          emailConfirmedAt: authUser.email_confirmed_at,
-          lastSignInAt: authUser.last_sign_in_at,
-          appMetadata: authUser.app_metadata,
-          userMetadata: authUser.user_metadata,
-        } : null,
-      })
-
-      if (verifiedUserError) {
-        setProfileStatus(verifiedUserError.message)
-        setIsSavingProfile(false)
-        return
-      }
-
-      if (!authUser) {
+      if (!signInResult.data.user) {
         setProfileStatus(text.loginRequired)
         setAuthMode('login')
         setIsSavingProfile(false)
         return
       }
 
-      setUserId(authUser.id)
+      setUserId(signInResult.data.user.id)
       setProfilePassword('')
       await loadProfile()
       setProfileStatus(text.loggedIn)
@@ -3550,6 +3394,27 @@ export default function WidgetPage({
     setNewPassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.loggedOut)
+  }
+
+  async function signInWithGoogle() {
+    try {
+      setIsOAuthLoading(true)
+      setProfileStatus(text.loggingIn)
+      const { error } = await (await getSupabase()).auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: appRedirectUrl(),
+        },
+      })
+
+      if (error) {
+        setProfileStatus(error.message)
+        setIsOAuthLoading(false)
+      }
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : String(error))
+      setIsOAuthLoading(false)
+    }
   }
 
   async function sendPasswordReset() {
@@ -3680,7 +3545,6 @@ export default function WidgetPage({
     }
 
     setNewPassword('')
-    setProfilePassword('')
     setIsRecoveryMode(false)
     setProfileStatus(text.passwordUpdated)
     await loadProfile()
@@ -4769,7 +4633,7 @@ export default function WidgetPage({
   }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || profile || activeView !== 'profile') return
+    if (typeof window === 'undefined' || profile || activeView !== 'profile' || authMode !== 'create') return
 
     let cancelled = false
 
@@ -8693,7 +8557,6 @@ function handleSessionDateChange(value: string) {
     setUserId('')
     setAuthEmail('')
     setProfile(null)
-    setProfilePassword('')
     setNewPassword('')
     setProfileStatus(text.accountDeleted)
     setIsDeletingAccount(false)
@@ -11806,8 +11669,8 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'profile' && (
-          <section className="section">
-            <h2>{text.profile}</h2>
+          <section className={!profile && !isRecoveryMode ? 'section profile-auth-section' : 'section'}>
+            <h2>{profile || isRecoveryMode ? text.profile : text.authWelcomeTitle}</h2>
             <p className="muted">
               {profile
                 ? text.profileUpdateHint
@@ -11816,10 +11679,23 @@ function handleSessionDateChange(value: string) {
 
             {!profile && !isRecoveryMode && (
               <div className="segmented auth-toggle">
-                <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')} type="button">
+                <button
+                  className={authMode === 'login' ? 'active' : ''}
+                  onClick={() => {
+                    setAuthMode('login')
+                    resetCaptcha()
+                  }}
+                  type="button"
+                >
                   {text.logIn}
                 </button>
-                <button className={authMode === 'create' ? 'active' : ''} onClick={() => setAuthMode('create')} type="button">
+                <button
+                  className={authMode === 'create' ? 'active' : ''}
+                  onClick={() => {
+                    setAuthMode('create')
+                  }}
+                  type="button"
+                >
                   {text.createAccount}
                 </button>
               </div>
@@ -12007,7 +11883,12 @@ function handleSessionDateChange(value: string) {
               )}
               <div className="email-field">
                 <label>{text.email} <span className="required">*</span></label>
-                <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="contact@vre-vietnam.com" />
+                <input
+                  type="email"
+                  value={profileEmail}
+                  onChange={(event) => setProfileEmail(event.target.value)}
+                  placeholder="contact@vre-vietnam.com"
+                />
               </div>
               {showProfileFields && (
                 <div className="name-field">
@@ -12097,18 +11978,13 @@ function handleSessionDateChange(value: string) {
                       placeholder={text.passwordPlaceholder}
                     />
                     <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
-                      {showPassword ? '🙈' : '👁️'}
+                      {showPassword ? text.hidePassword : text.showPassword}
                     </button>
                   </div>
-                  <p className="field-help">{text.passwordHelp}</p>
-                  {authMode === 'login' && (
-                    <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
-                      {isResettingPassword ? text.saving : text.resetPassword}
-                    </button>
-                  )}
+                  <p className="field-help">{authMode === 'create' ? text.passwordHelp : text.passwordLoginHelp}</p>
                 </div>
               )}
-              {!profile && !isRecoveryMode && (
+              {!profile && !isRecoveryMode && authMode === 'create' && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
@@ -12145,10 +12021,10 @@ function handleSessionDateChange(value: string) {
                   onClick={profile ? saveProfile : handleAuth}
                 >
                   {isSavingProfile
-                    ? authMode === 'login'
-                      ? text.loggingIn
-                      : profile
-                        ? text.saving
+                    ? profile
+                      ? text.saving
+                      : authMode === 'login'
+                        ? text.loggingIn
                         : text.creating
                     : profile
                       ? text.saveProfile
@@ -12156,6 +12032,16 @@ function handleSessionDateChange(value: string) {
                         ? text.logIn
                         : text.createAccount}
                 </button>
+                {!profile && !isRecoveryMode && (
+                  <button
+                    className={isOAuthLoading ? 'secondary create-button loading' : 'secondary create-button'}
+                    disabled={isOAuthLoading}
+                    onClick={signInWithGoogle}
+                    type="button"
+                  >
+                    {text.continueWithGoogle}
+                  </button>
+                )}
                 {profile && canAccessStaffConsole && (
                   <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
                     Staff Console
