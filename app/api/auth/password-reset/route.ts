@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 
 export const runtime = 'nodejs'
 
@@ -72,8 +73,12 @@ export async function POST(request: NextRequest) {
 
   const email = normalizeEmail(body.email)
   const captchaToken = cleanString(body.captchaToken)
-  const redirectTo = cleanString(body.redirectTo) || request.nextUrl.origin
+  const redirect = resolveTrustedAppRedirect(body.redirectTo)
   const ip = requestIp(request)
+
+  if (!redirect.ok) {
+    return jsonError(redirect.message, redirect.status)
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return jsonError('Enter a valid email.', 400)
@@ -112,7 +117,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo,
+    redirectTo: redirect.url,
     captchaToken: captchaToken || undefined,
   })
 
