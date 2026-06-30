@@ -463,7 +463,6 @@ export const de = {
   profile: 'Profil',
   profileUpdateHint: 'Profildaten aktualisieren.',
   authWelcomeTitle: 'Willkommen bei VRena',
-  profileLoginHint: 'Anmelden mit Passwort oder Google. Telefon bleibt für Zahlungen.',
   logIn: 'Anmelden',
   createAccount: 'Konto bauen',
   createAccountTab: 'Bauen',

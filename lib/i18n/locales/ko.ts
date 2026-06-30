@@ -463,7 +463,6 @@ export const ko = {
   profile: '프로필',
   profileUpdateHint: '프로필 정보를 업데이트하세요.',
   authWelcomeTitle: 'VRena에 오신 걸 환영합니다',
-  profileLoginHint: '비밀번호 또는 Google로 로그인. 전화는 결제용으로 둡니다.',
   logIn: '로그인',
   createAccount: '계정 만들기',
   createAccountTab: '만들기',
