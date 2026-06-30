@@ -7001,6 +7001,15 @@ body {
   height: 19px;
 }
 
+.app .profile-auth-section .passkey-captcha-box {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .app .profile-auth-section .google-mark {
   display: inline-grid;
   place-items: center;
