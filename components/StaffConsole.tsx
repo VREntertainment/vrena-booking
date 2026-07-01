@@ -8078,34 +8078,29 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             <h3>{text.tabs.report}</h3>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
-                <button type="button" onClick={() => {
-                  const [from, to] = reportPresetRange('today')
-                  setReportStart(from)
-                  setReportEnd(to)
-                }}>
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-                </button>
-                <button type="button" onClick={() => {
-                  const [from, to] = reportPresetRange('yesterday')
-                  setReportStart(from)
-                  setReportEnd(to)
-                }}>
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
-                </button>
-                <button className="staff-report-range-button" type="button" onClick={() => {
-                  setReportDatePickerTarget('report')
-                  setReportDatePickerOpen(true)
-                }}>
-                  <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
-                  <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-                </button>
-                <button type="button" onClick={applyPreviousPeriodComparison}>
-                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
-                </button>
-                <label className="staff-compare-toggle">
-                  <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                  {text.labels.compare}
-                </label>
+                <div className="staff-report-date-actions">
+                  <button type="button" onClick={() => {
+                    const [from, to] = reportPresetRange('today')
+                    setReportStart(from)
+                    setReportEnd(to)
+                  }}>
+                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+                  </button>
+                  <button type="button" onClick={() => {
+                    const [from, to] = reportPresetRange('yesterday')
+                    setReportStart(from)
+                    setReportEnd(to)
+                  }}>
+                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
+                  </button>
+                  <button className="staff-report-range-button" type="button" onClick={() => {
+                    setReportDatePickerTarget('report')
+                    setReportDatePickerOpen(true)
+                  }}>
+                    <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
+                    <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+                  </button>
+                </div>
                 <div className="staff-report-export-actions">
                   <button type="button" onClick={exportExcelReport}>
                     <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
@@ -8200,9 +8195,17 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   </div>
                 </div>
               </div>
-              {compareEnabled && (
-                <div className="staff-report-compare-row">
-                  <span>{text.compareWith}</span>
+              <div className="staff-report-compare-row">
+                <label className="staff-compare-toggle">
+                  <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
+                  {text.labels.compare}
+                </label>
+                <button className="staff-report-secondary-action" type="button" onClick={applyPreviousPeriodComparison}>
+                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
+                </button>
+                {compareEnabled && (
+                  <>
+                    <span>{text.compareWith}</span>
                   <button className="staff-report-range-button compact" type="button" onClick={() => {
                     setReportDatePickerTarget('compare')
                     setReportDatePickerOpen(true)
@@ -8210,8 +8213,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.compareRange}</span>
                     <strong>{rangeLabel(compareStart, compareEnd)}</strong>
                   </button>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="staff-summary-grid">

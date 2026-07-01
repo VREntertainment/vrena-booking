@@ -2543,6 +2543,7 @@ body {
 .app .staff-report-filter-row button,
 .app .staff-report-export-actions > button,
 .app .staff-report-export-actions > .staff-accountant-export > button,
+.app .staff-report-secondary-action,
 .app .staff-chart-mode button {
   min-height: 30px;
   padding: 5px 8px;
@@ -2559,16 +2560,21 @@ body {
 }
 
 .app .staff-report-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
+}
+
+.app .staff-report-head h3 {
+  margin: 0;
+  line-height: 1.05;
 }
 
 .app .staff-report-filters {
   display: grid;
-  gap: 6px;
-  justify-items: end;
+  gap: 8px;
+  justify-items: stretch;
   min-width: 0;
 }
 
@@ -2578,19 +2584,40 @@ body {
   min-width: 140px;
 }
 
-.app .staff-report-filter-row,
+.app .staff-report-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+
+.app .staff-report-date-actions,
+.app .staff-report-export-actions,
 .app .staff-report-compare-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .app .staff-report-export-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.app .staff-report-filter-row button:not(.staff-report-range-button),
+.app .staff-report-export-actions > button,
+.app .staff-report-export-actions > .staff-accountant-export > button,
+.app .staff-report-secondary-action {
+  white-space: nowrap;
+}
+
+.app .staff-report-secondary-action {
+  border-color: rgba(7, 17, 18, 0.12);
+  background: #ffffff;
+  color: #071112;
 }
 
 .app .staff-accountant-export {
@@ -2813,6 +2840,7 @@ body {
 
 .app .staff-report-compare-row {
   width: 100%;
+  min-height: 34px;
   justify-content: flex-end;
 }
 
@@ -9156,9 +9184,18 @@ body {
     justify-items: stretch;
   }
 
-  .app .staff-report-filter-row,
+  .app .staff-report-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-actions,
+  .app .staff-report-export-actions,
   .app .staff-report-compare-row {
     justify-content: flex-start;
+  }
+
+  .app .staff-report-export-actions {
+    flex-wrap: wrap;
   }
 
   .app .staff-report-range-button {
