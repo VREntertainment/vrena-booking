@@ -642,6 +642,7 @@ body {
 .app .profile-account-form .name-field,
 .app .profile-account-form .nickname-field,
 .app .profile-account-form .birthday-field,
+.app .profile-account-form .gender-field,
 .app .profile-account-form .motto-field {
   min-width: 0;
   border: 1px solid rgba(7, 17, 18, 0.09);
@@ -659,9 +660,13 @@ body {
 
 .app .profile-account-form .country-phone-field {
   display: grid;
-  grid-template-columns: minmax(76px, max-content) minmax(0, 1fr);
+  grid-template-columns: minmax(66px, max-content) minmax(0, 1fr);
   gap: 10px;
   align-items: end;
+}
+
+.app .profile-account-form .country-phone-label {
+  grid-column: 1 / -1;
 }
 
 .app .profile-account-form .country-phone-field .country-field,
@@ -684,7 +689,7 @@ body {
 
 .app .profile-account-form .country-phone-field .country-button {
   width: auto;
-  min-width: 66px;
+  min-width: 62px;
   padding-inline: 10px;
   white-space: nowrap;
 }
@@ -696,12 +701,19 @@ body {
 }
 
 .app .profile-account-form input,
+.app .profile-account-form select,
 .app .profile-account-form .date-input-shell,
 .app .profile-account-form .country-button {
   min-height: 42px;
   border-color: rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   background: #f8fafb;
+}
+
+.app .profile-account-form select {
+  width: 100%;
+  color: #071112;
+  padding: 8px 34px 8px 10px;
 }
 
 .app .profile-account-form .marketing-consent-field {
@@ -804,6 +816,17 @@ body {
     text-align: center;
   }
 
+  .app .profile-account-form .avatar-color-field {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .app .profile-account-form .avatar-color-field .color-row {
+    flex: 0 1 auto;
+  }
+
   .app .profile-account-form .custom-color-row {
     gap: 10px;
   }
@@ -869,6 +892,11 @@ body {
 
   .app .profile-security-panel .danger-link {
     grid-column: 1 / -1;
+  }
+
+  .app .profile-account-form .country-phone-field {
+    grid-template-columns: minmax(62px, max-content) minmax(0, 1fr);
+    gap: 8px;
   }
 }
 

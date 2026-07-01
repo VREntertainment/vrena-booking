@@ -299,6 +299,7 @@ type Profile = {
   nickname: string | null
   email: string | null
   birthday?: string | null
+  gender?: ProfileGender | null
   avatar_url: string | null
   avatar_emoji?: string | null
   avatar_initials?: string | null
@@ -366,7 +367,13 @@ const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'
 const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
 const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
-const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
+type ProfileGender = typeof PROFILE_GENDER_VALUES[number]
+const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+
+function normalizeProfileGender(value: unknown): ProfileGender | '' {
+  return typeof value === 'string' && PROFILE_GENDER_VALUES.includes(value as ProfileGender) ? value as ProfileGender : ''
+}
 
 function isAdminEmail(email?: string | null) {
   return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
@@ -1956,6 +1963,7 @@ export default function WidgetPage({
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
   const [profileBirthday, setProfileBirthday] = useState('')
+  const [profileGender, setProfileGender] = useState<ProfileGender | ''>('')
   const [personalDataConsent, setPersonalDataConsent] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(true)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -3236,6 +3244,7 @@ export default function WidgetPage({
         setProfileNickname(limitDisplayName(profileRow.nickname || ''))
         setProfileEmail(profileRow.email || '')
         setProfileBirthday(profileRow.birthday || '')
+        setProfileGender(normalizeProfileGender(profileRow.gender))
         setMarketingConsent(profileRow.marketing_consent !== false)
         setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
         setAvatarEmoji(profileRow.avatar_emoji || '😎')
@@ -3252,6 +3261,7 @@ export default function WidgetPage({
       const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
       const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
       const birthdayValue = typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : ''
+      const genderValue = normalizeProfileGender(authUser.user_metadata?.gender)
       const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
       const fallbackProfile: Profile = {
         id: authUser.id,
@@ -3260,6 +3270,7 @@ export default function WidgetPage({
         nickname: nickname || null,
         email,
         birthday: birthdayValue || null,
+        gender: genderValue || null,
         avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
         avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
         avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
@@ -3283,6 +3294,7 @@ export default function WidgetPage({
       setProfileNickname(nickname)
       setProfileEmail(email)
       setProfileBirthday(birthdayValue)
+      setProfileGender(genderValue)
       setMarketingConsent(fallbackProfile.marketing_consent !== false)
       setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
       setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
@@ -3299,6 +3311,7 @@ export default function WidgetPage({
         nickname: nickname || null,
         email,
         birthday: fallbackProfile.birthday,
+        gender: fallbackProfile.gender,
         avatar_url: fallbackProfile.avatar_url,
         avatar_emoji: fallbackProfile.avatar_emoji,
         avatar_initials: fallbackProfile.avatar_initials,
@@ -3430,6 +3443,7 @@ export default function WidgetPage({
             data: {
               display_name: display,
               name: display,
+              gender: profileGender || null,
               marketing_consent: marketingConsent,
               marketing_consent_at: marketingConsent ? consentAt : null,
               marketing_opted_out_at: marketingConsent ? null : consentAt,
@@ -7742,6 +7756,7 @@ function handleSessionDateChange(value: string) {
       profile_motto: cleanMotto || null,
       nickname: nickname || null,
       birthday: profileBirthday || null,
+      gender: profileGender || null,
       ...marketingConsentValues(marketingConsent, profile),
       ...avatarPayload,
       updated_at: new Date().toISOString(),
@@ -7769,6 +7784,7 @@ function handleSessionDateChange(value: string) {
         name: display,
         nickname: nickname || null,
         birthday: data.birthday,
+        gender: data.gender,
         phone: data.phone,
         avatar_url: publicAvatar.avatar_url,
         avatar_emoji: publicAvatar.avatar_emoji,
@@ -7872,6 +7888,7 @@ function handleSessionDateChange(value: string) {
     setProfileCountryCode(`${countryCode} ${countries.find((country) => country.code === countryCode)?.name || ''}`.trim())
     setProfilePhone(localPhone)
     setProfileBirthday(data.birthday || '')
+    setProfileGender(normalizeProfileGender(data.gender))
     setProfileStatus(text.profileSaved)
     setIsSavingProfile(false)
   }
@@ -12114,7 +12131,6 @@ function handleSessionDateChange(value: string) {
                         {avatarEmojis.map((emoji) => (
                           <button className={avatarEmoji === emoji ? 'active' : ''} key={emoji} onClick={() => setAvatarEmoji(emoji)} type="button">{emoji}</button>
                         ))}
-                        <input maxLength={2} value={avatarEmoji} onChange={(event) => setAvatarEmoji(Array.from(event.target.value).slice(0, 2).join(''))} aria-label={text.avatarEmoji} />
                       </div>
                     )}
                     {avatarMode === 'initials' && (
@@ -12122,61 +12138,65 @@ function handleSessionDateChange(value: string) {
                     )}
                     {avatarMode !== 'photo' && (
                       <>
-                        <div className="color-row" aria-label={text.avatarColor}>
-                          {avatarColors.map((color) => (
-                            <button
-                              className={avatarColor === color ? 'active' : ''}
-                              key={color}
-                              onClick={() => updateAvatarColor(color)}
-                              style={{ background: color }}
-                              type="button"
-                            />
-                          ))}
-                        </div>
-                        <div className="custom-color-row">
-                          <label>
-                            <span>{text.customColor}</span>
-                            <input type="color" value={avatarColor} onChange={(event) => updateAvatarColor(event.target.value)} />
-                          </label>
-                          <label className="hex-field">
-                            <span>{text.hexColor}</span>
-                            <input
-                              maxLength={7}
-                              value={avatarColorDraft}
-                              onBlur={() => setAvatarColorDraft(avatarColor)}
-                              onChange={(event) => updateAvatarColorDraft(event.target.value)}
-                              placeholder="#3059ff"
-                            />
-                          </label>
+                        <div className="avatar-color-field">
+                          <div className="color-row" aria-label={text.avatarColor}>
+                            {avatarColors.map((color) => (
+                              <button
+                                className={avatarColor === color ? 'active' : ''}
+                                key={color}
+                                onClick={() => updateAvatarColor(color)}
+                                style={{ background: color }}
+                                type="button"
+                              />
+                            ))}
+                          </div>
+                          <div className="custom-color-row">
+                            <label>
+                              <span>{text.customColor}</span>
+                              <input type="color" value={avatarColor} onChange={(event) => updateAvatarColor(event.target.value)} />
+                            </label>
+                            <label className="hex-field">
+                              <span>{text.hexColor}</span>
+                              <input
+                                maxLength={7}
+                                value={avatarColorDraft}
+                                onBlur={() => setAvatarColorDraft(avatarColor)}
+                                onChange={(event) => updateAvatarColorDraft(event.target.value)}
+                                placeholder="#3059ff"
+                              />
+                            </label>
+                          </div>
                         </div>
                         {avatarMode === 'initials' && (
                           <>
-                            <div className="color-row" aria-label={text.avatarTextColor}>
-                              {avatarTextColors.map((color) => (
-                                <button
-                                  className={avatarTextColor === color ? 'active' : ''}
-                                  key={color}
-                                  onClick={() => updateAvatarTextColor(color)}
-                                  style={{ background: color }}
-                                  type="button"
-                                />
-                              ))}
-                            </div>
-                            <div className="custom-color-row">
-                              <label>
-                                <span>{text.avatarTextColor}</span>
-                                <input type="color" value={avatarTextColor} onChange={(event) => updateAvatarTextColor(event.target.value)} />
-                              </label>
-                              <label className="hex-field">
-                                <span>{text.hexColor}</span>
-                                <input
-                                  maxLength={7}
-                                  value={avatarTextColorDraft}
-                                  onBlur={() => setAvatarTextColorDraft(avatarTextColor)}
-                                  onChange={(event) => updateAvatarTextColorDraft(event.target.value)}
-                                  placeholder="#ffffff"
-                                />
-                              </label>
+                            <div className="avatar-color-field">
+                              <div className="color-row" aria-label={text.avatarTextColor}>
+                                {avatarTextColors.map((color) => (
+                                  <button
+                                    className={avatarTextColor === color ? 'active' : ''}
+                                    key={color}
+                                    onClick={() => updateAvatarTextColor(color)}
+                                    style={{ background: color }}
+                                    type="button"
+                                  />
+                                ))}
+                              </div>
+                              <div className="custom-color-row">
+                                <label>
+                                  <span>{text.avatarTextColor}</span>
+                                  <input type="color" value={avatarTextColor} onChange={(event) => updateAvatarTextColor(event.target.value)} />
+                                </label>
+                                <label className="hex-field">
+                                  <span>{text.hexColor}</span>
+                                  <input
+                                    maxLength={7}
+                                    value={avatarTextColorDraft}
+                                    onBlur={() => setAvatarTextColorDraft(avatarTextColor)}
+                                    onChange={(event) => updateAvatarTextColorDraft(event.target.value)}
+                                    placeholder="#ffffff"
+                                  />
+                                </label>
+                              </div>
                             </div>
                           </>
                         )}
@@ -12194,10 +12214,11 @@ function handleSessionDateChange(value: string) {
               {showProfileFields && (
                 <>
                   <div className="country-phone-field">
+                    <label className="country-phone-label">{text.phoneNumber} <span className="required">*</span></label>
                     <div className="country-field">
-                      <label>{text.countryCode} <span className="required">*</span></label>
                       <div className="country-picker">
                         <button
+                          aria-label={text.countryCode}
                           className="country-button"
                           onClick={() => setCountryPickerOpen((open) => !open)}
                           type="button"
@@ -12233,8 +12254,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                     </div>
                     <div className="phone-field">
-                      <label>{text.phoneNumber} <span className="required">*</span></label>
-                      <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+                      <input aria-label={text.phoneNumber} value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
                     </div>
                   </div>
                 </>
@@ -12297,6 +12317,19 @@ function handleSessionDateChange(value: string) {
                     placeholder={text.chooseDate}
                     value={profileBirthday}
                   />
+                </div>
+              )}
+              {showProfileFields && (
+                <div className="gender-field">
+                  <label>{text.gender}</label>
+                  <select value={profileGender} onChange={(event) => setProfileGender(normalizeProfileGender(event.target.value))}>
+                    <option value="">{text.optional}</option>
+                    <option value="male">{text.genderMale}</option>
+                    <option value="female">{text.genderFemale}</option>
+                    <option value="non_binary">{text.genderNonBinary}</option>
+                    <option value="prefer_not_to_say">{text.genderPreferNotToSay}</option>
+                    <option value="self_describe">{text.genderSelfDescribe}</option>
+                  </select>
                 </div>
               )}
               {profile && showProfileFields && (
