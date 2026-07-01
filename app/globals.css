@@ -5210,8 +5210,58 @@ body {
   color: #4a5a60;
 }
 
+.app .message-translation-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  color: #66777d;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.app .message-translation-row.loading {
+  opacity: 0.7;
+}
+
+.app .message-translation-status,
+.app .message-translation-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app .message-translation-status svg {
+  color: #3059ff;
+  flex: 0 0 auto;
+}
+
+.app .message-translation-toggle {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #3059ff;
+  padding: 0;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.app .message-translation-toggle:hover,
+.app .message-translation-toggle:focus-visible {
+  color: #1239c8;
+  text-decoration: underline;
+}
+
 .app .session-message.own-message p {
   text-align: right;
+}
+
+.app .session-message.own-message .message-translation-row {
+  justify-content: flex-end;
 }
 
 .app .message-meta-row {
@@ -11702,8 +11752,18 @@ body {
     color: #f6f7f9;
   }
 
-  .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count {
+  .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count, .app .message-translation-row {
     color: #aeb9bd;
+  }
+
+  .app .message-translation-status svg,
+  .app .message-translation-toggle {
+    color: #9eefff;
+  }
+
+  .app .message-translation-toggle:hover,
+  .app .message-translation-toggle:focus-visible {
+    color: #ffffff;
   }
 
   .app .message-list::-webkit-scrollbar-thumb {
