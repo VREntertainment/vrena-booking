@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { X } from 'lucide-react'
 import type { LanguageCode } from '../lib/i18n'
 import { isLanguageCode } from '../lib/i18n'
 
@@ -84,7 +85,7 @@ export default function GameGuideModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={onClose}>
       <div className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          ×
+          <X aria-hidden="true" size={20} />
         </button>
         <div className="game-guide-header">
           <h3 id="game-guide-title">{text.gameGuideTitle}</h3>

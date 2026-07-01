@@ -2,6 +2,29 @@
 
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
+import {
+  Bold,
+  CalendarPlus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Crown,
+  Eye,
+  EyeOff,
+  Italic,
+  KeyRound,
+  LockKeyhole,
+  RefreshCw,
+  Save,
+  Share2,
+  Strikethrough,
+  Trash2,
+  Underline,
+  UserCheck,
+  UserMinus,
+  X,
+} from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
@@ -64,6 +87,15 @@ const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
   return <span aria-hidden="true" className="share-symbol-image" />
+}
+
+function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
+  return (
+    <span className="button-icon-text">
+      {icon}
+      <span>{children}</span>
+    </span>
+  )
 }
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
@@ -9773,7 +9805,7 @@ function handleSessionDateChange(value: string) {
             {openInvitationText}
           </button>
           <button className="secondary small-button" type="button" onClick={() => downloadSessionCalendar(session)}>
-            {addToCalendarText}
+            <ButtonIconText icon={<CalendarPlus aria-hidden="true" size={15} />}>{addToCalendarText}</ButtonIconText>
           </button>
         </div>
       </article>
@@ -9917,7 +9949,7 @@ function handleSessionDateChange(value: string) {
                       setIsSearchOpen(false)
                     }}
                   >
-                    ×
+                    <X aria-hidden="true" size={18} />
                   </button>
                 )}
               </div>
@@ -10228,7 +10260,7 @@ function handleSessionDateChange(value: string) {
                               setSessionExpanded(session, !isExpanded)
                             }}
                           >
-                            {isExpanded ? text.hideDetails : text.expandDetails}
+                            <ButtonIconText icon={isExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{isExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
                           </button>
                         )}
                       </div>
@@ -10568,10 +10600,10 @@ function handleSessionDateChange(value: string) {
                           <div className="full">
                             <label>{text.notes}</label>
                             <div className="format-toolbar">
-                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}>{text.formatBold}</button>
-                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}>{text.formatItalic}</button>
-                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}>{text.formatUnderline}</button>
-                              <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}>{text.formatStrike}</button>
+                              <button type="button" aria-label={text.formatBold} title={text.formatBold} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}><Bold aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                              <button type="button" aria-label={text.formatItalic} title={text.formatItalic} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}><Italic aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                              <button type="button" aria-label={text.formatUnderline} title={text.formatUnderline} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}><Underline aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                              <button type="button" aria-label={text.formatStrike} title={text.formatStrike} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}><Strikethrough aria-hidden="true" size={15} strokeWidth={2.5} /></button>
                             </div>
                             <RichNotesEditor
                               value={editSessionNotes}
@@ -10642,7 +10674,7 @@ function handleSessionDateChange(value: string) {
                       <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby={`invite-session-title-${session.id}`} onClick={() => setInviteModalSessionId('')}>
                         <div className="login-modal session-invite-modal" onClick={(event) => event.stopPropagation()}>
                           <button className="modal-close" type="button" onClick={() => setInviteModalSessionId('')} aria-label={text.close}>
-                            &times;
+                            <X aria-hidden="true" size={20} />
                           </button>
                           <div className="session-invite-modal-head">
                             <h3 id={`invite-session-title-${session.id}`}>{text.invitePlayer}</h3>
@@ -11312,7 +11344,7 @@ function handleSessionDateChange(value: string) {
                       setIsClubSearchOpen(false)
                     }}
                   >
-                    ×
+                    <X aria-hidden="true" size={18} />
                   </button>
                 )}
               </div>
@@ -11600,14 +11632,14 @@ function handleSessionDateChange(value: string) {
                       type="button"
                       onClick={() => moveCalendarWeek(-7)}
                     >
-                      ‹
+                      <ChevronLeft aria-hidden="true" size={18} />
                     </button>
                     <button
                       aria-label={text.nextWeek}
                       type="button"
                       onClick={() => moveCalendarWeek(7)}
                     >
-                      ›
+                      <ChevronRight aria-hidden="true" size={18} />
                     </button>
                   </div>
                 </div>
@@ -11906,10 +11938,10 @@ function handleSessionDateChange(value: string) {
               <div className="full">
                 <label>{text.notes}</label>
                 <div className="format-toolbar">
-                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}>{text.formatBold}</button>
-                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}>{text.formatItalic}</button>
-                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}>{text.formatUnderline}</button>
-                  <button type="button" onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}>{text.formatStrike}</button>
+                  <button type="button" aria-label={text.formatBold} title={text.formatBold} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}><Bold aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                  <button type="button" aria-label={text.formatItalic} title={text.formatItalic} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}><Italic aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                  <button type="button" aria-label={text.formatUnderline} title={text.formatUnderline} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}><Underline aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                  <button type="button" aria-label={text.formatStrike} title={text.formatStrike} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}><Strikethrough aria-hidden="true" size={15} strokeWidth={2.5} /></button>
                 </div>
                 <RichNotesEditor
                   value={sessionNotes}
@@ -11987,10 +12019,7 @@ function handleSessionDateChange(value: string) {
                     type="button"
                   >
                     <span className="passkey-mark" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
-                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
-                      </svg>
+                      <KeyRound size={19} strokeWidth={2.4} />
                     </span>
                     {text.continueWithPasskey}
                   </button>
@@ -12288,8 +12317,8 @@ function handleSessionDateChange(value: string) {
                       onChange={(event) => setProfilePassword(event.target.value)}
                       placeholder={text.passwordPlaceholder}
                     />
-                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
-                      {showPassword ? text.hidePassword : text.showPassword}
+                    <button type="button" aria-label={showPassword ? text.hidePassword : text.showPassword} title={showPassword ? text.hidePassword : text.showPassword} onClick={() => setShowPassword((visible) => !visible)}>
+                      {showPassword ? <EyeOff aria-hidden="true" size={20} /> : <Eye aria-hidden="true" size={20} />}
                     </button>
                   </div>
                   {authMode === 'create' && <p className="field-help">{text.passwordHelp}</p>}
@@ -12336,8 +12365,8 @@ function handleSessionDateChange(value: string) {
                       onChange={(event) => setNewPassword(event.target.value)}
                       placeholder={text.passwordPlaceholder}
                     />
-                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}>
-                      {showPassword ? text.hidePassword : text.showPassword}
+                    <button type="button" aria-label={showPassword ? text.hidePassword : text.showPassword} title={showPassword ? text.hidePassword : text.showPassword} onClick={() => setShowPassword((visible) => !visible)}>
+                      {showPassword ? <EyeOff aria-hidden="true" size={20} /> : <Eye aria-hidden="true" size={20} />}
                     </button>
                   </div>
                   <p className="field-help">{text.resetPasswordReady}</p>
@@ -12416,13 +12445,13 @@ function handleSessionDateChange(value: string) {
             {profile && (
               <div className="account-links">
                 <button className="link-button" disabled={isPasskeyLoading} onClick={registerPasskey} type="button">
-                  {isPasskeyLoading ? text.saving : text.addPasskey}
+                  <ButtonIconText icon={<KeyRound aria-hidden="true" size={16} />}>{isPasskeyLoading ? text.saving : text.addPasskey}</ButtonIconText>
                 </button>
                 <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
-                  {isResettingPassword ? text.saving : text.resetPassword}
+                  <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
                 </button>
                 <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
-                  {isDeletingAccount ? text.saving : text.deleteAccount}
+                  <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
                 </button>
               </div>
             )}
@@ -12441,7 +12470,7 @@ function handleSessionDateChange(value: string) {
                   <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
                   {canShareCurrentUserStats && (
                     <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
-                      {currentUserStatsShared ? text.shared : text.shareStats}
+                      <ButtonIconText icon={<Share2 aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
                     </button>
                   )}
                 </div>
@@ -12481,7 +12510,7 @@ function handleSessionDateChange(value: string) {
                       </div>
                       {pendingSessionInvites.length > 1 && (
                         <button className="secondary small-button" type="button" onClick={() => setProfileInvitesExpanded((expanded) => !expanded)}>
-                          {profileInvitesExpanded ? text.hideDetails : text.expandDetails}
+                          <ButtonIconText icon={profileInvitesExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileInvitesExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
                         </button>
                       )}
                     </div>
@@ -12500,7 +12529,7 @@ function handleSessionDateChange(value: string) {
                         <h4>{text.upcoming}</h4>
                         {profileUpcomingSessions.length > 1 && (
                           <button className="secondary small-button" type="button" onClick={() => setProfileUpcomingExpanded((expanded) => !expanded)}>
-                            {profileUpcomingExpanded ? text.hideDetails : text.expandDetails}
+                            <ButtonIconText icon={profileUpcomingExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileUpcomingExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
                           </button>
                         )}
                       </div>
@@ -12518,7 +12547,7 @@ function handleSessionDateChange(value: string) {
                         <h4>{text.past}</h4>
                         {profilePastSessions.length > 1 && (
                           <button className="secondary small-button" type="button" onClick={() => setProfilePastExpanded((expanded) => !expanded)}>
-                            {profilePastExpanded ? text.hideDetails : text.expandDetails}
+                            <ButtonIconText icon={profilePastExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profilePastExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
                           </button>
                         )}
                       </div>
@@ -12557,7 +12586,7 @@ function handleSessionDateChange(value: string) {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-unlock-title" onClick={closeClubUnlockModal}>
           <form className="login-modal" onSubmit={unlockClubPage} onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" onClick={closeClubUnlockModal} aria-label={text.close}>
-              &times;
+              <X aria-hidden="true" size={20} />
             </button>
             <h3 id="club-unlock-title">{text.unlockClub}</h3>
             <p>{text.privateClubLocked}</p>
@@ -12593,7 +12622,7 @@ function handleSessionDateChange(value: string) {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="anonymous-mode-title" onClick={() => setAnonymousConfirmOpen(false)}>
           <div className="login-modal anonymous-modal" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" onClick={() => setAnonymousConfirmOpen(false)} aria-label={text.close}>
-              &times;
+              <X aria-hidden="true" size={20} />
             </button>
             <div className="anonymous-mask-preview" aria-hidden="true">{ANONYMOUS_MASK_EMOJI}</div>
             <h3 id="anonymous-mode-title">{text.goAnonymousTitle}</h3>
@@ -12737,7 +12766,7 @@ function handleSessionDateChange(value: string) {
                     </div>
                   </div>
                   <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
-                    {text.close}
+                    <ButtonIconText icon={<X aria-hidden="true" size={15} />}>{text.close}</ButtonIconText>
                   </button>
                 </div>
               </div>
@@ -12789,7 +12818,7 @@ function handleSessionDateChange(value: string) {
                   <span>{text.clubInviteCode}</span>
                   <strong>{selectedClub.pin_code}</strong>
                   <button className="secondary small-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                    {text.shareClubCode}
+                    <ButtonIconText icon={<Share2 aria-hidden="true" size={15} />}>{text.shareClubCode}</ButtonIconText>
                   </button>
                 </div>
               )}
@@ -12905,12 +12934,12 @@ function handleSessionDateChange(value: string) {
                               )}
                               {canTransfer && (
                                 <button className="secondary small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => transferClubOwnership(selectedClub, member)}>
-                                  {text.transferOwnership}
+                                  <ButtonIconText icon={<Crown aria-hidden="true" size={15} />}>{text.transferOwnership}</ButtonIconText>
                                 </button>
                               )}
                               {canManageClubMember(selectedClub, member) && (
                                 <button className="danger small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => removeClubMember(selectedClub, member)}>
-                                  {text.remove}
+                                  <ButtonIconText icon={<UserMinus aria-hidden="true" size={15} />}>{text.remove}</ButtonIconText>
                                 </button>
                               )}
                             </article>
@@ -12926,11 +12955,11 @@ function handleSessionDateChange(value: string) {
                               <span>{compactDisplayName(member.display_name, text.player)}</span>
                               <div className="mini-session-actions">
                                 <button className="secondary small-button" disabled={busyClubId === selectedClub.id} onClick={() => approveClubMember(member)} type="button">
-                                  {text.approve}
+                                  <ButtonIconText icon={<UserCheck aria-hidden="true" size={15} />}>{text.approve}</ButtonIconText>
                                 </button>
                                 {canManageClubMember(selectedClub, member) && (
                                   <button className="danger small-button" disabled={busyClubId === selectedClub.id} onClick={() => removeClubMember(selectedClub, member)} type="button">
-                                    {text.remove}
+                                    <ButtonIconText icon={<UserMinus aria-hidden="true" size={15} />}>{text.remove}</ButtonIconText>
                                   </button>
                                 )}
                               </div>
@@ -13039,7 +13068,7 @@ function handleSessionDateChange(value: string) {
                                     openSessionFromProfile(session.id)
                                   }}
                                 >
-                                  {text.expandDetails}
+                                  <ButtonIconText icon={<ChevronDown aria-hidden="true" size={15} />}>{text.expandDetails}</ButtonIconText>
                                 </button>
                               </div>
                             </div>
@@ -13291,14 +13320,14 @@ function handleSessionDateChange(value: string) {
 
                   <div className="club-action-row">
                     <button className={isSavingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isSavingClub || busyClubId === selectedClub.id} type="button" onClick={() => saveClubSettings(selectedClub)}>
-                      {isSavingClub ? text.saving : text.saveClub}
+                      <ButtonIconText icon={<Save aria-hidden="true" size={17} />}>{isSavingClub ? text.saving : text.saveClub}</ButtonIconText>
                     </button>
                     <button className="secondary create-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => regenerateClubInviteCode(selectedClub)}>
-                      {text.regenerateInviteCode}
+                      <ButtonIconText icon={<RefreshCw aria-hidden="true" size={17} />}>{text.regenerateInviteCode}</ButtonIconText>
                     </button>
                     {selectedClub.pin_code && (
                       <button className="secondary create-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                        {text.shareClubCode}
+                        <ButtonIconText icon={<Share2 aria-hidden="true" size={17} />}>{text.shareClubCode}</ButtonIconText>
                       </button>
                     )}
                   </div>

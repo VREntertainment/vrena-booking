@@ -1,5 +1,6 @@
 'use client'
 
+import { Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n'
 
@@ -517,7 +518,10 @@ export default function LeaderboardPanel({
           </div>
           {canShareCurrentUserStats && onShareCurrentUserStats && (
             <button className="secondary small-button leaderboard-share-button" type="button" onClick={onShareCurrentUserStats}>
-              {isCurrentUserStatsShared ? text.shared : text.shareStats}
+              <span className="button-icon-text">
+                <Share2 aria-hidden="true" size={15} />
+                <span>{isCurrentUserStatsShared ? text.shared : text.shareStats}</span>
+              </span>
             </button>
           )}
         </div>

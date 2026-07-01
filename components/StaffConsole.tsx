@@ -1,8 +1,30 @@
 'use client'
 
 import NextImage from 'next/image'
+import {
+  Ban,
+  CalendarDays,
+  CalendarRange,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Info,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  Send,
+  Trash2,
+  UserX,
+  X,
+} from 'lucide-react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, RefObject } from 'react'
+import type { ChangeEvent, ReactNode, RefObject } from 'react'
 import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { supabase } from '../lib/supabase/client'
@@ -53,6 +75,15 @@ type PaymentSplitDraft = {
 type PaymentSplitPayload = {
   payment_method: StaffPaymentMethod
   amount: number
+}
+
+function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
+  return (
+    <span className="button-icon-text">
+      {icon}
+      <span>{children}</span>
+    </span>
+  )
 }
 
 export type StaffProfile = {
@@ -2250,7 +2281,7 @@ function StaffReportDateRangeModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="staff-report-date-modal-title" onClick={onClose}>
       <div className="login-modal staff-report-date-modal" onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" type="button" aria-label={text.aria.closeReportCalendar} onClick={onClose}>
-          ×
+          <X aria-hidden="true" size={20} />
         </button>
         <div className="staff-report-date-modal-head">
           <div>
@@ -2258,7 +2289,7 @@ function StaffReportDateRangeModal({
             <p>{text.labels.selectedRange}: {rangeLabel(orderedStart, orderedEnd)}</p>
           </div>
           <button className="staff-report-range-button" type="button" onClick={() => setRangeTarget('report')}>
-            <span>{text.labels.dateRange}</span>
+            <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
             <strong>{rangeLabel(orderedStart, orderedEnd)}</strong>
           </button>
         </div>
@@ -2287,9 +2318,13 @@ function StaffReportDateRangeModal({
               </label>
             </div>
             <div className="staff-report-calendar-nav">
-              <button type="button" aria-label={text.aria.previousReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>‹</button>
+              <button type="button" aria-label={text.aria.previousReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>
+                <ChevronLeft aria-hidden="true" size={16} />
+              </button>
               <span>{monthLabel(visibleMonth)} / {monthLabel(nextMonth)}</span>
-              <button type="button" aria-label={text.aria.nextReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>›</button>
+              <button type="button" aria-label={text.aria.nextReportMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>
+                <ChevronRight aria-hidden="true" size={16} />
+              </button>
             </div>
             <div className="staff-report-calendar-months">
               {renderCalendarMonth(visibleMonth)}
@@ -2310,7 +2345,7 @@ function StaffReportDateRangeModal({
               {draftCompareEnabled && (
                 <div className="staff-report-date-compare-fields">
                   <button className="staff-report-range-button compact" type="button" onClick={() => setRangeTarget('compare')}>
-                    <span>{text.labels.compareRange}</span>
+                    <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.compareRange}</span>
                     <strong>{rangeLabel(orderedCompareStart, orderedCompareEnd)}</strong>
                   </button>
                   <label>
@@ -2328,7 +2363,9 @@ function StaffReportDateRangeModal({
         </div>
 
         <div className="staff-report-date-modal-actions">
-          <button className="secondary" type="button" onClick={onClose}>{text.actions.cancel}</button>
+          <button className="secondary" type="button" onClick={onClose}>
+            <ButtonIconText icon={<X aria-hidden="true" size={14} />}>{text.actions.cancel}</ButtonIconText>
+          </button>
           <button
             className="primary"
             type="button"
@@ -6428,9 +6465,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               {canCreateOrders && (
                 <td>
                   <div className="staff-row-actions">
-                    <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>{text.actions.paid}</button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>{text.actions.noShow}</button>
+                    <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
+                      <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
+                    </button>
+                    <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
+                      <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
+                    </button>
+                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
+                      <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
+                    </button>
                   </div>
                 </td>
               )}
@@ -6515,7 +6558,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   setActiveTab('today')
                 }}
               >
-                {text.actions.calendar}
+                <ButtonIconText icon={<CalendarDays aria-hidden="true" size={15} />}>{text.actions.calendar}</ButtonIconText>
               </button>
             </div>
             {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
@@ -6622,7 +6665,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               <div className="staff-payment-splits full">
                 <div className="staff-list-head">
                   <h4>{text.labels.paymentSplits}</h4>
-                  <button type="button" onClick={addBookingPaymentSplit}>{text.actions.addSplit}</button>
+                    <button type="button" onClick={addBookingPaymentSplit}>
+                      <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.actions.addSplit}</ButtonIconText>
+                    </button>
                 </div>
                 <div className="staff-payment-split-list">
                   {booking.paymentSplits.map((split) => (
@@ -6641,7 +6686,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         value={formatDongInput(split.amount)}
                         onChange={(event) => updateBookingPaymentSplit(split.id, { amount: dongDigits(event.target.value) })}
                       />
-                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>{text.actions.remove}</button>
+                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>
+                        <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.remove}</ButtonIconText>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -6707,10 +6754,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   type="button"
                   onClick={() => onOpenSessionCalendar(operationsDate)}
                 >
-                  {text.actions.sessionCalendar}
+                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={15} />}>{text.actions.sessionCalendar}</ButtonIconText>
                 </button>
               )}
-              <button type="button" onClick={() => setOperationsDate(todayString())}>{text.actions.today}</button>
+              <button type="button" onClick={() => setOperationsDate(todayString())}>
+                <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+              </button>
               {canCreateOrders && (
                 <button
                   className="staff-calendar-shortcut"
@@ -6720,7 +6769,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     setActiveTab('new')
                   }}
                 >
-                  {text.tabs.new}
+                  <ButtonIconText icon={<Plus aria-hidden="true" size={15} />}>{text.tabs.new}</ButtonIconText>
                 </button>
               )}
             </div>
@@ -6774,9 +6823,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   </div>
                   {order && canCreateOrders && (
                     <div className="staff-row-actions staff-operation-actions">
-                      <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>{text.actions.paid}</button>
-                      <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
-                      <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>{text.actions.noShow}</button>
+                      <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
+                        <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
+                      </button>
+                      <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
+                        <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
+                      </button>
+                      <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
+                        <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
+                      </button>
                     </div>
                   )}
                 </article>
@@ -6800,7 +6855,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         <div className="staff-card staff-card-wide staff-attendance-card">
           <div className="staff-card-heading">
             <div className="staff-operations-actions staff-attendance-actions">
-              <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>{text.actions.previousWeek}</button>
+              <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>
+                <ButtonIconText icon={<ChevronLeft aria-hidden="true" size={14} />}>{text.actions.previousWeek}</ButtonIconText>
+              </button>
               <label>
                 <span className="staff-field-label">{text.labels.startDate}</span>
                 <StaffPickerField
@@ -6821,8 +6878,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   onChange={(value) => setAttendanceRange(attendanceWeekStart, value)}
                 />
               </label>
-              <button type="button" onClick={resetAttendanceRangeToThisWeek}>{text.actions.today}</button>
-              <button type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>{text.actions.nextWeek}</button>
+              <button type="button" onClick={resetAttendanceRangeToThisWeek}>
+                <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+              </button>
+              <button type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>
+                <ButtonIconText icon={<ChevronRight aria-hidden="true" size={14} />}>{text.actions.nextWeek}</ButtonIconText>
+              </button>
             </div>
           </div>
 
@@ -6873,9 +6934,13 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </label>
                       {canManageAttendance && (
                         <div className="staff-planning-actions">
-                          <button type="button" onClick={copyPreviousAttendanceWeek} disabled={saving}>{text.actions.copyPreviousWeek}</button>
+                          <button type="button" onClick={copyPreviousAttendanceWeek} disabled={saving}>
+                            <ButtonIconText icon={<Copy aria-hidden="true" size={14} />}>{text.actions.copyPreviousWeek}</ButtonIconText>
+                          </button>
                           <button type="button" onClick={publishAttendanceWeek} disabled={saving || draftShiftCount === 0}>
-                            {text.actions.publishWeek}{draftShiftCount > 0 ? ` (${draftShiftCount})` : ''}
+                            <ButtonIconText icon={<Send aria-hidden="true" size={14} />}>
+                              {text.actions.publishWeek}{draftShiftCount > 0 ? ` (${draftShiftCount})` : ''}
+                            </ButtonIconText>
                           </button>
                         </div>
                       )}
@@ -6983,10 +7048,24 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                             </div>
                             {canManageAttendance && (
                               <div className="staff-row-actions staff-attendance-row-actions">
-                                <button type="button" onClick={() => editShift(shift)}>{text.actions.edit}</button>
-                                {shift.status === 'draft' && <button type="button" onClick={() => updateShiftStatus(shift, 'published')}>{text.actions.publish}</button>}
-                                {shift.status !== 'completed' && <button type="button" onClick={() => updateShiftStatus(shift, 'completed')}>{text.actions.done}</button>}
-                                {shift.status !== 'cancelled' && <button type="button" onClick={() => updateShiftStatus(shift, 'cancelled')}>{text.actions.cancelShift}</button>}
+                                <button type="button" onClick={() => editShift(shift)}>
+                                  <ButtonIconText icon={<Pencil aria-hidden="true" size={14} />}>{text.actions.edit}</ButtonIconText>
+                                </button>
+                                {shift.status === 'draft' && (
+                                  <button type="button" onClick={() => updateShiftStatus(shift, 'published')}>
+                                    <ButtonIconText icon={<Send aria-hidden="true" size={14} />}>{text.actions.publish}</ButtonIconText>
+                                  </button>
+                                )}
+                                {shift.status !== 'completed' && (
+                                  <button type="button" onClick={() => updateShiftStatus(shift, 'completed')}>
+                                    <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
+                                  </button>
+                                )}
+                                {shift.status !== 'cancelled' && (
+                                  <button type="button" onClick={() => updateShiftStatus(shift, 'cancelled')}>
+                                    <ButtonIconText icon={<Ban aria-hidden="true" size={14} />}>{text.actions.cancelShift}</ButtonIconText>
+                                  </button>
+                                )}
                               </div>
                             )}
                           </article>
@@ -7021,7 +7100,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value as StaffShiftStatus })}>{staffShiftStatuses.map((status) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
                         <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
                       </div>
-                      <button className="primary" type="button" disabled={saving || !(shiftForm.staff_profile_id || firstStaffProfileId)} onClick={saveShift}>{text.actions.saveShift}</button>
+                      <button className="primary" type="button" disabled={saving || !(shiftForm.staff_profile_id || firstStaffProfileId)} onClick={saveShift}>
+                        <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveShift}</ButtonIconText>
+                      </button>
                     </fieldset>
                   </div>
                 </>
@@ -7049,7 +7130,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           </div>
                           {canEditAttendance && (
                             <div className="staff-row-actions staff-attendance-row-actions">
-                              <button type="button" onClick={() => editAttendanceLog(log)}>{text.actions.edit}</button>
+                              <button type="button" onClick={() => editAttendanceLog(log)}>
+                                <ButtonIconText icon={<Pencil aria-hidden="true" size={14} />}>{text.actions.edit}</ButtonIconText>
+                              </button>
                             </div>
                           )}
                         </article>
@@ -7096,7 +7179,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <label>{text.labels.holidayHours}<input min={0} step="0.25" type="number" value={attendanceLogForm.holiday_minutes} onChange={(event) => setAttendanceLogForm({ ...attendanceLogForm, holiday_minutes: event.target.value })} /></label>
                       <label className="full">{text.labels.managerNote}<textarea value={attendanceLogForm.manager_note} onChange={(event) => setAttendanceLogForm({ ...attendanceLogForm, manager_note: event.target.value })} /></label>
                     </div>
-                    <button className="primary" type="button" disabled={saving || !(attendanceLogForm.staff_profile_id || firstStaffProfileId)} onClick={saveAttendanceLog}>{text.actions.saveAttendance}</button>
+                    <button className="primary" type="button" disabled={saving || !(attendanceLogForm.staff_profile_id || firstStaffProfileId)} onClick={saveAttendanceLog}>
+                      <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveAttendance}</ButtonIconText>
+                    </button>
                   </fieldset>
                 </div>
               )}
@@ -7163,10 +7248,26 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                             {leave.reason && <span>{leave.reason}</span>}
                           </div>
                           <div className="staff-row-actions staff-attendance-row-actions">
-                            {canEditAttendance && <button type="button" onClick={() => editLeaveRequest(leave)}>{text.actions.edit}</button>}
-                            {canManageAttendance && leave.status === 'requested' && <button type="button" onClick={() => updateLeaveStatus(leave, 'approved')}>{text.actions.approve}</button>}
-                            {canManageAttendance && leave.status === 'requested' && <button type="button" onClick={() => updateLeaveStatus(leave, 'rejected')}>{text.actions.reject}</button>}
-                            {canEditAttendance && leave.status !== 'cancelled' && <button type="button" onClick={() => updateLeaveStatus(leave, 'cancelled')}>{text.actions.cancel}</button>}
+                            {canEditAttendance && (
+                              <button type="button" onClick={() => editLeaveRequest(leave)}>
+                                <ButtonIconText icon={<Pencil aria-hidden="true" size={14} />}>{text.actions.edit}</ButtonIconText>
+                              </button>
+                            )}
+                            {canManageAttendance && leave.status === 'requested' && (
+                              <button type="button" onClick={() => updateLeaveStatus(leave, 'approved')}>
+                                <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.approve}</ButtonIconText>
+                              </button>
+                            )}
+                            {canManageAttendance && leave.status === 'requested' && (
+                              <button type="button" onClick={() => updateLeaveStatus(leave, 'rejected')}>
+                                <ButtonIconText icon={<X aria-hidden="true" size={14} />}>{text.actions.reject}</ButtonIconText>
+                              </button>
+                            )}
+                            {canEditAttendance && leave.status !== 'cancelled' && (
+                              <button type="button" onClick={() => updateLeaveStatus(leave, 'cancelled')}>
+                                <ButtonIconText icon={<Ban aria-hidden="true" size={14} />}>{text.actions.cancel}</ButtonIconText>
+                              </button>
+                            )}
                           </div>
                         </article>
                       )
@@ -7290,7 +7391,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
                       <span>{text.labels.activeEmployee}</span>
                     </label>
-                    <button className="primary" type="button" disabled={saving || !canEditEmployeeProfiles || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>{text.actions.saveEmployeeProfile}</button>
+                    <button className="primary" type="button" disabled={saving || !canEditEmployeeProfiles || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>
+                      <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
+                    </button>
                   </fieldset>
                 </div>
               )}
@@ -7369,7 +7472,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </div>
                     ))}
                   </div>
-                  <button className="primary" type="button" disabled={saving} onClick={saveAttendanceSettings}>{text.actions.saveRules}</button>
+                  <button className="primary" type="button" disabled={saving} onClick={saveAttendanceSettings}>
+                    <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveRules}</ButtonIconText>
+                  </button>
                 </fieldset>
               )}
             </>
@@ -7515,7 +7620,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </div>
               </div>
             </div>
-            <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>{text.actions.saveGame}</button>
+            <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>
+              <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveGame}</ButtonIconText>
+            </button>
             </fieldset>
           </div>
           <div className="staff-card">
@@ -7561,7 +7668,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               </label>
               <label className="checkbox-row"><input type="checkbox" checked={priceForm.active} onChange={(event) => setPriceForm({ ...priceForm, active: event.target.checked })} /> {text.labels.active}</label>
             </div>
-            <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>{text.actions.savePrice}</button>
+            <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>
+              <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.savePrice}</ButtonIconText>
+            </button>
             </fieldset>
           </div>
           <div className="staff-card">
@@ -7599,7 +7708,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label className="full">{text.labels.notes}<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
                   <label className="checkbox-row"><input type="checkbox" checked={loyaltyForm.active} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, active: event.target.checked })} /> {text.labels.active}</label>
                 </div>
-                <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>{text.actions.saveLoyaltyRule}</button>
+                <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>
+                  <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveLoyaltyRule}</ButtonIconText>
+                </button>
                 </fieldset>
               </>
             ) : (
@@ -7679,7 +7790,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <label className="checkbox-row"><input type="checkbox" checked={discountForm.active} onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })} /> {text.labels.active}</label>
                 </div>
                 <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>
-                  {commerceTab === 'vouchers' ? text.actions.saveVoucher : text.actions.saveDiscount}
+                  <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{commerceTab === 'vouchers' ? text.actions.saveVoucher : text.actions.saveDiscount}</ButtonIconText>
                 </button>
                 </fieldset>
               </>
@@ -7806,7 +7917,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           <div className="staff-card-heading">
             <h3>{text.labels.roles}</h3>
             <button className="staff-link-button" type="button" onClick={() => setRoleHelpOpen(true)}>
-              {text.labels.roleExplanation}
+              <ButtonIconText icon={<Info aria-hidden="true" size={14} />}>{text.labels.roleExplanation}</ButtonIconText>
             </button>
           </div>
           <div className="staff-role-tools">
@@ -7894,7 +8005,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           type="button"
                           onClick={() => openProfileDeleteDialog(item)}
                         >
-                          {text.actions.deleteAccount}
+                          <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteAccount}</ButtonIconText>
                         </button>
                       )}
                     </div>
@@ -7906,7 +8017,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           type="button"
                           onClick={() => updateProfileRole(item.id, selectedRole)}
                         >
-                          {text.actions.saveRole}
+                          <ButtonIconText icon={<Save aria-hidden="true" size={14} />}>{text.actions.saveRole}</ButtonIconText>
                         </button>
                         <button
                           className="secondary"
@@ -7914,7 +8025,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           type="button"
                           onClick={() => clearStagedProfileRole(item.id)}
                         >
-                          {text.actions.cancel}
+                          <ButtonIconText icon={<X aria-hidden="true" size={14} />}>{text.actions.cancel}</ButtonIconText>
                         </button>
                       </div>
                     )}
@@ -7945,7 +8056,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   {record.delete_reason && <small>{record.delete_reason}</small>}
                 </div>
                 <button className="secondary" disabled={saving} type="button" onClick={() => restoreDeletedRecord(record)}>
-                  {text.actions.restore}
+                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={15} />}>{text.actions.restore}</ButtonIconText>
                 </button>
               </div>
             ))}
@@ -7971,34 +8082,44 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   const [from, to] = reportPresetRange('today')
                   setReportStart(from)
                   setReportEnd(to)
-                }}>{text.actions.today}</button>
+                }}>
+                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+                </button>
                 <button type="button" onClick={() => {
                   const [from, to] = reportPresetRange('yesterday')
                   setReportStart(from)
                   setReportEnd(to)
-                }}>{text.actions.yesterday}</button>
+                }}>
+                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
+                </button>
                 <button className="staff-report-range-button" type="button" onClick={() => {
                   setReportDatePickerTarget('report')
                   setReportDatePickerOpen(true)
                 }}>
-                  <span>{text.labels.dateRange}</span>
+                  <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
                   <strong>{rangeLabel(reportStart, reportEnd)}</strong>
                 </button>
-                <button type="button" onClick={applyPreviousPeriodComparison}>{text.actions.previousPeriod}</button>
+                <button type="button" onClick={applyPreviousPeriodComparison}>
+                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
+                </button>
                 <label className="staff-compare-toggle">
                   <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
                   {text.labels.compare}
                 </label>
                 <div className="staff-report-export-actions">
-                  <button type="button" onClick={exportExcelReport}>{text.actions.excel}</button>
-                  <button type="button" onClick={exportPdfReport}>{text.actions.pdf}</button>
+                  <button type="button" onClick={exportExcelReport}>
+                    <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
+                  </button>
+                  <button type="button" onClick={exportPdfReport}>
+                    <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{text.actions.pdf}</ButtonIconText>
+                  </button>
                   <div className="staff-accountant-export">
                     <button
                       className={accountantExportOpen ? 'active' : ''}
                       type="button"
                       onClick={() => setAccountantExportOpen((open) => !open)}
                     >
-                      {text.labels.accountantExports}
+                      <ButtonIconText icon={<Download aria-hidden="true" size={14} />}>{text.labels.accountantExports}</ButtonIconText>
                     </button>
                     {accountantExportOpen && (
                       <div className="staff-accountant-export-panel">
@@ -8007,14 +8128,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                             <strong>{text.labels.accountantExports}</strong>
                             <span>{text.messages.accountantExportHelp}</span>
                           </div>
-                          <button className="staff-accountant-export-close" type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>×</button>
+                          <button className="staff-accountant-export-close" type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>
+                            <X aria-hidden="true" size={16} />
+                          </button>
                         </div>
                         <div className="staff-accountant-export-grid">
                           <button className="staff-report-range-button compact" type="button" onClick={() => {
                             setReportDatePickerTarget('report')
                             setReportDatePickerOpen(true)
                           }}>
-                            <span>{text.labels.dateRange}</span>
+                            <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
                             <strong>{rangeLabel(reportStart, reportEnd)}</strong>
                           </button>
                           <label>
@@ -8070,7 +8193,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           ))}
                         </div>
                         <button className="primary staff-accountant-download" type="button" onClick={() => { void downloadAccountantExport() }}>
-                          {text.actions.download}
+                          <ButtonIconText icon={<Download aria-hidden="true" size={15} />}>{text.actions.download}</ButtonIconText>
                         </button>
                       </div>
                     )}
@@ -8084,7 +8207,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                     setReportDatePickerTarget('compare')
                     setReportDatePickerOpen(true)
                   }}>
-                    <span>{text.labels.compareRange}</span>
+                    <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.compareRange}</span>
                     <strong>{rangeLabel(compareStart, compareEnd)}</strong>
                   </button>
                 </div>
@@ -8361,7 +8484,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         >
           <div className="login-modal staff-account-delete-modal" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" aria-label={text.actions.cancel} onClick={() => setProfileDeleteDraft(null)} disabled={saving}>
-              ×
+              <X aria-hidden="true" size={20} />
             </button>
             <h3 id="staff-account-delete-title">{text.messages.accountDeleteTitle}</h3>
             <p>
@@ -8420,7 +8543,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         >
           <div className="login-modal staff-role-help-modal" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" aria-label={text.closeRoleHelp} onClick={() => setRoleHelpOpen(false)}>
-              ×
+              <X aria-hidden="true" size={20} />
             </button>
             <h3 id="staff-role-help-title">{text.labels.roleExplanation}</h3>
             <div className="staff-role-help-list">
