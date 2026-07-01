@@ -2253,6 +2253,7 @@ export default function WidgetPage({
   const passkeyCaptchaWidgetId = useRef<string | null>(null)
   const passkeyCaptchaResolveRef = useRef<((token: string) => void) | null>(null)
   const passkeyCaptchaRejectRef = useRef<((error: Error) => void) | null>(null)
+  const passkeyButtonRef = useRef<HTMLButtonElement | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
   const clubsLoadedRef = useRef(false)
   const clubsLoadingRef = useRef(false)
@@ -2927,6 +2928,39 @@ export default function WidgetPage({
         fail(error instanceof Error ? error : new Error(String(error)))
       }
     })
+  }
+
+  async function restorePasskeyDocumentFocus() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve())
+    })
+
+    window.focus()
+    passkeyButtonRef.current?.focus({ preventScroll: true })
+
+    if (document.hasFocus()) return
+
+    await new Promise<void>((resolve) => {
+      let settled = false
+      let timeoutId: number | null = null
+      const settle = () => {
+        if (settled) return
+        settled = true
+        if (timeoutId) window.clearTimeout(timeoutId)
+        window.removeEventListener('focus', settle)
+        document.removeEventListener('visibilitychange', settle)
+        resolve()
+      }
+
+      window.addEventListener('focus', settle, { once: true })
+      document.addEventListener('visibilitychange', settle, { once: true })
+      timeoutId = window.setTimeout(settle, 800)
+    })
+
+    window.focus()
+    passkeyButtonRef.current?.focus({ preventScroll: true })
   }
 
   function updateAuthMode(nextMode: 'login' | 'create') {
@@ -3791,6 +3825,11 @@ export default function WidgetPage({
     return typeof window !== 'undefined' && 'PublicKeyCredential' in window
   }
 
+  function isDocumentFocusPasskeyError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error || '')
+    return message.toLowerCase().includes('document is not focused')
+  }
+
   async function signInWithPasskey() {
     if (!passkeysAvailable()) {
       setProfileStatus(text.passkeyUnavailable)
@@ -3808,14 +3847,42 @@ export default function WidgetPage({
         return
       }
 
+      await restorePasskeyDocumentFocus()
+
       const client = await getSupabase()
-      const { data, error } = await client.auth.signInWithPasskey({
+      let { data, error } = await client.auth.signInWithPasskey({
         options: { captchaToken: captchaTokenForPasskey },
       })
+
+      if (error && isDocumentFocusPasskeyError(error)) {
+        resetPasskeyCaptcha()
+        await restorePasskeyDocumentFocus()
+        const retryCaptchaToken = await executePasskeyCaptcha()
+
+        if (!retryCaptchaToken) {
+          setProfileStatus(text.captchaRequired)
+          setIsPasskeyLoading(false)
+          return
+        }
+
+        await restorePasskeyDocumentFocus()
+        const retryResult = await client.auth.signInWithPasskey({
+          options: { captchaToken: retryCaptchaToken },
+        })
+        data = retryResult.data
+        error = retryResult.error
+      }
+
       resetPasskeyCaptcha()
 
       if (error) {
         setProfileStatus(error.message)
+        setIsPasskeyLoading(false)
+        return
+      }
+
+      if (!data) {
+        setProfileStatus(text.passkeyUnavailable)
         setIsPasskeyLoading(false)
         return
       }
@@ -12463,6 +12530,7 @@ function handleSessionDateChange(value: string) {
                     className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
                     disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
                     onClick={signInWithPasskey}
+                    ref={passkeyButtonRef}
                     type="button"
                   >
                     <span className="passkey-mark" aria-hidden="true">
