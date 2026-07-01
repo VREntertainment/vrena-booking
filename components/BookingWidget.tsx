@@ -92,7 +92,7 @@ const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
-  return <span aria-hidden="true" className="share-symbol-image" />
+  return <Share2 aria-hidden="true" className="share-symbol-icon" size={26} strokeWidth={2.2} />
 }
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {

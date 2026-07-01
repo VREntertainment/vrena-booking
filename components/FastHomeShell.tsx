@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Share2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
@@ -89,7 +90,7 @@ const MAX_DISPLAY_NAME_LENGTH = 10
 const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px), (pointer: coarse)'
 
 function ShareSymbol() {
-  return <span aria-hidden="true" className="share-symbol-image" />
+  return <Share2 aria-hidden="true" className="share-symbol-icon" size={26} strokeWidth={2.2} />
 }
 
 type LeaderboardQuery = {
