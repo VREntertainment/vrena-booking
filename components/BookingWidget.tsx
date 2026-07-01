@@ -21,7 +21,7 @@ import {
   Phone,
   RefreshCw,
   Save,
-  Share2,
+  Share,
   ShieldCheck,
   Strikethrough,
   Trash2,
@@ -92,7 +92,7 @@ const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
-  return <Share2 aria-hidden="true" className="share-symbol-icon" size={26} strokeWidth={2.2} />
+  return <Share aria-hidden="true" className="share-symbol-icon" size={26} strokeWidth={2.2} />
 }
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
@@ -12543,7 +12543,7 @@ function handleSessionDateChange(value: string) {
                   <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
                   {canShareCurrentUserStats && (
                     <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
-                      <ButtonIconText icon={<Share2 aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
+                      <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
                     </button>
                   )}
                 </div>
@@ -12891,7 +12891,7 @@ function handleSessionDateChange(value: string) {
                   <span>{text.clubInviteCode}</span>
                   <strong>{selectedClub.pin_code}</strong>
                   <button className="secondary small-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                    <ButtonIconText icon={<Share2 aria-hidden="true" size={15} />}>{text.shareClubCode}</ButtonIconText>
+                    <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{text.shareClubCode}</ButtonIconText>
                   </button>
                 </div>
               )}
@@ -13400,7 +13400,7 @@ function handleSessionDateChange(value: string) {
                     </button>
                     {selectedClub.pin_code && (
                       <button className="secondary create-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                        <ButtonIconText icon={<Share2 aria-hidden="true" size={17} />}>{text.shareClubCode}</ButtonIconText>
+                        <ButtonIconText icon={<Share aria-hidden="true" size={17} />}>{text.shareClubCode}</ButtonIconText>
                       </button>
                     )}
                   </div>
