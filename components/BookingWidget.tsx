@@ -17,6 +17,7 @@ import {
   Italic,
   KeyRound,
   LockKeyhole,
+  Languages,
   Mail,
   Phone,
   RefreshCw,
@@ -34,7 +35,7 @@ import {
   X,
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
-import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, uiText } from '../lib/i18n'
+import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationMap, uiText } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import type { StaffProfile } from './StaffConsole'
@@ -103,6 +104,60 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
       {icon}
       <span>{children}</span>
     </span>
+  )
+}
+
+function MessageBodyText({
+  body,
+  messageId,
+  messageKind,
+  onToggleOriginal,
+  onRequestTranslation,
+  targetLanguage,
+  text,
+  translation,
+}: {
+  body: string
+  messageId: string
+  messageKind: 'club' | 'session'
+  onToggleOriginal: () => void
+  onRequestTranslation: (messageKind: 'club' | 'session', messageId: string, body: string, targetLanguage: LanguageCode) => void
+  targetLanguage: LanguageCode
+  text: TranslationMap
+  translation?: MessageTranslationState
+}) {
+  useEffect(() => {
+    if (translation?.loading || translation?.translatedText || translation?.error) return
+    onRequestTranslation(messageKind, messageId, body, targetLanguage)
+  }, [body, messageId, messageKind, onRequestTranslation, targetLanguage, translation?.error, translation?.loading, translation?.translatedText])
+
+  const hasTranslation = Boolean(translation?.changed && translation.translatedText)
+  const showingOriginal = Boolean(translation?.showOriginal)
+  const displayBody = hasTranslation && !showingOriginal ? translation?.translatedText || body : body
+
+  return (
+    <>
+      <p>{displayBody}</p>
+      {hasTranslation && (
+        <div className="message-translation-row">
+          <span className="message-translation-status">
+            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
+            <span>{text.messageTranslated}</span>
+          </span>
+          <button className="message-translation-toggle" type="button" onClick={onToggleOriginal}>
+            {showingOriginal ? text.showTranslatedMessage : text.showOriginalMessage}
+          </button>
+        </div>
+      )}
+      {translation?.loading && !hasTranslation && (
+        <div className="message-translation-row loading">
+          <span className="message-translation-status">
+            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
+            <span>{text.translatingMessage}</span>
+          </span>
+        </div>
+      )}
+    </>
   )
 }
 const SESSION_MESSAGE_PAGE_SIZE = 30
@@ -575,6 +630,21 @@ type ClubMessage = {
   message_type: 'public' | 'admin_private'
   body: string
   created_at?: string | null
+}
+
+type MessageTranslationState = {
+  loading?: boolean
+  translatedText?: string
+  sourceLanguage?: string | null
+  changed?: boolean
+  error?: string
+  showOriginal?: boolean
+}
+
+type MessageTranslationResponse = {
+  sourceLanguage?: string | null
+  translatedText?: string
+  changed?: boolean
 }
 
 type TournamentFormat = 'pool_only' | 'pool_to_semifinal' | 'pool_to_final' | 'single_elimination' | 'double_elimination' | 'leaderboard'
@@ -1955,6 +2025,7 @@ export default function WidgetPage({
   const [clubMessages, setClubMessages] = useState<ClubMessage[]>([])
   const [isLoadingClubMessages, setIsLoadingClubMessages] = useState(false)
   const [clubMessageStatus, setClubMessageStatus] = useState('')
+  const [messageTranslations, setMessageTranslations] = useState<Record<string, MessageTranslationState>>({})
   const [networkTablesReady, setNetworkTablesReady] = useState(false)
   const [tournamentData, setTournamentData] = useState<TournamentData>({
     editors: [],
@@ -3026,6 +3097,90 @@ export default function WidgetPage({
       ...current.filter((item) => item.id !== message.id),
       message,
     ]))
+  }
+
+  function messageTranslationKey(messageKind: 'club' | 'session', messageId: string, targetLanguage: LanguageCode) {
+    return `${messageKind}:${messageId}:${targetLanguage}`
+  }
+
+  const requestMessageTranslation = useCallback(async (
+    messageKind: 'club' | 'session',
+    messageId: string,
+    body: string,
+    targetLanguage: LanguageCode
+  ) => {
+    const key = messageTranslationKey(messageKind, messageId, targetLanguage)
+
+    setMessageTranslations((current) => {
+      const existing = current[key]
+      if (existing?.loading || existing?.translatedText || existing?.error) return current
+      return {
+        ...current,
+        [key]: { loading: true },
+      }
+    })
+
+    try {
+      const client = await getSupabase()
+      const { data: sessionData } = await client.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+
+      if (!accessToken) {
+        setMessageTranslations((current) => ({
+          ...current,
+          [key]: { error: 'login_required' },
+        }))
+        return
+      }
+
+      const response = await fetch('/api/messages/translate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messageId,
+          messageKind,
+          targetLanguage,
+        }),
+      })
+
+      if (!response.ok) {
+        setMessageTranslations((current) => ({
+          ...current,
+          [key]: { error: 'translation_failed' },
+        }))
+        return
+      }
+
+      const data = await response.json() as MessageTranslationResponse
+      setMessageTranslations((current) => ({
+        ...current,
+        [key]: {
+          changed: Boolean(data.changed && data.translatedText && data.translatedText !== body),
+          loading: false,
+          sourceLanguage: data.sourceLanguage || null,
+          translatedText: data.translatedText || body,
+        },
+      }))
+    } catch {
+      setMessageTranslations((current) => ({
+        ...current,
+        [key]: { error: 'translation_failed' },
+      }))
+    }
+  }, [])
+
+  function toggleMessageOriginal(messageKind: 'club' | 'session', messageId: string, targetLanguage: LanguageCode) {
+    const key = messageTranslationKey(messageKind, messageId, targetLanguage)
+    setMessageTranslations((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] ?? {}),
+        showOriginal: !current[key]?.showOriginal,
+      },
+    }))
   }
 
   function canUseClubMessages(club: Club | undefined) {
@@ -11139,6 +11294,7 @@ function handleSessionDateChange(value: string) {
                               message.message_type === 'announcement' ? 'announcement' : '',
                               isOwnMessage ? 'own-message' : '',
                             ].filter(Boolean).join(' ')
+                            const translationKey = messageTranslationKey('session', message.id, language)
 
                             return (
                               <div className={messageClassName} key={message.id}>
@@ -11159,7 +11315,16 @@ function handleSessionDateChange(value: string) {
                                     {moderationStatus === 'pending_review' && <small className="moderation-badge pending">{text.pendingReview}</small>}
                                     {moderationStatus === 'rejected' && <small className="moderation-badge rejected">{text.rejectedMessage}</small>}
                                   </div>
-                                  <p>{message.body}</p>
+                                  <MessageBodyText
+                                    body={message.body}
+                                    messageId={message.id}
+                                    messageKind="session"
+                                    onRequestTranslation={requestMessageTranslation}
+                                    onToggleOriginal={() => toggleMessageOriginal('session', message.id, language)}
+                                    targetLanguage={language}
+                                    text={text}
+                                    translation={messageTranslations[translationKey]}
+                                  />
                                   {(canReviewMessage || isAdmin) && (
                                     <div className="moderation-actions">
                                       {canReviewMessage && (
@@ -13548,6 +13713,7 @@ function handleSessionDateChange(value: string) {
                                   'club-message',
                                   isOwnMessage ? 'own-message' : '',
                                 ].filter(Boolean).join(' ')
+                                const translationKey = messageTranslationKey('club', message.id, language)
 
                                 return (
                                   <div className={messageClassName} key={message.id}>
@@ -13566,7 +13732,16 @@ function handleSessionDateChange(value: string) {
                                       <div className="message-meta-row">
                                         <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
                                       </div>
-                                      <p>{message.body}</p>
+                                      <MessageBodyText
+                                        body={message.body}
+                                        messageId={message.id}
+                                        messageKind="club"
+                                        onRequestTranslation={requestMessageTranslation}
+                                        onToggleOriginal={() => toggleMessageOriginal('club', message.id, language)}
+                                        targetLanguage={language}
+                                        text={text}
+                                        translation={messageTranslations[translationKey]}
+                                      />
                                     </div>
                                   </div>
                                 )
@@ -13612,6 +13787,7 @@ function handleSessionDateChange(value: string) {
                                   'admin-private',
                                   isOwnMessage ? 'own-message' : '',
                                 ].filter(Boolean).join(' ')
+                                const translationKey = messageTranslationKey('club', message.id, language)
 
                                 return (
                                   <div className={messageClassName} key={message.id}>
@@ -13631,7 +13807,16 @@ function handleSessionDateChange(value: string) {
                                         <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
                                         <small className="moderation-badge pending">{text.private}</small>
                                       </div>
-                                      <p>{message.body}</p>
+                                      <MessageBodyText
+                                        body={message.body}
+                                        messageId={message.id}
+                                        messageKind="club"
+                                        onRequestTranslation={requestMessageTranslation}
+                                        onToggleOriginal={() => toggleMessageOriginal('club', message.id, language)}
+                                        targetLanguage={language}
+                                        text={text}
+                                        translation={messageTranslations[translationKey]}
+                                      />
                                     </div>
                                   </div>
                                 )
