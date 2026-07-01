@@ -5169,7 +5169,6 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
     let cancelled = false
-    setIsPasskeyCaptchaReady(false)
 
     function renderPasskeyCaptcha() {
       const hcaptcha = getHCaptcha()
