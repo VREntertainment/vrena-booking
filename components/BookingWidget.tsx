@@ -21,6 +21,7 @@ import {
   Phone,
   RefreshCw,
   Save,
+  ScanLine,
   Share,
   ShieldCheck,
   Strikethrough,
@@ -314,6 +315,21 @@ type Profile = {
   marketing_consent?: boolean | null
   marketing_consent_at?: string | null
   marketing_opted_out_at?: string | null
+}
+
+type TotpFactor = {
+  id: string
+  friendly_name?: string
+  factor_type?: string
+  status?: string
+  created_at?: string
+  updated_at?: string
+}
+
+type TotpEnrollment = {
+  id: string
+  qrCode: string
+  secret: string
 }
 
 type TicketLoyaltyRedemption = {
@@ -1982,6 +1998,14 @@ export default function WidgetPage({
   const [isPasskeyCaptchaReady, setIsPasskeyCaptchaReady] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [mfaFactors, setMfaFactors] = useState<TotpFactor[]>([])
+  const [mfaEnrollment, setMfaEnrollment] = useState<TotpEnrollment | null>(null)
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('')
+  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; challengeId: string } | null>(null)
+  const [mfaChallengeCode, setMfaChallengeCode] = useState('')
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [isMfaLoading, setIsMfaLoading] = useState(false)
+  const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
@@ -2224,6 +2248,13 @@ export default function WidgetPage({
   const invitationPopupBodyText = looseText.invitationPopupBody || 'You have been invited to join this session.'
   const openInvitationText = looseText.openInvitation || 'Open invite'
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
+  const activeTotpFactor = useMemo(() => mfaFactors.find((factor) => factor.status === 'verified') || mfaFactors[0] || null, [mfaFactors])
+  const mfaQrCodeSrc = useMemo(() => {
+    if (!mfaEnrollment?.qrCode) return ''
+    return mfaEnrollment.qrCode.startsWith('data:')
+      ? mfaEnrollment.qrCode
+      : `data:image/svg+xml;utf8,${encodeURIComponent(mfaEnrollment.qrCode)}`
+  }, [mfaEnrollment])
   const clubRankingCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
     { value: 'totalScore', label: text.totalScoreCriterion },
     { value: 'wins', label: text.winsCriterion },
@@ -3214,6 +3245,14 @@ export default function WidgetPage({
       setUserId(authUser.id)
       setAuthEmail(authUser.email?.toLowerCase() || '')
 
+      const needsMfa = await prepareMfaChallengeIfNeeded()
+      if (needsMfa) {
+        setProfile(null)
+        return
+      }
+
+      await refreshMfaFactors()
+
       const { data: profileRow, error: profileError, status: profileStatusCode } = await (await getSupabase())
         .from('profiles')
         .select(PROFILE_SELECT)
@@ -3532,6 +3571,11 @@ export default function WidgetPage({
 
       setUserId(signInResult.data.user.id)
       setProfilePassword('')
+      const needsMfa = await prepareMfaChallengeIfNeeded()
+      if (needsMfa) {
+        setIsSavingProfile(false)
+        return
+      }
       await loadProfile()
       setProfileStatus(text.loggedIn)
       setActiveView('leaderboard')
@@ -3553,6 +3597,13 @@ export default function WidgetPage({
     setAuthStep('email')
     setNewPassword('')
     setIsRecoveryMode(false)
+    setMfaFactors([])
+    setMfaEnrollment(null)
+    setMfaChallenge(null)
+    setMfaChallengeCode('')
+    setMfaVerifyCode('')
+    setMfaRequired(false)
+    setMfaStatus('')
     setProfileStatus(text.loggedOut)
   }
 
@@ -3591,6 +3642,11 @@ export default function WidgetPage({
 
       const nextUserId = data.user?.id || data.session?.user.id || ''
       if (nextUserId) setUserId(nextUserId)
+      const needsMfa = await prepareMfaChallengeIfNeeded()
+      if (needsMfa) {
+        setIsPasskeyLoading(false)
+        return
+      }
       await loadProfile()
       setProfileStatus(text.loggedIn)
       setActiveView('leaderboard')
@@ -3627,6 +3683,178 @@ export default function WidgetPage({
       setProfileStatus(error instanceof Error ? error.message : String(error))
       setIsPasskeyLoading(false)
     }
+  }
+
+  async function refreshMfaFactors() {
+    const { data, error } = await (await getSupabase()).auth.mfa.listFactors()
+
+    if (error) {
+      setMfaStatus(error.message)
+      return []
+    }
+
+    const factors = (data?.totp ?? [])
+      .filter((factor) => Boolean(factor?.id))
+      .map((factor) => ({
+        id: factor.id,
+        friendly_name: factor.friendly_name,
+        factor_type: factor.factor_type,
+        status: factor.status,
+        created_at: factor.created_at,
+        updated_at: factor.updated_at,
+      }))
+    setMfaFactors(factors)
+    return factors
+  }
+
+  async function prepareMfaChallengeIfNeeded() {
+    if (mfaChallenge) return true
+
+    const assurance = await (await getSupabase()).auth.mfa.getAuthenticatorAssuranceLevel()
+
+    if (assurance.error) {
+      setMfaStatus(assurance.error.message)
+      return false
+    }
+
+    if (assurance.data?.currentLevel === 'aal1' && assurance.data.nextLevel === 'aal2') {
+      const factors = await refreshMfaFactors()
+      const factor = factors.find((item) => item.status === 'verified') || factors[0]
+
+      if (!factor) {
+        setMfaStatus(text.mfaChallengeError)
+        setProfileStatus(text.mfaChallengeError)
+        return false
+      }
+
+      const challenge = await (await getSupabase()).auth.mfa.challenge({ factorId: factor.id })
+
+      if (challenge.error || !challenge.data) {
+        setMfaStatus(challenge.error?.message || text.mfaChallengeError)
+        setProfileStatus(challenge.error?.message || text.mfaChallengeError)
+        return true
+      }
+
+      setMfaChallenge({ factorId: factor.id, challengeId: challenge.data.id })
+      setMfaChallengeCode('')
+      setMfaRequired(true)
+      setActiveView('profile')
+      setProfileStatus(text.mfaRequired)
+      return true
+    }
+
+    setMfaChallenge(null)
+    setMfaRequired(false)
+    return false
+  }
+
+  async function verifyMfaChallenge() {
+    if (!mfaChallenge || !mfaChallengeCode.trim()) {
+      setProfileStatus(text.mfaCodeRequired)
+      return
+    }
+
+    setIsMfaLoading(true)
+    const { error } = await (await getSupabase()).auth.mfa.verify({
+      factorId: mfaChallenge.factorId,
+      challengeId: mfaChallenge.challengeId,
+      code: mfaChallengeCode.trim(),
+    })
+
+    if (error) {
+      setProfileStatus(error.message)
+      setIsMfaLoading(false)
+      return
+    }
+
+    setMfaChallenge(null)
+    setMfaChallengeCode('')
+    setMfaRequired(false)
+    setProfileStatus(text.mfaVerified)
+    await loadProfile()
+    setActiveView('leaderboard')
+    setIsMfaLoading(false)
+  }
+
+  async function beginTotpEnrollment() {
+    if (!profile) return
+
+    setIsMfaLoading(true)
+    setMfaStatus('')
+    setMfaVerifyCode('')
+    const { data, error } = await (await getSupabase()).auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'VRena',
+      issuer: 'VRena',
+    })
+
+    if (error || !data) {
+      setMfaStatus(error?.message || text.mfaEnrollError)
+      setIsMfaLoading(false)
+      return
+    }
+
+    setMfaEnrollment({
+      id: data.id,
+      qrCode: data.totp.qr_code,
+      secret: data.totp.secret,
+    })
+    setIsMfaLoading(false)
+  }
+
+  async function confirmTotpEnrollment() {
+    if (!mfaEnrollment || !mfaVerifyCode.trim()) {
+      setMfaStatus(text.mfaCodeRequired)
+      return
+    }
+
+    setIsMfaLoading(true)
+    setMfaStatus('')
+    const challenge = await (await getSupabase()).auth.mfa.challenge({ factorId: mfaEnrollment.id })
+
+    if (challenge.error || !challenge.data) {
+      setMfaStatus(challenge.error?.message || text.mfaVerifyError)
+      setIsMfaLoading(false)
+      return
+    }
+
+    const { error } = await (await getSupabase()).auth.mfa.verify({
+      factorId: mfaEnrollment.id,
+      challengeId: challenge.data.id,
+      code: mfaVerifyCode.trim(),
+    })
+
+    if (error) {
+      setMfaStatus(error.message)
+      setIsMfaLoading(false)
+      return
+    }
+
+    setMfaEnrollment(null)
+    setMfaVerifyCode('')
+    setMfaStatus(text.mfaEnabled)
+    await refreshMfaFactors()
+    setIsMfaLoading(false)
+  }
+
+  async function removeTotpFactor(factorId: string) {
+    if (typeof window !== 'undefined' && !window.confirm(text.mfaDisableConfirm)) return
+
+    setIsMfaLoading(true)
+    setMfaStatus('')
+    const { error } = await (await getSupabase()).auth.mfa.unenroll({ factorId })
+
+    if (error) {
+      setMfaStatus(error.message)
+      setIsMfaLoading(false)
+      return
+    }
+
+    setMfaEnrollment(null)
+    setMfaVerifyCode('')
+    setMfaStatus(text.mfaDisabled)
+    await refreshMfaFactors()
+    setIsMfaLoading(false)
   }
 
   async function signInWithGoogle() {
@@ -4771,6 +4999,13 @@ export default function WidgetPage({
           setUserId('')
           setAuthEmail('')
           setProfile(null)
+          setMfaFactors([])
+          setMfaEnrollment(null)
+          setMfaChallenge(null)
+          setMfaChallengeCode('')
+          setMfaVerifyCode('')
+          setMfaRequired(false)
+          setMfaStatus('')
         }
 
         if (event === 'PASSWORD_RECOVERY' && session) {
@@ -11997,7 +12232,7 @@ function handleSessionDateChange(value: string) {
               </p>
             )}
 
-            {!profile && !isRecoveryMode && authMode !== 'reset' && (
+            {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && (
               <div className="segmented auth-toggle">
                 <button
                   className={authMode === 'login' ? 'active' : ''}
@@ -12016,7 +12251,7 @@ function handleSessionDateChange(value: string) {
               </div>
             )}
 
-            {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
+            {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
               <div className="auth-method-stack">
                 <button
                   className={isOAuthLoading ? 'secondary create-button google-auth-button loading' : 'secondary create-button google-auth-button'}
@@ -12059,7 +12294,7 @@ function handleSessionDateChange(value: string) {
               profile ? 'profile-account-form' : '',
               !profile && (authMode === 'login' || authMode === 'create' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
-            ].join(' ').trim()}>
+            ].join(' ').trim()} hidden={mfaRequired}>
               {showProfileFields && (
                 <div className={profile ? 'profile-photo-panel profile-account-hero' : 'profile-photo-panel'}>
                   <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
@@ -12441,7 +12676,31 @@ function handleSessionDateChange(value: string) {
               )}
             </div>
 
-            {(authMode === 'reset' && !profile && !isRecoveryMode) ? (
+            {mfaRequired ? (
+              <div className="mfa-challenge-panel">
+                <div className="mfa-panel-icon">
+                  <ShieldCheck aria-hidden="true" size={22} />
+                </div>
+                <div className="mfa-panel-copy">
+                  <strong>{text.mfaChallengeTitle}</strong>
+                  <span>{text.mfaChallengeHint}</span>
+                </div>
+                <div className="mfa-code-row">
+                  <input
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    maxLength={8}
+                    onChange={(event) => setMfaChallengeCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder={text.mfaCodePlaceholder}
+                    value={mfaChallengeCode}
+                  />
+                  <button className={isMfaLoading ? 'primary loading' : 'primary'} disabled={isMfaLoading} onClick={verifyMfaChallenge} type="button">
+                    {isMfaLoading ? text.saving : text.mfaVerify}
+                  </button>
+                </div>
+                <button className="auth-inline-link" onClick={logout} type="button">{text.logOut}</button>
+              </div>
+            ) : (authMode === 'reset' && !profile && !isRecoveryMode) ? (
               <div className="action-row">
                 <button
                   className={isResettingPassword ? 'primary loading create-button' : 'primary create-button'}
@@ -12526,6 +12785,61 @@ function handleSessionDateChange(value: string) {
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
                   </button>
                 </div>
+                <div className="mfa-security-card">
+                  <div className="mfa-security-copy">
+                    <span className="mfa-security-icon"><ScanLine aria-hidden="true" size={18} /></span>
+                    <span>
+                      <strong>{text.mfaAuthenticatorTitle}</strong>
+                      <small>{activeTotpFactor ? text.mfaEnabledHint : text.mfaAuthenticatorHint}</small>
+                    </span>
+                  </div>
+                  {activeTotpFactor ? (
+                    <button className="secondary small-button" disabled={isMfaLoading} onClick={() => removeTotpFactor(activeTotpFactor.id)} type="button">
+                      {isMfaLoading ? text.saving : text.mfaDisable}
+                    </button>
+                  ) : (
+                    <button className="primary small-button" disabled={isMfaLoading} onClick={beginTotpEnrollment} type="button">
+                      {isMfaLoading ? text.saving : text.mfaEnable}
+                    </button>
+                  )}
+                </div>
+                {mfaEnrollment && (
+                  <div className="mfa-enroll-panel">
+                    <div className="mfa-panel-copy">
+                      <strong>{text.mfaSetupTitle}</strong>
+                      <span>{text.mfaSetupHint}</span>
+                    </div>
+                    {mfaQrCodeSrc && <img alt="" className="mfa-qr" src={mfaQrCodeSrc} />}
+                    <label className="mfa-secret-field">
+                      <span>{text.mfaSecretLabel}</span>
+                      <input readOnly type="text" value={mfaEnrollment.secret} />
+                    </label>
+                    <label className="mfa-code-field">
+                      <span>{text.mfaCodeLabel}</span>
+                      <input
+                        autoComplete="one-time-code"
+                        inputMode="numeric"
+                        maxLength={8}
+                        onChange={(event) => setMfaVerifyCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+                        placeholder={text.mfaCodePlaceholder}
+                        value={mfaVerifyCode}
+                      />
+                    </label>
+                    <div className="mfa-enroll-actions">
+                      <button className={isMfaLoading ? 'primary loading' : 'primary'} disabled={isMfaLoading} onClick={confirmTotpEnrollment} type="button">
+                        {isMfaLoading ? text.saving : text.mfaVerify}
+                      </button>
+                      <button className="secondary" disabled={isMfaLoading} onClick={() => {
+                        setMfaEnrollment(null)
+                        setMfaVerifyCode('')
+                        setMfaStatus('')
+                      }} type="button">
+                        {text.mfaCancel}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {mfaStatus && <p className="notice compact-notice">{mfaStatus}</p>}
               </div>
             )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
