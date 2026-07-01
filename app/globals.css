@@ -81,6 +81,69 @@ body {
   scroll-behavior: smooth;
 }
 
+.app-route-loader {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: #f6f7f9;
+  color: #071112;
+  padding: 24px;
+}
+
+.brand-loader {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 220px;
+  color: #263235;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.brand-loader-compact {
+  min-height: 148px;
+}
+
+.brand-loader-mark {
+  display: block;
+  width: min(110px, 36vw);
+  line-height: 0;
+  animation: brandLoaderPulse 1400ms ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px rgba(7, 17, 18, 0.1));
+}
+
+.brand-loader-mark img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand-loader-compact .brand-loader-mark {
+  width: min(82px, 30vw);
+}
+
+@keyframes brandLoaderPulse {
+  0%, 100% {
+    opacity: 0.72;
+    transform: translateY(0) scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader-mark {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .app h1, .app h2, .app h3, .app p {
   margin: 0;
 }
