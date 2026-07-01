@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
+import BrandLoader from './BrandLoader'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import type { StaffProfile } from './StaffConsole'
 
@@ -124,7 +125,7 @@ const FullBookingWidget = dynamic(() => import('./BookingWidget'), {
   loading: () => (
     <main>
       <section className="section">
-        <p className="notice" aria-busy="true">...</p>
+        <BrandLoader label="Loading booking" compact />
       </section>
     </main>
   ),
@@ -134,7 +135,7 @@ const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
   ssr: false,
   loading: () => (
     <section aria-busy="true" className="section leaderboard-section">
-      <p className="notice">...</p>
+      <BrandLoader label="Loading Hall of Fame" compact />
     </section>
   ),
 })
@@ -143,7 +144,7 @@ const StaffConsolePanel = dynamic(() => import('./StaffConsole'), {
   ssr: false,
   loading: () => (
     <section className="section staff-console">
-      <p className="notice" aria-busy="true">Loading Staff Console...</p>
+      <BrandLoader label="Loading Staff Console" compact />
     </section>
   ),
 })
@@ -903,7 +904,7 @@ export default function FastHomeShell() {
 
       {fullWidget ?? (
         <main>
-          {isLeaderboardLoading && leaderboardPlayers.length === 0 && <p className="notice" aria-busy="true">...</p>}
+          {isLeaderboardLoading && leaderboardPlayers.length === 0 && <BrandLoader label="Loading Hall of Fame" compact />}
           {leaderboardStatus && leaderboardPlayers.length === 0 && <p className="notice">{leaderboardStatus}</p>}
           <LeaderboardPanel
             avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({

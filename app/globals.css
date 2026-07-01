@@ -81,6 +81,67 @@ body {
   scroll-behavior: smooth;
 }
 
+.app-route-loader {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: #f6f7f9;
+  color: #071112;
+  padding: 24px;
+}
+
+.brand-loader {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 220px;
+  color: #263235;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.brand-loader-compact {
+  min-height: 148px;
+}
+
+.brand-loader-video {
+  display: block;
+  width: min(180px, 48vw);
+  height: auto;
+}
+
+.brand-loader-still {
+  display: none;
+  width: min(110px, 36vw);
+  line-height: 0;
+}
+
+.brand-loader-still img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand-loader-compact .brand-loader-video {
+  width: min(132px, 42vw);
+}
+
+.brand-loader-compact .brand-loader-still {
+  width: min(82px, 30vw);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader-video {
+    display: none;
+  }
+
+  .brand-loader-still {
+    display: block;
+  }
+}
+
 .app h1, .app h2, .app h3, .app p {
   margin: 0;
 }
