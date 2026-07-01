@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Save,
   ScanLine,
+  Search,
   Share,
   ShieldCheck,
   Strikethrough,
@@ -10186,7 +10187,7 @@ function handleSessionDateChange(value: string) {
                   type="button"
                   onClick={() => setIsSearchOpen((open) => !open)}
                 >
-                  🔎
+                  <Search aria-hidden="true" size={24} strokeWidth={2.35} />
                 </button>
                 <input
                   className="search"
@@ -11582,7 +11583,7 @@ function handleSessionDateChange(value: string) {
                   type="button"
                   onClick={() => setIsClubSearchOpen((open) => !open)}
                 >
-                  🔎
+                  <Search aria-hidden="true" size={24} strokeWidth={2.35} />
                 </button>
                 <input
                   className="search"
