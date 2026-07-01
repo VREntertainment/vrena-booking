@@ -4876,7 +4876,7 @@ export default function WidgetPage({
   }, [activeView, authMode, authStep, profile])
 
   useEffect(() => {
-    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login' && authStep === 'credentials'
+    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login' && authStep === 'email'
 
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
@@ -11979,9 +11979,26 @@ function handleSessionDateChange(value: string) {
                   </span>
                   {text.continueWithGoogle}
                 </button>
+                {authMode === 'login' && (
+                  <button
+                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
+                    disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
+                    onClick={signInWithPasskey}
+                    type="button"
+                  >
+                    <span className="passkey-mark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
+                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
+                      </svg>
+                    </span>
+                    {text.continueWithPasskey}
+                  </button>
+                )}
                 <div className="auth-divider">
                   <span>{text.authOr}</span>
                 </div>
+                {authMode === 'login' && <div className="passkey-captcha-box" ref={passkeyCaptchaContainerRef} aria-hidden="true" />}
               </div>
             )}
 
@@ -12260,28 +12277,6 @@ function handleSessionDateChange(value: string) {
                     {text.consentSuffix}
                   </span>
                 </label>
-              )}
-              {!profile && !isRecoveryMode && authMode === 'login' && authStep === 'credentials' && (
-                <div className="auth-method-stack credential-method-stack">
-                  <button
-                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
-                    disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
-                    onClick={signInWithPasskey}
-                    type="button"
-                  >
-                    <span className="passkey-mark" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M7 11a5 5 0 1 1 9.58 2.02L22 18.44V22h-3.56l-1.25-1.25L15.94 22h-2.88l-1.6-1.6 2.92-2.92-1.78-1.78A5 5 0 0 1 7 11Zm5-2.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" fill="currentColor" />
-                        <path d="M3.4 8.4a7.8 7.8 0 0 1 7.8-7.8 7.8 7.8 0 0 1 6.74 3.87" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" opacity=".42" />
-                      </svg>
-                    </span>
-                    {text.continueWithPasskey}
-                  </button>
-                  <div className="auth-divider">
-                    <span>{text.authOr}</span>
-                  </div>
-                  <div className="passkey-captcha-box" ref={passkeyCaptchaContainerRef} aria-hidden="true" />
-                </div>
               )}
               {!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'credentials' && (
                 <div className="password-field">
