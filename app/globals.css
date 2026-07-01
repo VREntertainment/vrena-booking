@@ -479,17 +479,11 @@ body {
   padding: 0;
 }
 
-.app .share-symbol-image {
+.app .share-symbol-icon {
   display: block;
   width: 26px;
   height: 26px;
-  background: center / contain no-repeat url('/share-arrow-light.png');
-}
-
-@media (prefers-color-scheme: dark) {
-  .app .share-symbol-image {
-    background-image: url('/share-arrow-dark.png');
-  }
+  color: currentColor;
 }
 
 .app .share-icon-button.copied {
@@ -4637,8 +4631,8 @@ body {
   height: 36px;
 }
 
-.app .session-network-share .share-symbol-image,
-.app .session-invite-share .share-symbol-image {
+.app .session-network-share .share-symbol-icon,
+.app .session-invite-share .share-symbol-icon {
   width: 24px;
   height: 24px;
 }
@@ -5804,7 +5798,7 @@ body {
   height: 34px;
 }
 
-.app .compact-share .share-symbol-image {
+.app .compact-share .share-symbol-icon {
   width: 24px;
   height: 24px;
 }
@@ -7725,8 +7719,8 @@ body {
   outline: none;
 }
 
-.app .share-button:focus-visible .share-symbol-image,
-.app .share-icon-button:focus-visible .share-symbol-image {
+.app .share-button:focus-visible .share-symbol-icon,
+.app .share-icon-button:focus-visible .share-symbol-icon {
   filter: drop-shadow(0 0 0 rgba(48, 89, 255, 0.6)) drop-shadow(0 0 4px rgba(48, 89, 255, 0.45));
 }
 
@@ -12503,7 +12497,7 @@ body {
     min-height: 38px;
   }
 
-  .app .sessions-section .compact-share .share-symbol-image {
+  .app .sessions-section .compact-share .share-symbol-icon {
     width: 22px;
     height: 22px;
   }
