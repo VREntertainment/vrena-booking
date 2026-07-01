@@ -647,9 +647,17 @@ body {
 }
 
 .app .profile-account-form .motto-field,
-.app .profile-account-form .country-phone-field,
 .app .profile-account-form .marketing-consent-field {
   grid-column: 1 / -1;
+}
+
+.app .profile-account-form .country-phone-field,
+.app .profile-account-form .email-field,
+.app .profile-account-form .name-field,
+.app .profile-account-form .nickname-field,
+.app .profile-account-form .birthday-field,
+.app .profile-account-form .gender-field {
+  grid-column: auto;
 }
 
 .app .profile-account-form .country-phone-field {
@@ -842,6 +850,15 @@ body {
 @media (max-width: 720px) {
   .app .profile-account-form {
     grid-template-columns: 1fr;
+  }
+
+  .app .profile-account-form .country-phone-field,
+  .app .profile-account-form .email-field,
+  .app .profile-account-form .name-field,
+  .app .profile-account-form .nickname-field,
+  .app .profile-account-form .birthday-field,
+  .app .profile-account-form .gender-field {
+    grid-column: 1;
   }
 
   .app .profile-account-form .profile-account-hero {
