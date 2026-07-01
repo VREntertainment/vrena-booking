@@ -757,6 +757,8 @@ const staffConsoleText = {
       codeOptional: 'Code (optional)',
       banAccount: 'Ban this account too',
       compare: 'Compare',
+      compareEditingHint: 'Calendar clicks now edit the compare range.',
+      compareInactiveHint: 'Switch to Compare above to edit this range.',
       compareRange: 'Compare range',
       confirmDeleteWord: 'Type DELETE to confirm',
       createCustomerAccount: 'Create customer account',
@@ -789,6 +791,7 @@ const staffConsoleText = {
       employmentType: 'Employment type',
       end: 'End',
       endDate: 'End date',
+      editingRange: 'Editing',
       emergencyContact: 'Emergency contact',
       estimatedPayroll: 'Estimated payroll',
       exportFormat: 'Format',
@@ -836,6 +839,7 @@ const staffConsoleText = {
       order: 'Order',
       orderStatus: 'Order status',
       orders: 'Orders',
+      off: 'Off',
       operationsCalendar: 'Operations calendar',
       operationsDate: 'Operations date',
       paid: 'Paid',
@@ -864,6 +868,7 @@ const staffConsoleText = {
       regularHours: 'Regular hours',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
+      referenceRange: 'Reference range',
       reportRange: 'Report range',
       roleExplanation: 'Role explanation',
       roleFor: 'Role for',
@@ -1345,6 +1350,8 @@ const staffConsoleText = {
       codeOptional: 'Mã (không bắt buộc)',
       banAccount: 'Cấm tài khoản này luôn',
       compare: 'So sánh',
+      compareEditingHint: 'Bấm lịch sẽ chỉnh khoảng so sánh.',
+      compareInactiveHint: 'Chọn So sánh phía trên để chỉnh khoảng này.',
       compareRange: 'Khoảng so sánh',
       confirmDeleteWord: 'Nhập DELETE để xác nhận',
       createCustomerAccount: 'Tạo tài khoản khách hàng',
@@ -1377,6 +1384,7 @@ const staffConsoleText = {
       employmentType: 'Loại hợp đồng',
       end: 'Kết thúc',
       endDate: 'Ngày kết thúc',
+      editingRange: 'Đang chỉnh',
       emergencyContact: 'Liên hệ khẩn cấp',
       estimatedPayroll: 'Lương tạm tính',
       exportFormat: 'Định dạng',
@@ -1424,6 +1432,7 @@ const staffConsoleText = {
       order: 'Đơn',
       orderStatus: 'Trạng thái đơn',
       orders: 'Đơn hàng',
+      off: 'Tắt',
       operationsCalendar: 'Lịch vận hành',
       operationsDate: 'Ngày vận hành',
       paid: 'Đã trả',
@@ -1452,6 +1461,7 @@ const staffConsoleText = {
       regularHours: 'Giờ thường',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
+      referenceRange: 'Khoảng tham chiếu',
       reportRange: 'Khoảng báo cáo',
       roleExplanation: 'Giải thích vai trò',
       roleFor: 'Vai trò cho',
@@ -2202,6 +2212,8 @@ function StaffReportDateRangeModal({
   const nextMonth = addMonths(visibleMonth, 1)
   const [orderedStart, orderedEnd] = orderedRange(draftStart, draftEnd)
   const [orderedCompareStart, orderedCompareEnd] = orderedRange(draftCompareStart, draftCompareEnd)
+  const editingCompare = draftCompareEnabled && rangeTarget === 'compare'
+  const activeRangeLabel = editingCompare ? text.labels.compareRange : text.labels.referenceRange
 
   function updateReportRange(start: string, end: string) {
     const [from, to] = orderedRange(start, end)
@@ -2212,8 +2224,30 @@ function StaffReportDateRangeModal({
     setDraftCompareEnd(previousEnd)
   }
 
+  function updateActiveRangeStart(value: string) {
+    if (editingCompare) {
+      const [from, to] = orderedRange(value, draftCompareEnd)
+      setDraftCompareStart(from)
+      setDraftCompareEnd(to)
+      return
+    }
+
+    updateReportRange(value, draftEnd)
+  }
+
+  function updateActiveRangeEnd(value: string) {
+    if (editingCompare) {
+      const [from, to] = orderedRange(draftCompareStart, value)
+      setDraftCompareStart(from)
+      setDraftCompareEnd(to)
+      return
+    }
+
+    updateReportRange(draftStart, value)
+  }
+
   function selectDate(date: string) {
-    if (rangeTarget === 'compare') {
+    if (editingCompare) {
       if (date < orderedCompareStart || draftCompareStart !== draftCompareEnd) {
         setDraftCompareStart(date)
         setDraftCompareEnd(date)
@@ -2288,10 +2322,29 @@ function StaffReportDateRangeModal({
             <h3 id="staff-report-date-modal-title">{text.labels.reportRange}</h3>
             <p>{text.labels.selectedRange}: {rangeLabel(orderedStart, orderedEnd)}</p>
           </div>
-          <button className="staff-report-range-button" type="button" onClick={() => setRangeTarget('report')}>
-            <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
-            <strong>{rangeLabel(orderedStart, orderedEnd)}</strong>
-          </button>
+          <div className="staff-report-date-mode" role="tablist" aria-label={text.labels.editingRange}>
+            <button
+              aria-selected={!editingCompare}
+              className={!editingCompare ? 'active' : ''}
+              role="tab"
+              type="button"
+              onClick={() => setRangeTarget('report')}
+            >
+              <span>{text.labels.referenceRange}</span>
+              <strong>{rangeLabel(orderedStart, orderedEnd)}</strong>
+            </button>
+            <button
+              aria-selected={editingCompare}
+              className={editingCompare ? 'active compare' : 'compare'}
+              disabled={!draftCompareEnabled}
+              role="tab"
+              type="button"
+              onClick={() => setRangeTarget('compare')}
+            >
+              <span>{text.labels.compareRange}</span>
+              <strong>{draftCompareEnabled ? rangeLabel(orderedCompareStart, orderedCompareEnd) : text.labels.off}</strong>
+            </button>
+          </div>
         </div>
 
         <div className="staff-report-date-modal-body">
@@ -2307,14 +2360,33 @@ function StaffReportDateRangeModal({
             })}
           </div>
           <div className="staff-report-date-main">
+            <div className="staff-report-active-range-head">
+              <strong>{text.labels.editingRange}: {activeRangeLabel}</strong>
+              <div className="staff-report-calendar-legend" aria-hidden="true">
+                <span><i className="reference" />{text.labels.referenceRange}</span>
+                <span><i className="compare" />{text.labels.compareRange}</span>
+              </div>
+            </div>
             <div className="staff-report-date-inputs">
               <label>
                 <span>{text.labels.startDate}</span>
-                <StaffPickerField ariaLabel={text.aria.reportStartDate} placeholder={text.chooseDate} type="date" value={draftStart} onChange={(value) => updateReportRange(value, draftEnd)} />
+                <StaffPickerField
+                  ariaLabel={editingCompare ? text.aria.compareStartDate : text.aria.reportStartDate}
+                  placeholder={text.chooseDate}
+                  type="date"
+                  value={editingCompare ? draftCompareStart : draftStart}
+                  onChange={updateActiveRangeStart}
+                />
               </label>
               <label>
                 <span>{text.labels.endDate}</span>
-                <StaffPickerField ariaLabel={text.aria.reportEndDate} placeholder={text.chooseDate} type="date" value={draftEnd} onChange={(value) => updateReportRange(draftStart, value)} />
+                <StaffPickerField
+                  ariaLabel={editingCompare ? text.aria.compareEndDate : text.aria.reportEndDate}
+                  placeholder={text.chooseDate}
+                  type="date"
+                  value={editingCompare ? draftCompareEnd : draftEnd}
+                  onChange={updateActiveRangeEnd}
+                />
               </label>
             </div>
             <div className="staff-report-calendar-nav">
@@ -2338,6 +2410,7 @@ function StaffReportDateRangeModal({
                   onChange={(event) => {
                     setDraftCompareEnabled(event.target.checked)
                     if (event.target.checked) setRangeTarget('compare')
+                    else setRangeTarget('report')
                   }}
                 />
                 {text.labels.compare}
@@ -2348,14 +2421,7 @@ function StaffReportDateRangeModal({
                     <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.compareRange}</span>
                     <strong>{rangeLabel(orderedCompareStart, orderedCompareEnd)}</strong>
                   </button>
-                  <label>
-                    <span>{text.labels.startDate}</span>
-                    <StaffPickerField ariaLabel={text.aria.compareStartDate} placeholder={text.chooseDate} type="date" value={draftCompareStart} onChange={setDraftCompareStart} />
-                  </label>
-                  <label>
-                    <span>{text.labels.endDate}</span>
-                    <StaffPickerField ariaLabel={text.aria.compareEndDate} placeholder={text.chooseDate} type="date" value={draftCompareEnd} onChange={setDraftCompareEnd} />
-                  </label>
+                  <p>{editingCompare ? text.labels.compareEditingHint : text.labels.compareInactiveHint}</p>
                 </div>
               )}
             </div>
