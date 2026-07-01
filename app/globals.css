@@ -12621,6 +12621,88 @@ body {
   .app .leaderboard-progress {
     background: rgba(255, 255, 255, 0.12);
   }
+
+  .app .profile-account-form .profile-account-hero,
+  .app .profile-account-form .country-phone-field,
+  .app .profile-account-form .email-field,
+  .app .profile-account-form .name-field,
+  .app .profile-account-form .nickname-field,
+  .app .profile-account-form .birthday-field,
+  .app .profile-account-form .gender-field,
+  .app .profile-account-form .motto-field,
+  .app .profile-account-form .marketing-consent-field,
+  .app .profile-security-panel,
+  .app .mfa-security-card,
+  .app .mfa-enroll-panel,
+  .app .mfa-challenge-panel,
+  .app .profile-auth-section .consent-field,
+  .app .profile-auth-section .captcha-field,
+  .app .profile-auth-section .auth-toggle,
+  .app .profile-auth-section .auth-email-review {
+    background: var(--player-surface-soft);
+    border-color: var(--player-border);
+    color: #f6f7f9;
+    box-shadow: none;
+  }
+
+  .app .profile-account-form .profile-account-hero {
+    background:
+      linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(48, 89, 255, 0.12)),
+      var(--player-surface-raised);
+  }
+
+  .app .profile-identity-copy strong,
+  .app .profile-card-section-title,
+  .app .profile-auth-section .auth-email-review,
+  .app .profile-auth-section .passkey-mark,
+  .app .profile-toggle-field strong,
+  .app .marketing-consent-field strong,
+  .app .mfa-security-copy strong,
+  .app .mfa-panel-copy strong {
+    color: #f6f7f9;
+  }
+
+  .app .profile-identity-copy > span,
+  .app .profile-summary-pills > span,
+  .app .profile-account-form label,
+  .app .profile-auth-section label,
+  .app .profile-auth-section .auth-divider,
+  .app .profile-auth-section .remember-field,
+  .app .profile-auth-section .consent-field,
+  .app .profile-auth-section .field-help,
+  .app .profile-toggle-field small,
+  .app .marketing-consent-field small,
+  .app .mfa-security-copy small,
+  .app .mfa-panel-copy span {
+    color: var(--player-text-muted);
+  }
+
+  .app .profile-account-form .avatar-options {
+    border-top-color: var(--player-border);
+  }
+
+  .app .profile-auth-section .auth-divider::before,
+  .app .profile-auth-section .auth-divider::after {
+    background: var(--player-border);
+  }
+
+  .app .profile-security-panel .link-button,
+  .app .profile-auth-section .action-row .secondary.create-button,
+  .app .profile-auth-section .auth-method-stack .secondary.create-button {
+    background: var(--player-surface-soft);
+    border-color: var(--player-border);
+    color: #f6f7f9;
+  }
+
+  .app .profile-security-panel .link-button:hover,
+  .app .profile-security-panel .link-button:focus-visible {
+    background: rgba(48, 89, 255, 0.18);
+    border-color: rgba(98, 133, 255, 0.36);
+  }
+
+  .app .profile-security-panel .danger-link {
+    color: #ffb4a8;
+  }
 }
 
 /* Lean session list: open layout, fewer nested boxes, faster scanning. */
