@@ -1327,7 +1327,18 @@ function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: 
 }
 
 function compactInitials(value: string) {
-  return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
+  const cleaned = value.trim()
+  if (!cleaned) return ''
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  const letters = words.length > 1
+    ? words.slice(0, 2).map((word) => Array.from(word)[0] || '').join('')
+    : Array.from(cleaned).slice(0, 2).join('')
+  return letters.toUpperCase()
+}
+
+function validAvatarInitials(value: string | null | undefined) {
+  const initials = compactInitials(value || '')
+  return initials && initials !== '?' ? initials : ''
 }
 
 function limitMotto(value: string) {
@@ -2383,8 +2394,9 @@ export default function WidgetPage({
     display_name?: string | null
     full_name?: string | null
     nickname?: string | null
-  } | null | undefined, fallback = 'P') {
+  } | null | undefined, fallback = 'Player') {
     const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
+    const initials = validAvatarInitials(source?.avatar_initials)
 
     if (source?.avatar_url) {
       return (
@@ -2421,8 +2433,8 @@ export default function WidgetPage({
       )
     }
     if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
-    if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
-    return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
+    if (initials) return <span className="avatar-text">{initials}</span>
+    return <span className="avatar-text">{compactInitials(label || fallback)}</span>
   }
 
   function avatarStyle(source: { avatar_color?: string | null; avatar_text_color?: string | null } | null | undefined) {
@@ -3274,6 +3286,7 @@ export default function WidgetPage({
       }
 
       if (profileRow) {
+        const profileInitials = validAvatarInitials(profileRow.avatar_initials)
         const phoneParts = splitPhoneNumber(profileRow.phone || '')
         setProfile(profileRow)
         setProfileCountryCode(phoneParts.countryInput)
@@ -3285,9 +3298,9 @@ export default function WidgetPage({
         setProfileBirthday(profileRow.birthday || '')
         setProfileGender(normalizeProfileGender(profileRow.gender))
         setMarketingConsent(profileRow.marketing_consent !== false)
-        setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileRow.avatar_initials ? 'initials' : 'photo')
+        setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileInitials ? 'initials' : 'photo')
         setAvatarEmoji(profileRow.avatar_emoji || '😎')
-        setAvatarInitials(profileRow.avatar_initials || '')
+        setAvatarInitials(profileInitials)
         setAvatarColor(profileRow.avatar_color || avatarColors[0])
         setAvatarColorDraft(profileRow.avatar_color || avatarColors[0])
         setAvatarTextColor(profileRow.avatar_text_color || avatarTextColors[0])
@@ -3296,12 +3309,23 @@ export default function WidgetPage({
       }
 
       const email = authUser.email?.toLowerCase() || ''
-      const fullName = typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : ''
+      const fullName = (
+        typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name :
+          typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name :
+            typeof authUser.user_metadata?.display_name === 'string' ? authUser.user_metadata.display_name :
+              ''
+      )
       const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
       const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
       const birthdayValue = typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : ''
       const genderValue = normalizeProfileGender(authUser.user_metadata?.gender)
       const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
+      const metadataAvatarUrl = (
+        typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url :
+          typeof authUser.user_metadata?.picture === 'string' ? authUser.user_metadata.picture :
+            ''
+      )
+      const metadataInitials = validAvatarInitials(typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : '')
       const fallbackProfile: Profile = {
         id: authUser.id,
         phone,
@@ -3310,9 +3334,9 @@ export default function WidgetPage({
         email,
         birthday: birthdayValue || null,
         gender: genderValue || null,
-        avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
+        avatar_url: metadataAvatarUrl || null,
         avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
-        avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
+        avatar_initials: metadataInitials || null,
         avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
         avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
         profile_motto: profileMottoValue || null,
@@ -3335,9 +3359,9 @@ export default function WidgetPage({
       setProfileBirthday(birthdayValue)
       setProfileGender(genderValue)
       setMarketingConsent(fallbackProfile.marketing_consent !== false)
-      setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : fallbackProfile.avatar_initials ? 'initials' : 'photo')
+      setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : metadataInitials ? 'initials' : 'photo')
       setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
-      setAvatarInitials(fallbackProfile.avatar_initials || '')
+      setAvatarInitials(metadataInitials)
       setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
       setAvatarColorDraft(fallbackProfile.avatar_color || avatarColors[0])
       setAvatarTextColor(fallbackProfile.avatar_text_color || avatarTextColors[0])
@@ -12313,7 +12337,7 @@ function handleSessionDateChange(value: string) {
                     ) : avatarMode === 'initials' ? (
                       <span className="avatar-text">{compactInitials(avatarInitials || displayName(profile))}</span>
                     ) : (
-                      <span className="avatar-text">{displayName(profile).slice(0, 1)}</span>
+                      <span className="avatar-text">{compactInitials(displayName(profile))}</span>
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} />
                   </label>
