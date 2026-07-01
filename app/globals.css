@@ -2896,9 +2896,9 @@ body {
 }
 
 .app .staff-report-date-modal-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+  align-items: start;
   gap: 12px;
   padding-right: 40px;
 }
@@ -2912,6 +2912,53 @@ body {
   color: #637075;
   font-size: 13px;
   font-weight: 800;
+}
+
+.app .staff-report-date-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.app .staff-report-date-mode button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-height: 54px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #071112;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.app .staff-report-date-mode button.active {
+  border-color: rgba(48, 89, 255, 0.48);
+  background: #f4f8ff;
+  box-shadow: 0 0 0 2px rgba(48, 89, 255, 0.08);
+}
+
+.app .staff-report-date-mode button.compare.active {
+  border-color: rgba(0, 174, 179, 0.55);
+  background: #f1fbfc;
+  box-shadow: 0 0 0 2px rgba(0, 174, 179, 0.1);
+}
+
+.app .staff-report-date-mode button:disabled {
+  opacity: 0.55;
+}
+
+.app .staff-report-date-mode button span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.app .staff-report-date-mode button strong {
+  font-size: 15px;
+  line-height: 1.1;
 }
 
 .app .staff-report-date-modal-body {
@@ -2952,6 +2999,49 @@ body {
   overflow: hidden;
 }
 
+.app .staff-report-active-range-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app .staff-report-active-range-head > strong {
+  font-size: 13px;
+}
+
+.app .staff-report-calendar-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-report-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.app .staff-report-calendar-legend i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.app .staff-report-calendar-legend i.reference {
+  background: #0b6edb;
+}
+
+.app .staff-report-calendar-legend i.compare {
+  border: 2px solid #00aeb3;
+  background: #ffffff;
+}
+
 .app .staff-report-date-inputs,
 .app .staff-report-date-compare-fields {
   display: grid;
@@ -2975,23 +3065,24 @@ body {
 .app .staff-report-calendar-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
 }
 
 .app .staff-report-calendar-nav button {
-  width: 32px;
-  min-height: 32px;
+  width: 28px;
+  min-height: 28px;
   border-radius: 999px;
-  font-size: 24px;
   line-height: 1;
   padding: 0;
 }
 
 .app .staff-report-calendar-nav span {
-  color: #637075;
-  font-size: 12px;
+  min-width: 190px;
+  color: #071112;
+  font-size: 13px;
   font-weight: 900;
+  text-align: center;
 }
 
 .app .staff-report-calendar-months {
@@ -3066,8 +3157,15 @@ body {
 }
 
 .app .staff-report-date-compare-fields {
-  grid-template-columns: minmax(180px, 0.8fr) repeat(2, minmax(0, 1fr));
-  align-items: end;
+  grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.app .staff-report-date-compare-fields p {
+  margin: 0;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .app .staff-report-date-modal-actions {
@@ -9195,6 +9293,16 @@ body {
   .app .staff-report-date-modal-body {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-mode,
+  .app .staff-report-active-range-head {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-active-range-head {
+    display: grid;
+    justify-items: start;
   }
 
   .app .staff-report-date-presets {
