@@ -218,7 +218,18 @@ function compactDisplayName(value: string | null | undefined, fallback = 'Player
 }
 
 function compactInitials(value: string) {
-  return Array.from(value.trim()).slice(0, 2).join('').toUpperCase()
+  const cleaned = value.trim()
+  if (!cleaned) return ''
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  const letters = words.length > 1
+    ? words.slice(0, 2).map((word) => Array.from(word)[0] || '').join('')
+    : Array.from(cleaned).slice(0, 2).join('')
+  return letters.toUpperCase()
+}
+
+function validAvatarInitials(value: string | null | undefined) {
+  const initials = compactInitials(value || '')
+  return initials && initials !== '?' ? initials : ''
 }
 
 function anonymousCallsignForId(profileId: string | null | undefined) {
@@ -340,8 +351,9 @@ function avatarNode(source: {
   display_name?: string | null
   full_name?: string | null
   nickname?: string | null
-} | null | undefined, fallback = 'P') {
+} | null | undefined, fallback = 'Player') {
   const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
+  const initials = validAvatarInitials(source?.avatar_initials)
 
   if (source?.avatar_url) {
     return (
@@ -363,8 +375,8 @@ function avatarNode(source: {
     )
   }
   if (source?.avatar_emoji) return <span className="avatar-emoji">{source.avatar_emoji}</span>
-  if (source?.avatar_initials) return <span className="avatar-text">{compactInitials(source.avatar_initials)}</span>
-  return <span className="avatar-text">{compactInitials(label || fallback).slice(0, 1)}</span>
+  if (initials) return <span className="avatar-text">{initials}</span>
+  return <span className="avatar-text">{compactInitials(label || fallback)}</span>
 }
 
 function isBirthdayToday(dateValue: string | null | undefined) {
@@ -637,16 +649,29 @@ export default function FastHomeShell() {
           staffConsoleRank(effectiveRole, authUser.email)
         ) >= 20 && isStaffModeMobileViewport()
 
+        const metadataFullName = (
+          typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name :
+            typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name :
+              typeof authUser.user_metadata?.display_name === 'string' ? authUser.user_metadata.display_name :
+                null
+        )
+        const metadataAvatarUrl = (
+          typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url :
+            typeof authUser.user_metadata?.picture === 'string' ? authUser.user_metadata.picture :
+              null
+        )
+        const metadataInitials = validAvatarInitials(typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : '')
+
         setProfile(nextProfile ?? {
           id: authUser.id,
           phone: typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : null,
-          full_name: typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : null,
+          full_name: metadataFullName,
           nickname: typeof authUser.user_metadata?.nickname === 'string' ? authUser.user_metadata.nickname : null,
           email: authUser.email?.toLowerCase() || null,
           birthday: typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : null,
-          avatar_url: typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url : null,
+          avatar_url: metadataAvatarUrl,
           avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
-          avatar_initials: typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : null,
+          avatar_initials: metadataInitials || null,
           avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
           avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
           profile_motto: typeof authUser.user_metadata?.profile_motto === 'string' ? authUser.user_metadata.profile_motto : null,

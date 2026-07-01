@@ -3169,7 +3169,13 @@ function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConso
 }
 
 function staffRoleAvatarInitials(value: string) {
-  return Array.from(value.trim()).slice(0, 2).join('').toUpperCase() || '?'
+  const cleaned = value.trim()
+  if (!cleaned || cleaned === '?') return 'PL'
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  const letters = words.length > 1
+    ? words.slice(0, 2).map((word) => Array.from(word)[0] || '').join('')
+    : Array.from(cleaned).slice(0, 2).join('')
+  return letters.toUpperCase() || 'PL'
 }
 
 function shouldSkipStaffImageOptimization(source: string | null | undefined) {
@@ -3181,7 +3187,7 @@ function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: Staff
   const name = customerName(profile, text)
   const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim()
   const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
-  const initials = profile.anonymous_mode ? '' : profile.avatar_initials?.trim()
+  const initials = profile.anonymous_mode || profile.avatar_initials?.trim() === '?' ? '' : profile.avatar_initials?.trim()
   const style = {
     background: profile.anonymous_mode ? '#11181b' : profile.avatar_color || '#3059ff',
     color: profile.anonymous_mode ? '#ffffff' : profile.avatar_text_color || '#ffffff',
@@ -8144,34 +8150,39 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             <h3>{text.tabs.report}</h3>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
-                <button type="button" onClick={() => {
-                  const [from, to] = reportPresetRange('today')
-                  setReportStart(from)
-                  setReportEnd(to)
-                }}>
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-                </button>
-                <button type="button" onClick={() => {
-                  const [from, to] = reportPresetRange('yesterday')
-                  setReportStart(from)
-                  setReportEnd(to)
-                }}>
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
-                </button>
-                <button className="staff-report-range-button" type="button" onClick={() => {
-                  setReportDatePickerTarget('report')
-                  setReportDatePickerOpen(true)
-                }}>
-                  <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
-                  <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-                </button>
-                <button type="button" onClick={applyPreviousPeriodComparison}>
-                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
-                </button>
-                <label className="staff-compare-toggle">
-                  <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                  {text.labels.compare}
-                </label>
+                <div className="staff-report-date-actions" aria-label={text.labels.reportRange}>
+                  <button type="button" onClick={() => {
+                    const [from, to] = reportPresetRange('today')
+                    setReportStart(from)
+                    setReportEnd(to)
+                  }}>
+                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+                  </button>
+                  <button type="button" onClick={() => {
+                    const [from, to] = reportPresetRange('yesterday')
+                    setReportStart(from)
+                    setReportEnd(to)
+                  }}>
+                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
+                  </button>
+                  <button className="staff-report-range-button" type="button" onClick={() => {
+                    setReportDatePickerTarget('report')
+                    setReportDatePickerOpen(true)
+                  }}>
+                    <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
+                    <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+                  </button>
+                </div>
+                <div className="staff-report-compare-actions" aria-label={text.labels.compareRange}>
+                  <button type="button" onClick={applyPreviousPeriodComparison}>
+                    <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
+                  </button>
+                  <label className={compareEnabled ? 'staff-compare-toggle active' : 'staff-compare-toggle'}>
+                    <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
+                    <span className="staff-compare-switch" aria-hidden="true" />
+                    <span>{text.labels.compare}</span>
+                  </label>
+                </div>
                 <div className="staff-report-export-actions">
                   <button type="button" onClick={exportExcelReport}>
                     <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>

@@ -2607,30 +2607,41 @@ body {
 .app .staff-report-export-actions > button,
 .app .staff-report-export-actions > .staff-accountant-export > button,
 .app .staff-chart-mode button {
-  min-height: 30px;
-  padding: 5px 8px;
+  min-height: 34px;
+  padding: 6px 10px;
   font-size: 12px;
 }
 
-.app .staff-report-filter-row button:not(.staff-report-range-button),
-.app .staff-report-export-actions > button,
+.app .staff-chart-mode button.active,
 .app .staff-report-export-actions > .staff-accountant-export > button,
-.app .staff-chart-mode button.active {
+.app .staff-accountant-download.primary {
   background: linear-gradient(90deg, #00aeb3, #3059ff);
   border-color: transparent;
   color: #ffffff;
 }
 
+.app .staff-chart-mode button.active {
+  box-shadow: none;
+}
+
+.app .staff-report-date-actions > button,
+.app .staff-report-compare-actions > button,
+.app .staff-report-export-actions > button {
+  border-color: rgba(7, 17, 18, 0.1);
+  background: #ffffff;
+  color: #071112;
+}
+
 .app .staff-report-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 16px;
   align-items: start;
 }
 
 .app .staff-report-filters {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   justify-items: end;
   min-width: 0;
 }
@@ -2645,15 +2656,37 @@ body {
 .app .staff-report-compare-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   justify-content: flex-end;
+}
+
+.app .staff-report-date-actions,
+.app .staff-report-compare-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.app .staff-report-date-actions {
+  padding: 4px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 12px;
+  background: #f7fafb;
+}
+
+.app .staff-report-compare-actions {
+  padding-left: 2px;
 }
 
 .app .staff-report-export-actions {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 1px solid rgba(7, 17, 18, 0.1);
 }
 
 .app .staff-accountant-export {
@@ -2670,24 +2703,24 @@ body {
   z-index: 70;
   top: calc(100% + 8px);
   right: 0;
-  width: min(760px, calc(100vw - 40px));
+  width: min(860px, calc(100vw - 40px));
   max-height: min(78vh, 660px);
   overflow: auto;
   display: grid;
-  gap: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  gap: 14px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
   background: #ffffff;
   color: #071112;
-  box-shadow: 0 18px 44px rgba(7, 17, 18, 0.14);
+  box-shadow: 0 24px 60px rgba(7, 17, 18, 0.16);
   text-align: left;
 }
 
 .app .staff-accountant-export-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -2697,7 +2730,7 @@ body {
 }
 
 .app .staff-accountant-export-head strong {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 760;
 }
 
@@ -2734,9 +2767,13 @@ body {
 
 .app .staff-accountant-export-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 2fr repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
+  padding: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 10px;
+  background: #f7fafb;
 }
 
 .app .staff-accountant-export-grid label {
@@ -2777,7 +2814,7 @@ body {
   gap: 10px;
   align-items: center;
   border-top: 1px solid rgba(7, 17, 18, 0.08);
-  padding-top: 2px;
+  padding-top: 10px;
 }
 
 .app .staff-accountant-report-heading strong {
@@ -2800,10 +2837,10 @@ body {
 .app .staff-accountant-report-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
   max-height: min(42vh, 300px);
   overflow: auto;
-  padding-right: 2px;
+  padding: 2px 2px 2px 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(7, 17, 18, 0.26) transparent;
 }
@@ -2811,10 +2848,10 @@ body {
 .app .staff-accountant-report-list button {
   position: relative;
   display: grid;
-  gap: 2px;
+  gap: 3px;
   justify-items: stretch;
-  min-height: 46px;
-  padding: 7px 32px 7px 10px;
+  min-height: 54px;
+  padding: 9px 40px 9px 12px;
   border-radius: 8px;
   background: #ffffff;
   color: #071112;
@@ -2823,7 +2860,7 @@ body {
 
 .app .staff-accountant-report-list button strong {
   color: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.2;
   font-weight: 760;
 }
@@ -2839,9 +2876,9 @@ body {
   content: '';
   position: absolute;
   top: 50%;
-  right: 12px;
-  width: 16px;
-  height: 16px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
   border: 2px solid rgba(99, 112, 117, 0.34);
   border-radius: 999px;
   transform: translateY(-50%);
@@ -2867,7 +2904,6 @@ body {
 
 .app .staff-accountant-download.primary {
   width: 100%;
-  background: #0071e3;
   color: #ffffff;
   min-height: 38px;
   border-radius: 9px;
@@ -2886,23 +2922,66 @@ body {
 }
 
 .app .staff-compare-toggle {
+  position: relative;
   width: auto;
-  min-height: 30px;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   border: 1px solid rgba(7, 17, 18, 0.12);
   border-radius: 8px;
-  padding: 5px 8px;
+  padding: 5px 10px 5px 7px;
+  background: #ffffff;
   color: #071112;
   font-size: 12px;
   font-weight: 900;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
 .app .staff-compare-toggle input {
+  position: absolute;
+  opacity: 0;
   width: auto;
   min-width: 0;
   min-height: 0;
+  pointer-events: none;
+}
+
+.app .staff-compare-toggle.active {
+  border-color: rgba(0, 113, 227, 0.38);
+  background: #f5f9ff;
+  color: #0a57c8;
+}
+
+.app .staff-compare-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: #c9d2d7;
+  transition: background 160ms ease;
+}
+
+.app .staff-compare-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(7, 17, 18, 0.22);
+  transition: transform 160ms ease;
+}
+
+.app .staff-compare-toggle.active .staff-compare-switch {
+  background: #0071e3;
+}
+
+.app .staff-compare-toggle.active .staff-compare-switch::after {
+  transform: translateX(12px);
 }
 
 .app .staff-report-range-button {
@@ -9338,6 +9417,26 @@ body {
     justify-content: flex-start;
   }
 
+  .app .staff-report-date-actions,
+  .app .staff-report-compare-actions,
+  .app .staff-report-export-actions {
+    width: 100%;
+  }
+
+  .app .staff-report-date-actions,
+  .app .staff-report-compare-actions {
+    justify-content: flex-start;
+  }
+
+  .app .staff-report-export-actions {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .app .staff-report-export-actions > button {
+    flex: 1 1 118px;
+  }
+
   .app .staff-report-range-button {
     flex: 1 1 210px;
   }
@@ -10633,7 +10732,8 @@ body {
 }
 
 .app .staff-calendar-shortcut,
-.app .staff-report-filter-row button:not(.staff-report-range-button),
+.app .staff-report-date-actions > button,
+.app .staff-report-compare-actions > button,
 .app .staff-report-export-actions > button,
 .app .staff-report-export-actions > .staff-accountant-export > button,
 .app .staff-accountant-download.primary,
@@ -10691,11 +10791,11 @@ body {
 }
 
 .app .staff-accountant-report-list {
-  gap: 6px;
+  gap: 8px;
 }
 
 .app .staff-accountant-report-list button {
-  min-height: 46px;
+  min-height: 54px;
   border-radius: 8px;
   border-color: var(--staff-modern-border);
   background: #ffffff;
@@ -10916,10 +11016,13 @@ body {
   .app .staff-audience-option,
   .app .staff-arena-option,
   .app .staff-game-active-toggle,
+  .app .staff-report-date-actions,
   .app .staff-report-range-button,
   .app .staff-accountant-export-panel,
+  .app .staff-accountant-export-grid,
   .app .staff-accountant-export-check,
   .app .staff-accountant-export-panel button,
+  .app .staff-compare-toggle,
   .app .staff-planning-panel,
   .app .staff-planning-corner,
   .app .staff-planning-day,
@@ -11054,17 +11157,19 @@ body {
     border-color: rgba(255, 255, 255, 0.1);
   }
 
-  .app .staff-report-filter-row button:not(.staff-report-range-button),
-  .app .staff-report-export-actions > button,
   .app .staff-report-export-actions > .staff-accountant-export > button,
+  .app .staff-accountant-download.primary,
   .app .staff-chart-mode button.active {
     background: linear-gradient(90deg, #00aeb3, #3059ff);
     color: #ffffff;
   }
 
-  .app .staff-accountant-download.primary {
-    background: #0071e3;
-    color: #ffffff;
+  .app .staff-report-date-actions > button,
+  .app .staff-report-compare-actions > button,
+  .app .staff-report-export-actions > button {
+    background: #182225;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f6f7f9;
   }
 
   .app .staff-report-export-actions .staff-accountant-export-panel button:not(.primary) {
@@ -11189,7 +11294,14 @@ body {
 
   .app .staff-compare-toggle {
     border-color: rgba(255, 255, 255, 0.12);
+    background: #182225;
     color: #f6f7f9;
+  }
+
+  .app .staff-compare-toggle.active {
+    border-color: rgba(41, 151, 255, 0.48);
+    background: #102033;
+    color: #c7d5ff;
   }
 
   .app .staff-report-graph {
