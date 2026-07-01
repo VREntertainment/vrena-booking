@@ -12079,9 +12079,6 @@ function handleSessionDateChange(value: string) {
                         {profileBirthday && (
                           <span><CalendarDays aria-hidden="true" size={13} /><span className="profile-summary-text">{formatShortDate(profileBirthday, language)}</span></span>
                         )}
-                        {canAccessStaffConsole && (
-                          <span><ShieldCheck aria-hidden="true" size={13} /><span className="profile-summary-text">Staff Console</span></span>
-                        )}
                       </div>
                     )}
                   </div>
@@ -12196,47 +12193,49 @@ function handleSessionDateChange(value: string) {
               )}
               {showProfileFields && (
                 <>
-                  <div className="country-field">
-                    <label>{text.countryCode} <span className="required">*</span></label>
-                    <div className="country-picker">
-                      <button
-                        className="country-button"
-                        onClick={() => setCountryPickerOpen((open) => !open)}
-                        type="button"
-                      >
-                        {profileCountryCode}
-                      </button>
-                      {countryPickerOpen && (
-                        <div className="country-menu">
-                          <input
-                            autoFocus
-                            value={countrySearch}
-                            onChange={(event) => setCountrySearch(event.target.value)}
-                            placeholder={text.searchCountry}
-                          />
-                          <div className="country-list">
-                            {filteredCountries.map((country) => (
-                              <button
-                                key={`${country.code}-${country.name}`}
-                                onClick={() => {
-                                  setProfileCountryCode(country.code)
-                                  setCountrySearch('')
-                                  setCountryPickerOpen(false)
-                                }}
-                                type="button"
-                              >
-                                <span>{country.code}</span>
-                                <strong>{country.name}</strong>
-                              </button>
-                            ))}
+                  <div className="country-phone-field">
+                    <div className="country-field">
+                      <label>{text.countryCode} <span className="required">*</span></label>
+                      <div className="country-picker">
+                        <button
+                          className="country-button"
+                          onClick={() => setCountryPickerOpen((open) => !open)}
+                          type="button"
+                        >
+                          {profileCountryCode}
+                        </button>
+                        {countryPickerOpen && (
+                          <div className="country-menu">
+                            <input
+                              autoFocus
+                              value={countrySearch}
+                              onChange={(event) => setCountrySearch(event.target.value)}
+                              placeholder={text.searchCountry}
+                            />
+                            <div className="country-list">
+                              {filteredCountries.map((country) => (
+                                <button
+                                  key={`${country.code}-${country.name}`}
+                                  onClick={() => {
+                                    setProfileCountryCode(country.code)
+                                    setCountrySearch('')
+                                    setCountryPickerOpen(false)
+                                  }}
+                                  type="button"
+                                >
+                                  <span>{country.code}</span>
+                                  <strong>{country.name}</strong>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="phone-field">
-                    <label>{text.phoneNumber} <span className="required">*</span></label>
-                    <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+                    <div className="phone-field">
+                      <label>{text.phoneNumber} <span className="required">*</span></label>
+                      <input value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+                    </div>
                   </div>
                 </>
               )}
