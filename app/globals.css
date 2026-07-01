@@ -582,28 +582,34 @@ body {
 .app .profile-summary-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px 12px;
   margin-top: 4px;
 }
 
-.app .profile-summary-pills span {
+.app .profile-summary-pills > span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
   max-width: 100%;
-  min-height: 26px;
-  border: 1px solid rgba(7, 17, 18, 0.09);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #4f5b60;
-  padding: 4px 8px;
-  font-size: 12px;
+  min-height: 22px;
+  color: #5e6b70;
+  padding: 0;
+  font-size: 13px;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .app .profile-summary-pills svg {
   flex: 0 0 auto;
   color: #3059ff;
+}
+
+.app .profile-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app .profile-account-form .avatar-options {
@@ -723,6 +729,65 @@ body {
   grid-column: 1 / -1;
 }
 
+@media (min-width: 721px) {
+  .app .profile-account-form .avatar-options {
+    gap: 10px;
+    border-top-color: rgba(7, 17, 18, 0.06);
+    padding-top: 14px;
+  }
+
+  .app .profile-account-form .anonymous-mode-toggle {
+    width: fit-content;
+    max-width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .app .profile-account-form .anonymous-mode-toggle input {
+    margin-top: 2px;
+  }
+
+  .app .profile-account-form .anonymous-mode-toggle small {
+    max-width: 520px;
+  }
+
+  .app .profile-account-form .compact-segmented {
+    max-width: 100%;
+  }
+
+  .app .profile-account-form .emoji-row,
+  .app .profile-account-form .color-row {
+    gap: 9px;
+  }
+
+  .app .profile-account-form .emoji-row input {
+    flex: 0 0 48px;
+    width: 48px;
+    max-width: 48px;
+    min-height: 36px;
+    padding-inline: 8px;
+    text-align: center;
+  }
+
+  .app .profile-account-form .custom-color-row {
+    gap: 10px;
+  }
+
+  .app .profile-account-form .custom-color-row label {
+    width: auto;
+  }
+
+  .app .profile-account-form .custom-color-row input[type="color"] {
+    width: 50px;
+  }
+
+  .app .profile-account-form .custom-color-row .hex-field input {
+    width: 132px;
+    max-width: 132px;
+  }
+}
+
 @media (max-width: 720px) {
   .app .profile-account-form {
     grid-template-columns: 1fr;
@@ -742,9 +807,8 @@ body {
     gap: 5px;
   }
 
-  .app .profile-summary-pills span {
+.app .profile-summary-pills > span {
     max-width: 100%;
-    overflow-wrap: anywhere;
   }
 
   .app .profile-security-panel .account-links,

@@ -12071,16 +12071,16 @@ function handleSessionDateChange(value: string) {
                     {profile && (
                       <div className="profile-summary-pills" aria-label={text.playerProfile}>
                         {profileEmail && (
-                          <span><Mail aria-hidden="true" size={13} />{profileEmail}</span>
+                          <span><Mail aria-hidden="true" size={13} /><span className="profile-summary-text">{profileEmail}</span></span>
                         )}
                         {profilePhone && (
-                          <span><Phone aria-hidden="true" size={13} />{profileCountryCode} {profilePhone}</span>
+                          <span><Phone aria-hidden="true" size={13} /><span className="profile-summary-text">{profileCountryCode} {profilePhone}</span></span>
                         )}
                         {profileBirthday && (
-                          <span><CalendarDays aria-hidden="true" size={13} />{formatShortDate(profileBirthday, language)}</span>
+                          <span><CalendarDays aria-hidden="true" size={13} /><span className="profile-summary-text">{formatShortDate(profileBirthday, language)}</span></span>
                         )}
                         {canAccessStaffConsole && (
-                          <span><ShieldCheck aria-hidden="true" size={13} />Staff Console</span>
+                          <span><ShieldCheck aria-hidden="true" size={13} /><span className="profile-summary-text">Staff Console</span></span>
                         )}
                       </div>
                     )}
