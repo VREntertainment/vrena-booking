@@ -185,6 +185,10 @@ body {
   padding: 0;
 }
 
+.app .search-close svg {
+  display: block;
+}
+
 .app .day-strip {
   position: absolute;
   top: 70px;
@@ -490,6 +494,23 @@ body {
 
 .app .share-icon-button.copied {
   color: #0d7c51;
+}
+
+.app .button-icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.app .button-icon-text svg {
+  flex: 0 0 auto;
+}
+
+.app .button-icon-text span {
+  min-width: 0;
 }
 
 .app .danger-link {
@@ -2339,10 +2360,17 @@ body {
 }
 
 .app .staff-report-range-button span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: #637075;
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
+}
+
+.app .staff-report-range-button span svg {
+  flex: 0 0 auto;
 }
 
 .app .staff-report-range-button strong {
@@ -4784,6 +4812,10 @@ body {
   line-height: 1;
 }
 
+.app .modal-close svg {
+  display: block;
+}
+
 .app .list {
   display: grid;
   gap: 10px;
@@ -5567,19 +5599,6 @@ body {
   font-size: 12px;
   font-weight: 900;
   box-shadow: 0 1px 0 rgba(7, 17, 18, 0.08);
-}
-
-.app .format-toolbar button:nth-child(2) {
-  font-style: italic;
-}
-
-.app .format-toolbar button:nth-child(3) {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.app .format-toolbar button:nth-child(4) {
-  text-decoration: line-through;
 }
 
 .app .format-toolbar button:hover, .app .format-toolbar button:focus-visible {
@@ -6826,23 +6845,29 @@ body {
 }
 
 .app .profile-auth-section .password-control input {
-  padding-right: 78px;
+  padding-right: 54px;
 }
 
 .app .profile-auth-section .password-control button {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: auto;
+  width: 38px;
   min-height: 36px;
   border: 0;
   border-radius: 9px;
   background: transparent;
   color: #3059ff;
-  padding: 0 9px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   box-shadow: none;
   font-size: 12px;
   font-weight: 900;
+}
+
+.app .profile-auth-section .password-control button svg {
+  display: block;
 }
 
 .app .profile-auth-section .field-help {

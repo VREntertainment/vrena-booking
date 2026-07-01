@@ -1,7 +1,17 @@
 'use client'
 
 import Image from 'next/image'
+import { CalendarPlus, X } from 'lucide-react'
 import type { ReactNode } from 'react'
+
+function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
+  return (
+    <span className="button-icon-text">
+      {icon}
+      <span>{children}</span>
+    </span>
+  )
+}
 
 type LoginPromptModalProps = {
   closeText: string
@@ -24,7 +34,7 @@ export function LoginPromptModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="login-prompt-title">
       <div className="login-modal">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <h3 id="login-prompt-title">{title}</h3>
         <p>{message}</p>
@@ -73,7 +83,7 @@ export function InvitePopupModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="invite-popup-title">
       <div className="login-modal invite-popup">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <h3 id="invite-popup-title">{title}</h3>
         <p>{body}</p>
@@ -94,7 +104,7 @@ export function InvitePopupModal({
             {openText}
           </button>
           <button className="secondary create-button" type="button" onClick={onCalendar}>
-            {calendarText}
+            <ButtonIconText icon={<CalendarPlus aria-hidden="true" size={17} />}>{calendarText}</ButtonIconText>
           </button>
         </div>
       </div>
@@ -114,7 +124,7 @@ export function ChampionLoginModal({ closeText, title, message, onClose }: Champ
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="champion-title">
       <div className="login-modal champion-modal">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <div className="champion-spark">👑</div>
         <h3 id="champion-title">{title}</h3>
@@ -141,7 +151,7 @@ export function BirthdayPopupModal({ closeText, title, message, buttonText, onCl
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="birthday-popup-title">
       <div className="login-modal birthday-modal">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <div className="birthday-cake" aria-hidden="true">🎂</div>
         <h3 id="birthday-popup-title">{title}</h3>
@@ -187,7 +197,7 @@ export function TariffPaymentModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tariff-payment-title">
       <div className="login-modal tariff-payment-modal">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <h3 id="tariff-payment-title">{title}</h3>
         <div className="tariff-payment-scroll">
@@ -279,7 +289,7 @@ export function CheckInModal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="checkin-title">
       <div className="login-modal">
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <h3 id="checkin-title">{title}</h3>
         <p>{playerName}</p>
@@ -379,7 +389,7 @@ export function PlayerProfileModal({
       <div className="player-profile-panel" onClick={(event) => event.stopPropagation()}>
         <div className="drawer-handle" />
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          &times;
+          <X aria-hidden="true" size={20} />
         </button>
         <div className="player-profile-head">
           {avatar}
