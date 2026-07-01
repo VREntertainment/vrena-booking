@@ -462,6 +462,8 @@ export const it = {
   createPrivateSession: 'Crea partita privata',
   profile: 'Profilo',
   profileUpdateHint: 'Aggiorna i dettagli profilo.',
+  profileSecurity: 'Sicurezza',
+  profilePreferences: 'Preferenze',
   authWelcomeTitle: 'Benvenuto su VRena',
   logIn: 'Accedi',
   createAccount: 'Crea account',

@@ -462,6 +462,8 @@ export const ja = {
   createPrivateSession: '非公開セッション作成',
   profile: 'プロフィール',
   profileUpdateHint: 'プロフィール情報を更新。',
+  profileSecurity: 'セキュリティ',
+  profilePreferences: '設定',
   authWelcomeTitle: 'VRenaへようこそ',
   logIn: 'ログイン',
   createAccount: 'アカウント作成',

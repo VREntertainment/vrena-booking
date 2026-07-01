@@ -462,6 +462,8 @@ export const de = {
   createPrivateSession: 'Private Runde bauen',
   profile: 'Profil',
   profileUpdateHint: 'Profildaten aktualisieren.',
+  profileSecurity: 'Sicherheit',
+  profilePreferences: 'Einstellungen',
   authWelcomeTitle: 'Willkommen bei VRena',
   logIn: 'Anmelden',
   createAccount: 'Konto bauen',

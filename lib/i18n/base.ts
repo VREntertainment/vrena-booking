@@ -460,6 +460,8 @@ export const en = {
   createPrivateSession: 'Create Private Session',
   profile: 'Profile',
   profileUpdateHint: 'Update your profile details.',
+  profileSecurity: 'Security',
+  profilePreferences: 'Preferences',
   authWelcomeTitle: 'Welcome to VRena',
   logIn: 'Log In',
   createAccount: 'Create Account',

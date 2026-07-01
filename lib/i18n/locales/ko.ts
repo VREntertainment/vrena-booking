@@ -462,6 +462,8 @@ export const ko = {
   createPrivateSession: '비공개 세션 만들기',
   profile: '프로필',
   profileUpdateHint: '프로필 정보를 업데이트하세요.',
+  profileSecurity: '보안',
+  profilePreferences: '환경설정',
   authWelcomeTitle: 'VRena에 오신 걸 환영합니다',
   logIn: '로그인',
   createAccount: '계정 만들기',
