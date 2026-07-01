@@ -772,6 +772,93 @@ body {
   color: #b42318;
 }
 
+.app .mfa-security-card,
+.app .mfa-enroll-panel,
+.app .mfa-challenge-panel {
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+.app .mfa-security-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+}
+
+.app .mfa-security-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .mfa-security-copy strong,
+.app .mfa-panel-copy strong {
+  display: block;
+  color: #071112;
+}
+
+.app .mfa-security-copy small,
+.app .mfa-panel-copy span {
+  display: block;
+  color: #627074;
+  line-height: 1.35;
+}
+
+.app .mfa-security-icon,
+.app .mfa-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #3059ff;
+}
+
+.app .mfa-enroll-panel,
+.app .mfa-challenge-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.app .mfa-challenge-panel {
+  margin-top: 14px;
+}
+
+.app .mfa-qr {
+  width: 148px;
+  height: 148px;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.app .mfa-secret-field,
+.app .mfa-code-field {
+  display: grid;
+  gap: 6px;
+}
+
+.app .mfa-secret-field input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.app .mfa-code-row,
+.app .mfa-enroll-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.app .compact-notice {
+  margin: 0;
+}
+
 .app .profile-save-actions {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
@@ -896,6 +983,20 @@ body {
 
   .app .profile-security-panel .account-links {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .mfa-security-card,
+  .app .mfa-code-row,
+  .app .mfa-enroll-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .app .mfa-security-card {
+    display: grid;
+  }
+
+  .app .mfa-qr {
+    justify-self: center;
   }
 
   .app .profile-security-panel .link-button {
