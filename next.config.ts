@@ -21,6 +21,9 @@ const supabaseImageRemotePatterns = (() => {
 })()
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     formats: ['image/webp'],
     imageSizes: [32, 48, 64, 96, 128, 256, 384],
