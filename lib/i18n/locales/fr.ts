@@ -462,6 +462,8 @@ export const fr = {
   createPrivateSession: 'Créer partie privée',
   profile: 'Profil',
   profileUpdateHint: 'Mets ton profil à jour.',
+  profileSecurity: 'Sécurité',
+  profilePreferences: 'Préférences',
   authWelcomeTitle: 'Bienvenue chez VRena',
   logIn: 'Connexion',
   createAccount: 'Créer compte',

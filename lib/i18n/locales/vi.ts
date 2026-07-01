@@ -462,6 +462,8 @@ export const vi = {
   createPrivateSession: 'Tạo phiên riêng tư',
   profile: 'Hồ sơ',
   profileUpdateHint: 'Cập nhật thông tin hồ sơ.',
+  profileSecurity: 'Bảo mật',
+  profilePreferences: 'Tùy chọn',
   authWelcomeTitle: 'Chào mừng đến VRena',
   logIn: 'Đăng nhập',
   createAccount: 'Tạo tài khoản',

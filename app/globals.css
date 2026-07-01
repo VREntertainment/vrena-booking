@@ -524,6 +524,235 @@ body {
   margin-top: 10px;
 }
 
+.app .profile-account-section {
+  display: grid;
+  gap: 16px;
+}
+
+.app .profile-account-section h2 {
+  margin-bottom: 0;
+}
+
+.app .profile-account-section > .muted {
+  max-width: 620px;
+  margin: -8px 0 0;
+}
+
+.app .profile-account-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.app .profile-account-form .profile-account-hero {
+  grid-column: 1 / -1;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  border-color: rgba(48, 89, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 252, 0.96)),
+    radial-gradient(circle at top left, rgba(0, 174, 179, 0.13), transparent 34%),
+    radial-gradient(circle at top right, rgba(48, 89, 255, 0.12), transparent 30%);
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(7, 17, 18, 0.07);
+}
+
+.app .profile-account-hero .profile-photo-preview {
+  box-shadow: 0 8px 22px rgba(48, 89, 255, 0.18);
+}
+
+.app .profile-identity-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .profile-identity-copy strong {
+  color: #071112;
+  font-size: clamp(20px, 3vw, 28px);
+  line-height: 1.05;
+}
+
+.app .profile-identity-copy > span {
+  margin: 0;
+  color: #637075;
+}
+
+.app .profile-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.app .profile-summary-pills span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 26px;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #4f5b60;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .profile-summary-pills svg {
+  flex: 0 0 auto;
+  color: #3059ff;
+}
+
+.app .profile-account-form .avatar-options {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.app .profile-card-section-title {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: #071112;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.app .profile-card-section-title svg {
+  color: #3059ff;
+}
+
+.app .profile-account-form .country-field,
+.app .profile-account-form .phone-field,
+.app .profile-account-form .email-field,
+.app .profile-account-form .name-field,
+.app .profile-account-form .nickname-field,
+.app .profile-account-form .birthday-field,
+.app .profile-account-form .motto-field {
+  min-width: 0;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  box-shadow: 0 1px 0 rgba(7, 17, 18, 0.04);
+}
+
+.app .profile-account-form .motto-field,
+.app .profile-account-form .marketing-consent-field {
+  grid-column: 1 / -1;
+}
+
+.app .profile-account-form label {
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .profile-account-form input,
+.app .profile-account-form .date-input-shell,
+.app .profile-account-form .country-button {
+  min-height: 42px;
+  border-color: rgba(7, 17, 18, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+.app .profile-account-form .marketing-consent-field {
+  display: grid;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.app .profile-security-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.app .profile-security-panel .profile-card-section-title {
+  margin: 0;
+}
+
+.app .profile-security-panel .account-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.app .profile-security-panel .link-button {
+  min-height: 42px;
+  border: 1px solid rgba(7, 17, 18, 0.09);
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #071112;
+  padding: 10px 12px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.app .profile-security-panel .link-button:hover,
+.app .profile-security-panel .link-button:focus-visible {
+  border-color: rgba(48, 89, 255, 0.28);
+  background: #f7f9ff;
+}
+
+.app .profile-security-panel .danger-link {
+  color: #b42318;
+}
+
+.app .profile-save-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 0;
+}
+
+.app .profile-save-actions .mobile-staff-profile-action {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .app .profile-account-form {
+    grid-template-columns: 1fr;
+  }
+
+  .app .profile-account-form .profile-account-hero {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .app .profile-identity-copy strong {
+    font-size: 22px;
+  }
+
+  .app .profile-summary-pills {
+    gap: 5px;
+  }
+
+  .app .profile-summary-pills span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .app .profile-security-panel .account-links,
+  .app .profile-save-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .app .my-sessions {
   display: grid;
   gap: 12px;

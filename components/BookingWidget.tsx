@@ -4,7 +4,9 @@ import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import {
   Bold,
+  Bell,
   CalendarPlus,
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,14 +17,18 @@ import {
   Italic,
   KeyRound,
   LockKeyhole,
+  Mail,
+  Phone,
   RefreshCw,
   Save,
   Share2,
+  ShieldCheck,
   Strikethrough,
   Trash2,
   Underline,
   UserCheck,
   UserMinus,
+  UserRound,
   X,
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
@@ -11962,7 +11968,7 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'profile' && (
-          <section className={!profile ? 'section profile-auth-section' : 'section'}>
+          <section className={!profile ? 'section profile-auth-section' : 'section profile-account-section'}>
             <h2>{profile ? text.profile : isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
             {(profile || isRecoveryMode || authMode === 'reset') && (
               <p className="muted">
@@ -12033,11 +12039,12 @@ function handleSessionDateChange(value: string) {
 
             <div className={[
               'form-grid profile-form',
+              profile ? 'profile-account-form' : '',
               !profile && (authMode === 'login' || authMode === 'create' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
             ].join(' ').trim()}>
               {showProfileFields && (
-                <div className="profile-photo-panel">
+                <div className={profile ? 'profile-photo-panel profile-account-hero' : 'profile-photo-panel'}>
                   <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
                     {profile?.anonymous_mode ? (
                       <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
@@ -12058,9 +12065,25 @@ function handleSessionDateChange(value: string) {
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} />
                   </label>
-                  <div>
+                  <div className="profile-identity-copy">
                     <strong>{profile ? displayName(profile) : text.profilePhoto}</strong>
                     <span>{text.uploadPhoto}</span>
+                    {profile && (
+                      <div className="profile-summary-pills" aria-label={text.playerProfile}>
+                        {profileEmail && (
+                          <span><Mail aria-hidden="true" size={13} />{profileEmail}</span>
+                        )}
+                        {profilePhone && (
+                          <span><Phone aria-hidden="true" size={13} />{profileCountryCode} {profilePhone}</span>
+                        )}
+                        {profileBirthday && (
+                          <span><CalendarDays aria-hidden="true" size={13} />{formatShortDate(profileBirthday, language)}</span>
+                        )}
+                        {canAccessStaffConsole && (
+                          <span><ShieldCheck aria-hidden="true" size={13} />Staff Console</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="avatar-options">
                     {profile && (
@@ -12163,6 +12186,12 @@ function handleSessionDateChange(value: string) {
                       </>
                     )}
                   </div>
+                </div>
+              )}
+              {profile && showProfileFields && (
+                <div className="profile-card-section-title">
+                  <UserRound aria-hidden="true" size={17} />
+                  <span>{text.profile}</span>
                 </div>
               )}
               {showProfileFields && (
@@ -12269,6 +12298,12 @@ function handleSessionDateChange(value: string) {
                     placeholder={text.chooseDate}
                     value={profileBirthday}
                   />
+                </div>
+              )}
+              {profile && showProfileFields && (
+                <div className="profile-card-section-title profile-preferences-title">
+                  <Bell aria-hidden="true" size={17} />
+                  <span>{text.profilePreferences}</span>
                 </div>
               )}
               {showProfileFields && (
@@ -12409,7 +12444,7 @@ function handleSessionDateChange(value: string) {
                 </button>
               </div>
             ) : (
-              <div className="action-row">
+              <div className={profile ? 'action-row profile-save-actions' : 'action-row'}>
                 <button
                   className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
                   disabled={isSavingProfile}
@@ -12443,16 +12478,22 @@ function handleSessionDateChange(value: string) {
               </div>
             )}
             {profile && (
-              <div className="account-links">
-                <button className="link-button" disabled={isPasskeyLoading} onClick={registerPasskey} type="button">
-                  <ButtonIconText icon={<KeyRound aria-hidden="true" size={16} />}>{isPasskeyLoading ? text.saving : text.addPasskey}</ButtonIconText>
-                </button>
-                <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
-                  <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
-                </button>
-                <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
-                  <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
-                </button>
+              <div className="profile-security-panel">
+                <div className="profile-card-section-title">
+                  <ShieldCheck aria-hidden="true" size={17} />
+                  <span>{text.profileSecurity}</span>
+                </div>
+                <div className="account-links">
+                  <button className="link-button" disabled={isPasskeyLoading} onClick={registerPasskey} type="button">
+                    <ButtonIconText icon={<KeyRound aria-hidden="true" size={16} />}>{isPasskeyLoading ? text.saving : text.addPasskey}</ButtonIconText>
+                  </button>
+                  <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
+                    <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
+                  </button>
+                  <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
+                    <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
+                  </button>
+                </div>
               </div>
             )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
