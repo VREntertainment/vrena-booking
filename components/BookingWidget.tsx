@@ -13828,7 +13828,7 @@ function handleSessionDateChange(value: string) {
                       <strong>{text.mfaSetupTitle}</strong>
                       <span>{text.mfaSetupHint}</span>
                     </div>
-                    {mfaQrCodeSrc && <img alt="" className="mfa-qr" src={mfaQrCodeSrc} />}
+                    {mfaQrCodeSrc && <NextImage alt="" className="mfa-qr" height={148} src={mfaQrCodeSrc} unoptimized width={148} />}
                     <label className="mfa-secret-field">
                       <span>{text.mfaSecretLabel}</span>
                       <input readOnly type="text" value={mfaEnrollment.secret} />
