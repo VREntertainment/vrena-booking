@@ -84,8 +84,8 @@ const WAITLIST_SELECT = 'id, session_id, profile_id, display_name, avatar_url, a
 const WAITLIST_POSITION_SELECT = 'id, session_id, profile_id, created_at'
 const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status, deleted_at'
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
-const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
-const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_LIST_SELECT_BASE = 'id, owner_id, name, description, visibility, pin_code, member_count, created_at'
+const CLUB_LIST_SELECT = 'id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at'
 const CLUB_PUBLIC_SELECT = 'id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, member_count, created_at'
 const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at'
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
@@ -4977,8 +4977,7 @@ export default function WidgetPage({
 
     const result = await client
       .from('clubs')
-      .select(CLUB_SELECT)
-      .is('club_members.deleted_at', null)
+      .select(CLUB_LIST_SELECT)
       .order('created_at', { ascending: false })
     let data = result.data as Club[] | null
     let error = result.error
@@ -4986,8 +4985,7 @@ export default function WidgetPage({
     if (error) {
       const fallbackResult = await client
         .from('clubs')
-        .select(CLUB_SELECT_BASE)
-        .is('club_members.deleted_at', null)
+        .select(CLUB_LIST_SELECT_BASE)
         .order('created_at', { ascending: false })
       data = fallbackResult.data as Club[] | null
       error = fallbackResult.error
@@ -4997,6 +4995,39 @@ export default function WidgetPage({
       setClubStatus(error.message)
       clubsLoadingRef.current = false
       return
+    }
+
+    const clubIds = (data ?? []).map((club) => club.id)
+    const membershipsByClubId = new Map<string, ClubMember[]>()
+    if (clubIds.length > 0) {
+      const membersResult = await client
+        .from('club_members')
+        .select(CLUB_MEMBER_SELECT)
+        .in('club_id', clubIds)
+        .is('deleted_at', null)
+
+      let membersData = membersResult.data as ClubMember[] | null
+      let membersError = membersResult.error
+
+      if (membersError) {
+        const fallbackMembersResult = await client
+          .from('club_members')
+          .select(CLUB_MEMBER_SELECT_BASE)
+          .in('club_id', clubIds)
+          .is('deleted_at', null)
+
+        membersData = fallbackMembersResult.data as ClubMember[] | null
+        membersError = fallbackMembersResult.error
+      }
+
+      if (!membersError) {
+        const visibleMembers = membersData ?? []
+        visibleMembers.forEach((member) => {
+          const members = membershipsByClubId.get(member.club_id) ?? []
+          members.push(member)
+          membershipsByClubId.set(member.club_id, members)
+        })
+      }
     }
 
     let currentUserMemberships: ClubMember[] = []
@@ -5028,7 +5059,10 @@ export default function WidgetPage({
 
     clubsLoadedRef.current = true
     clubsLoadingRef.current = false
-    setClubs((data ?? []).map((club) => mergeCurrentUserClubMembership(club, currentUserMemberships)))
+    setClubs((data ?? []).map((club) => mergeCurrentUserClubMembership({
+      ...club,
+      club_members: membershipsByClubId.get(club.id) ?? [],
+    }, currentUserMemberships)))
   }
 
   async function loadClubMessages(club: Club, force = false) {
@@ -8274,19 +8308,65 @@ function handleSessionDateChange(value: string) {
     if (!activeProfile) return
 
     const currentMembership = clubMembers(club).find((member) => member.profile_id === userId)
-    if (currentMembership) return
+    if (currentMembership) {
+      setClubStatus(currentMembership.status === 'pending' ? text.requestSent : text.joinedSession)
+      return
+    }
 
     setBusyClubId(club.id)
-    const { error } = await (await getSupabase()).from('club_members').insert({
+    const client = await getSupabase()
+    const desiredStatus = club.visibility === 'private' ? 'pending' : 'approved'
+    const existingMembershipResult = await client
+      .from('club_members')
+      .select(CLUB_MEMBER_SELECT)
+      .eq('club_id', club.id)
+      .eq('profile_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (existingMembershipResult.error) {
+      const fallbackMembershipResult = await client
+        .from('club_members')
+        .select(CLUB_MEMBER_SELECT_BASE)
+        .eq('club_id', club.id)
+        .eq('profile_id', userId)
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (fallbackMembershipResult.error) {
+        setClubStatus(fallbackMembershipResult.error.message)
+        setBusyClubId('')
+        return
+      }
+
+      if (fallbackMembershipResult.data) {
+        await loadClubs()
+        setClubStatus(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedSession)
+        setBusyClubId('')
+        return
+      }
+    } else if (existingMembershipResult.data) {
+      await loadClubs()
+      setClubStatus(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedSession)
+      setBusyClubId('')
+      return
+    }
+
+    const { error } = await client.from('club_members').insert({
       club_id: club.id,
       profile_id: userId,
       display_name: displayName(activeProfile),
       ...avatarFields(activeProfile),
-      status: club.visibility === 'private' ? 'pending' : 'approved',
+      status: desiredStatus,
     })
 
     if (error) {
-      setClubStatus(error.message)
+      if (error.code === '23505') {
+        await loadClubs()
+        setClubStatus(desiredStatus === 'pending' ? text.requestSent : text.joinedSession)
+      } else {
+        setClubStatus(error.message)
+      }
       setBusyClubId('')
       return
     }
