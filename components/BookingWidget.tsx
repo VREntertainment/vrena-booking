@@ -17,7 +17,6 @@ import {
   Italic,
   KeyRound,
   LockKeyhole,
-  Languages,
   Mail,
   Phone,
   RefreshCw,
@@ -51,9 +50,11 @@ import {
   type LeaderboardRpcRow,
 } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsShare'
+import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
+import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { StaffProfile } from './StaffConsole'
 
 const ARENA_COUNT = 2
@@ -121,86 +122,6 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
   )
 }
 
-function cleanMessageText(value: unknown) {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
-function equivalentMessageText(left: string, right: string) {
-  return left.replace(/\r\n/g, '\n').trim() === right.replace(/\r\n/g, '\n').trim()
-}
-
-function MessageBodyText({
-  body,
-  messageId,
-  messageKind,
-  onToggleOriginal,
-  onRequestTranslation,
-  targetLanguage,
-  text,
-  translation,
-}: {
-  body: string
-  messageId: string
-  messageKind: 'club' | 'session'
-  onToggleOriginal: () => void
-  onRequestTranslation: (messageKind: 'club' | 'session', messageId: string, body: string, targetLanguage: LanguageCode) => void
-  targetLanguage: LanguageCode
-  text: TranslationMap
-  translation?: MessageTranslationState
-}) {
-  useEffect(() => {
-    if (translation?.loading || translation?.translatedText || translation?.error) return
-    onRequestTranslation(messageKind, messageId, body, targetLanguage)
-  }, [body, messageId, messageKind, onRequestTranslation, targetLanguage, translation?.error, translation?.loading, translation?.translatedText])
-
-  const translatedText = cleanMessageText(translation?.translatedText)
-  const hasTranslation = Boolean(translation?.changed && translatedText)
-  const showingOriginal = Boolean(translation?.showOriginal)
-  const displayBody = hasTranslation && !showingOriginal ? translatedText : body
-  const hasAttemptedTranslation = Boolean(translation?.translatedText || translation?.error)
-  const showTranslateAction = !translation?.loading && !hasTranslation && hasAttemptedTranslation
-  const translationStatusLabel = hasTranslation
-    ? text.messageTranslated
-    : translation?.error || hasAttemptedTranslation
-      ? text.messageTranslationUnavailable
-      : text.translateMessage
-
-  return (
-    <>
-      <p>{displayBody}</p>
-      {translation?.loading ? (
-        <div className="message-translation-row loading">
-          <span className="message-translation-status">
-            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
-            <span>{text.translatingMessage}</span>
-          </span>
-        </div>
-      ) : (
-        <div className="message-translation-row">
-          <span className="message-translation-status">
-            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
-            <span>{translationStatusLabel}</span>
-          </span>
-          {hasTranslation && (
-            <button className="message-translation-toggle" type="button" onClick={onToggleOriginal}>
-              {showingOriginal ? text.showTranslatedMessage : text.showOriginalMessage}
-            </button>
-          )}
-          {showTranslateAction && (
-            <button
-              aria-label={text.translateMessage}
-              className="message-translation-toggle"
-              type="button"
-              onClick={() => onRequestTranslation(messageKind, messageId, body, targetLanguage)}
-            >
-              {text.translateMessage}
-            </button>
-          )}
-        </div>
-      )}
-    </>
-  )
-}
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
@@ -599,15 +520,6 @@ type ClubMessage = {
   message_type: 'public' | 'admin_private'
   body: string
   created_at?: string | null
-}
-
-type MessageTranslationState = {
-  loading?: boolean
-  translatedText?: string
-  sourceLanguage?: string | null
-  changed?: boolean
-  error?: string
-  showOriginal?: boolean
 }
 
 type MessageTranslationResponse = {
