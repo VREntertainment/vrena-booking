@@ -9331,6 +9331,16 @@ body {
   text-align: right;
 }
 
+.app .stat-subline .compact-stat-value,
+.app .stat-subline .compact-stat-input {
+  justify-self: end;
+}
+
+.app .stat-subline .compact-stat-value {
+  min-width: 44px;
+  font-size: 14px;
+}
+
 .app .compact-best-label {
   max-width: 100%;
   overflow: hidden;

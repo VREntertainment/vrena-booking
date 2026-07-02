@@ -367,6 +367,8 @@ type Profile = {
   role?: string | null
   score_adjustment?: number | null
   loyalty_points_total?: number | null
+  average_accuracy_override?: number | null
+  best_escape_duration_seconds_override?: number | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
   marketing_consent?: boolean | null
@@ -382,7 +384,6 @@ type StaffPlayerEditDraft = {
   gender: ProfileGender | ''
   profileMotto: string
   totalScore: string
-  loyaltyPoints: string
 }
 
 type TotpFactor = {
@@ -453,7 +454,7 @@ const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
 const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
 const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
 type ProfileGender = typeof PROFILE_GENDER_VALUES[number]
-const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
 
 function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
   return {
@@ -464,7 +465,6 @@ function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
     gender: '',
     profileMotto: '',
     totalScore: '',
-    loyaltyPoints: '',
   }
 }
 
@@ -1387,6 +1387,8 @@ function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: strin
 
 function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: string): LeaderboardPlayer {
   const isAnonymous = Boolean(profile.anonymous_mode)
+  const averageAccuracyOverride = Number(profile.average_accuracy_override)
+  const bestEscapeDurationSecondsOverride = Number(profile.best_escape_duration_seconds_override)
   const name = isAnonymous
     ? anonymousProfileName({
       id: profile.id,
@@ -1415,9 +1417,9 @@ function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: 
         totalAccuracy: 0,
     accuracyCount: 0,
     totalProjectiles: 0,
-    averageAccuracy: null,
+    averageAccuracy: Number.isFinite(averageAccuracyOverride) ? averageAccuracyOverride : null,
     reliabilityScore: 0,
-    bestEscapeDurationSeconds: null,
+    bestEscapeDurationSeconds: Number.isFinite(bestEscapeDurationSecondsOverride) && bestEscapeDurationSecondsOverride > 0 ? bestEscapeDurationSecondsOverride : null,
     bestByGame: [],
   }
 }
@@ -2240,7 +2242,7 @@ export default function WidgetPage({
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
-  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
+  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | 'loyaltyPoints' | 'averageAccuracy' | 'bestEscapeDuration' | null>(null)
   const [staffPlayerEditDraft, setStaffPlayerEditDraft] = useState<StaffPlayerEditDraft>(() => defaultStaffPlayerEditDraft())
   const [isSavingStaffPlayerEdit, setIsSavingStaffPlayerEdit] = useState(false)
   const [staffPlayerEditStatus, setStaffPlayerEditStatus] = useState('')
@@ -6373,11 +6375,15 @@ function handleSessionDateChange(value: string) {
       accuracyCount: number
       totalProjectiles: number
       bestEscapeDurationSeconds: number | null
+      averageAccuracyOverride: number | null
+      bestEscapeDurationSecondsOverride: number | null
       bestByGame: Map<string, number>
     }>()
 
     allProfiles.forEach((playerProfile) => {
       const playerAvatar = avatarFields(playerProfile)
+      const averageAccuracyOverride = Number(playerProfile.average_accuracy_override)
+      const bestEscapeDurationSecondsOverride = Number(playerProfile.best_escape_duration_seconds_override)
       stats.set(playerProfile.id, {
         profileId: playerProfile.id,
         displayName: compactDisplayName(displayName(playerProfile), text.player),
@@ -6399,6 +6405,8 @@ function handleSessionDateChange(value: string) {
         accuracyCount: 0,
         totalProjectiles: 0,
         bestEscapeDurationSeconds: null,
+        averageAccuracyOverride: Number.isFinite(averageAccuracyOverride) ? averageAccuracyOverride : null,
+        bestEscapeDurationSecondsOverride: Number.isFinite(bestEscapeDurationSecondsOverride) && bestEscapeDurationSecondsOverride > 0 ? bestEscapeDurationSecondsOverride : null,
         bestByGame: new Map<string, number>(),
       })
     })
@@ -6428,6 +6436,8 @@ function handleSessionDateChange(value: string) {
           accuracyCount: 0,
           totalProjectiles: 0,
           bestEscapeDurationSeconds: null,
+          averageAccuracyOverride: null,
+          bestEscapeDurationSecondsOverride: null,
           bestByGame: new Map<string, number>(),
         }
 
@@ -6485,8 +6495,9 @@ function handleSessionDateChange(value: string) {
         ...item,
         scoreAdjustment: profileScoreAdjustments[item.profileId] ?? 0,
         totalScore: item.baseTotalScore + (profileScoreAdjustments[item.profileId] ?? 0),
-        averageAccuracy: item.accuracyCount > 0 ? item.totalAccuracy / item.accuracyCount : null,
+        averageAccuracy: item.averageAccuracyOverride ?? (item.accuracyCount > 0 ? item.totalAccuracy / item.accuracyCount : null),
         reliabilityScore: percentValue(item.gamesJoined, item.sessionsJoined),
+        bestEscapeDurationSeconds: item.bestEscapeDurationSecondsOverride ?? item.bestEscapeDurationSeconds,
         bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
           game: games.find((game) => game.id === gameId)?.title || gameId,
           score,
@@ -6604,6 +6615,18 @@ function handleSessionDateChange(value: string) {
     if (profile?.id === selectedPlayerId) return profile
     return allProfiles.find((item) => item.id === selectedPlayerId) ?? null
   }, [allProfiles, profile, selectedPlayerId])
+  const selectedPlayerAverageAccuracyOverride = selectedPlayerProfileRecord?.average_accuracy_override === null || selectedPlayerProfileRecord?.average_accuracy_override === undefined
+    ? null
+    : finiteNumber(selectedPlayerProfileRecord.average_accuracy_override, Number.NaN)
+  const selectedPlayerBestEscapeOverride = selectedPlayerProfileRecord?.best_escape_duration_seconds_override === null || selectedPlayerProfileRecord?.best_escape_duration_seconds_override === undefined
+    ? null
+    : finiteNumber(selectedPlayerProfileRecord.best_escape_duration_seconds_override, Number.NaN)
+  const selectedPlayerAverageAccuracyValue = selectedPlayerAverageAccuracyOverride !== null && Number.isFinite(selectedPlayerAverageAccuracyOverride)
+    ? selectedPlayerAverageAccuracyOverride
+    : null
+  const selectedPlayerBestEscapeValue = selectedPlayerBestEscapeOverride !== null && Number.isFinite(selectedPlayerBestEscapeOverride) && selectedPlayerBestEscapeOverride > 0
+    ? selectedPlayerBestEscapeOverride
+    : null
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
 
@@ -6676,6 +6699,8 @@ function handleSessionDateChange(value: string) {
           avatarTextColor: profileAvatar.avatar_text_color,
           profileMotto: profile.profile_motto || null,
           loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
+          averageAccuracy: selectedPlayerAverageAccuracyValue ?? selectedPlayerStats.averageAccuracy,
+          bestEscapeDurationSeconds: selectedPlayerBestEscapeValue ?? selectedPlayerStats.bestEscapeDurationSeconds,
         }
       }
 
@@ -6691,6 +6716,8 @@ function handleSessionDateChange(value: string) {
         loyaltyPoints: selectedPlayerProfileRecord
           ? Math.max(0, Math.floor(Number(selectedPlayerProfileRecord.loyalty_points_total ?? selectedPlayerStats.loyaltyPoints ?? 0) || 0))
           : selectedPlayerStats.loyaltyPoints,
+        averageAccuracy: selectedPlayerAverageAccuracyValue ?? selectedPlayerStats.averageAccuracy,
+        bestEscapeDurationSeconds: selectedPlayerBestEscapeValue ?? selectedPlayerStats.bestEscapeDurationSeconds,
       }
     }
 
@@ -6716,9 +6743,9 @@ function handleSessionDateChange(value: string) {
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
-        averageAccuracy: null,
+        averageAccuracy: selectedPlayerAverageAccuracyValue,
         reliabilityScore: 0,
-        bestEscapeDurationSeconds: null,
+        bestEscapeDurationSeconds: selectedPlayerBestEscapeValue,
         bestByGame: [],
       }
     }
@@ -6746,9 +6773,9 @@ function handleSessionDateChange(value: string) {
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
-          averageAccuracy: null,
+          averageAccuracy: selectedPlayerAverageAccuracyValue,
           reliabilityScore: 0,
-          bestEscapeDurationSeconds: null,
+          bestEscapeDurationSeconds: selectedPlayerBestEscapeValue,
           bestByGame: [],
         }
       }
@@ -6777,16 +6804,16 @@ function handleSessionDateChange(value: string) {
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
-          averageAccuracy: null,
+          averageAccuracy: selectedPlayerAverageAccuracyValue,
           reliabilityScore: 0,
-          bestEscapeDurationSeconds: null,
+          bestEscapeDurationSeconds: selectedPlayerBestEscapeValue,
           bestByGame: [],
         }
       }
     }
 
     return undefined
-  }, [clubs, profile, profileScoreAdjustments, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, sessions, text.player, userId])
+  }, [clubs, profile, profileScoreAdjustments, selectedPlayerAverageAccuracyValue, selectedPlayerBestEscapeValue, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, sessions, text.player, userId])
 
   const selectedSessionParticipant = selectedPlayerSessionContext?.participant ?? null
   const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
@@ -6809,7 +6836,6 @@ function handleSessionDateChange(value: string) {
       gender: normalizeProfileGender(selectedPlayerProfileRecord?.gender),
       profileMotto: selectedPlayerProfileRecord?.profile_motto || selectedPlayerProfile.profileMotto || '',
       totalScore: String(selectedPlayerProfile.totalScore ?? 0),
-      loyaltyPoints: String(selectedPlayerProfile.loyaltyPoints ?? 0),
     }
   }, [
     canEditStaffPlayerCards,
@@ -6958,6 +6984,88 @@ function handleSessionDateChange(value: string) {
     )
   }
 
+  function renderProfileLoyaltyControl(playerStats: NonNullable<typeof selectedPlayerProfile>) {
+    if (selectedPlayerScoreEdit === 'loyaltyPoints' && canEditStaffPlayerCards) {
+      return (
+        <input
+          aria-label={text.loyaltyPoints}
+          autoFocus
+          className="inline-score-input compact-stat-input"
+          defaultValue={playerStats.loyaltyPoints ?? 0}
+          inputMode="numeric"
+          min={0}
+          type="number"
+          onBlur={async (event) => {
+            await updateProfileLoyaltyPoints(playerStats.profileId, event.target.value)
+            setSelectedPlayerScoreEdit(null)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+          }}
+        />
+      )
+    }
+
+    return (
+      <button
+        aria-label={text.loyaltyPoints}
+        className={canEditStaffPlayerCards ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+        disabled={!canEditStaffPlayerCards}
+        type="button"
+        onClick={() => setSelectedPlayerScoreEdit('loyaltyPoints')}
+      >
+        {playerStats.loyaltyPoints ?? 0}
+      </button>
+    )
+  }
+
+  function renderProfileStatOverrideControl(
+    playerStats: NonNullable<typeof selectedPlayerProfile>,
+    metric: 'averageAccuracy' | 'bestEscapeDuration',
+    ariaLabel: string,
+    value: number | null | undefined,
+    suffix = ''
+  ) {
+    const isEscapeDurationMetric = metric === 'bestEscapeDuration'
+    const displayValue = isEscapeDurationMetric
+      ? formatSpeedrunDuration(value)
+      : value === null || value === undefined ? '-' : `${Math.round(value)}${suffix}`
+
+    if (selectedPlayerScoreEdit === metric && canEditStaffPlayerCards) {
+      return (
+        <input
+          aria-label={ariaLabel}
+          autoFocus
+          className="inline-score-input compact-stat-input"
+          defaultValue={isEscapeDurationMetric ? (value ? formatSpeedrunDuration(value) : '') : value ?? ''}
+          inputMode={isEscapeDurationMetric ? 'text' : 'numeric'}
+          placeholder={isEscapeDurationMetric ? text.escapeDurationPlaceholder : undefined}
+          onBlur={async (event) => {
+            await updateProfileStatOverride(playerStats.profileId, metric, event.target.value)
+            setSelectedPlayerScoreEdit(null)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+            if (event.key === 'Escape') setSelectedPlayerScoreEdit(null)
+          }}
+        />
+      )
+    }
+
+    return (
+      <button
+        aria-label={ariaLabel}
+        className={canEditStaffPlayerCards ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+        disabled={!canEditStaffPlayerCards}
+        type="button"
+        onClick={() => setSelectedPlayerScoreEdit(metric)}
+      >
+        {displayValue}
+      </button>
+    )
+  }
+
   function renderSessionMetricControl(
     metric: 'session' | 'accuracy' | 'projectiles' | 'escapeDuration',
     value: number | null | undefined,
@@ -7085,7 +7193,16 @@ function handleSessionDateChange(value: string) {
             </>
           ),
         },
-    { key: 'loyalty-points', value: <><span className="stat-label">{text.loyaltyPoints}</span><strong>{selectedPlayerProfile.loyaltyPoints ?? 0}</strong></> },
+    {
+      key: 'loyalty-points',
+      className: 'editable-stat-card',
+      value: (
+        <>
+          <span className="stat-label">{text.loyaltyPoints}</span>
+          {renderProfileLoyaltyControl(selectedPlayerProfile)}
+        </>
+      ),
+    },
     selectedPlayerSessionIsEscape && selectedPlayerMetricParticipant
       ? {
           key: 'escape-time',
@@ -7096,7 +7213,7 @@ function handleSessionDateChange(value: string) {
               {renderSessionMetricControl('escapeDuration', selectedPlayerEscapeDurationSeconds, text.escapeSessionTime)}
               <span className="stat-subline">
                 <span>{escapeBestTimeText}</span>
-                <strong>{formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds)}</strong>
+                {renderProfileStatOverrideControl(selectedPlayerProfile, 'bestEscapeDuration', escapeBestTimeText, selectedPlayerProfile.bestEscapeDurationSeconds)}
               </span>
             </>
           ),
@@ -7106,7 +7223,7 @@ function handleSessionDateChange(value: string) {
           value: (
             <>
               <span className="stat-label">{escapeBestTimeText}</span>
-              <strong>{formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds)}</strong>
+              {renderProfileStatOverrideControl(selectedPlayerProfile, 'bestEscapeDuration', escapeBestTimeText, selectedPlayerProfile.bestEscapeDurationSeconds)}
             </>
           ),
         },
@@ -7120,12 +7237,21 @@ function handleSessionDateChange(value: string) {
               {renderSessionMetricControl('accuracy', selectedPlayerMetricParticipant.accuracy_percent, text.accuracy, '%')}
               <span className="stat-subline">
                 <span>{averageAccuracyText}</span>
-                <strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong>
+                {renderProfileStatOverrideControl(selectedPlayerProfile, 'averageAccuracy', averageAccuracyText, selectedPlayerProfile.averageAccuracy, '%')}
               </span>
             </>
           ),
         }
-      : { key: 'accuracy', value: <><span className="stat-label">{text.accuracy}</span><strong>{formatWholePercent(selectedPlayerProfile.averageAccuracy)}</strong></> },
+      : {
+          key: 'accuracy',
+          className: 'editable-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{text.accuracy}</span>
+              {renderProfileStatOverrideControl(selectedPlayerProfile, 'averageAccuracy', text.accuracy, selectedPlayerProfile.averageAccuracy, '%')}
+            </>
+          ),
+        },
     selectedPlayerMetricParticipant
       ? {
           key: 'projectiles',
@@ -7246,10 +7372,6 @@ function handleSessionDateChange(value: string) {
           <label>
             <span>{text.totalScore}</span>
             <input inputMode="numeric" value={staffPlayerEditDraft.totalScore} onChange={(event) => patchStaffPlayerEditDraft({ totalScore: event.target.value })} />
-          </label>
-          <label>
-            <span>{text.loyaltyPoints}</span>
-            <input inputMode="numeric" min={0} type="number" value={staffPlayerEditDraft.loyaltyPoints} onChange={(event) => patchStaffPlayerEditDraft({ loyaltyPoints: event.target.value })} />
           </label>
         </div>
         <div className="staff-player-card-editor-actions">
@@ -8307,6 +8429,94 @@ function handleSessionDateChange(value: string) {
     setCreateStatus(text.scoreSaved)
   }
 
+  function syncPlayerCardStat(profileId: string, patch: Partial<Profile>, playerPatch: Partial<LeaderboardPlayer>) {
+    setAllProfiles((currentProfiles) => currentProfiles.map((item) => item.id === profileId ? { ...item, ...patch } : item))
+    if (profile?.id === profileId) setProfile({ ...profile, ...patch })
+    setLeaderboardPlayers((currentPlayers) =>
+      currentPlayers.map((player) => player.profileId === profileId ? { ...player, ...playerPatch } : player)
+    )
+    setSelectedPlayerStatsOverride((current) => current?.profileId === profileId ? { ...current, ...playerPatch } : current)
+  }
+
+  async function updateProfileLoyaltyPoints(profileId: string, value: string | number | null) {
+    if (!canEditStaffPlayerCards) {
+      setCreateStatus(text.adminOnlyAction)
+      return
+    }
+
+    const nextLoyaltyPoints = value === '' || value === null ? null : Number(value)
+    if (nextLoyaltyPoints === null || !Number.isFinite(nextLoyaltyPoints) || nextLoyaltyPoints < 0) {
+      setCreateStatus(text.ticketLoyaltyInvalid)
+      return
+    }
+
+    const { data, error } = await (await getSupabase()).rpc('set_profile_loyalty_points', {
+      p_profile_id: profileId,
+      p_points: Math.max(0, Math.floor(nextLoyaltyPoints)),
+      p_reason: 'Player card staff edit',
+    })
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    const loyaltyRow = Array.isArray(data) ? data[0] : data
+    const savedPoints = Math.max(0, Math.floor(Number((loyaltyRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? nextLoyaltyPoints) || 0))
+    syncPlayerCardStat(profileId, { loyalty_points_total: savedPoints }, { loyaltyPoints: savedPoints })
+    refreshLeaderboardIfLoaded()
+    setCreateStatus(text.profileSaved)
+  }
+
+  async function updateProfileStatOverride(profileId: string, metric: 'averageAccuracy' | 'bestEscapeDuration', value: string | number | null) {
+    if (!canEditStaffPlayerCards) {
+      setCreateStatus(text.adminOnlyAction)
+      return
+    }
+
+    const isAccuracyMetric = metric === 'averageAccuracy'
+    const averageAccuracy = isAccuracyMetric
+      ? value === '' || value === null ? null : Number(value)
+      : null
+    const bestEscapeDuration = isAccuracyMetric
+      ? null
+      : value === '' || value === null ? null : parseSpeedrunDuration(value)
+
+    if (isAccuracyMetric && averageAccuracy !== null && (!Number.isFinite(averageAccuracy) || averageAccuracy < 0 || averageAccuracy > 100)) {
+      setCreateStatus(text.invalidScore)
+      return
+    }
+    if (!isAccuracyMetric && bestEscapeDuration !== null && (!Number.isFinite(bestEscapeDuration) || bestEscapeDuration <= 0)) {
+      setCreateStatus(text.invalidEscapeDuration)
+      return
+    }
+
+    const { error } = await (await getSupabase()).rpc('set_profile_stat_overrides', {
+      p_profile_id: profileId,
+      p_average_accuracy: averageAccuracy,
+      p_best_escape_duration_seconds: bestEscapeDuration,
+      p_update_average_accuracy: isAccuracyMetric,
+      p_update_best_escape_duration: !isAccuracyMetric,
+    })
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    const profilePatch: Partial<Profile> = isAccuracyMetric
+      ? { average_accuracy_override: averageAccuracy }
+      : { best_escape_duration_seconds_override: bestEscapeDuration }
+    const playerPatch: Partial<LeaderboardPlayer> = {
+      ...(isAccuracyMetric && averageAccuracy !== null ? { averageAccuracy } : {}),
+      ...(!isAccuracyMetric && bestEscapeDuration !== null ? { bestEscapeDurationSeconds: bestEscapeDuration } : {}),
+    }
+
+    syncPlayerCardStat(profileId, profilePatch, playerPatch)
+    selectedPlayerStatsFetchedRef.current.delete(profileId)
+    void loadSelectedPlayerStats(profileId, true)
+    refreshLeaderboardIfLoaded()
+    setCreateStatus(text.profileSaved)
+  }
+
   function patchStaffPlayerEditDraft(patch: Partial<StaffPlayerEditDraft>) {
     setStaffPlayerEditDraft((current) => ({ ...current, ...patch }))
   }
@@ -8320,7 +8530,6 @@ function handleSessionDateChange(value: string) {
     const birthday = staffPlayerEditDraft.birthday.trim()
     const profileMotto = limitMotto(staffPlayerEditDraft.profileMotto.trim())
     const totalScore = Number(staffPlayerEditDraft.totalScore)
-    const loyaltyPoints = Number(staffPlayerEditDraft.loyaltyPoints)
 
     if (!fullName) {
       setStaffPlayerEditStatus(text.nameRequired)
@@ -8328,10 +8537,6 @@ function handleSessionDateChange(value: string) {
     }
     if (!Number.isFinite(totalScore)) {
       setStaffPlayerEditStatus(text.invalidScore)
-      return
-    }
-    if (!Number.isFinite(loyaltyPoints) || loyaltyPoints < 0) {
-      setStaffPlayerEditStatus(text.ticketLoyaltyInvalid)
       return
     }
 
@@ -8402,31 +8607,6 @@ function handleSessionDateChange(value: string) {
             scoreAdjustment: normalizedAdjustment,
             totalScore: current.baseTotalScore + normalizedAdjustment,
           }
-          : current
-        )
-      }
-
-      const nextLoyaltyPoints = Math.max(0, Math.floor(loyaltyPoints))
-      if (nextLoyaltyPoints !== (playerStats.loyaltyPoints ?? 0)) {
-        const { data, error } = await client.rpc('set_profile_loyalty_points', {
-          p_profile_id: playerStats.profileId,
-          p_points: nextLoyaltyPoints,
-          p_reason: 'Player card staff edit',
-        })
-        if (error) throw error
-
-        const loyaltyRow = Array.isArray(data) ? data[0] : data
-        const savedPoints = Math.max(0, Math.floor(Number((loyaltyRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? nextLoyaltyPoints) || 0))
-        setAllProfiles((currentProfiles) => currentProfiles.map((item) => item.id === playerStats.profileId ? { ...item, loyalty_points_total: savedPoints } : item))
-        if (profile?.id === playerStats.profileId) setProfile({ ...profile, loyalty_points_total: savedPoints })
-        setLeaderboardPlayers((currentPlayers) =>
-          currentPlayers.map((player) => player.profileId === playerStats.profileId
-            ? { ...player, loyaltyPoints: savedPoints }
-            : player
-          )
-        )
-        setSelectedPlayerStatsOverride((current) => current?.profileId === playerStats.profileId
-          ? { ...current, loyaltyPoints: savedPoints }
           : current
         )
       }
