@@ -9390,14 +9390,6 @@ body {
     max-width: 100%;
   }
 
-  .app .tabs.staff-tabs-visible {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .app .mobile-staff-tab {
-    display: none;
-  }
-
   .app .mobile-staff-profile-action {
     display: inline-flex;
     align-items: center;
@@ -9438,11 +9430,6 @@ body {
     padding: 9px 8px;
     font-size: 14px;
     white-space: nowrap;
-  }
-
-  .app .tabs.staff-tabs-visible .tab {
-    padding-inline: 5px;
-    font-size: 12px;
   }
 
   .app .staff-grid {
@@ -10405,19 +10392,10 @@ body {
     gap: 4px;
   }
 
-  .app .tabs.staff-tabs-visible {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .app .tab {
     font-size: 13px;
     min-height: 40px;
     padding: 8px 4px;
-  }
-
-  .app .tabs.staff-tabs-visible .tab {
-    font-size: 11px;
-    padding-inline: 3px;
   }
 
   .app .staff-summary-grid {
