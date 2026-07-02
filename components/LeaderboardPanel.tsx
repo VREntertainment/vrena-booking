@@ -211,7 +211,6 @@ function formatLeaderboardValue(player: LeaderboardPlayer, criterion: Leaderboar
 export default function LeaderboardPanel({
   avatarStyleFor,
   canBypassPrivateClubPins = false,
-  canShareCurrentUserStats = false,
   clubs,
   currentUserRankPlayer,
   fixedClubId = '',
@@ -384,7 +383,7 @@ export default function LeaderboardPanel({
     }
   }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
-  const showCurrentUserShareButton = Boolean(canShareCurrentUserStats && onShareCurrentUserStats)
+  const showCurrentUserShareButton = Boolean(onShareCurrentUserStats)
 
   useEffect(() => {
     if (!onLoadMorePlayers || !hasMorePlayers || isLoadingMorePlayers || !loadMoreRef.current) return
