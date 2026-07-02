@@ -57,6 +57,7 @@ type LeaderboardPanelProps = {
   currentUserRankPlayer?: LeaderboardPlayer | null
   fixedClubId?: string
   hasMorePlayers?: boolean
+  hideIntro?: boolean
   isCurrentUserStatsShared?: boolean
   initialCriterion?: LeaderboardCriterion
   isLoadingMorePlayers?: boolean
@@ -215,6 +216,7 @@ export default function LeaderboardPanel({
   currentUserRankPlayer,
   fixedClubId = '',
   hasMorePlayers = false,
+  hideIntro = false,
   isCurrentUserStatsShared = false,
   initialCriterion = 'totalScore',
   isLoadingMorePlayers = false,
@@ -415,11 +417,13 @@ export default function LeaderboardPanel({
 
   return (
     <section className="section leaderboard-section">
-      <div className="section-head leaderboard-head">
-        <div>
-          <h2>{text.hallOfFame}</h2>
-          <p className="muted">{text.leaderboardHint}</p>
-        </div>
+      <div className={hideIntro ? 'section-head leaderboard-head compact-leaderboard-head' : 'section-head leaderboard-head'}>
+        {!hideIntro && (
+          <div>
+            <h2>{text.hallOfFame}</h2>
+            <p className="muted">{text.leaderboardHint}</p>
+          </div>
+        )}
         <div className="leaderboard-controls">
           <label>
             <span>{text.rankBy}</span>

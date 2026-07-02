@@ -14129,12 +14129,12 @@ function handleSessionDateChange(value: string) {
 
                 {selectedClubMembership?.status === 'approved' && selectedClub.owner_id !== userId && (
                   <button
-                    className={busyClubId === selectedClub.id ? 'secondary loading create-button' : 'secondary create-button'}
+                    className={busyClubId === selectedClub.id ? 'danger loading create-button club-leave-button' : 'danger create-button club-leave-button'}
                     disabled={busyClubId === selectedClub.id}
                     onClick={() => leaveClub(selectedClub, selectedClubMembership)}
                     type="button"
                   >
-                    {leaveClubText}
+                    <ButtonIconText icon={<UserMinus aria-hidden="true" size={18} />}>{leaveClubText}</ButtonIconText>
                   </button>
                 )}
               </div>
@@ -14192,6 +14192,7 @@ function handleSessionDateChange(value: string) {
                           currentUserRankPlayer={currentUserRankPlayer}
                           fixedClubId={selectedClub.id}
                           hasMorePlayers={hasMoreLeaderboardPlayers}
+                          hideIntro
                           initialCriterion={clubRankingCriterion(selectedClub)}
                           isCurrentUserStatsShared={currentUserStatsShared}
                           isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
@@ -14300,11 +14301,7 @@ function handleSessionDateChange(value: string) {
 
               {selectedClubTab === 'sessions' && (
                 <div className="club-tab-panel">
-                  <div className="section-head compact-head">
-                    <div>
-                      <h3>{text.clubSessions}</h3>
-                      <p className="muted">{text.clubMembersOnly}</p>
-                    </div>
+                  <div className="club-tab-toolbar">
                     <div className="segmented compact-segmented">
                       <button className={selectedClubSessionScope === 'upcoming' ? 'active' : ''} type="button" onClick={() => handleClubSessionScopeChange('upcoming')}>
                         {text.upcoming}
@@ -14418,13 +14415,7 @@ function handleSessionDateChange(value: string) {
                     <p className="notice">{text.clubMessageLoginRequired}</p>
                   ) : (
                     <>
-                      <div className="section-head compact-head">
-                        <div>
-                          <h3>{text.clubMessages}</h3>
-                          <p className="muted">{text.clubMessagesHint}</p>
-                        </div>
-                        {isLoadingClubMessages && <span className="pill">{text.clubMessagesLoading}</span>}
-                      </div>
+                      {isLoadingClubMessages && <div className="club-tab-toolbar"><span className="pill">{text.clubMessagesLoading}</span></div>}
                       {clubMessageStatus && <p className="notice">{clubMessageStatus}</p>}
                       <div className="club-message-channels">
                         <section className="club-message-channel">

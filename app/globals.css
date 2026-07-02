@@ -5509,11 +5509,20 @@ body {
 
 .app .club-tab-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .app .club-hall-panel .leaderboard-section {
   box-shadow: none;
+}
+
+.app .club-hall-panel .compact-leaderboard-head,
+.app .club-tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
 }
 
 .app .club-member-list {
@@ -5607,6 +5616,12 @@ body {
   width: auto;
   min-width: min(220px, 100%);
   margin-top: 0;
+}
+
+.app .club-action-row .club-leave-button {
+  background: rgba(180, 35, 24, 0.08);
+  color: #b42318;
+  border-color: rgba(180, 35, 24, 0.24);
 }
 
 .app .drawer-days {
@@ -12901,6 +12916,12 @@ body {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
     color: #f6f7f9;
+  }
+
+  .app .club-action-row .club-leave-button {
+    background: rgba(248, 113, 113, 0.12);
+    color: #ffb4ad;
+    border-color: rgba(248, 113, 113, 0.28);
   }
 
   .app .row-meta span,
