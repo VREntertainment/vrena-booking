@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { isLanguageCode } from '../../../lib/i18n'
+import { isLanguageCode } from '../../../lib/i18n/languages'
 
 type GameGuideAliasLanguagePageProps = {
   params: Promise<{

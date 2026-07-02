@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import PublicGameGuidePage from '../../../components/PublicGameGuidePage'
-import { isLanguageCode, languageOptions, type LanguageCode } from '../../../lib/i18n'
+import { isLanguageCode, languageOptions, type LanguageCode } from '../../../lib/i18n/languages'
 import { uiText } from '../../../lib/i18n/translations'
 import { getCachedPublicStaffGameGuides } from '../../../lib/publicGameGuides'
 

@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import type { LanguageCode, TranslationMap } from '../lib/i18n'
-import { languageOptions } from '../lib/i18n'
+import type { TranslationMap } from '../lib/i18n/base'
+import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import {
   gameAudienceLabelKeys,
   guideTextItems,
