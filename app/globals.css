@@ -6720,6 +6720,89 @@ body {
   font-size: 15px;
 }
 
+.app .staff-player-card-editor {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 8px;
+  background: #f7fafb;
+  padding: 12px;
+}
+
+.app .staff-player-card-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app .staff-player-card-editor-head strong,
+.app .staff-player-card-editor-head span {
+  display: block;
+}
+
+.app .staff-player-card-editor-head strong {
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.app .staff-player-card-editor-head span {
+  margin-top: 3px;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-player-card-editor-head svg {
+  flex: 0 0 auto;
+  color: #3059ff;
+}
+
+.app .staff-player-card-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-player-card-editor-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-player-card-editor-grid label > span {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-player-card-editor-grid input,
+.app .staff-player-card-editor-grid select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.app .staff-player-card-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .staff-player-card-editor-actions button {
+  min-height: 40px;
+}
+
+.app .staff-player-card-editor-actions > span {
+  min-width: 0;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .app .session-profile-score-controls {
   width: 100%;
   grid-column: 1 / -1;
@@ -12586,6 +12669,19 @@ body {
   .app .player-profile-panel {
     padding: 14px;
   }
+
+  .app .staff-player-card-editor {
+    padding: 10px;
+  }
+
+  .app .staff-player-card-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-player-card-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -12609,6 +12705,7 @@ body {
   .app .profile-photo-panel,
   .app .game-card,
   .app .player-profile-panel,
+  .app .staff-player-card-editor,
   .app .score-context-card {
     background: var(--player-surface-raised);
     border-color: var(--player-border);
