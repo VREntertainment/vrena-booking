@@ -384,6 +384,7 @@ export default function LeaderboardPanel({
     }
   }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
+  const showCurrentUserShareButton = Boolean(canShareCurrentUserStats && onShareCurrentUserStats)
 
   useEffect(() => {
     if (!onLoadMorePlayers || !hasMorePlayers || isLoadingMorePlayers || !loadMoreRef.current) return
@@ -503,21 +504,31 @@ export default function LeaderboardPanel({
         }}
       />
 
-      {currentUserLeaderboardRow && !selectedLeaderboardClubLocked && (
+      {(currentUserLeaderboardRow || showCurrentUserShareButton) && !selectedLeaderboardClubLocked && (
         <div className="current-rank-card">
-          <span>{text.currentRank}</span>
-          <strong>#{currentUserLeaderboardRow.rank}</strong>
-          <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
-          <div className="rank-mini">
-            <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, text)}</span>
-            <span>
-              {currentUserLeaderboardRow.rankInfo.nextTier
-                ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
-                : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
-            </span>
-          </div>
-          {canShareCurrentUserStats && onShareCurrentUserStats && (
-            <button className="secondary small-button leaderboard-share-button" type="button" onClick={onShareCurrentUserStats}>
+          {currentUserLeaderboardRow ? (
+            <>
+              <span>{text.currentRank}</span>
+              <strong>#{currentUserLeaderboardRow.rank}</strong>
+              <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
+              <div className="rank-mini">
+                <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, text)}</span>
+                <span>
+                  {currentUserLeaderboardRow.rankInfo.nextTier
+                    ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
+                    : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <span>{text.currentRank}</span>
+              <strong>-</strong>
+              <small>{text.rankJesterMessage}</small>
+            </>
+          )}
+          {showCurrentUserShareButton && (
+            <button className="secondary small-button leaderboard-share-button" type="button" onClick={() => onShareCurrentUserStats?.()}>
               <span className="button-icon-text">
                 <Share aria-hidden="true" size={15} />
                 <span>{isCurrentUserStatsShared ? text.shared : text.shareStats}</span>
