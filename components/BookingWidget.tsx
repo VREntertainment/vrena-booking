@@ -24,6 +24,7 @@ import {
   Save,
   ScanLine,
   Search,
+  Send,
   Share,
   ShieldCheck,
   Strikethrough,
@@ -14440,12 +14441,14 @@ function handleSessionDateChange(value: string) {
                               placeholder={text.clubPublicPlaceholder}
                             />
                             <button
-                              className="secondary small-button"
+                              aria-label={text.sendMessage}
+                              className="secondary small-button club-message-send-button"
                               disabled={busyMessageKey === `${selectedClub.id}-public`}
+                              title={text.sendMessage}
                               type="button"
                               onClick={() => postClubMessage(selectedClub, 'public')}
                             >
-                              {text.sendMessage}
+                              <Send aria-hidden="true" size={18} />
                             </button>
                           </div>
                           <small className={publicCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>
@@ -14513,12 +14516,14 @@ function handleSessionDateChange(value: string) {
                               placeholder={text.clubAdminPlaceholder}
                             />
                             <button
-                              className="secondary small-button"
+                              aria-label={text.sendMessage}
+                              className="secondary small-button club-message-send-button"
                               disabled={busyMessageKey === `${selectedClub.id}-admin_private`}
+                              title={text.sendMessage}
                               type="button"
                               onClick={() => postClubMessage(selectedClub, 'admin_private')}
                             >
-                              {text.sendMessage}
+                              <Send aria-hidden="true" size={18} />
                             </button>
                           </div>
                           <small className={adminCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>

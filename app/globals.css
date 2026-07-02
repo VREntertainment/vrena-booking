@@ -5184,6 +5184,14 @@ body {
   resize: vertical;
 }
 
+.app .club-message-send-button {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  min-width: 56px;
+  padding: 0;
+}
+
 .app .character-count {
   justify-self: end;
 }
