@@ -6,6 +6,7 @@ import { isLanguageCode, type LanguageCode } from '@/lib/i18n'
 export const runtime = 'nodejs'
 
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4.1-mini'
+const OPENAI_TRANSLATION_TIMEOUT_MS = 15000
 const MESSAGE_TABLES = {
   club: 'club_messages',
   session: 'session_messages',
@@ -31,6 +32,10 @@ function bodyHash(value: string) {
   return createHash('sha256').update(value).digest('hex')
 }
 
+function equivalentMessageText(left: string, right: string) {
+  return left.replace(/\r\n/g, '\n').trim() === right.replace(/\r\n/g, '\n').trim()
+}
+
 function getOutputText(data: unknown) {
   if (!data || typeof data !== 'object') return ''
   const outputText = (data as { output_text?: unknown }).output_text
@@ -39,6 +44,7 @@ function getOutputText(data: unknown) {
   const output = (data as { output?: unknown }).output
   if (!Array.isArray(output)) return ''
 
+  const parts: string[] = []
   for (const item of output) {
     if (!item || typeof item !== 'object') continue
     const content = (item as { content?: unknown }).content
@@ -46,11 +52,28 @@ function getOutputText(data: unknown) {
     for (const part of content) {
       if (!part || typeof part !== 'object') continue
       const text = (part as { text?: unknown }).text
-      if (typeof text === 'string') return text
+      if (typeof text === 'string') parts.push(text)
     }
   }
 
-  return ''
+  return parts.join('\n').trim()
+}
+
+function parseJsonObject(value: string) {
+  const trimmed = value
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+
+  try {
+    return JSON.parse(trimmed) as TranslationPayload
+  } catch {
+    const start = trimmed.indexOf('{')
+    const end = trimmed.lastIndexOf('}')
+    if (start < 0 || end <= start) throw new Error('No JSON object found.')
+    return JSON.parse(trimmed.slice(start, end + 1)) as TranslationPayload
+  }
 }
 
 function parseTranslation(data: unknown, originalBody: string): TranslationPayload {
@@ -58,16 +81,18 @@ function parseTranslation(data: unknown, originalBody: string): TranslationPaylo
   if (!output) return { translated_text: originalBody, changed: false }
 
   try {
-    const parsed = JSON.parse(output) as TranslationPayload
+    const parsed = parseJsonObject(output)
+    const translatedText = cleanString(parsed.translated_text) || originalBody
     return {
       source_language: cleanString(parsed.source_language) || null,
-      translated_text: cleanString(parsed.translated_text) || originalBody,
-      changed: Boolean(parsed.changed),
+      translated_text: translatedText,
+      changed: !equivalentMessageText(translatedText, originalBody),
     }
   } catch {
+    const translatedText = output.trim() || originalBody
     return {
-      translated_text: output.trim() || originalBody,
-      changed: output.trim() !== originalBody,
+      translated_text: translatedText,
+      changed: !equivalentMessageText(translatedText, originalBody),
     }
   }
 }
@@ -99,52 +124,61 @@ async function translateMessage(body: string, targetLanguage: LanguageCode) {
   }
 
   const model = process.env.OPENAI_TRANSLATION_MODEL || DEFAULT_TRANSLATION_MODEL
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      instructions: [
-        'Translate short in-app chat messages for a VR booking app.',
-        'Preserve names, game titles, dates, times, prices, URLs, emojis, line breaks, and the original tone.',
-        'Do not add commentary, warnings, explanations, or quote marks.',
-        'If the message is already in the target language, return it unchanged and set changed to false.',
-        'Return only valid JSON.',
-      ].join(' '),
-      input: [
-        `Target language: ${languageName(targetLanguage)} (${targetLanguage})`,
-        'Return JSON with source_language, translated_text, and changed.',
-        'Message:',
-        body,
-      ].join('\n'),
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'message_translation',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              source_language: { type: 'string' },
-              translated_text: { type: 'string' },
-              changed: { type: 'boolean' },
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), OPENAI_TRANSLATION_TIMEOUT_MS)
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        max_output_tokens: 300,
+        instructions: [
+          'Translate short in-app chat messages for a VR booking app.',
+          'Preserve names, game titles, dates, times, prices, URLs, emojis, line breaks, and the original tone.',
+          'Do not add commentary, warnings, explanations, or quote marks.',
+          'If the message is already in the target language, return it unchanged and set changed to false.',
+          'Return only valid JSON.',
+        ].join(' '),
+        input: [
+          `Target language: ${languageName(targetLanguage)} (${targetLanguage})`,
+          'Return JSON with source_language, translated_text, and changed.',
+          'Message:',
+          body,
+        ].join('\n'),
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'message_translation',
+            strict: true,
+            schema: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                source_language: { type: 'string' },
+                translated_text: { type: 'string' },
+                changed: { type: 'boolean' },
+              },
+              required: ['source_language', 'translated_text', 'changed'],
             },
-            required: ['source_language', 'translated_text', 'changed'],
           },
         },
-      },
-    }),
-  })
+      }),
+    })
 
-  if (!response.ok) {
-    throw new Error('Could not translate this message.')
+    if (!response.ok) {
+      throw new Error('Could not translate this message.')
+    }
+
+    return { model, translation: parseTranslation(await response.json(), body) }
+  } finally {
+    clearTimeout(timeout)
   }
-
-  return { model, translation: parseTranslation(await response.json(), body) }
 }
 
 export async function POST(request: NextRequest) {
