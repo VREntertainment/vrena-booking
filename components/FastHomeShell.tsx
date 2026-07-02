@@ -258,6 +258,26 @@ function finiteNumber(value: unknown, fallback = 0) {
   return Number.isFinite(numericValue) ? numericValue : fallback
 }
 
+function formatWholePercent(value: number | null | undefined) {
+  return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
+}
+
+const shareRankTiers = [
+  'Champion',
+  'Grandmaster',
+  'Master',
+  'Diamond',
+  'Platinum',
+  'Gold',
+  'Silver',
+  'Bronze',
+] as const
+
+function shareRankTitle(distinctRank: number | null | undefined, fallback: string) {
+  if (!distinctRank || distinctRank < 1) return fallback
+  return shareRankTiers[distinctRank - 1] || fallback
+}
+
 function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: string): LeaderboardPlayer {
   const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
   const baseTotalScore = finiteNumber(row.base_total_score)
@@ -736,6 +756,47 @@ export default function FastHomeShell() {
     window.setTimeout(() => setSharedKey(''), 1400)
   }
 
+  async function shareCurrentUserStatsFromShell() {
+    if (!profile || !userId) {
+      openFullApp('profile')
+      return
+    }
+
+    const shellStats = currentUserRankPlayer ?? leaderboardPlayers.find((player) => player.profileId === userId)
+    if (!shellStats) {
+      openFullApp('leaderboard')
+      return
+    }
+
+    const loadedRankIndex = leaderboardPlayers.findIndex((player) => player.profileId === userId)
+    const currentUserRank = shellStats.leaderboardRank ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
+    const rankTitle = shareRankTitle(shellStats.leaderboardDistinctRank, text.rankJesterMessage)
+    const rankSummary = currentUserRank ? `${text.currentRank}: #${currentUserRank} · ${rankTitle}` : `${text.currentRank}: ${rankTitle}`
+    const bestScore = shellStats.bestByGame[0]
+    const appUrl = window.location.origin || 'https://vrena-booking.vercel.app'
+    const summary = [
+      `${text.statsShareTitle}: ${compactDisplayName(shellStats.displayName || displayName(profile), text.player)}`,
+      rankSummary,
+      `${text.totalScore}: ${shellStats.totalScore}`,
+      `${text.gamesPlayedCriterion}: ${shellStats.gamesJoined}`,
+      `${text.wins}: ${shellStats.wins}`,
+      `Best Performer count: ${shellStats.bestPerformerCount}`,
+      `${text.accuracy}: ${formatWholePercent(shellStats.averageAccuracy)}`,
+      `${text.projectiles}: ${shellStats.totalProjectiles}`,
+      bestScore ? `${text.bestScores}: ${bestScore.game} ${bestScore.score}` : '',
+      appUrl,
+    ].filter(Boolean).join('\n')
+
+    if (navigator.share) {
+      await navigator.share({ title: text.statsShareTitle, text: summary, url: appUrl })
+    } else {
+      await navigator.clipboard?.writeText(summary)
+    }
+
+    setSharedKey('stats')
+    window.setTimeout(() => setSharedKey((current) => (current === 'stats' ? '' : current)), 1400)
+  }
+
   function openFullApp(view: AppView, profileId = '') {
     setHeavyTarget({ profileId, view })
   }
@@ -940,6 +1001,7 @@ export default function FastHomeShell() {
             clubs={clubs}
             currentUserRankPlayer={currentUserRankPlayer}
             hasMorePlayers={hasMoreLeaderboardPlayers}
+            isCurrentUserStatsShared={sharedKey === 'stats'}
             isLoadingClubs={isLoadingClubs}
             isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
             onLeaderboardClubChange={handleLeaderboardClubChange}
@@ -949,6 +1011,7 @@ export default function FastHomeShell() {
             onLeaderboardSearchChange={handleLeaderboardSearchChange}
             onLoadMorePlayers={loadMoreLeaderboardPlayers}
             onOpenPlayerProfile={(profileId) => openFullApp('leaderboard', profileId)}
+            onShareCurrentUserStats={shareCurrentUserStatsFromShell}
             players={leaderboardPlayers}
             renderAvatar={(player: LeaderboardPlayer) => avatarNode({
               avatar_url: player.avatarUrl,
