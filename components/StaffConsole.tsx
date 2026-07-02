@@ -3184,8 +3184,10 @@ function shouldSkipStaffImageOptimization(source: string | null | undefined) {
 }
 
 function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: StaffConsoleCopy }) {
+  const [failedImageUrl, setFailedImageUrl] = useState('')
   const name = customerName(profile, text)
-  const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim()
+  const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim() || ''
+  const shouldUseImage = Boolean(imageUrl && failedImageUrl !== imageUrl)
   const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
   const initials = profile.anonymous_mode || profile.avatar_initials?.trim() === '?' ? '' : profile.avatar_initials?.trim()
   const style = {
@@ -3195,7 +3197,7 @@ function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: Staff
 
   return (
     <span aria-hidden="true" className="player-avatar staff-role-avatar" style={style}>
-      {imageUrl ? (
+      {shouldUseImage ? (
         <span
           className="avatar-photo"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
@@ -3211,6 +3213,7 @@ function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: Staff
               objectPosition: 'center',
             }}
             unoptimized={shouldSkipStaffImageOptimization(imageUrl)}
+            onError={() => setFailedImageUrl(imageUrl)}
           />
         </span>
       ) : (
