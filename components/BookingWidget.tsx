@@ -3409,7 +3409,7 @@ export default function WidgetPage({
     if (hasPermission) notifySession(session, text.reminderJoined)
   }
 
-  async function loadProfile() {
+  async function loadProfile(options: { skipMfaChallenge?: boolean } = {}) {
     try {
       authDebug('loadProfile:start')
       const { data: userData, error: userError } = await (await getSupabase()).auth.getUser()
@@ -3448,10 +3448,12 @@ export default function WidgetPage({
       setUserId(authUser.id)
       setAuthEmail(authUser.email?.toLowerCase() || '')
 
-      const needsMfa = await prepareMfaChallengeIfNeeded()
-      if (needsMfa) {
-        setProfile(null)
-        return
+      if (!options.skipMfaChallenge) {
+        const needsMfa = await prepareMfaChallengeIfNeeded()
+        if (needsMfa) {
+          setProfile(null)
+          return
+        }
       }
 
       await refreshMfaFactors()
@@ -4003,7 +4005,7 @@ export default function WidgetPage({
     }
 
     setIsMfaLoading(true)
-    const { error } = await (await getSupabase()).auth.mfa.verify({
+    const { data, error } = await (await getSupabase()).auth.mfa.verify({
       factorId: mfaChallenge.factorId,
       challengeId: mfaChallenge.challengeId,
       code: mfaChallengeCode.trim(),
@@ -4018,8 +4020,13 @@ export default function WidgetPage({
     setMfaChallenge(null)
     setMfaChallengeCode('')
     setMfaRequired(false)
-    setProfileStatus(text.mfaVerified)
-    await loadProfile()
+    if (data?.user) {
+      setUserId(data.user.id)
+      setAuthEmail(data.user.email?.toLowerCase() || '')
+    }
+    setProfileStatus(text.loggedIn)
+    await refreshMfaFactors()
+    await loadProfile({ skipMfaChallenge: true })
     setActiveView('leaderboard')
     setIsMfaLoading(false)
   }
