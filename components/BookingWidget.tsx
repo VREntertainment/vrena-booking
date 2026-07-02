@@ -85,6 +85,7 @@ const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_u
 const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
 const CLUB_SELECT_BASE = `id, owner_id, name, description, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT_BASE})`
 const CLUB_SELECT = `id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at, club_members(${CLUB_MEMBER_SELECT})`
+const CLUB_PUBLIC_SELECT = 'id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, member_count, created_at'
 const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at'
 const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -4783,6 +4784,26 @@ export default function WidgetPage({
   async function loadClubs() {
     clubsLoadingRef.current = true
     const client = await getSupabase()
+
+    if (!userId) {
+      const { data, error } = await client
+        .from('clubs')
+        .select(CLUB_PUBLIC_SELECT)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        setClubStatus(error.message)
+        clubsLoadingRef.current = false
+        return
+      }
+
+      clubsLoadedRef.current = true
+      clubsLoadingRef.current = false
+      setClubs(((data ?? []) as Club[]).map((club) => ({ ...club, club_members: [] })))
+      return
+    }
+
     const result = await client
       .from('clubs')
       .select(CLUB_SELECT)
@@ -7401,6 +7422,7 @@ function handleSessionDateChange(value: string) {
 
   function canOpenClubPage(club: Club | undefined) {
     if (!club) return false
+    if (!userId) return false
     if (club.visibility === 'private') return canEnterPrivateClubPage(club)
     return canSeeClubPrivateData(club)
   }
@@ -7433,6 +7455,12 @@ function handleSessionDateChange(value: string) {
     const club = clubs.find((item) => item.id === clubId)
     setClubStatus('')
     setClubMessageStatus('')
+
+    if (!userId) {
+      setSelectedClubId('')
+      promptLogin()
+      return
+    }
 
     if (!canOpenClubPage(club)) {
       setSelectedClubId('')
@@ -11842,8 +11870,8 @@ function handleSessionDateChange(value: string) {
                 const membership = members.find((member) => member.profile_id === userId)
                 const canManage = canManageClub(club)
                 const canOpenPage = canOpenClubPage(club)
-                const canAskPrivateCode = club.visibility === 'private' && !canOpenPage
-                const canActivateClubCard = canOpenPage || canAskPrivateCode
+                const canAskPrivateCode = Boolean(userId && club.visibility === 'private' && !canOpenPage)
+                const canActivateClubCard = !userId || canOpenPage || canAskPrivateCode
                 const canSeeMembers = canSeeClubPrivateData(club)
                 const canUseMessages = canOpenPage && canUseClubMessages(club)
 
@@ -11874,7 +11902,7 @@ function handleSessionDateChange(value: string) {
                           {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
                         </div>
                       </div>
-                      {!membership && !canManage && (
+                      {userId && !membership && !canManage && (
                         <button
                           className={busyClubId === club.id ? 'primary loading' : 'primary'}
                           disabled={busyClubId === club.id}
