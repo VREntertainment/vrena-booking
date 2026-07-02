@@ -136,27 +136,40 @@ function MessageBodyText({
   const hasTranslation = Boolean(translation?.changed && translation.translatedText)
   const showingOriginal = Boolean(translation?.showOriginal)
   const displayBody = hasTranslation && !showingOriginal ? translation?.translatedText || body : body
+  const hasAttemptedTranslation = Boolean(translation?.translatedText || translation?.error)
+  const showTranslateAction = !translation?.loading && !hasTranslation && hasAttemptedTranslation
+  const translationStatusLabel = hasTranslation
+    ? text.messageTranslated
+    : hasAttemptedTranslation
+      ? text.messageTranslationUnavailable
+      : text.translateMessage
 
   return (
     <>
       <p>{displayBody}</p>
-      {hasTranslation && (
-        <div className="message-translation-row">
-          <span className="message-translation-status">
-            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
-            <span>{text.messageTranslated}</span>
-          </span>
-          <button className="message-translation-toggle" type="button" onClick={onToggleOriginal}>
-            {showingOriginal ? text.showTranslatedMessage : text.showOriginalMessage}
-          </button>
-        </div>
-      )}
-      {translation?.loading && !hasTranslation && (
+      {translation?.loading ? (
         <div className="message-translation-row loading">
           <span className="message-translation-status">
             <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
             <span>{text.translatingMessage}</span>
           </span>
+        </div>
+      ) : (
+        <div className="message-translation-row">
+          <span className="message-translation-status">
+            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
+            <span>{translationStatusLabel}</span>
+          </span>
+          {hasTranslation && (
+            <button className="message-translation-toggle" type="button" onClick={onToggleOriginal}>
+              {showingOriginal ? text.showTranslatedMessage : text.showOriginalMessage}
+            </button>
+          )}
+          {showTranslateAction && (
+            <button className="message-translation-toggle" type="button" onClick={() => onRequestTranslation(messageKind, messageId, body, targetLanguage)}>
+              {text.translateMessage}
+            </button>
+          )}
         </div>
       )}
     </>
@@ -3210,7 +3223,7 @@ export default function WidgetPage({
 
     setMessageTranslations((current) => {
       const existing = current[key]
-      if (existing?.loading || existing?.translatedText || existing?.error) return current
+      if (existing?.loading || (existing?.changed && existing.translatedText)) return current
       return {
         ...current,
         [key]: { loading: true },
