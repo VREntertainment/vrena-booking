@@ -2069,6 +2069,7 @@ export default function WidgetPage({
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
   const [avatarMode, setAvatarMode] = useState<'photo' | 'emoji' | 'initials'>('photo')
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<Set<string>>(() => new Set())
   const [avatarEmoji, setAvatarEmoji] = useState('😎')
   const [avatarInitials, setAvatarInitials] = useState('')
   const [avatarColor, setAvatarColor] = useState(avatarColors[0])
@@ -2459,6 +2460,15 @@ export default function WidgetPage({
     }
   }
 
+  function rememberFailedAvatarUrl(source: string | null | undefined) {
+    const normalizedSource = source?.trim()
+    if (!normalizedSource || normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:')) return
+    setFailedAvatarUrls((current) => {
+      if (current.has(normalizedSource)) return current
+      return new Set([...current, normalizedSource])
+    })
+  }
+
   function avatarNode(source: {
     avatar_url?: string | null
     avatar_emoji?: string | null
@@ -2471,8 +2481,9 @@ export default function WidgetPage({
   } | null | undefined, fallback = 'Player') {
     const label = compactDisplayName(source?.display_name || source?.nickname || source?.full_name, fallback)
     const initials = validAvatarInitials(source?.avatar_initials)
+    const avatarUrl = source?.avatar_url?.trim() || ''
 
-    if (source?.avatar_url) {
+    if (avatarUrl && !failedAvatarUrls.has(avatarUrl)) {
       return (
         <span
           className="avatar-photo"
@@ -2487,11 +2498,12 @@ export default function WidgetPage({
           }}
         >
           <NextImage
-            src={source.avatar_url}
+            src={avatarUrl}
             alt=""
             fill
             sizes="96px"
-            unoptimized={shouldSkipImageOptimization(source.avatar_url)}
+            unoptimized={shouldSkipImageOptimization(avatarUrl)}
+            onError={() => rememberFailedAvatarUrl(avatarUrl)}
             style={{
               position: 'absolute',
               inset: 0,
@@ -12587,13 +12599,14 @@ function handleSessionDateChange(value: string) {
                   <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
                     {profile?.anonymous_mode ? (
                       <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
-                    ) : avatarMode === 'photo' && (avatarPreview || profile?.avatar_url) ? (
+                    ) : avatarMode === 'photo' && (avatarPreview || (profile?.avatar_url && !failedAvatarUrls.has(profile.avatar_url.trim()))) ? (
                       <NextImage
                         src={avatarPreview || profile?.avatar_url || ''}
                         alt=""
                         width={112}
                         height={112}
                         unoptimized={shouldSkipImageOptimization(avatarPreview || profile?.avatar_url)}
+                        onError={() => rememberFailedAvatarUrl(avatarPreview || profile?.avatar_url)}
                       />
                     ) : avatarMode === 'emoji' ? (
                       <span className="avatar-emoji">{avatarEmoji}</span>
