@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import type { ReactNode } from 'react'
-import type { LanguageCode } from '../lib/i18n'
+import type { LanguageCode } from '../lib/i18n/languages'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 

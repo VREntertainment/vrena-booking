@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isLanguageCode, type LanguageCode } from '@/lib/i18n'
+import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
 
 export const runtime = 'nodejs'
 

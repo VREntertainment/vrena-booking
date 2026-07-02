@@ -327,6 +327,7 @@ export default function FastHomeShell() {
       <FullBookingWidget
         embedded
         externalLanguage={language}
+        initialText={text}
         initialSelectedPlayerId={heavyTarget.profileId || ''}
         initialSelectedPlayerSessionId={heavyTarget.sessionId || ''}
         initialView={heavyTarget.view}
@@ -334,7 +335,7 @@ export default function FastHomeShell() {
         onProfileChange={handleFullWidgetProfileChange}
       />
     )
-  }, [handleFullWidgetProfileChange, handleFullWidgetViewChange, heavyTarget, language])
+  }, [handleFullWidgetProfileChange, handleFullWidgetViewChange, heavyTarget, language, text])
 
   useEffect(() => {
     let active = true

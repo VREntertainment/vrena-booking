@@ -2,7 +2,7 @@
 
 import { Share } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import type { TranslationMap } from '../lib/i18n'
+import type { TranslationMap } from '../lib/i18n/base'
 
 export type LeaderboardPlayer = {
   profileId: string

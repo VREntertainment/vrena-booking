@@ -36,8 +36,10 @@ import {
   X,
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
-import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationMap, uiText } from '../lib/i18n'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
+import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
+import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
+import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import {
   currentUserLeaderboardPlayer,
   initialLeaderboardQuery,
@@ -1853,6 +1855,7 @@ type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'cl
 type BookingWidgetProps = {
   embedded?: boolean
   externalLanguage?: LanguageCode
+  initialText?: TranslationMap
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
   initialView?: BookingWidgetView
@@ -1863,6 +1866,7 @@ type BookingWidgetProps = {
 export default function WidgetPage({
   embedded = false,
   externalLanguage,
+  initialText,
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
   initialView = 'leaderboard',
@@ -2112,6 +2116,7 @@ export default function WidgetPage({
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<LanguageCode>(() => externalLanguage ?? getInitialLanguage())
+  const [text, setText] = useState<TranslationMap>(() => initialText ?? getFallbackTranslation())
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
@@ -2181,7 +2186,6 @@ export default function WidgetPage({
   const refreshLeaderboardIfLoadedRef = useRef(refreshLeaderboardIfLoaded)
   const refreshSessionsIfLoadedRef = useRef(refreshSessionsIfLoaded)
   const syncProfileEverywhereRef = useRef(syncProfileEverywhere)
-  const text = uiText[language]
   const resetPasswordReadyTextRef = useRef(text.resetPasswordReady)
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
@@ -5068,6 +5072,18 @@ export default function WidgetPage({
       setLanguage((currentLanguage) => currentLanguage === externalLanguage ? currentLanguage : externalLanguage)
     })
   }, [externalLanguage])
+
+  useEffect(() => {
+    let active = true
+
+    void loadTranslation(language).then((nextText) => {
+      if (active) setText(nextText)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [language])
 
   useEffect(() => {
     onActiveViewChange?.(activeView)

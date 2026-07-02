@@ -1,6 +1,6 @@
 'use client'
 
-import type { LanguageCode } from '../lib/i18n'
+import type { LanguageCode } from '../lib/i18n/languages'
 
 function formatShortDate(dateValue: string, language: LanguageCode) {
   if (!dateValue) return ''
