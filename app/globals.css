@@ -9280,7 +9280,7 @@ body {
     width: 100%;
     max-width: 100vw;
     overflow: clip visible;
-    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 8px calc(12px + env(safe-area-inset-left, 0px));
     display: grid;
     grid-template-columns: 44px auto auto minmax(0, 1fr) auto;
     grid-template-rows: 42px 42px;
@@ -9386,6 +9386,9 @@ body {
     grid-area: tabs;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
+    box-sizing: border-box;
+    justify-self: stretch;
+    width: 100%;
     min-width: 0;
     max-width: 100%;
   }
@@ -10389,13 +10392,13 @@ body {
 
   .app .tabs {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    gap: 3px;
   }
 
   .app .tab {
-    font-size: 13px;
+    font-size: 12px;
     min-height: 40px;
-    padding: 8px 4px;
+    padding: 8px 3px;
   }
 
   .app .staff-summary-grid {
