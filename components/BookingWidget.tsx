@@ -119,6 +119,14 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
   )
 }
 
+function cleanMessageText(value: unknown) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function equivalentMessageText(left: string, right: string) {
+  return left.replace(/\r\n/g, '\n').trim() === right.replace(/\r\n/g, '\n').trim()
+}
+
 function MessageBodyText({
   body,
   messageId,
@@ -143,14 +151,15 @@ function MessageBodyText({
     onRequestTranslation(messageKind, messageId, body, targetLanguage)
   }, [body, messageId, messageKind, onRequestTranslation, targetLanguage, translation?.error, translation?.loading, translation?.translatedText])
 
-  const hasTranslation = Boolean(translation?.changed && translation.translatedText)
+  const translatedText = cleanMessageText(translation?.translatedText)
+  const hasTranslation = Boolean(translation?.changed && translatedText)
   const showingOriginal = Boolean(translation?.showOriginal)
-  const displayBody = hasTranslation && !showingOriginal ? translation?.translatedText || body : body
+  const displayBody = hasTranslation && !showingOriginal ? translatedText : body
   const hasAttemptedTranslation = Boolean(translation?.translatedText || translation?.error)
   const showTranslateAction = !translation?.loading && !hasTranslation && hasAttemptedTranslation
   const translationStatusLabel = hasTranslation
     ? text.messageTranslated
-    : hasAttemptedTranslation
+    : translation?.error || hasAttemptedTranslation
       ? text.messageTranslationUnavailable
       : text.translateMessage
 
@@ -176,7 +185,12 @@ function MessageBodyText({
             </button>
           )}
           {showTranslateAction && (
-            <button className="message-translation-toggle" type="button" onClick={() => onRequestTranslation(messageKind, messageId, body, targetLanguage)}>
+            <button
+              aria-label={text.translateMessage}
+              className="message-translation-toggle"
+              type="button"
+              onClick={() => onRequestTranslation(messageKind, messageId, body, targetLanguage)}
+            >
               {text.translateMessage}
             </button>
           )}
@@ -3016,7 +3030,11 @@ export default function WidgetPage({
       if (existing?.loading || (existing?.changed && existing.translatedText)) return current
       return {
         ...current,
-        [key]: { loading: true },
+        [key]: {
+          ...(existing ?? {}),
+          error: undefined,
+          loading: true,
+        },
       }
     })
 
@@ -3028,7 +3046,11 @@ export default function WidgetPage({
       if (!accessToken) {
         setMessageTranslations((current) => ({
           ...current,
-          [key]: { error: 'login_required' },
+          [key]: {
+            ...(current[key] ?? {}),
+            error: 'login_required',
+            loading: false,
+          },
         }))
         return
       }
@@ -3049,25 +3071,36 @@ export default function WidgetPage({
       if (!response.ok) {
         setMessageTranslations((current) => ({
           ...current,
-          [key]: { error: 'translation_failed' },
+          [key]: {
+            ...(current[key] ?? {}),
+            error: 'translation_failed',
+            loading: false,
+          },
         }))
         return
       }
 
       const data = await response.json() as MessageTranslationResponse
+      const translatedText = cleanMessageText(data.translatedText) || body
       setMessageTranslations((current) => ({
         ...current,
         [key]: {
-          changed: Boolean(data.changed && data.translatedText && data.translatedText !== body),
+          changed: Boolean(translatedText && !equivalentMessageText(translatedText, body)),
+          error: undefined,
           loading: false,
           sourceLanguage: data.sourceLanguage || null,
-          translatedText: data.translatedText || body,
+          showOriginal: false,
+          translatedText,
         },
       }))
     } catch {
       setMessageTranslations((current) => ({
         ...current,
-        [key]: { error: 'translation_failed' },
+        [key]: {
+          ...(current[key] ?? {}),
+          error: 'translation_failed',
+          loading: false,
+        },
       }))
     }
   }, [])
