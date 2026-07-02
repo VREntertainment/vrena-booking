@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
+import { equivalentMessageText } from '@/lib/messageText'
 
 export const runtime = 'nodejs'
 
@@ -30,10 +31,6 @@ function cleanString(value: unknown) {
 
 function bodyHash(value: string) {
   return createHash('sha256').update(value).digest('hex')
-}
-
-function equivalentMessageText(left: string, right: string) {
-  return left.replace(/\r\n/g, '\n').trim() === right.replace(/\r\n/g, '\n').trim()
 }
 
 function getOutputText(data: unknown) {
