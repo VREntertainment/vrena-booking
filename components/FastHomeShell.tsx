@@ -911,6 +911,11 @@ export default function FastHomeShell() {
           <button className={activeShellView === 'clubs' ? 'tab active' : 'tab'} onClick={() => openFullApp('clubs')} type="button">
             {text.clubs}
           </button>
+          {canAccessStaffConsole && (
+            <button className={activeShellView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} onClick={() => openFullApp('staff')} type="button">
+              {language === 'vi' ? 'Nhân viên' : 'Staff'}
+            </button>
+          )}
         </div>
 
         <div className="shop-contact">
