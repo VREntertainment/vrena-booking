@@ -10775,6 +10775,11 @@ function handleSessionDateChange(value: string) {
           <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => setActiveView('clubs')}>
             {text.clubs}
           </button>
+          {canAccessStaffConsole && (
+            <button className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} onClick={() => setActiveView('staff')}>
+              {language === 'vi' ? 'Nhân viên' : 'Staff'}
+            </button>
+          )}
         </div>
 
         <div className="shop-contact">
