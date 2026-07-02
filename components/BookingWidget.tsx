@@ -13076,22 +13076,27 @@ function handleSessionDateChange(value: string) {
                   <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
                   </button>
-                </div>
-                <div className="mfa-security-card">
-                  <div className="mfa-security-copy">
-                    <span className="mfa-security-icon"><ScanLine aria-hidden="true" size={18} /></span>
-                    <span>
-                      <strong>{text.mfaAuthenticatorTitle}</strong>
-                      <small>{activeTotpFactor ? text.mfaEnabledHint : text.mfaAuthenticatorHint}</small>
-                    </span>
-                  </div>
                   {activeTotpFactor ? (
-                    <button className="secondary small-button" disabled={isMfaLoading} onClick={() => removeTotpFactor(activeTotpFactor.id)} type="button">
-                      {isMfaLoading ? text.saving : text.mfaDisable}
+                    <button
+                      aria-label={text.mfaDisable}
+                      className="link-button"
+                      disabled={isMfaLoading}
+                      onClick={() => removeTotpFactor(activeTotpFactor.id)}
+                      title={text.mfaEnabledHint}
+                      type="button"
+                    >
+                      <ButtonIconText icon={<ScanLine aria-hidden="true" size={16} />}>{isMfaLoading ? text.saving : text.mfaAuthenticatorTitle}</ButtonIconText>
                     </button>
                   ) : (
-                    <button className="primary small-button" disabled={isMfaLoading} onClick={beginTotpEnrollment} type="button">
-                      {isMfaLoading ? text.saving : text.mfaEnable}
+                    <button
+                      aria-label={text.mfaEnable}
+                      className="link-button"
+                      disabled={isMfaLoading}
+                      onClick={beginTotpEnrollment}
+                      title={text.mfaAuthenticatorHint}
+                      type="button"
+                    >
+                      <ButtonIconText icon={<ScanLine aria-hidden="true" size={16} />}>{isMfaLoading ? text.saving : text.mfaAuthenticatorTitle}</ButtonIconText>
                     </button>
                   )}
                 </div>
