@@ -2057,6 +2057,7 @@ export default function WidgetPage({
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [leaderboardPlayers, setLeaderboardPlayers] = useState<LeaderboardPlayer[]>([])
   const [currentUserRankPlayer, setCurrentUserRankPlayer] = useState<LeaderboardPlayer | null>(null)
+  const [currentUserShareStats, setCurrentUserShareStats] = useState<LeaderboardPlayer | null>(null)
   const [hasMoreLeaderboardPlayers, setHasMoreLeaderboardPlayers] = useState(false)
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
   const [isLoadingMoreLeaderboardPlayers, setIsLoadingMoreLeaderboardPlayers] = useState(false)
@@ -2316,6 +2317,7 @@ export default function WidgetPage({
   const selectedPlayerIdRef = useRef(initialSelectedPlayerId)
   const selectedPlayerStatsFetchedRef = useRef<Set<string>>(new Set())
   const selectedPlayerStatsLoadingRef = useRef<Set<string>>(new Set())
+  const currentUserShareStatsLoadingRef = useRef(false)
   const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
   const sessionMessagesLoadedRef = useRef<Set<string>>(new Set())
@@ -4337,6 +4339,36 @@ export default function WidgetPage({
     return ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
   }
 
+  async function hydrateCurrentUserShareStats(profileId = userId, force = false) {
+    if (!profileId) return null
+    if (!force && currentUserShareStats?.profileId === profileId && hasShareablePlayerStats(currentUserShareStats)) {
+      return currentUserShareStats
+    }
+    if (currentUserShareStatsLoadingRef.current) {
+      return currentUserShareStats?.profileId === profileId ? currentUserShareStats : null
+    }
+
+    currentUserShareStatsLoadingRef.current = true
+
+    try {
+      const currentUserRows = await fetchLeaderboardRows(leaderboardQueryRef.current, 0, 1, profileId)
+      const currentUserPlayer = currentUserRows[0] ?? null
+      setCurrentUserShareStats(currentUserPlayer)
+      setCurrentUserRankPlayer(currentUserPlayer)
+      if (currentUserPlayer) {
+        setProfileScoreAdjustments((current) => ({
+          ...current,
+          [currentUserPlayer.profileId]: currentUserPlayer.scoreAdjustment,
+        }))
+      }
+      return currentUserPlayer
+    } catch {
+      return null
+    } finally {
+      currentUserShareStatsLoadingRef.current = false
+    }
+  }
+
   async function loadLeaderboardPlayers(
     query = leaderboardQueryRef.current,
     offset = 0,
@@ -4353,6 +4385,9 @@ export default function WidgetPage({
       setIsLeaderboardLoading(true)
       setHasMoreLeaderboardPlayers(false)
       setCurrentUserRankPlayer(null)
+      if (targetUserId && currentUserShareStats?.profileId !== targetUserId) {
+        setCurrentUserShareStats(null)
+      }
     }
 
     try {
@@ -4384,10 +4419,12 @@ export default function WidgetPage({
         const currentUserRow = players.find((player) => player.profileId === targetUserId)
         if (currentUserRow) {
           setCurrentUserRankPlayer(currentUserRow)
+          setCurrentUserShareStats(currentUserRow)
         } else {
           const currentUserRows = await fetchLeaderboardRows(query, 0, 1, targetUserId)
           const currentUserPlayer = currentUserRows[0] ?? null
           setCurrentUserRankPlayer(currentUserPlayer)
+          setCurrentUserShareStats(currentUserPlayer)
           if (currentUserPlayer) {
             setProfileScoreAdjustments((current) => ({
               ...current,
@@ -6527,7 +6564,8 @@ function handleSessionDateChange(value: string) {
   const leaderboardPlayerStats = leaderboardLoadedRef.current ? leaderboardPlayers : allPlayerStats
   const currentProfileAvatar = profile ? avatarFields(profile) : null
 
-  const playerStats = leaderboardPlayerStats.find((item) => item.profileId === userId) ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer : null) ?? {
+  const hydratedCurrentUserShareStats = currentUserShareStats?.profileId === userId ? currentUserShareStats : null
+  const playerStats = hydratedCurrentUserShareStats ?? leaderboardPlayerStats.find((item) => item.profileId === userId) ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer : null) ?? {
     profileId: userId,
     displayName: displayName(profile),
     avatarUrl: currentProfileAvatar?.avatar_url || null,
@@ -6552,7 +6590,7 @@ function handleSessionDateChange(value: string) {
     bestEscapeDurationSeconds: null,
     bestByGame: [],
   }
-  const canShareCurrentUserStats = Boolean(profile && hasShareablePlayerStats(playerStats))
+  const canShareCurrentUserStats = Boolean(profile && userId)
   const currentUserStatsShared = sharedKey === 'stats'
 
   const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
@@ -10373,17 +10411,23 @@ function handleSessionDateChange(value: string) {
   }
 
   async function shareCurrentUserStats(contextLabel = '') {
-    if (!profile || !hasShareablePlayerStats(playerStats)) {
+    let shareStats = playerStats
+    if (profile && !hasShareablePlayerStats(shareStats)) {
+      const hydratedStats = await hydrateCurrentUserShareStats(userId, true)
+      if (hydratedStats) shareStats = hydratedStats
+    }
+
+    if (!profile || !hasShareablePlayerStats(shareStats)) {
       setProfileStatus(text.statsShareUnavailable)
       return
     }
 
-    const playerName = compactDisplayName(playerStats.displayName || displayName(profile), text.player)
+    const playerName = compactDisplayName(shareStats.displayName || displayName(profile), text.player)
     const title = contextLabel ? `${text.statsShareTitle} · ${contextLabel}` : text.statsShareTitle
-    const bestScore = playerStats.bestByGame[0]
+    const bestScore = shareStats.bestByGame[0]
     const loadedRankIndex = leaderboardPlayerStats.findIndex((item) => item.profileId === userId)
-    const playerLeaderboardRank = 'leaderboardRank' in playerStats ? playerStats.leaderboardRank : undefined
-    const playerLeaderboardDistinctRank = 'leaderboardDistinctRank' in playerStats ? playerStats.leaderboardDistinctRank : null
+    const playerLeaderboardRank = 'leaderboardRank' in shareStats ? shareStats.leaderboardRank : undefined
+    const playerLeaderboardDistinctRank = 'leaderboardDistinctRank' in shareStats ? shareStats.leaderboardDistinctRank : null
     const currentUserRank = playerLeaderboardRank
       ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardRank : undefined)
       ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
@@ -10394,12 +10438,12 @@ function handleSessionDateChange(value: string) {
     const summary = [
       `${title}: ${playerName}`,
       rankSummary,
-      `${text.totalScore}: ${playerStats.totalScore}`,
-      `${text.gamesPlayedCriterion}: ${playerStats.gamesJoined}`,
-      `${text.wins}: ${playerStats.wins}`,
-      `${bestPerformerCountText}: ${playerStats.bestPerformerCount}`,
-      `${text.accuracy}: ${formatWholePercent(playerStats.averageAccuracy)}`,
-      `${text.projectiles}: ${playerStats.totalProjectiles}`,
+      `${text.totalScore}: ${shareStats.totalScore}`,
+      `${text.gamesPlayedCriterion}: ${shareStats.gamesJoined}`,
+      `${text.wins}: ${shareStats.wins}`,
+      `${bestPerformerCountText}: ${shareStats.bestPerformerCount}`,
+      `${text.accuracy}: ${formatWholePercent(shareStats.averageAccuracy)}`,
+      `${text.projectiles}: ${shareStats.totalProjectiles}`,
       bestScore ? `${text.bestScores}: ${bestScore.game} ${bestScore.score}` : '',
       DEFAULT_APP_URL,
     ].filter(Boolean).join('\n')
@@ -10433,9 +10477,7 @@ function handleSessionDateChange(value: string) {
     const templateHeight = 1350
     const canvasScale = Math.min(canvas.width / templateWidth, canvas.height / templateHeight)
     const overlayScale = templateImage ? canvasScale * 0.9 : canvasScale
-    const overlayOffsetX = (canvas.width - templateWidth * overlayScale) / 2
     const overlayOffsetY = templateImage ? 18 * canvasScale : 0
-    const sx = (value: number) => overlayOffsetX + value * overlayScale
     const sy = (value: number) => overlayOffsetY + value * overlayScale
     const ss = (value: number) => value * overlayScale
 
@@ -10458,9 +10500,9 @@ function handleSessionDateChange(value: string) {
       ctx.clip()
 
       let drewPhoto = false
-      if (playerStats.avatarUrl) {
+      if (shareStats.avatarUrl) {
         try {
-          const image = await loadCanvasImage(playerStats.avatarUrl)
+          const image = await loadCanvasImage(shareStats.avatarUrl)
           const imageWidth = image.naturalWidth || image.width
           const imageHeight = image.naturalHeight || image.height
           const scale = Math.max(size / imageWidth, size / imageHeight)
@@ -10475,15 +10517,15 @@ function handleSessionDateChange(value: string) {
 
       if (!drewPhoto) {
         const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
-        avatarGradient.addColorStop(0, playerStats.avatarColor || '#00b6c6')
+        avatarGradient.addColorStop(0, shareStats.avatarColor || '#00b6c6')
         avatarGradient.addColorStop(1, '#3059ff')
         ctx.fillStyle = avatarGradient
         ctx.fillRect(x, y, size, size)
-        ctx.fillStyle = playerStats.avatarTextColor || '#ffffff'
-        ctx.font = `900 ${playerStats.avatarEmoji ? size * 0.5 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
+        ctx.fillStyle = shareStats.avatarTextColor || '#ffffff'
+        ctx.font = `900 ${shareStats.avatarEmoji ? size * 0.5 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(playerStats.avatarEmoji || compactInitials(playerStats.avatarInitials || playerStats.displayName || text.player).slice(0, 2), x + size / 2, y + size / 2)
+        ctx.fillText(shareStats.avatarEmoji || compactInitials(shareStats.avatarInitials || shareStats.displayName || text.player).slice(0, 2), x + size / 2, y + size / 2)
       }
 
       ctx.restore()
@@ -10499,17 +10541,7 @@ function handleSessionDateChange(value: string) {
       ctx.fillRect(0, 0, canvas.width, canvas.height)
     }
 
-    ctx.save()
-    ctx.shadowColor = 'rgba(7, 17, 18, 0.18)'
-    ctx.shadowBlur = ss(34)
-    ctx.shadowOffsetY = ss(18)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
-    drawCanvasRoundRect(ctx, sx(92), sy(118), ss(896), ss(1114), ss(42))
-    ctx.fill()
-    ctx.restore()
-
     ctx.textBaseline = 'alphabetic'
-    fitText(title, canvas.width / 2, sy(220), ss(740), ss(44))
 
     await drawShareAvatar(canvas.width / 2 - ss(104), sy(278), ss(208))
 
@@ -10532,12 +10564,12 @@ function handleSessionDateChange(value: string) {
     }
 
     const primaryStats = [
-      { label: text.totalScore, value: playerStats.totalScore.toLocaleString('en-US') },
-      { label: text.gamesPlayedCriterion, value: `${playerStats.gamesJoined}` },
-      { label: text.wins, value: `${playerStats.wins}` },
-      { label: bestPerformerCountText, value: `${playerStats.bestPerformerCount}` },
-      { label: text.accuracy, value: formatWholePercent(playerStats.averageAccuracy) },
-      { label: text.projectiles, value: `${playerStats.totalProjectiles}` },
+      { label: text.totalScore, value: shareStats.totalScore.toLocaleString('en-US') },
+      { label: text.gamesPlayedCriterion, value: `${shareStats.gamesJoined}` },
+      { label: text.wins, value: `${shareStats.wins}` },
+      { label: bestPerformerCountText, value: `${shareStats.bestPerformerCount}` },
+      { label: text.accuracy, value: formatWholePercent(shareStats.averageAccuracy) },
+      { label: text.projectiles, value: `${shareStats.totalProjectiles}` },
     ]
 
     const cardWidth = ss(276)
@@ -10560,7 +10592,7 @@ function handleSessionDateChange(value: string) {
       fitText(stat.value, x + cardWidth / 2, y + ss(98), cardWidth - ss(36), ss(46), '#071112', 900)
     })
 
-    const bestScores = playerStats.bestByGame.slice(0, 3)
+    const bestScores = shareStats.bestByGame.slice(0, 3)
     if (bestScores.length > 0) {
       fitText(text.bestScores, canvas.width / 2, sy(1064), ss(700), ss(30), '#071112', 900)
       bestScores.forEach((item, index) => {
