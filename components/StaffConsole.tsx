@@ -3173,6 +3173,16 @@ function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConso
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
+function customerSearchText(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
+  return [
+    customerName(profile, text),
+    profile.full_name || '',
+    profile.nickname || '',
+    profile.phone || '',
+    profile.email || '',
+  ].join(' ').toLowerCase()
+}
+
 function staffRoleAvatarInitials(value: string) {
   const cleaned = value.trim()
   if (!cleaned || cleaned === '?') return 'PL'
@@ -4455,6 +4465,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
+  const [customerNameFocused, setCustomerNameFocused] = useState(false)
   const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
   const [customerInviteStatus, setCustomerInviteStatus] = useState('')
   const [isCustomerInviteSaving, setIsCustomerInviteSaving] = useState(false)
@@ -4688,6 +4699,24 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
     ? visibleAllStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
+  const customerNameSuggestions = useMemo(() => {
+    const query = booking.customerName.trim().toLowerCase()
+    if (query.length < 2) return []
+
+    return profiles
+      .filter((item) => !isDemoProfile(item) && customerSearchText(item, text).includes(query))
+      .sort((left, right) => {
+        const leftName = customerName(left, text).toLowerCase()
+        const rightName = customerName(right, text).toLowerCase()
+        const leftStarts = leftName.startsWith(query) ? 0 : 1
+        const rightStarts = rightName.startsWith(query) ? 0 : 1
+        return leftStarts - rightStarts
+          || leftName.localeCompare(rightName)
+          || (left.phone || '').localeCompare(right.phone || '')
+          || (left.email || '').localeCompare(right.email || '')
+      })
+  }, [booking.customerName, profiles, text])
+  const showCustomerNameSuggestions = customerNameFocused && customerNameSuggestions.length > 0
   const employeeUsesMonthlyGross = isMonthlyGrossEmployment(employeeForm.employment_type)
   const employeePayrollSummary = useMemo(() => {
     const staffId = employeeForm.profile_id || firstEmployeeStaffProfileId
@@ -5306,6 +5335,22 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       customerPhone: selected?.phone || current.customerPhone,
       customerEmail: selected?.email || current.customerEmail,
     }))
+  }
+
+  function handleCustomerNameChange(value: string) {
+    setBooking((current) => ({
+      ...current,
+      customerId: (() => {
+        const selected = current.customerId ? profileById.get(current.customerId) : null
+        return selected && customerName(selected, text) === value ? current.customerId : ''
+      })(),
+      customerName: value,
+    }))
+  }
+
+  function selectCustomerSuggestion(profileId: string) {
+    applyCustomer(profileId)
+    setCustomerNameFocused(false)
   }
 
   async function createOrder() {
@@ -6656,10 +6701,41 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   ))}
                 </select>
               </label>
-              <label>
-                {text.labels.customerName}
-                <input value={booking.customerName} onChange={(event) => setBooking({ ...booking, customerName: event.target.value })} />
-              </label>
+              <div
+                className="staff-customer-name-field"
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) setCustomerNameFocused(false)
+                }}
+                onFocus={() => setCustomerNameFocused(true)}
+              >
+                <label htmlFor="staff-booking-customer-name">{text.labels.customerName}</label>
+                <input
+                  id="staff-booking-customer-name"
+                  aria-autocomplete="list"
+                  aria-controls={showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
+                  aria-expanded={showCustomerNameSuggestions}
+                  role="combobox"
+                  value={booking.customerName}
+                  onChange={(event) => handleCustomerNameChange(event.target.value)}
+                />
+                {showCustomerNameSuggestions && (
+                  <div className="staff-customer-suggestions" id="staff-customer-name-suggestions" role="listbox">
+                    {customerNameSuggestions.map((item) => (
+                      <button
+                        aria-selected={booking.customerId === item.id}
+                        className="staff-customer-suggestion"
+                        key={item.id}
+                        role="option"
+                        type="button"
+                        onClick={() => selectCustomerSuggestion(item.id)}
+                      >
+                        <span>{customerName(item, text)}</span>
+                        <small>{[item.phone, item.email].filter(Boolean).join(' · ') || text.noContact}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <label>
                 {text.labels.phone}
                 <input value={booking.customerPhone} onChange={(event) => setBooking({ ...booking, customerPhone: event.target.value })} />

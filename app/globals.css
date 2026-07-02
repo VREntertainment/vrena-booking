@@ -1735,6 +1735,14 @@ body {
   margin-bottom: 0;
 }
 
+.app .staff-card .compact-form-grid > .staff-customer-name-field {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
 .app .staff-card input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), .app .staff-card select {
   display: block;
   height: var(--staff-control-height);
@@ -1747,6 +1755,63 @@ body {
 
 .app .staff-card input[type="date"], .app .staff-card input[type="time"] {
   line-height: var(--staff-control-height);
+}
+
+.app .staff-customer-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(7, 17, 18, 0.14);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(7, 17, 18, 0.14);
+  padding: 5px;
+}
+
+.app .staff-customer-suggestion {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #071112;
+  padding: 7px 9px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .staff-customer-suggestion:hover,
+.app .staff-customer-suggestion:focus-visible,
+.app .staff-customer-suggestion[aria-selected="true"] {
+  background: rgba(48, 89, 255, 0.08);
+  color: #071112;
+}
+
+.app .staff-customer-suggestion span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-customer-suggestion small {
+  min-width: 0;
+  overflow: hidden;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app .staff-picker-shell {
@@ -12292,6 +12357,27 @@ body {
     border-color: var(--staff-modern-border-strong);
     background: var(--staff-modern-soft);
     color: #f6f7f9;
+  }
+
+  .app .staff-customer-suggestions {
+    border-color: var(--staff-modern-border);
+    background: #10191b;
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.32);
+  }
+
+  .app .staff-customer-suggestion {
+    color: #f6f7f9;
+  }
+
+  .app .staff-customer-suggestion:hover,
+  .app .staff-customer-suggestion:focus-visible,
+  .app .staff-customer-suggestion[aria-selected="true"] {
+    background: rgba(98, 133, 255, 0.16);
+    color: #ffffff;
+  }
+
+  .app .staff-customer-suggestion small {
+    color: #aeb9bd;
   }
 
   .app .staff-summary-grid > div,
