@@ -809,7 +809,7 @@ body {
 
 .app .profile-security-panel .account-links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
 }
@@ -1044,10 +1044,6 @@ body {
     max-width: 100%;
   }
 
-  .app .profile-security-panel .account-links {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .app .mfa-security-card,
   .app .mfa-code-row,
   .app .mfa-enroll-actions {
@@ -1072,10 +1068,6 @@ body {
 
   .app .profile-save-actions {
     grid-template-columns: 1fr;
-  }
-
-  .app .profile-security-panel .danger-link {
-    grid-column: 1 / -1;
   }
 
   .app .profile-account-form .country-phone-field {
@@ -5833,6 +5825,12 @@ body {
   }
   50% {
     transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 960px) {
+  .app .profile-security-panel .account-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
