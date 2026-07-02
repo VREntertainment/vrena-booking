@@ -34,7 +34,7 @@ type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
-type StaffRoleSort = 'name_asc' | 'name_desc' | 'role_desc' | 'role_asc' | 'email_asc'
+type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
@@ -88,6 +88,7 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
 
 export type StaffProfile = {
   id: string
+  created_at?: string | null
   full_name?: string | null
   nickname?: string | null
   email?: string | null
@@ -1036,6 +1037,7 @@ const staffConsoleText = {
       viewer: 'Viewer',
     } satisfies Record<StaffRole, string>,
     roleSorts: {
+      created_desc: 'Created last',
       email_asc: 'E-mail A-Z',
       name_asc: 'Name A-Z',
       name_desc: 'Name Z-A',
@@ -1629,6 +1631,7 @@ const staffConsoleText = {
       viewer: 'Viewer',
     } satisfies Record<StaffRole, string>,
     roleSorts: {
+      created_desc: 'Mới tạo gần đây',
       email_asc: 'E-mail A-Z',
       name_asc: 'Tên A-Z',
       name_desc: 'Tên Z-A',
@@ -2671,8 +2674,8 @@ const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
 const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
-const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, full_name, nickname, email, phone, role, loyalty_points_total, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
+const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
@@ -4768,8 +4771,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       const rightEmail = (right.email || '').toLowerCase()
       const leftRank = staffRank(left.role, left.email)
       const rightRank = staffRank(right.role, right.email)
+      const leftCreated = new Date(left.created_at || 0).getTime()
+      const rightCreated = new Date(right.created_at || 0).getTime()
 
       if (roleSort === 'name_desc') return rightName.localeCompare(leftName) || leftEmail.localeCompare(rightEmail)
+      if (roleSort === 'created_desc') return rightCreated - leftCreated || leftName.localeCompare(rightName)
       if (roleSort === 'role_desc') return rightRank - leftRank || leftName.localeCompare(rightName)
       if (roleSort === 'role_asc') return leftRank - rightRank || leftName.localeCompare(rightName)
       if (roleSort === 'email_asc') return leftEmail.localeCompare(rightEmail) || leftName.localeCompare(rightName)
