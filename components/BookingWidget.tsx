@@ -1727,6 +1727,22 @@ function drawCanvasRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number
   ctx.closePath()
 }
 
+const shareRankTiers = [
+  'Champion',
+  'Grandmaster',
+  'Master',
+  'Diamond',
+  'Platinum',
+  'Gold',
+  'Silver',
+  'Bronze',
+] as const
+
+function shareRankTitle(distinctRank: number | null | undefined, fallback: string) {
+  if (!distinctRank || distinctRank < 1) return fallback
+  return shareRankTiers[distinctRank - 1] || fallback
+}
+
 function hasShareablePlayerStats(stats: LeaderboardPlayer | null | undefined) {
   return Boolean(stats && (
     stats.gamesJoined > 0
@@ -10365,8 +10381,19 @@ function handleSessionDateChange(value: string) {
     const playerName = compactDisplayName(playerStats.displayName || displayName(profile), text.player)
     const title = contextLabel ? `${text.statsShareTitle} · ${contextLabel}` : text.statsShareTitle
     const bestScore = playerStats.bestByGame[0]
+    const loadedRankIndex = leaderboardPlayerStats.findIndex((item) => item.profileId === userId)
+    const playerLeaderboardRank = 'leaderboardRank' in playerStats ? playerStats.leaderboardRank : undefined
+    const playerLeaderboardDistinctRank = 'leaderboardDistinctRank' in playerStats ? playerStats.leaderboardDistinctRank : null
+    const currentUserRank = playerLeaderboardRank
+      ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardRank : undefined)
+      ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
+    const currentUserDistinctRank = playerLeaderboardDistinctRank
+      ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardDistinctRank : null)
+    const rankTitle = shareRankTitle(currentUserDistinctRank, text.rankJesterMessage)
+    const rankSummary = currentUserRank ? `${text.currentRank}: #${currentUserRank} · ${rankTitle}` : `${text.currentRank}: ${rankTitle}`
     const summary = [
       `${title}: ${playerName}`,
+      rankSummary,
       `${text.totalScore}: ${playerStats.totalScore}`,
       `${text.gamesPlayedCriterion}: ${playerStats.gamesJoined}`,
       `${text.wins}: ${playerStats.wins}`,
@@ -10401,6 +10428,16 @@ function handleSessionDateChange(value: string) {
       setSharedKey('stats')
       return
     }
+
+    const templateWidth = 1080
+    const templateHeight = 1350
+    const canvasScale = Math.min(canvas.width / templateWidth, canvas.height / templateHeight)
+    const overlayScale = templateImage ? canvasScale * 0.9 : canvasScale
+    const overlayOffsetX = (canvas.width - templateWidth * overlayScale) / 2
+    const overlayOffsetY = templateImage ? 18 * canvasScale : 0
+    const sx = (value: number) => overlayOffsetX + value * overlayScale
+    const sy = (value: number) => overlayOffsetY + value * overlayScale
+    const ss = (value: number) => value * overlayScale
 
     const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900, align: CanvasTextAlign = 'center') => {
       let fontSize = size
@@ -10464,27 +10501,34 @@ function handleSessionDateChange(value: string) {
 
     ctx.save()
     ctx.shadowColor = 'rgba(7, 17, 18, 0.18)'
-    ctx.shadowBlur = 34
-    ctx.shadowOffsetY = 18
+    ctx.shadowBlur = ss(34)
+    ctx.shadowOffsetY = ss(18)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
-    drawCanvasRoundRect(ctx, 92, 118, canvas.width - 184, canvas.height - 236, 42)
+    drawCanvasRoundRect(ctx, sx(92), sy(118), ss(896), ss(1114), ss(42))
     ctx.fill()
     ctx.restore()
 
     ctx.textBaseline = 'alphabetic'
-    fitText(title, canvas.width / 2, 220, 740, 44)
+    fitText(title, canvas.width / 2, sy(220), ss(740), ss(44))
 
-    await drawShareAvatar(canvas.width / 2 - 104, 278, 208)
+    await drawShareAvatar(canvas.width / 2 - ss(104), sy(278), ss(208))
 
     ctx.strokeStyle = '#3059ff'
-    ctx.lineWidth = 7
+    ctx.lineWidth = ss(7)
     ctx.beginPath()
-    ctx.arc(canvas.width / 2, 382, 108, 0, Math.PI * 2)
+    ctx.arc(canvas.width / 2, sy(382), ss(108), 0, Math.PI * 2)
     ctx.stroke()
 
-    fitText(playerName, canvas.width / 2, 552, 740, 54)
+    fitText(playerName, canvas.width / 2, sy(528), ss(740), ss(52))
     if (contextLabel) {
-      fitText(contextLabel, canvas.width / 2, 598, 660, 26, '#657278', 800)
+      fitText(contextLabel, canvas.width / 2, sy(570), ss(660), ss(25), '#657278', 800)
+    }
+
+    if (currentUserRank) {
+      fitText(`#${currentUserRank}`, canvas.width / 2, sy(contextLabel ? 616 : 590), ss(300), ss(38), '#3059ff', 900)
+      fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 650 : 624), ss(620), ss(26), '#657278', 850)
+    } else {
+      fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 620 : 596), ss(620), ss(27), '#657278', 850)
     }
 
     const primaryStats = [
@@ -10496,33 +10540,37 @@ function handleSessionDateChange(value: string) {
       { label: text.projectiles, value: `${playerStats.totalProjectiles}` },
     ]
 
-    const cardWidth = 276
-    const cardHeight = 138
-    const startX = (canvas.width - cardWidth * 3 - 34 * 2) / 2
-    const startY = 656
+    const cardWidth = ss(276)
+    const cardHeight = ss(138)
+    const cardGap = ss(34)
+    const rowGap = ss(28)
+    const startX = (canvas.width - cardWidth * 3 - cardGap * 2) / 2
+    const startY = sy(690)
 
     primaryStats.forEach((stat, index) => {
       const col = index % 3
       const row = Math.floor(index / 3)
-      const x = startX + col * (cardWidth + 34)
-      const y = startY + row * (cardHeight + 28)
+      const x = startX + col * (cardWidth + cardGap)
+      const y = startY + row * (cardHeight + rowGap)
 
       ctx.fillStyle = '#f0f4f6'
-      drawCanvasRoundRect(ctx, x, y, cardWidth, cardHeight, 24)
+      drawCanvasRoundRect(ctx, x, y, cardWidth, cardHeight, ss(24))
       ctx.fill()
-      fitText(stat.label, x + cardWidth / 2, y + 44, cardWidth - 36, 24, '#657278', 800)
-      fitText(stat.value, x + cardWidth / 2, y + 98, cardWidth - 36, 46, '#071112', 900)
+      fitText(stat.label, x + cardWidth / 2, y + ss(44), cardWidth - ss(36), ss(24), '#657278', 800)
+      fitText(stat.value, x + cardWidth / 2, y + ss(98), cardWidth - ss(36), ss(46), '#071112', 900)
     })
 
     const bestScores = playerStats.bestByGame.slice(0, 3)
     if (bestScores.length > 0) {
-      fitText(text.bestScores, canvas.width / 2, 1064, 700, 30, '#071112', 900)
+      fitText(text.bestScores, canvas.width / 2, sy(1064), ss(700), ss(30), '#071112', 900)
       bestScores.forEach((item, index) => {
-        fitText(`${item.game}: ${item.score}`, canvas.width / 2, 1110 + index * 40, 720, 28, '#39464b', 800)
+        fitText(`${item.game}: ${item.score}`, canvas.width / 2, sy(1110 + index * 40), ss(720), ss(28), '#39464b', 800)
       })
     }
 
-    fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
+    if (!templateImage) {
+      fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
+    }
 
     let blob: Blob | null = null
     try {
