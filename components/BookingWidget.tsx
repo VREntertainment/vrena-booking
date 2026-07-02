@@ -3794,7 +3794,7 @@ export default function WidgetPage({
         return
       }
       await loadProfile()
-      setProfileStatus(text.loggedIn)
+      setProfileStatus('')
       setActiveView('leaderboard')
       setIsSavingProfile(false)
     } catch (error) {
@@ -3898,7 +3898,7 @@ export default function WidgetPage({
         return
       }
       await loadProfile()
-      setProfileStatus(text.loggedIn)
+      setProfileStatus('')
       setActiveView('leaderboard')
       setIsPasskeyLoading(false)
     } catch (error) {
@@ -4024,7 +4024,7 @@ export default function WidgetPage({
       setUserId(data.user.id)
       setAuthEmail(data.user.email?.toLowerCase() || '')
     }
-    setProfileStatus(text.loggedIn)
+    setProfileStatus('')
     await refreshMfaFactors()
     await loadProfile({ skipMfaChallenge: true })
     setActiveView('leaderboard')
@@ -12512,15 +12512,15 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'profile' && (
           <section className={!profile ? 'section profile-auth-section' : 'section profile-account-section'}>
-            <h2>{profile ? text.profile : isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
-            {(profile || isRecoveryMode || authMode === 'reset') && (
-              <p className="muted">
-                {profile
-                  ? text.profileUpdateHint
-                  : isRecoveryMode
-                    ? text.setNewPasswordIntro
-                    : text.resetPasswordIntro}
-              </p>
+            {!profile && (
+              <>
+                <h2>{isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
+                {(isRecoveryMode || authMode === 'reset') && (
+                  <p className="muted">
+                    {isRecoveryMode ? text.setNewPasswordIntro : text.resetPasswordIntro}
+                  </p>
+                )}
+              </>
             )}
 
             {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && (
