@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
+import { buildPlayerStatsShareSummary } from '../lib/playerStatsShare'
+import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import BrandLoader from './BrandLoader'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import type { StaffProfile } from './StaffConsole'
@@ -83,9 +85,6 @@ type HeavyTarget = {
   view: AppView
 }
 
-const OWNER_EMAILS = ['emilejacquet@icloud.com']
-const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
-const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const LEADERBOARD_PAGE_SIZE = 20
 const MAX_DISPLAY_NAME_LENGTH = 10
 const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px), (pointer: coarse)'
@@ -171,43 +170,6 @@ function isStaffModeMobileViewport() {
   return typeof window !== 'undefined' && window.matchMedia(STAFF_MODE_MOBILE_QUERY).matches
 }
 
-function isAdminEmail(email?: string | null) {
-  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
-}
-
-function isOwnerEmail(email?: string | null) {
-  return Boolean(email && OWNER_EMAILS.includes(email.toLowerCase()))
-}
-
-function isAdminOnlyEmail(email?: string | null) {
-  return Boolean(email && ADMIN_ONLY_EMAILS.includes(email.toLowerCase()))
-}
-
-function defaultRoleForEmail(email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  if (OWNER_EMAILS.includes(normalizedEmail)) return 'owner'
-  if (isAdminEmail(normalizedEmail)) return 'admin'
-  return 'player'
-}
-
-function isAdminRole(role?: string | null) {
-  const normalizedRole = role?.toLowerCase()
-  return normalizedRole === 'super_admin' || normalizedRole === 'owner' || normalizedRole === 'admin'
-}
-
-function staffConsoleRank(role?: string | null, email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  const normalizedRole = role?.toLowerCase() || ''
-  if (isOwnerEmail(normalizedEmail)) return 120
-  if (isAdminOnlyEmail(normalizedEmail)) return 100
-  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (normalizedRole === 'admin') return 100
-  if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
-  if (normalizedRole === 'viewer') return 20
-  return 0
-}
-
 function limitDisplayName(value: string) {
   return Array.from(value).slice(0, MAX_DISPLAY_NAME_LENGTH).join('')
 }
@@ -256,26 +218,6 @@ function displayName(profile: Profile | null) {
 function finiteNumber(value: unknown, fallback = 0) {
   const numericValue = Number(value)
   return Number.isFinite(numericValue) ? numericValue : fallback
-}
-
-function formatWholePercent(value: number | null | undefined) {
-  return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
-}
-
-const shareRankTiers = [
-  'Champion',
-  'Grandmaster',
-  'Master',
-  'Diamond',
-  'Platinum',
-  'Gold',
-  'Silver',
-  'Bronze',
-] as const
-
-function shareRankTitle(distinctRank: number | null | undefined, fallback: string) {
-  if (!distinctRank || distinctRank < 1) return fallback
-  return shareRankTiers[distinctRank - 1] || fallback
 }
 
 function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: string): LeaderboardPlayer {
@@ -770,22 +712,25 @@ export default function FastHomeShell() {
 
     const loadedRankIndex = leaderboardPlayers.findIndex((player) => player.profileId === userId)
     const currentUserRank = shellStats.leaderboardRank ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
-    const rankTitle = shareRankTitle(shellStats.leaderboardDistinctRank, text.rankJesterMessage)
-    const rankSummary = currentUserRank ? `${text.currentRank}: #${currentUserRank} · ${rankTitle}` : `${text.currentRank}: ${rankTitle}`
-    const bestScore = shellStats.bestByGame[0]
     const appUrl = window.location.origin || 'https://vrena-booking.vercel.app'
-    const summary = [
-      `${text.statsShareTitle}: ${compactDisplayName(shellStats.displayName || displayName(profile), text.player)}`,
-      rankSummary,
-      `${text.totalScore}: ${shellStats.totalScore}`,
-      `${text.gamesPlayedCriterion}: ${shellStats.gamesJoined}`,
-      `${text.wins}: ${shellStats.wins}`,
-      `Best Performer count: ${shellStats.bestPerformerCount}`,
-      `${text.accuracy}: ${formatWholePercent(shellStats.averageAccuracy)}`,
-      `${text.projectiles}: ${shellStats.totalProjectiles}`,
-      bestScore ? `${text.bestScores}: ${bestScore.game} ${bestScore.score}` : '',
+    const { summary } = buildPlayerStatsShareSummary({
       appUrl,
-    ].filter(Boolean).join('\n')
+      currentRank: currentUserRank,
+      displayName: compactDisplayName(shellStats.displayName || displayName(profile), text.player),
+      labels: {
+        accuracy: text.accuracy,
+        bestPerformerCount: 'Best Performer count',
+        bestScores: text.bestScores,
+        currentRank: text.currentRank,
+        gamesPlayed: text.gamesPlayedCriterion,
+        projectiles: text.projectiles,
+        rankFallback: text.rankJesterMessage,
+        statsTitle: text.statsShareTitle,
+        totalScore: text.totalScore,
+        wins: text.wins,
+      },
+      stats: shellStats,
+    })
 
     if (navigator.share) {
       await navigator.share({ title: text.statsShareTitle, text: summary, url: appUrl })

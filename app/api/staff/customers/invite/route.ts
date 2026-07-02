@@ -2,35 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 import { trustedClientIp } from '@/lib/security/requestIp'
+import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
 
 export const runtime = 'nodejs'
 
-const ownerEmails = ['emilejacquet@icloud.com']
-const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function isOwnerEmail(email?: string | null) {
-  return Boolean(email && ownerEmails.includes(email.toLowerCase()))
-}
-
-function isAdminOnlyEmail(email?: string | null) {
-  return Boolean(email && adminOnlyEmails.includes(email.toLowerCase()))
-}
-
-function staffRank(role?: string | null, email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  const normalizedRole = role?.toLowerCase() || ''
-  if (isOwnerEmail(normalizedEmail)) return 120
-  if (isAdminOnlyEmail(normalizedEmail)) return 100
-  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (normalizedRole === 'admin') return 100
-  if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff') return 50
-  if (normalizedRole === 'cashier' || normalizedRole === 'viewer') return 20
-  return 0
 }
 
 function cleanString(value: unknown) {

@@ -27,6 +27,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode, RefObject } from 'react'
 import { languageOptions, uiText, type LanguageCode } from '../lib/i18n'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
+import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { supabase } from '../lib/supabase/client'
 
 type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
@@ -2671,9 +2672,6 @@ const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed
 const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
 const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
 const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'probation_full_time', 'probation_part_time', 'contractor', 'intern']
-const ownerEmails = ['emilejacquet@icloud.com']
-const adminOnlyEmails = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
-const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
@@ -2871,27 +2869,6 @@ function parseStaffArenaIds(value?: string | null) {
     .filter((item) => knownArenaIds.has(item))
 
   return arenaIds.length ? arenaIds : defaultStaffArenaIds
-}
-
-function isOwnerEmail(email?: string | null) {
-  return Boolean(email && ownerEmails.includes(email.toLowerCase()))
-}
-
-function isAdminOnlyEmail(email?: string | null) {
-  return Boolean(email && adminOnlyEmails.includes(email.toLowerCase()))
-}
-
-function staffRank(role?: string | null, email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  const normalizedRole = role?.toLowerCase() || ''
-  if (isOwnerEmail(normalizedEmail)) return 120
-  if (isAdminOnlyEmail(normalizedEmail)) return 100
-  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (normalizedRole === 'admin') return 100
-  if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff') return 50
-  if (normalizedRole === 'cashier' || normalizedRole === 'viewer') return 20
-  return 0
 }
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
@@ -8115,7 +8092,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               const storedRole = storedRoleValue(item.role, item.email)
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
-              const protectedEmail = adminEmails.includes((item.email || '').toLowerCase())
+              const protectedEmail = isAdminEmail(item.email)
               const rowFeedback = roleSaveFeedback[item.id]
               const rolePersonContent = (
                 <>
