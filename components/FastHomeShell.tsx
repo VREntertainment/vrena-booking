@@ -898,7 +898,7 @@ export default function FastHomeShell() {
           </div>
         </button>
 
-        <div className={canAccessStaffConsole ? 'tabs staff-tabs-visible' : 'tabs'}>
+        <div className="tabs">
           <button className={activeShellView === 'sessions' || activeShellView === 'create' ? 'tab active' : 'tab'} onClick={() => openFullApp('sessions')} type="button">
             {text.sessions}
           </button>
@@ -911,11 +911,6 @@ export default function FastHomeShell() {
           <button className={activeShellView === 'clubs' ? 'tab active' : 'tab'} onClick={() => openFullApp('clubs')} type="button">
             {text.clubs}
           </button>
-          {canAccessStaffConsole && (
-            <button className={activeShellView === 'staff' ? 'tab active mobile-staff-tab' : 'tab mobile-staff-tab'} onClick={() => openFullApp('staff')} type="button">
-              Staff
-            </button>
-          )}
         </div>
 
         <div className="shop-contact">

@@ -10422,7 +10422,7 @@ function handleSessionDateChange(value: string) {
           </div>
         </button>
 
-        <div className={canAccessStaffConsole ? 'tabs staff-tabs-visible' : 'tabs'}>
+        <div className="tabs">
           <button className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
             {text.sessions}
           </button>
@@ -10435,11 +10435,6 @@ function handleSessionDateChange(value: string) {
           <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => setActiveView('clubs')}>
             {text.clubs}
           </button>
-          {canAccessStaffConsole && (
-            <button className={activeView === 'staff' ? 'tab active mobile-staff-tab' : 'tab mobile-staff-tab'} onClick={() => setActiveView('staff')}>
-              Staff
-            </button>
-          )}
         </div>
 
         <div className="shop-contact">
