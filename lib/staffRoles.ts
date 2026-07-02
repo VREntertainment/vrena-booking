@@ -33,8 +33,8 @@ export function staffRoleRank(role?: string | null, email?: string | null) {
   if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
   if (normalizedRole === 'admin') return 100
   if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
-  if (normalizedRole === 'viewer') return 20
+  if (normalizedRole === 'staff') return 50
+  if (normalizedRole === 'cashier' || normalizedRole === 'viewer') return 20
   return 0
 }
 
