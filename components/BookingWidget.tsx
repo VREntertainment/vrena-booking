@@ -374,6 +374,17 @@ type Profile = {
   marketing_opted_out_at?: string | null
 }
 
+type StaffPlayerEditDraft = {
+  fullName: string
+  nickname: string
+  phone: string
+  birthday: string
+  gender: ProfileGender | ''
+  profileMotto: string
+  totalScore: string
+  loyaltyPoints: string
+}
+
 type TotpFactor = {
   id: string
   friendly_name?: string
@@ -443,6 +454,19 @@ const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM
 const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
 type ProfileGender = typeof PROFILE_GENDER_VALUES[number]
 const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+
+function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
+  return {
+    fullName: '',
+    nickname: '',
+    phone: '',
+    birthday: '',
+    gender: '',
+    profileMotto: '',
+    totalScore: '',
+    loyaltyPoints: '',
+  }
+}
 
 function normalizeProfileGender(value: unknown): ProfileGender | '' {
   return typeof value === 'string' && PROFILE_GENDER_VALUES.includes(value as ProfileGender) ? value as ProfileGender : ''
@@ -2216,6 +2240,9 @@ export default function WidgetPage({
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
   const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | null>(null)
+  const [staffPlayerEditDraft, setStaffPlayerEditDraft] = useState<StaffPlayerEditDraft>(() => defaultStaffPlayerEditDraft())
+  const [isSavingStaffPlayerEdit, setIsSavingStaffPlayerEdit] = useState(false)
+  const [staffPlayerEditStatus, setStaffPlayerEditStatus] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [highlightedSessionId, setHighlightedSessionId] = useState('')
@@ -6493,6 +6520,7 @@ function handleSessionDateChange(value: string) {
     : 0
   const canAccessStaffConsole = Boolean(profile && staffAccessRank >= 20)
   const canStaffExpandTicketSessions = Boolean(profile && staffAccessRank >= 50)
+  const canEditStaffPlayerCards = Boolean(profile && staffAccessRank >= 50)
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
 
@@ -6559,6 +6587,11 @@ function handleSessionDateChange(value: string) {
 
     return null
   }, [selectedPlayerId, selectedPlayerSessionId, sessions, userId, isAdmin, tournamentData.editors])
+  const selectedPlayerProfileRecord = useMemo(() => {
+    if (!selectedPlayerId) return null
+    if (profile?.id === selectedPlayerId) return profile
+    return allProfiles.find((item) => item.id === selectedPlayerId) ?? null
+  }, [allProfiles, profile, selectedPlayerId])
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
 
@@ -6569,6 +6602,17 @@ function handleSessionDateChange(value: string) {
     let visibleTextColor: string | null = null
     let visibleMotto: string | null = null
     let visibleName = ''
+
+    if (selectedPlayerProfileRecord) {
+      const profileAvatar = avatarFields(selectedPlayerProfileRecord)
+      visibleAvatar = profileAvatar.avatar_url || visibleAvatar
+      visibleEmoji = profileAvatar.avatar_emoji || visibleEmoji
+      visibleInitials = profileAvatar.avatar_initials || visibleInitials
+      visibleColor = profileAvatar.avatar_color || visibleColor
+      visibleTextColor = profileAvatar.avatar_text_color || visibleTextColor
+      visibleMotto = selectedPlayerProfileRecord.profile_motto || visibleMotto
+      visibleName = displayName(selectedPlayerProfileRecord) || visibleName
+    }
 
     if (selectedPlayerId === userId && profile) {
       const profileAvatar = avatarFields(profile)
@@ -6632,6 +6676,9 @@ function handleSessionDateChange(value: string) {
         avatarColor: selectedPlayerStats.avatarColor || visibleColor,
         avatarTextColor: selectedPlayerStats.avatarTextColor || visibleTextColor,
         profileMotto: selectedPlayerStats.profileMotto || visibleMotto,
+        loyaltyPoints: selectedPlayerProfileRecord
+          ? Math.max(0, Math.floor(Number(selectedPlayerProfileRecord.loyalty_points_total ?? selectedPlayerStats.loyaltyPoints ?? 0) || 0))
+          : selectedPlayerStats.loyaltyPoints,
       }
     }
 
@@ -6727,7 +6774,7 @@ function handleSessionDateChange(value: string) {
     }
 
     return undefined
-  }, [clubs, profile, profileScoreAdjustments, selectedPlayerId, selectedPlayerStats, sessions, text.player, userId])
+  }, [clubs, profile, profileScoreAdjustments, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, sessions, text.player, userId])
 
   const selectedSessionParticipant = selectedPlayerSessionContext?.participant ?? null
   const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
@@ -6740,6 +6787,35 @@ function handleSessionDateChange(value: string) {
     : selectedPlayerSessionContext?.session ?? null
   const selectedPlayerSessionIsEscape = isEscapeSession(selectedPlayerMetricSession)
   const selectedPlayerEscapeDurationSeconds = selectedPlayerMetricParticipant?.escape_duration_seconds ?? null
+  const staffPlayerEditSeed = useMemo<StaffPlayerEditDraft | null>(() => {
+    if (!selectedPlayerProfile || !canEditStaffPlayerCards) return null
+    return {
+      fullName: selectedPlayerProfileRecord?.full_name || selectedPlayerProfile.displayName || '',
+      nickname: selectedPlayerProfileRecord?.nickname || '',
+      phone: selectedPlayerProfileRecord?.phone || '',
+      birthday: selectedPlayerProfileRecord?.birthday || '',
+      gender: normalizeProfileGender(selectedPlayerProfileRecord?.gender),
+      profileMotto: selectedPlayerProfileRecord?.profile_motto || selectedPlayerProfile.profileMotto || '',
+      totalScore: String(selectedPlayerProfile.totalScore ?? 0),
+      loyaltyPoints: String(selectedPlayerProfile.loyaltyPoints ?? 0),
+    }
+  }, [
+    canEditStaffPlayerCards,
+    selectedPlayerProfile,
+    selectedPlayerProfileRecord?.full_name,
+    selectedPlayerProfileRecord?.nickname,
+    selectedPlayerProfileRecord?.phone,
+    selectedPlayerProfileRecord?.birthday,
+    selectedPlayerProfileRecord?.gender,
+    selectedPlayerProfileRecord?.profile_motto,
+  ])
+
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => {
+      setStaffPlayerEditDraft(staffPlayerEditSeed ?? defaultStaffPlayerEditDraft())
+      setStaffPlayerEditStatus('')
+    })
+  }, [staffPlayerEditSeed])
 
   function openChallengeForm(player: NonNullable<typeof selectedPlayerProfile>) {
     if (!profile) {
@@ -6837,7 +6913,7 @@ function handleSessionDateChange(value: string) {
   }
 
   function renderTotalScoreControl(playerStats: NonNullable<typeof selectedPlayerProfile>) {
-    if (selectedPlayerScoreEdit === 'total' && isAdmin) {
+    if (selectedPlayerScoreEdit === 'total' && canEditStaffPlayerCards) {
       return (
         <input
           aria-label={text.adminTotalScore}
@@ -6860,8 +6936,8 @@ function handleSessionDateChange(value: string) {
     return (
       <button
         aria-label={text.adminTotalScore}
-        className={isAdmin ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
-        disabled={!isAdmin}
+        className={canEditStaffPlayerCards ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+        disabled={!canEditStaffPlayerCards}
         type="button"
         onClick={() => setSelectedPlayerScoreEdit('total')}
       >
@@ -7058,6 +7134,122 @@ function handleSessionDateChange(value: string) {
     { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
     { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
   ] : []
+
+  function renderStaffPlayerAdminControls(playerStats: NonNullable<typeof selectedPlayerProfile>) {
+    if (!canEditStaffPlayerCards) return null
+
+    const sessionControls = selectedPlayerManageContext && !selectedPlayerSessionContext ? (
+      <div className="score-controls profile-score-controls">
+        <input
+          aria-label={text.score}
+          defaultValue={selectedPlayerManageContext.participant.score ?? ''}
+          inputMode="numeric"
+          onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+          placeholder={text.score}
+        />
+        <input
+          aria-label={text.accuracy}
+          defaultValue={selectedPlayerManageContext.participant.accuracy_percent ?? ''}
+          inputMode="numeric"
+          onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', event.target.value, selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+          placeholder="%"
+        />
+        <input
+          aria-label={text.projectiles}
+          defaultValue={selectedPlayerManageContext.participant.projectiles_fired ?? ''}
+          inputMode="numeric"
+          onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
+          placeholder={text.projectiles}
+        />
+        {isEscapeSession(selectedPlayerManageContext.session) && (
+          <input
+            aria-label={text.escapeSessionTime}
+            defaultValue={selectedPlayerManageContext.participant.escape_duration_seconds ? formatSpeedrunDuration(selectedPlayerManageContext.participant.escape_duration_seconds) : ''}
+            inputMode="text"
+            onBlur={(event) => updateParticipantResult(
+              selectedPlayerManageContext.participant.id,
+              selectedPlayerManageContext.participant.score ?? '',
+              selectedPlayerManageContext.participant.placement ?? '',
+              selectedPlayerManageContext.participant.accuracy_percent ?? '',
+              selectedPlayerManageContext.participant.projectiles_fired ?? '',
+              event.target.value
+            )}
+            placeholder={text.escapeDurationPlaceholder}
+          />
+        )}
+        <select
+          aria-label={text.place}
+          value={selectedPlayerManageContext.participant.placement ?? ''}
+          onChange={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', event.target.value, selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
+        >
+          <option value="">{text.noPlace}</option>
+          <option value="1">{text.firstPlace}</option>
+          <option value="2">{text.secondPlace}</option>
+          <option value="3">{text.thirdPlace}</option>
+        </select>
+      </div>
+    ) : null
+
+    return (
+      <div className="staff-player-card-editor">
+        <div className="staff-player-card-editor-head">
+          <div>
+            <strong>{text.profile}</strong>
+            <span>{text.profileUpdateHint}</span>
+          </div>
+          <ShieldCheck aria-hidden="true" size={18} />
+        </div>
+        <div className="staff-player-card-editor-grid">
+          <label>
+            <span>{text.name}</span>
+            <input value={staffPlayerEditDraft.fullName} onChange={(event) => patchStaffPlayerEditDraft({ fullName: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.nickname}</span>
+            <input value={staffPlayerEditDraft.nickname} onChange={(event) => patchStaffPlayerEditDraft({ nickname: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.phoneNumber}</span>
+            <input inputMode="tel" value={staffPlayerEditDraft.phone} onChange={(event) => patchStaffPlayerEditDraft({ phone: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.birthday}</span>
+            <input type="date" value={staffPlayerEditDraft.birthday} onChange={(event) => patchStaffPlayerEditDraft({ birthday: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.gender}</span>
+            <select value={staffPlayerEditDraft.gender} onChange={(event) => patchStaffPlayerEditDraft({ gender: normalizeProfileGender(event.target.value) })}>
+              <option value="">{text.genderPreferNotToSay}</option>
+              <option value="male">{text.genderMale}</option>
+              <option value="female">{text.genderFemale}</option>
+              <option value="non_binary">{text.genderNonBinary}</option>
+              <option value="prefer_not_to_say">{text.genderPreferNotToSay}</option>
+              <option value="self_describe">{text.genderSelfDescribe}</option>
+            </select>
+          </label>
+          <label>
+            <span>{text.profileMotto}</span>
+            <input maxLength={20} value={staffPlayerEditDraft.profileMotto} onChange={(event) => patchStaffPlayerEditDraft({ profileMotto: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.totalScore}</span>
+            <input inputMode="numeric" value={staffPlayerEditDraft.totalScore} onChange={(event) => patchStaffPlayerEditDraft({ totalScore: event.target.value })} />
+          </label>
+          <label>
+            <span>{text.loyaltyPoints}</span>
+            <input inputMode="numeric" min={0} type="number" value={staffPlayerEditDraft.loyaltyPoints} onChange={(event) => patchStaffPlayerEditDraft({ loyaltyPoints: event.target.value })} />
+          </label>
+        </div>
+        <div className="staff-player-card-editor-actions">
+          <button className={isSavingStaffPlayerEdit ? 'primary loading' : 'primary'} disabled={isSavingStaffPlayerEdit} type="button" onClick={() => saveStaffPlayerCardEdit(playerStats)}>
+            <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{isSavingStaffPlayerEdit ? text.saving : text.saveChanges}</ButtonIconText>
+          </button>
+          {staffPlayerEditStatus && <span>{staffPlayerEditStatus}</span>}
+        </div>
+        {sessionControls}
+      </div>
+    )
+  }
 
   function renderChallengeControls(player: NonNullable<typeof selectedPlayerProfile>) {
     if (player.profileId === userId) return null
@@ -8059,7 +8251,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function updateProfileTotalScore(profileId: string, totalScoreValue: string | number | null, baseTotalScore: number) {
-    if (!isAdmin) {
+    if (!canEditStaffPlayerCards) {
       setCreateStatus(text.adminOnlyAction)
       return
     }
@@ -8101,6 +8293,142 @@ function handleSessionDateChange(value: string) {
     )
     refreshLeaderboardIfLoaded()
     setCreateStatus(text.scoreSaved)
+  }
+
+  function patchStaffPlayerEditDraft(patch: Partial<StaffPlayerEditDraft>) {
+    setStaffPlayerEditDraft((current) => ({ ...current, ...patch }))
+  }
+
+  async function saveStaffPlayerCardEdit(playerStats: NonNullable<typeof selectedPlayerProfile>) {
+    if (!canEditStaffPlayerCards || isSavingStaffPlayerEdit) return
+
+    const fullName = staffPlayerEditDraft.fullName.trim()
+    const nickname = staffPlayerEditDraft.nickname.trim()
+    const phone = staffPlayerEditDraft.phone.trim()
+    const birthday = staffPlayerEditDraft.birthday.trim()
+    const profileMotto = limitMotto(staffPlayerEditDraft.profileMotto.trim())
+    const totalScore = Number(staffPlayerEditDraft.totalScore)
+    const loyaltyPoints = Number(staffPlayerEditDraft.loyaltyPoints)
+
+    if (!fullName) {
+      setStaffPlayerEditStatus(text.nameRequired)
+      return
+    }
+    if (!Number.isFinite(totalScore)) {
+      setStaffPlayerEditStatus(text.invalidScore)
+      return
+    }
+    if (!Number.isFinite(loyaltyPoints) || loyaltyPoints < 0) {
+      setStaffPlayerEditStatus(text.ticketLoyaltyInvalid)
+      return
+    }
+
+    setIsSavingStaffPlayerEdit(true)
+    setStaffPlayerEditStatus('')
+
+    try {
+      const client = await getSupabase()
+      const { data: sessionData } = await client.auth.getSession()
+      const accessToken = sessionData.session?.access_token || ''
+      if (!accessToken) throw new Error(text.loginToContinue)
+
+      const response = await fetch('/api/staff/customers/profile', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profileId: playerStats.profileId,
+          fullName,
+          nickname,
+          phone,
+          birthday: birthday || null,
+          gender: staffPlayerEditDraft.gender || null,
+          profileMotto: profileMotto || null,
+        }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(String(payload?.error || 'Could not update customer profile.'))
+
+      const updatedProfile = payload?.profile as Profile | undefined
+      if (updatedProfile?.id) {
+        syncProfileEverywhere(updatedProfile)
+        if (profile?.id === updatedProfile.id) setProfile({ ...profile, ...updatedProfile })
+      }
+
+      const nextTotalScore = Math.round(totalScore)
+      if (nextTotalScore !== playerStats.totalScore) {
+        const scoreAdjustment = nextTotalScore - playerStats.baseTotalScore
+        const { data, error } = await client.rpc('set_profile_score_adjustment', {
+          p_profile_id: playerStats.profileId,
+          p_score_adjustment: scoreAdjustment,
+        })
+        if (error) throw error
+
+        const savedAdjustment = Number((data as { score_adjustment?: number | null } | null)?.score_adjustment ?? scoreAdjustment)
+        const normalizedAdjustment = Number.isFinite(savedAdjustment) ? savedAdjustment : scoreAdjustment
+        setProfileScoreAdjustments((current) => ({
+          ...current,
+          [playerStats.profileId]: normalizedAdjustment,
+        }))
+        setAllProfiles((currentProfiles) => currentProfiles.map((item) => item.id === playerStats.profileId ? { ...item, score_adjustment: normalizedAdjustment } : item))
+        if (profile?.id === playerStats.profileId) setProfile({ ...profile, score_adjustment: normalizedAdjustment })
+        setLeaderboardPlayers((currentPlayers) =>
+          currentPlayers.map((player) => player.profileId === playerStats.profileId
+            ? {
+              ...player,
+              scoreAdjustment: normalizedAdjustment,
+              totalScore: player.baseTotalScore + normalizedAdjustment,
+            }
+            : player
+          )
+        )
+        setSelectedPlayerStatsOverride((current) => current?.profileId === playerStats.profileId
+          ? {
+            ...current,
+            scoreAdjustment: normalizedAdjustment,
+            totalScore: current.baseTotalScore + normalizedAdjustment,
+          }
+          : current
+        )
+      }
+
+      const nextLoyaltyPoints = Math.max(0, Math.floor(loyaltyPoints))
+      if (nextLoyaltyPoints !== (playerStats.loyaltyPoints ?? 0)) {
+        const { data, error } = await client.rpc('set_profile_loyalty_points', {
+          p_profile_id: playerStats.profileId,
+          p_points: nextLoyaltyPoints,
+          p_reason: 'Player card staff edit',
+        })
+        if (error) throw error
+
+        const loyaltyRow = Array.isArray(data) ? data[0] : data
+        const savedPoints = Math.max(0, Math.floor(Number((loyaltyRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? nextLoyaltyPoints) || 0))
+        setAllProfiles((currentProfiles) => currentProfiles.map((item) => item.id === playerStats.profileId ? { ...item, loyalty_points_total: savedPoints } : item))
+        if (profile?.id === playerStats.profileId) setProfile({ ...profile, loyalty_points_total: savedPoints })
+        setLeaderboardPlayers((currentPlayers) =>
+          currentPlayers.map((player) => player.profileId === playerStats.profileId
+            ? { ...player, loyaltyPoints: savedPoints }
+            : player
+          )
+        )
+        setSelectedPlayerStatsOverride((current) => current?.profileId === playerStats.profileId
+          ? { ...current, loyaltyPoints: savedPoints }
+          : current
+        )
+      }
+
+      selectedPlayerStatsFetchedRef.current.delete(playerStats.profileId)
+      void loadSelectedPlayerStats(playerStats.profileId, true)
+      refreshLeaderboardIfLoaded()
+      setStaffPlayerEditStatus(text.profileSaved)
+      setCreateStatus(text.profileSaved)
+    } catch (error) {
+      setStaffPlayerEditStatus(error instanceof Error ? error.message : 'Could not update customer profile.')
+    } finally {
+      setIsSavingStaffPlayerEdit(false)
+    }
   }
 
   function marketingConsentValues(consent: boolean, currentProfile: Profile | null, timestamp = new Date().toISOString()) {
@@ -14070,57 +14398,7 @@ function handleSessionDateChange(value: string) {
           challengeControls={renderChallengeControls(selectedPlayerProfile)}
           bestScoresTitle={text.bestScores}
           bestScores={selectedPlayerProfile.bestByGame}
-          adminControls={selectedPlayerManageContext && !selectedPlayerSessionContext && isAdmin ? (
-            <div className="score-controls profile-score-controls">
-              <input
-                aria-label={text.score}
-                defaultValue={selectedPlayerManageContext.participant.score ?? ''}
-                inputMode="numeric"
-                onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, event.target.value, selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-                placeholder={text.score}
-              />
-              <input
-                aria-label={text.accuracy}
-                defaultValue={selectedPlayerManageContext.participant.accuracy_percent ?? ''}
-                inputMode="numeric"
-                onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', event.target.value, selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-                placeholder="%"
-              />
-              <input
-                aria-label={text.projectiles}
-                defaultValue={selectedPlayerManageContext.participant.projectiles_fired ?? ''}
-                inputMode="numeric"
-                onBlur={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', selectedPlayerManageContext.participant.placement ?? '', selectedPlayerManageContext.participant.accuracy_percent ?? '', event.target.value)}
-                placeholder={text.projectiles}
-              />
-              {isEscapeSession(selectedPlayerManageContext.session) && (
-                <input
-                  aria-label={text.escapeSessionTime}
-                  defaultValue={selectedPlayerManageContext.participant.escape_duration_seconds ? formatSpeedrunDuration(selectedPlayerManageContext.participant.escape_duration_seconds) : ''}
-                  inputMode="text"
-                  onBlur={(event) => updateParticipantResult(
-                    selectedPlayerManageContext.participant.id,
-                    selectedPlayerManageContext.participant.score ?? '',
-                    selectedPlayerManageContext.participant.placement ?? '',
-                    selectedPlayerManageContext.participant.accuracy_percent ?? '',
-                    selectedPlayerManageContext.participant.projectiles_fired ?? '',
-                    event.target.value
-                  )}
-                  placeholder={text.escapeDurationPlaceholder}
-                />
-              )}
-              <select
-                aria-label={text.place}
-                value={selectedPlayerManageContext.participant.placement ?? ''}
-                onChange={(event) => updateParticipantResult(selectedPlayerManageContext.participant.id, selectedPlayerManageContext.participant.score ?? '', event.target.value, selectedPlayerManageContext.participant.accuracy_percent ?? '', selectedPlayerManageContext.participant.projectiles_fired ?? '')}
-              >
-                <option value="">{text.noPlace}</option>
-                <option value="1">{text.firstPlace}</option>
-                <option value="2">{text.secondPlace}</option>
-                <option value="3">{text.thirdPlace}</option>
-              </select>
-            </div>
-          ) : null}
+          adminControls={renderStaffPlayerAdminControls(selectedPlayerProfile)}
         />
       )}
 
