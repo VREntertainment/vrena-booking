@@ -103,6 +103,8 @@ export type StaffProfile = {
   anonymous_callsign?: string | null
   role?: string | null
   loyalty_points_total?: number | null
+  average_accuracy_override?: number | null
+  best_escape_duration_seconds_override?: number | null
   is_seed_demo?: boolean | null
   seed_batch?: string | null
 }
@@ -2675,7 +2677,7 @@ const adminEmails = [...ownerEmails, ...adminOnlyEmails]
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
