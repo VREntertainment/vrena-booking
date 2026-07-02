@@ -6785,6 +6785,18 @@ body {
   font-weight: 800;
 }
 
+.app .staff-player-phone-control {
+  display: grid;
+  grid-template-columns: minmax(68px, max-content) minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .staff-player-phone-control input:first-child {
+  min-width: 68px;
+  text-align: center;
+}
+
 .app .staff-player-card-editor-actions {
   display: flex;
   align-items: center;
@@ -12680,6 +12692,10 @@ body {
 
   .app .staff-player-card-editor-grid {
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-player-phone-control {
+    grid-template-columns: minmax(64px, max-content) minmax(0, 1fr);
   }
 
   .app .staff-player-card-editor-actions {

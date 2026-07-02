@@ -377,7 +377,8 @@ type Profile = {
 type StaffPlayerEditDraft = {
   fullName: string
   nickname: string
-  phone: string
+  phoneCountryCode: string
+  phoneLocalNumber: string
   birthday: string
   gender: ProfileGender | ''
   profileMotto: string
@@ -459,7 +460,8 @@ function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
   return {
     fullName: '',
     nickname: '',
-    phone: '',
+    phoneCountryCode: '+84',
+    phoneLocalNumber: '',
     birthday: '',
     gender: '',
     profileMotto: '',
@@ -6801,10 +6803,12 @@ function handleSessionDateChange(value: string) {
   const selectedPlayerEscapeDurationSeconds = selectedPlayerMetricParticipant?.escape_duration_seconds ?? null
   const staffPlayerEditSeed = useMemo<StaffPlayerEditDraft | null>(() => {
     if (!selectedPlayerProfile || !canEditStaffPlayerCards) return null
+    const phoneParts = splitPhoneNumber(selectedPlayerProfileRecord?.phone || '')
     return {
       fullName: selectedPlayerProfileRecord?.full_name || selectedPlayerProfile.displayName || '',
       nickname: selectedPlayerProfileRecord?.nickname || '',
-      phone: selectedPlayerProfileRecord?.phone || '',
+      phoneCountryCode: phoneParts.countryInput,
+      phoneLocalNumber: phoneParts.localPhone,
       birthday: selectedPlayerProfileRecord?.birthday || '',
       gender: normalizeProfileGender(selectedPlayerProfileRecord?.gender),
       profileMotto: selectedPlayerProfileRecord?.profile_motto || selectedPlayerProfile.profileMotto || '',
@@ -7220,9 +7224,29 @@ function handleSessionDateChange(value: string) {
             <span>{text.nickname}</span>
             <input value={staffPlayerEditDraft.nickname} onChange={(event) => patchStaffPlayerEditDraft({ nickname: event.target.value })} />
           </label>
-          <label>
+          <label className="staff-player-phone-field">
             <span>{text.phoneNumber}</span>
-            <input inputMode="tel" value={staffPlayerEditDraft.phone} onChange={(event) => patchStaffPlayerEditDraft({ phone: event.target.value })} />
+            <div className="staff-player-phone-control">
+              <input
+                aria-label={text.countryCode}
+                inputMode="tel"
+                list="staff-player-country-codes"
+                value={staffPlayerEditDraft.phoneCountryCode}
+                onBlur={(event) => patchStaffPlayerEditDraft({ phoneCountryCode: resolveCountryCode(event.target.value) })}
+                onChange={(event) => patchStaffPlayerEditDraft({ phoneCountryCode: event.target.value })}
+              />
+              <input
+                aria-label={text.phoneNumber}
+                inputMode="tel"
+                value={staffPlayerEditDraft.phoneLocalNumber}
+                onChange={(event) => patchStaffPlayerEditDraft({ phoneLocalNumber: event.target.value })}
+              />
+            </div>
+            <datalist id="staff-player-country-codes">
+              {countries.map((country) => (
+                <option key={`${country.code}-${country.name}`} value={country.code}>{country.name}</option>
+              ))}
+            </datalist>
           </label>
           <label>
             <span>{text.birthday}</span>
@@ -8316,7 +8340,9 @@ function handleSessionDateChange(value: string) {
 
     const fullName = staffPlayerEditDraft.fullName.trim()
     const nickname = staffPlayerEditDraft.nickname.trim()
-    const phone = staffPlayerEditDraft.phone.trim()
+    const phoneCountryCode = resolveCountryCode(staffPlayerEditDraft.phoneCountryCode)
+    const phoneLocalNumber = staffPlayerEditDraft.phoneLocalNumber.trim()
+    const phone = phoneLocalNumber ? `${phoneCountryCode} ${phoneLocalNumber}` : ''
     const birthday = staffPlayerEditDraft.birthday.trim()
     const profileMotto = limitMotto(staffPlayerEditDraft.profileMotto.trim())
     const totalScore = Number(staffPlayerEditDraft.totalScore)
@@ -8360,8 +8386,22 @@ function handleSessionDateChange(value: string) {
           profileMotto: profileMotto || null,
         }),
       })
-      const payload = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(String(payload?.error || 'Could not update customer profile.'))
+      const responseText = await response.text()
+      let payload: { error?: unknown; profile?: Profile } = {}
+      try {
+        payload = responseText ? JSON.parse(responseText) as { error?: unknown; profile?: Profile } : {}
+      } catch {
+        payload = {}
+      }
+      if (!response.ok) {
+        const cleanedResponseText = responseText.trim()
+        const message = typeof payload?.error === 'string' && payload.error.trim()
+          ? payload.error
+          : cleanedResponseText.startsWith('<')
+            ? 'Staff profile editor route is not available on this deployment yet.'
+            : cleanedResponseText || 'Could not update customer profile.'
+        throw new Error(message)
+      }
 
       const updatedProfile = payload?.profile as Profile | undefined
       if (updatedProfile?.id) {
