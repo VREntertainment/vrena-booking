@@ -4562,7 +4562,7 @@ body {
 
 .app .player-profile-panel {
   position: relative;
-  width: min(420px, 100%);
+  width: min(760px, 100%);
   max-height: min(82vh, 760px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -6787,13 +6787,19 @@ body {
 
 .app .staff-player-phone-control {
   display: grid;
-  grid-template-columns: minmax(68px, max-content) minmax(0, 1fr);
+  grid-template-columns: 78px minmax(0, 1fr);
   gap: 6px;
   min-width: 0;
 }
 
+.app .staff-player-phone-control input {
+  min-width: 0;
+}
+
 .app .staff-player-phone-control input:first-child {
-  min-width: 68px;
+  width: 78px;
+  min-width: 0;
+  padding-inline: 8px;
   text-align: center;
 }
 
@@ -9261,6 +9267,27 @@ body {
 .app .player-profile-panel .stats > .split-stat-card {
   flex-basis: 150px;
   min-width: 150px;
+}
+
+@media (min-width: 960px) {
+  .app .player-profile-panel {
+    width: min(900px, calc(100vw - 96px));
+  }
+
+  .app .player-profile-panel .stats > .stat-card {
+    flex-basis: 150px;
+    min-width: 150px;
+  }
+
+  .app .player-profile-panel .stats > .score-stat-card {
+    flex-basis: 216px;
+    min-width: 216px;
+  }
+
+  .app .player-profile-panel .stats > .split-stat-card {
+    flex-basis: 180px;
+    min-width: 180px;
+  }
 }
 
 .app .stats strong, .app .stats span {
@@ -12705,7 +12732,11 @@ body {
   }
 
   .app .staff-player-phone-control {
-    grid-template-columns: minmax(64px, max-content) minmax(0, 1fr);
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .app .staff-player-phone-control input:first-child {
+    width: 76px;
   }
 
   .app .staff-player-card-editor-actions {
