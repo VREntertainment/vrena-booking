@@ -38,6 +38,16 @@ import {
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationMap, uiText } from '../lib/i18n'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
+import {
+  currentUserLeaderboardPlayer,
+  initialLeaderboardQuery,
+  isLeaderboardCriterion,
+  isMissingPagedLeaderboardFunction,
+  leaderboardPlayerFromRpcRow,
+  leaderboardRpcArgs,
+  type LeaderboardQuery,
+  type LeaderboardRpcRow,
+} from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
@@ -434,35 +444,6 @@ type TicketDiscountQuote = {
   discount_amount: number
 }
 
-type LeaderboardRpcRow = {
-  profile_id: string
-  display_name: string | null
-  avatar_url: string | null
-  avatar_emoji: string | null
-  avatar_initials: string | null
-  avatar_color: string | null
-  avatar_text_color: string | null
-  profile_motto: string | null
-  sessions_joined: number | null
-  games_joined: number | null
-  wins: number | null
-  best_performer_count: number | null
-  base_total_score: number | null
-  total_score: number | null
-  score_adjustment: number | null
-  total_accuracy: number | null
-  accuracy_count: number | null
-  total_projectiles: number | null
-  average_accuracy: number | null
-  reliability_score: number | null
-  best_by_game: unknown
-  leaderboard_rank?: number | null
-  leaderboard_distinct_rank?: number | null
-  leaderboard_higher_metric_value?: number | null
-  leaderboard_metric_value?: number | null
-  leaderboard_total_count?: number | null
-}
-
 const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'
 const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
@@ -486,38 +467,6 @@ function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
 
 function normalizeProfileGender(value: unknown): ProfileGender | '' {
   return typeof value === 'string' && PROFILE_GENDER_VALUES.includes(value as ProfileGender) ? value as ProfileGender : ''
-}
-
-function isLeaderboardCriterion(value: string | null | undefined): value is LeaderboardCriterion {
-  return value === 'totalScore'
-    || value === 'wins'
-    || value === 'winRate'
-    || value === 'accuracy'
-    || value === 'reliability'
-    || value === 'projectiles'
-    || value === 'gamesPlayed'
-    || value === 'escapeTime'
-}
-
-function initialLeaderboardQuery(): LeaderboardQuery {
-  return {
-    clubId: '',
-    clubPin: '',
-    criterion: 'totalScore',
-    search: '',
-  }
-}
-
-function leaderboardRpcArgs(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
-  return {
-    p_club_id: query.clubId || null,
-    p_club_pin: query.clubPin || null,
-    p_limit: limit,
-    p_offset: offset,
-    p_profile_id: profileId || null,
-    p_rank_by: query.criterion,
-    p_search: query.search.trim() || null,
-  }
 }
 
 function normalizePrivateCode(value: string | null | undefined) {
@@ -1305,65 +1254,6 @@ function finiteNumber(value: unknown, fallback = 0) {
   return Number.isFinite(numericValue) ? numericValue : fallback
 }
 
-function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: string): LeaderboardPlayer {
-  const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
-  const baseTotalScore = finiteNumber(row.base_total_score)
-  const scoreAdjustment = finiteNumber(row.score_adjustment)
-  const bestEscapeDurationSeconds = bestByGameRows.reduce<number | null>((best, item) => {
-    if (!item || typeof item !== 'object') return best
-    const duration = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
-    if (!Number.isFinite(duration) || duration <= 0) return best
-    return best === null || duration < best ? duration : best
-  }, null)
-
-  return {
-    profileId: row.profile_id,
-    displayName: compactDisplayName(row.display_name, fallbackName),
-    avatarUrl: row.avatar_url || null,
-    avatarEmoji: row.avatar_emoji || null,
-    avatarInitials: row.avatar_initials || null,
-    avatarColor: row.avatar_color || null,
-    avatarTextColor: row.avatar_text_color || null,
-    profileMotto: row.profile_motto || null,
-    sessionsJoined: finiteNumber(row.sessions_joined),
-    gamesJoined: finiteNumber(row.games_joined),
-    wins: finiteNumber(row.wins),
-    bestPerformerCount: finiteNumber(row.best_performer_count),
-    baseTotalScore,
-    totalScore: finiteNumber(row.total_score, baseTotalScore + scoreAdjustment),
-    scoreAdjustment,
-    totalAccuracy: finiteNumber(row.total_accuracy),
-    accuracyCount: finiteNumber(row.accuracy_count),
-    totalProjectiles: finiteNumber(row.total_projectiles),
-    averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
-    reliabilityScore: finiteNumber(row.reliability_score),
-    bestEscapeDurationSeconds,
-    leaderboardRank: row.leaderboard_rank === null || row.leaderboard_rank === undefined ? undefined : finiteNumber(row.leaderboard_rank),
-    leaderboardDistinctRank: row.leaderboard_distinct_rank === null || row.leaderboard_distinct_rank === undefined
-      ? null
-      : finiteNumber(row.leaderboard_distinct_rank),
-    leaderboardHigherMetricValue: row.leaderboard_higher_metric_value === null || row.leaderboard_higher_metric_value === undefined
-      ? null
-      : finiteNumber(row.leaderboard_higher_metric_value),
-    leaderboardMetricValue: row.leaderboard_metric_value === null || row.leaderboard_metric_value === undefined
-      ? null
-      : finiteNumber(row.leaderboard_metric_value),
-    leaderboardTotalCount: row.leaderboard_total_count === null || row.leaderboard_total_count === undefined
-      ? undefined
-      : finiteNumber(row.leaderboard_total_count),
-    bestByGame: bestByGameRows.flatMap((item) => {
-      if (!item || typeof item !== 'object') return []
-      const gameValue = 'game' in item ? String(item.game || '') : ''
-      const score = finiteNumber('score' in item ? item.score : null, Number.NaN)
-      const escapeDurationSeconds = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
-      if (!gameValue || !Number.isFinite(score)) return []
-
-      const game = games.find((candidate) => candidate.id === gameValue)
-      return [{ game: game?.title || gameValue, score, escapeDurationSeconds: Number.isFinite(escapeDurationSeconds) ? escapeDurationSeconds : null }]
-    }),
-  }
-}
-
 function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbackName: string): LeaderboardPlayer {
   const isAnonymous = Boolean(profile.anonymous_mode)
   const averageAccuracyOverride = Number(profile.average_accuracy_override)
@@ -1954,13 +1844,6 @@ type BookingWidgetProps = {
   initialView?: BookingWidgetView
   onActiveViewChange?: (view: BookingWidgetView) => void
   onProfileChange?: (profile: Profile | null) => void
-}
-
-type LeaderboardQuery = {
-  clubId: string
-  clubPin: string
-  criterion: LeaderboardCriterion
-  search: string
 }
 
 export default function WidgetPage({
@@ -4357,7 +4240,10 @@ export default function WidgetPage({
 
       return true
     } catch (error) {
-      setLeaderboardStatus(error instanceof Error ? error.message : String(error))
+      const leaderboardError = error && typeof error === 'object'
+        ? error as { message?: string; code?: string }
+        : null
+      setLeaderboardStatus(isMissingPagedLeaderboardFunction(leaderboardError) ? '' : error instanceof Error ? error.message : String(error))
       if (mode === 'replace') {
         leaderboardLoadedRef.current = false
         leaderboardLoadedCountRef.current = 0
@@ -6520,7 +6406,8 @@ function handleSessionDateChange(value: string) {
   const currentProfileAvatar = profile ? avatarFields(profile) : null
 
   const hydratedCurrentUserShareStats = currentUserShareStats?.profileId === userId ? currentUserShareStats : null
-  const playerStats = hydratedCurrentUserShareStats ?? leaderboardPlayerStats.find((item) => item.profileId === userId) ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer : null) ?? {
+  const currentLeaderboardPlayer = currentUserLeaderboardPlayer(leaderboardPlayerStats, currentUserRankPlayer, userId)
+  const playerStats = hydratedCurrentUserShareStats ?? currentLeaderboardPlayer ?? {
     profileId: userId,
     displayName: displayName(profile),
     avatarUrl: currentProfileAvatar?.avatar_url || null,

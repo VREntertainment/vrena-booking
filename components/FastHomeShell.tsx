@@ -6,6 +6,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
+import {
+  currentUserLeaderboardPlayer,
+  initialLeaderboardQuery,
+  isMissingPagedLeaderboardFunction,
+  leaderboardPlayerFromRpcRow,
+  leaderboardRpcArgs,
+  type LeaderboardQuery,
+  type LeaderboardRpcRow,
+} from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary } from '../lib/playerStatsShare'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import BrandLoader from './BrandLoader'
@@ -30,35 +39,6 @@ type Profile = {
   role?: string | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
-}
-
-type LeaderboardRpcRow = {
-  profile_id: string
-  display_name: string | null
-  avatar_url: string | null
-  avatar_emoji: string | null
-  avatar_initials: string | null
-  avatar_color: string | null
-  avatar_text_color: string | null
-  profile_motto: string | null
-  sessions_joined: number | null
-  games_joined: number | null
-  wins: number | null
-  best_performer_count: number | null
-  base_total_score: number | null
-  total_score: number | null
-  score_adjustment: number | null
-  total_accuracy: number | null
-  accuracy_count: number | null
-  total_projectiles: number | null
-  average_accuracy: number | null
-  reliability_score: number | null
-  best_by_game: unknown
-  leaderboard_rank?: number | null
-  leaderboard_distinct_rank?: number | null
-  leaderboard_higher_metric_value?: number | null
-  leaderboard_metric_value?: number | null
-  leaderboard_total_count?: number | null
 }
 
 const ANONYMOUS_MASK_EMOJI = '🎭'
@@ -91,25 +71,6 @@ const STAFF_MODE_MOBILE_QUERY = '(max-width: 960px), (pointer: coarse)'
 
 function ShareSymbol() {
   return <Share aria-hidden="true" className="share-symbol-icon" size={26} strokeWidth={2.2} />
-}
-
-type LeaderboardQuery = {
-  clubId: string
-  clubPin: string
-  criterion: LeaderboardCriterion
-  search: string
-}
-
-const gameTitles: Record<string, string> = {
-  'arc-of-the-covenant': 'The Secret of the Arc',
-  'castle-unspunnen': 'Castle Unspunnen',
-  'joller-house': 'Joller House',
-  'laser-tag': 'Laser Tag',
-  'mini-block-towers': 'Mini Block Towers',
-  'office-war': 'Office War',
-  paintball: 'Paintball',
-  'snow-battle': 'Snow Battle',
-  'wild-west': 'Wild West',
 }
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
@@ -215,68 +176,6 @@ function displayName(profile: Profile | null) {
   return compactDisplayName(profile.nickname || profile.full_name || profile.phone || profile.email)
 }
 
-function finiteNumber(value: unknown, fallback = 0) {
-  const numericValue = Number(value)
-  return Number.isFinite(numericValue) ? numericValue : fallback
-}
-
-function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName: string): LeaderboardPlayer {
-  const bestByGameRows = Array.isArray(row.best_by_game) ? row.best_by_game : []
-  const baseTotalScore = finiteNumber(row.base_total_score)
-  const scoreAdjustment = finiteNumber(row.score_adjustment)
-  const bestEscapeDurationSeconds = bestByGameRows.reduce<number | null>((best, item) => {
-    if (!item || typeof item !== 'object') return best
-    const duration = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
-    if (!Number.isFinite(duration) || duration <= 0) return best
-    return best === null || duration < best ? duration : best
-  }, null)
-
-  return {
-    profileId: row.profile_id,
-    displayName: compactDisplayName(row.display_name, fallbackName),
-    avatarUrl: row.avatar_url || null,
-    avatarEmoji: row.avatar_emoji || null,
-    avatarInitials: row.avatar_initials || null,
-    avatarColor: row.avatar_color || null,
-    avatarTextColor: row.avatar_text_color || null,
-    profileMotto: row.profile_motto || null,
-    sessionsJoined: finiteNumber(row.sessions_joined),
-    gamesJoined: finiteNumber(row.games_joined),
-    wins: finiteNumber(row.wins),
-    bestPerformerCount: finiteNumber(row.best_performer_count),
-    baseTotalScore,
-    totalScore: finiteNumber(row.total_score, baseTotalScore + scoreAdjustment),
-    scoreAdjustment,
-    totalAccuracy: finiteNumber(row.total_accuracy),
-    accuracyCount: finiteNumber(row.accuracy_count),
-    totalProjectiles: finiteNumber(row.total_projectiles),
-    averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteNumber(row.average_accuracy),
-    reliabilityScore: finiteNumber(row.reliability_score),
-    bestEscapeDurationSeconds,
-    leaderboardRank: row.leaderboard_rank === null || row.leaderboard_rank === undefined ? undefined : finiteNumber(row.leaderboard_rank),
-    leaderboardDistinctRank: row.leaderboard_distinct_rank === null || row.leaderboard_distinct_rank === undefined
-      ? null
-      : finiteNumber(row.leaderboard_distinct_rank),
-    leaderboardHigherMetricValue: row.leaderboard_higher_metric_value === null || row.leaderboard_higher_metric_value === undefined
-      ? null
-      : finiteNumber(row.leaderboard_higher_metric_value),
-    leaderboardMetricValue: row.leaderboard_metric_value === null || row.leaderboard_metric_value === undefined
-      ? null
-      : finiteNumber(row.leaderboard_metric_value),
-    leaderboardTotalCount: row.leaderboard_total_count === null || row.leaderboard_total_count === undefined
-      ? undefined
-      : finiteNumber(row.leaderboard_total_count),
-    bestByGame: bestByGameRows.flatMap((item) => {
-      if (!item || typeof item !== 'object') return []
-      const gameValue = 'game' in item ? String(item.game || '') : ''
-      const score = finiteNumber('score' in item ? item.score : null, Number.NaN)
-      const escapeDurationSeconds = finiteNumber('escapeDurationSeconds' in item ? item.escapeDurationSeconds : null, Number.NaN)
-      if (!gameValue || !Number.isFinite(score)) return []
-      return [{ game: gameTitles[gameValue] || gameValue, score, escapeDurationSeconds: Number.isFinite(escapeDurationSeconds) ? escapeDurationSeconds : null }]
-    }),
-  }
-}
-
 function avatarStyle(source: { avatar_color?: string | null; avatar_text_color?: string | null } | null | undefined): CSSProperties | undefined {
   if (!source?.avatar_color && !source?.avatar_text_color) return undefined
 
@@ -347,34 +246,6 @@ function isBirthdayToday(dateValue: string | null | undefined) {
 
   const today = new Date()
   return today.getMonth() + 1 === month && today.getDate() === day
-}
-
-function initialLeaderboardQuery(): LeaderboardQuery {
-  return {
-    clubId: '',
-    clubPin: '',
-    criterion: 'totalScore',
-    search: '',
-  }
-}
-
-function leaderboardRpcArgs(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
-  return {
-    p_club_id: query.clubId || null,
-    p_club_pin: query.clubPin || null,
-    p_limit: limit,
-    p_offset: offset,
-    p_profile_id: profileId || null,
-    p_rank_by: query.criterion,
-    p_search: query.search.trim() || null,
-  }
-}
-
-function isMissingPagedLeaderboardFunction(error: { message?: string; code?: string } | null | undefined) {
-  const message = (error?.message || '').toLowerCase()
-  return error?.code === 'PGRST202'
-    || message.includes('get_leaderboard_players_page')
-    || message.includes('could not find the function')
 }
 
 export default function FastHomeShell() {
@@ -493,8 +364,8 @@ export default function FastHomeShell() {
       throw error
     }
 
-    return ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, 'Player'))
-  }, [])
+    return ((data ?? []) as LeaderboardRpcRow[]).map((row) => leaderboardPlayerFromRpcRow(row, text.player))
+  }, [text.player])
 
   const loadLeaderboardPage = useCallback(async (
     query: LeaderboardQuery,
@@ -704,7 +575,7 @@ export default function FastHomeShell() {
       return
     }
 
-    const shellStats = currentUserRankPlayer ?? leaderboardPlayers.find((player) => player.profileId === userId)
+    const shellStats = currentUserLeaderboardPlayer(leaderboardPlayers, currentUserRankPlayer, userId)
     if (!shellStats) {
       openFullApp('leaderboard')
       return
