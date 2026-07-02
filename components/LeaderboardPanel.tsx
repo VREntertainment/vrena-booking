@@ -52,7 +52,6 @@ export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
   canBypassPrivateClubPins?: boolean
-  canShareCurrentUserStats?: boolean
   clubs: LeaderboardClub[]
   currentUserRankPlayer?: LeaderboardPlayer | null
   fixedClubId?: string

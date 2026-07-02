@@ -37,7 +37,10 @@ import {
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { getInitialLanguage, isLanguageCode, languageOptions, storeLanguage, type LanguageCode, type TranslationMap, uiText } from '../lib/i18n'
+import { formatNotesHtml } from '../lib/formatNotesHtml'
+import { buildPlayerStatsShareSummary, formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
+import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import type { StaffProfile } from './StaffConsole'
 
@@ -48,9 +51,6 @@ const TIME_STEP_MINUTES = 20
 const SESSION_LOAD_BATCH_DAYS = 7
 const LEADERBOARD_PAGE_SIZE = 20
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
-const OWNER_EMAILS = ['emilejacquet@icloud.com']
-const ADMIN_ONLY_EMAILS = ['emile@vre-vietnam.com', 'contact@vre-vietnam.com']
-const ADMIN_EMAILS = [...OWNER_EMAILS, ...ADMIN_ONLY_EMAILS]
 const DEFAULT_APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vrena-booking.vercel.app'
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const HCAPTCHA_READY_CALLBACK = '__vrenaHcaptchaReady'
@@ -486,43 +486,6 @@ function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
 
 function normalizeProfileGender(value: unknown): ProfileGender | '' {
   return typeof value === 'string' && PROFILE_GENDER_VALUES.includes(value as ProfileGender) ? value as ProfileGender : ''
-}
-
-function isAdminEmail(email?: string | null) {
-  return Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()))
-}
-
-function isOwnerEmail(email?: string | null) {
-  return Boolean(email && OWNER_EMAILS.includes(email.toLowerCase()))
-}
-
-function isAdminOnlyEmail(email?: string | null) {
-  return Boolean(email && ADMIN_ONLY_EMAILS.includes(email.toLowerCase()))
-}
-
-function defaultRoleForEmail(email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  if (OWNER_EMAILS.includes(normalizedEmail)) return 'owner'
-  if (isAdminEmail(normalizedEmail)) return 'admin'
-  return 'player'
-}
-
-function isAdminRole(role?: string | null) {
-  const normalizedRole = role?.toLowerCase()
-  return normalizedRole === 'super_admin' || normalizedRole === 'owner' || normalizedRole === 'admin'
-}
-
-function staffConsoleRank(role?: string | null, email?: string | null) {
-  const normalizedEmail = email?.toLowerCase() || ''
-  const normalizedRole = role?.toLowerCase() || ''
-  if (isOwnerEmail(normalizedEmail)) return 120
-  if (isAdminOnlyEmail(normalizedEmail)) return 100
-  if (normalizedRole === 'super_admin' || normalizedRole === 'owner') return 120
-  if (normalizedRole === 'admin') return 100
-  if (normalizedRole === 'manager') return 80
-  if (normalizedRole === 'staff' || normalizedRole === 'cashier') return 50
-  if (normalizedRole === 'viewer') return 20
-  return 0
 }
 
 function isLeaderboardCriterion(value: string | null | undefined): value is LeaderboardCriterion {
@@ -1618,30 +1581,6 @@ function isInteractiveClickTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest('button, input, select, textarea, a, label, summary, details'))
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-function formatNotesHtml(value: string) {
-  if (/<\/?(strong|b|em|i|u|s|strike|br|div|p)\b/i.test(value)) {
-    return value
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<(\/?)(strong|b|em|i|u|s|strike|br|div|p)(?:\s[^>]*)?>/gi, '<$1$2>')
-      .replace(/<(?!\/?(strong|b|em|i|u|s|strike|br|div|p)\b)[^>]*>/gi, '')
-  }
-
-  return escapeHtml(value)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/__(.+?)__/g, '<u>$1</u>')
-    .replace(/~~(.+?)~~/g, '<s>$1</s>')
-    .replace(/(^|[^*])\*(?!\*)(.+?)\*/g, '$1<em>$2</em>')
-}
-
 function rankEmoji(placement?: number | null) {
   if (placement === 1) return '🥇'
   if (placement === 2) return '🥈'
@@ -1679,10 +1618,6 @@ function isBestSessionPerformer(session: Session, participant: Participant) {
 function percentValue(numerator: number, denominator: number) {
   if (denominator <= 0) return 0
   return (numerator / denominator) * 100
-}
-
-function formatWholePercent(value: number | null | undefined) {
-  return Number.isFinite(value) ? `${Math.round(Number(value))}%` : '-%'
 }
 
 function formatSpeedrunDuration(value: number | null | undefined) {
@@ -1739,34 +1674,6 @@ function drawCanvasRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number
   ctx.lineTo(x, y + safeRadius)
   ctx.quadraticCurveTo(x, y, x + safeRadius, y)
   ctx.closePath()
-}
-
-const shareRankTiers = [
-  'Champion',
-  'Grandmaster',
-  'Master',
-  'Diamond',
-  'Platinum',
-  'Gold',
-  'Silver',
-  'Bronze',
-] as const
-
-function shareRankTitle(distinctRank: number | null | undefined, fallback: string) {
-  if (!distinctRank || distinctRank < 1) return fallback
-  return shareRankTiers[distinctRank - 1] || fallback
-}
-
-function hasShareablePlayerStats(stats: LeaderboardPlayer | null | undefined) {
-  return Boolean(stats && (
-    stats.gamesJoined > 0
-    || stats.sessionsJoined > 0
-    || stats.wins > 0
-    || stats.bestPerformerCount > 0
-    || stats.totalScore > 0
-    || stats.totalProjectiles > 0
-    || Number(stats.averageAccuracy) > 0
-  ))
 }
 
 function safeDownloadSlug(value: string, fallback: string) {
@@ -10517,8 +10424,6 @@ function handleSessionDateChange(value: string) {
     }
 
     const playerName = compactDisplayName(shareStats.displayName || displayName(profile), text.player)
-    const title = contextLabel ? `${text.statsShareTitle} · ${contextLabel}` : text.statsShareTitle
-    const bestScore = shareStats.bestByGame[0]
     const loadedRankIndex = leaderboardPlayerStats.findIndex((item) => item.profileId === userId)
     const playerLeaderboardRank = 'leaderboardRank' in shareStats ? shareStats.leaderboardRank : undefined
     const playerLeaderboardDistinctRank = 'leaderboardDistinctRank' in shareStats ? shareStats.leaderboardDistinctRank : null
@@ -10527,20 +10432,29 @@ function handleSessionDateChange(value: string) {
       ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
     const currentUserDistinctRank = playerLeaderboardDistinctRank
       ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardDistinctRank : null)
-    const rankTitle = shareRankTitle(currentUserDistinctRank, text.rankJesterMessage)
-    const rankSummary = currentUserRank ? `${text.currentRank}: #${currentUserRank} · ${rankTitle}` : `${text.currentRank}: ${rankTitle}`
-    const summary = [
-      `${title}: ${playerName}`,
-      rankSummary,
-      `${text.totalScore}: ${shareStats.totalScore}`,
-      `${text.gamesPlayedCriterion}: ${shareStats.gamesJoined}`,
-      `${text.wins}: ${shareStats.wins}`,
-      `${bestPerformerCountText}: ${shareStats.bestPerformerCount}`,
-      `${text.accuracy}: ${formatWholePercent(shareStats.averageAccuracy)}`,
-      `${text.projectiles}: ${shareStats.totalProjectiles}`,
-      bestScore ? `${text.bestScores}: ${bestScore.game} ${bestScore.score}` : '',
-      DEFAULT_APP_URL,
-    ].filter(Boolean).join('\n')
+    const { rankTitle, summary, title } = buildPlayerStatsShareSummary({
+      appUrl: DEFAULT_APP_URL,
+      contextLabel,
+      currentRank: currentUserRank,
+      displayName: playerName,
+      labels: {
+        accuracy: text.accuracy,
+        bestPerformerCount: bestPerformerCountText,
+        bestScores: text.bestScores,
+        currentRank: text.currentRank,
+        gamesPlayed: text.gamesPlayedCriterion,
+        projectiles: text.projectiles,
+        rankFallback: text.rankJesterMessage,
+        statsTitle: text.statsShareTitle,
+        totalScore: text.totalScore,
+        wins: text.wins,
+      },
+      stats: {
+        ...shareStats,
+        leaderboardDistinctRank: currentUserDistinctRank,
+        leaderboardRank: currentUserRank,
+      },
+    })
 
     let templateImage: HTMLImageElement | null = null
     try {
@@ -11564,7 +11478,7 @@ function handleSessionDateChange(value: string) {
                           <div className={expandedNotes[session.id] ? 'notes-block expanded' : 'notes-block'}>
                             <div
                               className="notes"
-                              dangerouslySetInnerHTML={{ __html: formatNotesHtml(session.notes) }}
+                              dangerouslySetInnerHTML={{ __html: formatNotesHtml(session.notes, { markdownShortcuts: true }) }}
                             />
                             <button
                               className="expand-note"
@@ -12559,7 +12473,6 @@ function handleSessionDateChange(value: string) {
                   avatar_text_color: player.avatarTextColor,
                 })}
                 canBypassPrivateClubPins={isAdmin}
-                canShareCurrentUserStats={canShareCurrentUserStats}
                 clubs={clubs}
                 currentUserRankPlayer={currentUserRankPlayer}
                 hasMorePlayers={hasMoreLeaderboardPlayers}
@@ -14280,7 +14193,6 @@ function handleSessionDateChange(value: string) {
                             avatar_text_color: player.avatarTextColor,
                           })}
                           canBypassPrivateClubPins={isAdmin}
-                          canShareCurrentUserStats={canShareCurrentUserStats}
                           clubs={[selectedClub]}
                           currentUserRankPlayer={currentUserRankPlayer}
                           fixedClubId={selectedClub.id}
