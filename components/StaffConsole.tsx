@@ -6714,7 +6714,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   aria-autocomplete="list"
                   aria-controls={showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
                   aria-expanded={showCustomerNameSuggestions}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  name="staff-booking-profile-query"
                   role="combobox"
+                  spellCheck={false}
                   value={booking.customerName}
                   onChange={(event) => handleCustomerNameChange(event.target.value)}
                 />
@@ -6738,11 +6742,21 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               </div>
               <label>
                 {text.labels.phone}
-                <input value={booking.customerPhone} onChange={(event) => setBooking({ ...booking, customerPhone: event.target.value })} />
+                <input
+                  autoComplete="new-password"
+                  name="staff-booking-profile-phone"
+                  value={booking.customerPhone}
+                  onChange={(event) => setBooking({ ...booking, customerPhone: event.target.value })}
+                />
               </label>
               <label>
                 {text.labels.email}
-                <input value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
+                <input
+                  autoComplete="new-password"
+                  name="staff-booking-profile-email"
+                  value={booking.customerEmail}
+                  onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })}
+                />
               </label>
               <label>
                 {text.labels.game}
