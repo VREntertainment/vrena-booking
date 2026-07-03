@@ -4,7 +4,7 @@ import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
 export type ClubVisibility = 'public' | 'private'
 
-type ClubsViewProps = {
+export type ClubsViewProps = {
   children: ReactNode
   clubDescription: string
   clubListCount: number

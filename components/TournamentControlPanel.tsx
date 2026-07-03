@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
-type TournamentControlPanelProps = {
+export type TournamentControlPanelProps = {
   children: ReactNode
   canEdit: boolean
   isBusy: boolean
