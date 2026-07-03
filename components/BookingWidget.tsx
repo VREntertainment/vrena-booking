@@ -39,6 +39,8 @@ import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
 import {
   CLUB_LIST_SELECT,
   CLUB_LIST_SELECT_BASE,
+  CLUB_LIST_WITH_MEMBERS_SELECT,
+  CLUB_LIST_WITH_MEMBERS_SELECT_BASE,
   CLUB_MEMBER_SELECT,
   CLUB_MEMBER_SELECT_BASE,
   CLUB_MESSAGE_SELECT,
@@ -4499,10 +4501,28 @@ export default function WidgetPage({
 
     const result = await client
       .from('clubs')
-      .select(CLUB_LIST_SELECT)
+      .select(CLUB_LIST_WITH_MEMBERS_SELECT)
       .order('created_at', { ascending: false })
     let data = result.data as Club[] | null
     let error = result.error
+
+    if (error) {
+      const fallbackResult = await client
+        .from('clubs')
+        .select(CLUB_LIST_WITH_MEMBERS_SELECT_BASE)
+        .order('created_at', { ascending: false })
+      data = fallbackResult.data as Club[] | null
+      error = fallbackResult.error
+    }
+
+    if (error) {
+      const fallbackResult = await client
+        .from('clubs')
+        .select(CLUB_LIST_SELECT)
+        .order('created_at', { ascending: false })
+      data = fallbackResult.data as Club[] | null
+      error = fallbackResult.error
+    }
 
     if (error) {
       const fallbackResult = await client
@@ -4524,6 +4544,10 @@ export default function WidgetPage({
 
     const clubIds = loadedClubs.map((club) => club.id)
     const membershipsByClubId = new Map<string, ClubMember[]>()
+    loadedClubs.forEach((club) => {
+      const members = clubMembers(club)
+      if (members.length > 0) membershipsByClubId.set(club.id, members)
+    })
     if (clubIds.length > 0) {
       const membersResult = await client
         .from('club_members')
@@ -4549,7 +4573,7 @@ export default function WidgetPage({
         const visibleMembers = membersData ?? []
         visibleMembers.forEach((member) => {
           const members = membershipsByClubId.get(member.club_id) ?? []
-          members.push(member)
+          if (!members.some((existingMember) => existingMember.id === member.id)) members.push(member)
           membershipsByClubId.set(member.club_id, members)
         })
       }
