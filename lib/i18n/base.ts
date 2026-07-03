@@ -569,6 +569,7 @@ export const en = {
   privateIncorrect: 'Private code is incorrect.',
   sessionFull: 'This session is already full.',
   joinedSession: 'You joined the session.',
+  joinedClub: 'You joined the club.',
   joinWaitlist: 'Join waitlist',
   waitlisted: 'Waitlisted',
   waitlistPosition: 'Waitlist position',

@@ -4466,23 +4466,22 @@ export default function WidgetPage({
   async function loadClubs() {
     clubsLoadingRef.current = true
     const client = await getSupabase()
+    const publicResult = await client
+      .from('clubs')
+      .select(CLUB_PUBLIC_SELECT)
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
 
     if (!userId) {
-      const { data, error } = await client
-        .from('clubs')
-        .select(CLUB_PUBLIC_SELECT)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        setClubStatus(error.message)
+      if (publicResult.error) {
+        setClubStatus(publicResult.error.message)
         clubsLoadingRef.current = false
         return
       }
 
       clubsLoadedRef.current = true
       clubsLoadingRef.current = false
-      setClubs(((data ?? []) as Club[]).map((club) => ({ ...club, club_members: [] })))
+      setClubs(((publicResult.data ?? []) as Club[]).map((club) => ({ ...club, club_members: [] })))
       return
     }
 
@@ -4502,13 +4501,16 @@ export default function WidgetPage({
       error = fallbackResult.error
     }
 
-    if (error) {
+    const publicClubs = publicResult.error ? [] : (publicResult.data ?? []) as Club[]
+    const loadedClubs = mergeClubRecords((data ?? []) as Club[], publicClubs)
+
+    if (error && publicClubs.length === 0) {
       setClubStatus(error.message)
       clubsLoadingRef.current = false
       return
     }
 
-    const clubIds = (data ?? []).map((club) => club.id)
+    const clubIds = loadedClubs.map((club) => club.id)
     const membershipsByClubId = new Map<string, ClubMember[]>()
     if (clubIds.length > 0) {
       const membersResult = await client
@@ -4570,7 +4572,7 @@ export default function WidgetPage({
 
     clubsLoadedRef.current = true
     clubsLoadingRef.current = false
-    setClubs((data ?? []).map((club) => mergeCurrentUserClubMembership({
+    setClubs(loadedClubs.map((club) => mergeCurrentUserClubMembership({
       ...club,
       club_members: membershipsByClubId.get(club.id) ?? [],
     }, currentUserMemberships)))
@@ -7440,6 +7442,26 @@ function handleSessionDateChange(value: string) {
     return { ...club, club_members: Array.from(mergedMembers.values()) }
   }
 
+  function mergeClubRecords(primaryClubs: Club[], fallbackClubs: Club[]): Club[] {
+    const clubsById = new Map<string, Club>()
+    fallbackClubs.forEach((club) => clubsById.set(club.id, club))
+    primaryClubs.forEach((club) => clubsById.set(club.id, {
+      ...clubsById.get(club.id),
+      ...club,
+    }))
+
+    return Array.from(clubsById.values()).sort((left, right) => {
+      const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0
+      const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0
+      return rightTime - leftTime || left.name.localeCompare(right.name)
+    })
+  }
+
+  function isDuplicateClubMembershipError(error: { code?: string; message?: string } | null | undefined) {
+    const message = error?.message?.toLowerCase() || ''
+    return error?.code === '23505' || message.includes('club_members_active_club_profile_key')
+  }
+
   function approvedClubMember(club: Club, profileId = userId) {
     return clubMembers(club).some((member) => member.profile_id === profileId && member.status === 'approved')
   }
@@ -7833,7 +7855,7 @@ function handleSessionDateChange(value: string) {
 
     const currentMembership = clubMembers(club).find((member) => member.profile_id === userId)
     if (currentMembership) {
-      setClubStatus(currentMembership.status === 'pending' ? text.requestSent : text.joinedSession)
+      setClubStatus(currentMembership.status === 'pending' ? text.requestSent : text.joinedClub)
       return
     }
 
@@ -7865,13 +7887,13 @@ function handleSessionDateChange(value: string) {
 
       if (fallbackMembershipResult.data) {
         await loadClubs()
-        setClubStatus(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedSession)
+        setClubStatus(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
         setBusyClubId('')
         return
       }
     } else if (existingMembershipResult.data) {
       await loadClubs()
-      setClubStatus(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedSession)
+      setClubStatus(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
       setBusyClubId('')
       return
     }
@@ -7885,9 +7907,9 @@ function handleSessionDateChange(value: string) {
     })
 
     if (error) {
-      if (error.code === '23505') {
+      if (isDuplicateClubMembershipError(error)) {
         await loadClubs()
-        setClubStatus(desiredStatus === 'pending' ? text.requestSent : text.joinedSession)
+        setClubStatus(desiredStatus === 'pending' ? text.requestSent : text.joinedClub)
       } else {
         setClubStatus(error.message)
       }
@@ -7896,7 +7918,7 @@ function handleSessionDateChange(value: string) {
     }
 
     await loadClubs()
-    setClubStatus(club.visibility === 'private' ? text.requestSent : text.joinedSession)
+    setClubStatus(club.visibility === 'private' ? text.requestSent : text.joinedClub)
     setBusyClubId('')
   }
 

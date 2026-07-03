@@ -571,6 +571,7 @@ export const de = {
   privateIncorrect: 'Privatcode falsch.',
   sessionFull: 'Diese Runde ist schon voll.',
   joinedSession: 'Du bist drin.',
+  joinedClub: 'Du bist im Club.',
   joinWaitlist: 'Warteliste',
   waitlisted: 'Wartet',
   waitlistPosition: 'Warteplatz',

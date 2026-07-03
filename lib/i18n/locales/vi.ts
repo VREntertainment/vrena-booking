@@ -571,6 +571,7 @@ export const vi = {
   privateIncorrect: 'Mã riêng tư không đúng.',
   sessionFull: 'Phiên này đã đầy.',
   joinedSession: 'Bạn đã tham gia phiên.',
+  joinedClub: 'Bạn đã tham gia CLB.',
   joinWaitlist: 'Vào danh sách chờ',
   waitlisted: 'Đang chờ',
   waitlistPosition: 'Vị trí chờ',
