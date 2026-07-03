@@ -7097,66 +7097,6 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    const participantProfileUpdate = await (await getSupabase())
-      .from('session_participants')
-      .update({
-        display_name: display,
-        avatar_url: publicAvatar.avatar_url,
-        avatar_emoji: publicAvatar.avatar_emoji,
-        avatar_initials: publicAvatar.avatar_initials,
-        avatar_color: publicAvatar.avatar_color,
-        avatar_text_color: publicAvatar.avatar_text_color,
-        profile_motto: data.profile_motto,
-    })
-      .eq('profile_id', userId)
-      .select('id')
-
-    if (participantProfileUpdate.error) {
-      setProfileStatus(participantProfileUpdate.error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const clubMemberProfileUpdate = await (await getSupabase())
-      .from('club_members')
-      .update({
-        display_name: display,
-        avatar_url: publicAvatar.avatar_url,
-        avatar_emoji: publicAvatar.avatar_emoji,
-        avatar_initials: publicAvatar.avatar_initials,
-        avatar_color: publicAvatar.avatar_color,
-        avatar_text_color: publicAvatar.avatar_text_color,
-        profile_motto: data.profile_motto,
-      })
-      .eq('profile_id', userId)
-      .select('id')
-
-    if (clubMemberProfileUpdate.error) {
-      setProfileStatus(clubMemberProfileUpdate.error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const tournamentEditorProfileUpdate = await (await getSupabase())
-      .from('tournament_editors')
-      .update({
-        display_name: display,
-        avatar_url: publicAvatar.avatar_url,
-        avatar_emoji: publicAvatar.avatar_emoji,
-        avatar_initials: publicAvatar.avatar_initials,
-        avatar_color: publicAvatar.avatar_color,
-        avatar_text_color: publicAvatar.avatar_text_color,
-        profile_motto: data.profile_motto,
-      })
-      .eq('profile_id', userId)
-      .select('id')
-
-    if (tournamentEditorProfileUpdate.error) {
-      setProfileStatus(tournamentEditorProfileUpdate.error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
     const snapshotError = await syncProfilePublicSnapshots(data.id)
     if (snapshotError) {
       setProfileStatus(snapshotError)
