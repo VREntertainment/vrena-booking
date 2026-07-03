@@ -90,6 +90,7 @@ import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as i
 import AppSidebar, { type AppView } from './AppSidebar'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
+import SessionsView, { type SessionTimeScope } from './SessionsView'
 import type { StaffProfile } from './StaffConsole'
 
 const ARENA_COUNT = 2
@@ -1781,7 +1782,7 @@ export default function WidgetPage({
   const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
   const [anonymousConfirmOpen, setAnonymousConfirmOpen] = useState(false)
   const [isSavingAnonymousMode, setIsSavingAnonymousMode] = useState(false)
-  const [sessionTimeScope, setSessionTimeScope] = useState<'upcoming' | 'past'>('upcoming')
+  const [sessionTimeScope, setSessionTimeScope] = useState<SessionTimeScope>('upcoming')
   const [hasMoreUpcomingSessions, setHasMoreUpcomingSessions] = useState(true)
   const [isLoadingMoreSessions, setIsLoadingMoreSessions] = useState(false)
   const [isLoadingPastSessions, setIsLoadingPastSessions] = useState(false)
@@ -10457,127 +10458,43 @@ function handleSessionDateChange(value: string) {
   const appMain = (
       <main>
         {activeView === 'sessions' && (
-          <section className="section sessions-section">
-            <div className="section-head sessions-filter-head">
-              <div className="section-copy">
-                <h2>{text.availableSessions}</h2>
-                <p className="muted">{text.privateJoinHint}</p>
-              </div>
-              <div className={isSearchOpen ? 'search-shell open' : 'search-shell'} ref={searchShellRef}>
-                <button
-                  aria-label={text.searchSessions}
-                  className="mobile-search-toggle"
-                  type="button"
-                  onClick={() => setIsSearchOpen((open) => !open)}
-                >
-                  <Search aria-hidden="true" size={24} strokeWidth={2.35} />
-                </button>
-                <input
-                  className="search"
-                  type="search"
-                  placeholder={text.searchPlaceholder}
-                  value={search}
-                  onFocus={() => setIsSearchOpen(true)}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-                {(isSearchOpen || search || selectedSessionDate) && (
-                  <button
-                    aria-label={text.close}
-                    className="search-close"
-                    type="button"
-                    onClick={() => {
-                      setSearch('')
-                      setSelectedSessionDate('')
-                      setIsSearchOpen(false)
-                    }}
-                  >
-                    <X aria-hidden="true" size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
-            {(isSearchOpen || search || selectedSessionDate) && (
-              <div className="day-strip" aria-label={text.date} ref={dayStripRef}>
-                <button
-                  className={!selectedSessionDate ? 'day-chip active' : 'day-chip'}
-                  type="button"
-                  onClick={() => setSelectedSessionDate('')}
-                >
-                  <strong>{text.allDays}</strong>
-                </button>
-                {sessionDayOptions.map((day) => (
-                  <button
-                    className={selectedSessionDate === day.value ? 'day-chip active' : 'day-chip'}
-                    key={day.value}
-                    type="button"
-                    onClick={() => setSelectedSessionDate(day.value)}
-                  >
-                    <span>{day.weekday}</span>
-                    <strong>{day.day}</strong>
-                  </button>
-                ))}
-              </div>
-            )}
-            {renderTariffTrigger()}
-            {createStatus && <p className="notice">{createStatus}</p>}
-
-            {sessionReminders.length > 0 && (
-              <div className="reminder-strip" aria-label={text.sessionReminders}>
-                <div className="reminder-strip-head">
-                  <strong>{text.sessionReminders}</strong>
-                  <button
-                    className={isPushSubscribed ? 'secondary small-button' : 'primary small-button'}
-                    disabled={isEnablingPush || isPushSubscribed}
-                    type="button"
-                    onClick={enablePushReminders}
-                  >
-                    {isPushSubscribed ? text.remindersEnabled : isEnablingPush ? text.enablingReminders : text.enableReminders}
-                  </button>
-                </div>
-                {pushReminderStatus && <small className="push-reminder-status">{pushReminderStatus}</small>}
-                {sessionReminders.slice(0, 3).map(({ session, label }) => (
-                  <button key={session.id} type="button" onClick={() => openSessionFromProfile(session.id)}>
-                    <span>{label}</span>
-                    <small>{session.name} · {formatShortDate(session.date, language)} {session.start_time.slice(0, 5)}</small>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="sub-tabs">
-              <button
-                className={sessionTimeScope === 'upcoming' ? 'active' : ''}
-                type="button"
-                onClick={() => {
-                  setSessionTimeScope('upcoming')
-                  setSelectedSessionDate('')
-                }}
-              >
-                {text.upcoming}
+          <SessionsView
+            createStatus={createStatus}
+            dayStripRef={dayStripRef}
+            filteredSessionCount={filteredSessions.length}
+            hasMoreUpcomingSessions={hasMoreUpcomingSessions}
+            isEnablingPush={isEnablingPush}
+            isLoadingMoreSessions={isLoadingMoreSessions}
+            isLoadingPastSessions={isLoadingPastSessions}
+            isPushSubscribed={isPushSubscribed}
+            isSearchOpen={isSearchOpen}
+            onClearSearch={() => {
+              setSearch('')
+              setSelectedSessionDate('')
+              setIsSearchOpen(false)
+            }}
+            onCreateSession={() => (profile ? setActiveView('create') : promptLogin())}
+            onEnablePushReminders={enablePushReminders}
+            onSearchChange={setSearch}
+            onSearchOpenChange={setIsSearchOpen}
+            onSelectedSessionDateChange={setSelectedSessionDate}
+            onSessionTimeScopeChange={setSessionTimeScope}
+            pushReminderStatus={pushReminderStatus}
+            search={search}
+            searchShellRef={searchShellRef}
+            selectedSessionDate={selectedSessionDate}
+            sessionDayOptions={sessionDayOptions}
+            sessionReminderItems={sessionReminders.slice(0, 3).map(({ session, label }) => (
+              <button key={session.id} type="button" onClick={() => openSessionFromProfile(session.id)}>
+                <span>{label}</span>
+                <small>{session.name} · {formatShortDate(session.date, language)} {session.start_time.slice(0, 5)}</small>
               </button>
-              <button
-                className={sessionTimeScope === 'past' ? 'active' : ''}
-                type="button"
-                onClick={() => {
-                  setSessionTimeScope('past')
-                  setSelectedSessionDate('')
-                }}
-              >
-                {text.past}
-              </button>
-              <button
-                className="create-session-tab"
-                type="button"
-                onClick={() => (profile ? setActiveView('create') : promptLogin())}
-              >
-                {text.createSession}
-              </button>
-            </div>
-
-            <div className="list">
-              {filteredSessions.length === 0 && !(sessionTimeScope === 'past' && isLoadingPastSessions) && <p className="notice">{text.noMatchingSessions}</p>}
-              {sessionTimeScope === 'past' && isLoadingPastSessions && <p className="notice" aria-busy="true">...</p>}
-
+            ))}
+            sessionRemindersVisible={sessionReminders.length > 0}
+            sessionTimeScope={sessionTimeScope}
+            tariffTrigger={renderTariffTrigger()}
+            text={text}
+          >
               {filteredSessions.map((session) => {
                 const participants = session.session_participants ?? []
                 const waitlist = waitlistForSession(session)
@@ -11808,13 +11725,7 @@ function handleSessionDateChange(value: string) {
                   </article>
                 )
               })}
-              {sessionTimeScope === 'upcoming' && hasMoreUpcomingSessions && (
-                <div className="session-load-more" aria-busy={isLoadingMoreSessions}>
-                  {isLoadingMoreSessions ? '...' : ''}
-                </div>
-              )}
-            </div>
-          </section>
+          </SessionsView>
         )}
 
         {activeView === 'leaderboard' && (
