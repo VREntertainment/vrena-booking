@@ -10147,6 +10147,10 @@ body {
     box-shadow: 0 10px 26px rgba(11, 21, 24, 0.12);
   }
 
+  .app .sessions-section:has(.day-strip) .sub-tabs {
+    margin-top: 62px !important;
+  }
+
   .app .day-chip {
     min-width: 54px;
     min-height: 44px;
@@ -13200,6 +13204,18 @@ body {
 .app .sessions-section .sub-tabs button.active {
   border-bottom-color: #70dfff !important;
   color: #071112;
+}
+
+@media (min-width: 961px) {
+  .app .sessions-section .day-strip {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: 100%;
+    max-width: 100%;
+    margin: -4px 0 6px;
+    border-radius: 14px;
+  }
 }
 
 .app .sessions-section .compact-session-actions {

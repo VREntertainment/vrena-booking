@@ -28,7 +28,15 @@ const nextConfig: NextConfig = {
     formats: ['image/webp'],
     imageSizes: [32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
-    remotePatterns: supabaseImageRemotePatterns,
+    remotePatterns: [
+      ...supabaseImageRemotePatterns,
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/a/**',
+        search: '',
+      },
+    ],
   },
 }
 
