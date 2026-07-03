@@ -87,7 +87,9 @@ function safeDownloadSlug(value: string, fallback: string) {
 }
 
 function isShareCancelled(error: unknown) {
-  return Boolean(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError')
+  if (!error || typeof error !== 'object') return false
+  const { name, message } = error as { name?: string; message?: string }
+  return name === 'AbortError' || /cancel/i.test(message || '')
 }
 
 async function tryNativeShare(data: ShareData): Promise<SharePlayerStatsImageResult | null> {
@@ -318,8 +320,8 @@ export async function sharePlayerStatsImage({
   const file = new File([blob], `${safeDownloadSlug(displayName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
 
   if (navigator.canShare?.({ files: [file] })) {
-    const fileShareResult = await tryNativeShare({ files: [file], title, text: summary })
-    if (fileShareResult) return fileShareResult
+    const nativeFileResult = await tryNativeShare({ files: [file], title, text: summary })
+    if (nativeFileResult) return nativeFileResult
   }
 
   const textShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
