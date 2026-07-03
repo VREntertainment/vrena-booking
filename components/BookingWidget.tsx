@@ -12,7 +12,7 @@ import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
-import { hasShareablePlayerStats } from '../lib/playerStatsShare'
+import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
@@ -38,6 +38,20 @@ const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 const AVATAR_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const CLUB_MESSAGE_MAX_LENGTH = 150
+
+function isNativeStatsShareCancelled(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const { name, message } = error as { name?: string; message?: string }
+  return name === 'AbortError' || /cancel/i.test(message || '')
+}
+
+function shouldUseImmediateTextStatsShare() {
+  if (typeof navigator === 'undefined' || !navigator.share) return false
+  const userAgent = navigator.userAgent || ''
+  const vendor = navigator.vendor || ''
+  const isSafari = /Safari/i.test(userAgent) && !/(Chrome|Chromium|CriOS|Edg|OPR|OPT|CocCoc|coc_coc_browser)/i.test(userAgent)
+  return !isSafari && (/(Chrome|Chromium|CriOS|Edg|OPR|OPT|CocCoc|coc_coc_browser)/i.test(userAgent) || /Google/i.test(vendor))
+}
 const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
@@ -3313,6 +3327,15 @@ export default function WidgetPage({
   useEffect(() => {
     onProfileChange?.(profile)
   }, [profile, onProfileChange])
+
+  useEffect(() => {
+    if (!profile || !userId) return
+    if (currentUserShareStats?.profileId === userId) return
+
+    return scheduleDeferredWork(() => {
+      void hydrateCurrentUserShareStats(userId)
+    })
+  }, [profile, userId, currentUserShareStats])
 
   useEffect(() => {
     let active = true
@@ -8571,6 +8594,45 @@ function handleSessionDateChange(value: string) {
       ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
     const currentUserDistinctRank = playerLeaderboardDistinctRank
       ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardDistinctRank : null)
+    const shareLabels = {
+      accuracy: text.accuracy,
+      bestPerformerCount: bestPerformerCountText,
+      bestScores: text.bestScores,
+      currentRank: text.currentRank,
+      gamesPlayed: text.gamesPlayedCriterion,
+      projectiles: text.projectiles,
+      rankFallback: text.rankJesterMessage,
+      statsTitle: text.statsShareTitle,
+      totalScore: text.totalScore,
+      wins: text.wins,
+    }
+    const shareSummary = buildPlayerStatsShareSummary({
+      appUrl: DEFAULT_APP_URL,
+      contextLabel,
+      currentRank: currentUserRank,
+      displayName: playerName,
+      labels: shareLabels,
+      stats: {
+        ...shareStats,
+        leaderboardDistinctRank: currentUserDistinctRank,
+        leaderboardRank: currentUserRank,
+      },
+    })
+
+    if (shouldUseImmediateTextStatsShare()) {
+      try {
+        await navigator.share({
+          title: shareSummary.title,
+          text: shareSummary.summary,
+          url: DEFAULT_APP_URL,
+        })
+        setSharedKey('stats')
+        return
+      } catch (error) {
+        if (isNativeStatsShareCancelled(error)) return
+      }
+    }
+
     const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
     const shareResult = await sharePlayerStatsImage({
       appUrl: DEFAULT_APP_URL,
@@ -8579,18 +8641,7 @@ function handleSessionDateChange(value: string) {
       displayName: playerName,
       distinctRank: currentUserDistinctRank,
       fallbackPlayerLabel: text.player,
-      labels: {
-        accuracy: text.accuracy,
-        bestPerformerCount: bestPerformerCountText,
-        bestScores: text.bestScores,
-        currentRank: text.currentRank,
-        gamesPlayed: text.gamesPlayedCriterion,
-        projectiles: text.projectiles,
-        rankFallback: text.rankJesterMessage,
-        statsTitle: text.statsShareTitle,
-        totalScore: text.totalScore,
-        wins: text.wins,
-      },
+      labels: shareLabels,
       player: {
         ...shareStats,
         leaderboardDistinctRank: currentUserDistinctRank,
