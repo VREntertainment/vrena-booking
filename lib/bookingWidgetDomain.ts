@@ -447,6 +447,18 @@ export function mergeClubRecords(primaryClubs: Club[], fallbackClubs: Club[]): C
   })
 }
 
+export function clubRoleForProfile(club: Club, profileId: string | undefined): ClubRole {
+  if (!profileId) return 'member'
+  if (club.owner_id === profileId) return 'owner'
+  const member = clubMembers(club).find((item) => item.profile_id === profileId)
+  if (member?.status !== 'approved') return 'member'
+  return member.role || 'member'
+}
+
+export function clubMemberCount(club: Club): number {
+  return club.member_count ?? clubMembers(club).filter((member) => member.status === 'approved').length
+}
+
 export type TournamentEditor = {
   id: string
   session_id: string

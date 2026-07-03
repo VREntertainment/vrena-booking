@@ -92,15 +92,15 @@ function isShareCancelled(error: unknown) {
   return name === 'AbortError' || /cancel/i.test(message || '')
 }
 
-async function tryNativeShare(data: ShareData) {
-  if (!navigator.share) return 'unsupported'
+async function tryNativeShare(data: ShareData): Promise<SharePlayerStatsImageResult | null> {
+  if (!navigator.share) return null
 
   try {
     await navigator.share(data)
     return 'shared'
   } catch (error) {
     if (isShareCancelled(error)) return 'cancelled'
-    return 'failed'
+    return null
   }
 }
 
@@ -108,18 +108,32 @@ async function copyShareText(summary: string) {
   try {
     await navigator.clipboard?.writeText(summary)
   } catch {
-    return false
+    // Clipboard permissions vary by browser; downloading the image remains the durable fallback.
   }
-
-  return true
 }
 
 async function shareTextFallback(title: string, summary: string, appUrl: string): Promise<SharePlayerStatsImageResult> {
-  const nativeResult = await tryNativeShare({ title, text: summary, url: appUrl })
-  if (nativeResult === 'shared' || nativeResult === 'cancelled') return nativeResult
+  const nativeShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (nativeShareResult) return nativeShareResult
 
   await copyShareText(summary)
   return 'ready'
+}
+
+function downloadShareImage(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.rel = 'noopener'
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+
+  window.setTimeout(() => {
+    link.remove()
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 export async function sharePlayerStatsImage({
@@ -307,18 +321,13 @@ export async function sharePlayerStatsImage({
 
   if (navigator.canShare?.({ files: [file] })) {
     const nativeFileResult = await tryNativeShare({ files: [file], title, text: summary })
-    if (nativeFileResult === 'shared' || nativeFileResult === 'cancelled') return nativeFileResult
+    if (nativeFileResult) return nativeFileResult
   }
 
-  const nativeTextResult = await tryNativeShare({ title, text: summary, url: appUrl })
-  if (nativeTextResult === 'shared' || nativeTextResult === 'cancelled') return nativeTextResult
+  const textShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (textShareResult) return textShareResult
 
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = file.name
-  link.click()
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  downloadShareImage(blob, file.name)
   await copyShareText(summary)
   return 'ready'
 }
