@@ -36,6 +36,40 @@ import {
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
+import {
+  CLUB_LIST_SELECT,
+  CLUB_LIST_SELECT_BASE,
+  CLUB_MEMBER_SELECT,
+  CLUB_MEMBER_SELECT_BASE,
+  CLUB_MESSAGE_SELECT,
+  CLUB_PUBLIC_SELECT,
+  OPTIONAL_SESSION_METADATA_COLUMNS,
+  SESSION_CARD_SELECT,
+  SESSION_CARD_SELECT_BASE,
+  SESSION_MESSAGE_SELECT,
+  SESSION_SELECT,
+  SESSION_SELECT_BASE,
+  WAITLIST_POSITION_SELECT,
+  WAITLIST_SELECT,
+  avatarColors,
+  avatarEmojis,
+  avatarTextColors,
+  clubThemeColors,
+  countries,
+  dateLocales,
+  games,
+  individualTicketPrices,
+  isEscapeSession,
+  monthAbbreviations,
+  selectedTicketService,
+  ticketArenaCapacityPerSlot,
+  ticketArenaCount,
+  ticketMaxCustomerDurationMinutes,
+  ticketPriceBlockMinutes,
+  ticketServices,
+  type GameId,
+  type TicketType,
+} from '../lib/bookingStaticData'
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
@@ -49,7 +83,7 @@ import {
   type LeaderboardQuery,
   type LeaderboardRpcRow,
 } from '../lib/leaderboard'
-import { buildPlayerStatsShareSummary, formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsShare'
+import { formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
@@ -70,38 +104,6 @@ const HCAPTCHA_READY_CALLBACK = '__vrenaHcaptchaReady'
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const MAX_DISPLAY_NAME_LENGTH = 10
-const SESSION_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at'
-const SESSION_CARD_PARTICIPANT_SELECT = 'id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in'
-const SESSION_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, session_participants(${SESSION_PARTICIPANT_SELECT})`
-const SESSION_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, game_votes, confirmed_game_id, visibility, invite_code, notes, status, tournament_format, best_of, rounds_per_match, require_payment, qualification_rule, custom_qualifiers, enable_third_place_match, first_prize, second_prize, third_prize, tournament_locked, seeded, seed_label, seed_batch, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_unit_price, ticket_status, ticket_reference, ticket_customer_id, challenge_target_id, challenge_status, challenge_accepted_at, challenge_declined_at, session_participants(${SESSION_PARTICIPANT_SELECT})`
-const SESSION_CARD_SELECT_BASE = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, invite_code, status, rounds_per_match, session_participants(${SESSION_CARD_PARTICIPANT_SELECT})`
-const SESSION_CARD_SELECT = `id, owner_id, club_id, session_type, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, invite_code, status, rounds_per_match, seeded, seed_label, booking_type, ticket_type, ticket_player_count, challenge_target_id, challenge_status, session_participants(${SESSION_CARD_PARTICIPANT_SELECT})`
-const OPTIONAL_SESSION_METADATA_COLUMNS = [
-  'seeded',
-  'seed_label',
-  'seed_batch',
-  'booking_type',
-  'ticket_type',
-  'ticket_player_count',
-  'ticket_total_price',
-  'ticket_unit_price',
-  'ticket_status',
-  'ticket_reference',
-  'ticket_customer_id',
-  'challenge_target_id',
-  'challenge_status',
-  'challenge_accepted_at',
-  'challenge_declined_at',
-]
-const WAITLIST_SELECT = 'id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, created_at'
-const WAITLIST_POSITION_SELECT = 'id, session_id, profile_id, created_at'
-const CLUB_MEMBER_SELECT_BASE = 'id, club_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, status, deleted_at'
-const CLUB_MEMBER_SELECT = `${CLUB_MEMBER_SELECT_BASE}, role, created_at`
-const CLUB_LIST_SELECT_BASE = 'id, owner_id, name, description, visibility, pin_code, member_count, created_at'
-const CLUB_LIST_SELECT = 'id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, pin_code, member_count, created_at'
-const CLUB_PUBLIC_SELECT = 'id, owner_id, name, motto, description, banner_url, theme_color, default_language, ranking_criterion, visibility, member_count, created_at'
-const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, created_at'
-const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
@@ -237,18 +239,6 @@ type HCaptchaApi = {
   remove?: (widgetId: string) => void
 }
 
-type GameId =
-  | 'laser-tag'
-  | 'mini-block-towers'
-  | 'office-war'
-  | 'paintball'
-  | 'snow-battle'
-  | 'castle-unspunnen'
-  | 'wild-west'
-  | 'arc-of-the-covenant'
-  | 'joller-house'
-
-type TicketType = 'individual' | 'birthday' | 'corporate'
 type TicketStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
 type BookingType = 'community' | 'ticket' | 'challenge'
 type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
@@ -265,25 +255,6 @@ type ParticipantPaymentSplitDraft = {
   id: string
   payment_method: ParticipantPaymentMethod
   amount: string
-}
-
-type GameAudience =
-  | 'familyFriendly'
-  | 'scary'
-  | 'fun'
-  | 'quest'
-  | 'teamwork'
-  | 'beginnerFriendly'
-  | 'competitive'
-
-type GameInfo = {
-  id: GameId
-  title: string
-  category: 'FPS / PVP' | 'Escape'
-  image: string
-  durationMinutes: number
-  maxPlayersPerArena: number
-  audience: GameAudience[]
 }
 
 type StaffGameGuideText = Partial<Record<LanguageCode, string>>
@@ -730,172 +701,6 @@ type TournamentMatchInsert = {
   best_of?: 1 | 3 | 5 | number | null
 }
 
-const games: GameInfo[] = [
-  {
-    id: 'laser-tag',
-    title: 'Laser Tag',
-    category: 'FPS / PVP',
-    image: '/games/laser-tag.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['competitive', 'teamwork', 'beginnerFriendly', 'fun'],
-  },
-  {
-    id: 'mini-block-towers',
-    title: 'Mini Block Towers',
-    category: 'FPS / PVP',
-    image: '/games/mini-block-towers.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
-  },
-  {
-    id: 'office-war',
-    title: 'Office War',
-    category: 'FPS / PVP',
-    image: '/games/office-war.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['fun', 'teamwork', 'beginnerFriendly'],
-  },
-  {
-    id: 'paintball',
-    title: 'Paintball',
-    category: 'FPS / PVP',
-    image: '/games/paintball.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['competitive', 'teamwork', 'fun'],
-  },
-  {
-    id: 'snow-battle',
-    title: 'Snow Battle',
-    category: 'FPS / PVP',
-    image: '/games/snow-battle.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
-  },
-  {
-    id: 'castle-unspunnen',
-    title: 'Castle Unspunnen',
-    category: 'FPS / PVP',
-    image: '/games/castle-unspunnen.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['quest', 'teamwork', 'competitive'],
-  },
-  {
-    id: 'wild-west',
-    title: 'Wild West',
-    category: 'FPS / PVP',
-    image: '/games/wild-west.png',
-    durationMinutes: 20,
-    maxPlayersPerArena: 4,
-    audience: ['competitive', 'fun'],
-  },
-  {
-    id: 'arc-of-the-covenant',
-    title: 'The Secret of the Arc',
-    category: 'Escape',
-    image: '/games/arc-of-the-covenant.png',
-    durationMinutes: 40,
-    maxPlayersPerArena: 4,
-    audience: ['quest', 'teamwork'],
-  },
-  {
-    id: 'joller-house',
-    title: 'Joller House',
-    category: 'Escape',
-    image: '/games/joller-house.png',
-    durationMinutes: 40,
-    maxPlayersPerArena: 4,
-    audience: ['scary', 'quest', 'teamwork'],
-  },
-]
-
-function isEscapeGameId(gameId: string | null | undefined) {
-  return games.some((game) => game.id === gameId && game.category === 'Escape')
-}
-
-function isEscapeSession(session: Pick<Session, 'confirmed_game_id' | 'game_options'> | null | undefined) {
-  if (!session) return false
-  return isEscapeGameId(session.confirmed_game_id) || (session.game_options ?? []).some((gameId) => isEscapeGameId(gameId))
-}
-
-const ticketServices: Array<{
-  id: TicketType
-  duration: number
-  minPlayers: number
-  maxPlayers: number
-  arenaCount: 1 | 2
-  defaultGame: GameId
-}> = [
-  {
-    id: 'individual',
-    duration: 20,
-    minPlayers: 1,
-    maxPlayers: 16,
-    arenaCount: 1,
-    defaultGame: 'laser-tag',
-  },
-  {
-    id: 'birthday',
-    duration: 20,
-    minPlayers: 4,
-    maxPlayers: 16,
-    arenaCount: 1,
-    defaultGame: 'joller-house',
-  },
-  {
-    id: 'corporate',
-    duration: 20,
-    minPlayers: 6,
-    maxPlayers: 16,
-    arenaCount: 1,
-    defaultGame: 'office-war',
-  },
-]
-
-const individualTicketPrices = {
-  weekdayDay: 200000,
-  weekdayEvening: 250000,
-  weekend: 330000,
-}
-const ticketPriceBlockMinutes = 20
-const ticketArenaCount = 1
-const ticketArenaCapacityPerSlot = 4
-const ticketMaxCustomerDurationMinutes = 120
-
-const countries = [
-  { code: '+84', name: 'Vietnam' },
-  { code: '+33', name: 'France' },
-  { code: '+1', name: 'United States / Canada' },
-  { code: '+44', name: 'United Kingdom' },
-  { code: '+61', name: 'Australia' },
-  { code: '+65', name: 'Singapore' },
-  { code: '+66', name: 'Thailand' },
-  { code: '+60', name: 'Malaysia' },
-  { code: '+62', name: 'Indonesia' },
-  { code: '+63', name: 'Philippines' },
-  { code: '+81', name: 'Japan' },
-  { code: '+82', name: 'South Korea' },
-  { code: '+86', name: 'China' },
-  { code: '+852', name: 'Hong Kong' },
-  { code: '+886', name: 'Taiwan' },
-  { code: '+49', name: 'Germany' },
-  { code: '+39', name: 'Italy' },
-  { code: '+34', name: 'Spain' },
-  { code: '+31', name: 'Netherlands' },
-  { code: '+41', name: 'Switzerland' },
-]
-
-const avatarColors = ['#3059ff', '#00b5b8', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e', '#111827']
-const avatarTextColors = ['#ffffff', '#071112', '#fef3c7', '#cffafe', '#fce7f3', '#dcfce7']
-const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '🚀', '🌀', '🎯', '🕹️', '👾', '🤖', '🧠', '💥', '🛡️', '🧩', '🏆', '✨']
-const clubThemeColors = ['#3059ff', '#00b5b8', '#0f766e', '#f59e0b', '#ef4444', '#7c3aed', '#111827']
-
-
 function minutesToTime(minutes: number) {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
@@ -933,10 +738,6 @@ function isTicketSession(session: Pick<Session, 'booking_type'>) {
 
 function isChallengeSession(session: Pick<Session, 'booking_type'>) {
   return session.booking_type === 'challenge'
-}
-
-function selectedTicketService(ticketType: TicketType) {
-  return ticketServices.find((service) => service.id === ticketType) || ticketServices[0]
 }
 
 function ticketTypeLabel(ticketType: TicketType, text: Record<string, string>) {
@@ -1301,18 +1102,6 @@ function weekDaysFromStart(startDate: string) {
   return Array.from({ length: 7 }, (_, index) => addDaysToDateValue(startDate, index))
 }
 
-const dateLocales: Record<LanguageCode, string> = {
-  en: 'en-US',
-  vi: 'vi-VN',
-  ko: 'ko-KR',
-  ja: 'ja-JP',
-  fr: 'fr-FR',
-  de: 'de-DE',
-  it: 'it-IT',
-}
-
-const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
 function formatDayButton(dateValue: string, language: LanguageCode) {
   const date = new Date(`${dateValue}T12:00:00`)
   const locale = dateLocales[language]
@@ -1477,25 +1266,6 @@ async function loadCanvasImage(src: string) {
     image.src = src
   })
   return image
-}
-
-function drawCanvasRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
-  const safeRadius = Math.min(radius, width / 2, height / 2)
-  ctx.beginPath()
-  ctx.moveTo(x + safeRadius, y)
-  ctx.lineTo(x + width - safeRadius, y)
-  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius)
-  ctx.lineTo(x + width, y + height - safeRadius)
-  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height)
-  ctx.lineTo(x + safeRadius, y + height)
-  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius)
-  ctx.lineTo(x, y + safeRadius)
-  ctx.quadraticCurveTo(x, y, x + safeRadius, y)
-  ctx.closePath()
-}
-
-function safeDownloadSlug(value: string, fallback: string) {
-  return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || fallback
 }
 
 function bestOfLabel(value?: number | null) {
@@ -10280,11 +10050,14 @@ function handleSessionDateChange(value: string) {
       ?? (loadedRankIndex >= 0 ? loadedRankIndex + 1 : undefined)
     const currentUserDistinctRank = playerLeaderboardDistinctRank
       ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardDistinctRank : null)
-    const { rankTitle, summary, title } = buildPlayerStatsShareSummary({
+    const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
+    const shareResult = await sharePlayerStatsImage({
       appUrl: DEFAULT_APP_URL,
       contextLabel,
       currentRank: currentUserRank,
       displayName: playerName,
+      distinctRank: currentUserDistinctRank,
+      fallbackPlayerLabel: text.player,
       labels: {
         accuracy: text.accuracy,
         bestPerformerCount: bestPerformerCountText,
@@ -10297,203 +10070,14 @@ function handleSessionDateChange(value: string) {
         totalScore: text.totalScore,
         wins: text.wins,
       },
-      stats: {
+      player: {
         ...shareStats,
         leaderboardDistinctRank: currentUserDistinctRank,
         leaderboardRank: currentUserRank,
       },
     })
 
-    let templateImage: HTMLImageElement | null = null
-    try {
-      templateImage = await loadCanvasImage(`${window.location.origin}/brand/tournament-leaderboard-template.jpg`)
-    } catch {
-      templateImage = null
-    }
-
-    const canvas = document.createElement('canvas')
-    canvas.width = templateImage?.naturalWidth || 1080
-    canvas.height = templateImage?.naturalHeight || 1350
-    const ctx = canvas.getContext('2d')
-
-    if (!ctx) {
-      if (navigator.share) {
-        await navigator.share({ title, text: summary, url: DEFAULT_APP_URL })
-        setSharedKey('stats')
-        return
-      }
-
-      await navigator.clipboard?.writeText(summary)
-      setProfileStatus(text.statsShareReady)
-      setSharedKey('stats')
-      return
-    }
-
-    const templateWidth = 1080
-    const templateHeight = 1350
-    const canvasScale = Math.min(canvas.width / templateWidth, canvas.height / templateHeight)
-    const overlayScale = templateImage ? canvasScale * 0.9 : canvasScale
-    const overlayOffsetY = templateImage ? 18 * canvasScale : 0
-    const sy = (value: number) => overlayOffsetY + value * overlayScale
-    const ss = (value: number) => value * overlayScale
-
-    const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900, align: CanvasTextAlign = 'center') => {
-      let fontSize = size
-      ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
-      while (ctx.measureText(value).width > maxWidth && fontSize > 18) {
-        fontSize -= 2
-        ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
-      }
-      ctx.fillStyle = color
-      ctx.textAlign = align
-      ctx.fillText(value, x, y)
-    }
-
-    const drawShareAvatar = async (x: number, y: number, size: number) => {
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2)
-      ctx.clip()
-
-      let drewPhoto = false
-      if (shareStats.avatarUrl) {
-        try {
-          const image = await loadCanvasImage(shareStats.avatarUrl)
-          const imageWidth = image.naturalWidth || image.width
-          const imageHeight = image.naturalHeight || image.height
-          const scale = Math.max(size / imageWidth, size / imageHeight)
-          const drawWidth = imageWidth * scale
-          const drawHeight = imageHeight * scale
-          ctx.drawImage(image, x + (size - drawWidth) / 2, y + (size - drawHeight) / 2, drawWidth, drawHeight)
-          drewPhoto = true
-        } catch {
-          drewPhoto = false
-        }
-      }
-
-      if (!drewPhoto) {
-        const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
-        avatarGradient.addColorStop(0, shareStats.avatarColor || '#00b6c6')
-        avatarGradient.addColorStop(1, '#3059ff')
-        ctx.fillStyle = avatarGradient
-        ctx.fillRect(x, y, size, size)
-        ctx.fillStyle = shareStats.avatarTextColor || '#ffffff'
-        ctx.font = `900 ${shareStats.avatarEmoji ? size * 0.5 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(shareStats.avatarEmoji || compactInitials(shareStats.avatarInitials || shareStats.displayName || text.player).slice(0, 2), x + size / 2, y + size / 2)
-      }
-
-      ctx.restore()
-    }
-
-    if (templateImage) {
-      ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
-    } else {
-      const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-      background.addColorStop(0, '#f6fbfb')
-      background.addColorStop(1, '#dfe8ff')
-      ctx.fillStyle = background
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-    }
-
-    ctx.textBaseline = 'alphabetic'
-
-    await drawShareAvatar(canvas.width / 2 - ss(104), sy(278), ss(208))
-
-    ctx.strokeStyle = '#3059ff'
-    ctx.lineWidth = ss(7)
-    ctx.beginPath()
-    ctx.arc(canvas.width / 2, sy(382), ss(108), 0, Math.PI * 2)
-    ctx.stroke()
-
-    fitText(playerName, canvas.width / 2, sy(528), ss(740), ss(52))
-    if (contextLabel) {
-      fitText(contextLabel, canvas.width / 2, sy(570), ss(660), ss(25), '#657278', 800)
-    }
-
-    if (currentUserRank) {
-      fitText(`#${currentUserRank}`, canvas.width / 2, sy(contextLabel ? 616 : 590), ss(300), ss(38), '#3059ff', 900)
-      fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 650 : 624), ss(620), ss(26), '#657278', 850)
-    } else {
-      fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 620 : 596), ss(620), ss(27), '#657278', 850)
-    }
-
-    const primaryStats = [
-      { label: text.totalScore, value: shareStats.totalScore.toLocaleString('en-US') },
-      { label: text.gamesPlayedCriterion, value: `${shareStats.gamesJoined}` },
-      { label: text.wins, value: `${shareStats.wins}` },
-      { label: bestPerformerCountText, value: `${shareStats.bestPerformerCount}` },
-      { label: text.accuracy, value: formatWholePercent(shareStats.averageAccuracy) },
-      { label: text.projectiles, value: `${shareStats.totalProjectiles}` },
-    ]
-
-    const cardWidth = ss(276)
-    const cardHeight = ss(138)
-    const cardGap = ss(34)
-    const rowGap = ss(28)
-    const startX = (canvas.width - cardWidth * 3 - cardGap * 2) / 2
-    const startY = sy(690)
-
-    primaryStats.forEach((stat, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = startX + col * (cardWidth + cardGap)
-      const y = startY + row * (cardHeight + rowGap)
-
-      ctx.fillStyle = '#f0f4f6'
-      drawCanvasRoundRect(ctx, x, y, cardWidth, cardHeight, ss(24))
-      ctx.fill()
-      fitText(stat.label, x + cardWidth / 2, y + ss(44), cardWidth - ss(36), ss(24), '#657278', 800)
-      fitText(stat.value, x + cardWidth / 2, y + ss(98), cardWidth - ss(36), ss(46), '#071112', 900)
-    })
-
-    const bestScores = shareStats.bestByGame.slice(0, 3)
-    if (bestScores.length > 0) {
-      fitText(text.bestScores, canvas.width / 2, sy(1064), ss(700), ss(30), '#071112', 900)
-      bestScores.forEach((item, index) => {
-        fitText(`${item.game}: ${item.score}`, canvas.width / 2, sy(1110 + index * 40), ss(720), ss(28), '#39464b', 800)
-      })
-    }
-
-    if (!templateImage) {
-      fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
-    }
-
-    let blob: Blob | null = null
-    try {
-      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
-    } catch {
-      blob = null
-    }
-
-    if (!blob) {
-      if (navigator.share) {
-        await navigator.share({ title, text: summary, url: DEFAULT_APP_URL })
-        setSharedKey('stats')
-        return
-      }
-      await navigator.clipboard?.writeText(summary)
-      setProfileStatus(text.statsShareReady)
-      setSharedKey('stats')
-      return
-    }
-
-    const file = new File([blob], `${safeDownloadSlug(playerName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
-
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title, text: summary })
-      setSharedKey('stats')
-      return
-    }
-
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = file.name
-    link.click()
-    URL.revokeObjectURL(url)
-    setProfileStatus(text.statsShareReady)
+    if (shareResult === 'ready') setProfileStatus(text.statsShareReady)
     setSharedKey('stats')
   }
 

@@ -1,5 +1,5 @@
-import BookingWidget from '../components/BookingWidget'
+import HomeAppShell from '../components/HomeAppShell'
 
 export default function Home() {
-  return <BookingWidget />
+  return <HomeAppShell />
 }
