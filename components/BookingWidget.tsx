@@ -22,7 +22,6 @@ import {
   RefreshCw,
   Save,
   ScanLine,
-  Search,
   Send,
   Share,
   ShieldCheck,
@@ -88,6 +87,7 @@ import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import AppSidebar, { type AppView } from './AppSidebar'
+import ClubsView, { type ClubVisibility } from './ClubsView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import SessionsView, { type SessionTimeScope } from './SessionsView'
@@ -1730,7 +1730,7 @@ export default function WidgetPage({
   const [editTournamentSecondPrize, setEditTournamentSecondPrize] = useState('')
   const [editTournamentThirdPrize, setEditTournamentThirdPrize] = useState('')
   const [isUpdatingSession, setIsUpdatingSession] = useState(false)
-  const [clubVisibility, setClubVisibility] = useState<'public' | 'private'>('public')
+  const [clubVisibility, setClubVisibility] = useState<ClubVisibility>('public')
   const [clubName, setClubName] = useState('')
   const [clubDescription, setClubDescription] = useState('')
   const [clubStatus, setClubStatus] = useState('')
@@ -11773,83 +11773,26 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'clubs' && (
-          <section className="section">
-            <div className="section-head">
-              <div>
-                <h2>{text.clubsTitle}</h2>
-                <p className="muted">{text.clubsHint}</p>
-              </div>
-              <div className={isClubSearchOpen ? 'search-shell open' : 'search-shell'} ref={clubSearchShellRef}>
-                <button
-                  aria-label={text.searchSessions}
-                  className="mobile-search-toggle"
-                  type="button"
-                  onClick={() => setIsClubSearchOpen((open) => !open)}
-                >
-                  <Search aria-hidden="true" size={24} strokeWidth={2.35} />
-                </button>
-                <input
-                  className="search"
-                  type="search"
-                  placeholder={text.clubSearchPlaceholder}
-                  value={clubSearch}
-                  onFocus={() => setIsClubSearchOpen(true)}
-                  onChange={(event) => setClubSearch(event.target.value)}
-                />
-                {(isClubSearchOpen || clubSearch) && (
-                  <button
-                    aria-label={text.close}
-                    className="search-close"
-                    type="button"
-                    onClick={() => {
-                      setClubSearch('')
-                      setIsClubSearchOpen(false)
-                    }}
-                  >
-                    <X aria-hidden="true" size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {profile ? (
-              <>
-                <div className="segmented form-segmented">
-                  <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => setClubVisibility('public')} type="button">
-                    {text.public}
-                  </button>
-                  <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => setClubVisibility('private')} type="button">
-                    {text.private}
-                  </button>
-                </div>
-
-                <div className="form-grid club-form">
-                  <div>
-                    <label>{text.clubName} <span className="required">*</span></label>
-                    <input value={clubName} onChange={(event) => setClubName(event.target.value)} placeholder="VRena Friday Club" />
-                  </div>
-                  <div>
-                    <label>{text.clubDescription}</label>
-                    <input value={clubDescription} onChange={(event) => setClubDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
-                  </div>
-                </div>
-
-                <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={createClub} type="button">
-                  {isCreatingClub ? text.creatingClub : text.createClub}
-                </button>
-              </>
-            ) : (
-              <div className="notice club-login-notice">
-                <span>{text.clubLoginHint}</span>
-                <button className="secondary small-button" type="button" onClick={promptLogin}>
-                  {text.logIn}
-                </button>
-              </div>
-            )}
-            {clubStatus && <p className="notice">{clubStatus}</p>}
-
-            <div className="club-list">
-              {filteredClubs.length === 0 && <p className="notice">{text.noMatchingClubs}</p>}
+          <ClubsView
+            clubDescription={clubDescription}
+            clubListCount={filteredClubs.length}
+            clubName={clubName}
+            clubSearch={clubSearch}
+            clubSearchShellRef={clubSearchShellRef}
+            clubStatus={clubStatus}
+            clubVisibility={clubVisibility}
+            isClubSearchOpen={isClubSearchOpen}
+            isCreatingClub={isCreatingClub}
+            isLoggedIn={Boolean(profile)}
+            onClubDescriptionChange={setClubDescription}
+            onClubNameChange={setClubName}
+            onClubSearchChange={setClubSearch}
+            onClubSearchOpenChange={setIsClubSearchOpen}
+            onClubVisibilityChange={setClubVisibility}
+            onCreateClub={createClub}
+            onPromptLogin={promptLogin}
+            text={text}
+          >
               {filteredClubs.map((club) => {
                 const members = clubMembers(club)
                 const approvedMembers = members.filter((member) => member.status === 'approved')
@@ -11979,8 +11922,7 @@ function handleSessionDateChange(value: string) {
                   </article>
                 )
               })}
-            </div>
-          </section>
+          </ClubsView>
         )}
 
         {activeView === 'staff' && (
