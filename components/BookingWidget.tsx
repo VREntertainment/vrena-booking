@@ -94,6 +94,7 @@ import MessageBodyText, { type MessageTranslationState } from './MessageBodyText
 import ProfileAuthView, { type AuthMode } from './ProfileAuthView'
 import SessionsView, { type SessionTimeScope } from './SessionsView'
 import type { StaffProfile } from './StaffConsole'
+import TournamentControlPanel from './TournamentControlPanel'
 
 const ARENA_COUNT = 2
 const OPEN_MINUTES = 9 * 60
@@ -11431,43 +11432,20 @@ function handleSessionDateChange(value: string) {
                         .filter(Boolean) as Participant[]
 
                       return (
-                        <div className="tournament-desk">
-                          <div className="section-head compact-head">
-                            <div>
-                              <h3>{text.tournamentDesk}</h3>
-                              <p className="muted">
-                                {(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · {bestOfLabel(session.best_of)} · {text.roundsPerMatch}: {session.rounds_per_match || 1} · {eligiblePlayers.length} {text.tournamentEligible}
-                              </p>
-                            </div>
-                            {canEditTournament && (
-                              <div className="manage-row">
-                                <label className="mini-field">
-                                  {text.poolSize}
-                                  <select value={tournamentPoolSize} onChange={(event) => setTournamentPoolSize(Number(event.target.value))}>
-                                    {[2, 3, 4, 5, 6].map((size) => <option key={size} value={size}>{size}</option>)}
-                                  </select>
-                                </label>
-                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => setupTournamentPools(session)}>
-                                  {text.tournamentRandomSetup}
-                                </button>
-                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => generateTournamentMatches(session)}>
-                                  {text.tournamentGenerateMatches}
-                                </button>
-                                <button className="primary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => advanceTournamentRound(session)}>
-                                  {text.tournamentNextRound}
-                                </button>
-                                <button className="secondary small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => createThirdPlaceMatch(session)}>
-                                  {text.bronzeMatch}
-                                </button>
-                                <button className="danger small-button" disabled={busyTournamentId === session.id} type="button" onClick={() => finishTournament(session)}>
-                                  {text.finishTournament}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          <p className={canEditTournament ? 'notice tournament-role-notice manager' : 'notice tournament-role-notice'}>
-                            {tournamentRoleHint(session, hasTournamentStructure)}
-                          </p>
+                        <TournamentControlPanel
+                          canEdit={canEditTournament}
+                          isBusy={busyTournamentId === session.id}
+                          onAdvanceRound={() => advanceTournamentRound(session)}
+                          onCreateThirdPlaceMatch={() => createThirdPlaceMatch(session)}
+                          onFinishTournament={() => finishTournament(session)}
+                          onGenerateMatches={() => generateTournamentMatches(session)}
+                          onPoolSizeChange={setTournamentPoolSize}
+                          onSetupPools={() => setupTournamentPools(session)}
+                          poolSize={tournamentPoolSize}
+                          roleHint={tournamentRoleHint(session, hasTournamentStructure)}
+                          summary={`${(session.tournament_format || 'pool_to_final').replace(/_/g, ' ')} · ${bestOfLabel(session.best_of)} · ${text.roundsPerMatch}: ${session.rounds_per_match || 1} · ${eligiblePlayers.length} ${text.tournamentEligible}`}
+                          text={text}
+                        >
 
                           {podium.length > 0 && (
                             <div className="public-leaderboard">
@@ -11687,7 +11665,7 @@ function handleSessionDateChange(value: string) {
                               ))}
                             </details>
                           )}
-                        </div>
+                        </TournamentControlPanel>
                       )
                     })()}
 
