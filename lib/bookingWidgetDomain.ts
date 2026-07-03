@@ -406,6 +406,47 @@ export type Club = {
   club_members?: ClubMember[]
 }
 
+export type ClubListPageRow = Omit<Club, 'club_members'> & {
+  club_members?: ClubMember[] | null
+}
+
+export function clubMembers(club: Club | undefined): ClubMember[] {
+  if (!Array.isArray(club?.club_members)) return []
+  return club.club_members.filter((member) => Boolean(member?.id && member.profile_id && !member.deleted_at))
+}
+
+export function normalizeClubListPageRow(row: ClubListPageRow): Club {
+  return {
+    ...row,
+    club_members: Array.isArray(row.club_members) ? row.club_members : [],
+  }
+}
+
+export function mergeCurrentUserClubMembership(club: Club, memberships: ClubMember[]): Club {
+  const currentUserMemberships = memberships.filter((member) => member.club_id === club.id && !member.deleted_at)
+  if (currentUserMemberships.length === 0) return club
+
+  const mergedMembers = new Map<string, ClubMember>()
+  clubMembers(club).forEach((member) => mergedMembers.set(member.id, member))
+  currentUserMemberships.forEach((member) => mergedMembers.set(member.id, member))
+  return { ...club, club_members: Array.from(mergedMembers.values()) }
+}
+
+export function mergeClubRecords(primaryClubs: Club[], fallbackClubs: Club[]): Club[] {
+  const clubsById = new Map<string, Club>()
+  fallbackClubs.forEach((club) => clubsById.set(club.id, club))
+  primaryClubs.forEach((club) => clubsById.set(club.id, {
+    ...clubsById.get(club.id),
+    ...club,
+  }))
+
+  return Array.from(clubsById.values()).sort((left, right) => {
+    const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0
+    const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0
+    return rightTime - leftTime || left.name.localeCompare(right.name)
+  })
+}
+
 export type TournamentEditor = {
   id: string
   session_id: string

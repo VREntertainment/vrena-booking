@@ -2,82 +2,16 @@
 
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
-import {
-  Bold,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Crown,
-  Italic,
-  RefreshCw,
-  Save,
-  Send,
-  Share,
-  ShieldCheck,
-  Strikethrough,
-  Underline,
-  UserCheck,
-  UserMinus,
-  X,
-} from 'lucide-react'
+import { Bold, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Crown, Italic, RefreshCw, Save, Send, Share, ShieldCheck, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
-import {
-  CLUB_LIST_SELECT,
-  CLUB_LIST_SELECT_BASE,
-  CLUB_LIST_WITH_MEMBERS_SELECT,
-  CLUB_LIST_WITH_MEMBERS_SELECT_BASE,
-  CLUB_MEMBER_SELECT,
-  CLUB_MEMBER_SELECT_BASE,
-  CLUB_MESSAGE_SELECT,
-  CLUB_PUBLIC_SELECT,
-  OPTIONAL_SESSION_METADATA_COLUMNS,
-  SESSION_CARD_SELECT,
-  SESSION_CARD_SELECT_BASE,
-  SESSION_MESSAGE_SELECT,
-  SESSION_SELECT,
-  SESSION_SELECT_BASE,
-  WAITLIST_POSITION_SELECT,
-  WAITLIST_SELECT,
-  avatarColors,
-  avatarTextColors,
-  clubThemeColors,
-  countries,
-  games,
-  isEscapeSession,
-  selectedTicketService,
-  ticketArenaCount,
-  ticketMaxCustomerDurationMinutes,
-  ticketPriceBlockMinutes,
-  ticketServices,
-  type GameId,
-  type TicketType,
-} from '../lib/bookingStaticData'
+import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, countries, games, isEscapeSession, selectedTicketService, ticketArenaCount, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
-import {
-  canUseWebPush,
-  downloadSessionCalendarFile,
-  notifyBookingInvite,
-  notifyBookingSession,
-  registerReminderServiceWorker,
-  requestBrowserReminderPermission,
-  shareBookingLink,
-  urlBase64ToUint8Array,
-} from '../lib/bookingBrowserActions'
-import {
-  currentUserLeaderboardPlayer,
-  initialLeaderboardQuery,
-  isLeaderboardCriterion,
-  isMissingPagedLeaderboardFunction,
-  leaderboardPlayerFromRpcRow,
-  leaderboardRpcArgs,
-  type LeaderboardQuery,
-  type LeaderboardRpcRow,
-} from '../lib/leaderboard'
+import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
+import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
@@ -85,7 +19,7 @@ import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as i
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
 import BookingProfileView from './BookingProfileView'
-import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, StaffPlayerEditDraft, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, defaultStaffPlayerEditDraft, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, MatchStatus, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, participantPaymentMethodSummary, participantPaymentAmountSummary, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, isInteractiveClickTarget, rankEmoji, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, parseSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, queueLabel, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, getHCaptcha, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
+import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, StaffPlayerEditDraft, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, defaultStaffPlayerEditDraft, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, MatchStatus, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, participantPaymentMethodSummary, participantPaymentAmountSummary, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, isInteractiveClickTarget, rankEmoji, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, parseSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, queueLabel, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, getHCaptcha, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
 import ClubsView, { type ClubVisibility } from './ClubsView'
 import CreateSessionView from './CreateSessionView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
@@ -3034,6 +2968,14 @@ export default function WidgetPage({
       clubsLoadedRef.current = true
       clubsLoadingRef.current = false
       setClubs(((publicResult.data ?? []) as Club[]).map((club) => ({ ...club, club_members: [] })))
+      return
+    }
+
+    const clubsPageResult = await client.rpc('clubs_list_page')
+    if (!clubsPageResult.error && Array.isArray(clubsPageResult.data)) {
+      clubsLoadedRef.current = true
+      clubsLoadingRef.current = false
+      setClubs((clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow))
       return
     }
 
@@ -5999,36 +5941,6 @@ function handleSessionDateChange(value: string) {
       '--club-theme-soft': `${color}24`,
       '--club-theme-faint': `${color}12`,
     } as Record<string, string>
-  }
-
-  function clubMembers(club: Club | undefined): ClubMember[] {
-    if (!Array.isArray(club?.club_members)) return []
-    return club.club_members.filter((member) => Boolean(member?.id && member.profile_id && !member.deleted_at))
-  }
-
-  function mergeCurrentUserClubMembership(club: Club, memberships: ClubMember[]): Club {
-    const currentUserMemberships = memberships.filter((member) => member.club_id === club.id && !member.deleted_at)
-    if (currentUserMemberships.length === 0) return club
-
-    const mergedMembers = new Map<string, ClubMember>()
-    clubMembers(club).forEach((member) => mergedMembers.set(member.id, member))
-    currentUserMemberships.forEach((member) => mergedMembers.set(member.id, member))
-    return { ...club, club_members: Array.from(mergedMembers.values()) }
-  }
-
-  function mergeClubRecords(primaryClubs: Club[], fallbackClubs: Club[]): Club[] {
-    const clubsById = new Map<string, Club>()
-    fallbackClubs.forEach((club) => clubsById.set(club.id, club))
-    primaryClubs.forEach((club) => clubsById.set(club.id, {
-      ...clubsById.get(club.id),
-      ...club,
-    }))
-
-    return Array.from(clubsById.values()).sort((left, right) => {
-      const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0
-      const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0
-      return rightTime - leftTime || left.name.localeCompare(right.name)
-    })
   }
 
   function isDuplicateClubMembershipError(error: { code?: string; message?: string } | null | undefined) {
