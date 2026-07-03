@@ -3,7 +3,7 @@ import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
 export type CreateSessionMode = 'calendar' | 'form'
 
-type CreateSessionViewProps = {
+export type CreateSessionViewProps = {
   children: ReactNode
   createStatus: string
   mode: CreateSessionMode

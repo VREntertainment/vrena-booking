@@ -18,16 +18,15 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
-import BookingProfileView from './BookingProfileView'
 import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, StaffPlayerEditDraft, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, defaultStaffPlayerEditDraft, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, MatchStatus, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, participantPaymentMethodSummary, participantPaymentAmountSummary, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, isInteractiveClickTarget, rankEmoji, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, parseSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, queueLabel, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, getHCaptcha, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
-import ClubsView, { type ClubVisibility } from './ClubsView'
-import CreateSessionView from './CreateSessionView'
+import type { ClubVisibility, ClubsViewProps } from './ClubsView'
+import type { CreateSessionViewProps } from './CreateSessionView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
 import SessionsView, { type SessionTimeScope } from './SessionsView'
 import type { StaffProfile } from './StaffConsole'
-import TournamentControlPanel from './TournamentControlPanel'
+import type { TournamentControlPanelProps } from './TournamentControlPanel'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
@@ -74,6 +73,30 @@ const TicketBookingView = dynamic(() => import('./TicketBookingView'), {
   ),
 })
 const GameGuideModal = dynamic(() => import('./GameGuideModal'), { ssr: false })
+const ClubsView = dynamic<ClubsViewProps>(() => import('./ClubsView'), {
+  ssr: false,
+  loading: () => (
+    <section className="section">
+      <p className="notice" aria-busy="true">...</p>
+    </section>
+  ),
+})
+const CreateSessionView = dynamic<CreateSessionViewProps>(() => import('./CreateSessionView'), {
+  ssr: false,
+  loading: () => (
+    <section className="section">
+      <p className="notice" aria-busy="true">...</p>
+    </section>
+  ),
+})
+const BookingProfileView = dynamic(() => import('./BookingProfileView'), {
+  ssr: false,
+  loading: () => (
+    <section className="section profile-section">
+      <p className="notice" aria-busy="true">...</p>
+    </section>
+  ),
+})
 const StaffConsole = dynamic(() => import('./StaffConsole'), {
   ssr: false,
   loading: () => (
@@ -89,6 +112,14 @@ const BirthdayPopupModal = dynamic(() => import('./SessionModals').then((module)
 const TariffPaymentModal = dynamic(() => import('./SessionModals').then((module) => module.TariffPaymentModal), { ssr: false })
 const CheckInModal = dynamic(() => import('./SessionModals').then((module) => module.CheckInModal), { ssr: false })
 const PlayerProfileModal = dynamic(() => import('./SessionModals').then((module) => module.PlayerProfileModal), { ssr: false })
+const TournamentControlPanel = dynamic<TournamentControlPanelProps>(() => import('./TournamentControlPanel'), {
+  ssr: false,
+  loading: () => (
+    <div className="tournament-desk">
+      <p className="notice" aria-busy="true">...</p>
+    </div>
+  ),
+})
 const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
   ssr: false,
   loading: () => (
