@@ -70,7 +70,7 @@ import {
   type GameId,
   type TicketType,
 } from '../lib/bookingStaticData'
-import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
+import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import {
@@ -87,6 +87,7 @@ import { formatWholePercent, hasShareablePlayerStats } from '../lib/playerStatsS
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
+import AppSidebar, { type AppView } from './AppSidebar'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { StaffProfile } from './StaffConsole'
@@ -1532,16 +1533,14 @@ function schedulePostEffectStateUpdate(callback: () => void) {
   return () => window.clearTimeout(handle)
 }
 
-type BookingWidgetView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
-
 type BookingWidgetProps = {
   embedded?: boolean
   externalLanguage?: LanguageCode
   initialText?: TranslationMap
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
-  initialView?: BookingWidgetView
-  onActiveViewChange?: (view: BookingWidgetView) => void
+  initialView?: AppView
+  onActiveViewChange?: (view: AppView) => void
   onProfileChange?: (profile: Profile | null) => void
 }
 
@@ -1555,7 +1554,7 @@ export default function WidgetPage({
   onActiveViewChange,
   onProfileChange,
 }: BookingWidgetProps = {}) {
-  const [activeView, setActiveView] = useState<BookingWidgetView>(initialView)
+  const [activeView, setActiveView] = useState<AppView>(initialView)
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
@@ -1795,7 +1794,6 @@ export default function WidgetPage({
   const [busyInviteKey, setBusyInviteKey] = useState('')
   const [busyFriendId, setBusyFriendId] = useState('')
   const [busyMessageKey, setBusyMessageKey] = useState('')
-  const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [championLoginOpen, setChampionLoginOpen] = useState(false)
   const [language, setLanguage] = useState<LanguageCode>(() => externalLanguage ?? getInitialLanguage())
   const [text, setText] = useState<TranslationMap>(() => initialText ?? getFallbackTranslation())
@@ -10432,103 +10430,28 @@ function handleSessionDateChange(value: string) {
   }
 
   const appAside = (
-      <aside>
-        <div>
-          <div className="app-title-row">
-            <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">
-              <picture>
-                <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
-                <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
-              </picture>
-            </a>
-            <div className="language-picker">
-              <button
-                aria-expanded={languagePickerOpen}
-                aria-label={text.language}
-                type="button"
-                onClick={() => setLanguagePickerOpen((open) => !open)}
-              >
-                {language.toUpperCase()}
-              </button>
-              {languagePickerOpen && (
-                <div className="language-menu">
-                  {languageOptions.map((item) => (
-                    <button
-                      className={language === item ? 'active' : ''}
-                      key={item}
-                      aria-pressed={language === item}
-                      type="button"
-                      onClick={() => {
-                        setLanguage(item)
-                        storeLanguage(item)
-                        setLanguagePickerOpen(false)
-                      }}
-                    >
-                      {item.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              aria-label={sharedKey === 'app' ? text.shared : text.shareApp}
-              className={sharedKey === 'app' ? 'share-button app-share copied' : 'share-button app-share'}
-              title={sharedKey === 'app' ? text.shared : text.shareApp}
-              type="button"
-              onClick={() => shareLink('app', 'VRena Sessions')}
-            >
-              <ShareSymbol />
-            </button>
-          </div>
-          <h1 className="sr-only">VRena Sessions</h1>
-          <p className="muted">{text.tagline}</p>
-        </div>
-
-        <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => setActiveView('profile')} type="button">
-          <div className="avatar" style={avatarStyle(currentProfileAvatar)}>
-            {avatarNode(profile ? {
-              avatar_url: currentProfileAvatar?.avatar_url,
-              avatar_emoji: currentProfileAvatar?.avatar_emoji,
-              avatar_initials: currentProfileAvatar?.avatar_initials,
-              avatar_color: currentProfileAvatar?.avatar_color,
-              avatar_text_color: currentProfileAvatar?.avatar_text_color,
-              display_name: displayName(profile),
-            } : null, 'P')}
-            {crownedTopPlayer?.profileId === userId && <span className="champion-badge">🏆</span>}
-          </div>
-          <div>
-            <strong>{profile ? displayName(profile) : text.noProfile}</strong>
-            <span>{profile ? profile.profile_motto || text.profileMottoEmpty : text.clickLogin}</span>
-          </div>
-        </button>
-
-        <div className="tabs">
-          <button className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} onClick={() => setActiveView('sessions')}>
-            {text.sessions}
-          </button>
-          <button className={activeView === 'tickets' ? 'tab active' : 'tab'} onClick={() => setActiveView('tickets')}>
-            {text.tickets}
-          </button>
-          <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => setActiveView('leaderboard')}>
-            {text.hallOfFame}
-          </button>
-          <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => setActiveView('clubs')}>
-            {text.clubs}
-          </button>
-          {canAccessStaffConsole && (
-            <button className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} onClick={() => setActiveView('staff')}>
-              {language === 'vi' ? 'Nhân viên' : 'Staff'}
-            </button>
-          )}
-        </div>
-
-        <div className="shop-contact">
-          <strong>VRena Vietnam</strong>
-          <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
-          <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
-          <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
-        </div>
-      </aside>
+    <AppSidebar
+      activeView={activeView}
+      canAccessStaffConsole={canAccessStaffConsole}
+      isChampion={crownedTopPlayer?.profileId === userId}
+      language={language}
+      onLanguageChange={setLanguage}
+      onShareApp={() => shareLink('app', 'VRena Sessions')}
+      onViewChange={setActiveView}
+      profileAvatar={avatarNode(profile ? {
+        avatar_url: currentProfileAvatar?.avatar_url,
+        avatar_emoji: currentProfileAvatar?.avatar_emoji,
+        avatar_initials: currentProfileAvatar?.avatar_initials,
+        avatar_color: currentProfileAvatar?.avatar_color,
+        avatar_text_color: currentProfileAvatar?.avatar_text_color,
+        display_name: displayName(profile),
+      } : null, 'P')}
+      profileAvatarStyle={avatarStyle(currentProfileAvatar)}
+      profileSubtitle={profile ? profile.profile_motto || text.profileMottoEmpty : text.clickLogin}
+      profileTitle={profile ? displayName(profile) : text.noProfile}
+      sharedApp={sharedKey === 'app'}
+      text={text}
+    />
   )
 
   const appMain = (
