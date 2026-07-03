@@ -571,6 +571,7 @@ export const it = {
   privateIncorrect: 'Codice privato errato.',
   sessionFull: 'Questa partita è già piena.',
   joinedSession: 'Sei dentro.',
+  joinedClub: 'Sei nel club.',
   joinWaitlist: 'Lista attesa',
   waitlisted: 'In attesa',
   waitlistPosition: 'Posto attesa',

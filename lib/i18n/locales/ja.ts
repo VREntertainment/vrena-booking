@@ -571,6 +571,7 @@ export const ja = {
   privateIncorrect: '非公開コードが違います。',
   sessionFull: 'このセッションは満員です。',
   joinedSession: 'セッションに参加しました。',
+  joinedClub: 'クラブに参加しました。',
   joinWaitlist: '待機リストへ',
   waitlisted: '待機中',
   waitlistPosition: '待機位置',

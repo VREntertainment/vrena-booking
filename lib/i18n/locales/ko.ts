@@ -571,6 +571,7 @@ export const ko = {
   privateIncorrect: '비공개 코드가 틀렸어요.',
   sessionFull: '이 세션은 이미 만석입니다.',
   joinedSession: '세션에 참가했어요.',
+  joinedClub: '클럽에 참가했어요.',
   joinWaitlist: '대기자 등록',
   waitlisted: '대기 중',
   waitlistPosition: '대기 순서',
