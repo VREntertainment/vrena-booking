@@ -88,6 +88,7 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import AppSidebar, { type AppView } from './AppSidebar'
 import ClubsView, { type ClubVisibility } from './ClubsView'
+import CreateSessionView, { type CreateSessionMode } from './CreateSessionView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import ProfileAuthView, { type AuthMode } from './ProfileAuthView'
@@ -1669,7 +1670,7 @@ export default function WidgetPage({
   const [pushReminderStatus, setPushReminderStatus] = useState('')
   const [isPushSubscribed, setIsPushSubscribed] = useState(false)
   const [isEnablingPush, setIsEnablingPush] = useState(false)
-  const [createSessionMode, setCreateSessionMode] = useState<'calendar' | 'form'>('form')
+  const [createSessionMode, setCreateSessionMode] = useState<CreateSessionMode>('form')
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(localDateString()))
   const [ticketType, setTicketType] = useState<TicketType>('individual')
   const [ticketDate, setTicketDate] = useState(localDateString())
@@ -2422,6 +2423,14 @@ export default function WidgetPage({
 
   function showCreateFormMode() {
     setCreateSessionMode('form')
+  }
+
+  function handleCreateSessionModeChange(mode: CreateSessionMode) {
+    if (mode === 'calendar') {
+      showCalendarMode()
+      return
+    }
+    showCreateFormMode()
   }
 
   function moveCalendarWeek(dayOffset: number) {
@@ -12007,23 +12016,12 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'create' && (
-          <section className="section">
-            <div className="section-head">
-              <div>
-                <h2>{text.createSessionTitle}</h2>
-                <p className="muted">{text.createSessionHint}</p>
-              </div>
-            </div>
-
-            <div className="segmented create-session-mode-toggle" aria-label={text.createSessionTitle}>
-              <button className={createSessionMode === 'calendar' ? 'active' : ''} onClick={showCalendarMode} type="button">
-                {text.calendar}
-              </button>
-              <button className={createSessionMode === 'form' ? 'active' : ''} onClick={showCreateFormMode} type="button">
-                {text.createSession}
-              </button>
-            </div>
-
+          <CreateSessionView
+            createStatus={createStatus}
+            mode={createSessionMode}
+            onModeChange={handleCreateSessionModeChange}
+            text={text}
+          >
             {createSessionMode === 'calendar' ? (
               <div className="calendar-panel" aria-label={text.calendarAvailabilityTitle}>
                 <div className="calendar-toolbar">
@@ -12362,8 +12360,7 @@ function handleSessionDateChange(value: string) {
             </button>
               </div>
             )}
-            {createStatus && <p className="notice">{createStatus}</p>}
-          </section>
+          </CreateSessionView>
         )}
 
         {activeView === 'profile' && (
