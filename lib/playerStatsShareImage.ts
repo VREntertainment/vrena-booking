@@ -44,7 +44,7 @@ export type SharePlayerStatsImageOptions = {
   player: ShareStatsImagePlayer
 }
 
-export type SharePlayerStatsImageResult = 'shared' | 'ready'
+export type SharePlayerStatsImageResult = 'shared' | 'ready' | 'cancelled'
 
 async function loadCanvasImage(src: string) {
   const image = new Image()
@@ -86,13 +86,39 @@ function safeDownloadSlug(value: string, fallback: string) {
   return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || fallback
 }
 
-async function shareTextFallback(title: string, summary: string, appUrl: string) {
-  if (navigator.share) {
-    await navigator.share({ title, text: summary, url: appUrl })
+function isShareCancelled(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const { name, message } = error as { name?: string; message?: string }
+  return name === 'AbortError' || /cancel/i.test(message || '')
+}
+
+async function tryNativeShare(data: ShareData) {
+  if (!navigator.share) return 'unsupported'
+
+  try {
+    await navigator.share(data)
     return 'shared'
+  } catch (error) {
+    if (isShareCancelled(error)) return 'cancelled'
+    return 'failed'
+  }
+}
+
+async function copyShareText(summary: string) {
+  try {
+    await navigator.clipboard?.writeText(summary)
+  } catch {
+    return false
   }
 
-  await navigator.clipboard?.writeText(summary)
+  return true
+}
+
+async function shareTextFallback(title: string, summary: string, appUrl: string): Promise<SharePlayerStatsImageResult> {
+  const nativeResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (nativeResult === 'shared' || nativeResult === 'cancelled') return nativeResult
+
+  await copyShareText(summary)
   return 'ready'
 }
 
@@ -280,15 +306,19 @@ export async function sharePlayerStatsImage({
   const file = new File([blob], `${safeDownloadSlug(displayName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
 
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title, text: summary })
-    return 'shared'
+    const nativeFileResult = await tryNativeShare({ files: [file], title, text: summary })
+    if (nativeFileResult === 'shared' || nativeFileResult === 'cancelled') return nativeFileResult
   }
+
+  const nativeTextResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (nativeTextResult === 'shared' || nativeTextResult === 'cancelled') return nativeTextResult
 
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = file.name
   link.click()
-  URL.revokeObjectURL(url)
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  await copyShareText(summary)
   return 'ready'
 }

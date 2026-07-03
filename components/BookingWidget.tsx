@@ -8603,7 +8603,7 @@ function handleSessionDateChange(value: string) {
     })
 
     if (shareResult === 'ready') setProfileStatus(text.statsShareReady)
-    setSharedKey('stats')
+    if (shareResult !== 'cancelled') setSharedKey('stats')
   }
 
   async function shareTournamentResults(session: Session) {
