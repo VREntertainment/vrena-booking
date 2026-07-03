@@ -3003,49 +3003,49 @@ export default function WidgetPage({
     }
 
     const clubsPageResult = await client.rpc('clubs_list_page')
-    if (!clubsPageResult.error && Array.isArray(clubsPageResult.data)) {
-      clubsLoadedRef.current = true
-      clubsLoadingRef.current = false
-      setClubs((clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow))
-      return
-    }
+    let data = Array.isArray(clubsPageResult.data)
+      ? (clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow)
+      : null
+    let error = clubsPageResult.error
 
-    const result = await client
-      .from('clubs')
-      .select(CLUB_LIST_WITH_MEMBERS_SELECT)
-      .order('created_at', { ascending: false })
-    let data = result.data as Club[] | null
-    let error = result.error
-
-    if (error) {
-      const fallbackResult = await client
+    if (error || !data) {
+      const result = await client
         .from('clubs')
-        .select(CLUB_LIST_WITH_MEMBERS_SELECT_BASE)
+        .select(CLUB_LIST_WITH_MEMBERS_SELECT)
         .order('created_at', { ascending: false })
-      data = fallbackResult.data as Club[] | null
-      error = fallbackResult.error
-    }
+      data = result.data as Club[] | null
+      error = result.error
 
-    if (error) {
-      const fallbackResult = await client
-        .from('clubs')
-        .select(CLUB_LIST_SELECT)
-        .order('created_at', { ascending: false })
-      data = fallbackResult.data as Club[] | null
-      error = fallbackResult.error
-    }
+      if (error) {
+        const fallbackResult = await client
+          .from('clubs')
+          .select(CLUB_LIST_WITH_MEMBERS_SELECT_BASE)
+          .order('created_at', { ascending: false })
+        data = fallbackResult.data as Club[] | null
+        error = fallbackResult.error
+      }
 
-    if (error) {
-      const fallbackResult = await client
-        .from('clubs')
-        .select(CLUB_LIST_SELECT_BASE)
-        .order('created_at', { ascending: false })
-      data = fallbackResult.data as Club[] | null
-      error = fallbackResult.error
+      if (error) {
+        const fallbackResult = await client
+          .from('clubs')
+          .select(CLUB_LIST_SELECT)
+          .order('created_at', { ascending: false })
+        data = fallbackResult.data as Club[] | null
+        error = fallbackResult.error
+      }
+
+      if (error) {
+        const fallbackResult = await client
+          .from('clubs')
+          .select(CLUB_LIST_SELECT_BASE)
+          .order('created_at', { ascending: false })
+        data = fallbackResult.data as Club[] | null
+        error = fallbackResult.error
+      }
     }
 
     const publicClubs = publicResult.error ? [] : (publicResult.data ?? []) as Club[]
-    const loadedClubs = mergeClubRecords((data ?? []) as Club[], publicClubs)
+    const loadedClubs = mergeClubRecords(data ?? [], publicClubs)
 
     if (error && publicClubs.length === 0) {
       setClubStatus(error.message)
@@ -10725,7 +10725,9 @@ function handleSessionDateChange(value: string) {
                         {selectedClub.visibility === 'private' ? text.private : text.public}
                       </span>
                       <span>{clubMemberCount(selectedClub)} {text.members}</span>
-                      <span>{clubRoleLabel(clubRoleFor(selectedClub))}</span>
+                      {(selectedClub.owner_id === userId || selectedClubMembership?.status === 'approved') && (
+                        <span>{clubRoleLabel(clubRoleFor(selectedClub))}</span>
+                      )}
                     </div>
                   </div>
                   <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
