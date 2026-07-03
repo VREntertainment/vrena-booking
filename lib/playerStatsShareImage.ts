@@ -44,7 +44,7 @@ export type SharePlayerStatsImageOptions = {
   player: ShareStatsImagePlayer
 }
 
-export type SharePlayerStatsImageResult = 'shared' | 'ready'
+export type SharePlayerStatsImageResult = 'shared' | 'ready' | 'cancelled'
 
 async function loadCanvasImage(src: string) {
   const image = new Image()
@@ -86,14 +86,52 @@ function safeDownloadSlug(value: string, fallback: string) {
   return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || fallback
 }
 
-async function shareTextFallback(title: string, summary: string, appUrl: string) {
-  if (navigator.share) {
-    await navigator.share({ title, text: summary, url: appUrl })
-    return 'shared'
-  }
+function isShareCancelled(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError')
+}
 
-  await navigator.clipboard?.writeText(summary)
+async function tryNativeShare(data: ShareData): Promise<SharePlayerStatsImageResult | null> {
+  if (!navigator.share) return null
+
+  try {
+    await navigator.share(data)
+    return 'shared'
+  } catch (error) {
+    if (isShareCancelled(error)) return 'cancelled'
+    return null
+  }
+}
+
+async function copyShareText(summary: string) {
+  try {
+    await navigator.clipboard?.writeText(summary)
+  } catch {
+    // Clipboard permissions vary by browser; downloading the image remains the durable fallback.
+  }
+}
+
+async function shareTextFallback(title: string, summary: string, appUrl: string): Promise<SharePlayerStatsImageResult> {
+  const nativeShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (nativeShareResult) return nativeShareResult
+
+  await copyShareText(summary)
   return 'ready'
+}
+
+function downloadShareImage(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.rel = 'noopener'
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+
+  window.setTimeout(() => {
+    link.remove()
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 export async function sharePlayerStatsImage({
@@ -280,15 +318,14 @@ export async function sharePlayerStatsImage({
   const file = new File([blob], `${safeDownloadSlug(displayName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
 
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title, text: summary })
-    return 'shared'
+    const fileShareResult = await tryNativeShare({ files: [file], title, text: summary })
+    if (fileShareResult) return fileShareResult
   }
 
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = file.name
-  link.click()
-  URL.revokeObjectURL(url)
+  const textShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
+  if (textShareResult) return textShareResult
+
+  downloadShareImage(blob, file.name)
+  await copyShareText(summary)
   return 'ready'
 }
