@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import { Component, ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
+import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
 import {
   CLUB_LIST_SELECT,
   CLUB_LIST_SELECT_BASE,
@@ -88,7 +89,7 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import AppSidebar, { type AppView } from './AppSidebar'
 import ClubsView, { type ClubVisibility } from './ClubsView'
-import CreateSessionView, { type CreateSessionMode } from './CreateSessionView'
+import CreateSessionView from './CreateSessionView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import ProfileAuthView, { type AuthMode } from './ProfileAuthView'
@@ -1671,8 +1672,6 @@ export default function WidgetPage({
   const [pushReminderStatus, setPushReminderStatus] = useState('')
   const [isPushSubscribed, setIsPushSubscribed] = useState(false)
   const [isEnablingPush, setIsEnablingPush] = useState(false)
-  const [createSessionMode, setCreateSessionMode] = useState<CreateSessionMode>('form')
-  const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(localDateString()))
   const [ticketType, setTicketType] = useState<TicketType>('individual')
   const [ticketDate, setTicketDate] = useState(localDateString())
   const [ticketTime, setTicketTime] = useState('')
@@ -1889,6 +1888,37 @@ export default function WidgetPage({
   const invitationPopupBodyText = looseText.invitationPopupBody || 'You have been invited to join this session.'
   const openInvitationText = looseText.openInvitation || 'Open invite'
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
+  const {
+    calendarWeekStart,
+    createSessionMode,
+    handleCreateSessionModeChange,
+    moveCalendarWeek,
+    openCreateSessionCalendar,
+    startSessionFromCalendar,
+  } = useCreateSessionCalendar({
+    addDaysToDateValue,
+    getLocalDateString: localDateString,
+    loadCalendarRange: (startDate, endDate) => loadSessionRange(startDate, endDate, 'merge', {
+      includeBlockedTimes: true,
+      updateUpcomingPagination: false,
+    }),
+    onActiveViewChange: setActiveView,
+    onCreateStatusChange: setCreateStatus,
+    onSessionDateChange: setSessionDate,
+    onSessionTimeChange: setSessionTime,
+    requireProfile,
+    scrollToCalendarPanel: () => {
+      window.setTimeout(() => {
+        document.querySelector('.calendar-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 80)
+    },
+    scrollToCreateForm: () => {
+      window.setTimeout(() => {
+        document.getElementById('create-session-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 80)
+    },
+    startOfWeekDateValue,
+  })
   const activeTotpFactor = useMemo(() => mfaFactors.find((factor) => factor.status === 'verified') || mfaFactors[0] || null, [mfaFactors])
   const mfaQrCodeSrc = useMemo(() => {
     if (!mfaEnrollment?.qrCode) return ''
@@ -2382,62 +2412,8 @@ export default function WidgetPage({
     }, 80)
   }
 
-  function startSessionFromCalendar(dateValue: string, timeValue: string) {
-    if (!requireProfile()) return
-
-    setSessionDate(dateValue)
-    setSessionTime(timeValue)
-    setCreateStatus('')
-    setCreateSessionMode('form')
-    window.setTimeout(() => {
-      document.getElementById('create-session-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 80)
-  }
-
   function openSessionFromCalendar(session: Session) {
     openSessionFromProfile(session.id)
-  }
-
-  async function loadCalendarWeek(startDate = calendarWeekStart) {
-    const weekEnd = addDaysToDateValue(startDate, 6)
-    await loadSessionRange(startDate, weekEnd, 'merge', {
-      includeBlockedTimes: true,
-      updateUpcomingPagination: false,
-    })
-  }
-
-  function showCalendarMode() {
-    setCreateSessionMode('calendar')
-    void loadCalendarWeek(calendarWeekStart)
-  }
-
-  function openCreateSessionCalendar(dateValue = localDateString()) {
-    const targetWeekStart = startOfWeekDateValue(dateValue)
-    setActiveView('create')
-    setCreateSessionMode('calendar')
-    setCalendarWeekStart(targetWeekStart)
-    void loadCalendarWeek(targetWeekStart)
-    window.setTimeout(() => {
-      document.querySelector('.calendar-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 80)
-  }
-
-  function showCreateFormMode() {
-    setCreateSessionMode('form')
-  }
-
-  function handleCreateSessionModeChange(mode: CreateSessionMode) {
-    if (mode === 'calendar') {
-      showCalendarMode()
-      return
-    }
-    showCreateFormMode()
-  }
-
-  function moveCalendarWeek(dayOffset: number) {
-    const nextWeekStart = addDaysToDateValue(calendarWeekStart, dayOffset)
-    setCalendarWeekStart(nextWeekStart)
-    void loadCalendarWeek(nextWeekStart)
   }
 
   function resetCaptcha() {
