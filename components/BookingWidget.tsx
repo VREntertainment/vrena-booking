@@ -90,6 +90,7 @@ import AppSidebar, { type AppView } from './AppSidebar'
 import ClubsView, { type ClubVisibility } from './ClubsView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
+import ProfileAuthView, { type AuthMode } from './ProfileAuthView'
 import SessionsView, { type SessionTimeScope } from './SessionsView'
 import type { StaffProfile } from './StaffConsole'
 
@@ -1595,7 +1596,7 @@ export default function WidgetPage({
   const [isClubSearchOpen, setIsClubSearchOpen] = useState(false)
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
 
-  const [authMode, setAuthMode] = useState<'login' | 'create' | 'reset'>('login')
+  const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [authStep, setAuthStep] = useState<'email' | 'credentials'>('email')
   const [profileCountryCode, setProfileCountryCode] = useState('+84')
   const [countryPickerOpen, setCountryPickerOpen] = useState(false)
@@ -12366,37 +12367,14 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'profile' && (
-          <section className={!profile ? 'section profile-auth-section' : 'section profile-account-section'}>
-            {!profile && (
-              <>
-                <h2>{isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
-                {(isRecoveryMode || authMode === 'reset') && (
-                  <p className="muted">
-                    {isRecoveryMode ? text.setNewPasswordIntro : text.resetPasswordIntro}
-                  </p>
-                )}
-              </>
-            )}
-
-            {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && (
-              <div className="segmented auth-toggle">
-                <button
-                  className={authMode === 'login' ? 'active' : ''}
-                  onClick={() => updateAuthMode('login')}
-                  type="button"
-                >
-                  {text.logIn}
-                </button>
-                <button
-                  className={authMode === 'create' ? 'active' : ''}
-                  onClick={() => updateAuthMode('create')}
-                  type="button"
-                >
-                  {text.createAccountTab}
-                </button>
-              </div>
-            )}
-
+          <ProfileAuthView
+            authMode={authMode}
+            isRecoveryMode={isRecoveryMode}
+            mfaRequired={mfaRequired}
+            onAuthModeChange={updateAuthMode}
+            profileExists={Boolean(profile)}
+            text={text}
+          >
             {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
               <div className="auth-method-stack">
                 <button
@@ -13103,7 +13081,7 @@ function handleSessionDateChange(value: string) {
                 )}
               </div>
             )}
-          </section>
+          </ProfileAuthView>
         )}
 
       </main>
