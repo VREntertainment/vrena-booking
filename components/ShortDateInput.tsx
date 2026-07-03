@@ -1,5 +1,6 @@
 'use client'
 
+import { useId, useRef } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 
 function formatShortDate(dateValue: string, language: LanguageCode) {
@@ -24,13 +25,32 @@ export default function ShortDateInput({
   placeholder: string
   ariaLabel: string
 }) {
+  const inputId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
   const displayValue = value ? formatShortDate(value, language) : placeholder
+  const openPicker = () => {
+    const input = inputRef.current
+    if (!input) return
+
+    input.focus({ preventScroll: true })
+    try {
+      input.showPicker?.()
+    } catch {
+      // Some browsers only allow showPicker during a trusted activation.
+    }
+  }
 
   return (
-    <div className="date-input-shell">
+    <label
+      className="date-input-shell"
+      htmlFor={inputId}
+      onClick={openPicker}
+    >
       <input
         aria-label={ariaLabel}
         className="date-input-native"
+        id={inputId}
+        ref={inputRef}
         type="date"
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -38,6 +58,6 @@ export default function ShortDateInput({
       <span className={value ? 'date-input-display' : 'date-input-display placeholder'}>
         {displayValue}
       </span>
-    </div>
+    </label>
   )
 }

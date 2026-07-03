@@ -449,6 +449,7 @@ body {
   color: #071112;
   overflow: hidden;
   color-scheme: light;
+  cursor: pointer;
 }
 
 .app .date-input-native {
@@ -482,6 +483,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 1;
+  user-select: none;
 }
 
 .app .date-input-display.placeholder {
