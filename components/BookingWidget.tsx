@@ -608,6 +608,10 @@ type Club = {
   club_members?: ClubMember[]
 }
 
+type ClubListPageRow = Omit<Club, 'club_members'> & {
+  club_members?: ClubMember[] | null
+}
+
 type TournamentEditor = {
   id: string
   session_id: string
@@ -4485,6 +4489,14 @@ export default function WidgetPage({
       return
     }
 
+    const clubsPageResult = await client.rpc('clubs_list_page')
+    if (!clubsPageResult.error && Array.isArray(clubsPageResult.data)) {
+      clubsLoadedRef.current = true
+      clubsLoadingRef.current = false
+      setClubs((clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow))
+      return
+    }
+
     const result = await client
       .from('clubs')
       .select(CLUB_LIST_SELECT)
@@ -7430,6 +7442,13 @@ function handleSessionDateChange(value: string) {
   function clubMembers(club: Club | undefined): ClubMember[] {
     if (!Array.isArray(club?.club_members)) return []
     return club.club_members.filter((member) => Boolean(member?.id && member.profile_id && !member.deleted_at))
+  }
+
+  function normalizeClubListPageRow(row: ClubListPageRow): Club {
+    return {
+      ...row,
+      club_members: Array.isArray(row.club_members) ? row.club_members : [],
+    }
   }
 
   function mergeCurrentUserClubMembership(club: Club, memberships: ClubMember[]): Club {
