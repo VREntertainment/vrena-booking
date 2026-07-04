@@ -741,7 +741,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   )}
                 </div>
               )}
-              {!profile && !isRecoveryMode && (authMode === 'reset' || (authMode === 'create' && authStep === 'credentials')) && (
+              {!profile && !isRecoveryMode && (authMode === 'reset' || ((authMode === 'create' || authMode === 'login') && authStep === 'credentials')) && (
                 <div className="captcha-field">
                   <label>{text.captchaLabel} <span className="required">*</span></label>
                   <div className="captcha-box" ref={captchaContainerRef} />
