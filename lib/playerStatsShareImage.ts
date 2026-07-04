@@ -136,6 +136,12 @@ function downloadShareImage(blob: Blob, fileName: string) {
   }, 1000)
 }
 
+async function shareGeneratedImageFallback(blob: Blob, fileName: string, summary: string): Promise<SharePlayerStatsImageResult> {
+  downloadShareImage(blob, fileName)
+  await copyShareText(summary)
+  return 'ready'
+}
+
 export async function sharePlayerStatsImage({
   appUrl,
   contextLabel = '',
@@ -324,7 +330,5 @@ export async function sharePlayerStatsImage({
     if (nativeFileResult) return nativeFileResult
   }
 
-  downloadShareImage(blob, file.name)
-  await copyShareText(summary)
-  return 'ready'
+  return shareGeneratedImageFallback(blob, file.name, summary)
 }
