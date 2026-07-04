@@ -10104,8 +10104,13 @@ body {
     border-radius: 999px;
     background: #ffffff;
     box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+    color: #071112;
     font-size: 20px;
     pointer-events: auto;
+  }
+
+  .app .search-shell.open .mobile-search-toggle {
+    color: #071112;
   }
 
   .app .mobile-search-toggle svg {

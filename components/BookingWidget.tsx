@@ -1920,7 +1920,12 @@ export default function WidgetPage({
   }
 
   function passkeysAvailable() {
-    return typeof window !== 'undefined' && 'PublicKeyCredential' in window
+    return typeof window !== 'undefined'
+      && 'PublicKeyCredential' in window
+      && Boolean(window.PublicKeyCredential)
+      && 'credentials' in navigator
+      && typeof navigator.credentials?.create === 'function'
+      && typeof navigator.credentials?.get === 'function'
   }
 
   function isDocumentFocusPasskeyError(error: unknown) {
@@ -3660,7 +3665,7 @@ export default function WidgetPage({
   }, [activeView, authMode, authStep, profile])
 
   useEffect(() => {
-    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login' && authStep === 'email'
+    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login'
 
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
@@ -8551,24 +8556,38 @@ function handleSessionDateChange(value: string) {
       },
     })
 
-    const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
-    const shareResult = await sharePlayerStatsImage({
-      appUrl: DEFAULT_APP_URL,
-      contextLabel,
-      currentRank: currentUserRank,
-      displayName: playerName,
-      distinctRank: currentUserDistinctRank,
-      fallbackPlayerLabel: text.player,
-      labels: shareLabels,
-      player: {
-        ...shareStats,
-        leaderboardDistinctRank: currentUserDistinctRank,
-        leaderboardRank: currentUserRank,
-      },
-    })
+    try {
+      const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
+      const shareResult = await sharePlayerStatsImage({
+        appUrl: DEFAULT_APP_URL,
+        contextLabel,
+        currentRank: currentUserRank,
+        displayName: playerName,
+        distinctRank: currentUserDistinctRank,
+        fallbackPlayerLabel: text.player,
+        labels: shareLabels,
+        player: {
+          ...shareStats,
+          leaderboardDistinctRank: currentUserDistinctRank,
+          leaderboardRank: currentUserRank,
+        },
+      })
 
-    if (shareResult === 'ready') setProfileStatus(text.statsShareReady)
-    if (shareResult !== 'cancelled') setSharedKey('stats')
+      if (shareResult === 'ready') setProfileStatus(text.statsShareReady)
+      if (shareResult !== 'cancelled') setSharedKey('stats')
+    } catch {
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: shareSummary.title, text: shareSummary.summary, url: DEFAULT_APP_URL })
+        } else {
+          await navigator.clipboard?.writeText(shareSummary.summary)
+        }
+      } catch {
+        // Sharing and clipboard permissions vary by browser; still show the user that the action finished.
+      }
+      setProfileStatus(text.statsShareReady)
+      setSharedKey('stats')
+    }
   }
 
   async function shareTournamentResults(session: Session) {
