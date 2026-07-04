@@ -21,7 +21,7 @@ import {
   Trash2,
   UserRound,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { avatarColors, avatarEmojis, avatarTextColors } from '../lib/bookingStaticData'
 import {
   ANONYMOUS_MASK_COLOR,
@@ -41,10 +41,20 @@ import {
 } from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
 import { shouldSkipImageOptimization } from './AvatarNode'
+import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
 import ShortDateInput from './ShortDateInput'
 
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
+const profileTabCopy = {
+  en: { overview: 'Overview', achievements: 'Achievements' },
+  vi: { overview: 'Tổng quan', achievements: 'Thành tựu' },
+  ko: { overview: '개요', achievements: '업적' },
+  ja: { overview: '概要', achievements: '実績' },
+  fr: { overview: 'Aperçu', achievements: 'Succès' },
+  de: { overview: 'Übersicht', achievements: 'Erfolge' },
+  it: { overview: 'Panoramica', achievements: 'Obiettivi' },
+}
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
 
@@ -58,6 +68,7 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
 }
 
 export default function BookingProfileView({ context }: { context: any }) {
+  const [profileSubTab, setProfileSubTab] = useState<'overview' | 'achievements'>('overview')
   const {
     activeTotpFactor,
     addToCalendarText,
@@ -201,6 +212,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     userId,
     verifyMfaChallenge
   } = context
+  const profileTabs = profileTabCopy[language as keyof typeof profileTabCopy] ?? profileTabCopy.en
 
   function renderProfileSessionCard(session: any) {
     const participants = session.session_participants ?? []
@@ -392,6 +404,36 @@ export default function BookingProfileView({ context }: { context: any }) {
               </div>
             )}
 
+            {profile && (
+              <div className="segmented profile-sub-tabs" aria-label={text.profile}>
+                <button
+                  className={profileSubTab === 'overview' ? 'active' : ''}
+                  onClick={() => setProfileSubTab('overview')}
+                  type="button"
+                >
+                  {profileTabs.overview}
+                </button>
+                <button
+                  className={profileSubTab === 'achievements' ? 'active' : ''}
+                  onClick={() => setProfileSubTab('achievements')}
+                  type="button"
+                >
+                  {profileTabs.achievements}
+                </button>
+              </div>
+            )}
+
+            {profile && profileSubTab === 'achievements' ? (
+              <ProfileAchievementsPanel
+                language={language}
+                mySessions={mySessions}
+                playerStats={playerStats}
+                profile={profile}
+                text={text}
+                userId={userId}
+              />
+            ) : (
+              <>
             <div className={[
               'form-grid profile-form',
               profile ? 'profile-account-form' : '',
@@ -1061,6 +1103,8 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </>
                 )}
               </div>
+            )}
+              </>
             )}
           </ProfileAuthView>
 
