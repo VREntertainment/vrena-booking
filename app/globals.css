@@ -12563,7 +12563,17 @@ body {
   color: #0c1b1e;
 }
 
-.driver-popover.vrena-tour-popover .driver-popover-next-btn {
+.driver-popover.vrena-tour-popover .driver-popover-next-btn,
+.driver-popover.vrena-tour-popover .driver-popover-done-btn {
+  border-color: rgba(7, 17, 18, 0.9);
+  background: #071112;
+  color: #ffffff;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.vrena-tour-popover .driver-popover-next-btn:focus,
+.driver-popover.vrena-tour-popover .driver-popover-done-btn:hover,
+.driver-popover.vrena-tour-popover .driver-popover-done-btn:focus {
   border-color: rgba(7, 17, 18, 0.9);
   background: #071112;
   color: #ffffff;
@@ -12584,25 +12594,35 @@ body {
 
 @media (max-width: 520px) {
   .driver-popover.vrena-tour-popover {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
+    width: min(360px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
     border-radius: 10px;
+    padding: 16px;
   }
 
   .driver-popover.vrena-tour-popover .driver-popover-footer {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
   }
 
   .driver-popover.vrena-tour-popover .driver-popover-navigation-btns {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    width: 100%;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 8px;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .driver-popover.vrena-tour-popover .driver-popover-navigation-btns button + button {
+    margin-left: 0;
   }
 
   .driver-popover.vrena-tour-popover .driver-popover-footer-btn {
-    min-height: 42px;
-    width: 100%;
+    min-height: 38px;
+    min-width: 84px;
+    padding: 0 18px;
+    width: auto;
   }
 }
 
