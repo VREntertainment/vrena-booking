@@ -9649,9 +9649,68 @@ body {
 }
 
 .app .achievement-rank-copy strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: #071112;
   font-size: clamp(22px, 7vw, 34px);
   line-height: 1;
+}
+
+.app .achievement-rank-list-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  margin-top: 2px;
+  padding: 5px 9px;
+  border: 1px solid rgba(48, 89, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(48, 89, 255, 0.08);
+  color: #3059ff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.app .achievement-rank-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .achievement-rank-list span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background: rgba(7, 17, 18, 0.04);
+  color: #637075;
+}
+
+.app .achievement-rank-list span.active {
+  border-color: rgba(48, 89, 255, 0.28);
+  background: rgba(48, 89, 255, 0.1);
+  color: #3059ff;
+}
+
+.app .achievement-rank-list strong {
+  overflow: hidden;
+  color: #071112;
+  font-size: 15px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .achievement-rank-list small {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .app .achievement-xp-track,
@@ -10449,6 +10508,11 @@ body {
     transform: translate(-50%, 50%);
   }
 
+  .app .achievement-rank-list-sheet {
+    width: min(460px, calc(100vw - 40px));
+    grid-template-columns: 1fr;
+  }
+
   .app .achievement-detail-badge {
     width: 100%;
   }
@@ -10480,6 +10544,7 @@ body {
   }
 
   .app .achievement-rank-copy strong,
+  .app .achievement-rank-list strong,
   .app .achievement-section-head h3,
   .app .achievement-summary-card strong,
   .app .achievement-insight-card strong,
@@ -10506,6 +10571,7 @@ body {
   }
 
   .app .achievement-summary-card,
+  .app .achievement-rank-list span,
   .app .achievement-insight-card,
   .app .achievement-reward-card,
   .app .achievement-recent-item,
@@ -10540,6 +10606,18 @@ body {
     border-color: rgba(255, 255, 255, 0.18);
     background: #f6f7f9;
     color: #071112;
+  }
+
+  .app .achievement-rank-list-button {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(48, 89, 255, 0.18);
+    color: #dfe5ff;
+  }
+
+  .app .achievement-rank-list span.active {
+    border-color: rgba(48, 89, 255, 0.36);
+    background: rgba(48, 89, 255, 0.18);
+    color: #dfe5ff;
   }
 
   .app .achievement-locked,

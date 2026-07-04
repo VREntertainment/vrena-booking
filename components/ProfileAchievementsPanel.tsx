@@ -37,7 +37,14 @@ import {
   type GameAchievement,
   type RetentionAchievement,
 } from '../lib/profileAchievements'
-import { ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_TEXT_COLOR, compactInitials } from '../lib/bookingWidgetDomain'
+import {
+  anonymousCallsignForId,
+  ANONYMOUS_MASK_COLOR,
+  ANONYMOUS_MASK_EMOJI,
+  ANONYMOUS_MASK_TEXT_COLOR,
+  compactDisplayName,
+  compactInitials,
+} from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
 import { shouldSkipImageOptimization } from './AvatarNode'
 
@@ -53,6 +60,7 @@ type ProfileAchievementsPanelProps = {
   }
   profile: {
     anonymous_mode?: boolean | null
+    anonymous_callsign?: string | null
     avatar_color?: string | null
     avatar_emoji?: string | null
     avatar_initials?: string | null
@@ -62,6 +70,7 @@ type ProfileAchievementsPanelProps = {
     full_name?: string | null
     id?: string | null
     nickname?: string | null
+    phone?: string | null
   }
   text: TranslationMap
   userId: string
@@ -98,6 +107,8 @@ type AchievementCopy = {
   progress: string
   progressGraph: string
   rare: string
+  rankList: string
+  rankListIntro: string
   rarity: string
   recentUnlocks: string
   reliability: string
@@ -155,6 +166,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progress',
     progressGraph: 'Sessions played',
     rare: 'Rare',
+    rankList: 'Rank list',
+    rankListIntro: 'Ranks grow with XP from score, games joined, and wins.',
     rarity: 'Rarity',
     recentUnlocks: 'Recent unlocks',
     reliability: 'Reliability',
@@ -208,6 +221,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Tiến độ',
     progressGraph: 'Phiên đã chơi',
     rare: 'Hiếm',
+    rankList: 'Danh sách hạng',
+    rankListIntro: 'Hạng tăng theo XP từ điểm số, phiên đã tham gia và chiến thắng.',
     rarity: 'Độ hiếm',
     recentUnlocks: 'Mới mở',
     reliability: 'Độ tin cậy',
@@ -261,6 +276,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '진행도',
     progressGraph: '플레이한 세션',
     rare: '레어',
+    rankList: '랭크 목록',
+    rankListIntro: '랭크는 점수, 참여한 게임, 승리로 얻는 XP에 따라 올라갑니다.',
     rarity: '희귀도',
     recentUnlocks: '최근 해제',
     reliability: '신뢰도',
@@ -314,6 +331,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '進行状況',
     progressGraph: 'プレイ済みセッション',
     rare: 'レア',
+    rankList: 'ランク一覧',
+    rankListIntro: 'ランクはスコア、参加ゲーム、勝利から得たXPで上がります。',
     rarity: 'レア度',
     recentUnlocks: '最近の解除',
     reliability: '信頼度',
@@ -367,6 +386,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progression',
     progressGraph: 'Sessions jouées',
     rare: 'Rare',
+    rankList: 'Liste des rangs',
+    rankListIntro: 'Les rangs montent avec l’XP liée au score, aux jeux rejoints et aux victoires.',
     rarity: 'Rareté',
     recentUnlocks: 'Déblocages récents',
     reliability: 'Fiabilité',
@@ -420,6 +441,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Fortschritt',
     progressGraph: 'Gespielte Sessions',
     rare: 'Selten',
+    rankList: 'Rangliste',
+    rankListIntro: 'Ränge steigen durch XP aus Punkten, gespielten Games und Siegen.',
     rarity: 'Seltenheit',
     recentUnlocks: 'Neue Freischaltungen',
     reliability: 'Zuverlässigkeit',
@@ -473,6 +496,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progresso',
     progressGraph: 'Sessioni giocate',
     rare: 'Raro',
+    rankList: 'Lista ranghi',
+    rankListIntro: 'I ranghi crescono con XP da punteggio, giochi giocati e vittorie.',
     rarity: 'Rarità',
     recentUnlocks: 'Sblocchi recenti',
     reliability: 'Affidabilità',
@@ -518,6 +543,13 @@ const gamePathSteps: Array<{ labelKey: keyof AchievementCopy; target: number; ti
   { labelKey: 'gold', target: 5, tier: 'gold' },
   { labelKey: 'mastered', target: 10, tier: 'mastered' },
 ]
+
+const rankLevels = [
+  { level: '1-5', name: 'Rookie' },
+  { level: '6-11', name: 'Rising Player' },
+  { level: '12-19', name: 'Arena Ace' },
+  { level: '20+', name: 'VR Master' },
+] as const
 
 function tierIcon(tier: GameAchievement['tier']) {
   if (tier === 'mastered') return <Crown aria-hidden="true" size={15} />
@@ -610,6 +642,17 @@ function AchievementAvatar({ profile }: { profile: ProfileAchievementsPanelProps
   )
 }
 
+function profileAchievementName(profile: ProfileAchievementsPanelProps['profile']) {
+  if (profile.anonymous_mode) {
+    return compactDisplayName(
+      profile.nickname || profile.anonymous_callsign || anonymousCallsignForId(profile.id),
+      'CIPHER-291',
+    )
+  }
+
+  return compactDisplayName(profile.nickname || profile.full_name || profile.phone, 'Player')
+}
+
 export default function ProfileAchievementsPanel({
   language,
   mySessions,
@@ -622,6 +665,7 @@ export default function ProfileAchievementsPanel({
   const [selectedAchievement, setSelectedAchievement] = useState<GameAchievement | null>(null)
   const [selectedRetentionAchievement, setSelectedRetentionAchievement] = useState<RetentionAchievement | null>(null)
   const [achievementFilter, setAchievementFilter] = useState<AchievementFilter>('all')
+  const [showRankList, setShowRankList] = useState(false)
   const [shareStatus, setShareStatus] = useState('')
   const [sparkedAchievementId, setSparkedAchievementId] = useState('')
   const [, setTapCounts] = useState<Record<string, number>>({})
@@ -634,6 +678,7 @@ export default function ProfileAchievementsPanel({
   )
   const summary = useMemo(() => achievementSummary(achievements, sessionsPlayed, retentionAchievements), [achievements, retentionAchievements, sessionsPlayed])
   const levelProgress = useMemo(() => profileLevelProgress(playerStats), [playerStats])
+  const playerDisplayName = useMemo(() => profileAchievementName(profile), [profile])
   const graphPoints = useMemo(() => sessionsByRecentWeek(mySessions, userId, language), [language, mySessions, userId])
   const spotlight = useMemo(() => weeklyAchievementSpotlight(mySessions, userId, retentionAchievements), [mySessions, retentionAchievements, userId])
   const closestUnlock = useMemo(() => closestAchievement(achievements, retentionAchievements), [achievements, retentionAchievements])
@@ -725,12 +770,16 @@ export default function ProfileAchievementsPanel({
           </div>
           <div className="achievement-rank-copy">
             <span>{copy.playerRank}</span>
-            <strong>{levelProgress.rankLabel}</strong>
-            <small>{copy.level} {levelProgress.level}</small>
+            <strong>{playerDisplayName}</strong>
+            <small>{levelProgress.rankLabel} · {copy.level} {levelProgress.level}</small>
             <div className="achievement-xp-track" aria-label={`${levelProgress.progressToNext}% ${copy.progress}`}>
               <span style={{ width: `${levelProgress.progressToNext}%` }} />
             </div>
             <small>{levelProgress.xp.toLocaleString(language)} / {levelProgress.nextLevelXp.toLocaleString(language)} {copy.xp} - {copy.nextLevel}</small>
+            <button className="achievement-rank-list-button" onClick={() => setShowRankList(true)} type="button">
+              <Trophy aria-hidden="true" size={14} />
+              {copy.rankList}
+            </button>
           </div>
         </div>
         <div className="achievement-rank-badge" aria-hidden="true">
@@ -738,6 +787,33 @@ export default function ProfileAchievementsPanel({
           <span>{levelProgress.level}</span>
         </div>
       </div>
+
+      {showRankList && (
+        <div className="modal-backdrop" onClick={() => setShowRankList(false)}>
+          <div className="achievement-rank-list-sheet achievement-detail-sheet" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowRankList(false)} type="button" aria-label={text.close}>
+              <X aria-hidden="true" size={18} />
+            </button>
+            <div className="achievement-detail-copy">
+              <span className="achievement-tier-pill">
+                <ShieldCheck aria-hidden="true" size={15} />
+                {copy.playerRank}
+              </span>
+              <h3>{copy.rankList}</h3>
+              <strong>{copy.rankListIntro}</strong>
+              <div className="achievement-rank-list">
+                {rankLevels.map((rank) => (
+                  <span className={levelProgress.rankLabel === rank.name ? 'active' : ''} key={rank.name}>
+                    <ShieldCheck aria-hidden="true" size={18} />
+                    <strong>{rank.name}</strong>
+                    <small>{copy.level} {rank.level}</small>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="achievement-summary-grid" aria-label={copy.achievementsHint}>
         <div className="achievement-summary-card">
