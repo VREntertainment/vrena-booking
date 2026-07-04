@@ -18,7 +18,9 @@ import {
   ScanLine,
   Share,
   ShieldCheck,
+  Settings,
   Trash2,
+  Trophy,
   UserRound,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -47,13 +49,13 @@ import ShortDateInput from './ShortDateInput'
 
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const profileTabCopy = {
-  en: { overview: 'Overview', achievements: 'Achievements' },
-  vi: { overview: 'Tổng quan', achievements: 'Thành tựu' },
-  ko: { overview: '개요', achievements: '업적' },
-  ja: { overview: '概要', achievements: '実績' },
-  fr: { overview: 'Aperçu', achievements: 'Succès' },
-  de: { overview: 'Übersicht', achievements: 'Erfolge' },
-  it: { overview: 'Panoramica', achievements: 'Obiettivi' },
+  en: { achievements: 'Achievements', settings: 'Settings' },
+  vi: { achievements: 'Thành tựu', settings: 'Cài đặt' },
+  ko: { achievements: '업적', settings: '설정' },
+  ja: { achievements: '実績', settings: '設定' },
+  fr: { achievements: 'Succès', settings: 'Réglages' },
+  de: { achievements: 'Erfolge', settings: 'Einstellungen' },
+  it: { achievements: 'Obiettivi', settings: 'Impostazioni' },
 }
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
@@ -68,7 +70,7 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
 }
 
 export default function BookingProfileView({ context }: { context: any }) {
-  const [profileSubTab, setProfileSubTab] = useState<'overview' | 'achievements'>('overview')
+  const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
   const {
     activeTotpFactor,
     addToCalendarText,
@@ -407,18 +409,18 @@ export default function BookingProfileView({ context }: { context: any }) {
             {profile && (
               <div className="segmented profile-sub-tabs" aria-label={text.profile}>
                 <button
-                  className={profileSubTab === 'overview' ? 'active' : ''}
-                  onClick={() => setProfileSubTab('overview')}
-                  type="button"
-                >
-                  {profileTabs.overview}
-                </button>
-                <button
                   className={profileSubTab === 'achievements' ? 'active' : ''}
                   onClick={() => setProfileSubTab('achievements')}
                   type="button"
                 >
-                  {profileTabs.achievements}
+                  <ButtonIconText icon={<Trophy aria-hidden="true" size={17} />}>{profileTabs.achievements}</ButtonIconText>
+                </button>
+                <button
+                  className={profileSubTab === 'settings' ? 'active' : ''}
+                  onClick={() => setProfileSubTab('settings')}
+                  type="button"
+                >
+                  <ButtonIconText icon={<Settings aria-hidden="true" size={17} />}>{profileTabs.settings}</ButtonIconText>
                 </button>
               </div>
             )}
