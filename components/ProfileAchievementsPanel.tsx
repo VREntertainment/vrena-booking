@@ -37,6 +37,7 @@ type ProfileAchievementsPanelProps = {
     avatar_initials?: string | null
     avatar_text_color?: string | null
     avatar_url?: string | null
+    birthday?: string | null
     full_name?: string | null
     id?: string | null
     nickname?: string | null
@@ -394,7 +395,7 @@ export default function ProfileAchievementsPanel({
   const [, setTapCounts] = useState<Record<string, number>>({})
 
   const achievements = useMemo(() => buildGameAchievements(mySessions, userId), [mySessions, userId])
-  const retentionAchievements = useMemo(() => buildRetentionAchievements(mySessions, userId), [mySessions, userId])
+  const retentionAchievements = useMemo(() => buildRetentionAchievements(mySessions, userId, profile), [mySessions, profile, userId])
   const sessionsPlayed = useMemo(
     () => mySessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [mySessions, userId],

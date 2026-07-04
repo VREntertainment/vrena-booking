@@ -4,7 +4,10 @@ export type AchievementTier = 'none' | 'bronze' | 'silver' | 'gold' | 'mastered'
 export type AchievementState = 'locked' | 'unlocked' | 'mastered' | 'secret'
 
 type AchievementSessionParticipant = {
+  accuracy_percent?: number | string | null
   checked_in?: boolean | null
+  escape_duration_seconds?: number | string | null
+  placement?: number | string | null
   profile_id?: string | null
   score?: number | string | null
 }
@@ -21,6 +24,7 @@ export type AchievementSession = {
   session_participants?: AchievementSessionParticipant[] | null
   start_time?: string | null
   status?: string | null
+  ticket_type?: string | null
 }
 
 export type GameAchievement = {
@@ -58,6 +62,11 @@ export type RetentionAchievement = {
   title: string
 }
 
+export type RetentionAchievementProfile = {
+  anonymous_mode?: boolean | null
+  birthday?: string | null
+}
+
 const levelRequirements = {
   bronze: 1,
   silver: 3,
@@ -87,6 +96,11 @@ function playedGameIds(session: AchievementSession): GameId[] {
 function numericScore(value: number | string | null | undefined) {
   const score = Number(value)
   return Number.isFinite(score) ? score : null
+}
+
+function numericValue(value: number | string | null | undefined) {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : null
 }
 
 function sessionDateValue(session: AchievementSession) {
@@ -172,6 +186,143 @@ function isWeekendSession(session: AchievementSession) {
 
 function isChallengeAchievementSession(session: AchievementSession) {
   return Boolean(session.challenge_target_id || session.challenge_status || session.booking_type === 'challenge')
+}
+
+function checkedInParticipants(session: AchievementSession) {
+  return (session.session_participants ?? []).filter((participant) => participant.checked_in)
+}
+
+function checkedInParticipantCount(session: AchievementSession) {
+  return checkedInParticipants(session).length
+}
+
+function checkedInOtherParticipants(session: AchievementSession, profileId: string | null | undefined) {
+  return checkedInParticipants(session).filter((participant) => participant.profile_id && participant.profile_id !== profileId)
+}
+
+function playerCreatedSession(session: AchievementSession, profileId: string | null | undefined) {
+  return Boolean(profileId && session.owner_id === profileId)
+}
+
+function maxSessionsInSingleDay(sessions: AchievementSession[]) {
+  const byDate = new Map<string, number>()
+  sessions.forEach((session) => {
+    if (!session.date) return
+    byDate.set(session.date, (byDate.get(session.date) ?? 0) + 1)
+  })
+  return Math.max(0, ...Array.from(byDate.values()))
+}
+
+function maxRepeatedCoplayerCount(sessions: AchievementSession[], profileId: string | null | undefined) {
+  const counts = new Map<string, number>()
+  sessions.forEach((session) => {
+    checkedInOtherParticipants(session, profileId).forEach((participant) => {
+      if (!participant.profile_id) return
+      counts.set(participant.profile_id, (counts.get(participant.profile_id) ?? 0) + 1)
+    })
+  })
+  return Math.max(0, ...Array.from(counts.values()))
+}
+
+function hasPlayerTopScore(session: AchievementSession, profileId: string | null | undefined) {
+  const player = participantForSession(session, profileId)
+  const playerScore = numericScore(player?.score)
+  if (playerScore === null) return false
+
+  const scores = checkedInParticipants(session)
+    .map((participant) => numericScore(participant.score))
+    .filter((score): score is number => score !== null)
+  if (scores.length < 2) return false
+
+  return playerScore === Math.max(...scores)
+}
+
+function hasTopTenPercentPlacement(session: AchievementSession, profileId: string | null | undefined) {
+  const player = participantForSession(session, profileId)
+  const placement = numericValue(player?.placement)
+  if (placement === null || placement < 1) return false
+
+  const checkedInCount = checkedInParticipantCount(session)
+  if (checkedInCount < 2) return false
+
+  return placement <= Math.max(1, Math.ceil(checkedInCount * 0.1))
+}
+
+function hasAccuracyUpgrade(sessions: AchievementSession[], profileId: string | null | undefined) {
+  const accuracyValues = sessions
+    .map((session) => ({
+      date: sessionDateValue(session)?.getTime() ?? 0,
+      value: numericValue(participantForSession(session, profileId)?.accuracy_percent),
+    }))
+    .filter((item): item is { date: number; value: number } => item.value !== null)
+    .sort((a, b) => a.date - b.date)
+
+  let total = 0
+  for (let index = 0; index < accuracyValues.length; index += 1) {
+    if (index > 0 && accuracyValues[index].value > total / index) return true
+    total += accuracyValues[index].value
+  }
+
+  return false
+}
+
+function hasScoreImprovement(sessions: AchievementSession[], profileId: string | null | undefined) {
+  const scores = sessions
+    .map((session) => ({
+      date: sessionDateValue(session)?.getTime() ?? 0,
+      value: numericScore(participantForSession(session, profileId)?.score),
+    }))
+    .filter((item): item is { date: number; value: number } => item.value !== null)
+    .sort((a, b) => a.date - b.date)
+
+  let best = Number.NEGATIVE_INFINITY
+  for (const score of scores) {
+    if (best !== Number.NEGATIVE_INFINITY && score.value > best) return true
+    best = Math.max(best, score.value)
+  }
+
+  return false
+}
+
+function hasEscapeBreakthrough(sessions: AchievementSession[], profileId: string | null | undefined) {
+  const durations = sessions
+    .map((session) => ({
+      date: sessionDateValue(session)?.getTime() ?? 0,
+      value: numericValue(participantForSession(session, profileId)?.escape_duration_seconds),
+    }))
+    .filter((item): item is { date: number; value: number } => item.value !== null && item.value > 0)
+    .sort((a, b) => a.date - b.date)
+
+  let best = Number.POSITIVE_INFINITY
+  for (const duration of durations) {
+    if (best !== Number.POSITIVE_INFINITY && duration.value < best) return true
+    best = Math.min(best, duration.value)
+  }
+
+  return false
+}
+
+function birthdayMonth(birthday: string | null | undefined) {
+  if (!birthday) return null
+  const match = birthday.match(/^\d{4}-(\d{2})-\d{2}$/)
+  return match ? Number(match[1]) : null
+}
+
+function sessionMonth(session: AchievementSession) {
+  if (!session.date) return null
+  const match = session.date.match(/^\d{4}-(\d{2})-\d{2}$/)
+  return match ? Number(match[1]) : null
+}
+
+function isOffPeakSession(session: AchievementSession) {
+  if (!session.start_time) return false
+  const [hoursText] = session.start_time.split(':')
+  const hours = Number(hoursText)
+  if (!Number.isFinite(hours)) return false
+  const date = sessionDateValue(session)
+  const day = date?.getDay()
+  const isWeekday = day !== 0 && day !== 6
+  return isWeekday && (hours < 14 || hours >= 21)
 }
 
 function retentionState(current: number, target: number): AchievementState {
@@ -274,16 +425,24 @@ export function buildGameAchievements(sessions: AchievementSession[], profileId:
   })
 }
 
-export function buildRetentionAchievements(sessions: AchievementSession[], profileId: string | null | undefined): RetentionAchievement[] {
+export function buildRetentionAchievements(
+  sessions: AchievementSession[],
+  profileId: string | null | undefined,
+  profile?: RetentionAchievementProfile | null,
+): RetentionAchievement[] {
   const completedSessions = completedAchievementSessions(sessions, profileId)
   const gameCounts = new Map<GameId, number>()
   let fpsGamesTried = 0
   let escapeGamesTried = 0
   let scoredSessions = 0
+  let accuracySessions = 0
+  let escapeDurationSessions = 0
 
   completedSessions.forEach((session) => {
     const participant = participantForSession(session, profileId)
     if (numericScore(participant?.score) !== null) scoredSessions += 1
+    if (numericValue(participant?.accuracy_percent) !== null) accuracySessions += 1
+    if (numericValue(participant?.escape_duration_seconds) !== null) escapeDurationSessions += 1
 
     playedGameIds(session).forEach((gameId) => {
       gameCounts.set(gameId, (gameCounts.get(gameId) ?? 0) + 1)
@@ -307,8 +466,22 @@ export function buildRetentionAchievements(sessions: AchievementSession[], profi
   const challengeSessionCount = completedSessions.filter(isChallengeAchievementSession).length
   const weekendSessionCount = completedSessions.filter(isWeekendSession).length
   const nightSessionCount = completedSessions.filter((session) => sessionStartsAtOrAfter(session, 18)).length
+  const squadStarterCount = completedSessions.filter((session) => playerCreatedSession(session, profileId) && checkedInParticipantCount(session) >= 3).length
+  const bringCrewCount = completedSessions.filter((session) => playerCreatedSession(session, profileId) && checkedInOtherParticipants(session, profileId).length >= 3).length
+  const friendlyRivalryCount = maxRepeatedCoplayerCount(completedSessions, profileId)
+  const clutchCount = completedSessions.filter((session) => numericValue(participantForSession(session, profileId)?.placement) === 1 || hasPlayerTopScore(session, profileId)).length
+  const topTenCount = completedSessions.filter((session) => hasTopTenPercentPlacement(session, profileId)).length
+  const birthdayHeroCount = completedSessions.filter((session) => {
+    const month = birthdayMonth(profile?.birthday)
+    return Boolean(month && sessionMonth(session) === month)
+  }).length
+  const teamBuilderCount = completedSessions.filter((session) => session.booking_type === 'ticket' && session.ticket_type === 'corporate').length
+  const offPeakCount = completedSessions.filter(isOffPeakSession).length
+  const doubleSessionCount = maxSessionsInSingleDay(completedSessions)
+  const maskModeCount = profile?.anonymous_mode && completedSessions.length > 0 ? 1 : 0
 
   return [
+    retentionAchievement('first-blood', 'First Blood', 'Complete your first checked-in session.', 'special', completedSessions.length, 1),
     retentionAchievement('weekly-warrior', 'Weekly Warrior', 'Play one checked-in session this week.', 'comeback', currentWeekPlayCount(completedSessions), 1),
     retentionAchievement('streak-builder', 'Streak Builder', 'Play in two consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 2),
     retentionAchievement('arena-regular', 'Arena Regular', 'Play in four consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 4),
@@ -317,11 +490,24 @@ export function buildRetentionAchievements(sessions: AchievementSession[], profi
     retentionAchievement('genre-explorer', 'Genre Explorer', 'Play at least one FPS/PVP game and one Escape game.', 'explore', Math.min(2, (fpsGamesTried > 0 ? 1 : 0) + (escapeGamesTried > 0 ? 1 : 0)), 2),
     retentionAchievement('specialist', 'Specialist', 'Play the same game ten times.', 'explore', maxGameCount, 10),
     retentionAchievement('completionist', 'Completionist', 'Unlock Bronze on every game.', 'explore', bronzeGameCount, games.length),
+    retentionAchievement('squad-starter', 'Squad Starter', 'Create a session with at least three checked-in players.', 'social', squadStarterCount, 1),
     retentionAchievement('challenge-accepted', 'Challenge Accepted', 'Complete a challenge session.', 'social', challengeSessionCount, 1),
+    retentionAchievement('friendly-rivalry', 'Friendly Rivalry', 'Play with the same player three times.', 'social', friendlyRivalryCount, 3),
     retentionAchievement('club-loyalist', 'Club Loyalist', 'Play three checked-in club sessions.', 'social', clubSessionCount, 3),
-    retentionAchievement('personal-best', 'Personal Best', 'Record scores in three sessions so improvement tracking can begin.', 'performance', scoredSessions, 3),
+    retentionAchievement('bring-the-crew', 'Bring the Crew', 'Create a session where three other players check in.', 'social', bringCrewCount, 1),
+    retentionAchievement('personal-best', 'Personal Best', 'Beat your previous recorded score.', 'performance', hasScoreImprovement(completedSessions, profileId) ? 2 : Math.min(scoredSessions, 1), 2),
+    retentionAchievement('clutch-player', 'Clutch Player', 'Finish first or top-score a checked-in session.', 'performance', clutchCount, 1),
+    retentionAchievement('accuracy-upgrade', 'Accuracy Upgrade', 'Improve one recorded accuracy result above your previous average.', 'performance', hasAccuracyUpgrade(completedSessions, profileId) ? 2 : Math.min(accuracySessions, 1), 2),
+    retentionAchievement('escape-breakthrough', 'Escape Breakthrough', 'Beat your previous recorded Escape completion time.', 'performance', hasEscapeBreakthrough(completedSessions, profileId) ? 2 : Math.min(escapeDurationSessions, 1), 2),
+    retentionAchievement('top-ten-moment', 'Top 10% Moment', 'Place in the top 10% of a checked-in scored session.', 'performance', topTenCount, 1),
+    retentionAchievement('birthday-hero', 'Birthday Hero', 'Play during your birthday month.', 'special', birthdayHeroCount, 1),
+    retentionAchievement('team-builder', 'Team Builder', 'Join a checked-in corporate/event session.', 'social', teamBuilderCount, 1),
+    retentionAchievement('off-peak-explorer', 'Off-Peak Explorer', 'Play during quieter weekday hours.', 'special', offPeakCount, 1),
+    retentionAchievement('double-session-day', 'Double Session Day', 'Complete two checked-in sessions in one day.', 'comeback', doubleSessionCount, 2),
     retentionAchievement('weekend-raider', 'Weekend Raider', 'Play on a Saturday or Sunday.', 'special', weekendSessionCount, 1),
     retentionAchievement('night-owl', 'Night Owl', 'Play an evening session.', 'special', nightSessionCount, 1),
+    retentionAchievement('secret-hunter', 'Secret Hunter', 'Reveal the hidden profile achievement by trying three different games.', 'special', gamesTried, 3),
+    retentionAchievement('mask-mode', 'Mask Mode', 'Complete a session with anonymous mode enabled.', 'special', maskModeCount, 1),
   ]
 }
 
