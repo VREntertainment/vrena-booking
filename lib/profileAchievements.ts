@@ -2,6 +2,7 @@ import { games, type GameId, type GameInfo } from './bookingStaticData'
 
 export type AchievementTier = 'none' | 'bronze' | 'silver' | 'gold' | 'mastered'
 export type AchievementState = 'locked' | 'unlocked' | 'mastered' | 'secret'
+export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary'
 
 type AchievementSessionParticipant = {
   accuracy_percent?: number | string | null
@@ -47,7 +48,9 @@ export type AchievementSummary = {
   achievementsUnlocked: number
   gamesTried: number
   masteredCount: number
+  retentionUnlocked: number
   sessionsPlayed: number
+  totalUnlocked: number
   totalGames: number
 }
 
@@ -60,6 +63,40 @@ export type RetentionAchievement = {
   state: AchievementState
   target: number
   title: string
+}
+
+export type ClosestAchievement = {
+  current: number
+  id: string
+  progressPercent: number
+  target: number
+  title: string
+  type: 'game' | 'retention'
+}
+
+export type RecentAchievement = {
+  id: string
+  kind: 'game' | 'retention'
+  title: string
+  unlockedAt: string | null
+}
+
+export type AchievementSpotlight = {
+  current: number
+  description: string
+  id: string
+  progressPercent: number
+  target: number
+  title: string
+}
+
+export type AchievementMilestoneReward = {
+  current: number
+  description: string
+  id: string
+  target: number
+  title: string
+  unlocked: boolean
 }
 
 export type RetentionAchievementProfile = {
@@ -334,6 +371,15 @@ function progress(current: number, target: number) {
   return Math.min(100, Math.round((current / target) * 100))
 }
 
+function latestSessionDate(sessions: AchievementSession[]) {
+  const latest = sessions
+    .map(sessionDateValue)
+    .filter((date): date is Date => Boolean(date))
+    .sort((a, b) => b.getTime() - a.getTime())[0]
+
+  return latest ? latest.toISOString().slice(0, 10) : null
+}
+
 function retentionAchievement(
   id: string,
   title: string,
@@ -511,14 +557,176 @@ export function buildRetentionAchievements(
   ]
 }
 
-export function achievementSummary(achievements: GameAchievement[], sessionsPlayed: number): AchievementSummary {
+export function achievementSummary(
+  achievements: GameAchievement[],
+  sessionsPlayed: number,
+  retentionAchievements: RetentionAchievement[] = [],
+): AchievementSummary {
+  const achievementsUnlocked = achievements.filter((achievement) => achievement.state !== 'locked').length
+  const retentionUnlocked = retentionAchievements.filter((achievement) => achievement.state !== 'locked').length
+
   return {
-    achievementsUnlocked: achievements.filter((achievement) => achievement.state !== 'locked').length,
+    achievementsUnlocked,
     gamesTried: achievements.filter((achievement) => achievement.playedCount > 0).length,
     masteredCount: achievements.filter((achievement) => achievement.state === 'mastered').length,
+    retentionUnlocked,
     sessionsPlayed,
+    totalUnlocked: achievementsUnlocked + retentionUnlocked,
     totalGames: achievements.length,
   }
+}
+
+export function achievementRarityForGame(achievement: Pick<GameAchievement, 'tier' | 'nextRequirement'>): AchievementRarity {
+  if (achievement.tier === 'mastered') return 'legendary'
+  if (achievement.tier === 'gold' || achievement.nextRequirement === levelRequirements.mastered) return 'epic'
+  if (achievement.tier === 'silver' || achievement.nextRequirement === levelRequirements.gold) return 'rare'
+  return 'common'
+}
+
+export function achievementRarityForRetention(achievement: Pick<RetentionAchievement, 'target' | 'category'>): AchievementRarity {
+  if (achievement.target >= 10 || achievement.category === 'performance') return 'legendary'
+  if (achievement.target >= 4 || achievement.category === 'explore') return 'epic'
+  if (achievement.target >= 2 || achievement.category === 'social') return 'rare'
+  return 'common'
+}
+
+export function closestAchievement(
+  achievements: GameAchievement[],
+  retentionAchievements: RetentionAchievement[],
+): ClosestAchievement | null {
+  const gameCandidates: ClosestAchievement[] = achievements
+    .filter((achievement) => achievement.state !== 'mastered')
+    .map((achievement) => ({
+      current: achievement.playedCount,
+      id: achievement.game.id,
+      progressPercent: achievement.progressPercent,
+      target: achievement.nextRequirement ?? levelRequirements.mastered,
+      title: achievement.game.title,
+      type: 'game',
+    }))
+
+  const retentionCandidates: ClosestAchievement[] = retentionAchievements
+    .filter((achievement) => achievement.state === 'locked')
+    .map((achievement) => ({
+      current: achievement.current,
+      id: achievement.id,
+      progressPercent: achievement.progressPercent,
+      target: achievement.target,
+      title: achievement.title,
+      type: 'retention',
+    }))
+
+  return [...gameCandidates, ...retentionCandidates]
+    .sort((a, b) => {
+      if (b.progressPercent !== a.progressPercent) return b.progressPercent - a.progressPercent
+      return (a.target - a.current) - (b.target - b.current)
+    })[0] ?? null
+}
+
+export function weeklyAchievementSpotlight(
+  sessions: AchievementSession[],
+  profileId: string | null | undefined,
+  retentionAchievements: RetentionAchievement[],
+): AchievementSpotlight {
+  const weekly = retentionAchievements.find((achievement) => achievement.id === 'weekly-warrior')
+  if (weekly) {
+    return {
+      current: weekly.current,
+      description: weekly.description,
+      id: weekly.id,
+      progressPercent: weekly.progressPercent,
+      target: weekly.target,
+      title: weekly.title,
+    }
+  }
+
+  const completedSessions = completedAchievementSessions(sessions, profileId)
+  const current = currentWeekPlayCount(completedSessions)
+  return {
+    current,
+    description: 'Play one checked-in session this week.',
+    id: 'weekly-warrior',
+    progressPercent: progress(current, 1),
+    target: 1,
+    title: 'Weekly Warrior',
+  }
+}
+
+export function recentUnlockedAchievements(
+  sessions: AchievementSession[],
+  profileId: string | null | undefined,
+  achievements: GameAchievement[],
+  retentionAchievements: RetentionAchievement[],
+): RecentAchievement[] {
+  const completedSessions = completedAchievementSessions(sessions, profileId)
+  const byGame = new Map<GameId, AchievementSession[]>()
+
+  completedSessions.forEach((session) => {
+    playedGameIds(session).forEach((gameId) => {
+      byGame.set(gameId, [...(byGame.get(gameId) ?? []), session])
+    })
+  })
+
+  const gameItems = achievements
+    .filter((achievement) => achievement.state !== 'locked')
+    .map((achievement) => ({
+      id: achievement.game.id,
+      kind: 'game' as const,
+      title: achievement.title,
+      unlockedAt: latestSessionDate(byGame.get(achievement.game.id) ?? []),
+    }))
+
+  const latestOverall = latestSessionDate(completedSessions)
+  const retentionItems = retentionAchievements
+    .filter((achievement) => achievement.state !== 'locked')
+    .map((achievement) => ({
+      id: achievement.id,
+      kind: 'retention' as const,
+      title: achievement.title,
+      unlockedAt: latestOverall,
+    }))
+
+  return [...gameItems, ...retentionItems]
+    .filter((item) => Boolean(item.unlockedAt))
+    .sort((a, b) => String(b.unlockedAt).localeCompare(String(a.unlockedAt)))
+    .slice(0, 4)
+}
+
+export function achievementMilestoneRewards(summary: AchievementSummary): AchievementMilestoneReward[] {
+  return [
+    {
+      current: summary.sessionsPlayed,
+      description: 'A profile frame for showing up.',
+      id: 'rookie-frame',
+      target: 1,
+      title: 'Rookie Frame',
+      unlocked: summary.sessionsPlayed >= 1,
+    },
+    {
+      current: summary.totalUnlocked,
+      description: 'A warm badge glow for your deck.',
+      id: 'arena-glow',
+      target: 5,
+      title: 'Arena Glow',
+      unlocked: summary.totalUnlocked >= 5,
+    },
+    {
+      current: summary.retentionUnlocked,
+      description: 'A Trickster title for unusual patterns.',
+      id: 'trickster-title',
+      target: 3,
+      title: 'Trickster Title',
+      unlocked: summary.retentionUnlocked >= 3,
+    },
+    {
+      current: summary.masteredCount,
+      description: 'A crown treatment for mastered games.',
+      id: 'master-crown',
+      target: 1,
+      title: 'Master Crown',
+      unlocked: summary.masteredCount >= 1,
+    },
+  ]
 }
 
 export function profileLevelProgress(playerStats: { gamesJoined?: number | null; totalScore?: number | null; wins?: number | null }) {

@@ -9716,6 +9716,135 @@ body {
   line-height: 1.15;
 }
 
+.app .achievement-insights-grid,
+.app .achievement-rewards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.app .achievement-insight-card,
+.app .achievement-reward-card,
+.app .achievement-recent-item {
+  min-width: 0;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #071112;
+}
+
+.app .achievement-insight-card,
+.app .achievement-reward-card {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+}
+
+.app .achievement-spotlight-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.16), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.app .achievement-streak-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.14), transparent 42%),
+    #ffffff;
+}
+
+.app .achievement-insight-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(48, 89, 255, 0.08);
+  color: #3059ff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.app .achievement-insight-card strong,
+.app .achievement-reward-card strong,
+.app .achievement-recent-item strong {
+  min-width: 0;
+  color: #071112;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.app .achievement-insight-card small,
+.app .achievement-reward-card small,
+.app .achievement-recent-item small {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.app .achievement-recent-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .achievement-recent-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  color: #3059ff;
+}
+
+.app .achievement-reward-card {
+  position: relative;
+  overflow: hidden;
+  color: #3059ff;
+}
+
+.app .achievement-reward-card.reward-unlocked {
+  border-color: rgba(245, 197, 66, 0.36);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 45%),
+    #ffffff;
+  color: #8a6600;
+}
+
+.app .achievement-filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.app .achievement-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.app .achievement-filter-bar button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.app .achievement-filter-bar button.active {
+  border-color: rgba(48, 89, 255, 0.28);
+  background: #071112;
+  color: #ffffff;
+}
+
 .app .achievement-progress-card,
 .app .achievement-collection-card {
   display: grid;
@@ -9949,6 +10078,35 @@ body {
   color: #8a6600;
 }
 
+.app .achievement-rarity-pill {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(99, 112, 117, 0.12);
+  color: #637075;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.app .achievement-rarity-pill.rarity-rare {
+  background: rgba(48, 89, 255, 0.1);
+  color: #3059ff;
+}
+
+.app .achievement-rarity-pill.rarity-epic {
+  background: rgba(123, 58, 237, 0.12);
+  color: #6d36d8;
+}
+
+.app .achievement-rarity-pill.rarity-legendary {
+  background: rgba(245, 197, 66, 0.2);
+  color: #8a6600;
+}
+
 .app .achievement-locked {
   background: #f3f6f7;
 }
@@ -10167,6 +10325,47 @@ body {
   font-size: 15px;
 }
 
+.app .achievement-path {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.app .achievement-path span {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 5px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 10px;
+  background: rgba(7, 17, 18, 0.04);
+  color: #637075;
+}
+
+.app .achievement-path span.active {
+  border-color: rgba(245, 197, 66, 0.35);
+  background: rgba(245, 197, 66, 0.16);
+  color: #8a6600;
+}
+
+.app .achievement-path small {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .achievement-path em {
+  color: inherit;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+}
+
 .app .achievement-detail-list {
   display: grid;
   gap: 8px;
@@ -10225,6 +10424,14 @@ body {
 }
 
 @media (min-width: 720px) {
+  .app .achievement-insights-grid {
+    grid-template-columns: 1.35fr 1fr 1fr;
+  }
+
+  .app .achievement-rewards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .app .achievement-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -10275,6 +10482,9 @@ body {
   .app .achievement-rank-copy strong,
   .app .achievement-section-head h3,
   .app .achievement-summary-card strong,
+  .app .achievement-insight-card strong,
+  .app .achievement-reward-card strong,
+  .app .achievement-recent-item strong,
   .app .achievement-chart-labels strong,
   .app .achievement-card-body strong,
   .app .achievement-detail-copy h3,
@@ -10286,6 +10496,9 @@ body {
   .app .achievement-rank-copy small,
   .app .achievement-section-head .muted,
   .app .achievement-summary-card span,
+  .app .achievement-insight-card small,
+  .app .achievement-reward-card small,
+  .app .achievement-recent-item small,
   .app .achievement-chart-labels span,
   .app .achievement-card-body small,
   .app .achievement-detail-list dt {
@@ -10293,11 +10506,40 @@ body {
   }
 
   .app .achievement-summary-card,
+  .app .achievement-insight-card,
+  .app .achievement-reward-card,
+  .app .achievement-recent-item,
   .app .achievement-card,
+  .app .achievement-filter-bar button,
   .app .retention-achievement-card {
     border-color: rgba(255, 255, 255, 0.12);
     background: #182225;
     color: #f6f7f9;
+  }
+
+  .app .achievement-spotlight-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 42%),
+      #182225;
+  }
+
+  .app .achievement-streak-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.18), transparent 42%),
+      #182225;
+  }
+
+  .app .achievement-reward-card.reward-unlocked {
+    border-color: rgba(245, 197, 66, 0.34);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 45%),
+      #182225;
+  }
+
+  .app .achievement-filter-bar button.active {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: #f6f7f9;
+    color: #071112;
   }
 
   .app .achievement-locked,
@@ -10316,6 +10558,12 @@ body {
 
   .app .achievement-detail-list div {
     border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .app .achievement-path span {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #aeb9bd;
   }
 
   .app .achievement-secret {
