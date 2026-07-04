@@ -120,6 +120,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     openSessionFromProfile,
     passkeyButtonRef,
     passkeyCaptchaContainerRef,
+    preparePasskeyCaptcha,
     pendingInvitationsHintText,
     pendingInvitationsText,
     pendingSessionInvites,
@@ -361,16 +362,35 @@ export default function BookingProfileView({ context }: { context: any }) {
                 </button>
                 {authMode === 'login' && (
                   <button
-                    className={isPasskeyLoading ? 'secondary create-button passkey-auth-button loading' : 'secondary create-button passkey-auth-button'}
-                    disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
-                    onClick={signInWithPasskey}
+                    aria-busy={isPasskeyLoading || !isPasskeyCaptchaReady}
+                    aria-disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
+                    className={[
+                      'secondary create-button passkey-auth-button',
+                      isPasskeyLoading ? 'loading' : '',
+                      !isPasskeyLoading && !isPasskeyCaptchaReady ? 'preparing' : '',
+                      isPasskeyCaptchaReady ? 'ready' : '',
+                    ].filter(Boolean).join(' ')}
+                    disabled={isPasskeyLoading}
+                    onClick={(event) => {
+                      if (!isPasskeyCaptchaReady) {
+                        event.preventDefault()
+                        preparePasskeyCaptcha()
+                        return
+                      }
+
+                      signInWithPasskey()
+                    }}
+                    onFocus={preparePasskeyCaptcha}
+                    onMouseEnter={preparePasskeyCaptcha}
+                    onPointerEnter={preparePasskeyCaptcha}
+                    onTouchStart={preparePasskeyCaptcha}
                     ref={passkeyButtonRef}
                     type="button"
                   >
                     <span className="passkey-mark" aria-hidden="true">
                       <KeyRound size={19} strokeWidth={2.4} />
                     </span>
-                    {text.continueWithPasskey}
+                    {isPasskeyLoading ? text.passkeyStarting : text.continueWithPasskey}
                   </button>
                 )}
                 <div className="auth-divider">

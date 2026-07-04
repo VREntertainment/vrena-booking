@@ -8006,6 +8006,42 @@ body {
   gap: 10px;
 }
 
+.app .profile-auth-section .passkey-auth-button {
+  position: relative;
+  overflow: hidden;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.app .profile-auth-section .passkey-auth-button.ready {
+  cursor: pointer;
+}
+
+.app .profile-auth-section .passkey-auth-button.ready:hover,
+.app .profile-auth-section .passkey-auth-button.ready:focus-visible {
+  border-color: rgba(7, 17, 18, 0.24);
+  background: #f8fbfb;
+  box-shadow: 0 12px 28px rgba(11, 21, 24, 0.14);
+  filter: brightness(1.02);
+  transform: translateY(-1px) translateZ(0);
+}
+
+.app .profile-auth-section .passkey-auth-button.preparing {
+  cursor: progress;
+}
+
+.app .profile-auth-section .passkey-auth-button.preparing::after,
+.app .profile-auth-section .passkey-auth-button.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(48, 89, 255, 0.16), transparent);
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: passkeyButtonSweep 1.15s ease-in-out infinite;
+}
+
 .app .profile-auth-section .passkey-mark {
   display: inline-grid;
   place-items: center;
@@ -8013,6 +8049,18 @@ body {
   height: 19px;
   color: #071112;
   flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.app .profile-auth-section .passkey-auth-button > :not(.passkey-mark) {
+  position: relative;
+  z-index: 1;
+}
+
+.app .profile-auth-section .passkey-auth-button.preparing .passkey-mark,
+.app .profile-auth-section .passkey-auth-button.loading .passkey-mark {
+  animation: passkeyMarkPulse 900ms ease-in-out infinite;
 }
 
 .app .profile-auth-section .passkey-mark svg {
@@ -8027,7 +8075,34 @@ body {
   height: 1px;
   overflow: hidden;
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
+  transform: translate(-9999px, -9999px);
+}
+
+@keyframes passkeyButtonSweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes passkeyMarkPulse {
+  0%, 100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app .profile-auth-section .passkey-auth-button.preparing::after,
+  .app .profile-auth-section .passkey-auth-button.loading::after,
+  .app .profile-auth-section .passkey-auth-button.preparing .passkey-mark,
+  .app .profile-auth-section .passkey-auth-button.loading .passkey-mark {
+    animation: none;
+  }
 }
 
 .app .profile-auth-section .google-mark {
