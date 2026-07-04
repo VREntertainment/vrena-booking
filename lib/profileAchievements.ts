@@ -46,6 +46,7 @@ export type AchievementProgressPoint = {
 
 export type AchievementSummary = {
   achievementsUnlocked: number
+  availableAchievements: number
   gamesTried: number
   masteredCount: number
   retentionUnlocked: number
@@ -567,6 +568,7 @@ export function achievementSummary(
 
   return {
     achievementsUnlocked,
+    availableAchievements: achievements.length + retentionAchievements.length,
     gamesTried: achievements.filter((achievement) => achievement.playedCount > 0).length,
     masteredCount: achievements.filter((achievement) => achievement.state === 'mastered').length,
     retentionUnlocked,

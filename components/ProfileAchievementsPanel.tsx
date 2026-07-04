@@ -81,6 +81,7 @@ type AchievementCopy = {
   achievementsEmpty: string
   achievementsHint: string
   achievementsUnlocked: string
+  achievementsUnlockedTotal: string
   all: string
   badgePath: string
   bronze: string
@@ -140,6 +141,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'Check in to a session and your first badge will light up here.',
     achievementsHint: 'Game badges are powered by your checked-in sessions.',
     achievementsUnlocked: 'Achievements',
+    achievementsUnlockedTotal: 'Unlocked total',
     all: 'All',
     badgePath: 'Badge path',
     bronze: 'Bronze',
@@ -195,6 +197,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'Check-in một phiên chơi và huy hiệu đầu tiên sẽ sáng lên tại đây.',
     achievementsHint: 'Huy hiệu game được tính từ các phiên bạn đã check-in.',
     achievementsUnlocked: 'Thành tựu',
+    achievementsUnlockedTotal: 'Tổng đã mở',
     all: 'Tất cả',
     badgePath: 'Lộ trình huy hiệu',
     bronze: 'Đồng',
@@ -250,6 +253,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: '세션에 체크인하면 첫 배지가 여기에 켜집니다.',
     achievementsHint: '게임 배지는 체크인한 세션을 기준으로 계산됩니다.',
     achievementsUnlocked: '업적',
+    achievementsUnlockedTotal: '전체 해제',
     all: '전체',
     badgePath: '배지 경로',
     bronze: '브론즈',
@@ -305,6 +309,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'セッションにチェックインすると、最初のバッジがここで点灯します。',
     achievementsHint: 'ゲームバッジはチェックイン済みセッションから計算されます。',
     achievementsUnlocked: '実績',
+    achievementsUnlockedTotal: '解除済み合計',
     all: 'すべて',
     badgePath: 'バッジ経路',
     bronze: 'ブロンズ',
@@ -360,6 +365,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'Check-in à une session et ton premier badge s’allumera ici.',
     achievementsHint: 'Les badges de jeu utilisent tes sessions validées.',
     achievementsUnlocked: 'Succès',
+    achievementsUnlockedTotal: 'Total débloqué',
     all: 'Tout',
     badgePath: 'Parcours du badge',
     bronze: 'Bronze',
@@ -415,6 +421,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'Checke in eine Session ein, dann leuchtet dein erstes Abzeichen hier auf.',
     achievementsHint: 'Spielabzeichen basieren auf deinen eingecheckten Sessions.',
     achievementsUnlocked: 'Erfolge',
+    achievementsUnlockedTotal: 'Gesamt freigeschaltet',
     all: 'Alle',
     badgePath: 'Abzeichenpfad',
     bronze: 'Bronze',
@@ -470,6 +477,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     achievementsEmpty: 'Fai check-in a una sessione e il primo badge si illuminerà qui.',
     achievementsHint: 'I badge dei giochi usano le sessioni con check-in.',
     achievementsUnlocked: 'Obiettivi',
+    achievementsUnlockedTotal: 'Totale sbloccati',
     all: 'Tutti',
     badgePath: 'Percorso badge',
     bronze: 'Bronzo',
@@ -830,6 +838,14 @@ export default function ProfileAchievementsPanel({
           <Trophy aria-hidden="true" size={18} />
           <strong>{summary.achievementsUnlocked}</strong>
           <span>{copy.achievementsUnlocked}</span>
+        </div>
+        <div className="achievement-summary-card achievement-summary-progress-card">
+          <Award aria-hidden="true" size={18} />
+          <strong>{summary.totalUnlocked}/{summary.availableAchievements}</strong>
+          <span>{copy.achievementsUnlockedTotal}</span>
+          <span className="achievement-mini-progress" aria-hidden="true">
+            <span style={{ width: `${summary.availableAchievements > 0 ? Math.round((summary.totalUnlocked / summary.availableAchievements) * 100) : 0}%` }} />
+          </span>
         </div>
         {typeof playerStats.reliabilityScore === 'number' && playerStats.reliabilityScore > 0 && (
           <div className="achievement-summary-card">
