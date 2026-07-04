@@ -12519,6 +12519,93 @@ body {
   box-shadow: none;
 }
 
+.driver-popover.vrena-tour-popover {
+  z-index: 1000001;
+  width: min(340px, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
+  border: 1px solid rgba(8, 21, 23, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 20px 56px rgba(7, 17, 18, 0.24);
+  color: #0c1b1e;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-title {
+  color: #0c1b1e;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-description {
+  color: #4d5d63;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-footer {
+  gap: 10px;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-progress-text {
+  color: #66757b;
+  font-size: 0.78rem;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-footer-btn,
+.driver-popover.vrena-tour-popover .driver-popover-close-btn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-footer-btn {
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  background: #f5f8f8;
+  color: #0c1b1e;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-next-btn {
+  border-color: rgba(0, 184, 148, 0.46);
+  background: #0f8f73;
+  color: #ffffff;
+}
+
+.driver-popover.vrena-tour-popover .driver-popover-btn-disabled {
+  opacity: 0.45;
+}
+
+.driver-active .driver-overlay,
+.driver-active .driver-popover {
+  pointer-events: auto;
+}
+
+.driver-active .driver-active-element {
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.34), 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 520px) {
+  .driver-popover.vrena-tour-popover {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    border-radius: 10px;
+  }
+
+  .driver-popover.vrena-tour-popover .driver-popover-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .driver-popover.vrena-tour-popover .driver-popover-navigation-btns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .driver-popover.vrena-tour-popover .driver-popover-footer-btn {
+    min-height: 42px;
+    width: 100%;
+  }
+}
+
 .app .tab,
 .app .segmented button,
 .app .sub-tabs button,
