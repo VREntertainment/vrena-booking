@@ -1777,7 +1777,7 @@ export default function WidgetPage({
         return
       }
 
-      if (authMode === 'create' && !captchaToken) {
+      if ((authMode === 'create' || authMode === 'login') && !captchaToken) {
         setProfileStatus(text.captchaRequired)
         return
       }
@@ -1860,6 +1860,9 @@ export default function WidgetPage({
       const signInResult = await (await getSupabase()).auth.signInWithPassword({
         email: loginEmail,
         password: profilePassword,
+        options: {
+          captchaToken,
+        },
       })
 
       authDebug('handleAuth:signInWithPassword:response', {
@@ -1874,6 +1877,8 @@ export default function WidgetPage({
           userMetadata: signInResult.data.user.user_metadata,
         } : null,
       })
+
+      resetCaptcha()
 
       if (signInResult.error) {
         setProfileStatus(signInResult.error.message)
@@ -3608,7 +3613,7 @@ export default function WidgetPage({
   }, [])
 
   useEffect(() => {
-    const shouldShowCaptcha = authMode === 'reset' || (authMode === 'create' && authStep === 'credentials')
+    const shouldShowCaptcha = authMode === 'reset' || ((authMode === 'create' || authMode === 'login') && authStep === 'credentials')
 
     if (typeof window === 'undefined' || profile || activeView !== 'profile' || !shouldShowCaptcha) return
 
