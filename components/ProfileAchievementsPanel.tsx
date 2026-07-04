@@ -1,7 +1,43 @@
 'use client'
 
 import NextImage from 'next/image'
-import { Award, CalendarCheck, Clock3, Crown, Flame, Gamepad2, Lock, Medal, RotateCcw, Share2, ShieldCheck, Sparkles, Star, Target, Trophy, UsersRound, X } from 'lucide-react'
+import {
+  Activity,
+  Award,
+  BadgeCheck,
+  BriefcaseBusiness,
+  Cake,
+  CalendarCheck,
+  CalendarHeart,
+  Clock3,
+  Club,
+  Crosshair,
+  Crown,
+  Flame,
+  Footprints,
+  Gauge,
+  Gamepad2,
+  Handshake,
+  Lock,
+  Medal,
+  Moon,
+  Repeat2,
+  RotateCcw,
+  SearchCheck,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Swords,
+  Target,
+  TimerReset,
+  Trophy,
+  UserPlus,
+  UsersRound,
+  VenetianMask,
+  X,
+  Zap,
+} from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
@@ -102,8 +138,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progress',
     progressGraph: 'Sessions played',
     reliability: 'Reliability',
-    retentionCollection: 'Comeback achievements',
-    retentionHint: 'Extra badges that reward returning, exploring, challenging, and playing with others.',
+    retentionCollection: "The Trickster's Deck",
+    retentionHint: 'A playful set of hidden patterns, rivals, rituals, and lucky moments from your VRena runs.',
     secret: 'Secret',
     secretHint: 'Try more game types to reveal this badge.',
     sessionsPlayed: 'Sessions played',
@@ -135,8 +171,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Tiến độ',
     progressGraph: 'Phiên đã chơi',
     reliability: 'Độ tin cậy',
-    retentionCollection: 'Thành tựu quay lại chơi',
-    retentionHint: 'Huy hiệu thưởng cho việc quay lại, khám phá, thách đấu và chơi cùng người khác.',
+    retentionCollection: 'Bộ bài Trickster',
+    retentionHint: 'Những dấu ấn tinh nghịch về thói quen, đối thủ, nghi thức và khoảnh khắc may mắn trong các lượt chơi VRena.',
     secret: 'Bí mật',
     secretHint: 'Thử thêm nhiều thể loại game để mở huy hiệu này.',
     sessionsPlayed: 'Phiên đã chơi',
@@ -168,8 +204,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '진행도',
     progressGraph: '플레이한 세션',
     reliability: '신뢰도',
-    retentionCollection: '재방문 업적',
-    retentionHint: '다시 방문하고, 탐험하고, 도전하고, 함께 플레이할 때 보상되는 배지입니다.',
+    retentionCollection: '트릭스터의 덱',
+    retentionHint: 'VRena 플레이 속 패턴, 라이벌, 의식, 행운의 순간을 모은 장난스러운 배지입니다.',
     secret: '비밀',
     secretHint: '더 다양한 게임 유형을 시도하면 배지가 드러납니다.',
     sessionsPlayed: '플레이한 세션',
@@ -201,8 +237,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '進行状況',
     progressGraph: 'プレイ済みセッション',
     reliability: '信頼度',
-    retentionCollection: 'リピート実績',
-    retentionHint: '再来店、探索、チャレンジ、仲間とのプレイを評価する追加バッジです。',
+    retentionCollection: 'トリックスターのデッキ',
+    retentionHint: 'VRenaでのプレイに隠れた流れ、ライバル、儀式、幸運の瞬間を集めた遊び心あるバッジです。',
     secret: 'シークレット',
     secretHint: 'さらに多くのゲームタイプを試すと、このバッジが現れます。',
     sessionsPlayed: 'プレイ済みセッション',
@@ -234,8 +270,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progression',
     progressGraph: 'Sessions jouées',
     reliability: 'Fiabilité',
-    retentionCollection: 'Succès de retour',
-    retentionHint: 'Des badges qui récompensent le retour, l’exploration, les défis et le jeu à plusieurs.',
+    retentionCollection: 'Le deck du Trickster',
+    retentionHint: 'Une série de motifs cachés, rivaux, rituels et coups de chance tirés de tes parties VRena.',
     secret: 'Secret',
     secretHint: 'Essaie plus de types de jeux pour révéler ce badge.',
     sessionsPlayed: 'Sessions jouées',
@@ -267,8 +303,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Fortschritt',
     progressGraph: 'Gespielte Sessions',
     reliability: 'Zuverlässigkeit',
-    retentionCollection: 'Comeback-Erfolge',
-    retentionHint: 'Zusätzliche Abzeichen für Wiederkommen, Entdecken, Challenges und gemeinsames Spielen.',
+    retentionCollection: 'Das Trickster-Deck',
+    retentionHint: 'Verspielte Abzeichen für versteckte Muster, Rivalen, Rituale und Glücksmomente aus deinen VRena-Runden.',
     secret: 'Geheim',
     secretHint: 'Probiere mehr Spieltypen aus, um dieses Abzeichen zu enthüllen.',
     sessionsPlayed: 'Gespielte Sessions',
@@ -300,8 +336,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progresso',
     progressGraph: 'Sessioni giocate',
     reliability: 'Affidabilità',
-    retentionCollection: 'Obiettivi ritorno',
-    retentionHint: 'Badge extra per tornare, esplorare, sfidare e giocare con altre persone.',
+    retentionCollection: 'Il mazzo del Trickster',
+    retentionHint: 'Badge giocosi per schemi nascosti, rivali, rituali e colpi di fortuna delle tue partite VRena.',
     secret: 'Segreto',
     secretHint: 'Prova più tipi di gioco per rivelare questo badge.',
     sessionsPlayed: 'Sessioni giocate',
@@ -330,7 +366,36 @@ function tierIcon(tier: GameAchievement['tier']) {
   return <Lock aria-hidden="true" size={15} />
 }
 
-function retentionIcon(category: RetentionAchievement['category']) {
+function retentionIcon(achievement: Pick<RetentionAchievement, 'category' | 'id'>) {
+  if (achievement.id === 'first-blood') return <BadgeCheck aria-hidden="true" size={17} />
+  if (achievement.id === 'weekly-warrior') return <CalendarCheck aria-hidden="true" size={17} />
+  if (achievement.id === 'streak-builder') return <Flame aria-hidden="true" size={17} />
+  if (achievement.id === 'arena-regular') return <Repeat2 aria-hidden="true" size={17} />
+  if (achievement.id === 'back-for-more') return <Footprints aria-hidden="true" size={17} />
+  if (achievement.id === 'perfect-rotation') return <Target aria-hidden="true" size={17} />
+  if (achievement.id === 'genre-explorer') return <Crosshair aria-hidden="true" size={17} />
+  if (achievement.id === 'specialist') return <Medal aria-hidden="true" size={17} />
+  if (achievement.id === 'completionist') return <Crown aria-hidden="true" size={17} />
+  if (achievement.id === 'squad-starter') return <UsersRound aria-hidden="true" size={17} />
+  if (achievement.id === 'challenge-accepted') return <Swords aria-hidden="true" size={17} />
+  if (achievement.id === 'friendly-rivalry') return <Handshake aria-hidden="true" size={17} />
+  if (achievement.id === 'club-loyalist') return <Club aria-hidden="true" size={17} />
+  if (achievement.id === 'bring-the-crew') return <UserPlus aria-hidden="true" size={17} />
+  if (achievement.id === 'personal-best') return <Trophy aria-hidden="true" size={17} />
+  if (achievement.id === 'clutch-player') return <Zap aria-hidden="true" size={17} />
+  if (achievement.id === 'accuracy-upgrade') return <Gauge aria-hidden="true" size={17} />
+  if (achievement.id === 'escape-breakthrough') return <TimerReset aria-hidden="true" size={17} />
+  if (achievement.id === 'top-ten-moment') return <Activity aria-hidden="true" size={17} />
+  if (achievement.id === 'birthday-hero') return <Cake aria-hidden="true" size={17} />
+  if (achievement.id === 'team-builder') return <BriefcaseBusiness aria-hidden="true" size={17} />
+  if (achievement.id === 'off-peak-explorer') return <Clock3 aria-hidden="true" size={17} />
+  if (achievement.id === 'double-session-day') return <CalendarHeart aria-hidden="true" size={17} />
+  if (achievement.id === 'weekend-raider') return <Gamepad2 aria-hidden="true" size={17} />
+  if (achievement.id === 'night-owl') return <Moon aria-hidden="true" size={17} />
+  if (achievement.id === 'secret-hunter') return <SearchCheck aria-hidden="true" size={17} />
+  if (achievement.id === 'mask-mode') return <VenetianMask aria-hidden="true" size={17} />
+
+  const category = achievement.category
   if (category === 'comeback') return <RotateCcw aria-hidden="true" size={17} />
   if (category === 'explore') return <Target aria-hidden="true" size={17} />
   if (category === 'social') return <UsersRound aria-hidden="true" size={17} />
@@ -602,7 +667,7 @@ export default function ProfileAchievementsPanel({
               type="button"
             >
               <span className="retention-achievement-icon">
-                {achievement.state === 'locked' ? <Lock aria-hidden="true" size={17} /> : retentionIcon(achievement.category)}
+                {retentionIcon(achievement)}
               </span>
               <span className="retention-achievement-copy">
                 <strong>{achievement.title}</strong>
@@ -669,7 +734,7 @@ export default function ProfileAchievementsPanel({
               <X aria-hidden="true" size={18} />
             </button>
             <div className={`retention-detail-badge retention-${selectedRetentionAchievement.category}`}>
-              {selectedRetentionAchievement.state === 'locked' ? <Lock aria-hidden="true" size={42} /> : retentionIcon(selectedRetentionAchievement.category)}
+              {retentionIcon(selectedRetentionAchievement)}
             </div>
             <div className="achievement-detail-copy">
               <span className="achievement-tier-pill">
