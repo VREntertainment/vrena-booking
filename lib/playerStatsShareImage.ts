@@ -136,7 +136,27 @@ function downloadShareImage(blob: Blob, fileName: string) {
   }, 1000)
 }
 
-async function shareGeneratedImageFallback(blob: Blob, fileName: string, summary: string): Promise<SharePlayerStatsImageResult> {
+async function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number) {
+  try {
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality))
+  } catch {
+    return null
+  }
+}
+
+async function copyShareImage(blob: Blob) {
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return false
+
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function shareGeneratedImageFallback(blob: Blob, fileName: string, summary: string, clipboardImageBlob: Blob | null): Promise<SharePlayerStatsImageResult> {
+  if (clipboardImageBlob) await copyShareImage(clipboardImageBlob)
   downloadShareImage(blob, fileName)
   await copyShareText(summary)
   return 'ready'
@@ -312,12 +332,7 @@ export async function sharePlayerStatsImage({
     fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
   }
 
-  let blob: Blob | null = null
-  try {
-    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
-  } catch {
-    blob = null
-  }
+  const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)
 
   if (!blob) {
     return shareTextFallback(title, summary, appUrl)
@@ -330,5 +345,6 @@ export async function sharePlayerStatsImage({
     if (nativeFileResult) return nativeFileResult
   }
 
-  return shareGeneratedImageFallback(blob, file.name, summary)
+  const clipboardImageBlob = await canvasToBlob(canvas, 'image/png')
+  return shareGeneratedImageFallback(blob, file.name, summary, clipboardImageBlob)
 }
