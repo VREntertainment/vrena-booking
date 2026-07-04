@@ -18,14 +18,14 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
-import FirstLoginTour from './FirstLoginTour'
+import type { FirstLoginTourProps } from './FirstLoginTour'
 import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, StaffPlayerEditDraft, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, defaultStaffPlayerEditDraft, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, MatchStatus, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, participantPaymentMethodSummary, participantPaymentAmountSummary, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, isInteractiveClickTarget, rankEmoji, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, parseSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, queueLabel, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, getHCaptcha, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
 import type { ClubVisibility, ClubsViewProps } from './ClubsView'
 import type { CreateSessionViewProps } from './CreateSessionView'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
-import SessionsView, { type SessionTimeScope } from './SessionsView'
+import type { SessionTimeScope, SessionsViewProps } from './SessionsView'
 import type { StaffProfile } from './StaffConsole'
 import type { TournamentControlPanelProps } from './TournamentControlPanel'
 
@@ -66,6 +66,17 @@ function getSupabase() {
 
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
+const SessionsView = dynamic<SessionsViewProps>(() => import('./SessionsView'), {
+  ssr: false,
+  loading: () => (
+    <section className="section sessions-section" data-tour="sessions-list">
+      <p className="notice" aria-busy="true">...</p>
+    </section>
+  ),
+})
+const FirstLoginTour = dynamic<FirstLoginTourProps>(() => import('./FirstLoginTour'), {
+  ssr: false,
+})
 const TicketBookingView = dynamic(() => import('./TicketBookingView'), {
   ssr: false,
   loading: () => (
@@ -11459,7 +11470,9 @@ function handleSessionDateChange(value: string) {
 
   return (
     <div className="app" data-tour="app-shell">
-      <FirstLoginTour enabled={Boolean(profile)} onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
+      {profile && userId && (
+        <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
+      )}
       {appAside}
       {appMain}
       {appOverlays}
