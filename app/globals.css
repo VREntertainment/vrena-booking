@@ -9775,6 +9775,17 @@ body {
   line-height: 1.15;
 }
 
+.app .achievement-summary-progress-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(48, 89, 255, 0.1), transparent 42%),
+    #ffffff;
+}
+
+.app .achievement-summary-card .achievement-mini-progress {
+  width: 100%;
+  margin-top: 2px;
+}
+
 .app .achievement-insights-grid,
 .app .achievement-rewards-grid {
   display: grid;
@@ -10581,6 +10592,12 @@ body {
     border-color: rgba(255, 255, 255, 0.12);
     background: #182225;
     color: #f6f7f9;
+  }
+
+  .app .achievement-summary-progress-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(48, 89, 255, 0.16), transparent 42%),
+      #182225;
   }
 
   .app .achievement-spotlight-card {
