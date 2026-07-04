@@ -2999,7 +2999,6 @@ export default function WidgetPage({
     const publicResult = await client
       .from('clubs')
       .select(CLUB_PUBLIC_SELECT)
-      .eq('visibility', 'public')
       .order('created_at', { ascending: false })
 
     if (!userId) {
