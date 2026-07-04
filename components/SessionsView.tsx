@@ -10,7 +10,7 @@ type SessionDayOption = {
   weekday: string
 }
 
-type SessionsViewProps = {
+export type SessionsViewProps = {
   children: ReactNode
   createStatus: string
   dayStripRef: RefObject<HTMLDivElement | null>

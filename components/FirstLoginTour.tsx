@@ -8,7 +8,7 @@ import type { AppView } from './AppSidebar'
 const TOUR_VERSION = 'v1'
 const TOUR_STORAGE_PREFIX = 'vrena:first-login-tour'
 
-type FirstLoginTourProps = {
+export type FirstLoginTourProps = {
   enabled: boolean
   onViewChange: (view: AppView) => void
   replayNonce?: number
