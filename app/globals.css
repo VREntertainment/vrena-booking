@@ -9880,7 +9880,6 @@ body {
     linear-gradient(180deg, rgba(7, 17, 18, 0.02) 0%, rgba(7, 17, 18, 0.16) 45%, rgba(7, 17, 18, 0.72) 100%);
 }
 
-.app .achievement-image-wrap::after,
 .app .achievement-detail-badge::after {
   content: '';
   position: absolute;
