@@ -310,6 +310,7 @@ body {
 
 .app .mobile-search-toggle {
   display: none;
+  color: #071112;
 }
 
 .app .app-title-row {
@@ -10105,6 +10106,12 @@ body {
     box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
     font-size: 20px;
     pointer-events: auto;
+  }
+
+  .app .mobile-search-toggle svg {
+    display: block;
+    color: currentColor;
+    opacity: 1;
   }
 
   .app .search {

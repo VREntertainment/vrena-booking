@@ -39,19 +39,6 @@ const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 const AVATAR_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const CLUB_MESSAGE_MAX_LENGTH = 150
 
-function isNativeStatsShareCancelled(error: unknown) {
-  if (!error || typeof error !== 'object') return false
-  const { name, message } = error as { name?: string; message?: string }
-  return name === 'AbortError' || /cancel/i.test(message || '')
-}
-
-function shouldUseImmediateTextStatsShare() {
-  if (typeof navigator === 'undefined' || !navigator.share) return false
-  const userAgent = navigator.userAgent || ''
-  const vendor = navigator.vendor || ''
-  const isSafari = /Safari/i.test(userAgent) && !/(Chrome|Chromium|CriOS|Edg|OPR|OPT|CocCoc|coc_coc_browser)/i.test(userAgent)
-  return !isSafari && (/(Chrome|Chromium|CriOS|Edg|OPR|OPT|CocCoc|coc_coc_browser)/i.test(userAgent) || /Google/i.test(vendor))
-}
 const CLUB_MESSAGE_LIMIT = 30
 
 function ShareSymbol() {
@@ -8558,20 +8545,6 @@ function handleSessionDateChange(value: string) {
         leaderboardRank: currentUserRank,
       },
     })
-
-    if (shouldUseImmediateTextStatsShare()) {
-      try {
-        await navigator.share({
-          title: shareSummary.title,
-          text: shareSummary.summary,
-          url: DEFAULT_APP_URL,
-        })
-        setSharedKey('stats')
-        return
-      } catch (error) {
-        if (isNativeStatsShareCancelled(error)) return
-      }
-    }
 
     const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
     const shareResult = await sharePlayerStatsImage({

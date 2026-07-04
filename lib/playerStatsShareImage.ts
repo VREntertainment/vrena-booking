@@ -324,9 +324,6 @@ export async function sharePlayerStatsImage({
     if (nativeFileResult) return nativeFileResult
   }
 
-  const textShareResult = await tryNativeShare({ title, text: summary, url: appUrl })
-  if (textShareResult) return textShareResult
-
   downloadShareImage(blob, file.name)
   await copyShareText(summary)
   return 'ready'
