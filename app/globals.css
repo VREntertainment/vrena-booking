@@ -10006,6 +10006,122 @@ body {
   letter-spacing: 0;
 }
 
+.app .retention-achievements-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.12), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.app .retention-achievement-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.app .retention-achievement-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #071112;
+  text-align: left;
+  overflow: hidden;
+}
+
+.app .retention-achievement-icon,
+.app .retention-detail-badge {
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #00aeb3, #3059ff);
+  box-shadow: 0 10px 24px rgba(48, 89, 255, 0.16);
+}
+
+.app .retention-achievement-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.app .retention-achievement-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .retention-achievement-copy strong {
+  overflow: hidden;
+  color: #071112;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .retention-achievement-copy small {
+  color: #637075;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.app .retention-locked {
+  background: #f3f6f7;
+}
+
+.app .retention-locked .retention-achievement-icon {
+  background: #637075;
+  opacity: 0.82;
+}
+
+.app .retention-unlocked {
+  box-shadow: 0 12px 28px rgba(0, 174, 179, 0.08);
+}
+
+.app .retention-comeback .retention-achievement-icon,
+.app .retention-comeback.retention-detail-badge {
+  background: linear-gradient(135deg, #00aeb3, #3059ff);
+}
+
+.app .retention-explore .retention-achievement-icon,
+.app .retention-explore.retention-detail-badge {
+  background: linear-gradient(135deg, #3059ff, #6f42ff);
+}
+
+.app .retention-social .retention-achievement-icon,
+.app .retention-social.retention-detail-badge {
+  background: linear-gradient(135deg, #00aeb3, #0d7c51);
+}
+
+.app .retention-performance .retention-achievement-icon,
+.app .retention-performance.retention-detail-badge {
+  background: linear-gradient(135deg, #f5c542, #3059ff);
+}
+
+.app .retention-special .retention-achievement-icon,
+.app .retention-special.retention-detail-badge {
+  background: linear-gradient(135deg, #071112, #3059ff);
+}
+
+.app .retention-detail-badge {
+  width: min(180px, 58vw);
+  aspect-ratio: 1;
+  justify-self: center;
+  border-radius: 28px;
+  font-size: 38px;
+}
+
+.app .retention-detail-badge svg {
+  width: 44px;
+  height: 44px;
+}
+
 .app .achievement-detail-sheet {
   position: fixed;
   left: 10px;
@@ -10121,6 +10237,14 @@ body {
   .app .achievement-detail-badge {
     width: 100%;
   }
+
+  .app .retention-achievement-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .retention-detail-badge {
+    width: 100%;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -10161,13 +10285,15 @@ body {
   }
 
   .app .achievement-summary-card,
-  .app .achievement-card {
+  .app .achievement-card,
+  .app .retention-achievement-card {
     border-color: rgba(255, 255, 255, 0.12);
     background: #182225;
     color: #f6f7f9;
   }
 
-  .app .achievement-locked {
+  .app .achievement-locked,
+  .app .retention-locked {
     background: #121b1e;
   }
 
@@ -10188,6 +10314,20 @@ body {
     background:
       repeating-linear-gradient(90deg, rgba(48, 89, 255, 0.12) 0 8px, transparent 8px 16px),
       linear-gradient(180deg, #182225, #10191b);
+  }
+
+  .app .retention-achievements-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.16), transparent 30%),
+      linear-gradient(180deg, #10191b 0%, #0c1517 100%);
+  }
+
+  .app .retention-achievement-copy strong {
+    color: #f6f7f9;
+  }
+
+  .app .retention-achievement-copy small {
+    color: #aeb9bd;
   }
 }
 

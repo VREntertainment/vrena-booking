@@ -1,18 +1,20 @@
 'use client'
 
 import NextImage from 'next/image'
-import { Award, Crown, Gamepad2, Lock, Medal, Share2, ShieldCheck, Sparkles, Star, Target, Trophy, X } from 'lucide-react'
+import { Award, CalendarCheck, Clock3, Crown, Flame, Gamepad2, Lock, Medal, RotateCcw, Share2, ShieldCheck, Sparkles, Star, Target, Trophy, UsersRound, X } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import {
   achievementSummary,
   buildGameAchievements,
+  buildRetentionAchievements,
   profileLevelProgress,
   sessionsByRecentWeek,
   type AchievementProgressPoint,
   type AchievementSession,
   type GameAchievement,
+  type RetentionAchievement,
 } from '../lib/profileAchievements'
 import { ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_TEXT_COLOR, compactInitials } from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
@@ -64,6 +66,8 @@ type AchievementCopy = {
   progress: string
   progressGraph: string
   reliability: string
+  retentionCollection: string
+  retentionHint: string
   secret: string
   secretHint: string
   sessionsPlayed: string
@@ -97,6 +101,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progress',
     progressGraph: 'Sessions played',
     reliability: 'Reliability',
+    retentionCollection: 'Comeback achievements',
+    retentionHint: 'Extra badges that reward returning, exploring, challenging, and playing with others.',
     secret: 'Secret',
     secretHint: 'Try more game types to reveal this badge.',
     sessionsPlayed: 'Sessions played',
@@ -128,6 +134,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Tiến độ',
     progressGraph: 'Phiên đã chơi',
     reliability: 'Độ tin cậy',
+    retentionCollection: 'Thành tựu quay lại chơi',
+    retentionHint: 'Huy hiệu thưởng cho việc quay lại, khám phá, thách đấu và chơi cùng người khác.',
     secret: 'Bí mật',
     secretHint: 'Thử thêm nhiều thể loại game để mở huy hiệu này.',
     sessionsPlayed: 'Phiên đã chơi',
@@ -159,6 +167,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '진행도',
     progressGraph: '플레이한 세션',
     reliability: '신뢰도',
+    retentionCollection: '재방문 업적',
+    retentionHint: '다시 방문하고, 탐험하고, 도전하고, 함께 플레이할 때 보상되는 배지입니다.',
     secret: '비밀',
     secretHint: '더 다양한 게임 유형을 시도하면 배지가 드러납니다.',
     sessionsPlayed: '플레이한 세션',
@@ -190,6 +200,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: '進行状況',
     progressGraph: 'プレイ済みセッション',
     reliability: '信頼度',
+    retentionCollection: 'リピート実績',
+    retentionHint: '再来店、探索、チャレンジ、仲間とのプレイを評価する追加バッジです。',
     secret: 'シークレット',
     secretHint: 'さらに多くのゲームタイプを試すと、このバッジが現れます。',
     sessionsPlayed: 'プレイ済みセッション',
@@ -221,6 +233,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progression',
     progressGraph: 'Sessions jouées',
     reliability: 'Fiabilité',
+    retentionCollection: 'Succès de retour',
+    retentionHint: 'Des badges qui récompensent le retour, l’exploration, les défis et le jeu à plusieurs.',
     secret: 'Secret',
     secretHint: 'Essaie plus de types de jeux pour révéler ce badge.',
     sessionsPlayed: 'Sessions jouées',
@@ -252,6 +266,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Fortschritt',
     progressGraph: 'Gespielte Sessions',
     reliability: 'Zuverlässigkeit',
+    retentionCollection: 'Comeback-Erfolge',
+    retentionHint: 'Zusätzliche Abzeichen für Wiederkommen, Entdecken, Challenges und gemeinsames Spielen.',
     secret: 'Geheim',
     secretHint: 'Probiere mehr Spieltypen aus, um dieses Abzeichen zu enthüllen.',
     sessionsPlayed: 'Gespielte Sessions',
@@ -283,6 +299,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     progress: 'Progresso',
     progressGraph: 'Sessioni giocate',
     reliability: 'Affidabilità',
+    retentionCollection: 'Obiettivi ritorno',
+    retentionHint: 'Badge extra per tornare, esplorare, sfidare e giocare con altre persone.',
     secret: 'Segreto',
     secretHint: 'Prova più tipi di gioco per rivelare questo badge.',
     sessionsPlayed: 'Sessioni giocate',
@@ -309,6 +327,14 @@ function tierIcon(tier: GameAchievement['tier']) {
   if (tier === 'silver') return <Medal aria-hidden="true" size={15} />
   if (tier === 'bronze') return <Award aria-hidden="true" size={15} />
   return <Lock aria-hidden="true" size={15} />
+}
+
+function retentionIcon(category: RetentionAchievement['category']) {
+  if (category === 'comeback') return <RotateCcw aria-hidden="true" size={17} />
+  if (category === 'explore') return <Target aria-hidden="true" size={17} />
+  if (category === 'social') return <UsersRound aria-hidden="true" size={17} />
+  if (category === 'performance') return <Trophy aria-hidden="true" size={17} />
+  return <Clock3 aria-hidden="true" size={17} />
 }
 
 function progressPath(points: AchievementProgressPoint[]) {
@@ -363,10 +389,12 @@ export default function ProfileAchievementsPanel({
 }: ProfileAchievementsPanelProps) {
   const copy = achievementCopy[language] ?? achievementCopy.en
   const [selectedAchievement, setSelectedAchievement] = useState<GameAchievement | null>(null)
+  const [selectedRetentionAchievement, setSelectedRetentionAchievement] = useState<RetentionAchievement | null>(null)
   const [sparkedAchievementId, setSparkedAchievementId] = useState('')
   const [, setTapCounts] = useState<Record<string, number>>({})
 
   const achievements = useMemo(() => buildGameAchievements(mySessions, userId), [mySessions, userId])
+  const retentionAchievements = useMemo(() => buildRetentionAchievements(mySessions, userId), [mySessions, userId])
   const sessionsPlayed = useMemo(
     () => mySessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [mySessions, userId],
@@ -395,6 +423,15 @@ export default function ProfileAchievementsPanel({
       }
       return { ...current, [achievement.game.id]: nextCount }
     })
+  }
+
+  function openRetentionAchievement(achievement: RetentionAchievement) {
+    setSelectedRetentionAchievement(achievement)
+
+    if (achievement.state === 'locked') return
+
+    setSparkedAchievementId(achievement.id)
+    window.setTimeout(() => setSparkedAchievementId(''), 900)
   }
 
   return (
@@ -540,6 +577,45 @@ export default function ProfileAchievementsPanel({
         </div>
       </div>
 
+      <div className="achievement-collection-card retention-achievements-card">
+        <div className="achievement-section-head">
+          <div>
+            <h3>{copy.retentionCollection}</h3>
+            <p className="muted">{copy.retentionHint}</p>
+          </div>
+          <div className="achievement-collection-counts">
+            <span><Flame size={14} />{retentionAchievements.filter((achievement) => achievement.state !== 'locked').length}</span>
+          </div>
+        </div>
+        <div className="retention-achievement-grid">
+          {retentionAchievements.map((achievement) => (
+            <button
+              className={[
+                'retention-achievement-card',
+                `retention-${achievement.category}`,
+                achievement.state === 'locked' ? 'retention-locked' : 'retention-unlocked',
+                sparkedAchievementId === achievement.id ? 'achievement-sparked' : '',
+              ].filter(Boolean).join(' ')}
+              key={achievement.id}
+              onClick={() => openRetentionAchievement(achievement)}
+              type="button"
+            >
+              <span className="retention-achievement-icon">
+                {achievement.state === 'locked' ? <Lock aria-hidden="true" size={17} /> : retentionIcon(achievement.category)}
+              </span>
+              <span className="retention-achievement-copy">
+                <strong>{achievement.title}</strong>
+                <small>{achievement.description}</small>
+                <span className="achievement-mini-progress" aria-hidden="true">
+                  <span style={{ width: `${achievement.progressPercent}%` }} />
+                </span>
+                <small>{achievement.current}/{achievement.target}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {selectedAchievement && (
         <div className="modal-backdrop" onClick={() => setSelectedAchievement(null)}>
           <div className="achievement-detail-sheet" onClick={(event) => event.stopPropagation()}>
@@ -580,6 +656,41 @@ export default function ProfileAchievementsPanel({
                 <Share2 aria-hidden="true" size={15} />
                 {copy.shareComingSoon}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedRetentionAchievement && (
+        <div className="modal-backdrop" onClick={() => setSelectedRetentionAchievement(null)}>
+          <div className="achievement-detail-sheet retention-detail-sheet" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedRetentionAchievement(null)} type="button" aria-label={text.close}>
+              <X aria-hidden="true" size={18} />
+            </button>
+            <div className={`retention-detail-badge retention-${selectedRetentionAchievement.category}`}>
+              {selectedRetentionAchievement.state === 'locked' ? <Lock aria-hidden="true" size={42} /> : retentionIcon(selectedRetentionAchievement.category)}
+            </div>
+            <div className="achievement-detail-copy">
+              <span className="achievement-tier-pill">
+                {selectedRetentionAchievement.state === 'locked' ? <Lock aria-hidden="true" size={15} /> : <CalendarCheck aria-hidden="true" size={15} />}
+                {selectedRetentionAchievement.state === 'locked' ? copy.locked : copy.unlocked}
+              </span>
+              <h3>{selectedRetentionAchievement.title}</h3>
+              <strong>{selectedRetentionAchievement.description}</strong>
+              <dl className="achievement-detail-list">
+                <div>
+                  <dt>{copy.currentState}</dt>
+                  <dd>{selectedRetentionAchievement.state === 'locked' ? copy.locked : copy.unlocked}</dd>
+                </div>
+                <div>
+                  <dt>{copy.progress}</dt>
+                  <dd>{selectedRetentionAchievement.current}/{selectedRetentionAchievement.target}</dd>
+                </div>
+                <div>
+                  <dt>{copy.nextRequirement}</dt>
+                  <dd>{selectedRetentionAchievement.state === 'locked' ? selectedRetentionAchievement.description : copy.unlocked}</dd>
+                </div>
+              </dl>
             </div>
           </div>
         </div>

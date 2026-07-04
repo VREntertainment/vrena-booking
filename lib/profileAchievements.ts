@@ -10,10 +10,16 @@ type AchievementSessionParticipant = {
 }
 
 export type AchievementSession = {
+  booking_type?: string | null
+  challenge_status?: string | null
+  challenge_target_id?: string | null
+  club_id?: string | null
   confirmed_game_id?: GameId | string | null
   date?: string | null
   game_options?: Array<GameId | string> | null
+  owner_id?: string | null
   session_participants?: AchievementSessionParticipant[] | null
+  start_time?: string | null
   status?: string | null
 }
 
@@ -39,6 +45,17 @@ export type AchievementSummary = {
   masteredCount: number
   sessionsPlayed: number
   totalGames: number
+}
+
+export type RetentionAchievement = {
+  category: 'comeback' | 'explore' | 'social' | 'performance' | 'special'
+  current: number
+  description: string
+  id: string
+  progressPercent: number
+  state: AchievementState
+  target: number
+  title: string
 }
 
 const levelRequirements = {
@@ -70,6 +87,121 @@ function playedGameIds(session: AchievementSession): GameId[] {
 function numericScore(value: number | string | null | undefined) {
   const score = Number(value)
   return Number.isFinite(score) ? score : null
+}
+
+function sessionDateValue(session: AchievementSession) {
+  if (!session.date) return null
+  const date = new Date(`${session.date}T00:00:00`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function weekKey(date: Date) {
+  const weekStart = new Date(date)
+  weekStart.setHours(0, 0, 0, 0)
+  const dayOffset = (weekStart.getDay() + 6) % 7
+  weekStart.setDate(weekStart.getDate() - dayOffset)
+  return weekStart.toISOString().slice(0, 10)
+}
+
+function weeksBetween(previousWeekKey: string, nextWeekKey: string) {
+  const previous = new Date(`${previousWeekKey}T00:00:00`).getTime()
+  const next = new Date(`${nextWeekKey}T00:00:00`).getTime()
+  return Math.round((next - previous) / (7 * 24 * 60 * 60 * 1000))
+}
+
+function longestWeeklyStreak(sessions: AchievementSession[]) {
+  const weekKeys = Array.from(new Set(sessions
+    .map(sessionDateValue)
+    .filter((date): date is Date => Boolean(date))
+    .map(weekKey)))
+    .sort()
+
+  if (weekKeys.length === 0) return 0
+
+  let longest = 1
+  let current = 1
+
+  for (let index = 1; index < weekKeys.length; index += 1) {
+    if (weeksBetween(weekKeys[index - 1], weekKeys[index]) === 1) {
+      current += 1
+    } else {
+      current = 1
+    }
+    longest = Math.max(longest, current)
+  }
+
+  return longest
+}
+
+function maxGapDaysBetweenSessions(sessions: AchievementSession[]) {
+  const dates = sessions
+    .map(sessionDateValue)
+    .filter((date): date is Date => Boolean(date))
+    .sort((a, b) => a.getTime() - b.getTime())
+
+  let maxGap = 0
+  for (let index = 1; index < dates.length; index += 1) {
+    const gapDays = Math.floor((dates[index].getTime() - dates[index - 1].getTime()) / (24 * 60 * 60 * 1000))
+    maxGap = Math.max(maxGap, gapDays)
+  }
+  return maxGap
+}
+
+function currentWeekPlayCount(sessions: AchievementSession[]) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const currentWeekKey = weekKey(today)
+  return sessions.filter((session) => {
+    const date = sessionDateValue(session)
+    return date && weekKey(date) === currentWeekKey
+  }).length
+}
+
+function sessionStartsAtOrAfter(session: AchievementSession, hour: number) {
+  if (!session.start_time) return false
+  const [hours] = session.start_time.split(':')
+  return Number(hours) >= hour
+}
+
+function isWeekendSession(session: AchievementSession) {
+  const date = sessionDateValue(session)
+  if (!date) return false
+  const day = date.getDay()
+  return day === 0 || day === 6
+}
+
+function isChallengeAchievementSession(session: AchievementSession) {
+  return Boolean(session.challenge_target_id || session.challenge_status || session.booking_type === 'challenge')
+}
+
+function retentionState(current: number, target: number): AchievementState {
+  return current >= target ? 'unlocked' : 'locked'
+}
+
+function progress(current: number, target: number) {
+  if (target <= 0) return 100
+  return Math.min(100, Math.round((current / target) * 100))
+}
+
+function retentionAchievement(
+  id: string,
+  title: string,
+  description: string,
+  category: RetentionAchievement['category'],
+  current: number,
+  target: number,
+): RetentionAchievement {
+  const cappedCurrent = Math.max(0, current)
+  return {
+    category,
+    current: Math.min(cappedCurrent, target),
+    description,
+    id,
+    progressPercent: progress(cappedCurrent, target),
+    state: retentionState(cappedCurrent, target),
+    target,
+    title,
+  }
 }
 
 function tierForCount(count: number): AchievementTier {
@@ -140,6 +272,57 @@ export function buildGameAchievements(sessions: AchievementSession[], profileId:
       title: achievementTitle(game, tier),
     }
   })
+}
+
+export function buildRetentionAchievements(sessions: AchievementSession[], profileId: string | null | undefined): RetentionAchievement[] {
+  const completedSessions = completedAchievementSessions(sessions, profileId)
+  const gameCounts = new Map<GameId, number>()
+  let fpsGamesTried = 0
+  let escapeGamesTried = 0
+  let scoredSessions = 0
+
+  completedSessions.forEach((session) => {
+    const participant = participantForSession(session, profileId)
+    if (numericScore(participant?.score) !== null) scoredSessions += 1
+
+    playedGameIds(session).forEach((gameId) => {
+      gameCounts.set(gameId, (gameCounts.get(gameId) ?? 0) + 1)
+    })
+  })
+
+  gameCounts.forEach((count, gameId) => {
+    if (count <= 0) return
+    const game = games.find((item) => item.id === gameId)
+    if (game?.category === 'Escape') {
+      escapeGamesTried += 1
+    } else if (game?.category === 'FPS / PVP') {
+      fpsGamesTried += 1
+    }
+  })
+
+  const gamesTried = gameCounts.size
+  const maxGameCount = Math.max(0, ...Array.from(gameCounts.values()))
+  const bronzeGameCount = games.filter((game) => (gameCounts.get(game.id) ?? 0) >= 1).length
+  const clubSessionCount = completedSessions.filter((session) => Boolean(session.club_id)).length
+  const challengeSessionCount = completedSessions.filter(isChallengeAchievementSession).length
+  const weekendSessionCount = completedSessions.filter(isWeekendSession).length
+  const nightSessionCount = completedSessions.filter((session) => sessionStartsAtOrAfter(session, 18)).length
+
+  return [
+    retentionAchievement('weekly-warrior', 'Weekly Warrior', 'Play one checked-in session this week.', 'comeback', currentWeekPlayCount(completedSessions), 1),
+    retentionAchievement('streak-builder', 'Streak Builder', 'Play in two consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 2),
+    retentionAchievement('arena-regular', 'Arena Regular', 'Play in four consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 4),
+    retentionAchievement('back-for-more', 'Back for More', 'Return after a break of 30 days or more.', 'comeback', maxGapDaysBetweenSessions(completedSessions), 30),
+    retentionAchievement('perfect-rotation', 'Perfect Rotation', 'Try every VRena game at least once.', 'explore', gamesTried, games.length),
+    retentionAchievement('genre-explorer', 'Genre Explorer', 'Play at least one FPS/PVP game and one Escape game.', 'explore', Math.min(2, (fpsGamesTried > 0 ? 1 : 0) + (escapeGamesTried > 0 ? 1 : 0)), 2),
+    retentionAchievement('specialist', 'Specialist', 'Play the same game ten times.', 'explore', maxGameCount, 10),
+    retentionAchievement('completionist', 'Completionist', 'Unlock Bronze on every game.', 'explore', bronzeGameCount, games.length),
+    retentionAchievement('challenge-accepted', 'Challenge Accepted', 'Complete a challenge session.', 'social', challengeSessionCount, 1),
+    retentionAchievement('club-loyalist', 'Club Loyalist', 'Play three checked-in club sessions.', 'social', clubSessionCount, 3),
+    retentionAchievement('personal-best', 'Personal Best', 'Record scores in three sessions so improvement tracking can begin.', 'performance', scoredSessions, 3),
+    retentionAchievement('weekend-raider', 'Weekend Raider', 'Play on a Saturday or Sunday.', 'special', weekendSessionCount, 1),
+    retentionAchievement('night-owl', 'Night Owl', 'Play an evening session.', 'special', nightSessionCount, 1),
+  ]
 }
 
 export function achievementSummary(achievements: GameAchievement[], sessionsPlayed: number): AchievementSummary {
