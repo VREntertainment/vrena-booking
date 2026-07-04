@@ -2,41 +2,19 @@
 
 import NextImage from 'next/image'
 import {
-  Activity,
   Award,
-  BadgeCheck,
-  BriefcaseBusiness,
-  Cake,
-  CalendarCheck,
-  CalendarHeart,
-  Clock3,
-  Club,
-  Crosshair,
   Crown,
   Flame,
-  Footprints,
-  Gauge,
   Gamepad2,
-  Handshake,
   Lock,
   Medal,
-  Moon,
-  Repeat2,
-  RotateCcw,
-  SearchCheck,
   Share2,
   ShieldCheck,
   Sparkles,
   Star,
-  Swords,
   Target,
-  TimerReset,
   Trophy,
-  UserPlus,
-  UsersRound,
-  VenetianMask,
   X,
-  Zap,
 } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
@@ -366,41 +344,45 @@ function tierIcon(tier: GameAchievement['tier']) {
   return <Lock aria-hidden="true" size={15} />
 }
 
-function retentionIcon(achievement: Pick<RetentionAchievement, 'category' | 'id'>) {
-  if (achievement.id === 'first-blood') return <BadgeCheck aria-hidden="true" size={17} />
-  if (achievement.id === 'weekly-warrior') return <CalendarCheck aria-hidden="true" size={17} />
-  if (achievement.id === 'streak-builder') return <Flame aria-hidden="true" size={17} />
-  if (achievement.id === 'arena-regular') return <Repeat2 aria-hidden="true" size={17} />
-  if (achievement.id === 'back-for-more') return <Footprints aria-hidden="true" size={17} />
-  if (achievement.id === 'perfect-rotation') return <Target aria-hidden="true" size={17} />
-  if (achievement.id === 'genre-explorer') return <Crosshair aria-hidden="true" size={17} />
-  if (achievement.id === 'specialist') return <Medal aria-hidden="true" size={17} />
-  if (achievement.id === 'completionist') return <Crown aria-hidden="true" size={17} />
-  if (achievement.id === 'squad-starter') return <UsersRound aria-hidden="true" size={17} />
-  if (achievement.id === 'challenge-accepted') return <Swords aria-hidden="true" size={17} />
-  if (achievement.id === 'friendly-rivalry') return <Handshake aria-hidden="true" size={17} />
-  if (achievement.id === 'club-loyalist') return <Club aria-hidden="true" size={17} />
-  if (achievement.id === 'bring-the-crew') return <UserPlus aria-hidden="true" size={17} />
-  if (achievement.id === 'personal-best') return <Trophy aria-hidden="true" size={17} />
-  if (achievement.id === 'clutch-player') return <Zap aria-hidden="true" size={17} />
-  if (achievement.id === 'accuracy-upgrade') return <Gauge aria-hidden="true" size={17} />
-  if (achievement.id === 'escape-breakthrough') return <TimerReset aria-hidden="true" size={17} />
-  if (achievement.id === 'top-ten-moment') return <Activity aria-hidden="true" size={17} />
-  if (achievement.id === 'birthday-hero') return <Cake aria-hidden="true" size={17} />
-  if (achievement.id === 'team-builder') return <BriefcaseBusiness aria-hidden="true" size={17} />
-  if (achievement.id === 'off-peak-explorer') return <Clock3 aria-hidden="true" size={17} />
-  if (achievement.id === 'double-session-day') return <CalendarHeart aria-hidden="true" size={17} />
-  if (achievement.id === 'weekend-raider') return <Gamepad2 aria-hidden="true" size={17} />
-  if (achievement.id === 'night-owl') return <Moon aria-hidden="true" size={17} />
-  if (achievement.id === 'secret-hunter') return <SearchCheck aria-hidden="true" size={17} />
-  if (achievement.id === 'mask-mode') return <VenetianMask aria-hidden="true" size={17} />
+const gameIconByAchievementId: Record<string, string> = {
+  'accuracy-upgrade': 'targeting',
+  'arena-regular': 'tarot-wheel',
+  'back-for-more': 'footprint',
+  'birthday-hero': 'crowned-heart',
+  'bring-the-crew': 'backup',
+  'challenge-accepted': 'dagger-rose',
+  'club-loyalist': 'riot-shield',
+  'clutch-player': 'sprint',
+  completionist: 'crowned-heart',
+  'double-session-day': 'tarot-wheel',
+  'escape-breakthrough': 'hourglass',
+  'first-blood': 'medallist',
+  'friendly-rivalry': 'dagger-rose',
+  'genre-explorer': 'dice',
+  'mask-mode': 'domino-mask',
+  'night-owl': 'tarot-moon',
+  'off-peak-explorer': 'sunrise',
+  'perfect-rotation': 'dice',
+  'personal-best': 'medallist',
+  'secret-hunter': 'magnifying-glass',
+  specialist: 'targeting',
+  'squad-starter': 'team-idea',
+  'streak-builder': 'sprint',
+  'team-builder': 'briefcase',
+  'top-ten-moment': 'medallist',
+  'weekly-warrior': 'gamepad',
+  'weekend-raider': 'gamepad',
+}
 
-  const category = achievement.category
-  if (category === 'comeback') return <RotateCcw aria-hidden="true" size={17} />
-  if (category === 'explore') return <Target aria-hidden="true" size={17} />
-  if (category === 'social') return <UsersRound aria-hidden="true" size={17} />
-  if (category === 'performance') return <Trophy aria-hidden="true" size={17} />
-  return <Clock3 aria-hidden="true" size={17} />
+function retentionIcon(achievement: Pick<RetentionAchievement, 'id' | 'title'>) {
+  const iconId = gameIconByAchievementId[achievement.id] ?? 'gamepad'
+  return (
+    <span
+      aria-hidden="true"
+      className={`retention-game-icon retention-game-icon-${iconId}`}
+      title={achievement.title}
+    />
+  )
 }
 
 function progressPath(points: AchievementProgressPoint[]) {
@@ -733,12 +715,16 @@ export default function ProfileAchievementsPanel({
             <button className="modal-close" onClick={() => setSelectedRetentionAchievement(null)} type="button" aria-label={text.close}>
               <X aria-hidden="true" size={18} />
             </button>
-            <div className={`retention-detail-badge retention-${selectedRetentionAchievement.category}`}>
+            <div className={[
+              'retention-detail-badge',
+              `retention-${selectedRetentionAchievement.category}`,
+              selectedRetentionAchievement.state === 'locked' ? 'retention-locked' : 'retention-unlocked',
+            ].join(' ')}>
               {retentionIcon(selectedRetentionAchievement)}
             </div>
             <div className="achievement-detail-copy">
               <span className="achievement-tier-pill">
-                {selectedRetentionAchievement.state === 'locked' ? <Lock aria-hidden="true" size={15} /> : <CalendarCheck aria-hidden="true" size={15} />}
+                {selectedRetentionAchievement.state === 'locked' ? <Lock aria-hidden="true" size={15} /> : <Trophy aria-hidden="true" size={15} />}
                 {selectedRetentionAchievement.state === 'locked' ? copy.locked : copy.unlocked}
               </span>
               <h3>{selectedRetentionAchievement.title}</h3>

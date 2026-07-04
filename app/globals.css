@@ -10037,8 +10037,8 @@ body {
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, #00aeb3, #3059ff);
-  box-shadow: 0 10px 24px rgba(48, 89, 255, 0.16);
+  background: #8a969b;
+  box-shadow: 0 10px 24px rgba(7, 17, 18, 0.12);
 }
 
 .app .retention-achievement-icon {
@@ -10046,6 +10046,39 @@ body {
   height: 44px;
   border-radius: 14px;
 }
+
+.app .retention-game-icon {
+  width: 26px;
+  height: 26px;
+  display: block;
+  background: currentColor;
+  mask: var(--game-icon-url) center / contain no-repeat;
+  -webkit-mask: var(--game-icon-url) center / contain no-repeat;
+}
+
+.app .retention-detail-badge .retention-game-icon {
+  width: 58px;
+  height: 58px;
+}
+
+.app .retention-game-icon-backup { --game-icon-url: url('/game-icons/backup.svg'); }
+.app .retention-game-icon-briefcase { --game-icon-url: url('/game-icons/briefcase.svg'); }
+.app .retention-game-icon-crowned-heart { --game-icon-url: url('/game-icons/crowned-heart.svg'); }
+.app .retention-game-icon-dagger-rose { --game-icon-url: url('/game-icons/dagger-rose.svg'); }
+.app .retention-game-icon-dice { --game-icon-url: url('/game-icons/dice.svg'); }
+.app .retention-game-icon-domino-mask { --game-icon-url: url('/game-icons/domino-mask.svg'); }
+.app .retention-game-icon-footprint { --game-icon-url: url('/game-icons/footprint.svg'); }
+.app .retention-game-icon-gamepad { --game-icon-url: url('/game-icons/gamepad.svg'); }
+.app .retention-game-icon-hourglass { --game-icon-url: url('/game-icons/hourglass.svg'); }
+.app .retention-game-icon-magnifying-glass { --game-icon-url: url('/game-icons/magnifying-glass.svg'); }
+.app .retention-game-icon-medallist { --game-icon-url: url('/game-icons/medallist.svg'); }
+.app .retention-game-icon-riot-shield { --game-icon-url: url('/game-icons/riot-shield.svg'); }
+.app .retention-game-icon-sprint { --game-icon-url: url('/game-icons/sprint.svg'); }
+.app .retention-game-icon-sunrise { --game-icon-url: url('/game-icons/sunrise.svg'); }
+.app .retention-game-icon-targeting { --game-icon-url: url('/game-icons/targeting.svg'); }
+.app .retention-game-icon-tarot-moon { --game-icon-url: url('/game-icons/tarot-moon.svg'); }
+.app .retention-game-icon-tarot-wheel { --game-icon-url: url('/game-icons/tarot-wheel.svg'); }
+.app .retention-game-icon-team-idea { --game-icon-url: url('/game-icons/team-idea.svg'); }
 
 .app .retention-achievement-copy {
   display: grid;
@@ -10075,7 +10108,7 @@ body {
 }
 
 .app .retention-locked .retention-achievement-icon {
-  background: #637075;
+  background: #8a969b;
   opacity: 0.82;
 }
 
@@ -10083,29 +10116,10 @@ body {
   box-shadow: 0 12px 28px rgba(0, 174, 179, 0.08);
 }
 
-.app .retention-comeback .retention-achievement-icon,
-.app .retention-comeback.retention-detail-badge {
-  background: linear-gradient(135deg, #00aeb3, #3059ff);
-}
-
-.app .retention-explore .retention-achievement-icon,
-.app .retention-explore.retention-detail-badge {
-  background: linear-gradient(135deg, #3059ff, #6f42ff);
-}
-
-.app .retention-social .retention-achievement-icon,
-.app .retention-social.retention-detail-badge {
-  background: linear-gradient(135deg, #00aeb3, #0d7c51);
-}
-
-.app .retention-performance .retention-achievement-icon,
-.app .retention-performance.retention-detail-badge {
-  background: linear-gradient(135deg, #f5c542, #3059ff);
-}
-
-.app .retention-special .retention-achievement-icon,
-.app .retention-special.retention-detail-badge {
-  background: linear-gradient(135deg, #071112, #3059ff);
+.app .retention-unlocked .retention-achievement-icon,
+.app .retention-unlocked.retention-detail-badge {
+  background: linear-gradient(135deg, #d79810, #f5c542);
+  box-shadow: 0 12px 28px rgba(215, 152, 16, 0.22);
 }
 
 .app .retention-detail-badge {
@@ -10114,11 +10128,6 @@ body {
   justify-self: center;
   border-radius: 28px;
   font-size: 38px;
-}
-
-.app .retention-detail-badge svg {
-  width: 44px;
-  height: 44px;
 }
 
 .app .achievement-detail-sheet {
