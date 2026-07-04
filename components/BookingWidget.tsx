@@ -434,9 +434,11 @@ export default function WidgetPage({
   const captchaWidgetId = useRef<string | null>(null)
   const passkeyCaptchaContainerRef = useRef<HTMLDivElement | null>(null)
   const passkeyCaptchaWidgetId = useRef<string | null>(null)
+  const passkeyCaptchaTokenRef = useRef('')
   const passkeyCaptchaResolveRef = useRef<((token: string) => void) | null>(null)
   const passkeyCaptchaRejectRef = useRef<((error: Error) => void) | null>(null)
   const passkeyButtonRef = useRef<HTMLButtonElement | null>(null)
+  const warmedSupabaseClientRef = useRef<Awaited<ReturnType<typeof getSupabase>> | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
   const clubsLoadedRef = useRef(false)
   const clubsLoadedForUserIdRef = useRef<string | null>(null)
@@ -1022,6 +1024,8 @@ export default function WidgetPage({
   }
 
   function resetPasskeyCaptcha() {
+    passkeyCaptchaTokenRef.current = ''
+    setIsPasskeyCaptchaReady(false)
     passkeyCaptchaResolveRef.current = null
     passkeyCaptchaRejectRef.current = null
 
@@ -1032,7 +1036,9 @@ export default function WidgetPage({
     }
   }
 
-  async function executePasskeyCaptcha() {
+  async function executePasskeyCaptcha({ forceFresh = false } = {}) {
+    if (!forceFresh && passkeyCaptchaTokenRef.current) return passkeyCaptchaTokenRef.current
+
     const hcaptcha = getHCaptcha()
     const widgetId = passkeyCaptchaWidgetId.current
 
@@ -1043,15 +1049,19 @@ export default function WidgetPage({
       const settle = (token: string) => {
         if (settled) return
         settled = true
+        passkeyCaptchaTokenRef.current = token
         passkeyCaptchaResolveRef.current = null
         passkeyCaptchaRejectRef.current = null
+        setIsPasskeyCaptchaReady(Boolean(token))
         resolve(token)
       }
       const fail = (error: Error) => {
         if (settled) return
         settled = true
+        passkeyCaptchaTokenRef.current = ''
         passkeyCaptchaResolveRef.current = null
         passkeyCaptchaRejectRef.current = null
+        setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
         reject(error)
       }
 
@@ -1077,17 +1087,34 @@ export default function WidgetPage({
     })
   }
 
-  async function restorePasskeyDocumentFocus() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return
+  function warmSupabaseClient() {
+    void getSupabase().then((client) => {
+      warmedSupabaseClientRef.current = client
+    }).catch(() => {})
+  }
 
-    await new Promise<void>((resolve) => {
-      window.requestAnimationFrame(() => resolve())
-    })
+  function preparePasskeyCaptcha() {
+    if (typeof window === 'undefined') return
+
+    window.setTimeout(() => {
+      void executePasskeyCaptcha({ forceFresh: true }).catch(() => {
+        passkeyCaptchaTokenRef.current = ''
+        setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+      })
+    }, 0)
+  }
+
+  function focusPasskeyDocument() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return true
 
     window.focus()
     passkeyButtonRef.current?.focus({ preventScroll: true })
 
-    if (document.hasFocus()) return
+    return document.hasFocus()
+  }
+
+  async function restorePasskeyDocumentFocus() {
+    if (focusPasskeyDocument()) return
 
     await new Promise<void>((resolve) => {
       let settled = false
@@ -1106,8 +1133,7 @@ export default function WidgetPage({
       timeoutId = window.setTimeout(settle, 800)
     })
 
-    window.focus()
-    passkeyButtonRef.current?.focus({ preventScroll: true })
+    focusPasskeyDocument()
   }
 
   function updateAuthMode(nextMode: 'login' | 'create') {
@@ -1929,6 +1955,17 @@ export default function WidgetPage({
       && typeof navigator.credentials?.get === 'function'
   }
 
+  function shouldRequireCachedPasskeyCaptcha() {
+    if (typeof navigator === 'undefined') return true
+
+    const userAgent = navigator.userAgent
+    const vendor = navigator.vendor || ''
+
+    return /Safari/i.test(userAgent)
+      && /Apple/i.test(vendor)
+      && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|Android/i.test(userAgent)
+  }
+
   function isDocumentFocusPasskeyError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || '')
     return message.toLowerCase().includes('document is not focused')
@@ -1943,7 +1980,8 @@ export default function WidgetPage({
     try {
       setIsPasskeyLoading(true)
       setProfileStatus(text.passkeyStarting)
-      const captchaTokenForPasskey = await executePasskeyCaptcha()
+      const cachedCaptchaToken = passkeyCaptchaTokenRef.current
+      const captchaTokenForPasskey = cachedCaptchaToken || await executePasskeyCaptcha()
 
       if (!captchaTokenForPasskey) {
         setProfileStatus(text.captchaRequired)
@@ -1951,9 +1989,14 @@ export default function WidgetPage({
         return
       }
 
-      await restorePasskeyDocumentFocus()
+      if (!cachedCaptchaToken) {
+        await restorePasskeyDocumentFocus()
+      } else {
+        focusPasskeyDocument()
+      }
 
-      const client = await getSupabase()
+      const client = warmedSupabaseClientRef.current || await getSupabase()
+      warmedSupabaseClientRef.current = client
       let { data, error } = await client.auth.signInWithPasskey({
         options: { captchaToken: captchaTokenForPasskey },
       })
@@ -1961,7 +2004,7 @@ export default function WidgetPage({
       if (error && isDocumentFocusPasskeyError(error)) {
         resetPasskeyCaptcha()
         await restorePasskeyDocumentFocus()
-        const retryCaptchaToken = await executePasskeyCaptcha()
+        const retryCaptchaToken = await executePasskeyCaptcha({ forceFresh: true })
 
         if (!retryCaptchaToken) {
           setProfileStatus(text.captchaRequired)
@@ -1982,6 +2025,7 @@ export default function WidgetPage({
       if (error) {
         setProfileStatus(error.message)
         setIsPasskeyLoading(false)
+        preparePasskeyCaptcha()
         return
       }
 
@@ -2006,6 +2050,7 @@ export default function WidgetPage({
       resetPasskeyCaptcha()
       setProfileStatus(error instanceof Error ? error.message : String(error))
       setIsPasskeyLoading(false)
+      preparePasskeyCaptcha()
     }
   }
 
@@ -3670,12 +3715,14 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
     let cancelled = false
+    warmSupabaseClient()
 
     function renderPasskeyCaptcha() {
       const hcaptcha = getHCaptcha()
 
       if (cancelled || !passkeyCaptchaContainerRef.current || !hcaptcha || passkeyCaptchaWidgetId.current) return
 
+      setIsPasskeyCaptchaReady(false)
       passkeyCaptchaWidgetId.current = hcaptcha.render(passkeyCaptchaContainerRef.current, {
         sitekey: HCAPTCHA_SITE_KEY,
         size: 'invisible',
@@ -3683,13 +3730,19 @@ export default function WidgetPage({
           passkeyCaptchaResolveRef.current?.(token)
         },
         'expired-callback': () => {
+          passkeyCaptchaTokenRef.current = ''
+          setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
           passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
+          preparePasskeyCaptcha()
         },
         'error-callback': () => {
+          passkeyCaptchaTokenRef.current = ''
+          setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
           passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
         },
       })
-      setIsPasskeyCaptchaReady(true)
+      setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+      preparePasskeyCaptcha()
     }
 
     const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
