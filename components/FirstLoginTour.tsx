@@ -19,12 +19,19 @@ function storageKey(userId: string) {
   return `${TOUR_STORAGE_PREFIX}:${TOUR_VERSION}:${userId}`
 }
 
-function hasElement(selector: string) {
-  return typeof document !== 'undefined' && Boolean(document.querySelector(selector))
-}
-
 function stepElement(primarySelector: string, fallbackSelector = '[data-tour="app-shell"]') {
   return () => document.querySelector(primarySelector) || document.querySelector(fallbackSelector) || document.body
+}
+
+function firstAvailableStepElement(selectors: string[], fallbackSelector = '[data-tour="app-shell"]') {
+  return () => {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector)
+      if (element) return element
+    }
+
+    return document.querySelector(fallbackSelector) || document.body
+  }
 }
 
 function popover(title: string, description: string, side: Side = 'bottom') {
@@ -60,10 +67,25 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
       if (cancelled || startedRef.current || window.localStorage.getItem(key)) return
 
       startedRef.current = true
-      onViewChange('sessions')
 
       timer = window.setTimeout(() => {
         if (cancelled) return
+
+        const moveToSessions: DriverHook = (_element, _step, { driver: tour }) => {
+          onViewChange('sessions')
+          waitForPaint(() => {
+            tour.moveNext()
+            window.setTimeout(() => tour.refresh(), 120)
+          })
+        }
+
+        const moveBackToCreateSession: DriverHook = (_element, _step, { driver: tour }) => {
+          onViewChange('sessions')
+          waitForPaint(() => {
+            tour.movePrevious()
+            window.setTimeout(() => tour.refresh(), 120)
+          })
+        }
 
         const moveToLeaderboard: DriverHook = (_element, _step, { driver: tour }) => {
           onViewChange('leaderboard')
@@ -78,24 +100,23 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
           tour.destroy()
         }
 
-        const joinTarget = hasElement('[data-tour="join-session"]')
-          ? '[data-tour="join-session"]'
-          : '[data-tour="sessions-list"]'
         const steps: DriveStep[] = [
           {
-            element: stepElement('[data-tour="app-shell"]'),
             popover: popover(text.onboardingWelcomeTitle, text.onboardingWelcomeBody),
           },
           {
             element: stepElement('[data-tour="profile-card"]'),
-            popover: popover(text.onboardingProfileTitle, text.onboardingProfileBody, 'right'),
+            popover: {
+              ...popover(text.onboardingProfileTitle, text.onboardingProfileBody, 'right'),
+              onNextClick: moveToSessions,
+            },
           },
           {
             element: stepElement('[data-tour="sessions-list"]'),
             popover: popover(text.onboardingSessionsTitle, text.onboardingSessionsBody),
           },
           {
-            element: stepElement(joinTarget),
+            element: firstAvailableStepElement(['[data-tour="join-session"]', '[data-tour="sessions-list"]']),
             popover: popover(text.onboardingJoinTitle, text.onboardingJoinBody, 'left'),
           },
           {
@@ -107,14 +128,16 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
           },
           {
             element: stepElement('[data-tour="hall-of-fame-tab"]', '[data-tour="leaderboard-panel"]'),
-            popover: popover(text.onboardingHallTitle, text.onboardingHallBody, 'right'),
+            popover: {
+              ...popover(text.onboardingHallTitle, text.onboardingHallBody, 'right'),
+              onPrevClick: moveBackToCreateSession,
+            },
           },
           {
             element: stepElement('[data-tour="player-profile-link"]', '[data-tour="leaderboard-panel"]'),
             popover: popover(text.onboardingPlayersTitle, text.onboardingPlayersBody, 'left'),
           },
           {
-            element: stepElement('[data-tour="app-shell"]'),
             popover: {
               ...popover(text.onboardingFinishTitle, text.onboardingFinishBody),
               onDoneClick: finishTour,
