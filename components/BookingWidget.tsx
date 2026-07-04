@@ -272,6 +272,7 @@ export default function WidgetPage({
   const [isMfaLoading, setIsMfaLoading] = useState(false)
   const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
+  const [tourReplayNonce, setTourReplayNonce] = useState(0)
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
   const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
@@ -3896,18 +3897,19 @@ export default function WidgetPage({
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
+  const isSpecialTicketType = ticketType !== 'individual'
   const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
   const ticketAutomaticDiscountAmount = Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
-  const hasTicketVoucherDiscount = ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
-  const activeTicketDiscountAmount = Math.max(ticketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
+  const hasTicketVoucherDiscount = !isSpecialTicketType && ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
+  const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(ticketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
   const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > ticketAutomaticDiscountAmount ? 'voucher' : 'automatic'
-  const currentTicketPriceBeforeLoyalty = Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
+  const currentTicketPriceBeforeLoyalty = isSpecialTicketType ? 0 : Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
   const ticketLoyaltyBalance = Math.max(
     0,
     Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
   )
   const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
-  const canUseTicketLoyaltyPoints = !hasTicketVoucherDiscount
+  const canUseTicketLoyaltyPoints = !isSpecialTicketType && !hasTicketVoucherDiscount
   const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
     ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
     : 0
@@ -3925,8 +3927,8 @@ export default function WidgetPage({
       currentTicketPriceBeforeLoyalty
     )
     : 0
-  const ticketLoyaltyDiscountAmount = appliedTicketLoyaltyPoints * ticketLoyaltyRedeemValue
-  const currentTicketTotalPrice = Math.max(0, currentTicketPriceBeforeLoyalty - ticketLoyaltyDiscountAmount)
+  const ticketLoyaltyDiscountAmount = isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints * ticketLoyaltyRedeemValue
+  const currentTicketTotalPrice = isSpecialTicketType ? 0 : Math.max(0, currentTicketPriceBeforeLoyalty - ticketLoyaltyDiscountAmount)
   const estimatedTicketLoyaltyPointsEarned = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_points ?? 0) || 0))
   const estimatedTicketLoyaltyReductionValue = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_reduction_vnd ?? 0) || 0))
   const gameGuideGames = useMemo(() => {
@@ -3979,7 +3981,7 @@ export default function WidgetPage({
   const ticketDiscountCodeCheckingText = text.ticketDiscountCodeChecking
 
   useEffect(() => {
-    if (!ticketDate || currentTicketPricing.grossPrice <= 0) {
+    if (isSpecialTicketType || !ticketDate || currentTicketPricing.grossPrice <= 0) {
       return schedulePostEffectStateUpdate(() => setTicketAutomaticDiscountQuote(null))
     }
 
@@ -4018,14 +4020,15 @@ export default function WidgetPage({
     return () => {
       active = false
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketDate, ticketPlayers, ticketTime, ticketType])
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isSpecialTicketType, ticketDate, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     const normalizedCode = ticketDiscountCode.trim().toUpperCase()
 
-    if (!normalizedCode) {
+    if (isSpecialTicketType || !normalizedCode) {
       return schedulePostEffectStateUpdate(() => {
         setTicketDiscountQuote(null)
+        if (isSpecialTicketType) setTicketDiscountCode('')
         setTicketDiscountStatus('')
         setIsCheckingTicketDiscount(false)
       })
@@ -4084,7 +4087,7 @@ export default function WidgetPage({
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isSpecialTicketType, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
@@ -4125,12 +4128,21 @@ function handleSessionDateChange(value: string) {
     const service = selectedTicketService(value)
     const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
     const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers), ticketDuration)
+    const nextIsSpecialTicket = value !== 'individual'
     setTicketType(value)
     setTicketPlayers(nextPlayers)
     setTicketDuration(nextDuration)
     setTicketTime('')
     setTicketConfirmation(null)
     setTicketStatus('')
+    if (nextIsSpecialTicket) {
+      setTicketDiscountCode('')
+      setTicketDiscountQuote(null)
+      setTicketDiscountStatus('')
+      setTicketAutomaticDiscountQuote(null)
+      setTicketUseLoyaltyPoints(false)
+      setTicketLoyaltyPointsToRedeem('')
+    }
   }
 
   function handleTicketPlayersChange(value: number) {
@@ -4192,10 +4204,15 @@ function handleSessionDateChange(value: string) {
     setTicketConfirmation(null)
   }
 
+  function replayOnboardingTour() {
+    setActiveView('profile')
+    setTourReplayNonce((value) => value + 1)
+  }
+
   useEffect(() => {
     let active = true
 
-    if (!profile || activeView !== 'tickets') {
+    if (!profile || activeView !== 'tickets' || isSpecialTicketType) {
       return schedulePostEffectStateUpdate(() => {
         setTicketLoyaltyRedemption(null)
         setTicketLoyaltyEarnQuote(null)
@@ -4241,12 +4258,12 @@ function handleSessionDateChange(value: string) {
     return () => {
       active = false
     }
-  }, [activeTicketService.defaultGame, activeView, profile, ticketDate])
+  }, [activeTicketService.defaultGame, activeView, isSpecialTicketType, profile, ticketDate])
 
   useEffect(() => {
     let active = true
 
-    if (!profile || activeView !== 'tickets') {
+    if (!profile || activeView !== 'tickets' || isSpecialTicketType) {
       return schedulePostEffectStateUpdate(() => setTicketLoyaltyEarnQuote(null))
     }
 
@@ -4278,7 +4295,7 @@ function handleSessionDateChange(value: string) {
     return () => {
       active = false
     }
-  }, [activeTicketService.defaultGame, activeView, currentTicketTotalPrice, profile, ticketDate, ticketPlayers])
+  }, [activeTicketService.defaultGame, activeView, currentTicketTotalPrice, isSpecialTicketType, profile, ticketDate, ticketPlayers])
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
@@ -7265,12 +7282,12 @@ function handleSessionDateChange(value: string) {
     }
 
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-    if (normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
       setTicketStatus(ticketDiscountCodeCheckingText)
       return
     }
 
-    if (normalizedTicketDiscountCode && !ticketDiscountQuote) {
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
       setTicketStatus(ticketDiscountCodeInvalidText)
       return
     }
@@ -7290,10 +7307,10 @@ function handleSessionDateChange(value: string) {
       p_player_count: ticketPlayers,
       p_arena_count: activeTicketArenaCount,
       p_game_options: [service.defaultGame],
-      p_unit_price: currentTicketUnitPrice,
-      p_total_price: currentTicketTotalPrice,
-      p_loyalty_points_to_redeem: appliedTicketLoyaltyPoints,
-      p_discount_code: ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+      p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
+      p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+      p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
+      p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
     })
 
     if (error) {
@@ -7317,11 +7334,11 @@ function handleSessionDateChange(value: string) {
       date: ticketDate,
       time: ticketTime,
       players: ticketPlayers,
-      totalPrice: currentTicketTotalPrice,
-      discountCode: booking.discount_code || undefined,
-      discountAmount: Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)),
-      loyaltyPointsRedeemed: appliedTicketLoyaltyPoints,
-      loyaltyDiscountAmount: ticketLoyaltyDiscountAmount,
+      totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+      discountCode: !isSpecialTicketType ? booking.discount_code || undefined : undefined,
+      discountAmount: !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
+      loyaltyPointsRedeemed: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
+      loyaltyDiscountAmount: isSpecialTicketType ? 0 : ticketLoyaltyDiscountAmount,
     }
 
     if (profile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
@@ -8685,7 +8702,7 @@ function handleSessionDateChange(value: string) {
   )
 
 
-  const profileViewContext = { activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, countryPickerOpen, countrySearch, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, filteredCountries, handleAuth, handleAvatarChange, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyCaptchaReady, isPasskeyLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, passkeyCaptchaContainerRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setCountryPickerOpen, setCountrySearch, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, countryPickerOpen, countrySearch, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, filteredCountries, handleAuth, handleAvatarChange, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyCaptchaReady, isPasskeyLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, passkeyCaptchaContainerRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setCountryPickerOpen, setCountrySearch, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const appMain = (
       <main>
@@ -11442,7 +11459,7 @@ function handleSessionDateChange(value: string) {
 
   return (
     <div className="app" data-tour="app-shell">
-      <FirstLoginTour enabled={Boolean(profile)} onViewChange={setActiveView} text={text} userId={userId} />
+      <FirstLoginTour enabled={Boolean(profile)} onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       {appAside}
       {appMain}
       {appOverlays}

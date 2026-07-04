@@ -153,6 +153,9 @@ export default function TicketBookingView({
   ticketTypeDescription,
   ticketUnitFormulaText,
 }: TicketBookingViewProps) {
+  const isSpecialTicket = ticketType !== 'individual'
+  const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
+
   return (
     <section className="section tickets-section">
       <div className="ticket-explainer" role="note">
@@ -245,20 +248,22 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              <label className="ticket-discount-code-field">
-                <span>{text.ticketDiscountCodeLabel}</span>
-                <input
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  inputMode="text"
-                  placeholder={text.ticketDiscountCodePlaceholder}
-                  value={ticketDiscountCode}
-                  onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
-                />
-                {(isCheckingTicketDiscount || ticketDiscountStatus) && (
-                  <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
-                )}
-              </label>
+              {!isSpecialTicket && (
+                <label className="ticket-discount-code-field">
+                  <span>{text.ticketDiscountCodeLabel}</span>
+                  <input
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    inputMode="text"
+                    placeholder={text.ticketDiscountCodePlaceholder}
+                    value={ticketDiscountCode}
+                    onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
+                  />
+                  {(isCheckingTicketDiscount || ticketDiscountStatus) && (
+                    <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
+                  )}
+                </label>
+              )}
 
               <div className="ticket-price-summary">
                 <div>
@@ -269,80 +274,84 @@ export default function TicketBookingView({
                   <span>{text.duration}</span>
                   <strong>{activeTicketDuration} min</strong>
                 </div>
-                <div>
-                  <span>{text.unitPrice}</span>
-                  <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                  <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers)}</small>
-                </div>
+                {!isSpecialTicket && (
+                  <div>
+                    <span>{text.unitPrice}</span>
+                    <strong>{formatVnd(currentTicketUnitPrice)}</strong>
+                    <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers)}</small>
+                  </div>
+                )}
                 <div>
                   <span>{text.reservedPlayerSpots}</span>
                   <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
                   <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
                 </div>
-                {currentTicketPricing.discountRate > 0 && (
+                {!isSpecialTicket && currentTicketPricing.discountRate > 0 && (
                   <div className="ticket-discount-line">
                     <span>{text.discount}</span>
                     <strong>{Math.round(currentTicketPricing.discountRate * 100)}%</strong>
                     <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
                   </div>
                 )}
-                {ticketDiscountAmount > 0 && (
+                {!isSpecialTicket && ticketDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
                     <strong>-{formatVnd(ticketDiscountAmount)}</strong>
                     <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName}</small>
                   </div>
                 )}
-                <div className="ticket-loyalty-redemption">
-                  <p className="ticket-loyalty-zero">
-                    {estimatedLoyaltyPointsEarned > 0
-                      ? text.ticketLoyaltyEarnEstimate
-                        .replace('{points}', String(estimatedLoyaltyPointsEarned))
-                        .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
-                      : text.ticketLoyaltyEarnZero}
-                  </p>
-                  {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
-                    null
-                  ) : (
-                    <>
-                      <div>
-                        <span>{text.ticketLoyaltyBalance}</span>
-                        <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
-                        <small>
-                          {loyaltyRedeemValue > 0
-                            ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
-                            : isLoadingTicketLoyalty
-                              ? text.ticketLoyaltyLoading
-                              : text.ticketLoyaltyUnavailable}
-                        </small>
-                      </div>
-                      <label className="ticket-loyalty-toggle">
-                        <input
-                          checked={useLoyaltyPoints}
-                          disabled={maxLoyaltyPointsToRedeem <= 0}
-                          onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
-                          type="checkbox"
-                        />
-                        <span>{text.ticketUseLoyaltyPoints}</span>
-                      </label>
-                      {useLoyaltyPoints && (
-                        <label className="ticket-loyalty-input">
-                          <span>{text.ticketLoyaltyPointsToUse}</span>
+                {!isSpecialTicket && (
+                  <div className="ticket-loyalty-redemption">
+                    <p className="ticket-loyalty-zero">
+                      {estimatedLoyaltyPointsEarned > 0
+                        ? text.ticketLoyaltyEarnEstimate
+                          .replace('{points}', String(estimatedLoyaltyPointsEarned))
+                          .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
+                        : text.ticketLoyaltyEarnZero}
+                    </p>
+                    {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
+                      null
+                    ) : (
+                      <>
+                        <div>
+                          <span>{text.ticketLoyaltyBalance}</span>
+                          <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
+                          <small>
+                            {loyaltyRedeemValue > 0
+                              ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
+                              : isLoadingTicketLoyalty
+                                ? text.ticketLoyaltyLoading
+                                : text.ticketLoyaltyUnavailable}
+                          </small>
+                        </div>
+                        <label className="ticket-loyalty-toggle">
                           <input
-                            inputMode="numeric"
-                            max={maxLoyaltyPointsToRedeem}
-                            min={0}
-                            onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
-                            type="number"
-                            value={loyaltyPointsToRedeem}
+                            checked={useLoyaltyPoints}
+                            disabled={maxLoyaltyPointsToRedeem <= 0}
+                            onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
+                            type="checkbox"
                           />
-                          <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
+                          <span>{text.ticketUseLoyaltyPoints}</span>
                         </label>
-                      )}
-                    </>
-                  )}
-                </div>
-                {loyaltyDiscountAmount > 0 && (
+                        {useLoyaltyPoints && (
+                          <label className="ticket-loyalty-input">
+                            <span>{text.ticketLoyaltyPointsToUse}</span>
+                            <input
+                              inputMode="numeric"
+                              max={maxLoyaltyPointsToRedeem}
+                              min={0}
+                              onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
+                              type="number"
+                              value={loyaltyPointsToRedeem}
+                            />
+                            <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
+                          </label>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+                {!isSpecialTicket && loyaltyDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{text.ticketLoyaltyDiscount}</span>
                     <strong>-{formatVnd(loyaltyDiscountAmount)}</strong>
@@ -351,7 +360,7 @@ export default function TicketBookingView({
                 )}
                 <div className="ticket-total-line">
                   <span>{text.totalPrice}</span>
-                  <strong>{formatVnd(currentTicketTotalPrice)}</strong>
+                  <strong>{ticketTotalDisplay}</strong>
                 </div>
               </div>
 
@@ -383,14 +392,14 @@ export default function TicketBookingView({
                 <span>{formatShortDate(ticketConfirmation.date, language)}</span>
                 <span>{ticketConfirmation.time}</span>
                 <span>{ticketConfirmation.players} {text.players}</span>
-                <span>{formatVnd(ticketConfirmation.totalPrice)}</span>
+                <span>{ticketConfirmation.ticketType === 'individual' ? formatVnd(ticketConfirmation.totalPrice) : text.ticketPriceToConfirm}</span>
               </div>
-              {Boolean(ticketConfirmation.loyaltyPointsRedeemed && ticketConfirmation.loyaltyDiscountAmount) && (
+              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.loyaltyPointsRedeemed && ticketConfirmation.loyaltyDiscountAmount) && (
                 <p>
                   {text.ticketLoyaltyRedeemed}: <strong>{ticketConfirmation.loyaltyPointsRedeemed} {text.loyaltyPoints}</strong> (-{formatVnd(ticketConfirmation.loyaltyDiscountAmount || 0)})
                 </p>
               )}
-              {Boolean(ticketConfirmation.discountCode && ticketConfirmation.discountAmount) && (
+              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.discountCode && ticketConfirmation.discountAmount) && (
                 <p>
                   {text.ticketDiscountCodeSummary}: <strong>{ticketConfirmation.discountCode}</strong> (-{formatVnd(ticketConfirmation.discountAmount || 0)})
                 </p>
