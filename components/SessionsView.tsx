@@ -72,7 +72,7 @@ export default function SessionsView({
   const hasActiveSearchFilter = Boolean(isSearchOpen || search || selectedSessionDate)
 
   return (
-    <section className="section sessions-section">
+    <section className="section sessions-section" data-tour="sessions-list">
       <div className="section-head sessions-filter-head">
         <div className="section-copy">
           <h2>{text.availableSessions}</h2>
@@ -175,6 +175,7 @@ export default function SessionsView({
         </button>
         <button
           className="create-session-tab"
+          data-tour="create-session-button"
           type="button"
           onClick={onCreateSession}
         >

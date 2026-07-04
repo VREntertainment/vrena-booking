@@ -98,7 +98,7 @@ export default function AppSidebar({
         <p className="muted">{text.tagline}</p>
       </div>
 
-      <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} onClick={() => onViewChange('profile')} type="button">
+      <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" onClick={() => onViewChange('profile')} type="button">
         <div className="avatar" style={profileAvatarStyle}>
           {profileAvatar}
           {isChampion && <span className="champion-badge">🏆</span>}
@@ -116,7 +116,7 @@ export default function AppSidebar({
         <button className={activeView === 'tickets' ? 'tab active' : 'tab'} onClick={() => onViewChange('tickets')}>
           {text.tickets}
         </button>
-        <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} onClick={() => onViewChange('leaderboard')}>
+        <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" onClick={() => onViewChange('leaderboard')}>
           {text.hallOfFame}
         </button>
         <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => onViewChange('clubs')}>

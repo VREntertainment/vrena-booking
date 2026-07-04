@@ -415,7 +415,7 @@ export default function LeaderboardPanel({
   }
 
   return (
-    <section className="section leaderboard-section">
+    <section className="section leaderboard-section" data-tour="leaderboard-panel">
       <div className={hideIntro ? 'section-head leaderboard-head compact-leaderboard-head' : 'section-head leaderboard-head'}>
         {!hideIntro && (
           <div>
@@ -555,6 +555,7 @@ export default function LeaderboardPanel({
               <button
                 aria-label={playerCardLabel(player, text.player)}
                 className="player-avatar player-avatar-button leaderboard-avatar-button"
+                data-tour="player-profile-link"
                 onClick={() => onOpenPlayerProfile(player.profileId)}
                 style={avatarStyleFor(player)}
                 type="button"
