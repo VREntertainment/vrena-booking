@@ -9857,13 +9857,13 @@ body {
 .app .achievement-detail-badge {
   position: relative;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #071112;
 }
 
 .app .achievement-image-wrap {
   width: 100%;
-  aspect-ratio: 1.08;
+  aspect-ratio: 1;
 }
 
 .app .achievement-image-wrap img,
@@ -9876,19 +9876,23 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 38%, transparent 0 34%, rgba(7, 17, 18, 0.2) 35%, rgba(7, 17, 18, 0.7) 78%),
-    linear-gradient(180deg, transparent 20%, rgba(7, 17, 18, 0.72));
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.12) 0 18%, transparent 42%),
+    linear-gradient(180deg, rgba(7, 17, 18, 0.02) 0%, rgba(7, 17, 18, 0.16) 45%, rgba(7, 17, 18, 0.72) 100%);
 }
 
 .app .achievement-image-wrap::after,
 .app .achievement-detail-badge::after {
   content: '';
   position: absolute;
-  inset: 14%;
-  border: 2px solid rgba(255, 255, 255, 0.74);
-  border-radius: 22%;
-  transform: rotate(45deg);
-  box-shadow: 0 0 20px rgba(48, 89, 255, 0.28);
+  inset: 29%;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.2), transparent 52%),
+    rgba(7, 17, 18, 0.08);
+  clip-path: polygon(50% 0, 82% 14%, 100% 50%, 82% 86%, 50% 100%, 18% 86%, 0 50%, 18% 14%);
+  box-shadow:
+    inset 0 0 18px rgba(255, 255, 255, 0.12),
+    0 0 20px rgba(48, 89, 255, 0.3);
 }
 
 .app .achievement-card-body {
@@ -9951,7 +9955,7 @@ body {
 }
 
 .app .achievement-locked .achievement-image-wrap img {
-  filter: grayscale(1) blur(1.5px) brightness(0.62);
+  filter: grayscale(0.9) blur(1px) brightness(0.72);
 }
 
 .app .achievement-lock {
