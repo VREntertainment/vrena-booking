@@ -145,6 +145,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     registerPasskey,
     rememberFailedAvatarUrl,
     rememberLogin,
+    replayOnboardingTour,
     removeTotpFactor,
     resetCaptcha,
     saveProfile,
@@ -891,6 +892,9 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </button>
                   <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
                     <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
+                  </button>
+                  <button className="link-button" onClick={replayOnboardingTour} type="button">
+                    <ButtonIconText icon={<UserRound aria-hidden="true" size={16} />}>{text.takeTourAgain}</ButtonIconText>
                   </button>
                   <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>

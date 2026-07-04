@@ -11,6 +11,7 @@ const TOUR_STORAGE_PREFIX = 'vrena:first-login-tour'
 type FirstLoginTourProps = {
   enabled: boolean
   onViewChange: (view: AppView) => void
+  replayNonce?: number
   text: TranslationMap
   userId: string
 }
@@ -49,7 +50,7 @@ function waitForPaint(callback: () => void) {
   })
 }
 
-export default function FirstLoginTour({ enabled, onViewChange, text, userId }: FirstLoginTourProps) {
+export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0, text, userId }: FirstLoginTourProps) {
   const startedRef = useRef(false)
   const driverRef = useRef<Driver | null>(null)
 
@@ -57,14 +58,15 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
     if (!enabled || !userId || startedRef.current || typeof window === 'undefined') return
 
     const key = storageKey(userId)
-    if (window.localStorage.getItem(key)) return
+    const isManualReplay = replayNonce > 0
+    if (!isManualReplay && window.localStorage.getItem(key)) return
 
     let cancelled = false
     let timer: number | undefined
 
     async function startTour() {
       const { driver } = await import('driver.js')
-      if (cancelled || startedRef.current || window.localStorage.getItem(key)) return
+      if (cancelled || startedRef.current || (!isManualReplay && window.localStorage.getItem(key))) return
 
       startedRef.current = true
 
@@ -165,6 +167,7 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
           steps,
           onDestroyed: () => {
             window.localStorage.setItem(key, new Date().toISOString())
+            startedRef.current = false
             driverRef.current = null
           },
         }
@@ -181,9 +184,10 @@ export default function FirstLoginTour({ enabled, onViewChange, text, userId }: 
       cancelled = true
       if (timer) window.clearTimeout(timer)
       driverRef.current?.destroy()
+      startedRef.current = false
       driverRef.current = null
     }
-  }, [enabled, onViewChange, text, userId])
+  }, [enabled, onViewChange, replayNonce, text, userId])
 
   return null
 }
