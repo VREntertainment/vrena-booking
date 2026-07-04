@@ -58,6 +58,13 @@ type BookingWidgetProps = {
   onProfileChange?: (profile: Profile | null) => void
 }
 
+const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
+const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'staff']
+
+function isBookingAppView(value: unknown): value is AppView {
+  return typeof value === 'string' && bookingAppViews.includes(value as AppView)
+}
+
 export default function WidgetPage({
   embedded = false,
   externalLanguage,
@@ -69,6 +76,7 @@ export default function WidgetPage({
   onProfileChange,
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<AppView>(initialView)
+  const hasMountedInitialViewSyncRef = useRef(false)
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
@@ -3221,10 +3229,32 @@ export default function WidgetPage({
   })
 
   useEffect(() => {
+    if (!hasMountedInitialViewSyncRef.current) {
+      hasMountedInitialViewSyncRef.current = true
+      return
+    }
+
     return schedulePostEffectStateUpdate(() => {
       setActiveView((currentView) => currentView === initialView ? currentView : initialView)
     })
   }, [initialView])
+
+  useEffect(() => {
+    let storedView: AppView | null = null
+
+    try {
+      const storedValue = window.localStorage.getItem(BOOKING_ACTIVE_VIEW_STORAGE_KEY)
+      storedView = isBookingAppView(storedValue) ? storedValue : null
+    } catch {
+      storedView = null
+    }
+
+    if (!storedView) return undefined
+
+    return schedulePostEffectStateUpdate(() => {
+      setActiveView((currentView) => currentView === storedView ? currentView : storedView)
+    })
+  }, [])
 
   useEffect(() => {
     if (!externalLanguage) return
@@ -3246,6 +3276,10 @@ export default function WidgetPage({
   }, [language])
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(BOOKING_ACTIVE_VIEW_STORAGE_KEY, activeView)
+    } catch {}
+
     onActiveViewChange?.(activeView)
   }, [activeView, onActiveViewChange])
 
