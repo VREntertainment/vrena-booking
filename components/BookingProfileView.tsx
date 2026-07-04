@@ -363,7 +363,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                 {authMode === 'login' && (
                   <button
                     aria-busy={isPasskeyLoading || !isPasskeyCaptchaReady}
-                    aria-disabled={isPasskeyLoading || !isPasskeyCaptchaReady}
+                    aria-disabled={isPasskeyLoading}
                     className={[
                       'secondary create-button passkey-auth-button',
                       isPasskeyLoading ? 'loading' : '',
@@ -371,15 +371,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                       isPasskeyCaptchaReady ? 'ready' : '',
                     ].filter(Boolean).join(' ')}
                     disabled={isPasskeyLoading}
-                    onClick={(event) => {
-                      if (!isPasskeyCaptchaReady) {
-                        event.preventDefault()
-                        preparePasskeyCaptcha()
-                        return
-                      }
-
-                      signInWithPasskey()
-                    }}
+                    onClick={signInWithPasskey}
                     onFocus={preparePasskeyCaptcha}
                     onMouseEnter={preparePasskeyCaptcha}
                     onPointerEnter={preparePasskeyCaptcha}
