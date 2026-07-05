@@ -2998,14 +2998,101 @@ function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConso
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
+function normalizeStaffSearchValue(value: string | null | undefined) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+}
+
 function customerSearchText(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
-  return [
+  return normalizeStaffSearchValue([
     customerName(profile, text),
     profile.full_name || '',
     profile.nickname || '',
     profile.phone || '',
     profile.email || '',
-  ].join(' ').toLowerCase()
+  ].join(' '))
+}
+
+function StaffOperationPlayerSearch({
+  disabled,
+  onQueryChange,
+  onSelect,
+  profiles,
+  query,
+  selectedProfileId,
+  text,
+}: {
+  disabled: boolean
+  onQueryChange: (value: string) => void
+  onSelect: (profile: StaffProfile | null) => void
+  profiles: StaffProfile[]
+  query: string
+  selectedProfileId: string
+  text: StaffConsoleCopy
+}) {
+  const selectedProfile = selectedProfileId ? profiles.find((profile) => profile.id === selectedProfileId) || null : null
+  const normalizedQuery = normalizeStaffSearchValue(query.trim())
+  const suggestions = useMemo(() => {
+    if (normalizedQuery.length < 1) return []
+
+    return profiles
+      .filter((profile) => !isDemoProfile(profile) && customerSearchText(profile, text).includes(normalizedQuery))
+      .sort((left, right) => {
+        const leftName = normalizeStaffSearchValue(customerName(left, text))
+        const rightName = normalizeStaffSearchValue(customerName(right, text))
+        const leftStarts = leftName.startsWith(normalizedQuery) ? 0 : 1
+        const rightStarts = rightName.startsWith(normalizedQuery) ? 0 : 1
+        return leftStarts - rightStarts
+          || leftName.localeCompare(rightName)
+          || (left.phone || '').localeCompare(right.phone || '')
+          || (left.email || '').localeCompare(right.email || '')
+      })
+      .slice(0, 10)
+  }, [normalizedQuery, profiles, text])
+
+  return (
+    <div className="staff-operation-add-player-picker">
+      <input
+        autoComplete="off"
+        disabled={disabled}
+        onChange={(event) => {
+          const nextValue = event.target.value
+          onQueryChange(nextValue)
+          if (selectedProfile && nextValue !== customerName(selectedProfile, text)) onSelect(null)
+        }}
+        placeholder={text.labels.customerProfile}
+        type="search"
+        value={query}
+      />
+      {normalizedQuery.length >= 1 && (
+        <div className="staff-operation-player-results" role="listbox">
+          {suggestions.map((profile) => {
+            const isSelected = profile.id === selectedProfileId
+            return (
+              <button
+                aria-selected={isSelected}
+                className="staff-operation-player-result"
+                key={profile.id}
+                onClick={() => {
+                  onSelect(profile)
+                  onQueryChange(customerName(profile, text))
+                }}
+                role="option"
+                type="button"
+              >
+                <span>{customerName(profile, text)}</span>
+                <small>{[profile.phone, profile.email].filter(Boolean).join(' · ') || profile.profile_motto || text.noContact}</small>
+              </button>
+            )
+          })}
+          {suggestions.length === 0 && <p className="staff-operation-player-empty">{text.noUsersFound}</p>}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function staffRoleAvatarInitials(value: string) {
@@ -3527,6 +3614,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [operationSessionScope, setOperationSessionScope] = useState<StaffOperationScope>('today')
   const [expandedOperationSessions, setExpandedOperationSessions] = useState<Record<string, boolean>>({})
   const [operationAddProfileBySession, setOperationAddProfileBySession] = useState<Record<string, string>>({})
+  const [operationAddProfileQueryBySession, setOperationAddProfileQueryBySession] = useState<Record<string, string>>({})
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [achievementAwards, setAchievementAwards] = useState<StaffAchievementAward[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
@@ -3774,14 +3862,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     ? visibleAllStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
   const customerNameSuggestions = useMemo(() => {
-    const query = booking.customerName.trim().toLowerCase()
+    const query = normalizeStaffSearchValue(booking.customerName.trim())
     if (query.length < 2) return []
 
     return profiles
       .filter((item) => !isDemoProfile(item) && customerSearchText(item, text).includes(query))
       .sort((left, right) => {
-        const leftName = customerName(left, text).toLowerCase()
-        const rightName = customerName(right, text).toLowerCase()
+        const leftName = normalizeStaffSearchValue(customerName(left, text))
+        const rightName = normalizeStaffSearchValue(customerName(right, text))
         const leftStarts = leftName.startsWith(query) ? 0 : 1
         const rightStarts = rightName.startsWith(query) ? 0 : 1
         return leftStarts - rightStarts
@@ -4333,6 +4421,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
 
     setOperationAddProfileBySession((current) => ({ ...current, [session.id]: '' }))
+    setOperationAddProfileQueryBySession((current) => ({ ...current, [session.id]: '' }))
     setStatus(text.messages.operationParticipantAdded)
     await loadTodaySessions(true)
   }
@@ -6308,14 +6397,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       <div className="staff-operation-edit-section">
                         <strong>{text.labels.addPlayer}</strong>
                         <div className="staff-operation-add-player">
-                          <select
-                            value={operationAddProfileBySession[session.id] || ''}
+                          <StaffOperationPlayerSearch
                             disabled={!canCreateOrders || saving}
-                            onChange={(event) => setOperationAddProfileBySession((current) => ({ ...current, [session.id]: event.target.value }))}
-                          >
-                            <option value="">{text.labels.customerProfile}</option>
-                            {addableProfiles.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
-                          </select>
+                            onQueryChange={(value) => setOperationAddProfileQueryBySession((current) => ({ ...current, [session.id]: value }))}
+                            onSelect={(profileOption) => setOperationAddProfileBySession((current) => ({ ...current, [session.id]: profileOption?.id || '' }))}
+                            profiles={addableProfiles}
+                            query={operationAddProfileQueryBySession[session.id] || ''}
+                            selectedProfileId={operationAddProfileBySession[session.id] || ''}
+                            text={text}
+                          />
                           <button disabled={!canCreateOrders || saving || !operationAddProfileBySession[session.id]} type="button" onClick={() => addOperationParticipant(session)}>
                             <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.labels.addPlayer}</ButtonIconText>
                           </button>
