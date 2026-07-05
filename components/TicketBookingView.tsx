@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import type { ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
+import ContactChannels from './ContactChannels'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
@@ -173,6 +174,7 @@ export default function TicketBookingView({
         {gameGuideTrigger}
       </div>
       {tariffTrigger}
+      <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
 
       <>
           <div className="ticket-flow-grid">
