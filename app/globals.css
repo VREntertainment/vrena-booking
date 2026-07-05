@@ -6496,6 +6496,25 @@ body {
   gap: 12px;
 }
 
+.app .ticket-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.app .ticket-quick-actions .game-guide-link,
+.app .ticket-quick-actions .session-tariff-link {
+  width: auto;
+  min-height: 38px;
+  margin: 0;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
 .app .ticket-explainer {
   display: flex;
   flex-wrap: wrap;
@@ -6538,6 +6557,37 @@ body {
   color: #3059ff;
   font-size: 14px;
   box-shadow: none;
+}
+
+.app .guest-ticket-modal {
+  width: min(460px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 48px 18px 18px;
+}
+
+.app .guest-ticket-modal .guest-ticket-contact {
+  grid-template-areas:
+    "copy"
+    "phone"
+    "name"
+    "hint"
+    "login";
+  grid-template-columns: 1fr;
+  margin: 0;
+  padding: 0 0 12px;
+}
+
+.app .guest-ticket-modal .guest-ticket-contact p {
+  grid-column: auto;
+}
+
+.app .guest-ticket-modal .guest-ticket-contact .link-button {
+  justify-self: start;
+}
+
+.app .guest-ticket-modal .create-button {
+  width: 100%;
 }
 
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
@@ -15863,6 +15913,23 @@ body {
   background: transparent !important;
   box-shadow: none !important;
   padding-inline: 0;
+}
+
+.app .ticket-quick-actions {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--player-border);
+}
+
+.app .ticket-quick-actions .game-guide-link,
+.app .ticket-quick-actions .ticket-tariff-link {
+  width: auto;
+  min-height: 36px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid rgba(48, 89, 255, 0.22) !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .app .ticket-flow-grid {
