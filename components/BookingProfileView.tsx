@@ -113,6 +113,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     isMfaLoading,
     isOAuthLoading,
     isPasskeyCaptchaReady,
+    isPasskeyCaptchaVisible,
     isProfileAuthLoading,
     isPasskeyLoading,
     isRecoveryMode,
@@ -405,7 +406,13 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <div className="auth-divider">
                   <span>{text.authOr}</span>
                 </div>
-                {authMode === 'login' && <div className="passkey-captcha-box" ref={passkeyCaptchaContainerRef} aria-hidden="true" />}
+                {authMode === 'login' && (
+                  <div
+                    aria-hidden={isPasskeyCaptchaVisible ? undefined : true}
+                    className={isPasskeyCaptchaVisible ? 'passkey-captcha-box visible' : 'passkey-captcha-box'}
+                    ref={passkeyCaptchaContainerRef}
+                  />
+                )}
               </div>
             )}
 

@@ -8160,6 +8160,17 @@ body {
   transform: translate(-9999px, -9999px);
 }
 
+.app .profile-auth-section .passkey-captcha-box.visible {
+  position: static;
+  width: min(100%, 320px);
+  min-height: 78px;
+  height: auto;
+  overflow: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
 .app .profile-auth-section .google-mark {
   display: inline-grid;
   place-items: center;

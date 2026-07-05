@@ -19,8 +19,8 @@ export type HCaptchaApi = {
 }
 
 export type PasskeyCaptchaPolicy = {
-  mode: 'unsupported' | 'execute-on-click' | 'cached-before-passkey'
-  reason: 'no-passkeys' | 'standard-browser' | 'webkit-focus-risk'
+  mode: 'unsupported' | 'execute-on-click' | 'cached-before-passkey' | 'visible-before-passkey'
+  reason: 'no-passkeys' | 'standard-browser' | 'webkit-focus-risk' | 'safari-visible-challenge'
 }
 
 export const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
@@ -178,8 +178,12 @@ export function passkeyCaptchaPolicy(): PasskeyCaptchaPolicy {
     return { mode: 'unsupported', reason: 'no-passkeys' }
   }
 
-  if (isLikelyIOSWebKit() || isLikelyMacSafari()) {
+  if (isLikelyIOSWebKit()) {
     return { mode: 'cached-before-passkey', reason: 'webkit-focus-risk' }
+  }
+
+  if (isLikelyMacSafari()) {
+    return { mode: 'visible-before-passkey', reason: 'safari-visible-challenge' }
   }
 
   return { mode: 'execute-on-click', reason: 'standard-browser' }
