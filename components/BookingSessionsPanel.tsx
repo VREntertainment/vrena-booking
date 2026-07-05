@@ -159,7 +159,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
 
   function renderSessionRetentionCard(card: SessionRetentionCard) {
     return (
-      <aside className={`session-retention-card session-retention-card-${card.accent}`} key={`session-retention-${card.id}`}>
+      <div className={`session-retention-card session-retention-card-${card.accent}`} key={`session-retention-${card.id}`}>
         <span className="session-retention-card-icon">{card.icon}</span>
         <span className="session-retention-card-copy">
           <strong>{card.title}</strong>
@@ -172,7 +172,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
             {card.cta}
           </button>
         )}
-      </aside>
+      </div>
     )
   }
 
