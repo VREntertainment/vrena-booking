@@ -30,7 +30,9 @@ import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
+import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import { supabase } from '../lib/supabase/client'
+import StaffAchievementAwardPanel, { type StaffAchievementAward } from './StaffAchievementAwardPanel'
 import AppLoadingState from './AppLoadingState'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
@@ -418,7 +420,7 @@ type SoftDeletedRecord = {
   delete_reason: string | null
 }
 
-type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'orders' | 'profiles' | 'restore' | 'report'
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report'
 
 type StaffReportSummary = {
   totalSales: number
@@ -790,6 +792,13 @@ const staffConsoleText = {
       compareRange: 'Compare range',
       confirmDeleteWord: 'Type DELETE to confirm',
       createCustomerAccount: 'Create customer account',
+      awardAchievement: 'Unlock achievement',
+      awardAchievementHelp: 'Manually unlock an existing player achievement when the automatic session data does not cover the real-world moment.',
+      awardNote: 'Staff note',
+      awardToPlayer: 'Why are you unlocking it?',
+      chooseAchievement: 'Choose achievement',
+      choosePlayer: 'Choose player',
+      grantedAwards: 'Manual unlocks',
       createDiscount: 'Create discount',
       createGame: 'Create game',
       createLoyaltyRule: 'Create loyalty rule',
@@ -801,6 +810,10 @@ const staffConsoleText = {
       customerAccountHelp: 'Create a customer profile and email them a secure link to set their password.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
+      noAwardsYet: 'No manual unlocks yet.',
+      noPlayersFound: 'No matching players.',
+      optional: 'optional',
+      sendAward: 'Unlock achievement',
       date: 'Date',
       dateRange: 'Date range',
       dayType: 'Day type',
@@ -991,6 +1004,9 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Enter a customer email.',
       customerAccountInvited: 'Customer account created. Password request sent.',
       customerAccountNameRequired: 'Enter the customer name.',
+      achievementAwarded: 'Achievement unlocked for this player.',
+      achievementAlreadyAwarded: 'Already awarded to this player.',
+      achievementAwardSelectPlayer: 'Choose a player first.',
       discountSaved: 'Discount saved.',
       draftShiftCreated: 'Draft shift created.',
       draftShiftExists: 'That draft already exists for this staff member and day.',
@@ -1402,6 +1418,13 @@ const staffConsoleText = {
       compareRange: 'Khoảng so sánh',
       confirmDeleteWord: 'Nhập DELETE để xác nhận',
       createCustomerAccount: 'Tạo tài khoản khách hàng',
+      awardAchievement: 'Mở khóa thành tựu',
+      awardAchievementHelp: 'Mở khóa thủ công một thành tựu hiện có khi dữ liệu phiên tự động chưa phản ánh đúng khoảnh khắc thực tế.',
+      awardNote: 'Ghi chú nhân viên',
+      awardToPlayer: 'Vì sao mở khóa thành tựu này?',
+      chooseAchievement: 'Chọn thành tựu',
+      choosePlayer: 'Chọn người chơi',
+      grantedAwards: 'Mở khóa thủ công',
       createDiscount: 'Tạo ưu đãi',
       createGame: 'Tạo trò chơi',
       createLoyaltyRule: 'Tạo quy tắc điểm',
@@ -1413,6 +1436,10 @@ const staffConsoleText = {
       customerAccountHelp: 'Tạo hồ sơ khách hàng và gửi email bảo mật để họ đặt mật khẩu.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
+      noAwardsYet: 'Chưa có mở khóa thủ công.',
+      noPlayersFound: 'Không tìm thấy người chơi.',
+      optional: 'không bắt buộc',
+      sendAward: 'Mở khóa thành tựu',
       date: 'Ngày',
       dateRange: 'Khoảng ngày',
       dayType: 'Loại ngày',
@@ -1603,6 +1630,9 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Nhập email khách hàng.',
       customerAccountInvited: 'Đã tạo tài khoản khách hàng. Đã gửi yêu cầu tạo mật khẩu.',
       customerAccountNameRequired: 'Nhập tên khách hàng.',
+      achievementAwarded: 'Đã mở khóa thành tựu cho người chơi.',
+      achievementAlreadyAwarded: 'Người chơi đã có thành tựu này.',
+      achievementAwardSelectPlayer: 'Chọn người chơi trước.',
       discountSaved: 'Đã lưu ưu đãi.',
       draftShiftCreated: 'Đã tạo ca nháp.',
       draftShiftExists: 'Ca nháp này đã tồn tại cho nhân viên và ngày này.',
@@ -3463,6 +3493,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
   const canCreateCustomerAccounts = rank >= 50
+  const canAwardAchievements = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
   const isOwnerOrAdmin = role === 'owner' || role === 'admin'
@@ -3497,12 +3528,18 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [expandedOperationSessions, setExpandedOperationSessions] = useState<Record<string, boolean>>({})
   const [operationAddProfileBySession, setOperationAddProfileBySession] = useState<Record<string, string>>({})
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
+  const [achievementAwards, setAchievementAwards] = useState<StaffAchievementAward[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
   const [customerNameFocused, setCustomerNameFocused] = useState(false)
   const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
   const [customerInviteStatus, setCustomerInviteStatus] = useState('')
   const [isCustomerInviteSaving, setIsCustomerInviteSaving] = useState(false)
+  const [achievementAwardProfileId, setAchievementAwardProfileId] = useState('')
+  const [achievementAwardId, setAchievementAwardId] = useState(staffAchievementAwardCatalog[0]?.id || '')
+  const [achievementAwardNote, setAchievementAwardNote] = useState('')
+  const [achievementAwardStatus, setAchievementAwardStatus] = useState('')
+  const [isAchievementAwardSaving, setIsAchievementAwardSaving] = useState(false)
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
   const [priceForm, setPriceForm] = useState(() => defaultPriceForm())
   const [discountForm, setDiscountForm] = useState(() => defaultDiscountForm())
@@ -3550,7 +3587,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const allowedTabs = useMemo<StaffTab[]>(() => {
     const staffTabs: StaffTab[] = [
       'new',
-      ...(canCreateCustomerAccounts ? (['clientProfile'] satisfies StaffTab[]) : []),
+      ...(canCreateCustomerAccounts || canAwardAchievements ? (['clientProfile'] satisfies StaffTab[]) : []),
       'today',
       'orders',
       'report',
@@ -3563,7 +3600,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     if (rank >= 120) return [...staffTabs, 'restore']
     if (rank >= 20) return staffTabs
     return ['report']
-  }, [canCreateCustomerAccounts, rank])
+  }, [canAwardAchievements, canCreateCustomerAccounts, rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
   const visibleTabGroups = useMemo(() => staffTabGroups.map((group) => ({
     ...group,
@@ -3683,6 +3720,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     [attendanceRangeEnd, attendanceRangeStart]
   )
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
+  const awardableProfiles = useMemo(() => (
+    profiles.filter((item) => !isDemoProfile(item))
+  ), [profiles])
   const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
   const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
@@ -3909,8 +3949,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const currentTabLoading = Boolean(
     currentTab === 'new'
       ? loadingData.games || loadingData.prices || loadingData.discounts || loadingData.profiles
-      : currentTab === 'clientProfile'
-        ? false
+    : currentTab === 'clientProfile'
+        ? loadingData.profiles || loadingData.achievementAwards
         : currentTab === 'today'
           ? loadingData.games || loadingData.today || loadingData.todaySessions || loadingData.profiles
           : currentTab === 'attendance'
@@ -3933,6 +3973,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   useEffect(() => {
     if (currentTab === 'new') {
       void Promise.all([loadGames(), loadPrices(), loadDiscounts(), loadProfiles()])
+    } else if (currentTab === 'clientProfile') {
+      const loaders: Array<Promise<void>> = []
+      if (canAwardAchievements) loaders.push(loadProfiles(), loadAchievementAwards())
+      void Promise.all(loaders)
     } else if (currentTab === 'today') {
       void Promise.all([loadGames(), loadProfiles(), loadTodayOrders(true), loadTodaySessions(true)])
     } else if (currentTab === 'attendance') {
@@ -4094,6 +4138,23 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       if (error) throw new Error(error.message)
       setProfiles(((data ?? []) as StaffProfile[]).filter((item) => !isDemoProfile(item)))
       setPendingRoleChanges({})
+    }, force)
+  }
+
+  async function loadAchievementAwards(force = false) {
+    await runStaffLoader('achievementAwards', async () => {
+      if (!canAwardAchievements) {
+        setAchievementAwards([])
+        return
+      }
+      const { data, error } = await supabase
+        .from('profile_achievement_awards')
+        .select('id, profile_id, achievement_id, achievement_kind, title, description, note, awarded_at')
+        .is('revoked_at', null)
+        .order('awarded_at', { ascending: false })
+        .limit(500)
+      if (error) throw new Error(error.message)
+      setAchievementAwards((data ?? []) as StaffAchievementAward[])
     }, force)
   }
 
@@ -5340,6 +5401,41 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     } finally {
       setIsCustomerInviteSaving(false)
     }
+  }
+
+  async function awardAchievementToPlayer() {
+    if (!canAwardAchievements || isAchievementAwardSaving) return
+    const selectedProfileId = achievementAwardProfileId || awardableProfiles[0]?.id || ''
+    if (!selectedProfileId) {
+      setAchievementAwardStatus(text.messages.achievementAwardSelectPlayer)
+      return
+    }
+
+    const selectedAchievement = staffAchievementAwardById(achievementAwardId) || staffAchievementAwardCatalog[0]
+    if (!selectedAchievement) return
+
+    setIsAchievementAwardSaving(true)
+    setAchievementAwardStatus('')
+    const { error } = await supabase.rpc('staff_award_profile_achievement', {
+      p_profile_id: selectedProfileId,
+      p_achievement_id: selectedAchievement.id,
+      p_achievement_kind: selectedAchievement.kind,
+      p_title: selectedAchievement.title,
+      p_description: selectedAchievement.description,
+      p_note: achievementAwardNote.trim() || null,
+    })
+
+    if (error) {
+      setAchievementAwardStatus(error.message)
+      setIsAchievementAwardSaving(false)
+      return
+    }
+
+    setAchievementAwardNote('')
+    setAchievementAwardStatus(text.messages.achievementAwarded)
+    markStaffDataStale('achievementAwards')
+    await loadAchievementAwards(true)
+    setIsAchievementAwardSaving(false)
   }
 
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
@@ -7293,11 +7389,44 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
         </div>
       )}
 
-      {currentTab === 'clientProfile' && canCreateCustomerAccounts && (
+      {currentTab === 'clientProfile' && (canCreateCustomerAccounts || canAwardAchievements) && (
         <div className="staff-card staff-card-wide">
           <div className="staff-card-heading">
-            <h3>{text.labels.createCustomerAccount}</h3>
+            <h3>{canAwardAchievements ? text.labels.awardAchievement : text.labels.createCustomerAccount}</h3>
           </div>
+          {canAwardAchievements && (
+            <StaffAchievementAwardPanel
+              awards={achievementAwards}
+              canOpenProfiles={canOpenRoleProfiles}
+              isSaving={isAchievementAwardSaving}
+              note={achievementAwardNote}
+              onAward={awardAchievementToPlayer}
+              onAchievementChange={setAchievementAwardId}
+              onNoteChange={setAchievementAwardNote}
+              onOpenProfile={onOpenPlayerProfile}
+              onProfileChange={setAchievementAwardProfileId}
+              profiles={awardableProfiles}
+              selectedAchievementId={achievementAwardId}
+              selectedProfileId={achievementAwardProfileId || awardableProfiles[0]?.id || ''}
+              status={achievementAwardStatus}
+              text={{
+                alreadyAwarded: text.messages.achievementAlreadyAwarded,
+                awardAchievement: text.labels.awardAchievement,
+                awardAchievementHelp: text.labels.awardAchievementHelp,
+                awardNote: text.labels.awardNote,
+                awardToPlayer: text.labels.awardToPlayer,
+                chooseAchievement: text.labels.chooseAchievement,
+                choosePlayer: text.labels.choosePlayer,
+                grantedAwards: text.labels.grantedAwards,
+                noAwardsYet: text.labels.noAwardsYet,
+                noPlayersFound: text.labels.noPlayersFound,
+                optional: text.labels.optional,
+                searchPlayers: text.labels.searchUsers,
+                sendAward: text.labels.sendAward,
+              }}
+            />
+          )}
+          {canCreateCustomerAccounts && (
           <div className="staff-customer-invite-panel">
             <div className="staff-customer-invite-copy">
               <strong>{text.labels.createCustomerAccount}</strong>
@@ -7351,6 +7480,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             </div>
             {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
           </div>
+          )}
         </div>
       )}
 
