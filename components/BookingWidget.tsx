@@ -8173,14 +8173,12 @@ function handleSessionDateChange(value: string) {
             clubVisibility={clubVisibility}
             isClubSearchOpen={isClubSearchOpen}
             isCreatingClub={isCreatingClub}
-            isLoggedIn={Boolean(profile)}
             onClubDescriptionChange={setClubDescription}
             onClubNameChange={setClubName}
             onClubSearchChange={setClubSearch}
             onClubSearchOpenChange={setIsClubSearchOpen}
             onClubVisibilityChange={setClubVisibility}
             onCreateClub={createClub}
-            onPromptLogin={promptLogin}
             text={text}
           >
               {filteredClubs.map((club) => {
