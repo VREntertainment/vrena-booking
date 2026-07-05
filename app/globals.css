@@ -6590,6 +6590,11 @@ body {
   width: 100%;
 }
 
+.app .guest-ticket-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;

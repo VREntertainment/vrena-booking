@@ -52,6 +52,8 @@ type TicketBookingConfirmation = {
   discountAmount?: number
 }
 
+type GuestTicketAction = 'create-account' | 'guest'
+
 export type TicketBookingViewProps = {
   text: Record<string, string>
   language: LanguageCode
@@ -97,8 +99,9 @@ export type TicketBookingViewProps = {
   onTicketDiscountCodeChange: (value: string) => void
   onTicketUseLoyaltyPointsChange: (checked: boolean) => void
   onTicketLoyaltyPointsChange: (value: string) => void
-  onBookTickets: () => void
+  onBookTickets: () => Promise<boolean>
   onPromptLogin: () => void
+  onPromptCreateAccount: () => void
   formatShortDate: (dateValue: string, language: LanguageCode) => string
   formatVnd: (value: number) => string
   ticketTypeLabel: (ticketType: TicketType, text: Record<string, string>) => string
@@ -155,6 +158,7 @@ export default function TicketBookingView({
   onTicketLoyaltyPointsChange,
   onBookTickets,
   onPromptLogin,
+  onPromptCreateAccount,
   formatShortDate,
   formatVnd,
   ticketTypeLabel,
@@ -164,6 +168,7 @@ export default function TicketBookingView({
   onGuestTicketContactChange,
 }: TicketBookingViewProps) {
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
+  const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
@@ -185,7 +190,18 @@ export default function TicketBookingView({
       setGuestTicketContactOpen(true)
       return
     }
-    onBookTickets()
+    void onBookTickets()
+  }
+
+  async function handleGuestTicketAction(action: GuestTicketAction) {
+    setGuestTicketAction(action)
+    const booked = await onBookTickets()
+    setGuestTicketAction(null)
+
+    if (!booked) return
+
+    setGuestTicketContactOpen(false)
+    if (action === 'create-account') onPromptCreateAccount()
   }
 
   return (
@@ -423,6 +439,7 @@ export default function TicketBookingView({
                 <GuestTicketContactPanel
                   contact={guestTicketContact}
                   disabled={isBookingTickets}
+                  estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
                   onChange={onGuestTicketContactChange}
                   onPromptLogin={() => {
                     setGuestTicketContactOpen(false)
@@ -431,14 +448,24 @@ export default function TicketBookingView({
                   text={text}
                 />
                 {ticketStatus && <p className="notice">{ticketStatus}</p>}
-                <button
-                  className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
-                  disabled={isBookingTickets}
-                  type="button"
-                  onClick={onBookTickets}
-                >
-                  {isBookingTickets ? text.bookingTickets : text.bookTickets}
-                </button>
+                <div className="guest-ticket-actions">
+                  <button
+                    className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
+                    disabled={isBookingTickets}
+                    type="button"
+                    onClick={() => void handleGuestTicketAction('create-account')}
+                  >
+                    {isBookingTickets && guestTicketAction === 'create-account' ? text.bookingTickets : text.guestTicketCreateAccountCta}
+                  </button>
+                  <button
+                    className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
+                    disabled={isBookingTickets}
+                    type="button"
+                    onClick={() => void handleGuestTicketAction('guest')}
+                  >
+                    {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketBookWithoutAccountCta}
+                  </button>
+                </div>
               </div>
             </div>
           )}
