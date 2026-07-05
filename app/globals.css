@@ -8449,6 +8449,13 @@ body {
   padding: 14px;
 }
 
+.app .profile-account-section-unframed {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .app .section-head {
   align-items: center;
   gap: 12px;
@@ -12488,6 +12495,12 @@ body {
     border-color: rgba(255, 255, 255, 0.12);
   }
 
+  .app .profile-account-section-unframed {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
   .app .staff-game-guide-head small,
   .app .staff-game-guide-fields label {
     color: #aeb9bd;
@@ -13698,6 +13711,13 @@ body {
   background: var(--player-surface);
 }
 
+.app .section.profile-account-section-unframed:not(.staff-console) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .app .section-head {
   margin-bottom: 10px;
 }
@@ -14118,6 +14138,10 @@ body {
     padding: 12px;
   }
 
+  .app .section.profile-account-section-unframed:not(.staff-console) {
+    padding: 0;
+  }
+
   .app .tickets-section {
     gap: 10px;
   }
@@ -14215,6 +14239,12 @@ body {
   .app .score-context-card {
     background: var(--player-surface-raised);
     border-color: var(--player-border);
+  }
+
+  .app .section.profile-account-section-unframed:not(.staff-console) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .app .compact-session-card-expanded,

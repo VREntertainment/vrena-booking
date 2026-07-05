@@ -11,6 +11,7 @@ type ProfileAuthViewProps = {
   mfaRequired: boolean
   onAuthModeChange: (mode: AuthToggleMode) => void
   profileExists: boolean
+  unframed?: boolean
   text: TranslationMap
 }
 
@@ -21,10 +22,15 @@ export default function ProfileAuthView({
   mfaRequired,
   onAuthModeChange,
   profileExists,
+  unframed = false,
   text,
 }: ProfileAuthViewProps) {
   return (
-    <section className={!profileExists ? 'section profile-auth-section' : 'section profile-account-section'}>
+    <section className={[
+      'section',
+      !profileExists ? 'profile-auth-section' : 'profile-account-section',
+      profileExists && unframed ? 'profile-account-section-unframed' : '',
+    ].filter(Boolean).join(' ')}>
       {!profileExists && (
         <>
           <h2>{isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
