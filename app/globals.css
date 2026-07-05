@@ -11854,7 +11854,6 @@ body {
     justify-items: stretch;
     margin-top: 2px;
     padding: 12px 0 14px;
-    border-top: 1px solid var(--player-border);
     border-bottom: 1px solid var(--player-border);
   }
 
@@ -15918,7 +15917,6 @@ body {
 
 .app .ticket-quick-actions {
   padding: 0 0 10px;
-  border-bottom: 1px solid var(--player-border);
 }
 
 .app .ticket-quick-actions .game-guide-link,
@@ -15939,9 +15937,8 @@ body {
 }
 
 .app .ticket-fast-path-summary {
-  padding: 12px 0 14px;
+  padding: 6px 0 4px;
   border: 0 !important;
-  border-bottom: 1px solid var(--player-border) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -15958,12 +15955,10 @@ body {
 
 .app .ticket-event-options-copy {
   padding-bottom: 7px;
-  border-bottom: 1px solid var(--player-border);
 }
 
 .app .ticket-service-grid {
   gap: 0;
-  border-top: 1px solid var(--player-border);
 }
 
 .app .ticket-service-card {

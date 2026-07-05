@@ -200,7 +200,7 @@ export default function TicketBookingView({
             <div className="ticket-form-panel">
               <div className="ticket-fast-path-summary">
                 <div>
-                  <strong>{ticketTypeLabel(ticketType, text)}</strong>
+                  {isSpecialTicket && <strong>{ticketTypeLabel(ticketType, text)}</strong>}
                   <small>{ticketSummaryDetail}</small>
                 </div>
                 {isSpecialTicket && (
