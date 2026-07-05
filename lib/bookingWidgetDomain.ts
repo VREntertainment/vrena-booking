@@ -63,6 +63,8 @@ export type TicketBookingConfirmation = {
   time: string
   players: number
   totalPrice: number
+  guestPhone?: string
+  guestName?: string
   loyaltyPointsRedeemed?: number
   loyaltyDiscountAmount?: number
   discountCode?: string
