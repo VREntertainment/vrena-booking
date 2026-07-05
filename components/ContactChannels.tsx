@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 export const VRENA_CONTACT_PHONE_DISPLAY = '0981152315'
 export const VRENA_CONTACT_PHONE_INTERNATIONAL = '84981152315'
 
@@ -5,11 +7,13 @@ const CONTACT_CHANNELS = [
   {
     className: 'whatsapp',
     href: `https://wa.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`,
+    iconSrc: '/brand/whatsapp.svg',
     label: 'WhatsApp',
   },
   {
     className: 'zalo',
     href: `https://zalo.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`,
+    iconSrc: '/brand/zalo.svg',
     label: 'Zalo',
   },
 ] as const
@@ -35,7 +39,8 @@ export default function ContactChannels({ className, label }: ContactChannelsPro
             rel="noreferrer"
             target="_blank"
           >
-            {channel.label}
+            <Image aria-hidden="true" alt="" height={18} src={channel.iconSrc} width={18} />
+            <span>{channel.label}</span>
           </a>
         ))}
       </div>

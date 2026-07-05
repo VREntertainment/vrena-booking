@@ -29,7 +29,7 @@ export const fr = {
   onboardingFinishTitle: 'Fin',
   onboardingFinishBody: 'Vous êtes prêt à jouer.',
   ticketsExplainerTitle: 'Les Tickets sont des réservations privées',
-  ticketsExplainerBody: 'Utilisez Tickets pour réserver VRena pour vous ou votre groupe. Utilisez Parties pour rejoindre ou créer des parties communautaires.',
+  ticketsExplainerBody: 'Utilisez Tickets pour réserver sans compte. Utilisez Parties pour rejoindre ou créer des jeux avec d’autres joueurs.',
   gameGuide: 'Guide des jeux',
   gameGuideOpen: 'Guide des jeux',
   gameGuideForGame: 'Guide',

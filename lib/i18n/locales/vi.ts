@@ -29,7 +29,7 @@ export const vi = {
   onboardingFinishTitle: 'Hoàn tất',
   onboardingFinishBody: 'Bạn đã sẵn sàng chơi.',
   ticketsExplainerTitle: 'Tickets là đặt chỗ riêng',
-  ticketsExplainerBody: 'Dùng Tickets để giữ chỗ VRena cho bạn hoặc nhóm. Dùng Phiên để tham gia hoặc tạo game cộng đồng với người chơi khác.',
+  ticketsExplainerBody: 'Dùng Tickets để đặt chỗ không cần tài khoản. Dùng Phiên để tham gia hoặc tạo game với người chơi khác.',
   gameGuide: 'Hướng dẫn game',
   gameGuideOpen: 'Hướng dẫn game',
   gameGuideForGame: 'Hướng dẫn',

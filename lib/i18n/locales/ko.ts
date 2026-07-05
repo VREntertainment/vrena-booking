@@ -29,7 +29,7 @@ export const ko = {
   onboardingFinishTitle: '완료',
   onboardingFinishBody: '플레이할 준비가 되었습니다.',
   ticketsExplainerTitle: 'Tickets는 개인 예약입니다',
-  ticketsExplainerBody: 'Tickets로 나 또는 그룹의 VRena 자리를 예약하세요. Sessions는 다른 플레이어와 커뮤니티 게임에 참여하거나 만드는 곳입니다.',
+  ticketsExplainerBody: 'Tickets로 계정 없이 예약하세요. Sessions에서 다른 플레이어와 게임에 참여하거나 만들 수 있습니다.',
   gameGuide: '게임 가이드',
   gameGuideOpen: '게임 가이드',
   gameGuideForGame: '가이드',
