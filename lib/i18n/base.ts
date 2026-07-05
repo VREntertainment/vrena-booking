@@ -123,7 +123,7 @@ export const en = {
   ticketDurationMinimum80: '60 min as minimum; choose more time for all players to have equal playtime',
   ticketDurationBelowRecommended: 'Below the recommended time: not all players may get the same playtime.',
   ticketSpecialBookingNote: 'Birthday and corporate bookings are confirmed after we understand the needs for your event.',
-  ticketDiscountDeskNote: 'Voucher codes do not stack with group discounts or loyalty points. The best price reduction is used automatically.',
+  ticketDiscountDeskNote: 'Voucher or Discount or Loyalty Points. The best reduction is applied.',
   ticketDiscountCodeLabel: 'Voucher / discount code',
   ticketDiscountCodePlaceholder: 'Enter code',
   ticketDiscountCodeChecking: 'Checking code...',

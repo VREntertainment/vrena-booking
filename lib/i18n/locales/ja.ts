@@ -125,7 +125,7 @@ export const ja = {
   ticketDurationMinimum80: '最低60分です。全員が同じプレイ時間にするには時間を追加してください。',
   ticketDurationBelowRecommended: '推奨時間より短いです。全員のプレイ時間が同じにならない場合があります。',
   ticketSpecialBookingNote: '誕生日・法人予約は、イベント内容を確認したうえで確定します。',
-  ticketDiscountDeskNote: 'バウチャーコードはグループ割引やポイントと併用できません。最もお得な割引が自動で適用されます。',
+  ticketDiscountDeskNote: 'バウチャー、割引、ポイントのうち最もお得な割引が適用されます。',
   ticketDiscountCodeLabel: 'バウチャー / 割引コード',
   ticketDiscountCodePlaceholder: 'コードを入力',
   ticketDiscountCodeChecking: 'コードを確認中...',
