@@ -2,7 +2,8 @@
 
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
-import { Bold, ChevronDown, ChevronUp, Italic, Send, Strikethrough, Underline, X } from 'lucide-react'
+import { Fragment, type ReactNode } from 'react'
+import { Bold, CalendarDays, ChevronDown, ChevronUp, Gift, Italic, Map, Send, Sparkles, Strikethrough, Ticket, Trophy, Underline, Users, X } from 'lucide-react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
 import { games, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
 import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketArenaCountForPlayers, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type Participant } from '../lib/bookingWidgetDomain'
@@ -23,10 +24,157 @@ type BookingSessionsPanelProps = {
   context: Record<string, any>
 }
 
+type SessionRetentionCardAction = 'tickets' | 'create' | 'share' | 'guide' | 'today' | 'clubs' | 'leaderboard'
+
+type SessionRetentionCard = {
+  action: SessionRetentionCardAction
+  accent: string
+  body: string
+  cta: string
+  icon: ReactNode
+  id: string
+  title: string
+}
+
+const sessionRetentionCadence = [3, 4, 5, 3, 5, 4, 3]
+
 export default function BookingSessionsPanel({ context }: BookingSessionsPanelProps) {
   const {
     activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession, canManageSession, canReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, compactDisplayName: compactDisplayNameFromContext, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition
   } = context
+
+  const sessionRetentionCards: SessionRetentionCard[] = [
+    {
+      action: 'tickets',
+      accent: 'tickets',
+      body: text.sessionCtaBookBody,
+      cta: text.sessionCtaBookAction,
+      icon: <Ticket aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'tickets',
+      title: text.sessionCtaBookTitle,
+    },
+    {
+      action: 'create',
+      accent: 'create',
+      body: text.sessionCtaCreateBody,
+      cta: text.sessionCtaCreateAction,
+      icon: <CalendarDays aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'create',
+      title: text.sessionCtaCreateTitle,
+    },
+    {
+      action: 'share',
+      accent: 'share',
+      body: text.sessionCtaShareBody,
+      cta: text.sessionCtaShareAction,
+      icon: <Users aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'share',
+      title: text.sessionCtaShareTitle,
+    },
+    {
+      action: 'guide',
+      accent: 'guide',
+      body: text.sessionCtaGuideBody,
+      cta: text.sessionCtaGuideAction,
+      icon: <Map aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'guide',
+      title: text.sessionCtaGuideTitle,
+    },
+    {
+      action: 'today',
+      accent: 'today',
+      body: text.sessionCtaTodayBody,
+      cta: text.sessionCtaTodayAction,
+      icon: <Sparkles aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'today',
+      title: text.sessionCtaTodayTitle,
+    },
+    {
+      action: 'clubs',
+      accent: 'clubs',
+      body: text.sessionCtaClubsBody,
+      cta: text.sessionCtaClubsAction,
+      icon: <Gift aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'clubs',
+      title: text.sessionCtaClubsTitle,
+    },
+    {
+      action: 'leaderboard',
+      accent: 'leaderboard',
+      body: text.sessionCtaLeaderboardBody,
+      cta: text.sessionCtaLeaderboardAction,
+      icon: <Trophy aria-hidden="true" size={20} strokeWidth={2.35} />,
+      id: 'leaderboard',
+      title: text.sessionCtaLeaderboardTitle,
+    },
+  ]
+
+  const shouldShowSessionRetentionCards = sessionTimeScope === 'upcoming' && !search && !selectedSessionDate
+
+  function sessionRetentionCardForIndex(index: number) {
+    if (!shouldShowSessionRetentionCards) {
+      return null
+    }
+
+    let insertionPoint = 0
+    for (let cardIndex = 0; cardIndex < sessionRetentionCards.length; cardIndex += 1) {
+      insertionPoint += sessionRetentionCadence[cardIndex]
+      if (index + 1 === insertionPoint) {
+        return sessionRetentionCards[cardIndex]
+      }
+    }
+    return null
+  }
+
+  function handleSessionRetentionAction(action: SessionRetentionCardAction) {
+    if (action === 'tickets') {
+      setActiveView('tickets')
+      return
+    }
+    if (action === 'create') {
+      if (profile) {
+        setActiveView('create')
+      } else {
+        promptLogin()
+      }
+      return
+    }
+    if (action === 'share') {
+      void shareLink('app', 'VRena Sessions')
+      return
+    }
+    if (action === 'today') {
+      setSessionTimeScope('upcoming')
+      setSelectedSessionDate(localDateString(new Date()))
+      return
+    }
+    if (action === 'clubs') {
+      setActiveView('clubs')
+      return
+    }
+    if (action === 'leaderboard') {
+      setActiveView('leaderboard')
+    }
+  }
+
+  function renderSessionRetentionCard(card: SessionRetentionCard) {
+    return (
+      <aside className={`session-retention-card session-retention-card-${card.accent}`} key={`session-retention-${card.id}`}>
+        <span className="session-retention-card-icon">{card.icon}</span>
+        <span className="session-retention-card-copy">
+          <strong>{card.title}</strong>
+          <span>{card.body}</span>
+        </span>
+        {card.action === 'guide' ? (
+          renderGameGuideTrigger(null, 'session-retention-card-cta')
+        ) : (
+          <button className="session-retention-card-cta" type="button" onClick={() => handleSessionRetentionAction(card.action)}>
+            {card.cta}
+          </button>
+        )}
+      </aside>
+    )
+  }
 
   return (
 <SessionsView
@@ -66,7 +214,8 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
   tariffTrigger={renderTariffTrigger()}
   text={text}
 >
-    {filteredSessions.map((session: Session) => {
+    {filteredSessions.map((session: Session, sessionIndex: number) => {
+      const sessionRetentionCard = sessionRetentionCardForIndex(sessionIndex)
       const participants = session.session_participants ?? []
       const waitlist: any[] = waitlistForSession(session)
       const remaining = seatsLeft(session)
@@ -139,6 +288,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
       )
 
       return (
+        <Fragment key={session.id}>
         <article
           className={[
             'session',
@@ -146,7 +296,6 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
             isHighlighted ? 'session-highlighted' : '',
           ].filter(Boolean).join(' ')}
           id={`session-${session.id}`}
-          key={session.id}
         >
           <div
             className={isExpanded ? 'compact-session-card compact-session-card-expanded' : 'compact-session-card'}
@@ -1273,6 +1422,8 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
             </div>
           )}
         </article>
+        {sessionRetentionCard && renderSessionRetentionCard(sessionRetentionCard)}
+        </Fragment>
       )
     })}
 </SessionsView>

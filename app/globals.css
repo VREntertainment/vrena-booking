@@ -15175,6 +15175,98 @@ body {
   background: color-mix(in srgb, var(--player-surface-soft) 52%, transparent) !important;
 }
 
+.app .sessions-section .session-retention-card {
+  --session-retention-accent: #3059ff;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--player-border);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--session-retention-accent) 9%, transparent),
+      transparent 68%
+    );
+}
+
+.app .sessions-section .session-retention-card-tickets {
+  --session-retention-accent: #13a8d8;
+}
+
+.app .sessions-section .session-retention-card-create {
+  --session-retention-accent: #2f6df6;
+}
+
+.app .sessions-section .session-retention-card-share {
+  --session-retention-accent: #14956f;
+}
+
+.app .sessions-section .session-retention-card-guide {
+  --session-retention-accent: #7c5cff;
+}
+
+.app .sessions-section .session-retention-card-today {
+  --session-retention-accent: #d6801f;
+}
+
+.app .sessions-section .session-retention-card-clubs {
+  --session-retention-accent: #c2457a;
+}
+
+.app .sessions-section .session-retention-card-leaderboard {
+  --session-retention-accent: #0f9f9c;
+}
+
+.app .sessions-section .session-retention-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--session-retention-accent) 15%, var(--player-surface-soft));
+  color: var(--session-retention-accent);
+}
+
+.app .sessions-section .session-retention-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.app .sessions-section .session-retention-card-copy strong {
+  color: var(--player-text);
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.18;
+}
+
+.app .sessions-section .session-retention-card-copy span {
+  color: var(--player-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.app .sessions-section .session-retention-card-cta {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--session-retention-accent) 26%, var(--player-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--session-retention-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--session-retention-accent) 82%, var(--player-text));
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.app .sessions-section .session-retention-card-cta:hover {
+  background: color-mix(in srgb, var(--session-retention-accent) 14%, transparent);
+  transform: none;
+}
+
 .app .sessions-section .compact-session-card-expanded {
   border: 0 !important;
   outline: none !important;
@@ -15447,6 +15539,19 @@ body {
 
   .app .sessions-section .compact-session-title-row h3 {
     font-size: 15px;
+  }
+
+  .app .sessions-section .session-retention-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 9px 11px;
+    padding: 12px 0;
+  }
+
+  .app .sessions-section .session-retention-card-cta {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 32px;
+    padding: 6px 11px;
   }
 
   .app .sessions-section .compact-session-actions {
