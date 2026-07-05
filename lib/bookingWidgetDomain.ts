@@ -15,26 +15,6 @@ import type { LanguageCode } from './i18n/languages'
 import type { LeaderboardCriterion, LeaderboardPlayer } from '../components/LeaderboardPanel'
 import type { StaffProfile } from '../components/StaffConsole'
 
-type HCaptchaApi = {
-  render: (
-    container: HTMLElement,
-    options: {
-      sitekey: string
-      size?: 'invisible'
-      callback: (token: string) => void
-      'expired-callback': () => void
-      'error-callback': () => void
-    }
-  ) => string
-  execute?: (
-    widgetId?: string,
-    options?: { async?: boolean }
-  ) => void | Promise<string | { response?: string }>
-  getResponse?: (widgetId?: string) => string
-  reset: (widgetId?: string) => void
-  remove?: (widgetId: string) => void
-}
-
 export const ARENA_COUNT = 2
 export const OPEN_MINUTES = 9 * 60
 export const CLOSE_MINUTES = 22 * 60
@@ -1375,12 +1355,6 @@ export function icsDate(value: Date) {
 
 export function icsText(value: string) {
   return value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
-}
-
-export function getHCaptcha() {
-  if (typeof window === 'undefined') return undefined
-
-  return (window as unknown as { hcaptcha?: HCaptchaApi }).hcaptcha
 }
 
 export function scheduleDeferredWork(callback: () => void) {
