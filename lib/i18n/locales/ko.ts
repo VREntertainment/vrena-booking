@@ -125,7 +125,7 @@ export const ko = {
   ticketDurationMinimum80: '최소 60분입니다. 모두 같은 플레이 시간을 원하면 시간을 더 선택하세요.',
   ticketDurationBelowRecommended: '권장 시간보다 짧습니다. 모든 플레이어의 플레이 시간이 같지 않을 수 있습니다.',
   ticketSpecialBookingNote: '생일 및 기업 예약은 이벤트 필요 사항을 확인한 뒤 확정됩니다.',
-  ticketDiscountDeskNote: '바우처 코드는 그룹 할인이나 포인트와 함께 사용할 수 없습니다. 가장 큰 할인이 자동 적용됩니다.',
+  ticketDiscountDeskNote: '바우처, 할인 또는 포인트 중 가장 큰 할인이 적용됩니다.',
   ticketDiscountCodeLabel: '바우처 / 할인 코드',
   ticketDiscountCodePlaceholder: '코드 입력',
   ticketDiscountCodeChecking: '코드 확인 중...',

@@ -15917,6 +15917,7 @@ body {
 
 .app .ticket-quick-actions {
   padding: 0 0 10px;
+  border-bottom: 0 !important;
 }
 
 .app .ticket-quick-actions .game-guide-link,

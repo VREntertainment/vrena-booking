@@ -125,7 +125,7 @@ export const vi = {
   ticketDurationMinimum80: 'Tối thiểu 60 phút; chọn thêm thời gian để mọi người có thời lượng chơi bằng nhau.',
   ticketDurationBelowRecommended: 'Dưới thời lượng khuyến nghị: không phải ai cũng có cùng thời gian chơi.',
   ticketSpecialBookingNote: 'Booking sinh nhật và corporate sẽ được xác nhận sau khi tụi mình hiểu nhu cầu sự kiện của bạn.',
-  ticketDiscountDeskNote: 'Mã voucher không cộng dồn với giảm giá nhóm hoặc điểm thưởng. Hệ thống tự chọn mức giảm tốt nhất.',
+  ticketDiscountDeskNote: 'Voucher, giảm giá hoặc điểm thưởng. Hệ thống áp dụng mức giảm tốt nhất.',
   ticketDiscountCodeLabel: 'Mã voucher / giảm giá',
   ticketDiscountCodePlaceholder: 'Nhập mã',
   ticketDiscountCodeChecking: 'Đang kiểm tra mã...',

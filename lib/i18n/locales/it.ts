@@ -125,7 +125,7 @@ export const it = {
   ticketDurationMinimum80: '60 min minimo; scegli più tempo perché tutti abbiano lo stesso tempo di gioco.',
   ticketDurationBelowRecommended: 'Sotto il tempo consigliato: non tutti i giocatori potrebbero avere lo stesso tempo di gioco.',
   ticketSpecialBookingNote: 'Le prenotazioni compleanno e corporate vengono confermate dopo aver capito le esigenze del tuo evento.',
-  ticketDiscountDeskNote: 'I codici voucher non si sommano agli sconti gruppo o ai punti fedeltà. Viene usata automaticamente la riduzione migliore.',
+  ticketDiscountDeskNote: 'Voucher, sconto o punti fedeltà. Viene applicata la riduzione migliore.',
   ticketDiscountCodeLabel: 'Codice voucher / sconto',
   ticketDiscountCodePlaceholder: 'Inserisci codice',
   ticketDiscountCodeChecking: 'Controllo codice...',
