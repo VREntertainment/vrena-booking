@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { ReactNode } from 'react'
+import { X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
@@ -162,27 +163,37 @@ export default function TicketBookingView({
   guestTicketContact,
   onGuestTicketContactChange,
 }: TicketBookingViewProps) {
+  const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
   const currentTicketService = ticketServices.find((service) => service.id === ticketType)
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
 
+  useEffect(() => {
+    if (ticketConfirmation) setGuestTicketContactOpen(false)
+  }, [ticketConfirmation])
+
+  function handleBookTicketsClick() {
+    if (!isLoggedIn) {
+      setGuestTicketContactOpen(true)
+      return
+    }
+    onBookTickets()
+  }
+
   return (
     <section className="section tickets-section">
-      <div className="ticket-explainer" role="note">
-        <strong>{text.ticketsExplainerTitle}</strong>
-        <span>{text.ticketsExplainerBody}</span>
+      <div className="ticket-quick-actions">
         {gameGuideTrigger}
+        {tariffTrigger}
       </div>
-      {tariffTrigger}
 
       <>
           <div className="ticket-flow-grid">
             <div className="ticket-form-panel">
               <div className="ticket-fast-path-summary">
                 <div>
-                  <span>{text.ticketType}</span>
                   <strong>{ticketTypeLabel(ticketType, text)}</strong>
                   <small>
                     {ticketTypeDescription(ticketType, text)}
@@ -195,16 +206,6 @@ export default function TicketBookingView({
                   </button>
                 )}
               </div>
-
-              {!isLoggedIn && (
-                <GuestTicketContactPanel
-                  contact={guestTicketContact}
-                  disabled={isBookingTickets}
-                  onChange={onGuestTicketContactChange}
-                  onPromptLogin={onPromptLogin}
-                  text={text}
-                />
-              )}
 
               <div className="form-grid compact-form-grid ticket-form-grid">
                 <div className="ticket-control ticket-control-date">
@@ -257,7 +258,7 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              {isLoggedIn && !isSpecialTicket && (
+              {!isSpecialTicket && (
                 <label className="ticket-discount-code-field">
                   <span>{text.ticketDiscountCodeLabel}</span>
                   <input
@@ -275,10 +276,6 @@ export default function TicketBookingView({
               )}
 
               <div className="ticket-price-summary">
-                <div>
-                  <span>{text.ticketType}</span>
-                  <strong>{ticketTypeLabel(ticketType, text)}</strong>
-                </div>
                 <div>
                   <span>{text.duration}</span>
                   <strong>{activeTicketDuration} min</strong>
@@ -302,7 +299,7 @@ export default function TicketBookingView({
                     <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
                   </div>
                 )}
-                {isLoggedIn && !isSpecialTicket && ticketDiscountAmount > 0 && (
+                {!isSpecialTicket && ticketDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
                     <strong>-{formatVnd(ticketDiscountAmount)}</strong>
@@ -383,7 +380,7 @@ export default function TicketBookingView({
                 className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
                 disabled={isBookingTickets}
                 type="button"
-                onClick={onBookTickets}
+                onClick={handleBookTicketsClick}
               >
                 {isBookingTickets ? text.bookingTickets : text.bookTickets}
               </button>
@@ -413,6 +410,35 @@ export default function TicketBookingView({
           </div>
 
           <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
+
+          {!isLoggedIn && guestTicketContactOpen && (
+            <div className="modal-backdrop guest-ticket-modal-backdrop">
+              <div className="login-modal guest-ticket-modal" role="dialog" aria-modal="true" aria-label={text.guestTicketTitle}>
+                <button aria-label={text.close} className="modal-close" type="button" onClick={() => setGuestTicketContactOpen(false)}>
+                  <X aria-hidden="true" size={18} />
+                </button>
+                <GuestTicketContactPanel
+                  contact={guestTicketContact}
+                  disabled={isBookingTickets}
+                  onChange={onGuestTicketContactChange}
+                  onPromptLogin={() => {
+                    setGuestTicketContactOpen(false)
+                    onPromptLogin()
+                  }}
+                  text={text}
+                />
+                {ticketStatus && <p className="notice">{ticketStatus}</p>}
+                <button
+                  className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
+                  disabled={isBookingTickets}
+                  type="button"
+                  onClick={onBookTickets}
+                >
+                  {isBookingTickets ? text.bookingTickets : text.bookTickets}
+                </button>
+              </div>
+            </div>
+          )}
 
           {ticketConfirmation && (
             <div className="ticket-confirmation">

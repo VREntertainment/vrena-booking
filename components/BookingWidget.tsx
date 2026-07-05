@@ -6652,12 +6652,12 @@ function handleSessionDateChange(value: string) {
     }
 
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-    if (activeProfile && !isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
       setTicketStatus(ticketDiscountCodeCheckingText)
       return
     }
 
-    if (activeProfile && !isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
       setTicketStatus(ticketDiscountCodeInvalidText)
       return
     }
