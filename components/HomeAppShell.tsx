@@ -7,7 +7,7 @@ const BookingWidget = dynamic(() => import('./BookingWidget'), {
   ssr: false,
   loading: () => (
     <main className="app-route-loader">
-      <BrandLoader label="Loading Hall of Fame" />
+      <BrandLoader />
     </main>
   ),
 })

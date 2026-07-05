@@ -8,6 +8,7 @@ type ProfileAuthViewProps = {
   authMode: AuthMode
   children: ReactNode
   isRecoveryMode: boolean
+  loading?: boolean
   mfaRequired: boolean
   onAuthModeChange: (mode: AuthToggleMode) => void
   profileExists: boolean
@@ -19,6 +20,7 @@ export default function ProfileAuthView({
   authMode,
   children,
   isRecoveryMode,
+  loading = false,
   mfaRequired,
   onAuthModeChange,
   profileExists,
@@ -29,9 +31,10 @@ export default function ProfileAuthView({
     <section className={[
       'section',
       !profileExists ? 'profile-auth-section' : 'profile-account-section',
+      loading ? 'profile-auth-section-loading' : '',
       profileExists && unframed ? 'profile-account-section-unframed' : '',
     ].filter(Boolean).join(' ')}>
-      {!profileExists && (
+      {!loading && !profileExists && (
         <>
           <h2>{isRecoveryMode ? text.setNewPasswordTitle : authMode === 'reset' ? text.resetPasswordTitle : text.authWelcomeTitle}</h2>
           {(isRecoveryMode || authMode === 'reset') && (
@@ -42,7 +45,7 @@ export default function ProfileAuthView({
         </>
       )}
 
-      {!mfaRequired && !profileExists && !isRecoveryMode && authMode !== 'reset' && (
+      {!loading && !mfaRequired && !profileExists && !isRecoveryMode && authMode !== 'reset' && (
         <div className="segmented auth-toggle">
           <button
             className={authMode === 'login' ? 'active' : ''}

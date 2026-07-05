@@ -42,6 +42,7 @@ import {
   sessionCoverGame,
 } from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
+import AppLoadingState from './AppLoadingState'
 import { shouldSkipImageOptimization } from './AvatarNode'
 import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
@@ -112,6 +113,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     isMfaLoading,
     isOAuthLoading,
     isPasskeyCaptchaReady,
+    isProfileAuthLoading,
     isPasskeyLoading,
     isRecoveryMode,
     isResettingPassword,
@@ -354,9 +356,14 @@ export default function BookingProfileView({ context }: { context: any }) {
             mfaRequired={mfaRequired}
             onAuthModeChange={updateAuthMode}
             profileExists={Boolean(profile)}
+            loading={isProfileAuthLoading}
             text={text}
             unframed={Boolean(profile && profileSubTab === 'achievements')}
           >
+            {isProfileAuthLoading ? (
+              <AppLoadingState className="profile-loading-panel" label={text.profileLoading} />
+            ) : (
+              <>
             {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
               <div className="auth-method-stack">
                 <button
@@ -379,12 +386,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <button
                     aria-busy={isPasskeyLoading || !isPasskeyCaptchaReady}
                     aria-disabled={isPasskeyLoading}
-                    className={[
-                      'secondary create-button passkey-auth-button',
-                      isPasskeyLoading ? 'loading' : '',
-                      !isPasskeyLoading && !isPasskeyCaptchaReady ? 'preparing' : '',
-                      isPasskeyCaptchaReady ? 'ready' : '',
-                    ].filter(Boolean).join(' ')}
+                    className="secondary create-button passkey-auth-button"
                     disabled={isPasskeyLoading}
                     onClick={signInWithPasskey}
                     onFocus={preparePasskeyCaptcha}
@@ -1106,6 +1108,8 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </>
                 )}
               </div>
+            )}
+              </>
             )}
               </>
             )}
