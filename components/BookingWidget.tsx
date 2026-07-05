@@ -14,10 +14,11 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
+import { HCAPTCHA_LOAD_TIMEOUT_MS, HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeyCaptchaPolicy, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
-import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, getHCaptcha, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
+import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
 import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type SessionTimeScope } from './BookingWidgetSurfaces'
 import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
@@ -26,11 +27,6 @@ import type { AuthMode } from './ProfileAuthView'
 import type { StaffProfile } from './StaffConsole'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
-const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
-const HCAPTCHA_SCRIPT_ID = 'hcaptcha-script'
-const HCAPTCHA_PRIMARY_SCRIPT_URL = 'https://js.hcaptcha.com/1/api.js?render=explicit'
-const HCAPTCHA_FALLBACK_SCRIPT_URL = 'https://hcaptcha.com/1/api.js?render=explicit'
-const HCAPTCHA_LOAD_TIMEOUT_MS = 8000
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -44,100 +40,10 @@ const CLUB_MESSAGE_LIMIT = 30
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
-let hcaptchaLoadPromise: Promise<NonNullable<ReturnType<typeof getHCaptcha>>> | null = null
 
 function getSupabase() {
   supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
   return supabaseClientPromise
-}
-
-function waitForHCaptcha(timeoutMs = HCAPTCHA_LOAD_TIMEOUT_MS) {
-  const availableCaptcha = getHCaptcha()
-  if (availableCaptcha) return Promise.resolve(availableCaptcha)
-  if (typeof window === 'undefined') return Promise.reject(new Error('hCaptcha is not available.'))
-
-  const startedAt = Date.now()
-
-  return new Promise<NonNullable<ReturnType<typeof getHCaptcha>>>((resolve, reject) => {
-    const check = () => {
-      const hcaptcha = getHCaptcha()
-
-      if (hcaptcha) {
-        resolve(hcaptcha)
-        return
-      }
-
-      if (Date.now() - startedAt >= timeoutMs) {
-        reject(new Error('hCaptcha did not load.'))
-        return
-      }
-
-      window.setTimeout(check, 50)
-    }
-
-    check()
-  })
-}
-
-function loadHCaptchaScript(src: string) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return Promise.reject(new Error('hCaptcha can only load in the browser.'))
-  }
-
-  const availableCaptcha = getHCaptcha()
-  if (availableCaptcha) return Promise.resolve(availableCaptcha)
-
-  return new Promise<NonNullable<ReturnType<typeof getHCaptcha>>>((resolve, reject) => {
-    const previousScript = document.getElementById(HCAPTCHA_SCRIPT_ID)
-    previousScript?.remove()
-
-    const script = document.createElement('script')
-    let timeoutId: number | null = null
-
-    const cleanup = () => {
-      if (timeoutId) window.clearTimeout(timeoutId)
-      script.removeEventListener('load', onLoad)
-      script.removeEventListener('error', onError)
-    }
-
-    const onLoad = () => {
-      waitForHCaptcha().then((hcaptcha) => {
-        cleanup()
-        resolve(hcaptcha)
-      }).catch((error) => {
-        cleanup()
-        reject(error)
-      })
-    }
-
-    const onError = () => {
-      cleanup()
-      reject(new Error('hCaptcha script failed to load.'))
-    }
-
-    script.id = HCAPTCHA_SCRIPT_ID
-    script.src = src
-    script.async = true
-    script.defer = true
-    script.addEventListener('load', onLoad)
-    script.addEventListener('error', onError)
-    timeoutId = window.setTimeout(onError, HCAPTCHA_LOAD_TIMEOUT_MS)
-    document.body.appendChild(script)
-  })
-}
-
-function ensureHCaptcha() {
-  const availableCaptcha = getHCaptcha()
-  if (availableCaptcha) return Promise.resolve(availableCaptcha)
-
-  hcaptchaLoadPromise ??= loadHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL)
-    .catch(() => loadHCaptchaScript(HCAPTCHA_FALLBACK_SCRIPT_URL))
-    .catch((error) => {
-      hcaptchaLoadPromise = null
-      throw error
-    })
-
-  return hcaptchaLoadPromise
 }
 
 type BookingWidgetProps = {
@@ -1027,7 +933,7 @@ export default function WidgetPage({
 
   function resetPasskeyCaptcha() {
     passkeyCaptchaTokenRef.current = ''
-    setIsPasskeyCaptchaReady(false)
+    setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
     passkeyCaptchaResolveRef.current = null
     passkeyCaptchaRejectRef.current = null
 
@@ -1066,7 +972,7 @@ export default function WidgetPage({
         passkeyCaptchaTokenRef.current = ''
         passkeyCaptchaResolveRef.current = null
         passkeyCaptchaRejectRef.current = null
-        setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+        setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
         reject(error)
       }
 
@@ -1142,12 +1048,12 @@ export default function WidgetPage({
 
   function preparePasskeyCaptcha() {
     if (typeof window === 'undefined') return
-    if (!shouldRequireCachedPasskeyCaptcha()) return
+    if (passkeyCaptchaPolicy().mode !== 'cached-before-passkey') return
 
     window.setTimeout(() => {
       void executePasskeyCaptcha({ forceFresh: true }).catch(() => {
         passkeyCaptchaTokenRef.current = ''
-        setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+        setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
       })
     }, 0)
   }
@@ -2005,26 +1911,6 @@ export default function WidgetPage({
     setMfaRequired(false)
     setMfaStatus('')
     setProfileStatus(text.loggedOut)
-  }
-
-  function passkeysAvailable() {
-    return typeof window !== 'undefined'
-      && 'PublicKeyCredential' in window
-      && Boolean(window.PublicKeyCredential)
-      && 'credentials' in navigator
-      && typeof navigator.credentials?.create === 'function'
-      && typeof navigator.credentials?.get === 'function'
-  }
-
-  function shouldRequireCachedPasskeyCaptcha() {
-    if (typeof navigator === 'undefined') return true
-
-    const userAgent = navigator.userAgent
-    const vendor = navigator.vendor || ''
-
-    return /Safari/i.test(userAgent)
-      && /Apple/i.test(vendor)
-      && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|Android/i.test(userAgent)
   }
 
   function isDocumentFocusPasskeyError(error: unknown) {
@@ -3813,16 +3699,7 @@ export default function WidgetPage({
       cancelled = true
       updateCaptchaToken('')
 
-      const hcaptcha = getHCaptcha()
-
-      if (hcaptcha && captchaWidgetId.current) {
-        try {
-          hcaptcha.remove?.(captchaWidgetId.current)
-        } catch {
-          hcaptcha.reset(captchaWidgetId.current)
-        }
-      }
-
+      removeHCaptchaWidget(captchaWidgetId.current)
       captchaWidgetId.current = null
     }
   }, [activeView, authMode, authStep, profile])
@@ -3838,7 +3715,7 @@ export default function WidgetPage({
     ensureHCaptcha().then((hcaptcha) => {
       if (cancelled || !passkeyCaptchaContainerRef.current || !hcaptcha || passkeyCaptchaWidgetId.current) return
 
-      setIsPasskeyCaptchaReady(false)
+      setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
       passkeyCaptchaWidgetId.current = hcaptcha.render(passkeyCaptchaContainerRef.current, {
         sitekey: HCAPTCHA_SITE_KEY,
         size: 'invisible',
@@ -3847,17 +3724,17 @@ export default function WidgetPage({
         },
         'expired-callback': () => {
           passkeyCaptchaTokenRef.current = ''
-          setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+          setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
           passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
           preparePasskeyCaptcha()
         },
         'error-callback': () => {
           passkeyCaptchaTokenRef.current = ''
-          setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+          setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
           passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
         },
       })
-      setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
+      setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
       preparePasskeyCaptcha()
     }).catch(() => {
       if (!cancelled) setIsPasskeyCaptchaReady(false)
@@ -3868,16 +3745,7 @@ export default function WidgetPage({
       setIsPasskeyCaptchaReady(false)
       resetPasskeyCaptcha()
 
-      const hcaptcha = getHCaptcha()
-
-      if (hcaptcha && passkeyCaptchaWidgetId.current) {
-        try {
-          hcaptcha.remove?.(passkeyCaptchaWidgetId.current)
-        } catch {
-          hcaptcha.reset(passkeyCaptchaWidgetId.current)
-        }
-      }
-
+      removeHCaptchaWidget(passkeyCaptchaWidgetId.current)
       passkeyCaptchaWidgetId.current = null
     }
   }, [activeView, authMode, authStep, isRecoveryMode, profile, text.captchaRequired])

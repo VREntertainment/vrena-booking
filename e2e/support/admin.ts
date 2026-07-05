@@ -10,18 +10,25 @@ export function futureDate(daysFromToday = 14) {
 }
 
 export async function stubHCaptcha(page: Page) {
-  await page.route('https://js.hcaptcha.com/1/api.js?render=explicit', async (route) => {
+  await page.route(/https:\/\/(js\.)?hcaptcha\.com\/1\/api\.js\?render=explicit/, async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: `
+        var hcaptchaToken = 'e2e-hcaptcha-token';
         window.hcaptcha = {
           render: function (_container, options) {
             setTimeout(function () {
               if (options && typeof options.callback === 'function') {
-                options.callback('e2e-hcaptcha-token');
+                options.callback(hcaptchaToken);
               }
             }, 0);
             return 'e2e-hcaptcha-widget';
+          },
+          execute: function () {
+            return Promise.resolve(hcaptchaToken);
+          },
+          getResponse: function () {
+            return hcaptchaToken;
           },
           reset: function () {},
           remove: function () {}
