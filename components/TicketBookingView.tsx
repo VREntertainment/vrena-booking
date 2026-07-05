@@ -168,6 +168,12 @@ export default function TicketBookingView({
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
   const currentTicketService = ticketServices.find((service) => service.id === ticketType)
+  const ticketSummaryMeta = currentTicketService
+    ? `20-120 min • ${currentTicketService.minPlayers}-${currentTicketService.maxPlayers} ${text.players}`
+    : ''
+  const ticketSummaryDetail = ticketType === 'individual'
+    ? ['1 ticket / person', ticketSummaryMeta].filter(Boolean).join(' • ')
+    : [ticketTypeDescription(ticketType, text), ticketSummaryMeta].filter(Boolean).join(' • ')
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
 
   useEffect(() => {
@@ -195,10 +201,7 @@ export default function TicketBookingView({
               <div className="ticket-fast-path-summary">
                 <div>
                   <strong>{ticketTypeLabel(ticketType, text)}</strong>
-                  <small>
-                    {ticketTypeDescription(ticketType, text)}
-                    {currentTicketService && ` · 20-120 min · ${currentTicketService.minPlayers}-${currentTicketService.maxPlayers} ${text.players}`}
-                  </small>
+                  <small>{ticketSummaryDetail}</small>
                 </div>
                 {isSpecialTicket && (
                   <button className="secondary small-button" type="button" onClick={() => onTicketTypeChange('individual')}>
@@ -287,7 +290,7 @@ export default function TicketBookingView({
                     <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers)}</small>
                   </div>
                 )}
-                <div>
+                <div className="ticket-reserved-line">
                   <span>{text.reservedPlayerSpots}</span>
                   <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
                   <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
