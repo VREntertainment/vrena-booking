@@ -4,7 +4,7 @@ import NextImage from 'next/image'
 import { Bold, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
-import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, countries, games, isEscapeSession, selectedTicketService, ticketArenaCount, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
+import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, countries, games, isEscapeSession, selectedTicketService, ticketArenaCount, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
@@ -2647,6 +2647,40 @@ export default function WidgetPage({
     setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
     setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
     return hydratedDetailSession
+  }
+
+  function mergeJoinedParticipantIntoSession(sessionId: string, participant: Participant | null) {
+    if (!participant) return
+
+    setSessions((currentSessions) => currentSessions.map((session) => {
+      if (session.id !== sessionId) return session
+
+      const participants = session.session_participants ?? []
+      const alreadyJoined = participants.some((item) => item.profile_id === participant.profile_id)
+
+      return {
+        ...session,
+        session_participants: alreadyJoined
+          ? participants.map((item) => item.profile_id === participant.profile_id ? { ...item, ...participant } : item)
+          : [...participants, participant],
+        session_waitlist: session.session_waitlist?.filter((entry) => entry.profile_id !== participant.profile_id),
+      }
+    }))
+  }
+
+  async function fetchCurrentUserSessionParticipant(sessionId: string) {
+    if (!userId) return null
+
+    const { data, error } = await (await getSupabase())
+      .from('session_participants')
+      .select(SESSION_CARD_PARTICIPANT_SELECT)
+      .eq('session_id', sessionId)
+      .eq('profile_id', userId)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (error || !data) return null
+    return data as Participant
   }
 
   async function loadSessionMessages(
@@ -6840,8 +6874,10 @@ function handleSessionDateChange(value: string) {
     setBusySessionId(session.id)
 
     const avatarPayload = avatarFields(activeProfile)
+    const client = await getSupabase()
+    let joinedParticipant: Participant | null = null
     const joinResult = joinsWithPrivateCode
-      ? await (await getSupabase()).rpc('join_private_session_with_code', {
+      ? await client.rpc('join_private_session_with_code', {
         p_session_id: session.id,
         p_invite_code: (joinCodes[session.id] || '').trim().toUpperCase(),
         p_display_name: displayName(activeProfile),
@@ -6852,7 +6888,7 @@ function handleSessionDateChange(value: string) {
         p_avatar_text_color: avatarPayload.avatar_text_color,
         p_profile_motto: avatarPayload.profile_motto,
       })
-      : await (await getSupabase()).from('session_participants').insert({
+      : await client.from('session_participants').insert({
         session_id: session.id,
         profile_id: userId,
         display_name: displayName(activeProfile),
@@ -6865,19 +6901,25 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    await (await getSupabase())
+    joinedParticipant = await fetchCurrentUserSessionParticipant(session.id)
+
+    mergeJoinedParticipantIntoSession(session.id, joinedParticipant)
+
+    await client
       .from('session_waitlist')
       .delete()
       .eq('session_id', session.id)
       .eq('profile_id', userId)
 
-    await (await getSupabase())
+    await client
       .from('session_invites')
       .update({ status: 'accepted' })
       .eq('session_id', session.id)
       .eq('recipient_id', userId)
 
     await loadSessions({ focusDate: session.date })
+    await loadSessionDetail(session.id, { force: true })
+    mergeJoinedParticipantIntoSession(session.id, joinedParticipant)
     await loadNetworkData()
     setBusySessionId('')
     setCreateStatus(text.joinedSession)
