@@ -201,6 +201,7 @@ export const en = {
   sessionTariffLoyaltyTitle: 'Loyalty points',
   sessionTariffLoyaltyText: 'Earn points after payment is confirmed, based on the final paid price rounded down. Use points on future tickets when redemption is active.',
   sessionTariffDisclaimer: 'Price is calculated from the selected player count for 1-4 players, then from reserved arena time for larger groups.',
+  contactUs: 'Contact us',
   zaloContact: 'Contact us on Zalo',
   softOpeningHighlights: 'Soft Opening Highlights',
   searchPlaceholder: 'Search session name, profile name, game, private code',

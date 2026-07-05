@@ -203,6 +203,7 @@ export const ja = {
   sessionTariffLoyaltyTitle: 'ポイント',
   sessionTariffLoyaltyText: 'ポイントは支払い確認後、実際に支払った最終金額を切り捨てて付与されます。交換が有効なときに次回以降のチケットで使えます。',
   sessionTariffDisclaimer: '料金は1〜4名までは選択した人数で計算し、それ以上のグループは予約したアリーナ時間で計算します。',
+  contactUs: 'お問い合わせ',
   zaloContact: 'Zaloで連絡',
   softOpeningHighlights: 'ソフトオープン注目',
   searchPlaceholder: 'セッション名、プロフィール名、ゲーム、非公開コードを検索',

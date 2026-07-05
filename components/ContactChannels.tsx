@@ -1,0 +1,44 @@
+export const VRENA_CONTACT_PHONE_DISPLAY = '0981152315'
+export const VRENA_CONTACT_PHONE_INTERNATIONAL = '84981152315'
+
+const CONTACT_CHANNELS = [
+  {
+    className: 'whatsapp',
+    href: `https://wa.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`,
+    label: 'WhatsApp',
+  },
+  {
+    className: 'zalo',
+    href: `https://zalo.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`,
+    label: 'Zalo',
+  },
+] as const
+
+type ContactChannelsProps = {
+  className?: string
+  label: string
+}
+
+export default function ContactChannels({ className, label }: ContactChannelsProps) {
+  const rootClassName = className ? `contact-channels ${className}` : 'contact-channels'
+
+  return (
+    <div className={rootClassName}>
+      <strong>{label}</strong>
+      <div className="contact-channel-buttons">
+        {CONTACT_CHANNELS.map((channel) => (
+          <a
+            aria-label={`${channel.label} ${VRENA_CONTACT_PHONE_DISPLAY}`}
+            className={`contact-channel ${channel.className}`}
+            href={channel.href}
+            key={channel.label}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {channel.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}

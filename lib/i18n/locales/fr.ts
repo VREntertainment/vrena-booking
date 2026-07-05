@@ -203,6 +203,7 @@ export const fr = {
   sessionTariffLoyaltyTitle: 'Points fidélité',
   sessionTariffLoyaltyText: 'Les points sont gagnés après confirmation du paiement, selon le prix final payé arrondi à l’entier inférieur. Ils sont utilisables sur de futurs tickets lorsque l’échange est actif.',
   sessionTariffDisclaimer: 'Le prix est calculé selon le nombre de joueurs choisi pour 1-4 joueurs, puis selon le temps d’arène réservé pour les groupes plus grands.',
+  contactUs: 'Contactez-nous',
   zaloContact: 'Contactez-nous sur Zalo',
   softOpeningHighlights: 'Temps forts soft opening',
   searchPlaceholder: 'Chercher partie, profil, jeu, code privé',

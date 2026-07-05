@@ -1532,6 +1532,57 @@ body {
   text-decoration: underline;
 }
 
+.app .contact-channels {
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  width: 100%;
+}
+
+.app .contact-channels > strong {
+  font-size: 13px;
+}
+
+.app .contact-channel-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  width: min(100%, 210px);
+}
+
+.app .contact-channel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+.app .contact-channel.whatsapp {
+  background: #128c7e;
+}
+
+.app .contact-channel.zalo {
+  background: #0068ff;
+}
+
+.app .contact-channel:hover {
+  filter: brightness(0.94);
+  text-decoration: none;
+}
+
+.app .tariff-contact-channels {
+  justify-items: start;
+  margin-top: 8px;
+}
+
 .app .staff-console {
   display: grid;
   gap: 10px;

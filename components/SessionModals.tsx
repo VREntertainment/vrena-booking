@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { CalendarPlus, X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import ContactChannels from './ContactChannels'
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
   return (
@@ -174,7 +175,7 @@ type TariffPaymentModalProps = {
   paymentText: string
   loyaltyTitle: string
   loyaltyText: string
-  zaloText: string
+  contactText: string
   disclaimer: string
   onClose: () => void
 }
@@ -189,7 +190,7 @@ export function TariffPaymentModal({
   paymentText,
   loyaltyTitle,
   loyaltyText,
-  zaloText,
+  contactText,
   disclaimer,
   onClose,
 }: TariffPaymentModalProps) {
@@ -217,11 +218,7 @@ export function TariffPaymentModal({
           <div className="tariff-payment-section">
             <p>{offerLimit}</p>
             <p>{paymentText}</p>
-            <p>
-              <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">
-                {zaloText}
-              </a>
-            </p>
+            <ContactChannels className="tariff-contact-channels" label={contactText} />
           </div>
           <div className="tariff-payment-section tariff-loyalty-section">
             <h4>{loyaltyTitle}</h4>
