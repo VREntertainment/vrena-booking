@@ -5,7 +5,7 @@ import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
 export const runtime = 'nodejs'
 
 const profileGenderValues = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
-const profileSelect = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+const profileSelect = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, total_projectiles_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })

@@ -155,6 +155,8 @@ export const ko = {
   escapeSpeedrunCriterion: 'Escape 스피드런',
   escapeBestTime: '최고 Escape 시간',
   escapeSessionTime: 'Escape 시간',
+  escapeChapterTimes: '챕터 시간',
+  escapeChapterLabel: '챕터',
   escapeDurationPlaceholder: 'mm:ss',
   invalidEscapeDuration: '12:34처럼 올바른 시간을 입력하세요.',
   escapeDurationEscapeOnly: '스피드런 시간은 Escape 게임에만 저장할 수 있습니다.',

@@ -9510,6 +9510,34 @@ body {
   font-size: 14px;
 }
 
+.app .escape-chapter-times {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid #dce5e8;
+  margin-top: 2px;
+  padding-top: 6px;
+}
+
+.app .escape-chapter-time-grid {
+  display: grid;
+  gap: 5px;
+}
+
+.app .escape-chapter-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .escape-chapter-time-row .compact-stat-value {
+  min-width: 54px;
+  font-size: 13px;
+}
+
 .app .compact-best-label {
   max-width: 100%;
   overflow: hidden;
