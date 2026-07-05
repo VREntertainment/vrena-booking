@@ -6663,14 +6663,59 @@ body {
 
 .app .ticket-flow-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 0.66fr) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.54fr);
+  gap: 18px;
   align-items: start;
 }
 
 .app .ticket-type-list {
   display: grid;
   gap: 7px;
+}
+
+.app .ticket-fast-path-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(112, 223, 255, 0.12), rgba(48, 89, 255, 0.08)), rgba(255, 255, 255, 0.82);
+}
+
+.app .ticket-fast-path-summary div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .ticket-fast-path-summary span,
+.app .ticket-event-options-copy {
+  color: #65727a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .ticket-fast-path-summary strong {
+  color: #071112;
+  font-size: 18px;
+  line-height: 1.14;
+}
+
+.app .ticket-fast-path-summary small,
+.app .ticket-event-options-copy {
+  color: #65727a;
+  line-height: 1.35;
+}
+
+.app .ticket-event-options {
+  align-self: start;
+}
+
+.app .ticket-event-options-copy {
+  margin: 0;
+  font-weight: 650;
 }
 
 .app .ticket-service-grid {
@@ -11757,7 +11802,9 @@ body {
     display: grid;
     gap: 8px;
     justify-items: stretch;
-    padding: 2px 0 14px;
+    margin-top: 2px;
+    padding: 12px 0 14px;
+    border-top: 1px solid var(--player-border);
     border-bottom: 1px solid var(--player-border);
   }
 
@@ -11796,6 +11843,14 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .app .ticket-fast-path-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-fast-path-summary .small-button {
+    width: 100%;
+  }
+
   .app .guest-ticket-contact {
     grid-template-areas:
       "copy"
@@ -11815,7 +11870,7 @@ body {
   }
 
   .app .ticket-service-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .app .ticket-form-grid {
@@ -13875,6 +13930,29 @@ body {
     border: 0;
   }
 
+  .app .ticket-fast-path-summary {
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(48, 89, 255, 0.16)), #182225;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .app .ticket-fast-path-summary strong {
+    color: #f6f7f9;
+  }
+
+  .app .ticket-fast-path-summary span,
+  .app .ticket-fast-path-summary small,
+  .app .guest-ticket-copy span,
+  .app .guest-ticket-contact p,
+  .app .guest-ticket-contact label small,
+  .app .ticket-event-options-copy {
+    color: #aeb9bd;
+  }
+
+  .app .guest-ticket-copy strong,
+  .app .guest-ticket-contact label span {
+    color: #f6f7f9;
+  }
+
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
@@ -15790,6 +15868,29 @@ body {
 .app .ticket-flow-grid {
   gap: 18px;
   padding-top: 4px;
+}
+
+.app .ticket-fast-path-summary {
+  padding: 12px 0 14px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .ticket-fast-path-summary .small-button {
+  min-height: 34px;
+  margin: 0;
+}
+
+.app .ticket-event-options {
+  padding-top: 2px;
+}
+
+.app .ticket-event-options-copy {
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--player-border);
 }
 
 .app .ticket-service-grid {
