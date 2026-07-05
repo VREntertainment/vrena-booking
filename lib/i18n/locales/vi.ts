@@ -203,6 +203,7 @@ export const vi = {
   sessionTariffLoyaltyTitle: 'Điểm thưởng',
   sessionTariffLoyaltyText: 'Điểm được cộng sau khi xác nhận thanh toán, dựa trên giá cuối cùng đã trả và làm tròn xuống. Có thể dùng điểm cho vé sau khi đổi điểm đang bật.',
   sessionTariffDisclaimer: 'Giá được tính theo số người đã chọn cho 1-4 người, sau đó theo thời gian giữ arena cho nhóm lớn hơn.',
+  contactUs: 'Liên hệ',
   zaloContact: 'Liên hệ Zalo',
   softOpeningHighlights: 'Điểm nhấn khai trương',
   searchPlaceholder: 'Tìm tên phiên, tên hồ sơ, game, mã riêng tư',

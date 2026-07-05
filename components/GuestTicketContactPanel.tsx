@@ -24,19 +24,17 @@ export default function GuestTicketContactPanel({
         <strong>{text.guestTicketTitle}</strong>
         <span>{text.guestTicketBody}</span>
       </div>
-      <label>
-        <span>{text.phone} <span className="required">*</span></span>
-        <PhoneNumberInput
-          buttonLabel={text.countryCode}
-          className="guest-ticket-phone-control"
-          disabled={disabled}
-          inputLabel={`${text.phone} *`}
-          onChange={(phone) => onChange({ ...contact, phone })}
-          placeholder="0981152315"
-          searchPlaceholder={text.searchCountry}
-          value={contact.phone}
-        />
-      </label>
+      <PhoneNumberInput
+        autoComplete="tel-national"
+        buttonLabel={text.countryCode}
+        className="guest-ticket-phone-control"
+        disabled={disabled}
+        inputLabel={`${text.phone} *`}
+        onChange={(phone) => onChange({ ...contact, phone })}
+        placeholder="0981152315"
+        searchPlaceholder={text.searchCountry}
+        value={contact.phone}
+      />
       <label>
         <span>{text.name} <small>{text.optional}</small></span>
         <input

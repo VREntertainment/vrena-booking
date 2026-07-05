@@ -44,6 +44,7 @@ import {
 import { formatWholePercent } from '../lib/playerStatsShare'
 import AppLoadingState from './AppLoadingState'
 import CountryCodePicker from './CountryCodePicker'
+import ContactChannels from './ContactChannels'
 import { shouldSkipImageOptimization } from './AvatarNode'
 import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
@@ -989,7 +990,7 @@ export default function BookingProfileView({ context }: { context: any }) {
             <div className="profile-mobile-contact">
               <strong>VRena Vietnam</strong>
               <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
-              <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
+              <ContactChannels label={text.contactUs} />
               <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
             </div>
 

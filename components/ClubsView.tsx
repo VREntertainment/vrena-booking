@@ -15,14 +15,12 @@ export type ClubsViewProps = {
   clubVisibility: ClubVisibility
   isClubSearchOpen: boolean
   isCreatingClub: boolean
-  isLoggedIn: boolean
   onClubDescriptionChange: (value: string) => void
   onClubNameChange: (value: string) => void
   onClubSearchChange: (value: string) => void
   onClubSearchOpenChange: (open: boolean | ((open: boolean) => boolean)) => void
   onClubVisibilityChange: (visibility: ClubVisibility) => void
   onCreateClub: () => void
-  onPromptLogin: () => void
   text: TranslationMap
 }
 
@@ -37,14 +35,12 @@ export default function ClubsView({
   clubVisibility,
   isClubSearchOpen,
   isCreatingClub,
-  isLoggedIn,
   onClubDescriptionChange,
   onClubNameChange,
   onClubSearchChange,
   onClubSearchOpenChange,
   onClubVisibilityChange,
   onCreateClub,
-  onPromptLogin,
   text,
 }: ClubsViewProps) {
   const hasActiveSearch = Boolean(isClubSearchOpen || clubSearch)
@@ -88,40 +84,29 @@ export default function ClubsView({
         </div>
       </div>
 
-      {isLoggedIn ? (
-        <>
-          <div className="segmented form-segmented">
-            <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => onClubVisibilityChange('public')} type="button">
-              {text.public}
-            </button>
-            <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => onClubVisibilityChange('private')} type="button">
-              {text.private}
-            </button>
-          </div>
+      <div className="segmented form-segmented">
+        <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => onClubVisibilityChange('public')} type="button">
+          {text.public}
+        </button>
+        <button className={clubVisibility === 'private' ? 'active' : ''} onClick={() => onClubVisibilityChange('private')} type="button">
+          {text.private}
+        </button>
+      </div>
 
-          <div className="form-grid club-form">
-            <div>
-              <label>{text.clubName} <span className="required">*</span></label>
-              <input value={clubName} onChange={(event) => onClubNameChange(event.target.value)} placeholder="VRena Friday Club" />
-            </div>
-            <div>
-              <label>{text.clubDescription}</label>
-              <input value={clubDescription} onChange={(event) => onClubDescriptionChange(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
-            </div>
-          </div>
-
-          <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={onCreateClub} type="button">
-            {isCreatingClub ? text.creatingClub : text.createClub}
-          </button>
-        </>
-      ) : (
-        <div className="notice club-login-notice">
-          <span>{text.clubLoginHint}</span>
-          <button className="secondary small-button" type="button" onClick={onPromptLogin}>
-            {text.logIn}
-          </button>
+      <div className="form-grid club-form">
+        <div>
+          <label>{text.clubName} <span className="required">*</span></label>
+          <input value={clubName} onChange={(event) => onClubNameChange(event.target.value)} placeholder="VRena Friday Club" />
         </div>
-      )}
+        <div>
+          <label>{text.clubDescription}</label>
+          <input value={clubDescription} onChange={(event) => onClubDescriptionChange(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
+        </div>
+      </div>
+
+      <button className={isCreatingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isCreatingClub} onClick={onCreateClub} type="button">
+        {isCreatingClub ? text.creatingClub : text.createClub}
+      </button>
       {clubStatus && <p className="notice">{clubStatus}</p>}
 
       <div className="club-list">
