@@ -3528,6 +3528,106 @@ body {
   max-width: 240px;
 }
 
+.app .staff-operation-scope-tabs {
+  margin: 0;
+}
+
+.app .staff-operation-edit-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  padding-top: 10px;
+}
+
+.app .staff-operation-edit-section {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-operation-edit-section > strong {
+  font-size: 13px;
+}
+
+.app .staff-operation-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-operation-field-grid.compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.app .staff-operation-field-grid label,
+.app .staff-operation-chapters label {
+  display: grid;
+  gap: 4px;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-operation-field-grid input,
+.app .staff-operation-field-grid select,
+.app .staff-operation-add-player select,
+.app .staff-operation-chapters input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 7px;
+  background: #fff;
+  color: #071112;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.app .staff-operation-field-grid input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+
+.app .staff-operation-add-player {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.app .staff-operation-participants {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-operation-participant {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.app .staff-operation-participant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .staff-operation-chapters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-operation-chapters > span {
+  grid-column: 1 / -1;
+  color: #637075;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .app .staff-operations-orders {
   border-top: 1px solid rgba(7, 17, 18, 0.08);
   padding-top: 8px;
@@ -11050,6 +11150,16 @@ body {
     grid-column: 1 / -1;
     justify-content: flex-start;
     max-width: none;
+  }
+
+  .app .staff-operation-field-grid,
+  .app .staff-operation-field-grid.compact,
+  .app .staff-operation-chapters {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-operation-add-player {
+    grid-template-columns: 1fr;
   }
 
   .app .staff-report-graphics {

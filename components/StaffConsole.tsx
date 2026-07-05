@@ -41,6 +41,7 @@ type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'games' | 'pr
 type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
+type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
@@ -350,6 +351,16 @@ type StaffSessionParticipant = {
   payment_status?: string | null
   payment_amount?: number | null
   payment_splits?: unknown
+  score?: number | null
+  accuracy_percent?: number | null
+  projectiles_fired?: number | null
+  escape_duration_seconds?: number | null
+  placement?: number | null
+  chapter_times?: Array<{
+    chapter_number: number
+    duration_seconds: number
+    game_slug: string
+  }> | null
 }
 
 type StaffOperationSession = {
@@ -371,6 +382,7 @@ type StaffOperationSession = {
   ticket_total_price?: number | null
   ticket_status?: string | null
   ticket_reference?: string | null
+  notes?: string | null
   session_participants?: StaffSessionParticipant[]
 }
 
@@ -559,14 +571,17 @@ const staffConsoleText = {
       nextWeek: 'Next week',
       noShow: 'No-show',
       paid: 'Paid',
+      past: 'Past',
       pdf: 'PDF',
       previousWeek: 'Previous week',
       publish: 'Publish',
       publishWeek: 'Publish week',
       reject: 'Reject',
       remove: 'Remove',
+      removePlayer: 'Remove player',
       restore: 'Restore',
       save: 'Save',
+      saveParticipant: 'Save player',
       cancel: 'Cancel',
       cancelShift: 'Cancel shift',
       confirmDeleteAccount: 'Delete account',
@@ -869,6 +884,16 @@ const staffConsoleText = {
       personalEmail: 'Personal e-mail',
       personalPhone: 'Personal phone',
       players: 'Players',
+      addPlayer: 'Add player',
+      sessionFields: 'Session fields',
+      participantResults: 'Player results',
+      chapterTimes: 'Chapter times',
+      chapter: 'Chapter',
+      score: 'Score',
+      place: 'Place',
+      accuracy: 'Accuracy',
+      projectiles: 'Shots',
+      escapeTime: 'Escape time',
       loyaltyPoints: 'Loyalty points',
       pointsEarned: 'Points earned',
       pointsExpireAfterDays: 'Points expire after days',
@@ -1022,7 +1047,11 @@ const staffConsoleText = {
       uniqueDiscountHelp: 'One-off discount for this booking only. It does not create a reusable voucher.',
       uploadGamePhoto: 'Uploading game photo...',
       noOperationSessions: 'No sessions or ticket bookings for this day.',
-      operationsIntro: 'Today at the counter: sessions, ticket bookings, capacity, payments, and check-ins in one place.',
+      operationsIntro: 'Manage sessions, ticket bookings, capacity, payments, check-ins, players, and results in one place.',
+      operationSessionSaved: 'Session updated.',
+      operationParticipantSaved: 'Player updated.',
+      operationParticipantAdded: 'Player added.',
+      operationParticipantRemoved: 'Player removed.',
       voucherCodeRequired: 'Voucher code is required.',
       voucherSaved: 'Voucher saved.',
     },
@@ -1058,7 +1087,7 @@ const staffConsoleText = {
       role_desc: 'Role high-low',
     } satisfies Record<StaffRoleSort, string>,
     reportRangePresets: {
-      today: 'Today',
+      today: 'Sessions',
       yesterday: 'Yesterday',
       this_week: 'This week',
       last_week: 'Last week',
@@ -1154,14 +1183,17 @@ const staffConsoleText = {
       nextWeek: 'Tuần sau',
       noShow: 'Không đến',
       paid: 'Đã thanh toán',
+      past: 'Đã qua',
       pdf: 'PDF',
       previousWeek: 'Tuần trước',
       publish: 'Công bố',
       publishWeek: 'Công bố tuần',
       reject: 'Từ chối',
       remove: 'Xóa',
+      removePlayer: 'Xóa người chơi',
       restore: 'Khôi phục',
       save: 'Lưu',
+      saveParticipant: 'Lưu người chơi',
       cancel: 'Hủy',
       cancelShift: 'Hủy ca',
       confirmDeleteAccount: 'Xóa tài khoản',
@@ -1464,6 +1496,16 @@ const staffConsoleText = {
       personalEmail: 'Email cá nhân',
       personalPhone: 'SĐT cá nhân',
       players: 'Người chơi',
+      addPlayer: 'Thêm người chơi',
+      sessionFields: 'Thông tin phiên',
+      participantResults: 'Kết quả người chơi',
+      chapterTimes: 'Thời gian chapter',
+      chapter: 'Chapter',
+      score: 'Điểm',
+      place: 'Hạng',
+      accuracy: 'Độ chính xác',
+      projectiles: 'Số phát bắn',
+      escapeTime: 'Thời gian Escape',
       loyaltyPoints: 'Điểm thưởng',
       pointsEarned: 'Điểm nhận được',
       pointsExpireAfterDays: 'Điểm hết hạn sau số ngày',
@@ -1617,7 +1659,11 @@ const staffConsoleText = {
       uniqueDiscountHelp: 'Ưu đãi dùng một lần cho đặt chỗ này. Không tạo voucher dùng lại.',
       uploadGamePhoto: 'Đang tải ảnh trò chơi...',
       noOperationSessions: 'Không có phiên hoặc đặt vé trong ngày này.',
-      operationsIntro: 'Tại quầy hôm nay: phiên chơi, đặt vé, sức chứa, thanh toán và check-in trong một nơi.',
+      operationsIntro: 'Quản lý phiên, đặt vé, sức chứa, thanh toán, check-in, người chơi và kết quả trong một nơi.',
+      operationSessionSaved: 'Đã cập nhật phiên.',
+      operationParticipantSaved: 'Đã cập nhật người chơi.',
+      operationParticipantAdded: 'Đã thêm người chơi.',
+      operationParticipantRemoved: 'Đã xóa người chơi.',
       voucherCodeRequired: 'Cần nhập mã voucher.',
       voucherSaved: 'Đã lưu voucher.',
     },
@@ -1653,7 +1699,7 @@ const staffConsoleText = {
       role_desc: 'Vai trò cao-thấp',
     } satisfies Record<StaffRoleSort, string>,
     reportRangePresets: {
-      today: 'Hôm nay',
+      today: 'Phiên',
       yesterday: 'Hôm qua',
       this_week: 'Tuần này',
       last_week: 'Tuần trước',
@@ -2728,6 +2774,32 @@ function normalizeTime(value: string | null | undefined) {
   return (value || '').slice(0, 5)
 }
 
+function parseStaffDuration(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === '') return null
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? Math.floor(value) : null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^\d+$/.test(trimmed)) return Math.floor(Number(trimmed))
+  const parts = trimmed.split(':').map((part) => Number(part))
+  if (parts.some((part) => !Number.isFinite(part) || part < 0)) return null
+  if (parts.length === 2) return Math.floor(parts[0] * 60 + parts[1])
+  if (parts.length === 3) return Math.floor(parts[0] * 3600 + parts[1] * 60 + parts[2])
+  return null
+}
+
+function formatStaffDuration(value: number | null | undefined) {
+  const seconds = Number(value)
+  if (!Number.isFinite(seconds) || seconds <= 0) return ''
+  const wholeSeconds = Math.floor(seconds)
+  const hours = Math.floor(wholeSeconds / 3600)
+  const minutes = Math.floor((wholeSeconds % 3600) / 60)
+  const remainingSeconds = wholeSeconds % 60
+  const minuteText = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes)
+  return hours > 0
+    ? `${hours}:${minuteText}:${String(remainingSeconds).padStart(2, '0')}`
+    : `${minuteText}:${String(remainingSeconds).padStart(2, '0')}`
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -2999,6 +3071,15 @@ function sessionKindLabel(session: StaffOperationSession, text: StaffConsoleCopy
 function sessionGameName(session: StaffOperationSession, games: StaffGame[], text: StaffConsoleCopy = staffConsoleText.en) {
   const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
   return games.find((game) => game.slug === gameId || game.id === gameId)?.name || text.gameFallback
+}
+
+function sessionStaffGame(session: StaffOperationSession, games: StaffGame[]) {
+  const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
+  return games.find((game) => game.slug === gameId || game.id === gameId) || null
+}
+
+function operationParticipantName(participant: StaffSessionParticipant, text: StaffConsoleCopy = staffConsoleText.en) {
+  return participant.display_name || text.customerFallback
 }
 
 function sessionBookedPlayers(session: StaffOperationSession, order?: StaffOrder) {
@@ -3412,6 +3493,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
   const [operationSessions, setOperationSessions] = useState<StaffOperationSession[]>([])
+  const [operationSessionScope, setOperationSessionScope] = useState<StaffOperationScope>('today')
+  const [expandedOperationSessions, setExpandedOperationSessions] = useState<Record<string, boolean>>({})
+  const [operationAddProfileBySession, setOperationAddProfileBySession] = useState<Record<string, string>>({})
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
@@ -3828,7 +3912,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       : currentTab === 'clientProfile'
         ? false
         : currentTab === 'today'
-          ? loadingData.games || loadingData.today || loadingData.todaySessions
+          ? loadingData.games || loadingData.today || loadingData.todaySessions || loadingData.profiles
           : currentTab === 'attendance'
             ? loadingData.profiles || loadingData.attendance
             : currentTab === 'games'
@@ -3850,7 +3934,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     if (currentTab === 'new') {
       void Promise.all([loadGames(), loadPrices(), loadDiscounts(), loadProfiles()])
     } else if (currentTab === 'today') {
-      void Promise.all([loadGames(), loadTodayOrders(true), loadTodaySessions(true)])
+      void Promise.all([loadGames(), loadProfiles(), loadTodayOrders(true), loadTodaySessions(true)])
     } else if (currentTab === 'attendance') {
       void Promise.all([loadProfiles(), loadAttendanceData(true)])
     } else if (currentTab === 'games') {
@@ -3870,7 +3954,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
     // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, commerceTab, operationsDate, attendanceWeekEnd, attendanceWeekStart])
+  }, [currentTab, commerceTab, operationsDate, operationSessionScope, attendanceWeekEnd, attendanceWeekStart])
 
   useEffect(() => {
     if (currentTab !== 'report') return
@@ -4079,21 +4163,158 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }
 
   async function loadTodayOrders(force = false) {
+    if (operationSessionScope !== 'today') {
+      setOrders([])
+      setOrderPayments([])
+      return
+    }
     await loadOrdersForRange('today', operationsDate, operationsDate, force)
   }
 
   async function loadTodaySessions(force = false) {
     await runStaffLoader('todaySessions', async () => {
-      const { data, error } = await supabase
+      const today = todayString()
+      let query = supabase
         .from('sessions')
-        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, session_participants(id, profile_id, display_name, checked_in, payment_status, payment_amount, payment_splits)')
-        .eq('date', operationsDate)
+        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
         .is('session_participants.deleted_at', null)
-        .order('start_time', { ascending: true })
 
+      query = operationSessionScope === 'past'
+        ? query.lt('date', today).order('date', { ascending: false }).order('start_time', { ascending: false }).limit(80)
+        : query.eq('date', operationsDate).order('start_time', { ascending: true })
+
+      const { data, error } = await query
       if (error) throw new Error(error.message)
       setOperationSessions((data ?? []) as StaffOperationSession[])
     }, force)
+  }
+
+  async function updateOperationSession(session: StaffOperationSession, patch: Partial<StaffOperationSession>) {
+    if (!canCreateOrders) {
+      setStatus(text.messages.readOnlyBooking)
+      return
+    }
+
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_update_session_operation', {
+      p_session_id: session.id,
+      p_name: patch.name ?? null,
+      p_date: patch.date ?? null,
+      p_start_time: patch.start_time ?? null,
+      p_duration_minutes: patch.duration_minutes ?? null,
+      p_max_players: patch.max_players ?? null,
+      p_arena_count: patch.arena_count ?? null,
+      p_visibility: patch.visibility ?? null,
+      p_status: patch.status ?? null,
+      p_confirmed_game_id: patch.confirmed_game_id ?? null,
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setStatus(text.messages.operationSessionSaved)
+    await loadTodaySessions(true)
+  }
+
+  async function updateOperationParticipant(session: StaffOperationSession, participant: StaffSessionParticipant, patch: Partial<StaffSessionParticipant>) {
+    if (!canCreateOrders) {
+      setStatus(text.messages.readOnlyBooking)
+      return
+    }
+
+    const patchValue = <K extends keyof StaffSessionParticipant>(key: K) => (
+      Object.prototype.hasOwnProperty.call(patch, key) ? patch[key] ?? null : participant[key] ?? null
+    )
+
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_upsert_session_participant_operation', {
+      p_session_id: session.id,
+      p_participant_id: participant.id,
+      p_profile_id: participant.profile_id,
+      p_display_name: participant.display_name ?? null,
+      p_checked_in: patch.checked_in ?? participant.checked_in ?? false,
+      p_payment_status: patchValue('payment_status'),
+      p_payment_amount: patchValue('payment_amount'),
+      p_score: patchValue('score'),
+      p_accuracy_percent: patchValue('accuracy_percent'),
+      p_projectiles_fired: patchValue('projectiles_fired'),
+      p_escape_duration_seconds: patchValue('escape_duration_seconds'),
+      p_placement: patchValue('placement'),
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setStatus(text.messages.operationParticipantSaved)
+    await loadTodaySessions(true)
+  }
+
+  async function addOperationParticipant(session: StaffOperationSession) {
+    const profileId = operationAddProfileBySession[session.id] || ''
+    if (!profileId) return
+
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_upsert_session_participant_operation', {
+      p_session_id: session.id,
+      p_profile_id: profileId,
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setOperationAddProfileBySession((current) => ({ ...current, [session.id]: '' }))
+    setStatus(text.messages.operationParticipantAdded)
+    await loadTodaySessions(true)
+  }
+
+  async function removeOperationParticipant(session: StaffOperationSession, participant: StaffSessionParticipant) {
+    if (!window.confirm(text.actions.removePlayer)) return
+
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_remove_session_participant_operation', {
+      p_session_id: session.id,
+      p_participant_id: participant.id,
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setStatus(text.messages.operationParticipantRemoved)
+    await loadTodaySessions(true)
+  }
+
+  async function updateOperationChapterTime(session: StaffOperationSession, participant: StaffSessionParticipant, gameSlug: string, chapterNumber: number, value: string) {
+    const durationSeconds = parseStaffDuration(value)
+    if (!durationSeconds) return
+
+    setSaving(true)
+    const { error } = await supabase.rpc('set_session_participant_chapter_time', {
+      p_participant_id: participant.id,
+      p_game_slug: gameSlug,
+      p_chapter_number: chapterNumber,
+      p_duration_seconds: durationSeconds,
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setStatus(text.messages.operationParticipantSaved)
+    await loadTodaySessions(true)
   }
 
   async function loadAttendanceData(force = false) {
@@ -5887,6 +6108,21 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             </div>
           </div>
 
+          <div className="staff-commerce-switcher staff-operation-scope-tabs" role="tablist" aria-label={text.labels.sessions}>
+            {(['today', 'past'] as StaffOperationScope[]).map((scope) => (
+              <button
+                aria-selected={operationSessionScope === scope}
+                className={operationSessionScope === scope ? 'active' : ''}
+                key={scope}
+                role="tab"
+                type="button"
+                onClick={() => setOperationSessionScope(scope)}
+              >
+                {scope === 'today' ? text.actions.today : text.actions.past}
+              </button>
+            ))}
+          </div>
+
           <div className="staff-summary-grid staff-operations-summary">
             <div><span>{text.labels.sessions}</span><strong>{operationSummary.sessions}</strong></div>
             <div><span>{text.labels.ticketBookings}</span><strong>{operationSummary.ticketBookings}</strong></div>
@@ -5900,6 +6136,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             {operationSessions.map((session) => {
               const order = operationOrderBySessionId.get(session.id)
               const participants = session.session_participants || []
+              const isExpanded = Boolean(expandedOperationSessions[session.id])
+              const staffGame = sessionStaffGame(session, games)
+              const isEscapeGame = staffGame?.game_type === 'escape'
+              const chapterCount = Math.max(1, Math.min(50, Number(staffGame?.escape_chapter_count ?? 1) || 1))
+              const addableProfiles = profiles.filter((item) => !isDemoProfile(item) && !participants.some((participant) => participant.profile_id === item.id))
               const paidAmount = order ? orderPaidAmount(order, orderPaymentsByOrderId) : 0
               const totalAmount = order?.total ?? Number(session.ticket_total_price || 0)
               const paymentLabel = order
@@ -5933,17 +6174,103 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </div>
                     )}
                   </div>
-                  {order && canCreateOrders && (
-                    <div className="staff-row-actions staff-operation-actions">
-                      <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
-                        <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
-                      </button>
-                      <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
-                        <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
-                      </button>
-                      <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
-                        <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
-                      </button>
+                  <div className="staff-row-actions staff-operation-actions">
+                    <button type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}>
+                      {isExpanded ? text.actions.cancel : text.actions.edit}
+                    </button>
+                    {order && canCreateOrders && (
+                      <>
+                        <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
+                          <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
+                        </button>
+                        <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
+                          <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
+                        </button>
+                        <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
+                          <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {isExpanded && (
+                    <div className="staff-operation-edit-panel">
+                      <div className="staff-operation-edit-section">
+                        <strong>{text.labels.sessionFields}</strong>
+                        <div className="staff-operation-field-grid">
+                          <label>{text.labels.name}<input defaultValue={session.name} disabled={!canCreateOrders || saving} onBlur={(event) => updateOperationSession(session, { name: event.target.value })} /></label>
+                          <label>{text.labels.date}<StaffPickerField ariaLabel={text.labels.date} placeholder={text.chooseDate} type="date" value={session.date} onChange={(value) => updateOperationSession(session, { date: value })} /></label>
+                          <label>{text.labels.time}<StaffPickerField ariaLabel={text.labels.time} placeholder={text.chooseTime} type="time" value={normalizeTime(session.start_time)} onChange={(value) => updateOperationSession(session, { start_time: value })} /></label>
+                          <label>{text.labels.duration}<input defaultValue={session.duration_minutes} disabled={!canCreateOrders || saving} min={20} type="number" onBlur={(event) => updateOperationSession(session, { duration_minutes: Number(event.target.value) || session.duration_minutes })} /></label>
+                          <label>{text.labels.maxPlayers}<input defaultValue={session.max_players} disabled={!canCreateOrders || saving} min={1} type="number" onBlur={(event) => updateOperationSession(session, { max_players: Number(event.target.value) || session.max_players })} /></label>
+                          <label>{text.labels.arena}<input defaultValue={session.arena_count ?? 1} disabled={!canCreateOrders || saving} min={1} type="number" onBlur={(event) => updateOperationSession(session, { arena_count: Number(event.target.value) || session.arena_count || 1 })} /></label>
+                          <label>{text.labels.status}<select defaultValue={session.status} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { status: event.target.value as StaffOperationSession['status'] })}><option value="open">open</option><option value="completed">completed</option><option value="cancelled">cancelled</option></select></label>
+                          <label>{text.labels.type}<select defaultValue={session.visibility} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { visibility: event.target.value as StaffOperationSession['visibility'] })}><option value="public">{text.labels.communitySession}</option><option value="private">{text.labels.privateSession}</option></select></label>
+                          <label>{text.labels.game}<select defaultValue={session.confirmed_game_id || ''} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { confirmed_game_id: event.target.value })}><option value="">{text.noneYet}</option>{games.map((game) => <option key={game.id} value={game.slug}>{game.name}</option>)}</select></label>
+                        </div>
+                      </div>
+
+                      <div className="staff-operation-edit-section">
+                        <strong>{text.labels.addPlayer}</strong>
+                        <div className="staff-operation-add-player">
+                          <select
+                            value={operationAddProfileBySession[session.id] || ''}
+                            disabled={!canCreateOrders || saving}
+                            onChange={(event) => setOperationAddProfileBySession((current) => ({ ...current, [session.id]: event.target.value }))}
+                          >
+                            <option value="">{text.labels.customerProfile}</option>
+                            {addableProfiles.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          </select>
+                          <button disabled={!canCreateOrders || saving || !operationAddProfileBySession[session.id]} type="button" onClick={() => addOperationParticipant(session)}>
+                            <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.labels.addPlayer}</ButtonIconText>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="staff-operation-edit-section">
+                        <strong>{text.labels.participantResults}</strong>
+                        <div className="staff-operation-participants">
+                          {participants.map((participant) => {
+                            const chapterTimes = new Map((participant.chapter_times || []).map((item) => [Number(item.chapter_number), Number(item.duration_seconds)]))
+                            return (
+                              <div className="staff-operation-participant" key={participant.id}>
+                                <div className="staff-operation-participant-head">
+                                  <strong>{operationParticipantName(participant, text)}</strong>
+                                  <button disabled={!canCreateOrders || saving} type="button" onClick={() => removeOperationParticipant(session, participant)}>
+                                    <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.removePlayer}</ButtonIconText>
+                                  </button>
+                                </div>
+                                <div className="staff-operation-field-grid compact">
+                                  <label>{text.labels.checkIns}<input defaultChecked={Boolean(participant.checked_in)} disabled={!canCreateOrders || saving} type="checkbox" onChange={(event) => updateOperationParticipant(session, participant, { checked_in: event.target.checked })} /></label>
+                                  <label>{text.labels.paymentStatus}<select defaultValue={participant.payment_status || ''} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationParticipant(session, participant, { payment_status: event.target.value })}><option value="">{text.unpaid}</option><option value="cash">{text.paymentMethods.cash}</option><option value="bank_transfer">{text.paymentMethods.bank_transfer}</option><option value="paid">{text.actions.paid}</option><option value="free">free</option></select></label>
+                                  <label>{text.labels.payment}<input defaultValue={participant.payment_amount ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { payment_amount: Number(event.target.value) || null })} /></label>
+                                  <label>{text.labels.score}<input defaultValue={participant.score ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { score: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  <label>{text.labels.place}<input defaultValue={participant.placement ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { placement: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  <label>{text.labels.accuracy}<input defaultValue={participant.accuracy_percent ?? ''} disabled={!canCreateOrders || saving} inputMode="decimal" onBlur={(event) => updateOperationParticipant(session, participant, { accuracy_percent: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  <label>{text.labels.projectiles}<input defaultValue={participant.projectiles_fired ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { projectiles_fired: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  {isEscapeGame && <label>{text.labels.escapeTime}<input defaultValue={formatStaffDuration(participant.escape_duration_seconds)} disabled={!canCreateOrders || saving} inputMode="text" placeholder="12:34" onBlur={(event) => updateOperationParticipant(session, participant, { escape_duration_seconds: parseStaffDuration(event.target.value) })} /></label>}
+                                </div>
+                                {isEscapeGame && (
+                                  <div className="staff-operation-chapters">
+                                    <span>{text.labels.chapterTimes}</span>
+                                    {Array.from({ length: chapterCount }, (_, index) => index + 1).map((chapterNumber) => (
+                                      <label key={chapterNumber}>
+                                        {text.labels.chapter} {chapterNumber}
+                                        <input
+                                          defaultValue={formatStaffDuration(chapterTimes.get(chapterNumber))}
+                                          disabled={!canCreateOrders || saving}
+                                          inputMode="text"
+                                          placeholder="12:34"
+                                          onBlur={(event) => updateOperationChapterTime(session, participant, staffGame?.slug || '', chapterNumber, event.target.value)}
+                                        />
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </article>
