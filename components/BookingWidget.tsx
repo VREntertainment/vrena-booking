@@ -3040,14 +3040,22 @@ export default function WidgetPage({
   async function loadClubs() {
     clubsLoadingRef.current = true
     const client = await getSupabase()
+    const clubsPageResult = await client.rpc('clubs_list_page')
+    let data = Array.isArray(clubsPageResult.data)
+      ? (clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow)
+      : null
+    let error = clubsPageResult.error
     const publicResult = await client
       .from('clubs')
       .select(CLUB_PUBLIC_SELECT)
       .order('created_at', { ascending: false })
 
     if (!userId) {
-      if (publicResult.error) {
-        setClubStatus(publicResult.error.message)
+      const publicClubs = publicResult.error ? [] : (publicResult.data ?? []) as Club[]
+      const loadedClubs = mergeClubRecords(data ?? [], publicClubs.map((club) => ({ ...club, club_members: [] })))
+
+      if (error && publicResult.error && loadedClubs.length === 0) {
+        setClubStatus(error.message || publicResult.error.message)
         clubsLoadingRef.current = false
         return
       }
@@ -3055,15 +3063,9 @@ export default function WidgetPage({
       clubsLoadedRef.current = true
       clubsLoadedForUserIdRef.current = ''
       clubsLoadingRef.current = false
-      setClubs(((publicResult.data ?? []) as Club[]).map((club) => ({ ...club, club_members: [] })))
+      setClubs(loadedClubs)
       return
     }
-
-    const clubsPageResult = await client.rpc('clubs_list_page')
-    let data = Array.isArray(clubsPageResult.data)
-      ? (clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow)
-      : null
-    let error = clubsPageResult.error
 
     if (error || !data) {
       const result = await client
