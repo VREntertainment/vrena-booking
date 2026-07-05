@@ -1608,6 +1608,10 @@ body {
   margin-top: 8px;
 }
 
+.app .ticket-mobile-contact {
+  display: none;
+}
+
 .app .staff-console {
   display: grid;
   gap: 10px;
@@ -11733,6 +11737,22 @@ body {
 
   .app .shop-contact {
     display: none;
+  }
+
+  .app .ticket-mobile-contact {
+    display: grid;
+    gap: 8px;
+    justify-items: stretch;
+    padding: 2px 0 14px;
+    border-bottom: 1px solid var(--player-border);
+  }
+
+  .app .ticket-mobile-contact > strong {
+    text-align: left;
+  }
+
+  .app .ticket-mobile-contact .contact-channel-buttons {
+    width: 100%;
   }
 
   .app .profile-mobile-contact {
