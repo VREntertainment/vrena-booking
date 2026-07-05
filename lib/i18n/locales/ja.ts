@@ -155,6 +155,8 @@ export const ja = {
   escapeSpeedrunCriterion: 'Escape スピードラン',
   escapeBestTime: 'Escape 最速タイム',
   escapeSessionTime: 'Escape タイム',
+  escapeChapterTimes: 'チャプタータイム',
+  escapeChapterLabel: 'チャプター',
   escapeDurationPlaceholder: 'mm:ss',
   invalidEscapeDuration: '12:34 のような正しいタイムを入力してください。',
   escapeDurationEscapeOnly: 'スピードランタイムはEscapeゲームだけ保存できます。',

@@ -113,6 +113,7 @@ export type StaffProfile = {
   loyalty_points_total?: number | null
   average_accuracy_override?: number | null
   best_escape_duration_seconds_override?: number | null
+  total_projectiles_override?: number | null
   is_seed_demo?: boolean | null
   seed_batch?: string | null
 }
@@ -125,6 +126,7 @@ type StaffGame = {
   duration_minutes: number
   max_players_per_arena: number
   number_of_rounds: number
+  escape_chapter_count?: number | null
   description: string | null
   difficulty?: string | null
   audience?: StaffAudience[] | string | null
@@ -797,6 +799,7 @@ const staffConsoleText = {
       discountVoucher: 'Discount / voucher',
       discounts: 'Discounts',
       duration: 'Duration',
+      escapeChapters: 'Escape chapters',
       email: 'E-mail',
       employeeCode: 'Employee code',
       employmentType: 'Employment type',
@@ -1391,6 +1394,7 @@ const staffConsoleText = {
       discountVoucher: 'Ưu đãi / voucher',
       discounts: 'Ưu đãi',
       duration: 'Thời lượng',
+      escapeChapters: 'Số chapter Escape',
       email: 'E-mail',
       employeeCode: 'Mã nhân viên',
       employmentType: 'Loại hợp đồng',
@@ -2238,6 +2242,7 @@ const defaultGameForm = () => ({
   duration_minutes: 20,
   max_players_per_arena: 4,
   number_of_rounds: 1,
+  escape_chapter_count: 1,
   description: '',
   audience: [] as StaffAudience[],
   guide_language: 'en' as LanguageCode,
@@ -2416,7 +2421,7 @@ const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', '
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
@@ -4398,6 +4403,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       duration_minutes: Number(gameForm.duration_minutes),
       max_players_per_arena: Number(gameForm.max_players_per_arena),
       number_of_rounds: Number(gameForm.number_of_rounds),
+      escape_chapter_count: gameForm.game_type === 'escape' ? Math.max(1, Math.min(50, Number(gameForm.escape_chapter_count) || 1)) : 1,
       description: gameForm.description.trim() || null,
       difficulty: audience.join(', ') || null,
       audience,
@@ -5246,6 +5252,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       duration_minutes: game.duration_minutes,
       max_players_per_arena: game.max_players_per_arena,
       number_of_rounds: game.number_of_rounds,
+      escape_chapter_count: Math.max(1, Math.min(50, Number(game.escape_chapter_count ?? 1) || 1)),
       description: game.description || '',
       audience: normalizeStaffAudience(game.audience, game.difficulty),
       guide_language: normalizeGuideLanguage(game.guide_language),
@@ -6600,6 +6607,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               <label>{text.labels.duration}<input type="number" value={gameForm.duration_minutes} onChange={(event) => setGameForm({ ...gameForm, duration_minutes: Number(event.target.value) })} /></label>
               <label>{text.labels.maxPlayersArena}<input type="number" value={gameForm.max_players_per_arena} onChange={(event) => setGameForm({ ...gameForm, max_players_per_arena: Number(event.target.value) })} /></label>
               <label>{text.labels.rounds}<input type="number" value={gameForm.number_of_rounds} onChange={(event) => setGameForm({ ...gameForm, number_of_rounds: Number(event.target.value) })} /></label>
+              {gameForm.game_type === 'escape' && (
+                <label>{text.labels.escapeChapters}<input min={1} max={50} type="number" value={gameForm.escape_chapter_count} onChange={(event) => setGameForm({ ...gameForm, escape_chapter_count: Number(event.target.value) })} /></label>
+              )}
               <div className="full staff-game-media-row">
                 <div className="staff-game-photo-field">
                   <span className="staff-field-label">{text.labels.gamePhoto}</span>

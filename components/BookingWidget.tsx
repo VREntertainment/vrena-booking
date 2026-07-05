@@ -287,7 +287,8 @@ export default function WidgetPage({
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
-  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | 'loyaltyPoints' | 'averageAccuracy' | 'bestEscapeDuration' | null>(null)
+  const [selectedPlayerScoreEdit, setSelectedPlayerScoreEdit] = useState<'session' | 'total' | 'accuracy' | 'projectiles' | 'escapeDuration' | 'loyaltyPoints' | 'averageAccuracy' | 'bestEscapeDuration' | 'totalProjectiles' | null>(null)
+  const [selectedPlayerChapterEdit, setSelectedPlayerChapterEdit] = useState<number | null>(null)
   const [staffPlayerEditDraft, setStaffPlayerEditDraft] = useState<StaffPlayerEditDraft>(() => defaultStaffPlayerEditDraft())
   const [isSavingStaffPlayerEdit, setIsSavingStaffPlayerEdit] = useState(false)
   const [staffPlayerEditStatus, setStaffPlayerEditStatus] = useState('')
@@ -510,6 +511,7 @@ export default function WidgetPage({
     setSelectedPlayerSessionId(sessionId)
     setSelectedPlayerStatsOverride((current) => seedStats ?? (current?.profileId === profileId ? current : null))
     setSelectedPlayerScoreEdit(null)
+    setSelectedPlayerChapterEdit(null)
     if (sessionId) void loadSessionDetail(sessionId)
     else void loadSelectedPlayerStats(profileId, true)
   }
@@ -4562,6 +4564,7 @@ function handleSessionDateChange(value: string) {
       totalAccuracy: number
       accuracyCount: number
       totalProjectiles: number
+      totalProjectilesOverride: number | null
       bestEscapeDurationSeconds: number | null
       averageAccuracyOverride: number | null
       bestEscapeDurationSecondsOverride: number | null
@@ -4572,6 +4575,7 @@ function handleSessionDateChange(value: string) {
       const playerAvatar = avatarFields(playerProfile)
       const averageAccuracyOverride = Number(playerProfile.average_accuracy_override)
       const bestEscapeDurationSecondsOverride = Number(playerProfile.best_escape_duration_seconds_override)
+      const totalProjectilesOverride = Number(playerProfile.total_projectiles_override)
       stats.set(playerProfile.id, {
         profileId: playerProfile.id,
         displayName: compactDisplayName(displayName(playerProfile), text.player),
@@ -4592,6 +4596,7 @@ function handleSessionDateChange(value: string) {
         totalAccuracy: 0,
         accuracyCount: 0,
         totalProjectiles: 0,
+        totalProjectilesOverride: Number.isFinite(totalProjectilesOverride) && totalProjectilesOverride >= 0 ? totalProjectilesOverride : null,
         bestEscapeDurationSeconds: null,
         averageAccuracyOverride: Number.isFinite(averageAccuracyOverride) ? averageAccuracyOverride : null,
         bestEscapeDurationSecondsOverride: Number.isFinite(bestEscapeDurationSecondsOverride) && bestEscapeDurationSecondsOverride > 0 ? bestEscapeDurationSecondsOverride : null,
@@ -4623,6 +4628,7 @@ function handleSessionDateChange(value: string) {
           totalAccuracy: 0,
           accuracyCount: 0,
           totalProjectiles: 0,
+          totalProjectilesOverride: null,
           bestEscapeDurationSeconds: null,
           averageAccuracyOverride: null,
           bestEscapeDurationSecondsOverride: null,
@@ -4685,6 +4691,7 @@ function handleSessionDateChange(value: string) {
         totalScore: item.baseTotalScore + (profileScoreAdjustments[item.profileId] ?? 0),
         averageAccuracy: item.averageAccuracyOverride ?? (item.accuracyCount > 0 ? item.totalAccuracy / item.accuracyCount : null),
         reliabilityScore: percentValue(item.gamesJoined, item.sessionsJoined),
+        totalProjectiles: item.totalProjectilesOverride ?? item.totalProjectiles,
         bestEscapeDurationSeconds: item.bestEscapeDurationSecondsOverride ?? item.bestEscapeDurationSeconds,
         bestByGame: Array.from(item.bestByGame.entries()).map(([gameId, score]) => ({
           game: games.find((game) => game.id === gameId)?.title || gameId,
@@ -4811,11 +4818,17 @@ function handleSessionDateChange(value: string) {
   const selectedPlayerBestEscapeOverride = selectedPlayerProfileRecord?.best_escape_duration_seconds_override === null || selectedPlayerProfileRecord?.best_escape_duration_seconds_override === undefined
     ? null
     : finiteNumber(selectedPlayerProfileRecord.best_escape_duration_seconds_override, Number.NaN)
+  const selectedPlayerTotalProjectilesOverride = selectedPlayerProfileRecord?.total_projectiles_override === null || selectedPlayerProfileRecord?.total_projectiles_override === undefined
+    ? null
+    : finiteNumber(selectedPlayerProfileRecord.total_projectiles_override, Number.NaN)
   const selectedPlayerAverageAccuracyValue = selectedPlayerAverageAccuracyOverride !== null && Number.isFinite(selectedPlayerAverageAccuracyOverride)
     ? selectedPlayerAverageAccuracyOverride
     : null
   const selectedPlayerBestEscapeValue = selectedPlayerBestEscapeOverride !== null && Number.isFinite(selectedPlayerBestEscapeOverride) && selectedPlayerBestEscapeOverride > 0
     ? selectedPlayerBestEscapeOverride
+    : null
+  const selectedPlayerTotalProjectilesValue = selectedPlayerTotalProjectilesOverride !== null && Number.isFinite(selectedPlayerTotalProjectilesOverride) && selectedPlayerTotalProjectilesOverride >= 0
+    ? selectedPlayerTotalProjectilesOverride
     : null
   const selectedPlayerProfile = useMemo(() => {
     if (!selectedPlayerId) return undefined
@@ -4891,6 +4904,7 @@ function handleSessionDateChange(value: string) {
           loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
           averageAccuracy: selectedPlayerAverageAccuracyValue ?? selectedPlayerStats.averageAccuracy,
           bestEscapeDurationSeconds: selectedPlayerBestEscapeValue ?? selectedPlayerStats.bestEscapeDurationSeconds,
+          totalProjectiles: selectedPlayerTotalProjectilesValue ?? selectedPlayerStats.totalProjectiles,
         }
       }
 
@@ -4908,6 +4922,7 @@ function handleSessionDateChange(value: string) {
           : selectedPlayerStats.loyaltyPoints,
         averageAccuracy: selectedPlayerAverageAccuracyValue ?? selectedPlayerStats.averageAccuracy,
         bestEscapeDurationSeconds: selectedPlayerBestEscapeValue ?? selectedPlayerStats.bestEscapeDurationSeconds,
+        totalProjectiles: selectedPlayerTotalProjectilesValue ?? selectedPlayerStats.totalProjectiles,
       }
     }
 
@@ -4962,7 +4977,7 @@ function handleSessionDateChange(value: string) {
           loyaltyPoints: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
-          totalProjectiles: 0,
+          totalProjectiles: selectedPlayerTotalProjectilesValue ?? 0,
           averageAccuracy: selectedPlayerAverageAccuracyValue,
           reliabilityScore: 0,
           bestEscapeDurationSeconds: selectedPlayerBestEscapeValue,
@@ -4993,7 +5008,7 @@ function handleSessionDateChange(value: string) {
           loyaltyPoints: 0,
           totalAccuracy: 0,
           accuracyCount: 0,
-          totalProjectiles: 0,
+          totalProjectiles: selectedPlayerTotalProjectilesValue ?? 0,
           averageAccuracy: selectedPlayerAverageAccuracyValue,
           reliabilityScore: 0,
           bestEscapeDurationSeconds: selectedPlayerBestEscapeValue,
@@ -5003,7 +5018,7 @@ function handleSessionDateChange(value: string) {
     }
 
     return undefined
-  }, [clubs, profile, profileScoreAdjustments, selectedPlayerAverageAccuracyValue, selectedPlayerBestEscapeValue, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, sessions, text.player, userId])
+  }, [clubs, profile, profileScoreAdjustments, selectedPlayerAverageAccuracyValue, selectedPlayerBestEscapeValue, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, selectedPlayerTotalProjectilesValue, sessions, text.player, userId])
 
   const selectedSessionParticipant = selectedPlayerSessionContext?.participant ?? null
   const selectedSessionEditableParticipant = selectedPlayerManageContext && selectedPlayerSessionContext && selectedPlayerManageContext.session.id === selectedPlayerSessionContext.session.id
@@ -5015,7 +5030,30 @@ function handleSessionDateChange(value: string) {
     ? selectedPlayerManageContext?.session ?? selectedPlayerSessionContext?.session ?? null
     : selectedPlayerSessionContext?.session ?? null
   const selectedPlayerSessionIsEscape = isEscapeSession(selectedPlayerMetricSession)
+  const selectedPlayerEscapeGameId = selectedPlayerMetricSession?.confirmed_game_id
+    || selectedPlayerMetricSession?.game_options?.find((gameId) => games.find((game) => game.id === gameId)?.category === 'Escape')
+    || null
+  const selectedPlayerEscapeChapterCount = selectedPlayerEscapeGameId
+    ? Math.max(1, Math.min(50, Math.floor(Number(staffGameGuides[selectedPlayerEscapeGameId]?.escape_chapter_count ?? 1) || 1)))
+    : 1
   const selectedPlayerEscapeDurationSeconds = selectedPlayerMetricParticipant?.escape_duration_seconds ?? null
+  const selectedPlayerChapterTimes = useMemo(() => {
+    const gameSlug = selectedPlayerEscapeGameId || ''
+    return (selectedPlayerMetricParticipant?.chapter_times ?? [])
+      .filter((item) => !gameSlug || item.game_slug === gameSlug)
+      .reduce<Record<number, number>>((times, item) => {
+        const chapter = Number(item.chapter_number)
+        const duration = Number(item.duration_seconds)
+        if (Number.isFinite(chapter) && Number.isFinite(duration) && duration > 0) {
+          times[chapter] = duration
+        }
+        return times
+      }, {})
+  }, [selectedPlayerEscapeGameId, selectedPlayerMetricParticipant])
+
+  useEffect(() => {
+    if (selectedPlayerSessionIsEscape) void ensureStaffGameGuidesLoaded()
+  }, [selectedPlayerSessionIsEscape])
   const staffPlayerEditSeed = useMemo<StaffPlayerEditDraft | null>(() => {
     if (!selectedPlayerProfile || !canEditStaffPlayerCards) return null
     const phoneParts = splitPhoneNumber(selectedPlayerProfileRecord?.phone || '')
@@ -5142,6 +5180,35 @@ function handleSessionDateChange(value: string) {
     setSelectedPlayerScoreEdit(null)
   }
 
+  async function updateSelectedChapterTime(chapterNumber: number, value: string) {
+    const participant = selectedPlayerEditableParticipant
+    const gameSlug = selectedPlayerEscapeGameId
+    if (!participant || !gameSlug) return
+
+    const durationSeconds = parseSpeedrunDuration(value)
+    if (durationSeconds === null || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      setCreateStatus(text.invalidEscapeDuration)
+      return
+    }
+
+    const { error } = await (await getSupabase()).rpc('set_session_participant_chapter_time', {
+      p_participant_id: participant.id,
+      p_game_slug: gameSlug,
+      p_chapter_number: chapterNumber,
+      p_duration_seconds: durationSeconds,
+    })
+
+    if (error) {
+      setCreateStatus(error.message)
+      return
+    }
+
+    await loadSessions()
+    refreshLeaderboardIfLoaded()
+    setCreateStatus(text.scoreSaved)
+    setSelectedPlayerChapterEdit(null)
+  }
+
   function renderTotalScoreControl(playerStats: NonNullable<typeof selectedPlayerProfile>) {
     if (selectedPlayerScoreEdit === 'total' && canEditStaffPlayerCards) {
       return (
@@ -5214,15 +5281,16 @@ function handleSessionDateChange(value: string) {
 
   function renderProfileStatOverrideControl(
     playerStats: NonNullable<typeof selectedPlayerProfile>,
-    metric: 'averageAccuracy' | 'bestEscapeDuration',
+    metric: 'averageAccuracy' | 'bestEscapeDuration' | 'totalProjectiles',
     ariaLabel: string,
     value: number | null | undefined,
     suffix = ''
   ) {
     const isEscapeDurationMetric = metric === 'bestEscapeDuration'
+    const isProjectilesMetric = metric === 'totalProjectiles'
     const displayValue = isEscapeDurationMetric
       ? formatSpeedrunDuration(value)
-      : value === null || value === undefined ? '-' : `${Math.round(value)}${suffix}`
+      : value === null || value === undefined ? '-' : `${isProjectilesMetric ? Math.floor(value) : Math.round(value)}${suffix}`
 
     if (selectedPlayerScoreEdit === metric && canEditStaffPlayerCards) {
       return (
@@ -5303,6 +5371,57 @@ function handleSessionDateChange(value: string) {
     )
   }
 
+  function renderEscapeChapterTimeControls() {
+    if (!selectedPlayerSessionIsEscape || !selectedPlayerMetricParticipant || !selectedPlayerEscapeGameId) return null
+
+    const editable = Boolean(selectedPlayerEditableParticipant)
+    const chapters = Array.from({ length: selectedPlayerEscapeChapterCount }, (_, index) => index + 1)
+
+    return (
+      <div className="escape-chapter-times">
+        <span className="stat-label">{text.escapeChapterTimes}</span>
+        <div className="escape-chapter-time-grid">
+          {chapters.map((chapterNumber) => {
+            const value = selectedPlayerChapterTimes[chapterNumber] ?? null
+            const isEditing = selectedPlayerChapterEdit === chapterNumber && editable
+            const label = `${text.escapeChapterLabel} ${chapterNumber}`
+
+            return (
+              <div className="escape-chapter-time-row" key={chapterNumber}>
+                <span>{label}</span>
+                {isEditing ? (
+                  <input
+                    aria-label={label}
+                    autoFocus
+                    className="inline-score-input compact-stat-input"
+                    defaultValue={value ? formatSpeedrunDuration(value) : ''}
+                    inputMode="text"
+                    placeholder={text.escapeDurationPlaceholder}
+                    onBlur={(event) => updateSelectedChapterTime(chapterNumber, event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') event.currentTarget.blur()
+                      if (event.key === 'Escape') setSelectedPlayerChapterEdit(null)
+                    }}
+                  />
+                ) : (
+                  <button
+                    aria-label={label}
+                    className={editable ? 'score-value editable compact-stat-value' : 'score-value compact-stat-value'}
+                    disabled={!editable}
+                    type="button"
+                    onClick={() => setSelectedPlayerChapterEdit(chapterNumber)}
+                  >
+                    {formatSpeedrunDuration(value)}
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   function renderTariffTrigger(extraClassName = '') {
     return (
       <button className={`session-tariff-link ${extraClassName}`.trim()} type="button" onClick={() => setTariffPaymentOpen(true)}>
@@ -5318,7 +5437,7 @@ function handleSessionDateChange(value: string) {
     const client = await getSupabase()
     const { data, error } = await client
       .from('staff_games')
-      .select('slug, guide_language, guide_summary, guide_rules, guide_tips')
+      .select('slug, game_type, escape_chapter_count, guide_language, guide_summary, guide_rules, guide_tips')
       .eq('active', true)
 
     staffGameGuidesLoadingRef.current = false
@@ -5407,6 +5526,7 @@ function handleSessionDateChange(value: string) {
                 <span>{escapeBestTimeText}</span>
                 {renderProfileStatOverrideControl(selectedPlayerProfile, 'bestEscapeDuration', escapeBestTimeText, selectedPlayerProfile.bestEscapeDurationSeconds)}
               </span>
+              {renderEscapeChapterTimeControls()}
             </>
           ),
         }
@@ -5454,12 +5574,21 @@ function handleSessionDateChange(value: string) {
               {renderSessionMetricControl('projectiles', selectedPlayerMetricParticipant.projectiles_fired, text.projectiles)}
               <span className="stat-subline">
                 <span>{totalShotsText}</span>
-                <strong>{selectedPlayerProfile.totalProjectiles}</strong>
+                {renderProfileStatOverrideControl(selectedPlayerProfile, 'totalProjectiles', totalShotsText, selectedPlayerProfile.totalProjectiles)}
               </span>
             </>
           ),
         }
-      : { key: 'projectiles', value: <><span className="stat-label">{text.projectiles}</span><strong>{selectedPlayerProfile.totalProjectiles}</strong></> },
+      : {
+          key: 'projectiles',
+          className: 'editable-stat-card',
+          value: (
+            <>
+              <span className="stat-label">{text.projectiles}</span>
+              {renderProfileStatOverrideControl(selectedPlayerProfile, 'totalProjectiles', totalShotsText, selectedPlayerProfile.totalProjectiles)}
+            </>
+          ),
+        },
     { key: 'games', value: <>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</> },
     { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
     { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
@@ -6703,23 +6832,29 @@ function handleSessionDateChange(value: string) {
     const loyaltyRow = Array.isArray(data) ? data[0] : data
     const savedPoints = Math.max(0, Math.floor(Number((loyaltyRow as { loyalty_points_total?: number | null } | null)?.loyalty_points_total ?? nextLoyaltyPoints) || 0))
     syncPlayerCardStat(profileId, { loyalty_points_total: savedPoints }, { loyaltyPoints: savedPoints })
+    selectedPlayerStatsFetchedRef.current.delete(profileId)
+    void loadSelectedPlayerStats(profileId, true)
     refreshLeaderboardIfLoaded()
     setCreateStatus(text.profileSaved)
   }
 
-  async function updateProfileStatOverride(profileId: string, metric: 'averageAccuracy' | 'bestEscapeDuration', value: string | number | null) {
+  async function updateProfileStatOverride(profileId: string, metric: 'averageAccuracy' | 'bestEscapeDuration' | 'totalProjectiles', value: string | number | null) {
     if (!canEditStaffPlayerCards) {
       setCreateStatus(text.adminOnlyAction)
       return
     }
 
     const isAccuracyMetric = metric === 'averageAccuracy'
+    const isProjectilesMetric = metric === 'totalProjectiles'
     const averageAccuracy = isAccuracyMetric
       ? value === '' || value === null ? null : Number(value)
       : null
-    const bestEscapeDuration = isAccuracyMetric
+    const bestEscapeDuration = isAccuracyMetric || isProjectilesMetric
       ? null
       : value === '' || value === null ? null : parseSpeedrunDuration(value)
+    const totalProjectiles = isProjectilesMetric
+      ? value === '' || value === null ? null : Number(value)
+      : null
 
     if (isAccuracyMetric && averageAccuracy !== null && (!Number.isFinite(averageAccuracy) || averageAccuracy < 0 || averageAccuracy > 100)) {
       setCreateStatus(text.invalidScore)
@@ -6729,13 +6864,19 @@ function handleSessionDateChange(value: string) {
       setCreateStatus(text.invalidEscapeDuration)
       return
     }
+    if (isProjectilesMetric && totalProjectiles !== null && (!Number.isFinite(totalProjectiles) || totalProjectiles < 0)) {
+      setCreateStatus(text.invalidScore)
+      return
+    }
 
     const { error } = await (await getSupabase()).rpc('set_profile_stat_overrides', {
       p_profile_id: profileId,
       p_average_accuracy: averageAccuracy,
       p_best_escape_duration_seconds: bestEscapeDuration,
       p_update_average_accuracy: isAccuracyMetric,
-      p_update_best_escape_duration: !isAccuracyMetric,
+      p_update_best_escape_duration: !isAccuracyMetric && !isProjectilesMetric,
+      p_total_projectiles: totalProjectiles === null ? null : Math.floor(totalProjectiles),
+      p_update_total_projectiles: isProjectilesMetric,
     })
     if (error) {
       setCreateStatus(error.message)
@@ -6744,10 +6885,13 @@ function handleSessionDateChange(value: string) {
 
     const profilePatch: Partial<Profile> = isAccuracyMetric
       ? { average_accuracy_override: averageAccuracy }
-      : { best_escape_duration_seconds_override: bestEscapeDuration }
+      : isProjectilesMetric
+        ? { total_projectiles_override: totalProjectiles === null ? null : Math.floor(totalProjectiles) }
+        : { best_escape_duration_seconds_override: bestEscapeDuration }
     const playerPatch: Partial<LeaderboardPlayer> = {
       ...(isAccuracyMetric && averageAccuracy !== null ? { averageAccuracy } : {}),
       ...(!isAccuracyMetric && bestEscapeDuration !== null ? { bestEscapeDurationSeconds: bestEscapeDuration } : {}),
+      ...(isProjectilesMetric && totalProjectiles !== null ? { totalProjectiles: Math.floor(totalProjectiles) } : {}),
     }
 
     syncPlayerCardStat(profileId, profilePatch, playerPatch)

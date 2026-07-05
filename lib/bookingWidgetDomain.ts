@@ -65,6 +65,8 @@ export type StaffGameGuideText = Partial<Record<LanguageCode, string>>
 
 export type StaffGameGuide = {
   slug: string
+  game_type?: string | null
+  escape_chapter_count?: number | null
   guide_language?: string | null
   guide_summary?: StaffGameGuideText | null
   guide_rules?: StaffGameGuideText | null
@@ -105,6 +107,7 @@ export type Profile = {
   loyalty_points_total?: number | null
   average_accuracy_override?: number | null
   best_escape_duration_seconds_override?: number | null
+  total_projectiles_override?: number | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
   marketing_consent?: boolean | null
@@ -162,7 +165,7 @@ export const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
 export const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
 export const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
 export type ProfileGender = typeof PROFILE_GENDER_VALUES[number]
-export const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
+export const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at'
 
 export function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
   return {
@@ -204,8 +207,21 @@ export type Participant = {
   projectiles_fired?: number | null
   escape_duration_seconds?: number | null
   placement?: number | null
+  chapter_times?: ParticipantChapterTime[] | null
   prize_claimed?: boolean | null
   prize_claimed_at?: string | null
+}
+
+export type ParticipantChapterTime = {
+  id: string
+  session_id: string
+  participant_id: string
+  profile_id: string
+  game_slug: string
+  chapter_number: number
+  duration_seconds: number
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export type WaitlistEntry = {
@@ -844,6 +860,7 @@ export function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbac
   const isAnonymous = Boolean(profile.anonymous_mode)
   const averageAccuracyOverride = Number(profile.average_accuracy_override)
   const bestEscapeDurationSecondsOverride = Number(profile.best_escape_duration_seconds_override)
+  const totalProjectilesOverride = Number(profile.total_projectiles_override)
   const name = isAnonymous
     ? anonymousProfileName({
       id: profile.id,
@@ -871,7 +888,7 @@ export function leaderboardPlayerFromStaffProfile(profile: StaffProfile, fallbac
     loyaltyPoints: Math.max(0, Math.floor(Number(profile.loyalty_points_total ?? 0) || 0)),
         totalAccuracy: 0,
     accuracyCount: 0,
-    totalProjectiles: 0,
+    totalProjectiles: Number.isFinite(totalProjectilesOverride) ? Math.max(0, Math.floor(totalProjectilesOverride)) : 0,
     averageAccuracy: Number.isFinite(averageAccuracyOverride) ? averageAccuracyOverride : null,
     reliabilityScore: 0,
     bestEscapeDurationSeconds: Number.isFinite(bestEscapeDurationSecondsOverride) && bestEscapeDurationSecondsOverride > 0 ? bestEscapeDurationSecondsOverride : null,

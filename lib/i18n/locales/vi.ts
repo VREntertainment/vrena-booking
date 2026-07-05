@@ -155,6 +155,8 @@ export const vi = {
   escapeSpeedrunCriterion: 'Speedrun Escape',
   escapeBestTime: 'Thời gian Escape tốt nhất',
   escapeSessionTime: 'Thời gian Escape',
+  escapeChapterTimes: 'Thời gian từng chapter',
+  escapeChapterLabel: 'Chapter',
   escapeDurationPlaceholder: 'mm:ss',
   invalidEscapeDuration: 'Nhập thời gian hợp lệ, ví dụ 12:34.',
   escapeDurationEscapeOnly: 'Chỉ lưu thời gian speedrun cho game Escape.',

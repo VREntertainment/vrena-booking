@@ -155,6 +155,8 @@ export const it = {
   escapeSpeedrunCriterion: 'Speedrun Escape',
   escapeBestTime: 'Miglior tempo Escape',
   escapeSessionTime: 'Tempo Escape',
+  escapeChapterTimes: 'Tempi per capitolo',
+  escapeChapterLabel: 'Capitolo',
   escapeDurationPlaceholder: 'mm:ss',
   invalidEscapeDuration: 'Usa un tempo valido, ad esempio 12:34.',
   escapeDurationEscapeOnly: 'Il tempo speedrun si salva solo per i giochi Escape.',
