@@ -43,6 +43,7 @@ import {
 } from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
 import AppLoadingState from './AppLoadingState'
+import CountryCodePicker from './CountryCodePicker'
 import { shouldSkipImageOptimization } from './AvatarNode'
 import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
@@ -98,15 +99,12 @@ export default function BookingProfileView({ context }: { context: any }) {
     chooseAvatarMode,
     confirmTotpEnrollment,
     continueAuthFromEmail,
-    countryPickerOpen,
-    countrySearch,
     crownedTopPlayer,
     currentUserStatsShared,
     deleteMyAccount,
     downloadSessionCalendar,
     editAuthEmail,
     failedAvatarUrls,
-    filteredCountries,
     handleAuth,
     handleAvatarChange,
     isDeletingAccount,
@@ -175,8 +173,6 @@ export default function BookingProfileView({ context }: { context: any }) {
     setAvatarEmoji,
     setAvatarInitials,
     setAvatarTextColorDraft,
-    setCountryPickerOpen,
-    setCountrySearch,
     setMarketingConsent,
     setMfaChallengeCode,
     setMfaEnrollment,
@@ -629,42 +625,12 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <div className="country-phone-field">
                     <label className="country-phone-label">{text.phoneNumber} <span className="required">*</span></label>
                     <div className="country-field">
-                      <div className="country-picker">
-                        <button
-                          aria-label={text.countryCode}
-                          className="country-button"
-                          onClick={() => setCountryPickerOpen((open: boolean) => !open)}
-                          type="button"
-                        >
-                          {profileCountryCode}
-                        </button>
-                        {countryPickerOpen && (
-                          <div className="country-menu">
-                            <input
-                              autoFocus
-                              value={countrySearch}
-                              onChange={(event) => setCountrySearch(event.target.value)}
-                              placeholder={text.searchCountry}
-                            />
-                            <div className="country-list">
-                              {filteredCountries.map((country: { code: string; name: string }) => (
-                                <button
-                                  key={`${country.code}-${country.name}`}
-                                  onClick={() => {
-                                    setProfileCountryCode(country.code)
-                                    setCountrySearch('')
-                                    setCountryPickerOpen(false)
-                                  }}
-                                  type="button"
-                                >
-                                  <span>{country.code}</span>
-                                  <strong>{country.name}</strong>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <CountryCodePicker
+                        buttonLabel={text.countryCode}
+                        onChange={setProfileCountryCode}
+                        searchPlaceholder={text.searchCountry}
+                        value={profileCountryCode}
+                      />
                     </div>
                     <div className="phone-field">
                       <input aria-label={text.phoneNumber} value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />

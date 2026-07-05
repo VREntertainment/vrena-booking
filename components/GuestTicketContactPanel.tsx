@@ -1,6 +1,7 @@
 'use client'
 
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
+import { PhoneNumberInput } from './CountryCodePicker'
 
 type GuestTicketContactPanelProps = {
   contact: GuestTicketContact
@@ -25,13 +26,14 @@ export default function GuestTicketContactPanel({
       </div>
       <label>
         <span>{text.phone} <span className="required">*</span></span>
-        <input
-          autoComplete="tel"
+        <PhoneNumberInput
+          buttonLabel={text.countryCode}
+          className="guest-ticket-phone-control"
           disabled={disabled}
-          inputMode="tel"
-          onChange={(event) => onChange({ ...contact, phone: event.target.value })}
-          placeholder={text.guestTicketPhonePlaceholder}
-          type="tel"
+          inputLabel={`${text.phone} *`}
+          onChange={(phone) => onChange({ ...contact, phone })}
+          placeholder="0981152315"
+          searchPlaceholder={text.searchCountry}
           value={contact.phone}
         />
       </label>

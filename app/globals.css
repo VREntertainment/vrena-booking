@@ -8710,6 +8710,30 @@ body {
   font-weight: 800;
 }
 
+.app .phone-number-control {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.app .phone-number-control .country-button {
+  min-height: 46px;
+  padding-inline: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.app .phone-number-control .country-menu {
+  right: auto;
+  width: min(280px, calc(100vw - 32px));
+}
+
+.app .phone-number-control input {
+  min-width: 0;
+}
+
 .app .password-control {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 48px;
