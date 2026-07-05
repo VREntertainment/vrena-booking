@@ -30,6 +30,7 @@ type HCaptchaApi = {
     widgetId?: string,
     options?: { async?: boolean }
   ) => void | Promise<string | { response?: string }>
+  getResponse?: (widgetId?: string) => string
   reset: (widgetId?: string) => void
   remove?: (widgetId: string) => void
 }

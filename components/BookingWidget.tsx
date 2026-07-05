@@ -179,6 +179,7 @@ export default function WidgetPage({
   const [profilePassword, setProfilePassword] = useState('')
   const [rememberLogin, setRememberLogin] = useState(true)
   const [captchaToken, setCaptchaToken] = useState('')
+  const captchaTokenRef = useRef('')
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -954,8 +955,29 @@ export default function WidgetPage({
     openSessionFromProfile(session.id)
   }
 
+  function updateCaptchaToken(token: string) {
+    captchaTokenRef.current = token
+    setCaptchaToken(token)
+  }
+
+  function currentCaptchaToken() {
+    const tokenFromState = captchaToken || captchaTokenRef.current
+    if (tokenFromState) return tokenFromState
+
+    const hcaptcha = getHCaptcha()
+    const widgetId = captchaWidgetId.current || undefined
+    const tokenFromWidget = hcaptcha?.getResponse?.(widgetId)
+
+    if (tokenFromWidget) {
+      updateCaptchaToken(tokenFromWidget)
+      return tokenFromWidget
+    }
+
+    return ''
+  }
+
   function resetCaptcha() {
-    setCaptchaToken('')
+    updateCaptchaToken('')
 
     const hcaptcha = getHCaptcha()
 
@@ -1769,7 +1791,7 @@ export default function WidgetPage({
         mode: authMode,
         email: loginEmail,
         isAdminEmail: isAdminEmail(loginEmail),
-        hasCaptcha: Boolean(captchaToken),
+        hasCaptcha: Boolean(currentCaptchaToken()),
         localPhoneLength: localPhone.length,
         hasFullName: Boolean(fullName),
       })
@@ -1789,7 +1811,9 @@ export default function WidgetPage({
         return
       }
 
-      if ((authMode === 'create' || authMode === 'login') && !captchaToken) {
+      const captchaTokenForAuth = authMode === 'create' || authMode === 'login' ? currentCaptchaToken() : ''
+
+      if ((authMode === 'create' || authMode === 'login') && !captchaTokenForAuth) {
         setProfileStatus(text.captchaRequired)
         return
       }
@@ -1822,7 +1846,7 @@ export default function WidgetPage({
               personal_data_consent_at: consentAt,
               privacy_policy_url: PRIVACY_POLICY_URL,
             },
-            captchaToken,
+            captchaToken: captchaTokenForAuth,
           },
         })
 
@@ -1873,7 +1897,7 @@ export default function WidgetPage({
         email: loginEmail,
         password: profilePassword,
         options: {
-          captchaToken,
+          captchaToken: captchaTokenForAuth,
         },
       })
 
@@ -1989,6 +2013,12 @@ export default function WidgetPage({
       const cachedCaptchaToken = passkeyCaptchaTokenRef.current
       const captchaTokenForPasskey = cachedCaptchaToken || (captchaWidgetReady ? await executePasskeyCaptcha() : '')
 
+      if (!captchaTokenForPasskey) {
+        setProfileStatus(text.captchaRequired)
+        setIsPasskeyLoading(false)
+        return
+      }
+
       if (!cachedCaptchaToken) {
         await restorePasskeyDocumentFocus()
       } else {
@@ -2012,6 +2042,12 @@ export default function WidgetPage({
           retryCaptchaReady = await waitForPasskeyCaptchaWidget(4500)
         }
         const retryCaptchaToken = retryCaptchaReady ? await executePasskeyCaptcha({ forceFresh: true }) : ''
+
+        if (!retryCaptchaToken) {
+          setProfileStatus(text.captchaRequired)
+          setIsPasskeyLoading(false)
+          return
+        }
 
         await restorePasskeyDocumentFocus()
         const retryResult = await client.auth.signInWithPasskey(
@@ -2290,7 +2326,9 @@ export default function WidgetPage({
       return
     }
 
-    if (!profile && !captchaToken) {
+    const captchaTokenForReset = profile ? '' : currentCaptchaToken()
+
+    if (!profile && !captchaTokenForReset) {
       setProfileStatus(text.captchaRequired)
       return
     }
@@ -2308,7 +2346,7 @@ export default function WidgetPage({
       body: JSON.stringify({
         email,
         redirectTo,
-        captchaToken: captchaToken || undefined,
+        captchaToken: captchaTokenForReset || undefined,
       }),
     })
     const resetResult = (await response.json().catch(() => ({}))) as { error?: string }
@@ -3729,9 +3767,9 @@ export default function WidgetPage({
 
       captchaWidgetId.current = hcaptcha.render(captchaContainerRef.current, {
         sitekey: HCAPTCHA_SITE_KEY,
-        callback: (token) => setCaptchaToken(token),
-        'expired-callback': () => setCaptchaToken(''),
-        'error-callback': () => setCaptchaToken(''),
+        callback: (token) => updateCaptchaToken(token),
+        'expired-callback': () => updateCaptchaToken(''),
+        'error-callback': () => updateCaptchaToken(''),
       })
     }
 
@@ -3753,7 +3791,7 @@ export default function WidgetPage({
     return () => {
       cancelled = true
       cleanupFallback()
-      setCaptchaToken('')
+      updateCaptchaToken('')
 
       const hcaptcha = getHCaptcha()
 
