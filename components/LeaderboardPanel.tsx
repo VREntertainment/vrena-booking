@@ -417,11 +417,6 @@ export default function LeaderboardPanel({
   return (
     <section className="section leaderboard-section" data-tour="leaderboard-panel">
       <div className={hideIntro ? 'section-head leaderboard-head compact-leaderboard-head' : 'section-head leaderboard-head'}>
-        {!hideIntro && (
-          <div>
-            <h2>{text.hallOfFame}</h2>
-          </div>
-        )}
         <div className="leaderboard-controls">
           <label>
             <span>{text.rankBy}</span>

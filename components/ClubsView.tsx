@@ -48,9 +48,6 @@ export default function ClubsView({
   return (
     <section className="section clubs-section">
       <div className="section-head">
-        <div>
-          <h2>{text.clubsTitle}</h2>
-        </div>
         <div className={isClubSearchOpen ? 'search-shell open' : 'search-shell'} ref={clubSearchShellRef}>
           <button
             aria-label={text.searchSessions}

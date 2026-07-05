@@ -20,13 +20,6 @@ export default function CreateSessionView({
 }: CreateSessionViewProps) {
   return (
     <section className="section create-session-section">
-      <div className="section-head">
-        <div>
-          <h2>{text.createSessionTitle}</h2>
-          <p className="muted">{text.createSessionHint}</p>
-        </div>
-      </div>
-
       <div className="segmented create-session-mode-toggle" aria-label={text.createSessionTitle}>
         <button className={mode === 'calendar' ? 'active' : ''} onClick={() => onModeChange('calendar')} type="button">
           {text.calendar}
