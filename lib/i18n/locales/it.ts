@@ -518,6 +518,7 @@ export const it = {
   continueWithGoogle: 'Continua con Google',
   addPasskey: 'Aggiungi passkey',
   passkeyStarting: 'Segui il prompt del dispositivo per continuare.',
+  passkeySecurityCheckLoading: 'Preparazione dell’accesso sicuro con passkey. Riprova tra un momento.',
   passkeyUnavailable: 'Le passkey non sono disponibili su questo dispositivo.',
   passkeyAdded: 'Passkey aggiunta. La prossima volta accederai più velocemente.',
   mfaAuthenticatorTitle: 'App authenticator',

@@ -518,6 +518,7 @@ export const ja = {
   continueWithGoogle: 'Googleで続行',
   addPasskey: 'パスキーを追加',
   passkeyStarting: '端末の案内に従って続行してください。',
+  passkeySecurityCheckLoading: '安全なパスキーサインインを準備中です。少し待ってからもう一度お試しください。',
   passkeyUnavailable: 'この端末ではパスキーを利用できません。',
   passkeyAdded: 'パスキーを追加しました。次回からより早くログインできます。',
   mfaAuthenticatorTitle: '認証アプリ',

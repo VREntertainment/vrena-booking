@@ -28,6 +28,8 @@ import type { StaffProfile } from './StaffConsole'
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 const HCAPTCHA_READY_CALLBACK = '__vrenaHcaptchaReady'
+const HCAPTCHA_PRIMARY_SCRIPT_URL = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
+const HCAPTCHA_FALLBACK_SCRIPT_URL = `https://hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -45,6 +47,44 @@ let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supab
 function getSupabase() {
   supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
   return supabaseClientPromise
+}
+
+function appendHCaptchaScript(src: string, onLoad: () => void) {
+  const script = document.createElement('script')
+
+  script.id = 'hcaptcha-script'
+  script.src = src
+  script.async = true
+  script.defer = true
+  script.addEventListener('load', onLoad, { once: true })
+  document.body.appendChild(script)
+
+  return script
+}
+
+function scheduleHCaptchaFallback(onLoad: () => void, isCancelled: () => boolean) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return () => {}
+
+  const script = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+
+  if (!script || !script.src.startsWith('https://js.hcaptcha.com/')) return () => {}
+
+  let settled = false
+  const useFallback = () => {
+    if (settled || isCancelled() || getHCaptcha()) return
+
+    settled = true
+    script.remove()
+    appendHCaptchaScript(HCAPTCHA_FALLBACK_SCRIPT_URL, onLoad)
+  }
+
+  script.addEventListener('error', useFallback, { once: true })
+  const timeoutId = window.setTimeout(useFallback, 3500)
+
+  return () => {
+    window.clearTimeout(timeoutId)
+    script.removeEventListener('error', useFallback)
+  }
 }
 
 type BookingWidgetProps = {
@@ -974,6 +1014,52 @@ export default function WidgetPage({
     })
   }
 
+  async function waitForPasskeyCaptchaWidget(timeoutMs = 10000) {
+    if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) return true
+    if (typeof window === 'undefined') return false
+
+    const startedAt = Date.now()
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false
+      let timeoutId: number | null = null
+      const script = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+
+      const cleanup = () => {
+        if (timeoutId) window.clearTimeout(timeoutId)
+        script?.removeEventListener('load', check)
+        script?.removeEventListener('error', finish)
+      }
+
+      const finish = () => {
+        if (settled) return
+        settled = true
+        cleanup()
+        resolve(Boolean(passkeyCaptchaWidgetId.current && getHCaptcha()?.execute))
+      }
+
+      const check = () => {
+        if (settled) return
+
+        if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) {
+          finish()
+          return
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          finish()
+          return
+        }
+
+        timeoutId = window.setTimeout(check, 75)
+      }
+
+      script?.addEventListener('load', check)
+      script?.addEventListener('error', finish, { once: true })
+      check()
+    })
+  }
+
   function warmSupabaseClient() {
     void getSupabase().then((client) => {
       warmedSupabaseClientRef.current = client
@@ -1878,14 +1964,11 @@ export default function WidgetPage({
     try {
       setIsPasskeyLoading(true)
       setProfileStatus(text.passkeyStarting)
-      const cachedCaptchaToken = passkeyCaptchaTokenRef.current
-      const captchaTokenForPasskey = cachedCaptchaToken || await executePasskeyCaptcha()
+      preparePasskeyCaptcha()
+      const captchaWidgetReady = await waitForPasskeyCaptchaWidget(1800)
 
-      if (!captchaTokenForPasskey) {
-        setProfileStatus(text.captchaRequired)
-        setIsPasskeyLoading(false)
-        return
-      }
+      const cachedCaptchaToken = passkeyCaptchaTokenRef.current
+      const captchaTokenForPasskey = cachedCaptchaToken || (captchaWidgetReady ? await executePasskeyCaptcha() : '')
 
       if (!cachedCaptchaToken) {
         await restorePasskeyDocumentFocus()
@@ -1895,25 +1978,24 @@ export default function WidgetPage({
 
       const client = warmedSupabaseClientRef.current || await getSupabase()
       warmedSupabaseClientRef.current = client
-      let { data, error } = await client.auth.signInWithPasskey({
-        options: { captchaToken: captchaTokenForPasskey },
-      })
+      let { data, error } = await client.auth.signInWithPasskey(
+        captchaTokenForPasskey
+          ? { options: { captchaToken: captchaTokenForPasskey } }
+          : undefined,
+      )
 
       if (error && isDocumentFocusPasskeyError(error)) {
         resetPasskeyCaptcha()
         await restorePasskeyDocumentFocus()
-        const retryCaptchaToken = await executePasskeyCaptcha({ forceFresh: true })
-
-        if (!retryCaptchaToken) {
-          setProfileStatus(text.captchaRequired)
-          setIsPasskeyLoading(false)
-          return
-        }
+        const retryCaptchaReady = await waitForPasskeyCaptchaWidget(1800)
+        const retryCaptchaToken = retryCaptchaReady ? await executePasskeyCaptcha({ forceFresh: true }) : ''
 
         await restorePasskeyDocumentFocus()
-        const retryResult = await client.auth.signInWithPasskey({
-          options: { captchaToken: retryCaptchaToken },
-        })
+        const retryResult = await client.auth.signInWithPasskey(
+          retryCaptchaToken
+            ? { options: { captchaToken: retryCaptchaToken } }
+            : undefined,
+        )
         data = retryResult.data
         error = retryResult.error
       }
@@ -3615,6 +3697,7 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || profile || activeView !== 'profile' || !shouldShowCaptcha) return
 
     let cancelled = false
+    let cleanupFallback = () => {}
 
     function renderCaptcha() {
       const hcaptcha = getHCaptcha()
@@ -3638,17 +3721,15 @@ export default function WidgetPage({
       renderCaptcha()
     } else if (existingScript) {
       existingScript.addEventListener('load', renderCaptcha, { once: true })
+      cleanupFallback = scheduleHCaptchaFallback(renderCaptcha, () => cancelled)
     } else {
-      const script = document.createElement('script')
-      script.id = 'hcaptcha-script'
-      script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
-      script.async = true
-      script.defer = true
-      document.body.appendChild(script)
+      appendHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL, renderCaptcha)
+      cleanupFallback = scheduleHCaptchaFallback(renderCaptcha, () => cancelled)
     }
 
     return () => {
       cancelled = true
+      cleanupFallback()
       setCaptchaToken('')
 
       const hcaptcha = getHCaptcha()
@@ -3675,6 +3756,7 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
     let cancelled = false
+    let cleanupFallback = () => {}
     warmSupabaseClient()
 
     function renderPasskeyCaptcha() {
@@ -3714,17 +3796,15 @@ export default function WidgetPage({
       renderPasskeyCaptcha()
     } else if (existingScript) {
       existingScript.addEventListener('load', renderPasskeyCaptcha, { once: true })
+      cleanupFallback = scheduleHCaptchaFallback(renderPasskeyCaptcha, () => cancelled)
     } else {
-      const script = document.createElement('script')
-      script.id = 'hcaptcha-script'
-      script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
-      script.async = true
-      script.defer = true
-      document.body.appendChild(script)
+      appendHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL, renderPasskeyCaptcha)
+      cleanupFallback = scheduleHCaptchaFallback(renderPasskeyCaptcha, () => cancelled)
     }
 
     return () => {
       cancelled = true
+      cleanupFallback()
       setIsPasskeyCaptchaReady(false)
       resetPasskeyCaptcha()
 
