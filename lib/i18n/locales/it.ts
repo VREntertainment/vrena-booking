@@ -203,6 +203,7 @@ export const it = {
   sessionTariffLoyaltyTitle: 'Punti fedeltà',
   sessionTariffLoyaltyText: 'I punti vengono assegnati dopo la conferma del pagamento, sul prezzo finale pagato arrotondato per difetto. Puoi usarli su ticket futuri quando il riscatto è attivo.',
   sessionTariffDisclaimer: 'Il prezzo si calcola sul numero di giocatori scelto per 1-4 giocatori, poi sul tempo arena riservato per gruppi più grandi.',
+  contactUs: 'Contattaci',
   zaloContact: 'Contattaci su Zalo',
   softOpeningHighlights: 'Momenti soft opening',
   searchPlaceholder: 'Cerca partita, profilo, gioco, codice privato',

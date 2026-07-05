@@ -203,6 +203,7 @@ export const de = {
   sessionTariffLoyaltyTitle: 'Treuepunkte',
   sessionTariffLoyaltyText: 'Punkte gibt es nach bestätigter Zahlung, basierend auf dem final bezahlten Preis, abgerundet. Sie können für spätere Tickets genutzt werden, wenn Einlösung aktiv ist.',
   sessionTariffDisclaimer: 'Der Preis wird bei 1-4 Spielern nach der gewählten Spielerzahl berechnet, danach nach reservierter Arena-Zeit für größere Gruppen.',
+  contactUs: 'Kontakt',
   zaloContact: 'Kontaktiere uns auf Zalo',
   softOpeningHighlights: 'Soft-Opening-Highlights',
   searchPlaceholder: 'Runde, Profil, Spiel, Privatcode suchen',

@@ -3,6 +3,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { storeLanguage } from '../lib/i18n/detectLanguage'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import ContactChannels from './ContactChannels'
 
 export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
 
@@ -132,7 +133,7 @@ export default function AppSidebar({
       <div className="shop-contact">
         <strong>VRena Vietnam</strong>
         <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
-        <a href="https://zalo.me/84981152315" target="_blank" rel="noreferrer">Zalo: 0981152315</a>
+        <ContactChannels label={text.contactUs} />
         <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
       </div>
     </aside>

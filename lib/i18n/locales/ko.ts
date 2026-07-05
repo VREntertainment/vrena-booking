@@ -203,6 +203,7 @@ export const ko = {
   sessionTariffLoyaltyTitle: '포인트',
   sessionTariffLoyaltyText: '포인트는 결제 확인 후, 실제로 지불한 최종 금액을 내림해 지급됩니다. 사용이 활성화되면 이후 티켓에 사용할 수 있습니다.',
   sessionTariffDisclaimer: '요금은 1-4명까지 선택한 인원수로 계산하고, 더 큰 그룹은 예약된 아레나 시간을 기준으로 계산합니다.',
+  contactUs: '문의하기',
   zaloContact: 'Zalo로 문의',
   softOpeningHighlights: '소프트 오픈 하이라이트',
   searchPlaceholder: '세션명, 프로필명, 게임, 비공개 코드 검색',
