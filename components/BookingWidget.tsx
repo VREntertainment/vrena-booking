@@ -8201,6 +8201,11 @@ function handleSessionDateChange(value: string) {
                     role={canActivateClubCard ? 'button' : undefined}
                     tabIndex={canActivateClubCard ? 0 : undefined}
                   >
+                    {club.banner_url && (
+                      <div className="club-card-banner">
+                        <NextImage src={club.banner_url} alt="" fill sizes="(max-width: 720px) 100vw, 720px" />
+                      </div>
+                    )}
                     <div className="session-top">
                       <div>
                         <h3>{club.name}</h3>
