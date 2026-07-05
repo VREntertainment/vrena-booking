@@ -165,6 +165,8 @@ export default function TicketBookingView({
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
+  const currentTicketService = ticketServices.find((service) => service.id === ticketType)
+  const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
 
   return (
     <section className="section tickets-section">
@@ -174,31 +176,26 @@ export default function TicketBookingView({
         {gameGuideTrigger}
       </div>
       {tariffTrigger}
-      <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
 
       <>
           <div className="ticket-flow-grid">
-            <div className="ticket-type-list">
-              <label>{text.ticketType}</label>
-              <div className="ticket-service-grid">
-                {ticketServices.map((service) => (
-                  <button
-                    className={ticketType === service.id ? 'ticket-service-card active' : 'ticket-service-card'}
-                    key={service.id}
-                    type="button"
-                    onClick={() => onTicketTypeChange(service.id)}
-                  >
-                    <strong>{ticketTypeLabel(service.id, text)}</strong>
-                    <span>{ticketTypeDescription(service.id, text)}</span>
-                    <small>
-                      20-120 min · {service.minPlayers}-{service.maxPlayers} {text.players}
-                    </small>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="ticket-form-panel">
+              <div className="ticket-fast-path-summary">
+                <div>
+                  <span>{text.ticketType}</span>
+                  <strong>{ticketTypeLabel(ticketType, text)}</strong>
+                  <small>
+                    {ticketTypeDescription(ticketType, text)}
+                    {currentTicketService && ` · 20-120 min · ${currentTicketService.minPlayers}-${currentTicketService.maxPlayers} ${text.players}`}
+                  </small>
+                </div>
+                {isSpecialTicket && (
+                  <button className="secondary small-button" type="button" onClick={() => onTicketTypeChange('individual')}>
+                    {text.ticketUseIndividual}
+                  </button>
+                )}
+              </div>
+
               {!isLoggedIn && (
                 <GuestTicketContactPanel
                   contact={guestTicketContact}
@@ -392,7 +389,30 @@ export default function TicketBookingView({
               </button>
               {ticketStatus && <p className="notice">{ticketStatus}</p>}
             </div>
+
+            <div className="ticket-type-list ticket-event-options">
+              <label>{text.ticketEventHelpTitle}</label>
+              <p className="ticket-event-options-copy">{text.ticketEventHelpBody}</p>
+              <div className="ticket-service-grid">
+                {specialTicketServices.map((service) => (
+                  <button
+                    className={ticketType === service.id ? 'ticket-service-card active' : 'ticket-service-card'}
+                    key={service.id}
+                    type="button"
+                    onClick={() => onTicketTypeChange(service.id)}
+                  >
+                    <strong>{ticketTypeLabel(service.id, text)}</strong>
+                    <span>{ticketTypeDescription(service.id, text)}</span>
+                    <small>
+                      20-120 min · {service.minPlayers}-{service.maxPlayers} {text.players}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
 
           {ticketConfirmation && (
             <div className="ticket-confirmation">
