@@ -20,7 +20,7 @@ type HomeAppShellProps = {
   initialView?: AppView
 }
 
-export default function HomeAppShell({ initialView = 'leaderboard' }: HomeAppShellProps) {
+export default function HomeAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const hasHandledInitialViewRef = useRef(false)
