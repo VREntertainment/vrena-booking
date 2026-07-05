@@ -1104,6 +1104,7 @@ export default function WidgetPage({
 
   function preparePasskeyCaptcha() {
     if (typeof window === 'undefined') return
+    if (!shouldRequireCachedPasskeyCaptcha()) return
 
     window.setTimeout(() => {
       void executePasskeyCaptcha({ forceFresh: true }).catch(() => {
