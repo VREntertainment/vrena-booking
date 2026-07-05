@@ -5001,6 +5001,20 @@ body {
   background: #ffffff;
 }
 
+.app .club-card-banner {
+  position: relative;
+  min-height: 132px;
+  overflow: hidden;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), transparent),
+    #eef4f7;
+}
+
+.app .club-card-banner img {
+  object-fit: cover;
+}
+
 .app .club-card-motto {
   color: var(--club-theme, #3059ff);
   font-size: 13px;
@@ -15827,14 +15841,15 @@ body {
 }
 
 .app .clubs-section .club-list {
-  gap: 0;
-  border-top: 1px solid var(--player-border);
+  gap: 22px;
+  margin-top: 22px;
+  border-top: 0;
 }
 
 .app .clubs-section .notice {
-  padding: 12px 0;
+  padding: 10px 0;
   border: 0 !important;
-  border-bottom: 1px solid var(--player-border) !important;
+  border-bottom: 0 !important;
   border-left: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -15846,17 +15861,48 @@ body {
 }
 
 .app .clubs-section .club-card {
-  padding: 14px 0;
+  gap: 10px;
+  padding: 0 0 4px;
   border: 0 !important;
-  border-bottom: 1px solid var(--player-border) !important;
+  border-bottom: 0 !important;
   border-left: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-.app .clubs-section .club-card:last-child {
-  border-bottom: 0 !important;
+.app .clubs-section .club-card-banner {
+  min-height: clamp(116px, 16vw, 170px);
+  margin-bottom: 4px;
+}
+
+.app .clubs-section .club-card > .notice {
+  padding: 4px 0;
+}
+
+.app .clubs-section .club-card .players {
+  gap: 10px 12px;
+  padding-top: 2px;
+  border-top: 0;
+}
+
+.app .clubs-section .club-card .player {
+  min-width: 58px;
+  max-width: 72px;
+  gap: 5px;
+}
+
+.app .clubs-section .club-card .player-avatar {
+  width: 42px;
+  height: 42px;
+  box-shadow: 0 8px 18px rgba(7, 17, 18, 0.08);
+}
+
+.app .clubs-section .club-card .player > span {
+  color: var(--player-text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.1;
 }
 
 .app .club-drawer {
