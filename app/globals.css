@@ -945,6 +945,10 @@ body {
   margin-top: 0;
 }
 
+.app .profile-settings-actions {
+  margin-bottom: 12px;
+}
+
 .app .profile-save-actions .mobile-staff-profile-action {
   grid-column: 1 / -1;
 }

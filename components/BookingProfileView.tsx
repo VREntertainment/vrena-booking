@@ -446,6 +446,26 @@ export default function BookingProfileView({ context }: { context: any }) {
               />
             ) : (
               <>
+            {profile && (
+              <div className="action-row profile-save-actions profile-settings-actions">
+                <button
+                  className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
+                  disabled={isSavingProfile}
+                  onClick={saveProfile}
+                  type="button"
+                >
+                  {isSavingProfile ? text.saving : text.saveProfile}
+                </button>
+                <button className="secondary create-button" onClick={logout} type="button">
+                  {text.logOut}
+                </button>
+                {canAccessStaffConsole && (
+                  <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
+                    Staff Console
+                  </button>
+                )}
+              </div>
+            )}
             <div className={[
               'form-grid profile-form',
               profile ? 'profile-account-form' : '',
@@ -892,8 +912,8 @@ export default function BookingProfileView({ context }: { context: any }) {
                   {isResettingPassword ? text.saving : text.updatePassword}
                 </button>
               </div>
-            ) : (
-              <div className={profile ? 'action-row profile-save-actions' : 'action-row'}>
+            ) : profile ? null : (
+              <div className="action-row">
                 <button
                   className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
                   disabled={isSavingProfile}
@@ -914,16 +934,6 @@ export default function BookingProfileView({ context }: { context: any }) {
                         ? text.logIn
                         : text.createAccount}
                 </button>
-                {profile && canAccessStaffConsole && (
-                  <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
-                    Staff Console
-                  </button>
-                )}
-                {profile && (
-                  <button className="secondary create-button" onClick={logout} type="button">
-                    {text.logOut}
-                  </button>
-                )}
               </div>
             )}
             {profile && (
