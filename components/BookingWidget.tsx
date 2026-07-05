@@ -56,6 +56,7 @@ type BookingWidgetProps = {
   initialView?: AppView
   onActiveViewChange?: (view: AppView) => void
   onProfileChange?: (profile: Profile | null) => void
+  restoreStoredView?: boolean
 }
 
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
@@ -86,6 +87,7 @@ export default function WidgetPage({
   initialView = 'leaderboard',
   onActiveViewChange,
   onProfileChange,
+  restoreStoredView = true,
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const hasMountedInitialViewSyncRef = useRef(false)
@@ -3366,6 +3368,8 @@ export default function WidgetPage({
   }, [initialView])
 
   useEffect(() => {
+    if (!restoreStoredView) return undefined
+
     let storedView: AppView | null = null
 
     try {
@@ -3380,7 +3384,7 @@ export default function WidgetPage({
     return schedulePostEffectStateUpdate(() => {
       setActiveView((currentView) => currentView === storedView ? currentView : storedView)
     })
-  }, [])
+  }, [restoreStoredView])
 
   useEffect(() => {
     if (!externalLanguage) return

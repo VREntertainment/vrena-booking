@@ -1,5 +1,7 @@
 import { Share } from 'lucide-react'
+import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
+import { publicAppRoutes } from '../lib/appRoutes'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { storeLanguage } from '../lib/i18n/detectLanguage'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
@@ -99,7 +101,7 @@ export default function AppSidebar({
         <p className="muted">{text.tagline}</p>
       </div>
 
-      <button className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" onClick={() => onViewChange('profile')} type="button">
+      <Link className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" href={publicAppRoutes.profile} onClick={() => onViewChange('profile')}>
         <div className="avatar" style={profileAvatarStyle}>
           {profileAvatar}
           {isChampion && <span className="champion-badge">🏆</span>}
@@ -108,25 +110,25 @@ export default function AppSidebar({
           <strong>{profileTitle}</strong>
           <span>{profileSubtitle}</span>
         </div>
-      </button>
+      </Link>
 
       <div className="tabs">
-        <button className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} onClick={() => onViewChange('sessions')}>
+        <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} onClick={() => onViewChange('sessions')}>
           {text.sessions}
-        </button>
-        <button className={activeView === 'tickets' ? 'tab active' : 'tab'} onClick={() => onViewChange('tickets')}>
+        </Link>
+        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} href={publicAppRoutes.tickets} onClick={() => onViewChange('tickets')}>
           {text.tickets}
-        </button>
-        <button className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" onClick={() => onViewChange('leaderboard')}>
+        </Link>
+        <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} onClick={() => onViewChange('leaderboard')}>
           {text.hallOfFame}
-        </button>
-        <button className={activeView === 'clubs' ? 'tab active' : 'tab'} onClick={() => onViewChange('clubs')}>
+        </Link>
+        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} onClick={() => onViewChange('clubs')}>
           {text.clubs}
-        </button>
+        </Link>
         {canAccessStaffConsole && (
-          <button className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} onClick={() => onViewChange('staff')}>
+          <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
             {language === 'vi' ? 'Nhân viên' : 'Staff'}
-          </button>
+          </Link>
         )}
       </div>
 

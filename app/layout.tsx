@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { siteUrl } from "../lib/siteMetadata";
 import "driver.js/dist/driver.css";
 import "./globals.css";
 
@@ -16,8 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "VRena_Booking_App",
   description: "Book and play VR games at VRena",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/vrena-icon-20260616.png", sizes: "512x512", type: "image/png" },
