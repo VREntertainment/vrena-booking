@@ -27,9 +27,10 @@ import type { StaffProfile } from './StaffConsole'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
-const HCAPTCHA_READY_CALLBACK = '__vrenaHcaptchaReady'
-const HCAPTCHA_PRIMARY_SCRIPT_URL = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
-const HCAPTCHA_FALLBACK_SCRIPT_URL = `https://hcaptcha.com/1/api.js?render=explicit&onload=${HCAPTCHA_READY_CALLBACK}`
+const HCAPTCHA_SCRIPT_ID = 'hcaptcha-script'
+const HCAPTCHA_PRIMARY_SCRIPT_URL = 'https://js.hcaptcha.com/1/api.js?render=explicit'
+const HCAPTCHA_FALLBACK_SCRIPT_URL = 'https://hcaptcha.com/1/api.js?render=explicit'
+const HCAPTCHA_LOAD_TIMEOUT_MS = 8000
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -43,62 +44,100 @@ const CLUB_MESSAGE_LIMIT = 30
 const SESSION_MESSAGE_PAGE_SIZE = 30
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
+let hcaptchaLoadPromise: Promise<NonNullable<ReturnType<typeof getHCaptcha>>> | null = null
 
 function getSupabase() {
   supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
   return supabaseClientPromise
 }
 
-function appendHCaptchaScript(src: string, onLoad: () => void) {
-  const script = document.createElement('script')
+function waitForHCaptcha(timeoutMs = HCAPTCHA_LOAD_TIMEOUT_MS) {
+  const availableCaptcha = getHCaptcha()
+  if (availableCaptcha) return Promise.resolve(availableCaptcha)
+  if (typeof window === 'undefined') return Promise.reject(new Error('hCaptcha is not available.'))
 
-  script.id = 'hcaptcha-script'
-  script.src = src
-  script.async = true
-  script.defer = true
-  script.addEventListener('load', onLoad, { once: true })
-  document.body.appendChild(script)
+  const startedAt = Date.now()
 
-  return script
-}
+  return new Promise<NonNullable<ReturnType<typeof getHCaptcha>>>((resolve, reject) => {
+    const check = () => {
+      const hcaptcha = getHCaptcha()
 
-function scheduleHCaptchaFallback(onLoad: () => void, isCancelled: () => boolean) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return () => {}
+      if (hcaptcha) {
+        resolve(hcaptcha)
+        return
+      }
 
-  const script = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(new Error('hCaptcha did not load.'))
+        return
+      }
 
-  if (!script || !script.src.startsWith('https://js.hcaptcha.com/')) return () => {}
+      window.setTimeout(check, 50)
+    }
 
-  let settled = false
-  const useFallback = () => {
-    if (settled || isCancelled() || getHCaptcha()) return
-
-    settled = true
-    script.remove()
-    appendHCaptchaScript(HCAPTCHA_FALLBACK_SCRIPT_URL, onLoad)
-  }
-
-  script.addEventListener('error', useFallback, { once: true })
-  const timeoutId = window.setTimeout(useFallback, 3500)
-
-  return () => {
-    window.clearTimeout(timeoutId)
-    script.removeEventListener('error', useFallback)
-  }
-}
-
-function forceHCaptchaFallbackLoad() {
-  if (typeof window === 'undefined' || typeof document === 'undefined' || getHCaptcha()) return
-
-  const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
-
-  if (existingScript?.src.startsWith('https://hcaptcha.com/')) return
-
-  existingScript?.remove()
-  appendHCaptchaScript(HCAPTCHA_FALLBACK_SCRIPT_URL, () => {
-    const readyCallback = (window as Window & { [HCAPTCHA_READY_CALLBACK]?: () => void })[HCAPTCHA_READY_CALLBACK]
-    readyCallback?.()
+    check()
   })
+}
+
+function loadHCaptchaScript(src: string) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('hCaptcha can only load in the browser.'))
+  }
+
+  const availableCaptcha = getHCaptcha()
+  if (availableCaptcha) return Promise.resolve(availableCaptcha)
+
+  return new Promise<NonNullable<ReturnType<typeof getHCaptcha>>>((resolve, reject) => {
+    const previousScript = document.getElementById(HCAPTCHA_SCRIPT_ID)
+    previousScript?.remove()
+
+    const script = document.createElement('script')
+    let timeoutId: number | null = null
+
+    const cleanup = () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      script.removeEventListener('load', onLoad)
+      script.removeEventListener('error', onError)
+    }
+
+    const onLoad = () => {
+      waitForHCaptcha().then((hcaptcha) => {
+        cleanup()
+        resolve(hcaptcha)
+      }).catch((error) => {
+        cleanup()
+        reject(error)
+      })
+    }
+
+    const onError = () => {
+      cleanup()
+      reject(new Error('hCaptcha script failed to load.'))
+    }
+
+    script.id = HCAPTCHA_SCRIPT_ID
+    script.src = src
+    script.async = true
+    script.defer = true
+    script.addEventListener('load', onLoad)
+    script.addEventListener('error', onError)
+    timeoutId = window.setTimeout(onError, HCAPTCHA_LOAD_TIMEOUT_MS)
+    document.body.appendChild(script)
+  })
+}
+
+function ensureHCaptcha() {
+  const availableCaptcha = getHCaptcha()
+  if (availableCaptcha) return Promise.resolve(availableCaptcha)
+
+  hcaptchaLoadPromise ??= loadHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL)
+    .catch(() => loadHCaptchaScript(HCAPTCHA_FALLBACK_SCRIPT_URL))
+    .catch((error) => {
+      hcaptchaLoadPromise = null
+      throw error
+    })
+
+  return hcaptchaLoadPromise
 }
 
 type BookingWidgetProps = {
@@ -1009,9 +1048,11 @@ export default function WidgetPage({
 
     return new Promise<string>((resolve, reject) => {
       let settled = false
+      const timeoutId = window.setTimeout(() => fail(new Error(text.captchaRequired)), HCAPTCHA_LOAD_TIMEOUT_MS)
       const settle = (token: string) => {
         if (settled) return
         settled = true
+        window.clearTimeout(timeoutId)
         passkeyCaptchaTokenRef.current = token
         passkeyCaptchaResolveRef.current = null
         passkeyCaptchaRejectRef.current = null
@@ -1021,6 +1062,7 @@ export default function WidgetPage({
       const fail = (error: Error) => {
         if (settled) return
         settled = true
+        window.clearTimeout(timeoutId)
         passkeyCaptchaTokenRef.current = ''
         passkeyCaptchaResolveRef.current = null
         passkeyCaptchaRejectRef.current = null
@@ -1055,16 +1097,14 @@ export default function WidgetPage({
     if (typeof window === 'undefined') return false
 
     const startedAt = Date.now()
+    await ensureHCaptcha().catch(() => undefined)
 
     return new Promise<boolean>((resolve) => {
       let settled = false
       let timeoutId: number | null = null
-      const script = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
 
       const cleanup = () => {
         if (timeoutId) window.clearTimeout(timeoutId)
-        script?.removeEventListener('load', check)
-        script?.removeEventListener('error', finish)
       }
 
       const finish = () => {
@@ -1090,8 +1130,6 @@ export default function WidgetPage({
         timeoutId = window.setTimeout(check, 75)
       }
 
-      script?.addEventListener('load', check)
-      script?.addEventListener('error', finish, { once: true })
       check()
     })
   }
@@ -2007,7 +2045,6 @@ export default function WidgetPage({
       let captchaWidgetReady = await waitForPasskeyCaptchaWidget(1800)
 
       if (!captchaWidgetReady && !passkeyCaptchaTokenRef.current) {
-        forceHCaptchaFallbackLoad()
         captchaWidgetReady = await waitForPasskeyCaptchaWidget(4500)
       }
 
@@ -2039,7 +2076,6 @@ export default function WidgetPage({
         await restorePasskeyDocumentFocus()
         let retryCaptchaReady = await waitForPasskeyCaptchaWidget(1800)
         if (!retryCaptchaReady) {
-          forceHCaptchaFallbackLoad()
           retryCaptchaReady = await waitForPasskeyCaptchaWidget(4500)
         }
         const retryCaptchaToken = retryCaptchaReady ? await executePasskeyCaptcha({ forceFresh: true }) : ''
@@ -3759,11 +3795,8 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || profile || activeView !== 'profile' || !shouldShowCaptcha) return
 
     let cancelled = false
-    let cleanupFallback = () => {}
 
-    function renderCaptcha() {
-      const hcaptcha = getHCaptcha()
-
+    ensureHCaptcha().then((hcaptcha) => {
       if (cancelled || !captchaContainerRef.current || !hcaptcha || captchaWidgetId.current) return
 
       captchaWidgetId.current = hcaptcha.render(captchaContainerRef.current, {
@@ -3772,26 +3805,12 @@ export default function WidgetPage({
         'expired-callback': () => updateCaptchaToken(''),
         'error-callback': () => updateCaptchaToken(''),
       })
-    }
-
-    const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
-    const browserWindow = window as Window & { [HCAPTCHA_READY_CALLBACK]?: () => void }
-
-    browserWindow[HCAPTCHA_READY_CALLBACK] = renderCaptcha
-
-    if (getHCaptcha()) {
-      renderCaptcha()
-    } else if (existingScript) {
-      existingScript.addEventListener('load', renderCaptcha, { once: true })
-      cleanupFallback = scheduleHCaptchaFallback(renderCaptcha, () => cancelled)
-    } else {
-      appendHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL, renderCaptcha)
-      cleanupFallback = scheduleHCaptchaFallback(renderCaptcha, () => cancelled)
-    }
+    }).catch(() => {
+      if (!cancelled) updateCaptchaToken('')
+    })
 
     return () => {
       cancelled = true
-      cleanupFallback()
       updateCaptchaToken('')
 
       const hcaptcha = getHCaptcha()
@@ -3805,10 +3824,6 @@ export default function WidgetPage({
       }
 
       captchaWidgetId.current = null
-
-      if (browserWindow[HCAPTCHA_READY_CALLBACK] === renderCaptcha) {
-        delete browserWindow[HCAPTCHA_READY_CALLBACK]
-      }
     }
   }, [activeView, authMode, authStep, profile])
 
@@ -3818,12 +3833,9 @@ export default function WidgetPage({
     if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
 
     let cancelled = false
-    let cleanupFallback = () => {}
     warmSupabaseClient()
 
-    function renderPasskeyCaptcha() {
-      const hcaptcha = getHCaptcha()
-
+    ensureHCaptcha().then((hcaptcha) => {
       if (cancelled || !passkeyCaptchaContainerRef.current || !hcaptcha || passkeyCaptchaWidgetId.current) return
 
       setIsPasskeyCaptchaReady(false)
@@ -3847,26 +3859,12 @@ export default function WidgetPage({
       })
       setIsPasskeyCaptchaReady(!shouldRequireCachedPasskeyCaptcha())
       preparePasskeyCaptcha()
-    }
-
-    const existingScript = document.getElementById('hcaptcha-script') as HTMLScriptElement | null
-    const browserWindow = window as Window & { [HCAPTCHA_READY_CALLBACK]?: () => void }
-
-    browserWindow[HCAPTCHA_READY_CALLBACK] = renderPasskeyCaptcha
-
-    if (getHCaptcha()) {
-      renderPasskeyCaptcha()
-    } else if (existingScript) {
-      existingScript.addEventListener('load', renderPasskeyCaptcha, { once: true })
-      cleanupFallback = scheduleHCaptchaFallback(renderPasskeyCaptcha, () => cancelled)
-    } else {
-      appendHCaptchaScript(HCAPTCHA_PRIMARY_SCRIPT_URL, renderPasskeyCaptcha)
-      cleanupFallback = scheduleHCaptchaFallback(renderPasskeyCaptcha, () => cancelled)
-    }
+    }).catch(() => {
+      if (!cancelled) setIsPasskeyCaptchaReady(false)
+    })
 
     return () => {
       cancelled = true
-      cleanupFallback()
       setIsPasskeyCaptchaReady(false)
       resetPasskeyCaptcha()
 
@@ -3881,10 +3879,6 @@ export default function WidgetPage({
       }
 
       passkeyCaptchaWidgetId.current = null
-
-      if (browserWindow[HCAPTCHA_READY_CALLBACK] === renderPasskeyCaptcha) {
-        delete browserWindow[HCAPTCHA_READY_CALLBACK]
-      }
     }
   }, [activeView, authMode, authStep, isRecoveryMode, profile, text.captchaRequired])
 
