@@ -9,17 +9,14 @@ import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFo
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
 import { ButtonIconText, ShareSymbol } from './BookingWidgetUi'
+import AppLoadingState from './AppLoadingState'
 import type { Session } from '../lib/bookingWidgetDomain'
 
 const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 const TournamentControlPanel = dynamic(() => import('./TournamentControlPanel'), {
   ssr: false,
-  loading: () => (
-    <div className="tournament-desk">
-      <p className="notice" aria-busy="true">...</p>
-    </div>
-  ),
+  loading: () => <AppLoadingState className="tournament-desk" compact />,
 })
 
 type BookingSessionsPanelProps = {

@@ -31,6 +31,7 @@ import { uiText } from '../lib/i18n/translations'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { supabase } from '../lib/supabase/client'
+import AppLoadingState from './AppLoadingState'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
   ssr: false,
@@ -5610,7 +5611,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       </div>
 
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
-      {currentTabLoading && <p className="notice" aria-busy="true">{text.loading}</p>}
+      {currentTabLoading && <AppLoadingState compact label={text.loading} />}
 
       {currentTab === 'new' && (
         <div className="staff-grid">

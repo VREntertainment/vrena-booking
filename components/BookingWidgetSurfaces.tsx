@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import AppLoadingState from './AppLoadingState'
 import type { FirstLoginTourProps } from './FirstLoginTour'
 import type { ClubVisibility, ClubsViewProps } from './ClubsView'
 import type { CreateSessionViewProps } from './CreateSessionView'
@@ -16,52 +17,28 @@ export const FirstLoginTour = dynamic<FirstLoginTourProps>(() => import('./First
 })
 export const BookingSessionsPanel = dynamic(() => import('./BookingSessionsPanel'), {
   ssr: false,
-  loading: () => (
-    <section className="section sessions-section" data-tour="sessions-list">
-      <p className="notice" aria-busy="true">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState className="section sessions-section" />,
 })
 export const TicketBookingView = dynamic(() => import('./TicketBookingView'), {
   ssr: false,
-  loading: () => (
-    <section className="section tickets-section">
-      <p className="notice" aria-busy="true">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState className="section tickets-section" />,
 })
 export const GameGuideModal = dynamic(() => import('./GameGuideModal'), { ssr: false })
 export const ClubsView = dynamic<ClubsViewProps>(() => import('./ClubsView'), {
   ssr: false,
-  loading: () => (
-    <section className="section">
-      <p className="notice" aria-busy="true">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState />,
 })
 export const CreateSessionView = dynamic<CreateSessionViewProps>(() => import('./CreateSessionView'), {
   ssr: false,
-  loading: () => (
-    <section className="section">
-      <p className="notice" aria-busy="true">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState />,
 })
 export const BookingProfileView = dynamic(() => import('./BookingProfileView'), {
   ssr: false,
-  loading: () => (
-    <section className="section profile-section">
-      <p className="notice" aria-busy="true">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState className="section profile-section" />,
 })
 export const StaffConsole = dynamic(() => import('./StaffConsole'), {
   ssr: false,
-  loading: () => (
-    <section className="section staff-console">
-      <p className="notice" aria-busy="true">Loading Staff Console...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState className="section staff-console" />,
 })
 export const LoginPromptModal = dynamic(() => import('./SessionModals').then((module) => module.LoginPromptModal), { ssr: false })
 export const InvitePopupModal = dynamic(() => import('./SessionModals').then((module) => module.InvitePopupModal), { ssr: false })
@@ -72,17 +49,9 @@ export const CheckInModal = dynamic(() => import('./SessionModals').then((module
 export const PlayerProfileModal = dynamic(() => import('./SessionModals').then((module) => module.PlayerProfileModal), { ssr: false })
 export const TournamentControlPanel = dynamic<TournamentControlPanelProps>(() => import('./TournamentControlPanel'), {
   ssr: false,
-  loading: () => (
-    <div className="tournament-desk">
-      <p className="notice" aria-busy="true">...</p>
-    </div>
-  ),
+  loading: () => <AppLoadingState className="tournament-desk" compact />,
 })
 export const LeaderboardPanel = dynamic(() => import('./LeaderboardPanel'), {
   ssr: false,
-  loading: () => (
-    <section aria-busy="true" className="section leaderboard-section">
-      <p className="notice">...</p>
-    </section>
-  ),
+  loading: () => <AppLoadingState className="section leaderboard-section" />,
 })
