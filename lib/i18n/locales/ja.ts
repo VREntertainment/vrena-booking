@@ -29,7 +29,7 @@ export const ja = {
   onboardingFinishTitle: '完了',
   onboardingFinishBody: 'プレイの準備ができました。',
   ticketsExplainerTitle: 'Ticketsはプライベート予約です',
-  ticketsExplainerBody: 'Ticketsは自分やグループのVRena枠を予約する場所です。Sessionsは他のプレイヤーとコミュニティゲームに参加・作成する場所です。',
+  ticketsExplainerBody: 'Ticketsはアカウントなしで予約できます。Sessionsでは他のプレイヤーとゲームに参加・作成できます。',
   gameGuide: 'ゲームガイド',
   gameGuideOpen: 'ゲームガイド',
   gameGuideForGame: 'ガイド',

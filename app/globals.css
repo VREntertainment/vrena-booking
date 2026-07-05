@@ -1546,36 +1546,61 @@ body {
 .app .contact-channel-buttons {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  width: min(100%, 210px);
+  gap: 8px;
+  width: min(100%, 220px);
 }
 
 .app .contact-channel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
-  padding: 7px 10px;
-  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 10px;
+  color: #071112 !important;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
   text-decoration: none !important;
   white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(7, 17, 18, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .app .contact-channel.whatsapp {
-  background: #128c7e;
+  border-color: rgba(37, 211, 102, 0.34);
 }
 
 .app .contact-channel.zalo {
-  background: #0068ff;
+  border-color: rgba(0, 104, 255, 0.3);
+}
+
+.app .contact-channel img {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.app .contact-channel span {
+  min-width: 0;
 }
 
 .app .contact-channel:hover {
-  filter: brightness(0.94);
+  box-shadow: 0 8px 20px rgba(7, 17, 18, 0.1);
   text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.app .contact-channel.whatsapp:hover {
+  border-color: rgba(37, 211, 102, 0.7);
+}
+
+.app .contact-channel.zalo:hover {
+  border-color: rgba(0, 104, 255, 0.62);
 }
 
 .app .tariff-contact-channels {
@@ -14908,6 +14933,21 @@ body {
     border: 0;
     background: transparent;
     box-shadow: none;
+  }
+
+  .app .contact-channel {
+    background: var(--player-surface-raised);
+    border-color: var(--player-border);
+    color: #f6f7f9 !important;
+    box-shadow: var(--player-shadow-soft);
+  }
+
+  .app .contact-channel.whatsapp {
+    border-color: rgba(37, 211, 102, 0.42);
+  }
+
+  .app .contact-channel.zalo {
+    border-color: rgba(0, 104, 255, 0.42);
   }
 
   .app .compact-session-card-expanded,
