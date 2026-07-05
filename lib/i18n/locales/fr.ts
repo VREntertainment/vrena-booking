@@ -499,6 +499,7 @@ export const fr = {
   creatingClub: 'Création club...',
   clubCreated: 'Club créé.',
   clubRequired: 'Entre un nom de club.',
+  viewClub: 'Voir le club',
   joinClub: 'Rejoindre',
   requestJoin: 'Demander accès',
   requestSent: 'Req envoyée',

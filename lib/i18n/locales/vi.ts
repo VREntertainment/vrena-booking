@@ -499,6 +499,7 @@ export const vi = {
   creatingClub: 'Đang tạo CLB...',
   clubCreated: 'Đã tạo CLB.',
   clubRequired: 'Vui lòng nhập tên CLB.',
+  viewClub: 'Xem CLB',
   joinClub: 'Vào CLB',
   requestJoin: 'Xin tham gia',
   requestSent: 'Đã gửi.',

@@ -3,12 +3,12 @@
 import dynamic from 'next/dynamic'
 import AppLoadingState from './AppLoadingState'
 import type { FirstLoginTourProps } from './FirstLoginTour'
-import type { ClubVisibility, ClubsViewProps } from './ClubsView'
+import type { ClubVisibility, ClubVisibilityFilter, ClubsViewProps } from './ClubsView'
 import type { CreateSessionViewProps } from './CreateSessionView'
 import type { SessionTimeScope } from './SessionsView'
 import type { TournamentControlPanelProps } from './TournamentControlPanel'
 
-export type { ClubVisibility, SessionTimeScope }
+export type { ClubVisibility, ClubVisibilityFilter, SessionTimeScope }
 
 export const RichNotesEditor = dynamic(() => import('./RichNotesEditor'), { ssr: false })
 export const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })

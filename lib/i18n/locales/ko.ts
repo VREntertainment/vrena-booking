@@ -499,6 +499,7 @@ export const ko = {
   creatingClub: '클럽 생성 중...',
   clubCreated: '클럽 생성됨.',
   clubRequired: '클럽명을 입력하세요.',
+  viewClub: '클럽 보기',
   joinClub: '클럽 참가',
   requestJoin: '참가 요청',
   requestSent: '요청 보냄.',
