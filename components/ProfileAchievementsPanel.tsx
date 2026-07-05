@@ -17,7 +17,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import {
@@ -36,6 +36,7 @@ import {
   type AchievementRarity,
   type AchievementSession,
   type GameAchievement,
+  type RecentAchievement,
   type RetentionAchievement,
 } from '../lib/profileAchievements'
 import {
@@ -47,6 +48,7 @@ import {
   compactInitials,
 } from '../lib/bookingWidgetDomain'
 import { formatWholePercent } from '../lib/playerStatsShare'
+import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
 
 type ProfileAchievementsPanelProps = {
@@ -133,6 +135,16 @@ type AchievementCopy = {
   unlocked: string
   unlockCondition: string
   xp: string
+}
+
+type ManualProfileAchievementAward = {
+  id: string
+  achievement_id: string
+  achievement_kind: 'game' | 'retention' | string
+  title: string
+  description: string | null
+  note: string | null
+  awarded_at: string
 }
 
 type AchievementFilter = 'all' | 'games' | 'trickster' | 'social' | 'performance' | 'hidden'
@@ -670,6 +682,60 @@ function profileAchievementName(profile: ProfileAchievementsPanelProps['profile'
   return compactDisplayName(profile.nickname || profile.full_name || profile.phone, 'Player')
 }
 
+function applyManualGameAwards(achievements: GameAchievement[], manualAwards: ManualProfileAchievementAward[]) {
+  const manualGameIds = new Set(manualAwards
+    .filter((award) => award.achievement_kind === 'game')
+    .map((award) => award.achievement_id))
+
+  return achievements.map((achievement): GameAchievement => {
+    if (!manualGameIds.has(achievement.game.id) || achievement.state !== 'locked') return achievement
+    return {
+      ...achievement,
+      nextRequirement: 3,
+      playedCount: Math.max(1, achievement.playedCount),
+      progressPercent: 34,
+      state: 'unlocked',
+      tier: 'bronze',
+      title: `${achievement.game.title} Rookie`,
+    }
+  })
+}
+
+function applyManualRetentionAwards(achievements: RetentionAchievement[], manualAwards: ManualProfileAchievementAward[]) {
+  const manualRetentionIds = new Set(manualAwards
+    .filter((award) => award.achievement_kind === 'retention')
+    .map((award) => award.achievement_id))
+
+  return achievements.map((achievement): RetentionAchievement => {
+    if (!manualRetentionIds.has(achievement.id) || achievement.state !== 'locked') return achievement
+    return {
+      ...achievement,
+      current: achievement.target,
+      progressPercent: 100,
+      state: 'unlocked',
+    }
+  })
+}
+
+function mergeRecentAchievements(automatic: RecentAchievement[], manualAwards: ManualProfileAchievementAward[]) {
+  const manualRecent: RecentAchievement[] = manualAwards.map((award) => ({
+    id: award.achievement_id,
+    kind: award.achievement_kind === 'game' ? 'game' : 'retention',
+    title: award.title,
+    unlockedAt: award.awarded_at ? award.awarded_at.slice(0, 10) : null,
+  }))
+  const seen = new Set<string>()
+  return [...manualRecent, ...automatic]
+    .filter((achievement) => {
+      const key = `${achievement.kind}:${achievement.id}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return Boolean(achievement.unlockedAt)
+    })
+    .sort((left, right) => String(right.unlockedAt).localeCompare(String(left.unlockedAt)))
+    .slice(0, 4)
+}
+
 export default function ProfileAchievementsPanel({
   language,
   mySessions,
@@ -685,10 +751,36 @@ export default function ProfileAchievementsPanel({
   const [showRankList, setShowRankList] = useState(false)
   const [shareStatus, setShareStatus] = useState('')
   const [sparkedAchievementId, setSparkedAchievementId] = useState('')
+  const [manualAwards, setManualAwards] = useState<ManualProfileAchievementAward[]>([])
   const [, setTapCounts] = useState<Record<string, number>>({})
 
-  const achievements = useMemo(() => buildGameAchievements(mySessions, userId), [mySessions, userId])
-  const retentionAchievements = useMemo(() => buildRetentionAchievements(mySessions, userId, profile), [mySessions, profile, userId])
+  useEffect(() => {
+    const profileId = profile.id || userId
+    if (!profileId) return
+
+    let cancelled = false
+    void supabase
+      .from('profile_achievement_awards')
+      .select('id, achievement_id, achievement_kind, title, description, note, awarded_at')
+      .eq('profile_id', profileId)
+      .is('revoked_at', null)
+      .order('awarded_at', { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) setManualAwards((data ?? []) as ManualProfileAchievementAward[])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [profile.id, userId])
+
+  const automaticAchievements = useMemo(() => buildGameAchievements(mySessions, userId), [mySessions, userId])
+  const automaticRetentionAchievements = useMemo(() => buildRetentionAchievements(mySessions, userId, profile), [mySessions, profile, userId])
+  const achievements = useMemo(() => applyManualGameAwards(automaticAchievements, manualAwards), [automaticAchievements, manualAwards])
+  const retentionAchievements = useMemo(
+    () => applyManualRetentionAwards(automaticRetentionAchievements, manualAwards),
+    [automaticRetentionAchievements, manualAwards],
+  )
   const sessionsPlayed = useMemo(
     () => mySessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [mySessions, userId],
@@ -704,8 +796,8 @@ export default function ProfileAchievementsPanel({
   const spotlight = useMemo(() => weeklyAchievementSpotlight(mySessions, userId, retentionAchievements), [mySessions, retentionAchievements, userId])
   const closestUnlock = useMemo(() => closestAchievement(achievements, retentionAchievements), [achievements, retentionAchievements])
   const recentUnlocks = useMemo(
-    () => recentUnlockedAchievements(mySessions, userId, achievements, retentionAchievements),
-    [achievements, mySessions, retentionAchievements, userId],
+    () => mergeRecentAchievements(recentUnlockedAchievements(mySessions, userId, achievements, retentionAchievements), manualAwards),
+    [achievements, manualAwards, mySessions, retentionAchievements, userId],
   )
   const milestoneRewards = useMemo(() => achievementMilestoneRewards(summary), [summary])
   const graphPathPoints = useMemo(() => progressPath(graphPoints), [graphPoints])

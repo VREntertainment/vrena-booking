@@ -2492,6 +2492,211 @@ body {
   white-space: nowrap;
 }
 
+.app .staff-achievement-award-panel {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+}
+
+.app .staff-achievement-award-copy {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.app .staff-achievement-award-mark,
+.app .staff-achievement-preview-icon,
+.app .staff-achievement-player-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #3059ff;
+  background: rgba(48, 89, 255, 0.09);
+}
+
+.app .staff-achievement-award-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.app .staff-achievement-award-copy strong,
+.app .staff-achievement-awarded-list > strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.app .staff-achievement-award-copy span,
+.app .staff-achievement-preview span,
+.app .staff-achievement-awarded-list small {
+  color: #637075;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .staff-achievement-award-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1.15fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.app .staff-achievement-player-picker,
+.app .staff-achievement-award-form {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+
+.app .staff-achievement-player-picker label,
+.app .staff-achievement-award-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.app .staff-search-control {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(7, 17, 18, 0.12);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.app .staff-search-control input {
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.app .staff-achievement-player-list {
+  display: grid;
+  gap: 5px;
+  max-height: 310px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.app .staff-achievement-player {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid rgba(7, 17, 18, 0.08);
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.app .staff-achievement-player.active {
+  border-color: rgba(48, 89, 255, 0.35);
+  background: rgba(48, 89, 255, 0.07);
+}
+
+.app .staff-achievement-player-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.app .staff-achievement-player span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .staff-achievement-player strong,
+.app .staff-achievement-player small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-achievement-player small {
+  color: #637075;
+  font-size: 12px;
+}
+
+.app .staff-achievement-preview {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid rgba(7, 17, 18, 0.07);
+  border-bottom: 1px solid rgba(7, 17, 18, 0.07);
+}
+
+.app .staff-achievement-preview-image,
+.app .staff-achievement-preview-icon {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.app .staff-achievement-preview-image img {
+  object-fit: cover;
+}
+
+.app .staff-achievement-preview > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-achievement-award-form textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.app .staff-achievement-award-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app .staff-achievement-award-actions button {
+  min-height: 38px;
+}
+
+.app .staff-achievement-awarded-list {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.app .staff-achievement-awarded-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 174, 179, 0.09);
+  color: #0f7478;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .app .staff-role-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(150px, 220px);
@@ -11065,9 +11270,18 @@ body {
   }
 
   .app .staff-customer-invite-copy,
-  .app .staff-customer-invite-form {
+  .app .staff-customer-invite-form,
+  .app .staff-achievement-award-layout {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-achievement-award-actions {
+    justify-content: stretch;
+  }
+
+  .app .staff-achievement-award-actions button {
+    flex: 1 1 160px;
   }
 
   .app .staff-summary-card {
@@ -12757,10 +12971,30 @@ body {
   .app .staff-chart-mode,
   .app .staff-report-curve,
   .app .staff-hourly-chart,
-  .app .staff-operation-session {
+  .app .staff-operation-session,
+  .app .staff-search-control,
+  .app .staff-achievement-player,
+  .app .staff-achievement-preview {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
     color: #f6f7f9;
+  }
+
+  .app .staff-achievement-player.active {
+    background: rgba(48, 89, 255, 0.22);
+    border-color: rgba(90, 130, 255, 0.55);
+  }
+
+  .app .staff-achievement-award-mark,
+  .app .staff-achievement-preview-icon,
+  .app .staff-achievement-player-avatar {
+    background: rgba(48, 89, 255, 0.22);
+    color: #c7d5ff;
+  }
+
+  .app .staff-achievement-awarded-list span {
+    background: rgba(0, 174, 179, 0.18);
+    color: #9df4f4;
   }
 
   .app .staff-audience-chip {
@@ -12787,6 +13021,10 @@ body {
   .app .staff-table span,
   .app .staff-list-item span,
   .app .staff-customer-invite-copy span,
+  .app .staff-achievement-award-copy span,
+  .app .staff-achievement-preview span,
+  .app .staff-achievement-player small,
+  .app .staff-achievement-awarded-list small,
   .app .staff-role-row span:not(.staff-role-avatar):not(.avatar-photo):not(.avatar-emoji):not(.avatar-text),
   .app .staff-role-help-item span,
   .app .staff-restore-row span,
