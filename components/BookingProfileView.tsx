@@ -355,6 +355,7 @@ export default function BookingProfileView({ context }: { context: any }) {
             onAuthModeChange={updateAuthMode}
             profileExists={Boolean(profile)}
             text={text}
+            unframed={Boolean(profile && profileSubTab === 'achievements')}
           >
             {!mfaRequired && !profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email' && (
               <div className="auth-method-stack">
