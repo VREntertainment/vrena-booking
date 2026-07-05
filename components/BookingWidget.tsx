@@ -84,7 +84,7 @@ export default function WidgetPage({
   initialText,
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
-  initialView = 'leaderboard',
+  initialView = 'tickets',
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
