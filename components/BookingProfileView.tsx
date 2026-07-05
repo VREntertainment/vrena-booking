@@ -71,7 +71,7 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
 }
 
 export default function BookingProfileView({ context }: { context: any }) {
-  const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
+  const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('settings')
   const {
     activeTotpFactor,
     addToCalendarText,

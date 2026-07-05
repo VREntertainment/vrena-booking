@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic'
 import type { ReactNode } from 'react'
+import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
+import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 
@@ -40,6 +42,8 @@ type TicketBookingConfirmation = {
   time: string
   players: number
   totalPrice: number
+  guestPhone?: string
+  guestName?: string
   loyaltyPointsRedeemed?: number
   loyaltyDiscountAmount?: number
   discountCode?: string
@@ -98,6 +102,8 @@ export type TicketBookingViewProps = {
   ticketTypeLabel: (ticketType: TicketType, text: Record<string, string>) => string
   ticketTypeDescription: (ticketType: TicketType, text: Record<string, string>) => string
   ticketUnitFormulaText: (text: Record<string, string>, unitPrice: number, players: number) => string
+  guestTicketContact: GuestTicketContact
+  onGuestTicketContactChange: (contact: GuestTicketContact) => void
 }
 
 export default function TicketBookingView({
@@ -152,9 +158,12 @@ export default function TicketBookingView({
   ticketTypeLabel,
   ticketTypeDescription,
   ticketUnitFormulaText,
+  guestTicketContact,
+  onGuestTicketContactChange,
 }: TicketBookingViewProps) {
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
+  const showLoyaltyTools = isLoggedIn && !isSpecialTicket
 
   return (
     <section className="section tickets-section">
@@ -165,16 +174,7 @@ export default function TicketBookingView({
       </div>
       {tariffTrigger}
 
-      {!isLoggedIn ? (
-        <div className="ticket-login-panel">
-          <strong>{text.ticketLoginRequiredTitle}</strong>
-          <p className="muted">{text.ticketLoginRequiredBody}</p>
-          <button className="primary" type="button" onClick={onPromptLogin}>
-            {text.loginPromptButton}
-          </button>
-        </div>
-      ) : (
-        <>
+      <>
           <div className="ticket-flow-grid">
             <div className="ticket-type-list">
               <label>{text.ticketType}</label>
@@ -197,6 +197,16 @@ export default function TicketBookingView({
             </div>
 
             <div className="ticket-form-panel">
+              {!isLoggedIn && (
+                <GuestTicketContactPanel
+                  contact={guestTicketContact}
+                  disabled={isBookingTickets}
+                  onChange={onGuestTicketContactChange}
+                  onPromptLogin={onPromptLogin}
+                  text={text}
+                />
+              )}
+
               <div className="form-grid compact-form-grid ticket-form-grid">
                 <div className="ticket-control ticket-control-date">
                   <label>{text.date} <span className="required">*</span></label>
@@ -248,7 +258,7 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              {!isSpecialTicket && (
+              {isLoggedIn && !isSpecialTicket && (
                 <label className="ticket-discount-code-field">
                   <span>{text.ticketDiscountCodeLabel}</span>
                   <input
@@ -293,14 +303,14 @@ export default function TicketBookingView({
                     <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
                   </div>
                 )}
-                {!isSpecialTicket && ticketDiscountAmount > 0 && (
+                {isLoggedIn && !isSpecialTicket && ticketDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
                     <strong>-{formatVnd(ticketDiscountAmount)}</strong>
                     <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName}</small>
                   </div>
                 )}
-                {!isSpecialTicket && (
+                {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
                     <p className="ticket-loyalty-zero">
                       {estimatedLoyaltyPointsEarned > 0
@@ -351,7 +361,7 @@ export default function TicketBookingView({
                     )}
                   </div>
                 )}
-                {!isSpecialTicket && loyaltyDiscountAmount > 0 && (
+                {showLoyaltyTools && loyaltyDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{text.ticketLoyaltyDiscount}</span>
                     <strong>-{formatVnd(loyaltyDiscountAmount)}</strong>
@@ -409,10 +419,25 @@ export default function TicketBookingView({
                   {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
                 </p>
               )}
+              {ticketConfirmation.guestPhone && (
+                <p>
+                  {text.guestTicketResumeHint
+                    .replace('{phone}', ticketConfirmation.guestPhone)
+                    .replace('{reference}', ticketConfirmation.reference || '-')}
+                </p>
+              )}
+              {!isLoggedIn && (
+                <div className="guest-ticket-next-steps">
+                  <strong>{text.guestTicketSavedTitle}</strong>
+                  <span>{text.guestTicketSavedBody}</span>
+                  <button className="secondary small-button" type="button" onClick={onPromptLogin}>
+                    {text.guestTicketCreateAccountCta}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </>
-      )}
     </section>
   )
 }
