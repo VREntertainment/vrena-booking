@@ -90,17 +90,20 @@ export default function GuestTicketContactPanel({
             </div>
           )}
         </div>
-        <input
-          aria-label={`${text.phone} *`}
-          autoComplete="tel-national"
-          className="guest-ticket-phone-input"
-          disabled={disabled}
-          inputMode="tel"
-          onChange={(event) => updatePhone(phoneParts.countryInput, event.target.value)}
-          placeholder="0981152315"
-          type="tel"
-          value={phoneParts.localPhone}
-        />
+        <label className="guest-ticket-phone-field">
+          <span className="guest-ticket-phone-required"><span className="required">*</span></span>
+          <input
+            aria-label={`${text.phone} *`}
+            autoComplete="tel-national"
+            className="guest-ticket-phone-input"
+            disabled={disabled}
+            inputMode="tel"
+            onChange={(event) => updatePhone(phoneParts.countryInput, event.target.value)}
+            placeholder="0981152315"
+            type="tel"
+            value={phoneParts.localPhone}
+          />
+        </label>
       </div>
       <label>
         <span>{text.name} <small>{text.optional}</small></span>

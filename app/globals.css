@@ -6512,7 +6512,7 @@ body {
 
 .app .guest-ticket-contact {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr);
+  grid-template-columns: minmax(230px, 0.9fr) minmax(300px, 0.95fr) minmax(190px, 0.72fr);
   gap: 10px;
   align-items: end;
   padding-bottom: 14px;
@@ -6560,6 +6560,22 @@ body {
   gap: 8px;
   align-items: end;
   min-width: 0;
+}
+
+.app .guest-ticket-phone-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+
+.app .guest-ticket-phone-required {
+  min-height: 13px;
+  line-height: 1;
+}
+
+.app .guest-ticket-phone-required .required {
+  color: #d72638;
 }
 
 .app .guest-ticket-country-picker {
@@ -6650,6 +6666,7 @@ body {
 .app .guest-ticket-phone-input {
   width: 100%;
   min-width: 0;
+  padding-inline: 14px;
 }
 
 .app .guest-ticket-contact p {
