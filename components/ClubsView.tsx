@@ -50,11 +50,10 @@ export default function ClubsView({
   const hasActiveSearch = Boolean(isClubSearchOpen || clubSearch)
 
   return (
-    <section className="section">
+    <section className="section clubs-section">
       <div className="section-head">
         <div>
           <h2>{text.clubsTitle}</h2>
-          <p className="muted">{text.clubsHint}</p>
         </div>
         <div className={isClubSearchOpen ? 'search-shell open' : 'search-shell'} ref={clubSearchShellRef}>
           <button

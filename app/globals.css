@@ -14893,3 +14893,318 @@ body {
     color: #f6f7f9;
   }
 }
+
+/* Lean player surfaces: extend the Sessions treatment to the rest of the player console. */
+.app .profile-chip.active {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .profile-chip.active .avatar,
+.app .profile-chip.active .avatar-photo,
+.app .profile-chip.active .avatar-photo img {
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+.app .leaderboard-section,
+.app .tickets-section,
+.app .clubs-section,
+.app .create-session-section {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .profile-account-section-unframed {
+  gap: 14px;
+}
+
+.app .profile-account-section-unframed .profile-sub-tabs,
+.app .clubs-section .form-segmented,
+.app .create-session-section .create-session-mode-toggle {
+  width: fit-content;
+  gap: 20px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .profile-account-section-unframed .profile-sub-tabs button,
+.app .clubs-section .form-segmented button,
+.app .create-session-section .create-session-mode-toggle button {
+  min-height: 32px;
+  padding: 5px 0;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--player-text-muted);
+  box-shadow: none !important;
+}
+
+.app .profile-account-section-unframed .profile-sub-tabs button.active,
+.app .clubs-section .form-segmented button.active,
+.app .create-session-section .create-session-mode-toggle button.active {
+  border-bottom-color: #70dfff !important;
+  color: #071112;
+}
+
+.app .profile-account-form {
+  gap: 0 16px;
+}
+
+.app .profile-account-form .profile-account-hero,
+.app .profile-account-form .country-phone-field,
+.app .profile-account-form .email-field,
+.app .profile-account-form .name-field,
+.app .profile-account-form .nickname-field,
+.app .profile-account-form .birthday-field,
+.app .profile-account-form .gender-field,
+.app .profile-account-form .motto-field,
+.app .profile-account-form .marketing-consent-field,
+.app .profile-security-panel,
+.app .mfa-security-card,
+.app .mfa-enroll-panel,
+.app .mfa-challenge-panel {
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .profile-account-form .profile-account-hero {
+  padding: 0 0 16px;
+}
+
+.app .profile-account-form .country-phone-field,
+.app .profile-account-form .email-field,
+.app .profile-account-form .name-field,
+.app .profile-account-form .nickname-field,
+.app .profile-account-form .birthday-field,
+.app .profile-account-form .gender-field,
+.app .profile-account-form .motto-field,
+.app .profile-account-form .marketing-consent-field {
+  padding: 12px 0;
+}
+
+.app .profile-account-form .motto-field,
+.app .profile-account-form .marketing-consent-field,
+.app .profile-security-panel,
+.app .mfa-enroll-panel,
+.app .mfa-challenge-panel {
+  padding-inline: 0;
+}
+
+.app .profile-security-panel {
+  padding: 14px 0 0;
+}
+
+.app .profile-security-panel .account-links {
+  gap: 0;
+  border-top: 1px solid var(--player-border);
+}
+
+.app .profile-security-panel .link-button {
+  border: 0 !important;
+  border-right: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .profile-security-panel .link-button:last-child {
+  border-right: 0 !important;
+}
+
+.app .ticket-explainer,
+.app .ticket-tariff-link,
+.app .ticket-login-panel,
+.app .ticket-confirmation,
+.app .ticket-admin-box {
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-inline: 0;
+}
+
+.app .ticket-flow-grid {
+  gap: 18px;
+  padding-top: 4px;
+}
+
+.app .ticket-service-grid {
+  gap: 0;
+  border-top: 1px solid var(--player-border);
+}
+
+.app .ticket-service-card {
+  padding: 12px 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .ticket-service-card.active {
+  background: transparent !important;
+  box-shadow: inset 3px 0 0 #70dfff !important;
+  padding-left: 12px;
+}
+
+.app .ticket-price-summary {
+  gap: 0;
+  border-top: 1px solid var(--player-border);
+}
+
+.app .ticket-price-summary > div,
+.app .ticket-confirmation-grid span,
+.app .ticket-session-summary span {
+  padding: 10px 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .ticket-price-summary > div:nth-last-child(-n + 4) {
+  border-bottom: 0 !important;
+}
+
+.app .clubs-section .club-form {
+  gap: 12px 16px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--player-border);
+}
+
+.app .clubs-section > .create-button {
+  width: auto;
+  min-width: min(220px, 100%);
+  margin-top: 0;
+}
+
+.app .clubs-section .club-list {
+  gap: 0;
+  border-top: 1px solid var(--player-border);
+}
+
+.app .clubs-section .notice {
+  padding: 12px 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .clubs-section .club-login-notice {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.app .clubs-section .club-card {
+  padding: 14px 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--player-border) !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .clubs-section .club-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.app .club-drawer {
+  gap: 16px;
+}
+
+.app .club-drawer .club-hero,
+.app .club-drawer .club-invite-box,
+.app .club-drawer .club-member-row,
+.app .club-drawer .club-session-preview,
+.app .club-drawer .club-banner-upload {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .club-drawer .club-hero {
+  min-height: 170px;
+}
+
+.app .club-drawer .club-invite-box,
+.app .club-drawer .club-member-row,
+.app .club-drawer .club-session-preview {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--player-border) !important;
+}
+
+.app .create-session-section .calendar-panel {
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .create-session-section .calendar-scroll {
+  border-color: var(--player-border);
+  border-radius: var(--player-radius-sm);
+}
+
+.app .create-session-section .form-grid > .full {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--player-border);
+}
+
+.app .create-session-section .game-card {
+  border-color: transparent;
+  background: transparent;
+}
+
+.app .create-session-section .tournament-create-box {
+  padding: 14px 0 14px 14px;
+  border: 0 !important;
+  border-left: 3px solid #70dfff !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+  .app .ticket-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .profile-account-form {
+    gap: 0;
+  }
+
+  .app .profile-security-panel .account-links {
+    grid-template-columns: 1fr;
+  }
+
+  .app .profile-security-panel .link-button {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--player-border) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .profile-account-section-unframed .profile-sub-tabs button.active,
+  .app .clubs-section .form-segmented button.active,
+  .app .create-session-section .create-session-mode-toggle button.active {
+    color: #f6f7f9;
+  }
+}
