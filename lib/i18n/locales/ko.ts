@@ -518,6 +518,7 @@ export const ko = {
   continueWithGoogle: 'Google로 계속',
   addPasskey: '패스키 추가',
   passkeyStarting: '기기 안내에 따라 계속하세요.',
+  passkeySecurityCheckLoading: '안전한 패스키 로그인을 준비 중입니다. 잠시 후 다시 시도하세요.',
   passkeyUnavailable: '이 기기에서는 패스키를 사용할 수 없습니다.',
   passkeyAdded: '패스키가 추가되었습니다. 다음 로그인은 더 빨라요.',
   mfaAuthenticatorTitle: '인증 앱',

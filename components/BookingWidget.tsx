@@ -974,6 +974,31 @@ export default function WidgetPage({
     })
   }
 
+  async function waitForPasskeyCaptchaWidget(timeoutMs = 2500) {
+    if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) return true
+    if (typeof window === 'undefined') return false
+
+    const startedAt = Date.now()
+
+    return new Promise<boolean>((resolve) => {
+      const check = () => {
+        if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) {
+          resolve(true)
+          return
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve(false)
+          return
+        }
+
+        window.setTimeout(check, 75)
+      }
+
+      check()
+    })
+  }
+
   function warmSupabaseClient() {
     void getSupabase().then((client) => {
       warmedSupabaseClientRef.current = client
@@ -1878,12 +1903,23 @@ export default function WidgetPage({
     try {
       setIsPasskeyLoading(true)
       setProfileStatus(text.passkeyStarting)
+      preparePasskeyCaptcha()
+      const captchaWidgetReady = await waitForPasskeyCaptchaWidget()
+
+      if (!captchaWidgetReady && !passkeyCaptchaTokenRef.current) {
+        setProfileStatus(text.passkeySecurityCheckLoading)
+        setIsPasskeyLoading(false)
+        preparePasskeyCaptcha()
+        return
+      }
+
       const cachedCaptchaToken = passkeyCaptchaTokenRef.current
       const captchaTokenForPasskey = cachedCaptchaToken || await executePasskeyCaptcha()
 
       if (!captchaTokenForPasskey) {
-        setProfileStatus(text.captchaRequired)
+        setProfileStatus(text.passkeySecurityCheckLoading)
         setIsPasskeyLoading(false)
+        preparePasskeyCaptcha()
         return
       }
 
@@ -1905,8 +1941,9 @@ export default function WidgetPage({
         const retryCaptchaToken = await executePasskeyCaptcha({ forceFresh: true })
 
         if (!retryCaptchaToken) {
-          setProfileStatus(text.captchaRequired)
+          setProfileStatus(text.passkeySecurityCheckLoading)
           setIsPasskeyLoading(false)
+          preparePasskeyCaptcha()
           return
         }
 

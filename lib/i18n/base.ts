@@ -516,6 +516,7 @@ export const en = {
   continueWithGoogle: 'Continue with Google',
   addPasskey: 'Add passkey',
   passkeyStarting: 'Follow your device prompt to continue.',
+  passkeySecurityCheckLoading: 'Preparing secure passkey sign-in. Try again in a moment.',
   passkeyUnavailable: 'Passkeys are not available on this device.',
   passkeyAdded: 'Passkey added. Next time you can sign in faster.',
   mfaAuthenticatorTitle: 'Authenticator app',

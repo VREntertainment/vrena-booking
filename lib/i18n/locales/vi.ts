@@ -518,6 +518,7 @@ export const vi = {
   continueWithGoogle: 'Tiếp tục với Google',
   addPasskey: 'Thêm passkey',
   passkeyStarting: 'Làm theo thông báo trên thiết bị để tiếp tục.',
+  passkeySecurityCheckLoading: 'Đang chuẩn bị đăng nhập passkey an toàn. Thử lại sau giây lát.',
   passkeyUnavailable: 'Thiết bị này chưa hỗ trợ passkey.',
   passkeyAdded: 'Đã thêm passkey. Lần sau bạn đăng nhập nhanh hơn.',
   mfaAuthenticatorTitle: 'Ứng dụng xác thực',
