@@ -15832,26 +15832,67 @@ body {
   border-bottom: 0 !important;
 }
 
-.app .clubs-section .club-form {
-  gap: 12px 16px;
-  padding: 0 0 14px;
+.app .clubs-section .club-discovery-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.app .clubs-section .club-discovery-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.app .clubs-section .club-filter {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: min(360px, 100%);
+}
+
+.app .clubs-section .club-create-toggle {
+  width: auto;
+  min-width: 154px;
+  min-height: 44px;
+  margin: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.app .clubs-section .club-create-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0 18px;
   border-bottom: 1px solid var(--player-border);
 }
 
-.app .clubs-section > .create-button {
+.app .clubs-section .club-form {
+  gap: 12px 16px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.app .clubs-section .create-button {
   width: auto;
   min-width: min(220px, 100%);
   margin-top: 0;
+  justify-self: start;
 }
 
 .app .clubs-section .club-list {
-  gap: 22px;
-  margin-top: 22px;
+  gap: 30px;
+  margin-top: 26px;
   border-top: 0;
 }
 
 .app .clubs-section .notice {
-  padding: 10px 0;
+  padding: 8px 0;
   border: 0 !important;
   border-bottom: 0 !important;
   border-left: 0 !important;
@@ -15865,8 +15906,8 @@ body {
 }
 
 .app .clubs-section .club-card {
-  gap: 10px;
-  padding: 0 0 4px;
+  gap: 11px;
+  padding: 0 0 10px;
   border: 0 !important;
   border-bottom: 0 !important;
   border-left: 0 !important;
@@ -15876,17 +15917,65 @@ body {
 }
 
 .app .clubs-section .club-card-banner {
-  min-height: clamp(116px, 16vw, 170px);
-  margin-bottom: 4px;
+  aspect-ratio: 5 / 1;
+  min-height: 112px;
+  max-height: 180px;
+  margin-bottom: 6px;
 }
 
-.app .clubs-section .club-card > .notice {
-  padding: 4px 0;
+.app .clubs-section .club-card-banner img {
+  object-position: center;
+}
+
+.app .clubs-section .club-card-main,
+.app .clubs-section .club-card-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.app .clubs-section .club-card-main h3 {
+  margin: 0;
+}
+
+.app .clubs-section .club-card-meta {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.app .clubs-section .club-card-description {
+  max-width: 74ch;
+  margin: 0;
+}
+
+.app .clubs-section .club-card-footer {
+  align-items: end;
+}
+
+.app .clubs-section .club-card-actions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.app .clubs-section .club-card-primary-action {
+  min-width: 128px;
+  min-height: 38px;
+  margin: 0;
+}
+
+.app .clubs-section .club-private-note {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 38px;
+  color: var(--player-text-muted);
+  font-weight: 700;
 }
 
 .app .clubs-section .club-card .players {
   gap: 10px 12px;
-  padding-top: 2px;
+  padding-top: 0;
   border-top: 0;
 }
 
@@ -15902,11 +15991,23 @@ body {
   box-shadow: 0 8px 18px rgba(7, 17, 18, 0.08);
 }
 
-.app .clubs-section .club-card .player > span {
+.app .clubs-section .club-card .player > span,
+.app .clubs-section .club-card-more-members {
   color: var(--player-text-muted);
   font-size: 11px;
   font-weight: 750;
   line-height: 1.1;
+}
+
+.app .clubs-section .club-card-more-members {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--player-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--player-surface) 70%, transparent);
 }
 
 .app .club-drawer {
@@ -15983,6 +16084,43 @@ body {
   .app .profile-security-panel .link-button {
     border-right: 0 !important;
     border-bottom: 1px solid var(--player-border) !important;
+  }
+
+  .app .clubs-section .club-discovery-toolbar,
+  .app .clubs-section .club-card-main,
+  .app .clubs-section .club-card-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .app .clubs-section .club-discovery-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .app .clubs-section .club-filter,
+  .app .clubs-section .club-create-toggle {
+    width: 100%;
+  }
+
+  .app .clubs-section .club-create-toggle,
+  .app .clubs-section .club-card-actions,
+  .app .clubs-section .club-card-meta {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .app .clubs-section .club-card-banner {
+    aspect-ratio: 16 / 6;
+    min-height: 96px;
+  }
+
+  .app .clubs-section .club-card-actions {
+    flex-wrap: wrap;
+  }
+
+  .app .clubs-section .club-card-primary-action {
+    width: 100%;
   }
 }
 

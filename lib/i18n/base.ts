@@ -497,6 +497,7 @@ export const en = {
   creatingClub: 'Creating club...',
   clubCreated: 'Club created.',
   clubRequired: 'Please enter a club name.',
+  viewClub: 'View Club',
   joinClub: 'Join Club',
   requestJoin: 'Request to Join',
   requestSent: 'Request sent.',

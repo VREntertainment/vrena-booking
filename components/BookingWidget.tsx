@@ -1,8 +1,8 @@
 'use client'
 
 import NextImage from 'next/image'
-import { Bold, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { Bold, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, Lock, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
+import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
 import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, games, isEscapeSession, selectedTicketService, ticketArenaCount, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
@@ -20,7 +20,7 @@ import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
 import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
-import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type SessionTimeScope } from './BookingWidgetSurfaces'
+import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type ClubVisibilityFilter, type SessionTimeScope } from './BookingWidgetSurfaces'
 import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
@@ -271,6 +271,7 @@ export default function WidgetPage({
   const [editTournamentThirdPrize, setEditTournamentThirdPrize] = useState('')
   const [isUpdatingSession, setIsUpdatingSession] = useState(false)
   const [clubVisibility, setClubVisibility] = useState<ClubVisibility>('public')
+  const [clubVisibilityFilter, setClubVisibilityFilter] = useState<ClubVisibilityFilter>('all')
   const [clubName, setClubName] = useState('')
   const [clubDescription, setClubDescription] = useState('')
   const [clubStatus, setClubStatus] = useState('')
@@ -4415,9 +4416,12 @@ function handleSessionDateChange(value: string) {
 
   const filteredClubs = useMemo(() => {
     const query = normalizeSearchValue(clubSearch)
-    if (!query) return clubs
+    const visibleClubs = clubVisibilityFilter === 'all'
+      ? clubs
+      : clubs.filter((club) => club.visibility === clubVisibilityFilter)
+    if (!query) return visibleClubs
 
-    return clubs.filter((club) => {
+    return visibleClubs.filter((club) => {
       const memberNames = clubMembers(club)
         .map((member) => member.display_name || '')
         .join(' ')
@@ -4430,7 +4434,7 @@ function handleSessionDateChange(value: string) {
 
       return haystack.includes(query)
     })
-  }, [clubSearch, clubs])
+  }, [clubSearch, clubVisibilityFilter, clubs])
 
   const sessionDayOptions = useMemo(() => {
     const today = new Date()
@@ -8164,14 +8168,18 @@ function handleSessionDateChange(value: string) {
             clubSearchShellRef={clubSearchShellRef}
             clubStatus={clubStatus}
             clubVisibility={clubVisibility}
+            clubVisibilityFilter={clubVisibilityFilter}
             isClubSearchOpen={isClubSearchOpen}
             isCreatingClub={isCreatingClub}
+            isLoggedIn={Boolean(profile)}
             onClubDescriptionChange={setClubDescription}
             onClubNameChange={setClubName}
             onClubSearchChange={setClubSearch}
             onClubSearchOpenChange={setIsClubSearchOpen}
+            onClubVisibilityFilterChange={setClubVisibilityFilter}
             onClubVisibilityChange={setClubVisibility}
             onCreateClub={createClub}
+            onPromptLogin={promptLogin}
             text={text}
           >
               {filteredClubs.map((club) => {
@@ -8185,6 +8193,21 @@ function handleSessionDateChange(value: string) {
                 const canActivateClubCard = !userId || canOpenPage || canAskPrivateCode
                 const canSeeMembers = canSeeClubPrivateData(club)
                 const canUseMessages = canOpenPage && canUseClubMessages(club)
+                const visibleApprovedMembers = approvedMembers.slice(0, 6)
+                const extraApprovedMemberCount = Math.max(0, approvedMembers.length - visibleApprovedMembers.length)
+                const clubPrimaryActionText = !userId
+                  ? (club.visibility === 'private' ? text.requestJoin : text.viewClub)
+                  : (!membership && !canManage ? (club.visibility === 'private' ? text.requestJoin : text.joinClub) : text.viewClub)
+                const canShowPrimaryAction = !membership || canManage || canOpenPage || !userId
+
+                function handleClubPrimaryAction(event: MouseEvent<HTMLButtonElement>) {
+                  event.stopPropagation()
+                  if (!userId || membership || canManage || canOpenPage) {
+                    openClubPage(club.id)
+                    return
+                  }
+                  joinClub(club)
+                }
 
                 return (
                   <article
@@ -8206,81 +8229,84 @@ function handleSessionDateChange(value: string) {
                         <NextImage src={club.banner_url} alt="" fill sizes="(max-width: 720px) 100vw, 720px" />
                       </div>
                     )}
-                    <div className="session-top">
+                    <div className="club-card-main">
                       <div>
                         <h3>{club.name}</h3>
                         {club.motto && <p className="club-card-motto">{club.motto}</p>}
-                        <div className="row-meta">
-                          <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                            {club.visibility === 'private' ? text.private : text.public}
-                          </span>
-                          <span>{clubMemberCount(club)} {text.members}</span>
-                          {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
-                        </div>
                       </div>
-                      {userId && !membership && !canManage && (
-                        <button
-                          className={busyClubId === club.id ? 'primary loading' : 'primary'}
-                          disabled={busyClubId === club.id}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            joinClub(club)
-                          }}
-                          type="button"
-                        >
-                          {club.visibility === 'private' ? text.requestJoin : text.joinClub}
-                        </button>
-                      )}
+                      <div className="row-meta club-card-meta">
+                        <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                          {club.visibility === 'private' ? text.private : text.public}
+                        </span>
+                        <span>{clubMemberCount(club)} {text.members}</span>
+                        {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
+                      </div>
                     </div>
 
-                    {club.description && <p className="notes">{club.description}</p>}
+                    {club.description && <p className="notes club-card-description">{club.description}</p>}
 
-                    {canUseMessages && (
+                    <div className="club-card-footer">
+                      {canSeeMembers ? (
+                        <div className="players club-card-players">
+                          {visibleApprovedMembers.map((member) => (
+                            <div className="player" key={member.id}>
+                              <button
+                                aria-label={playerCardLabel(member.display_name, text.player)}
+                                className="player-avatar player-avatar-button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  openPlayerProfile(member.profile_id)
+                                }}
+                                style={avatarStyle(member)}
+                                type="button"
+                              >
+                                {avatarNode(member, 'P')}
+                              </button>
+                              <span>{compactDisplayName(member.display_name, text.player)}</span>
+                              {canManage && member.profile_id !== club.owner_id && (
+                                <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
+                                  event.stopPropagation()
+                                  removeClubMember(club, member)
+                                }} type="button">
+                                  {text.remove}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {extraApprovedMemberCount > 0 && <span className="club-card-more-members">+{extraApprovedMemberCount}</span>}
+                        </div>
+                      ) : (
+                        <span className="club-private-note">
+                          <Lock aria-hidden="true" size={15} />
+                          {text.hiddenMembers}
+                        </span>
+                      )}
+
                       <div className="club-card-actions">
+                        {canUseMessages && (
+                          <button
+                            className="secondary small-button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openClubPage(club.id, 'messages')
+                            }}
+                            type="button"
+                          >
+                            {text.clubMessages}
+                          </button>
+                        )}
+                        {canShowPrimaryAction && (
                         <button
-                          className="secondary small-button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            openClubPage(club.id, 'messages')
-                          }}
+                          className={busyClubId === club.id ? 'primary loading club-card-primary-action' : 'primary club-card-primary-action'}
+                          disabled={busyClubId === club.id}
+                          onClick={handleClubPrimaryAction}
                           type="button"
                         >
-                          {text.clubMessages}
+                          {clubPrimaryActionText}
                         </button>
+                        )}
                       </div>
-                    )}
-
-                    {canSeeMembers ? (
-                      <div className="players">
-                        {approvedMembers.map((member) => (
-                          <div className="player" key={member.id}>
-                            <button
-                              aria-label={playerCardLabel(member.display_name, text.player)}
-                              className="player-avatar player-avatar-button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                openPlayerProfile(member.profile_id)
-                              }}
-                              style={avatarStyle(member)}
-                              type="button"
-                            >
-                              {avatarNode(member, 'P')}
-                            </button>
-                            <span>{compactDisplayName(member.display_name, text.player)}</span>
-                            {canManage && member.profile_id !== club.owner_id && (
-                              <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
-                                event.stopPropagation()
-                                removeClubMember(club, member)
-                              }} type="button">
-                                {text.remove}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="notice">{text.hiddenMembers}</p>
-                    )}
+                    </div>
 
                     {canManage && pendingMembers.length > 0 && (
                       <div className="pending-list">

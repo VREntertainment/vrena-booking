@@ -499,6 +499,7 @@ export const it = {
   creatingClub: 'Creo club...',
   clubCreated: 'Club creato.',
   clubRequired: 'Inserisci nome club.',
+  viewClub: 'Vedi club',
   joinClub: 'Entra nel club',
   requestJoin: 'Chiedi accesso',
   requestSent: 'Richiesta ok',

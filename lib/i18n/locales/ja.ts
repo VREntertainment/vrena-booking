@@ -499,6 +499,7 @@ export const ja = {
   creatingClub: 'クラブ作成中...',
   clubCreated: 'クラブ作成済み。',
   clubRequired: 'クラブ名を入力してください。',
+  viewClub: 'クラブを見る',
   joinClub: 'クラブ参加',
   requestJoin: '参加リクエスト',
   requestSent: 'リクエスト送信済み。',
