@@ -74,10 +74,6 @@ export default function SessionsView({
   return (
     <section className="section sessions-section" data-tour="sessions-list">
       <div className="section-head sessions-filter-head">
-        <div className="section-copy">
-          <h2>{text.availableSessions}</h2>
-          <p className="muted">{text.privateJoinHint}</p>
-        </div>
         <div className={isSearchOpen ? 'search-shell open' : 'search-shell'} ref={searchShellRef}>
           <button
             aria-label={text.searchSessions}
