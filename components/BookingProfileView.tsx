@@ -358,7 +358,7 @@ export default function BookingProfileView({ context }: { context: any }) {
             profileExists={Boolean(profile)}
             loading={isProfileAuthLoading}
             text={text}
-            unframed={Boolean(profile && profileSubTab === 'achievements')}
+            unframed={Boolean(profile)}
           >
             {isProfileAuthLoading ? (
               <AppLoadingState className="profile-loading-panel" label={text.profileLoading} />

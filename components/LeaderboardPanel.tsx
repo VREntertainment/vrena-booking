@@ -420,7 +420,6 @@ export default function LeaderboardPanel({
         {!hideIntro && (
           <div>
             <h2>{text.hallOfFame}</h2>
-            <p className="muted">{text.leaderboardHint}</p>
           </div>
         )}
         <div className="leaderboard-controls">

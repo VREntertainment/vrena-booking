@@ -19,7 +19,7 @@ export default function CreateSessionView({
   text,
 }: CreateSessionViewProps) {
   return (
-    <section className="section">
+    <section className="section create-session-section">
       <div className="section-head">
         <div>
           <h2>{text.createSessionTitle}</h2>
