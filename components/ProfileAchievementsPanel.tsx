@@ -3,6 +3,7 @@
 import NextImage from 'next/image'
 import {
   Award,
+  CalendarPlus,
   Crown,
   Flame,
   Gamepad2,
@@ -120,6 +121,7 @@ type AchievementCopy = {
   secret: string
   secretHint: string
   sessionsPlayed: string
+  sessionsCreated: string
   shareAchievement: string
   shareCopied: string
   shareComingSoon: string
@@ -180,6 +182,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'Secret',
     secretHint: 'Try more game types to reveal this badge.',
     sessionsPlayed: 'Sessions played',
+    sessionsCreated: 'Sessions created',
     shareAchievement: 'Share achievement',
     shareCopied: 'Copied',
     shareComingSoon: 'Share coming soon',
@@ -236,6 +239,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'Bí mật',
     secretHint: 'Thử thêm nhiều thể loại game để mở huy hiệu này.',
     sessionsPlayed: 'Phiên đã chơi',
+    sessionsCreated: 'Phiên đã tạo',
     shareAchievement: 'Chia sẻ thành tựu',
     shareCopied: 'Đã sao chép',
     shareComingSoon: 'Chia sẻ sắp có',
@@ -292,6 +296,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: '비밀',
     secretHint: '더 다양한 게임 유형을 시도하면 배지가 드러납니다.',
     sessionsPlayed: '플레이한 세션',
+    sessionsCreated: '생성한 세션',
     shareAchievement: '업적 공유',
     shareCopied: '복사됨',
     shareComingSoon: '공유 준비 중',
@@ -348,6 +353,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'シークレット',
     secretHint: 'さらに多くのゲームタイプを試すと、このバッジが現れます。',
     sessionsPlayed: 'プレイ済みセッション',
+    sessionsCreated: '作成したセッション',
     shareAchievement: '実績を共有',
     shareCopied: 'コピー済み',
     shareComingSoon: '共有は近日対応',
@@ -404,6 +410,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'Secret',
     secretHint: 'Essaie plus de types de jeux pour révéler ce badge.',
     sessionsPlayed: 'Sessions jouées',
+    sessionsCreated: 'Sessions créées',
     shareAchievement: 'Partager le succès',
     shareCopied: 'Copié',
     shareComingSoon: 'Partage bientôt disponible',
@@ -460,6 +467,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'Geheim',
     secretHint: 'Probiere mehr Spieltypen aus, um dieses Abzeichen zu enthüllen.',
     sessionsPlayed: 'Gespielte Sessions',
+    sessionsCreated: 'Erstellte Sessions',
     shareAchievement: 'Erfolg teilen',
     shareCopied: 'Kopiert',
     shareComingSoon: 'Teilen bald verfügbar',
@@ -516,6 +524,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     secret: 'Segreto',
     secretHint: 'Prova più tipi di gioco per rivelare questo badge.',
     sessionsPlayed: 'Sessioni giocate',
+    sessionsCreated: 'Sessioni create',
     shareAchievement: 'Condividi obiettivo',
     shareCopied: 'Copiato',
     shareComingSoon: 'Condivisione in arrivo',
@@ -684,6 +693,10 @@ export default function ProfileAchievementsPanel({
     () => mySessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [mySessions, userId],
   )
+  const sessionsCreated = useMemo(
+    () => mySessions.filter((session) => session.owner_id === userId).length,
+    [mySessions, userId],
+  )
   const summary = useMemo(() => achievementSummary(achievements, sessionsPlayed, retentionAchievements), [achievements, retentionAchievements, sessionsPlayed])
   const levelProgress = useMemo(() => profileLevelProgress(playerStats), [playerStats])
   const playerDisplayName = useMemo(() => profileAchievementName(profile), [profile])
@@ -835,9 +848,9 @@ export default function ProfileAchievementsPanel({
           <span>{copy.gamesTried}</span>
         </div>
         <div className="achievement-summary-card">
-          <Trophy aria-hidden="true" size={18} />
-          <strong>{summary.achievementsUnlocked}</strong>
-          <span>{copy.achievementsUnlocked}</span>
+          <CalendarPlus aria-hidden="true" size={18} />
+          <strong>{sessionsCreated}</strong>
+          <span>{copy.sessionsCreated}</span>
         </div>
         <div className="achievement-summary-card achievement-summary-progress-card">
           <Award aria-hidden="true" size={18} />
