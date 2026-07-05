@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { countries } from '../lib/bookingStaticData'
 
 type CountryCodePickerProps = {
@@ -51,6 +51,7 @@ export default function CountryCodePicker({
   searchPlaceholder,
   value,
 }: CountryCodePickerProps) {
+  const pickerRef = useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const filteredCountries = useMemo(() => {
@@ -62,8 +63,24 @@ export default function CountryCodePicker({
     )
   }, [search])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!pickerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isOpen])
+
   return (
-    <div className="country-picker">
+    <div className="country-picker" ref={pickerRef}>
       <button
         aria-label={buttonLabel}
         className="country-button"
