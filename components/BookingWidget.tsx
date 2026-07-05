@@ -15,6 +15,7 @@ import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { HCAPTCHA_LOAD_TIMEOUT_MS, HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeyCaptchaPolicy, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
+import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
@@ -213,6 +214,7 @@ export default function WidgetPage({
   const [ticketTime, setTicketTime] = useState('')
   const [ticketPlayers, setTicketPlayers] = useState(1)
   const [ticketDuration, setTicketDuration] = useState(20)
+  const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
   const [ticketStatus, setTicketStatus] = useState('')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
@@ -6632,10 +6634,7 @@ function handleSessionDateChange(value: string) {
   }
 
   async function bookTickets() {
-    if (!requireProfile()) return
-
     const activeProfile = profile
-    if (!activeProfile) return
 
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
@@ -6650,19 +6649,28 @@ function handleSessionDateChange(value: string) {
       return
     }
 
-    if (ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
+    if (activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
       setTicketStatus(text.ticketLoyaltyInvalid)
       return
     }
 
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+    if (activeProfile && !isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
       setTicketStatus(ticketDiscountCodeCheckingText)
       return
     }
 
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
+    if (activeProfile && !isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
       setTicketStatus(ticketDiscountCodeInvalidText)
+      return
+    }
+
+    const guestContactValidation = activeProfile
+      ? { normalizedPhone: '', error: '' }
+      : validateGuestTicketContact(guestTicketContact, looseText)
+
+    if (guestContactValidation.error) {
+      setTicketStatus(guestContactValidation.error)
       return
     }
 
@@ -6673,7 +6681,7 @@ function handleSessionDateChange(value: string) {
     setTicketStatus(text.bookingTickets)
     setTicketConfirmation(null)
 
-    const { data, error } = await (await getSupabase()).rpc('create_ticket_booking', {
+    const ticketRpcArgs = {
       p_ticket_type: ticketType,
       p_date: ticketDate,
       p_start_time: `${ticketTime}:00`,
@@ -6683,9 +6691,19 @@ function handleSessionDateChange(value: string) {
       p_game_options: [service.defaultGame],
       p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
       p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-      p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
-      p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
-    })
+    }
+
+    const { data, error } = activeProfile
+      ? await (await getSupabase()).rpc('create_ticket_booking', {
+        ...ticketRpcArgs,
+        p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
+        p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+      })
+      : await (await getSupabase()).rpc('create_guest_ticket_booking', {
+        ...ticketRpcArgs,
+        p_guest_name: guestTicketContact.name.trim() || null,
+        p_guest_phone: guestContactValidation.normalizedPhone,
+      })
 
     if (error) {
       setTicketStatus(error.message || text.ticketBookingError)
@@ -6709,10 +6727,12 @@ function handleSessionDateChange(value: string) {
       time: ticketTime,
       players: ticketPlayers,
       totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-      discountCode: !isSpecialTicketType ? booking.discount_code || undefined : undefined,
-      discountAmount: !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
-      loyaltyPointsRedeemed: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
-      loyaltyDiscountAmount: isSpecialTicketType ? 0 : ticketLoyaltyDiscountAmount,
+      guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
+      guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
+      discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
+      discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
+      loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
+      loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
     }
 
     if (profile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
@@ -8321,6 +8341,7 @@ function handleSessionDateChange(value: string) {
             formatShortDate={formatShortDate}
             formatVnd={formatVnd}
             gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
+            guestTicketContact={guestTicketContact}
             isBookingTickets={isBookingTickets}
             isCheckingTicketDiscount={isCheckingTicketDiscount}
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
@@ -8334,6 +8355,7 @@ function handleSessionDateChange(value: string) {
             maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
             language={language}
             onBookTickets={bookTickets}
+            onGuestTicketContactChange={setGuestTicketContact}
             onPromptLogin={promptLogin}
             onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
             onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
