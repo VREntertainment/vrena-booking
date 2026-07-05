@@ -34,6 +34,7 @@ import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/
 import { supabase } from '../lib/supabase/client'
 import StaffAchievementAwardPanel, { type StaffAchievementAward } from './StaffAchievementAwardPanel'
 import AppLoadingState from './AppLoadingState'
+import { PhoneNumberInput } from './CountryCodePicker'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
   ssr: false,
@@ -3575,6 +3576,7 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
 export default function StaffConsole({ profile, authEmail, language, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
   const resolvedLanguage = resolveStaffConsoleLanguage(language)
   const text = staffConsoleText[resolvedLanguage]
+  const sharedText = uiText[resolvedLanguage]
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
@@ -6097,7 +6099,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               </div>
               <label>
                 {text.labels.phone}
-                <input value={booking.customerPhone} onChange={(event) => setBooking({ ...booking, customerPhone: event.target.value })} />
+                <PhoneNumberInput
+                  buttonLabel={sharedText.countryCode}
+                  className="staff-phone-control"
+                  inputLabel={text.labels.phone}
+                  onChange={(phone) => setBooking({ ...booking, customerPhone: phone })}
+                  searchPlaceholder={sharedText.searchCountry}
+                  value={booking.customerPhone}
+                />
               </label>
               <label>
                 {text.labels.email}
@@ -6990,7 +6999,17 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                           {staffEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                         </select>
                       </label>
-                      <label>{text.labels.personalPhone}<input value={employeeForm.personal_phone} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_phone: event.target.value })} /></label>
+                      <label>
+                        {text.labels.personalPhone}
+                        <PhoneNumberInput
+                          buttonLabel={sharedText.countryCode}
+                          className="staff-phone-control"
+                          inputLabel={text.labels.personalPhone}
+                          onChange={(phone) => setEmployeeForm({ ...employeeForm, personal_phone: phone })}
+                          searchPlaceholder={sharedText.searchCountry}
+                          value={employeeForm.personal_phone}
+                        />
+                      </label>
                       <label>{text.labels.personalEmail}<input value={employeeForm.personal_email} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_email: event.target.value })} /></label>
                       <label>
                         {text.labels.startDate}
@@ -7544,11 +7563,13 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               </label>
               <label>
                 <span className="staff-field-label">{text.labels.phone}</span>
-                <input
-                  autoComplete="tel"
+                <PhoneNumberInput
+                  buttonLabel={sharedText.countryCode}
+                  className="staff-phone-control"
+                  inputLabel={text.labels.phone}
+                  onChange={(phone) => setCustomerInviteForm((current) => ({ ...current, phone }))}
+                  searchPlaceholder={sharedText.searchCountry}
                   value={customerInviteForm.phone}
-                  onChange={(event) => setCustomerInviteForm((current) => ({ ...current, phone: event.target.value }))}
-                  placeholder="0981152315"
                 />
               </label>
               <label>
