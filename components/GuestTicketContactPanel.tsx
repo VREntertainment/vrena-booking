@@ -6,6 +6,7 @@ import { PhoneNumberInput } from './CountryCodePicker'
 type GuestTicketContactPanelProps = {
   contact: GuestTicketContact
   disabled: boolean
+  estimatedLoyaltyPointsEarned: number
   onChange: (contact: GuestTicketContact) => void
   onPromptLogin: () => void
   text: Record<string, string>
@@ -14,10 +15,13 @@ type GuestTicketContactPanelProps = {
 export default function GuestTicketContactPanel({
   contact,
   disabled,
+  estimatedLoyaltyPointsEarned,
   onChange,
   onPromptLogin,
   text,
 }: GuestTicketContactPanelProps) {
+  const loyaltyPointsText = String(Math.max(0, Math.floor(Number(estimatedLoyaltyPointsEarned) || 0)))
+
   return (
     <div className="guest-ticket-contact" aria-label={text.guestTicketTitle}>
       <div className="guest-ticket-copy">
@@ -49,7 +53,7 @@ export default function GuestTicketContactPanel({
           value={contact.name}
         />
       </label>
-      <p>{text.guestTicketAccountHint}</p>
+      <p>{text.guestTicketAccountHint.replace('{points}', loyaltyPointsText)}</p>
       <button className="link-button" disabled={disabled} onClick={onPromptLogin} type="button">
         {text.guestTicketLoginLink}
       </button>
