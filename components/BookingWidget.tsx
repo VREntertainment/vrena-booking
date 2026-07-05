@@ -216,6 +216,7 @@ export default function WidgetPage({
   const [ticketDuration, setTicketDuration] = useState(20)
   const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
   const [ticketStatus, setTicketStatus] = useState('')
+  const [ticketStatusVariant, setTicketStatusVariant] = useState<'info' | 'error'>('info')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
   const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(false)
@@ -4095,7 +4096,7 @@ export default function WidgetPage({
     return schedulePostEffectStateUpdate(() => {
       setTicketUseLoyaltyPoints(false)
       setTicketLoyaltyPointsToRedeem('')
-      setTicketStatus(ticketDiscountBestReductionText)
+      showTicketStatus(ticketDiscountBestReductionText)
     })
   }, [hasTicketVoucherDiscount, ticketDiscountBestReductionText, ticketUseLoyaltyPoints])
 
@@ -4125,6 +4126,49 @@ function handleSessionDateChange(value: string) {
   setSessionDate(value)
 }
 
+  function showTicketStatus(message: string, variant: 'info' | 'error' = 'info') {
+    setTicketStatus(message)
+    setTicketStatusVariant(variant)
+  }
+
+  function clearTicketStatus() {
+    setTicketStatus('')
+    setTicketStatusVariant('info')
+  }
+
+  function validateTicketSelection(activeProfile = profile) {
+    const service = selectedTicketService(ticketType)
+    const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
+
+    if (!ticketDate || !ticketTime || !selectedTimeOption) {
+      showTicketStatus(text.ticketRequired, 'error')
+      return false
+    }
+
+    if (ticketPlayers < service.minPlayers || ticketPlayers > service.maxPlayers) {
+      showTicketStatus(text.ticketPlayersInvalid, 'error')
+      return false
+    }
+
+    if (activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
+      showTicketStatus(text.ticketLoyaltyInvalid, 'error')
+      return false
+    }
+
+    const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+      showTicketStatus(ticketDiscountCodeCheckingText)
+      return false
+    }
+
+    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
+      showTicketStatus(ticketDiscountCodeInvalidText, 'error')
+      return false
+    }
+
+    return true
+  }
+
   function handleTicketTypeChange(value: TicketType) {
     const service = selectedTicketService(value)
     const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
@@ -4135,7 +4179,7 @@ function handleSessionDateChange(value: string) {
     setTicketDuration(nextDuration)
     setTicketTime('')
     setTicketConfirmation(null)
-    setTicketStatus('')
+    clearTicketStatus()
     if (nextIsSpecialTicket) {
       setTicketDiscountCode('')
       setTicketDiscountQuote(null)
@@ -4175,7 +4219,7 @@ function handleSessionDateChange(value: string) {
     if (checked && hasTicketVoucherDiscount) {
       setTicketUseLoyaltyPoints(false)
       setTicketLoyaltyPointsToRedeem('')
-      setTicketStatus(ticketDiscountBestReductionText)
+      showTicketStatus(ticketDiscountBestReductionText)
       return
     }
     setTicketUseLoyaltyPoints(checked)
@@ -6641,47 +6685,24 @@ function handleSessionDateChange(value: string) {
 
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
-
-    if (!ticketDate || !ticketTime || !selectedTimeOption) {
-      setTicketStatus(text.ticketRequired)
-      return false
-    }
-
-    if (ticketPlayers < service.minPlayers || ticketPlayers > service.maxPlayers) {
-      setTicketStatus(text.ticketPlayersInvalid)
-      return false
-    }
-
-    if (activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
-      setTicketStatus(text.ticketLoyaltyInvalid)
-      return false
-    }
-
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
-      setTicketStatus(ticketDiscountCodeCheckingText)
-      return false
-    }
 
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
-      setTicketStatus(ticketDiscountCodeInvalidText)
-      return false
-    }
+    if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
 
     const guestContactValidation = activeProfile
       ? { normalizedPhone: '', error: '' }
       : validateGuestTicketContact(guestTicketContact, looseText)
 
     if (guestContactValidation.error) {
-      setTicketStatus(guestContactValidation.error)
+      showTicketStatus(guestContactValidation.error, 'error')
       return false
     }
 
-    const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, setTicketStatus)
+    const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
     if (!allowed) return false
 
     setIsBookingTickets(true)
-    setTicketStatus(text.bookingTickets)
+    showTicketStatus(text.bookingTickets)
     setTicketConfirmation(null)
 
     const ticketRpcArgs = {
@@ -6709,7 +6730,7 @@ function handleSessionDateChange(value: string) {
       })
 
     if (error) {
-      setTicketStatus(error.message || text.ticketBookingError)
+      showTicketStatus(error.message || text.ticketBookingError, 'error')
       setIsBookingTickets(false)
       return false
     }
@@ -6749,7 +6770,7 @@ function handleSessionDateChange(value: string) {
     }
 
     setTicketConfirmation(confirmation)
-    setTicketStatus(text.ticketBookingCreated)
+    showTicketStatus(text.ticketBookingCreated)
     setTicketTime('')
     setTicketUseLoyaltyPoints(false)
     setTicketLoyaltyPointsToRedeem('')
@@ -8387,18 +8408,21 @@ function handleSessionDateChange(value: string) {
             onGuestTicketContactChange={setGuestTicketContact}
             onPromptCreateAccount={promptCreateAccount}
             onPromptLogin={promptLogin}
+            onValidateTicketSelection={validateTicketSelection}
             onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
             onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
             onTicketDateChange={(value) => {
               setTicketDate(value)
               setTicketTime('')
               setTicketConfirmation(null)
+              clearTicketStatus()
             }}
             onTicketDurationChange={handleTicketDurationChange}
             onTicketPlayersChange={handleTicketPlayersChange}
             onTicketTimeChange={(value) => {
               setTicketTime(value)
               setTicketConfirmation(null)
+              clearTicketStatus()
             }}
             onTicketTypeChange={handleTicketTypeChange}
             onTicketUseLoyaltyPointsChange={handleTicketUseLoyaltyPointsChange}
@@ -8417,6 +8441,7 @@ function handleSessionDateChange(value: string) {
             ticketPlayers={ticketPlayers}
             ticketServices={ticketServices}
             ticketStatus={ticketStatus}
+            ticketStatusVariant={ticketStatusVariant}
             ticketTime={ticketTime}
             ticketTimeOptions={ticketTimeOptions}
             ticketType={ticketType}

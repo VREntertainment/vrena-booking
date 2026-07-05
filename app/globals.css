@@ -6595,6 +6595,16 @@ body {
   gap: 10px;
 }
 
+.app .ticket-status-message {
+  font-weight: 800;
+}
+
+.app .notice.ticket-status-error {
+  border-left-color: #d72638;
+  background: rgba(215, 38, 56, 0.1);
+  color: #b51d2e;
+}
+
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;

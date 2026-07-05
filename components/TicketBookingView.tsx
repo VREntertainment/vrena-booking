@@ -53,6 +53,7 @@ type TicketBookingConfirmation = {
 }
 
 type GuestTicketAction = 'create-account' | 'guest'
+type TicketStatusVariant = 'info' | 'error'
 
 export type TicketBookingViewProps = {
   text: Record<string, string>
@@ -66,6 +67,7 @@ export type TicketBookingViewProps = {
   ticketTime: string
   ticketPlayers: number
   ticketStatus: string
+  ticketStatusVariant: TicketStatusVariant
   isBookingTickets: boolean
   isLoadingTicketLoyalty: boolean
   ticketConfirmation: TicketBookingConfirmation | null
@@ -100,6 +102,7 @@ export type TicketBookingViewProps = {
   onTicketUseLoyaltyPointsChange: (checked: boolean) => void
   onTicketLoyaltyPointsChange: (value: string) => void
   onBookTickets: () => Promise<boolean>
+  onValidateTicketSelection: () => boolean
   onPromptLogin: () => void
   onPromptCreateAccount: () => void
   formatShortDate: (dateValue: string, language: LanguageCode) => string
@@ -123,6 +126,7 @@ export default function TicketBookingView({
   ticketTime,
   ticketPlayers,
   ticketStatus,
+  ticketStatusVariant,
   isBookingTickets,
   isLoadingTicketLoyalty,
   ticketConfirmation,
@@ -157,6 +161,7 @@ export default function TicketBookingView({
   onTicketUseLoyaltyPointsChange,
   onTicketLoyaltyPointsChange,
   onBookTickets,
+  onValidateTicketSelection,
   onPromptLogin,
   onPromptCreateAccount,
   formatShortDate,
@@ -187,6 +192,7 @@ export default function TicketBookingView({
 
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
+      if (!onValidateTicketSelection()) return
       setGuestTicketContactOpen(true)
       return
     }
@@ -403,7 +409,7 @@ export default function TicketBookingView({
               >
                 {isBookingTickets ? text.bookingTickets : text.bookTickets}
               </button>
-              {ticketStatus && <p className="notice">{ticketStatus}</p>}
+              {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
             <div className="ticket-type-list ticket-event-options">
@@ -447,7 +453,7 @@ export default function TicketBookingView({
                   }}
                   text={text}
                 />
-                {ticketStatus && <p className="notice">{ticketStatus}</p>}
+                {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
                 <div className="guest-ticket-actions">
                   <button
                     className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
