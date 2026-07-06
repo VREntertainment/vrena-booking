@@ -269,8 +269,8 @@ export default function TicketBookingView({
                   />
                 </div>
                 <div className="ticket-control ticket-control-time">
-                  <label>{text.availableTime} <span className="required">*</span></label>
-                  <select value={ticketTime} onChange={(event) => onTicketTimeChange(event.target.value)}>
+                  <label htmlFor="ticket-available-time">{text.availableTime} <span className="required">*</span></label>
+                  <select id="ticket-available-time" value={ticketTime} onChange={(event) => onTicketTimeChange(event.target.value)}>
                     <option value="">{text.chooseTime}</option>
                     {ticketTimeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -280,9 +280,10 @@ export default function TicketBookingView({
                   </select>
                 </div>
                 <div className="ticket-control ticket-control-duration">
-                  <label>{text.duration}</label>
+                  <label htmlFor="ticket-duration">{text.duration}</label>
                   <select
                     disabled={ticketDurationOptions.length === 0}
+                    id="ticket-duration"
                     value={ticketDurationOptions.includes(activeTicketDuration) ? activeTicketDuration : ''}
                     onChange={(event) => onTicketDurationChange(Number(event.target.value))}
                   >
@@ -297,8 +298,8 @@ export default function TicketBookingView({
                   </select>
                 </div>
                 <div className="ticket-control ticket-control-players">
-                  <label>{text.numberOfPlayers} <span className="required">*</span></label>
-                  <select value={ticketPlayers} onChange={(event) => onTicketPlayersChange(Number(event.target.value))}>
+                  <label htmlFor="ticket-player-count">{text.numberOfPlayers} <span className="required">*</span></label>
+                  <select id="ticket-player-count" value={ticketPlayers} onChange={(event) => onTicketPlayersChange(Number(event.target.value))}>
                     {ticketPlayerOptions.map((count) => (
                       <option key={count} value={count}>
                         {count} {text.players}

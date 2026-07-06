@@ -59,7 +59,7 @@ export default function AppSidebar({
           <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">
             <picture>
               <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
-              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
+              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
             </picture>
           </a>
           <div className="language-picker">
