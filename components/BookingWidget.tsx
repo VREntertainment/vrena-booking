@@ -1716,6 +1716,19 @@ export default function WidgetPage({
       return true
     }
 
+    if (action === 'booking_attempt') {
+      const { error } = await (await getSupabase()).rpc('consume_booking_attempt_rate_limit', {
+        p_subject: subject || null,
+      })
+
+      if (error) {
+        setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
+        return false
+      }
+
+      return true
+    }
+
     const rule = RATE_LIMITS[action]
     const { error } = await (await getSupabase()).rpc('consume_rate_limit', {
       p_action: action,
