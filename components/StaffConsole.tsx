@@ -350,6 +350,7 @@ type StaffSessionParticipant = {
   id: string
   profile_id: string | null
   display_name?: string | null
+  deleted_at?: string | null
   checked_in?: boolean | null
   payment_status?: string | null
   payment_amount?: number | null
@@ -4346,9 +4347,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       const today = todayString()
       let query = supabase
         .from('sessions')
-        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
+        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, deleted_at, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
         .is('deleted_at', null)
-        .is('session_participants.deleted_at', null)
 
       query = operationSessionScope === 'past'
         ? query.lt('date', today).order('date', { ascending: false }).order('start_time', { ascending: false }).limit(80)
@@ -4356,7 +4356,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
       const { data, error } = await query
       if (error) throw new Error(error.message)
-      setOperationSessions((data ?? []) as StaffOperationSession[])
+      setOperationSessions((data ?? []).map((session) => ({
+        ...session,
+        session_participants: (session.session_participants ?? []).filter((participant) => !participant.deleted_at),
+      })) as StaffOperationSession[])
     }, force)
   }
 
