@@ -178,6 +178,7 @@ export default function TicketBookingView({
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
   const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
   const [registeredAccountGuestPhone, setRegisteredAccountGuestPhone] = useState('')
+  const isRegisteredAccountConfirmation = registeredAccountGuestPhone === guestTicketContact.phone
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
@@ -460,36 +461,84 @@ export default function TicketBookingView({
                 <button aria-label={text.close} className="modal-close" type="button" onClick={() => setGuestTicketContactOpen(false)}>
                   <X aria-hidden="true" size={18} />
                 </button>
-                <GuestTicketContactPanel
-                  contact={guestTicketContact}
-                  disabled={isBookingTickets}
-                  estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
-                  onChange={onGuestTicketContactChange}
-                  onPromptLogin={() => {
-                    setGuestTicketContactOpen(false)
-                    onPromptLogin()
-                  }}
-                  text={text}
-                />
-                {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
-                <div className="guest-ticket-actions">
-                  <button
-                    className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
-                    disabled={isBookingTickets}
-                    type="button"
-                    onClick={() => void handleGuestTicketAction('create-account')}
-                  >
-                    {isBookingTickets && guestTicketAction === 'create-account' ? text.bookingTickets : text.guestTicketCreateAccountCta}
-                  </button>
-                  <button
-                    className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
-                    disabled={isBookingTickets}
-                    type="button"
-                    onClick={() => void handleGuestTicketAction('guest')}
-                  >
-                    {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketBookWithoutAccountCta}
-                  </button>
-                </div>
+                {isRegisteredAccountConfirmation ? (
+                  <div className="guest-ticket-account-confirmation">
+                    <div className="guest-ticket-copy">
+                      <strong>{text.guestTicketRegisteredConfirmTitle}</strong>
+                      <span>{text.guestTicketRegisteredConfirmBody}</span>
+                    </div>
+                    <div className="guest-ticket-confirm-phone">
+                      <span>{text.guestTicketRegisteredConfirmPhone}</span>
+                      <strong>{guestTicketContact.phone}</strong>
+                    </div>
+                    <p className="guest-ticket-hold-note">{text.guestTicketRegisteredConfirmHoldNote}</p>
+                    {ticketStatus && ticketStatus !== text.guestTicketExistingAccountGuestMessage && (
+                      <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>
+                    )}
+                    <div className="guest-ticket-actions">
+                      <button
+                        className="primary create-button"
+                        disabled={isBookingTickets}
+                        type="button"
+                        onClick={() => {
+                          setGuestTicketContactOpen(false)
+                          onPromptLogin()
+                        }}
+                      >
+                        {text.guestTicketRegisteredConfirmLoginCta}
+                      </button>
+                      <button
+                        className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
+                        disabled={isBookingTickets}
+                        type="button"
+                        onClick={() => void handleGuestTicketAction('guest')}
+                      >
+                        {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketRegisteredConfirmContinueCta}
+                      </button>
+                      <button
+                        className="link-button guest-ticket-back-button"
+                        disabled={isBookingTickets}
+                        type="button"
+                        onClick={() => setRegisteredAccountGuestPhone('')}
+                      >
+                        {text.onboardingPrevious}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <GuestTicketContactPanel
+                      contact={guestTicketContact}
+                      disabled={isBookingTickets}
+                      estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
+                      onChange={onGuestTicketContactChange}
+                      onPromptLogin={() => {
+                        setGuestTicketContactOpen(false)
+                        onPromptLogin()
+                      }}
+                      text={text}
+                    />
+                    {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
+                    <div className="guest-ticket-actions">
+                      <button
+                        className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
+                        disabled={isBookingTickets}
+                        type="button"
+                        onClick={() => void handleGuestTicketAction('create-account')}
+                      >
+                        {isBookingTickets && guestTicketAction === 'create-account' ? text.bookingTickets : text.guestTicketCreateAccountCta}
+                      </button>
+                      <button
+                        className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
+                        disabled={isBookingTickets}
+                        type="button"
+                        onClick={() => void handleGuestTicketAction('guest')}
+                      >
+                        {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketBookWithoutAccountCta}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
