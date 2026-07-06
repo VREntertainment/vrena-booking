@@ -16168,8 +16168,27 @@ body {
 .app .clubs-section .club-create-panel {
   display: grid;
   gap: 12px;
-  padding: 14px 0 18px;
+  margin-top: 14px;
+  padding: 14px;
   border-bottom: 1px solid var(--player-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--player-surface) 86%, var(--club-theme-faint, rgba(48, 89, 255, 0.07)));
+}
+
+.app .clubs-section .club-create-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.app .clubs-section .club-create-copy strong {
+  color: #071112;
+  font-size: 15px;
+}
+
+.app .clubs-section .club-create-copy span {
+  color: var(--player-text-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .app .clubs-section .club-form {
@@ -16186,9 +16205,42 @@ body {
 }
 
 .app .clubs-section .club-list {
-  gap: 30px;
+  gap: 34px;
   margin-top: 26px;
   border-top: 0;
+}
+
+.app .clubs-section .club-list-group {
+  display: grid;
+  gap: 14px;
+}
+
+.app .clubs-section .club-list-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--player-border);
+}
+
+.app .clubs-section .club-list-group-head h3 {
+  margin: 0;
+  color: #071112;
+  font-size: 16px;
+}
+
+.app .clubs-section .club-list-group-head span {
+  display: inline-flex;
+  min-width: 28px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--player-border);
+  border-radius: 999px;
+  color: var(--player-text-muted);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .app .clubs-section .notice {
@@ -16201,30 +16253,83 @@ body {
   box-shadow: none !important;
 }
 
+.app .clubs-section .club-empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 18px 0;
+  border-top: 1px solid var(--player-border);
+  border-bottom: 1px solid var(--player-border);
+}
+
+.app .clubs-section .club-empty-state strong {
+  color: #071112;
+  font-size: 16px;
+}
+
+.app .clubs-section .club-empty-state span {
+  color: var(--player-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .app .clubs-section .club-login-notice {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .app .clubs-section .club-card {
-  gap: 11px;
-  padding: 0 0 10px;
-  border: 0 !important;
-  border-bottom: 0 !important;
-  border-left: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  gap: 13px;
+  padding: 12px;
+  border: 1px solid var(--player-border) !important;
+  border-left: 4px solid var(--club-theme, #3059ff) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, rgba(48, 89, 255, 0.07))) !important;
+  box-shadow: 0 8px 24px rgba(7, 17, 18, 0.055) !important;
 }
 
-.app .clubs-section .club-card-banner {
-  aspect-ratio: 5 / 1;
-  min-height: 112px;
-  max-height: 180px;
-  margin-bottom: 6px;
+.app .clubs-section .club-card-cover {
+  position: relative;
+  display: flex;
+  min-height: 96px;
+  overflow: hidden;
+  align-items: flex-start;
+  justify-content: flex-end;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), rgba(112, 223, 255, 0.18)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.65), transparent);
 }
 
-.app .clubs-section .club-card-banner img {
+.app .clubs-section .club-card-cover::before {
+  content: "";
+  position: absolute;
+  inset: auto 12px 12px 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--club-theme, #3059ff);
+  opacity: 0.7;
+}
+
+.app .clubs-section .club-card-cover.has-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(7, 17, 18, 0.56), rgba(7, 17, 18, 0.08));
+}
+
+.app .clubs-section .club-card-cover img {
   object-position: center;
+  object-fit: cover;
+}
+
+.app .clubs-section .club-card-cover-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px;
 }
 
 .app .clubs-section .club-card-main,
@@ -16247,6 +16352,61 @@ body {
 .app .clubs-section .club-card-description {
   max-width: 74ch;
   margin: 0;
+}
+
+.app .clubs-section .club-card-activity {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .clubs-section .club-card-signal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--player-border) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  color: #071112;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.app .clubs-section .club-card-signal svg {
+  color: var(--club-theme, #3059ff);
+}
+
+.app .clubs-section .club-card-signal span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--player-text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.22;
+}
+
+.app .clubs-section .club-card-signal strong {
+  overflow: hidden;
+  color: #071112;
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app .clubs-section .club-card-signal.attention {
+  border-color: rgba(180, 35, 24, 0.2) !important;
+  background: rgba(180, 35, 24, 0.07) !important;
+}
+
+.app .clubs-section .club-card-signal.attention svg {
+  color: #b42318;
 }
 
 .app .clubs-section .club-card-footer {
@@ -16410,13 +16570,20 @@ body {
     text-align: left;
   }
 
-  .app .clubs-section .club-card-banner {
-    aspect-ratio: 16 / 6;
-    min-height: 96px;
+  .app .clubs-section .club-create-panel {
+    padding: 12px;
   }
 
   .app .clubs-section .club-card-actions {
     flex-wrap: wrap;
+  }
+
+  .app .clubs-section .club-card-activity {
+    grid-template-columns: 1fr;
+  }
+
+  .app .clubs-section .club-card-cover {
+    min-height: 82px;
   }
 
   .app .clubs-section .club-card-primary-action {
@@ -16429,5 +16596,29 @@ body {
   .app .clubs-section .form-segmented button.active,
   .app .create-session-section .create-session-mode-toggle button.active {
     color: #f6f7f9;
+  }
+
+  .app .clubs-section .club-create-panel,
+  .app .clubs-section .club-card {
+    background: color-mix(in srgb, #0d171a 88%, var(--club-theme-faint, rgba(98, 133, 255, 0.12))) !important;
+  }
+
+  .app .clubs-section .club-create-copy strong,
+  .app .clubs-section .club-list-group-head h3,
+  .app .clubs-section .club-empty-state strong,
+  .app .clubs-section .club-card-main h3,
+  .app .clubs-section .club-card-signal,
+  .app .clubs-section .club-card-signal strong {
+    color: #f6f7f9;
+  }
+
+  .app .clubs-section .club-card-signal {
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .app .clubs-section .club-card-cover {
+    background:
+      linear-gradient(135deg, var(--club-theme-soft, rgba(98, 133, 255, 0.18)), rgba(112, 223, 255, 0.08)),
+      #101d21;
   }
 }

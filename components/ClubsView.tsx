@@ -121,6 +121,11 @@ export default function ClubsView({
 
       {showCreatePanel && (
         <div className="club-create-panel">
+          <div className="club-create-copy">
+            <strong>{text.createClub}</strong>
+            <span>{text.clubsHint}</span>
+          </div>
+
           <div className="segmented form-segmented">
             <button className={clubVisibility === 'public' ? 'active' : ''} onClick={() => onClubVisibilityChange('public')} type="button">
               {text.public}
@@ -150,8 +155,25 @@ export default function ClubsView({
       {clubStatus && <p className="notice">{clubStatus}</p>}
 
       <div className="club-list">
-        {clubListCount === 0 && <p className="notice">{text.noMatchingClubs}</p>}
-        {children}
+        {clubListCount === 0 && (
+          <div className="club-empty-state">
+            <strong>{text.noMatchingClubs}</strong>
+            <span>{clubSearch ? text.clubEmptySearchHint : text.clubEmptyCreateHint}</span>
+            {clubSearch && (
+              <button
+                className="secondary small-button"
+                type="button"
+                onClick={() => {
+                  onClubSearchChange('')
+                  onClubSearchOpenChange(false)
+                }}
+              >
+                {text.clearClubSearch}
+              </button>
+            )}
+          </div>
+        )}
+        {clubListCount > 0 && children}
       </div>
     </section>
   )
