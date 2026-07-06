@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { siteUrl } from "../lib/siteMetadata";
-import "driver.js/dist/driver.css";
 import "./globals.css";
 
 const geistSans = Geist({

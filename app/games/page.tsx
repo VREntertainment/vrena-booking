@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import PublicGameGuidePage from '../../components/PublicGameGuidePage'
 import { uiText } from '../../lib/i18n/translations'
 import { getCachedPublicStaffGameGuides } from '../../lib/publicGameGuides'
+import './public-game-guide.css'
 
 export const revalidate = 86400
 

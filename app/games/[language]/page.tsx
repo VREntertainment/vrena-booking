@@ -4,6 +4,7 @@ import PublicGameGuidePage from '../../../components/PublicGameGuidePage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../../../lib/i18n/languages'
 import { uiText } from '../../../lib/i18n/translations'
 import { getCachedPublicStaffGameGuides } from '../../../lib/publicGameGuides'
+import '../public-game-guide.css'
 
 type GamesLanguagePageProps = {
   params: Promise<{
