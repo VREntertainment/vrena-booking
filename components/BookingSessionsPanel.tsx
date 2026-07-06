@@ -292,13 +292,18 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
         <article
           className={[
             'session',
+            isTicket ? 'ticket-session-row' : '',
             isExpanded ? 'expanded-session' : '',
             isHighlighted ? 'session-highlighted' : '',
           ].filter(Boolean).join(' ')}
           id={`session-${session.id}`}
         >
           <div
-            className={isExpanded ? 'compact-session-card compact-session-card-expanded' : 'compact-session-card'}
+            className={[
+              'compact-session-card',
+              isTicket ? 'ticket-session-card' : '',
+              isExpanded ? 'compact-session-card-expanded' : '',
+            ].filter(Boolean).join(' ')}
             onClick={(event) => {
               if (!canExpandDetails) return
               if (isInteractiveClickTarget(event.target)) return
@@ -315,7 +320,13 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
               }
             }}
           >
-            <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} />
+            {isTicket ? (
+              <span className="ticket-session-visual" aria-hidden="true">
+                <Ticket size={23} strokeWidth={2.45} />
+              </span>
+            ) : (
+              <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} />
+            )}
             <div className="compact-session-main">
               <div className="compact-session-title-row">
                 <h3>{session.name}</h3>
@@ -336,7 +347,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 <span>{formatShortDate(session.date, language)}</span>
                 <span>{session.start_time.slice(0, 5)}</span>
                 <span>{session.duration_minutes} min</span>
-                {renderGameGuideTrigger(coverGame.id, 'compact-game-guide-link')}
+                {!isTicket && renderGameGuideTrigger(coverGame.id, 'compact-game-guide-link')}
                 {!isTicket && !isPast && <span>{remaining} {text.seatsLeft}</span>}
                 {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
                 {session.session_type === 'tournament' && <span>{text.roundsPerMatch}: {session.rounds_per_match || 1}</span>}
