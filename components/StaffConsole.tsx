@@ -3635,6 +3635,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [operationAddProfileBySession, setOperationAddProfileBySession] = useState<Record<string, string>>({})
   const [operationAddProfileQueryBySession, setOperationAddProfileQueryBySession] = useState<Record<string, string>>({})
   const [operationDeleteDraft, setOperationDeleteDraft] = useState<StaffDeleteSessionDraft | null>(null)
+  const [operationDeleteError, setOperationDeleteError] = useState('')
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [achievementAwards, setAchievementAwards] = useState<StaffAchievementAward[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
@@ -4389,6 +4390,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     await loadTodaySessions(true)
   }
 
+  function openOperationDeleteDraft(session: StaffOperationSession, order: StaffOrder | null) {
+    setOperationDeleteError('')
+    setOperationDeleteDraft({ session, order })
+  }
+
+  function closeOperationDeleteDraft() {
+    setOperationDeleteError('')
+    setOperationDeleteDraft(null)
+  }
+
   async function deleteOperationSession() {
     if (!operationDeleteDraft) return
     if (!canCreateOrders) {
@@ -4396,22 +4407,55 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       return
     }
 
+    const draft = operationDeleteDraft
+    const deleteReason = 'Deleted from Staff Console'
     setSaving(true)
-    const { error } = await supabase.rpc('staff_delete_session_operation', {
-      p_session_id: operationDeleteDraft.session.id,
-      p_delete_reason: 'Deleted from Staff Console',
+    setOperationDeleteError('')
+    let deleteError = ''
+
+    const { error: rpcError } = await supabase.rpc('staff_delete_session_operation', {
+      p_session_id: draft.session.id,
+      p_delete_reason: deleteReason,
     })
+
+    if (rpcError) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (sessionError || !accessToken) {
+        deleteError = sessionError?.message || rpcError.message
+      } else {
+        try {
+          const response = await fetch('/api/staff/operations/session/delete', {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId: draft.session.id,
+              deleteReason,
+            }),
+          })
+          const payload = await response.json().catch(() => ({})) as { error?: string }
+          if (!response.ok) deleteError = payload.error || rpcError.message
+        } catch (error) {
+          deleteError = error instanceof Error ? error.message : rpcError.message
+        }
+      }
+    }
+
     setSaving(false)
 
-    if (error) {
-      setStatus(error.message)
+    if (deleteError) {
+      setOperationDeleteError(deleteError)
+      setStatus(deleteError)
       return
     }
 
-    setOperationDeleteDraft(null)
+    closeOperationDeleteDraft()
     setExpandedOperationSessions((current) => {
       const next = { ...current }
-      delete next[operationDeleteDraft.session.id]
+      delete next[draft.session.id]
       return next
     })
     setStatus(text.messages.operationSessionDeleted)
@@ -6437,7 +6481,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                       </>
                     )}
                     {canCreateOrders && (
-                      <button className="danger" disabled={saving} type="button" onClick={() => setOperationDeleteDraft({ session, order: order || null })}>
+                      <button className="danger" disabled={saving} type="button" onClick={() => openOperationDeleteDraft(session, order || null)}>
                         <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteSession}</ButtonIconText>
                       </button>
                     )}
@@ -8226,10 +8270,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           role="dialog"
           aria-modal="true"
           aria-labelledby="staff-operation-delete-title"
-          onClick={() => !saving && setOperationDeleteDraft(null)}
+          onClick={() => !saving && closeOperationDeleteDraft()}
         >
           <div className="login-modal staff-operation-delete-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label={text.actions.cancel} onClick={() => setOperationDeleteDraft(null)} disabled={saving}>
+            <button className="modal-close" type="button" aria-label={text.actions.cancel} onClick={closeOperationDeleteDraft} disabled={saving}>
               <X aria-hidden="true" size={20} />
             </button>
             <h3 id="staff-operation-delete-title">{text.messages.operationDeleteTitle}</h3>
@@ -8248,13 +8292,16 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
               </p>
             )}
             <p>{text.messages.operationDeleteBody}</p>
+            {operationDeleteError && (
+              <p className="notice ticket-status-message ticket-status-error">{operationDeleteError}</p>
+            )}
             <div className="action-row">
               <button className="danger" disabled={saving} type="button" onClick={deleteOperationSession}>
                 <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>
                   {saving ? text.messages.operationSessionDeleting : text.actions.confirmDeleteSession}
                 </ButtonIconText>
               </button>
-              <button className="secondary" disabled={saving} type="button" onClick={() => setOperationDeleteDraft(null)}>
+              <button className="secondary" disabled={saving} type="button" onClick={closeOperationDeleteDraft}>
                 {text.actions.cancel}
               </button>
             </div>
