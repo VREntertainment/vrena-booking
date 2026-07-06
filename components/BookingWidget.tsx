@@ -10,6 +10,7 @@ import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
+import { ageBandFromBirthday, isUnder13Birthday } from '../lib/agePolicy'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
@@ -30,7 +31,11 @@ import type { StaffProfile } from './StaffConsole'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
-const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
+const VRENA_WEBSITE_URL = 'https://www.vre-vietnam.com'
+const PRIVACY_POLICY_URL = `${VRENA_WEBSITE_URL}/privacy-policy`
+const TERMS_CONDITIONS_URL = `${VRENA_WEBSITE_URL}/terms-and-conditions`
+const CONSENT_WAIVER_URL = `${VRENA_WEBSITE_URL}/consent-form`
+const LEGAL_CONSENT_VERSION = '2026-07-06'
 const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
 const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
@@ -491,6 +496,10 @@ export default function WidgetPage({
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
   const showProfileFields = Boolean(profile)
+  const activeAgeBand = ageBandFromBirthday(profileBirthday || profile?.birthday || null)
+  const isUnder13Profile = activeAgeBand === 'under13'
+  const isTeenMinorProfile = activeAgeBand === 'minor'
+  const isAdultProfile = activeAgeBand === 'adult'
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
 
   function challengeStatusLabel(status?: ChallengeStatus | null) {
@@ -1689,7 +1698,8 @@ export default function WidgetPage({
       const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
       const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
       const birthdayValue = typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : ''
-      const genderValue = normalizeProfileGender(authUser.user_metadata?.gender)
+      const genderValue = ageBandFromBirthday(birthdayValue) === 'under13' ? '' : normalizeProfileGender(authUser.user_metadata?.gender)
+      const personalDataConsentValue = authUser.user_metadata?.personal_data_consent === true
       const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
       const metadataAvatarUrl = (
         typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url :
@@ -1717,6 +1727,12 @@ export default function WidgetPage({
         marketing_consent: authUser.user_metadata?.marketing_consent === false ? false : true,
         marketing_consent_at: typeof authUser.user_metadata?.marketing_consent_at === 'string' ? authUser.user_metadata.marketing_consent_at : null,
         marketing_opted_out_at: typeof authUser.user_metadata?.marketing_opted_out_at === 'string' ? authUser.user_metadata.marketing_opted_out_at : null,
+        personal_data_consent: personalDataConsentValue,
+        personal_data_consent_at: typeof authUser.user_metadata?.personal_data_consent_at === 'string' ? authUser.user_metadata.personal_data_consent_at : null,
+        privacy_policy_url: typeof authUser.user_metadata?.privacy_policy_url === 'string' ? authUser.user_metadata.privacy_policy_url : null,
+        terms_conditions_url: typeof authUser.user_metadata?.terms_conditions_url === 'string' ? authUser.user_metadata.terms_conditions_url : null,
+        consent_waiver_url: typeof authUser.user_metadata?.consent_waiver_url === 'string' ? authUser.user_metadata.consent_waiver_url : null,
+        legal_consent_version: typeof authUser.user_metadata?.legal_consent_version === 'string' ? authUser.user_metadata.legal_consent_version : null,
       }
 
       authDebug('loadProfile:missingProfileFallback', fallbackProfile)
@@ -1757,6 +1773,12 @@ export default function WidgetPage({
         marketing_consent: fallbackProfile.marketing_consent !== false,
         marketing_consent_at: fallbackProfile.marketing_consent_at || new Date().toISOString(),
         marketing_opted_out_at: fallbackProfile.marketing_opted_out_at || null,
+        personal_data_consent: fallbackProfile.personal_data_consent || false,
+        personal_data_consent_at: fallbackProfile.personal_data_consent_at || null,
+        privacy_policy_url: fallbackProfile.privacy_policy_url || null,
+        terms_conditions_url: fallbackProfile.terms_conditions_url || null,
+        consent_waiver_url: fallbackProfile.consent_waiver_url || null,
+        legal_consent_version: fallbackProfile.legal_consent_version || null,
         updated_at: new Date().toISOString(),
       })
 
@@ -1866,7 +1888,14 @@ export default function WidgetPage({
         return
       }
 
-      if (authMode === 'create' && !personalDataConsent) {
+      const signupAgeBand = ageBandFromBirthday(profileBirthday)
+
+      if (authMode === 'create' && signupAgeBand === 'unknown') {
+        setProfileStatus(text.birthdayRequired)
+        return
+      }
+
+      if (authMode === 'create' && signupAgeBand === 'adult' && !personalDataConsent) {
         setProfileStatus(text.consentRequired)
         return
       }
@@ -1891,6 +1920,7 @@ export default function WidgetPage({
       const consentAt = new Date().toISOString()
       const countryCode = resolveCountryCode(profileCountryCode)
       const normalizedProfilePhone = localPhone ? `${countryCode}${localPhone}` : ''
+      const legalConsentAccepted = authMode === 'create' && signupAgeBand === 'adult' && personalDataConsent
 
       if (authMode === 'create') {
         const signUpResult = await (await getSupabase()).auth.signUp({
@@ -1902,13 +1932,17 @@ export default function WidgetPage({
               full_name: fullName || display,
               name: display,
               phone: normalizedProfilePhone || null,
-              gender: profileGender || null,
+              birthday: profileBirthday || null,
+              gender: signupAgeBand === 'under13' ? null : profileGender || null,
               marketing_consent: marketingConsent,
               marketing_consent_at: marketingConsent ? consentAt : null,
               marketing_opted_out_at: marketingConsent ? null : consentAt,
-              personal_data_consent: personalDataConsent,
-              personal_data_consent_at: consentAt,
+              personal_data_consent: legalConsentAccepted,
+              personal_data_consent_at: legalConsentAccepted ? consentAt : null,
               privacy_policy_url: PRIVACY_POLICY_URL,
+              terms_conditions_url: TERMS_CONDITIONS_URL,
+              consent_waiver_url: CONSENT_WAIVER_URL,
+              legal_consent_version: LEGAL_CONSENT_VERSION,
             },
             captchaToken: captchaTokenForAuth,
           },
@@ -6612,6 +6646,21 @@ function handleSessionDateChange(value: string) {
     return error?.message || ''
   }
 
+  async function notifyMinorBookingCreated(kind: 'session' | 'ticket', sessionId: string | null | undefined, sourceProfile: Profile | null) {
+    if (!sessionId || !sourceProfile || ageBandFromBirthday(sourceProfile.birthday) !== 'minor') return
+
+    try {
+      await notifyBookingUpdateEmail(await getSupabase(), {
+        action: 'created',
+        bookingKind: kind,
+        sessionId,
+        source: 'player-app',
+      })
+    } catch (error) {
+      console.warn('Could not send minor booking notice.', error)
+    }
+  }
+
   async function updateAnonymousMode(nextMode: boolean) {
     if (!profile || !userId) return
 
@@ -6742,7 +6791,7 @@ function handleSessionDateChange(value: string) {
       profile_motto: cleanMotto || null,
       nickname: nickname || null,
       birthday: profileBirthday || null,
-      gender: profileGender || null,
+      gender: isUnder13Birthday(profileBirthday) ? null : profileGender || null,
       ...marketingConsentValues(marketingConsent, profile),
       ...avatarPayload,
       updated_at: new Date().toISOString(),
@@ -6781,6 +6830,12 @@ function handleSessionDateChange(value: string) {
         marketing_consent: data.marketing_consent,
         marketing_consent_at: data.marketing_consent_at,
         marketing_opted_out_at: data.marketing_opted_out_at,
+        personal_data_consent: data.personal_data_consent,
+        personal_data_consent_at: data.personal_data_consent_at,
+        privacy_policy_url: data.privacy_policy_url,
+        terms_conditions_url: data.terms_conditions_url,
+        consent_waiver_url: data.consent_waiver_url,
+        legal_consent_version: data.legal_consent_version,
       },
     })
 
@@ -6890,6 +6945,11 @@ function handleSessionDateChange(value: string) {
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
 
+    if (activeProfile && ageBandFromBirthday(activeProfile.birthday) === 'under13') {
+      showTicketStatus(text.under13BookingBlocked, 'error')
+      return false
+    }
+
     if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
 
     const guestContactValidation = activeProfile
@@ -6989,6 +7049,7 @@ function handleSessionDateChange(value: string) {
     setTicketDiscountCode('')
     setTicketDiscountQuote(null)
     setTicketDiscountStatus('')
+    await notifyMinorBookingCreated('ticket', confirmation.sessionId, activeProfile)
     await loadSessions({ focusDate: ticketDate })
     setIsBookingTickets(false)
     return true
@@ -7003,6 +7064,12 @@ function handleSessionDateChange(value: string) {
     const activeProfile = profile
 
     if (!activeProfile) {
+      setIsCreating(false)
+      return
+    }
+
+    if (ageBandFromBirthday(activeProfile.birthday) === 'under13') {
+      setCreateStatus(text.under13CreateBlocked)
       setIsCreating(false)
       return
     }
@@ -7083,6 +7150,8 @@ function handleSessionDateChange(value: string) {
     if (selectedSessionClub) {
       await notifyClubMembersOfSession(selectedSessionClub, created.id)
     }
+
+    await notifyMinorBookingCreated('session', created.id, activeProfile)
 
     setCreateStatus(
       sessionVisibility === 'private'
@@ -7372,6 +7441,10 @@ function handleSessionDateChange(value: string) {
 
   async function postSessionMessage(session: Session, messageType: 'announcement' | 'comment') {
     if (!requireProfile() || !profile) return
+    if (ageBandFromBirthday(profile.birthday) === 'under13') {
+      setCreateStatus(text.under13MessageBlocked)
+      return
+    }
     if (messageType === 'announcement' && !canReviewSessionMessages(session)) return
 
     const draft = (messageType === 'announcement' ? announcementDrafts[session.id] : commentDrafts[session.id]) || ''
@@ -7412,6 +7485,10 @@ function handleSessionDateChange(value: string) {
 
   async function postClubMessage(club: Club, messageType: ClubMessage['message_type']) {
     if (!requireProfile() || !profile) return
+    if (ageBandFromBirthday(profile.birthday) === 'under13') {
+      setClubMessageStatus(text.under13MessageBlocked)
+      return
+    }
     if (!canUseClubMessages(club)) {
       setClubMessageStatus(text.clubMessageLoginRequired)
       return
@@ -8393,7 +8470,7 @@ function handleSessionDateChange(value: string) {
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
 
-  const profileViewContext = { activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyCaptchaReady, isPasskeyCaptchaVisible: passkeyCaptchaMode === 'visible-before-passkey', isPasskeyLoading, isProfileAuthLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, passkeyCaptchaContainerRef, preparePasskeyCaptcha, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyCaptchaReady, isPasskeyCaptchaVisible: passkeyCaptchaMode === 'visible-before-passkey', isPasskeyLoading, isProfileAuthLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, passkeyCaptchaContainerRef, preparePasskeyCaptcha, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 

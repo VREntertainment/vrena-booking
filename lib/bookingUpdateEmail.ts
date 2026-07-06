@@ -24,6 +24,7 @@ function changeLine(change: BookingUpdateEmailChange) {
 }
 
 function subjectAction(action: BookingUpdateEmailPayload['action']) {
+  if (action === 'created') return 'Created'
   if (action === 'deleted') return 'Deleted'
   if (action === 'cancelled') return 'Cancelled'
   return 'Updated'
@@ -35,9 +36,11 @@ function bookingKindLabel(kind: BookingUpdateEmailPayload['bookingKind']) {
 
 function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | null }) {
   const lines = [
-    'Existing booking update',
+    payload.action === 'created' ? 'New booking notice' : 'Existing booking update',
     '',
-    'This is an update to an existing VRena booking. It is not a new booking confirmation.',
+    payload.action === 'created'
+      ? 'This VRena booking was created by a player account that needs staff attention.'
+      : 'This is an update to an existing VRena booking. It is not a new booking confirmation.',
     '',
     `Action: ${subjectAction(payload.action)}`,
     `Booking type: ${bookingKindLabel(payload.bookingKind)}`,
@@ -49,6 +52,10 @@ function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | 
     `Source: ${valueText(payload.source)}`,
     `Updated by: ${valueText(payload.actorEmail)}`,
   ]
+
+  if (payload.minorWarning) {
+    lines.splice(3, 0, cleanText(payload.minorWarning), '')
+  }
 
   if (payload.summary) {
     lines.push('', 'Summary:', cleanText(payload.summary))
@@ -90,10 +97,16 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
     dateTime,
   ].filter(Boolean)
   const text = buildBody(payload)
-  const html = text
+  const escapedMinorWarning = payload.minorWarning
+    ? cleanText(payload.minorWarning).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    : ''
+  const htmlBody = text
     .split('\n')
     .map((line) => line ? line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<br>')
     .join('<br>')
+  const html = escapedMinorWarning
+    ? htmlBody.replace(escapedMinorWarning, `<span style="color:#b00020;font-weight:800">${escapedMinorWarning}</span>`)
+    : htmlBody
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',

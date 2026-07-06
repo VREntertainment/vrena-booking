@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendBookingUpdateEmail } from '@/lib/bookingUpdateEmail'
 import type { BookingUpdateEmailPayload } from '@/lib/bookingUpdateEmailTypes'
 import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
+import { ageBandFromBirthday } from '@/lib/agePolicy'
 
 export const runtime = 'nodejs'
 
@@ -15,7 +16,7 @@ function cleanString(value: unknown) {
 }
 
 function cleanAction(value: unknown): BookingUpdateEmailPayload['action'] | null {
-  return value === 'edited' || value === 'cancelled' || value === 'deleted' ? value : null
+  return value === 'created' || value === 'edited' || value === 'cancelled' || value === 'deleted' ? value : null
 }
 
 function cleanKind(value: unknown): BookingUpdateEmailPayload['bookingKind'] | null {
@@ -78,9 +79,22 @@ function cleanPayload(body: Record<string, unknown>): BookingUpdateEmailPayload 
     customerEmail: cleanString(body.customerEmail) || null,
     total: typeof body.total === 'number' && Number.isFinite(body.total) ? body.total : null,
     summary: cleanString(body.summary) || null,
+    minorWarning: cleanString(body.minorWarning) || null,
     source: cleanString(body.source) || null,
     changes,
   }
+}
+
+function minorWarningForBirthday(birthday: unknown) {
+  if (typeof birthday !== 'string') return null
+  const band = ageBandFromBirthday(birthday)
+  if (band === 'minor') {
+    return 'MINOR PLAYER: This user is under 18. Parent/guardian confirmation is required before confirming this booking/session.'
+  }
+  if (band === 'under13') {
+    return 'UNDER-13 PLAYER: Online booking/session creation should remain disabled. Staff must handle this manually with a parent/guardian.'
+  }
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -136,7 +150,7 @@ export async function POST(request: NextRequest) {
   if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status')
+      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status, ticket_customer_id')
       .eq('id', payload.sessionId)
       .maybeSingle()
 
@@ -170,7 +184,7 @@ export async function POST(request: NextRequest) {
   if (!session && order?.session_id) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status')
+      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status, ticket_customer_id')
       .eq('id', order.session_id)
       .maybeSingle()
 
@@ -180,6 +194,19 @@ export async function POST(request: NextRequest) {
 
   const isOwner = Boolean(session?.owner_id && session.owner_id === userData.user.id)
   if (actorRank < 50 && !isOwner) return jsonError('Booking update email is not authorized.', 403)
+
+  const minorProfileId = cleanString(session?.ticket_customer_id) || cleanString(session?.owner_id)
+  let trustedMinorWarning: string | null = null
+  if (minorProfileId) {
+    const { data: minorProfile, error: minorProfileError } = await adminClient
+      .from('profiles')
+      .select('birthday')
+      .eq('id', minorProfileId)
+      .maybeSingle()
+
+    if (minorProfileError) return jsonError(minorProfileError.message, 500)
+    trustedMinorWarning = minorWarningForBirthday(minorProfile?.birthday)
+  }
 
   await sendBookingUpdateEmail({
     ...payload,
@@ -194,6 +221,7 @@ export async function POST(request: NextRequest) {
     customerPhone: payload.customerPhone || cleanString(order?.customer_phone) || null,
     customerEmail: payload.customerEmail || cleanString(order?.customer_email) || null,
     total: payload.total ?? (typeof order?.total === 'number' ? order.total : null),
+    minorWarning: trustedMinorWarning || payload.minorWarning || null,
     actorEmail: actorProfile?.email || userData.user.email || null,
   })
 

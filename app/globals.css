@@ -8888,6 +8888,31 @@ body {
   font-weight: 800;
 }
 
+.app .minor-policy-note {
+  color: #b00020;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.app .profile-age-policy-note {
+  grid-column: 1 / span 2;
+  max-width: 720px;
+  margin: 0;
+}
+
+.app .profile-legal-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.app .profile-legal-panel .legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .app .profile-toggle-field {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
