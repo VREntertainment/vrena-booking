@@ -1,4 +1,4 @@
-export type BookingUpdateAction = 'edited' | 'cancelled' | 'deleted'
+export type BookingUpdateAction = 'created' | 'edited' | 'cancelled' | 'deleted'
 export type BookingUpdateKind = 'session' | 'ticket'
 
 export type BookingUpdateEmailChange = {
@@ -21,6 +21,7 @@ export type BookingUpdateEmailPayload = {
   customerEmail?: string | null
   total?: number | null
   summary?: string | null
+  minorWarning?: string | null
   changes?: BookingUpdateEmailChange[]
   source?: string | null
 }

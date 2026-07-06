@@ -50,7 +50,6 @@ import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
 import ShortDateInput from './ShortDateInput'
 
-const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com'
 const profileTabCopy = {
   en: { achievements: 'Achievements', settings: 'Settings' },
   vi: { achievements: 'Thành tựu', settings: 'Cài đặt' },
@@ -76,6 +75,7 @@ export default function BookingProfileView({ context }: { context: any }) {
   const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
   const {
     activeTotpFactor,
+    activeAgeBand,
     addToCalendarText,
     authMode,
     authStep,
@@ -97,6 +97,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     canAccessStaffConsole,
     canShareCurrentUserStats,
     captchaContainerRef,
+    consentWaiverUrl,
     chooseAvatarMode,
     confirmTotpEnrollment,
     continueAuthFromEmail,
@@ -108,6 +109,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     failedAvatarUrls,
     handleAuth,
     handleAvatarChange,
+    isAdultProfile,
     isDeletingAccount,
     isMfaLoading,
     isOAuthLoading,
@@ -119,6 +121,8 @@ export default function BookingProfileView({ context }: { context: any }) {
     isResettingPassword,
     isSavingAnonymousMode,
     isSavingProfile,
+    isTeenMinorProfile,
+    isUnder13Profile,
     language,
     leaveSession,
     logout,
@@ -141,6 +145,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     pendingSessionInvites,
     personalDataConsent,
     playerStats,
+    privacyPolicyUrl,
     profile,
     profileBirthday,
     profileCountryCode,
@@ -202,6 +207,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     showProfileFields,
     signInWithGoogle,
     signInWithPasskey,
+    termsConditionsUrl,
     text,
     updateAnonymousMode,
     updateAuthMode,
@@ -687,9 +693,9 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <p className="field-help">{text.profileMottoHelp}</p>
                 </div>
               )}
-              {showProfileFields && (
+              {(showProfileFields || (!profile && authMode === 'create' && authStep === 'credentials')) && (
                 <div className="birthday-field">
-                  <label>{text.birthday}</label>
+                  <label>{text.birthday} {!profile && <span className="required">*</span>}</label>
                   <ShortDateInput
                     ariaLabel={text.birthday}
                     language={language}
@@ -697,12 +703,17 @@ export default function BookingProfileView({ context }: { context: any }) {
                     placeholder={text.chooseDate}
                     value={profileBirthday}
                   />
+                  {!profile && <p className="field-help">{text.birthdaySignupHelp}</p>}
                 </div>
               )}
               {showProfileFields && (
                 <div className="gender-field">
                   <label>{text.gender}</label>
-                  <select value={profileGender} onChange={(event) => setProfileGender(normalizeProfileGender(event.target.value))}>
+                  <select
+                    disabled={isUnder13Profile}
+                    value={isUnder13Profile ? '' : profileGender}
+                    onChange={(event) => setProfileGender(normalizeProfileGender(event.target.value))}
+                  >
                     <option value="">{text.optional}</option>
                     <option value="male">{text.genderMale}</option>
                     <option value="female">{text.genderFemale}</option>
@@ -710,7 +721,14 @@ export default function BookingProfileView({ context }: { context: any }) {
                     <option value="prefer_not_to_say">{text.genderPreferNotToSay}</option>
                     <option value="self_describe">{text.genderSelfDescribe}</option>
                   </select>
+                  {isUnder13Profile && <p className="field-help minor-policy-note">{text.under13GenderDisabled}</p>}
                 </div>
+              )}
+              {activeAgeBand === 'minor' && (
+                <p className="minor-policy-note profile-age-policy-note">{text.minorConsentNotice}</p>
+              )}
+              {activeAgeBand === 'under13' && (
+                <p className="minor-policy-note profile-age-policy-note">{text.under13AccountNotice}</p>
               )}
               {profile && showProfileFields && (
                 <div className="profile-card-section-title profile-preferences-title">
@@ -738,7 +756,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </span>
                 </label>
               )}
-              {!profile && authMode === 'create' && authStep === 'credentials' && (
+              {!profile && authMode === 'create' && authStep === 'credentials' && activeAgeBand === 'adult' && (
                 <label className="consent-field">
                   <input
                     checked={personalDataConsent}
@@ -747,9 +765,11 @@ export default function BookingProfileView({ context }: { context: any }) {
                   />
                   <span>
                     {text.consentPrefix}
-                    <a href={PRIVACY_POLICY_URL} rel="noreferrer" target="_blank">
-                      {text.privacyPolicy}
-                    </a>
+                    <a href={termsConditionsUrl} rel="noreferrer" target="_blank">{text.termsConditions}</a>
+                    {text.legalSeparator}
+                    <a href={privacyPolicyUrl} rel="noreferrer" target="_blank">{text.privacyPolicy}</a>
+                    {text.legalSeparator}
+                    <a href={consentWaiverUrl} rel="noreferrer" target="_blank">{text.consentWaiver}</a>
                     {text.consentSuffix}
                   </span>
                 </label>
@@ -983,6 +1003,24 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </div>
                 )}
                 {mfaStatus && <p className="notice compact-notice">{mfaStatus}</p>}
+              </div>
+            )}
+            {profile && (
+              <div className="profile-legal-panel">
+                <div className="profile-card-section-title">
+                  <ShieldCheck aria-hidden="true" size={17} />
+                  <span>{text.legal}</span>
+                </div>
+                <div className="account-links legal-links">
+                  <a className="link-button" href={termsConditionsUrl} rel="noreferrer" target="_blank">{text.termsConditions}</a>
+                  <a className="link-button" href={privacyPolicyUrl} rel="noreferrer" target="_blank">{text.privacyPolicy}</a>
+                  <a className="link-button" href={consentWaiverUrl} rel="noreferrer" target="_blank">{text.consentWaiver}</a>
+                </div>
+                {isAdultProfile && profile.personal_data_consent_at && (
+                  <p className="field-help">{text.legalAcceptedPrefix} {formatShortDate(profile.personal_data_consent_at.slice(0, 10), language)}</p>
+                )}
+                {isTeenMinorProfile && <p className="minor-policy-note">{text.minorConsentNotice}</p>}
+                {isUnder13Profile && <p className="minor-policy-note">{text.under13AccountNotice}</p>}
               </div>
             )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
