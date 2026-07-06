@@ -6595,6 +6595,45 @@ body {
   gap: 10px;
 }
 
+.app .guest-ticket-account-confirmation {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 4px;
+}
+
+.app .guest-ticket-confirm-phone {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--player-border);
+  border-radius: 8px;
+  background: var(--player-surface-soft);
+}
+
+.app .guest-ticket-confirm-phone span,
+.app .guest-ticket-hold-note {
+  color: var(--player-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.app .guest-ticket-confirm-phone strong {
+  color: var(--player-text);
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.app .guest-ticket-hold-note {
+  margin: 0;
+}
+
+.app .guest-ticket-back-button {
+  justify-self: center;
+  min-height: 34px;
+  padding: 4px 8px;
+}
+
 .app .ticket-status-message {
   font-weight: 800;
 }
