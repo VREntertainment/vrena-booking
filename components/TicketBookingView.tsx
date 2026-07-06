@@ -202,10 +202,16 @@ export default function TicketBookingView({
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
       if (!onValidateTicketSelection()) return
+      setRegisteredAccountGuestPhone('')
       setGuestTicketContactOpen(true)
       return
     }
     void onBookTickets()
+  }
+
+  function handleCloseGuestTicketContact() {
+    setRegisteredAccountGuestPhone('')
+    setGuestTicketContactOpen(false)
   }
 
   async function handleGuestTicketAction(action: GuestTicketAction) {
@@ -458,7 +464,7 @@ export default function TicketBookingView({
           {!isLoggedIn && guestTicketContactOpen && (
             <div className="modal-backdrop guest-ticket-modal-backdrop">
               <div className="login-modal guest-ticket-modal" role="dialog" aria-modal="true" aria-label={text.guestTicketTitle}>
-                <button aria-label={text.close} className="modal-close" type="button" onClick={() => setGuestTicketContactOpen(false)}>
+                <button aria-label={text.close} className="modal-close" type="button" onClick={handleCloseGuestTicketContact}>
                   <X aria-hidden="true" size={18} />
                 </button>
                 {isRegisteredAccountConfirmation ? (
