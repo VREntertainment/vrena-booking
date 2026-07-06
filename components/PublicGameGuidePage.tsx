@@ -111,7 +111,7 @@ export default function PublicGameGuidePage({
           <Link className="brand-logo" href="/" aria-label="VRena Booking App">
             <picture>
               <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
-              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" />
+              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
             </picture>
           </Link>
           <div className="public-game-guide-title">
