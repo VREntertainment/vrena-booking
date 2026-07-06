@@ -389,6 +389,11 @@ type StaffOperationSession = {
   session_participants?: StaffSessionParticipant[]
 }
 
+type StaffDeleteSessionDraft = {
+  session: StaffOperationSession
+  order: StaffOrder | null
+}
+
 type RoleSaveFeedback = {
   tone: 'saving' | 'success' | 'error'
   message: string
@@ -589,6 +594,8 @@ const staffConsoleText = {
       cancelShift: 'Cancel shift',
       confirmDeleteAccount: 'Delete account',
       deleteAccount: 'Delete account',
+      deleteSession: 'Delete',
+      confirmDeleteSession: 'Delete',
       download: 'Download',
       saveAttendance: 'Save attendance',
       saveDiscount: 'Save discount',
@@ -993,6 +1000,8 @@ const staffConsoleText = {
       accountDeleteBanNote: 'Ban metadata stays attached to the deleted profile for future review.',
       accountDeleteBody: 'This soft-deletes the user profile and removes it from active app lists. Historical sessions, scores, orders, and audit records stay intact.',
       accountDeleteTitle: 'Delete account?',
+      operationDeleteBody: 'This removes it from the Sessions and Tickets lists. Linked players are removed and any linked order is marked cancelled.',
+      operationDeleteTitle: 'Delete this session or ticket?',
       accountDeleted: 'Account deleted.',
       accountDeleting: 'Deleting account...',
       accountDeleteConfirmationHelp: 'Write DELETE exactly to unlock this action.',
@@ -1069,6 +1078,8 @@ const staffConsoleText = {
       operationParticipantSaved: 'Player updated.',
       operationParticipantAdded: 'Player added.',
       operationParticipantRemoved: 'Player removed.',
+      operationSessionDeleted: 'Session deleted.',
+      operationSessionDeleting: 'Deleting session...',
       voucherCodeRequired: 'Voucher code is required.',
       voucherSaved: 'Voucher saved.',
     },
@@ -1215,6 +1226,8 @@ const staffConsoleText = {
       cancelShift: 'Hủy ca',
       confirmDeleteAccount: 'Xóa tài khoản',
       deleteAccount: 'Xóa tài khoản',
+      deleteSession: 'Xóa',
+      confirmDeleteSession: 'Xóa',
       download: 'Tải xuống',
       saveAttendance: 'Lưu chấm công',
       saveDiscount: 'Lưu ưu đãi',
@@ -1619,6 +1632,8 @@ const staffConsoleText = {
       accountDeleteBanNote: 'Thông tin cấm sẽ gắn với hồ sơ đã xóa để kiểm tra sau.',
       accountDeleteBody: 'Thao tác này xóa mềm hồ sơ người dùng và gỡ khỏi danh sách đang hoạt động. Phiên chơi, điểm, đơn hàng và nhật ký lịch sử vẫn được giữ.',
       accountDeleteTitle: 'Xóa tài khoản?',
+      operationDeleteBody: 'Mục này sẽ biến mất khỏi danh sách Phiên và Tickets. Người chơi liên quan được xóa và đơn hàng liên kết được chuyển sang đã hủy.',
+      operationDeleteTitle: 'Xóa phiên hoặc vé này?',
       accountDeleted: 'Đã xóa tài khoản.',
       accountDeleting: 'Đang xóa tài khoản...',
       accountDeleteConfirmationHelp: 'Nhập chính xác DELETE để mở khóa thao tác này.',
@@ -1695,6 +1710,8 @@ const staffConsoleText = {
       operationParticipantSaved: 'Đã cập nhật người chơi.',
       operationParticipantAdded: 'Đã thêm người chơi.',
       operationParticipantRemoved: 'Đã xóa người chơi.',
+      operationSessionDeleted: 'Đã xóa phiên.',
+      operationSessionDeleting: 'Đang xóa phiên...',
       voucherCodeRequired: 'Cần nhập mã voucher.',
       voucherSaved: 'Đã lưu voucher.',
     },
@@ -3617,6 +3634,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [expandedOperationSessions, setExpandedOperationSessions] = useState<Record<string, boolean>>({})
   const [operationAddProfileBySession, setOperationAddProfileBySession] = useState<Record<string, string>>({})
   const [operationAddProfileQueryBySession, setOperationAddProfileQueryBySession] = useState<Record<string, string>>({})
+  const [operationDeleteDraft, setOperationDeleteDraft] = useState<StaffDeleteSessionDraft | null>(null)
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [achievementAwards, setAchievementAwards] = useState<StaffAchievementAward[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
@@ -4328,6 +4346,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       let query = supabase
         .from('sessions')
         .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
+        .is('deleted_at', null)
         .is('session_participants.deleted_at', null)
 
       query = operationSessionScope === 'past'
@@ -4368,6 +4387,38 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
     setStatus(text.messages.operationSessionSaved)
     await loadTodaySessions(true)
+  }
+
+  async function deleteOperationSession() {
+    if (!operationDeleteDraft) return
+    if (!canCreateOrders) {
+      setStatus(text.messages.readOnlyBooking)
+      return
+    }
+
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_delete_session_operation', {
+      p_session_id: operationDeleteDraft.session.id,
+      p_delete_reason: 'Deleted from Staff Console',
+    })
+    setSaving(false)
+
+    if (error) {
+      setStatus(error.message)
+      return
+    }
+
+    setOperationDeleteDraft(null)
+    setExpandedOperationSessions((current) => {
+      const next = { ...current }
+      delete next[operationDeleteDraft.session.id]
+      return next
+    })
+    setStatus(text.messages.operationSessionDeleted)
+    await Promise.all([
+      loadTodaySessions(true),
+      loadTodayOrders(true),
+    ])
   }
 
   async function updateOperationParticipant(session: StaffOperationSession, participant: StaffSessionParticipant, patch: Partial<StaffSessionParticipant>) {
@@ -6385,6 +6436,11 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                         </button>
                       </>
                     )}
+                    {canCreateOrders && (
+                      <button className="danger" disabled={saving} type="button" onClick={() => setOperationDeleteDraft({ session, order: order || null })}>
+                        <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteSession}</ButtonIconText>
+                      </button>
+                    )}
                   </div>
                   {isExpanded && (
                     <div className="staff-operation-edit-panel">
@@ -8162,6 +8218,48 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           onApply={applyReportDateRange}
           onClose={() => setReportDatePickerOpen(false)}
         />
+      )}
+
+      {operationDeleteDraft && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="staff-operation-delete-title"
+          onClick={() => !saving && setOperationDeleteDraft(null)}
+        >
+          <div className="login-modal staff-operation-delete-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label={text.actions.cancel} onClick={() => setOperationDeleteDraft(null)} disabled={saving}>
+              <X aria-hidden="true" size={20} />
+            </button>
+            <h3 id="staff-operation-delete-title">{text.messages.operationDeleteTitle}</h3>
+            <p>
+              <strong>{operationDeleteDraft.session.name}</strong>
+              {' · '}
+              {shortDateLabel(operationDeleteDraft.session.date)}
+              {' · '}
+              {normalizeTime(operationDeleteDraft.session.start_time)}
+            </p>
+            {operationDeleteDraft.order && (
+              <p>
+                {operationDeleteDraft.order.order_number}
+                {' · '}
+                {orderPaymentLabel(operationDeleteDraft.order, orderPaymentsByOrderId, text)}
+              </p>
+            )}
+            <p>{text.messages.operationDeleteBody}</p>
+            <div className="action-row">
+              <button className="danger" disabled={saving} type="button" onClick={deleteOperationSession}>
+                <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>
+                  {saving ? text.messages.operationSessionDeleting : text.actions.confirmDeleteSession}
+                </ButtonIconText>
+              </button>
+              <button className="secondary" disabled={saving} type="button" onClick={() => setOperationDeleteDraft(null)}>
+                {text.actions.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {profileDeleteDraft && (
