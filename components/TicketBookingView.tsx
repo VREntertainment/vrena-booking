@@ -178,7 +178,7 @@ export default function TicketBookingView({
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
   const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
   const [registeredAccountGuestPhone, setRegisteredAccountGuestPhone] = useState('')
-  const isRegisteredAccountConfirmation = registeredAccountGuestPhone === guestTicketContact.phone
+  const isRegisteredAccountConfirmation = Boolean(registeredAccountGuestPhone) && registeredAccountGuestPhone === guestTicketContact.phone
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
