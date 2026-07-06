@@ -458,10 +458,10 @@ body {
   box-sizing: border-box;
   min-height: 46px;
   display: block;
-  border: 1px solid rgba(7, 17, 18, 0.16);
+  border: 1px solid var(--player-field-border-strong);
   border-radius: 8px;
-  background: #f0f4f6;
-  color: #071112;
+  background: var(--player-field-bg);
+  color: var(--player-field-text);
   overflow: hidden;
   color-scheme: light;
   cursor: pointer;
@@ -493,7 +493,7 @@ body {
   transform: translateY(-50%);
   pointer-events: none;
   overflow: hidden;
-  color: #071112;
+  color: var(--player-field-text);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -502,7 +502,7 @@ body {
 }
 
 .app .date-input-display.placeholder {
-  color: #8a9498;
+  color: var(--player-field-placeholder);
   font-weight: 700;
 }
 
@@ -724,9 +724,9 @@ body {
 .app .profile-account-form .gender-field,
 .app .profile-account-form .motto-field {
   min-width: 0;
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--player-field-panel);
   padding: 10px;
   box-shadow: 0 1px 0 rgba(7, 17, 18, 0.04);
 }
@@ -793,31 +793,32 @@ body {
 .app .profile-account-form .date-input-shell,
 .app .profile-account-form .country-button {
   min-height: 42px;
-  border-color: rgba(7, 17, 18, 0.1);
+  border-color: var(--player-field-border);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--player-field-bg-soft);
+  color: var(--player-field-text);
 }
 
 .app .profile-account-form select {
   width: 100%;
-  color: #071112;
+  color: var(--player-field-text);
   padding: 8px 34px 8px 10px;
 }
 
 .app .profile-account-form .marketing-consent-field {
   display: grid;
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--player-field-panel);
   padding: 12px;
 }
 
 .app .profile-security-panel {
   display: grid;
   gap: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--player-field-panel);
   padding: 12px;
 }
 
@@ -834,10 +835,10 @@ body {
 
 .app .profile-security-panel .link-button {
   min-height: 42px;
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: #f8fafb;
-  color: #071112;
+  background: var(--player-field-bg-soft);
+  color: var(--player-field-text);
   padding: 10px 12px;
   text-align: center;
   text-decoration: none;
@@ -856,9 +857,9 @@ body {
 .app .mfa-security-card,
 .app .mfa-enroll-panel,
 .app .mfa-challenge-panel {
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--player-field-bg-soft);
 }
 
 .app .mfa-security-card {
@@ -3955,10 +3956,10 @@ body {
 .app .rich-note-editor {
   min-height: 86px;
   width: 100%;
-  border: 2px solid rgba(7, 17, 18, 0.22);
+  border: 2px solid var(--player-field-border-strong);
   border-radius: 8px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--player-field-panel);
+  color: var(--player-field-text);
   padding: 10px 12px;
   font: inherit;
   line-height: 1.35;
@@ -3975,7 +3976,7 @@ body {
 
 .app .rich-note-editor:empty::before {
   content: attr(data-placeholder);
-  color: #8a9498;
+  color: var(--player-field-placeholder);
 }
 
 .app .invite-code {
@@ -5613,9 +5614,9 @@ body {
 .app input, .app select, .app textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #f0f4f6;
-  color: #071112;
+  border: 1px solid var(--player-field-border);
+  background: var(--player-field-bg);
+  color: var(--player-field-text);
   border-radius: 8px;
   padding: 10px 11px;
   font: inherit;
@@ -5652,9 +5653,9 @@ body {
 .app .country-button {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #f0f4f6;
-  color: #071112;
+  border: 1px solid var(--player-field-border);
+  background: var(--player-field-bg);
+  color: var(--player-field-text);
   border-radius: 8px;
   padding: 10px 11px;
   text-align: left;
@@ -5669,10 +5670,10 @@ body {
   right: 0;
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.14);
+  border: 1px solid var(--player-field-border);
   border-radius: 8px;
   padding: 8px;
-  background: #ffffff;
+  background: var(--player-field-panel);
   box-shadow: 0 14px 30px rgba(7, 17, 18, 0.16);
 }
 
@@ -5688,14 +5689,14 @@ body {
   gap: 8px;
   align-items: center;
   background: transparent;
-  color: #071112;
+  color: var(--player-field-text);
   border-radius: 6px;
   padding: 8px;
   text-align: left;
 }
 
 .app .country-list button:hover {
-  background: #f0f4f6;
+  background: var(--player-control-hover);
 }
 
 .app .country-list span {
@@ -9607,12 +9608,23 @@ body {
 
 /* Player-side refinement: quieter Apple-like surfaces without touching Staff Console. */
 .app {
+  --player-bg: #f6f7f9;
+  --player-text: #071112;
   --player-surface: rgba(255, 255, 255, 0.94);
   --player-surface-soft: rgba(246, 248, 250, 0.88);
   --player-surface-raised: #ffffff;
   --player-border: rgba(7, 17, 18, 0.09);
   --player-border-strong: rgba(48, 89, 255, 0.22);
   --player-text-muted: #637075;
+  --player-field-bg: #f0f4f6;
+  --player-field-bg-soft: #f8fafb;
+  --player-field-panel: #ffffff;
+  --player-field-border: rgba(7, 17, 18, 0.12);
+  --player-field-border-strong: rgba(7, 17, 18, 0.16);
+  --player-field-text: #071112;
+  --player-field-placeholder: #8a9498;
+  --player-control-hover: #f0f4f6;
+  --player-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --player-shadow: 0 10px 30px rgba(7, 17, 18, 0.06);
   --player-shadow-soft: 0 5px 16px rgba(7, 17, 18, 0.045);
   --player-radius: 14px;
@@ -9717,10 +9729,11 @@ body {
 .app .ticket-admin-box input,
 .app .ticket-admin-box select,
 .app .ticket-admin-box textarea {
-  border-color: rgba(7, 17, 18, 0.12);
+  border-color: var(--player-field-border);
   border-radius: var(--player-radius-sm);
-  background: var(--player-surface-soft);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  background: var(--player-field-bg-soft);
+  color: var(--player-field-text);
+  box-shadow: var(--player-control-shadow);
 }
 
 .app .sessions-section {
@@ -10014,12 +10027,23 @@ body {
 
 @media (prefers-color-scheme: dark) {
   .app {
+    --player-bg: #071112;
+    --player-text: #f6f7f9;
     --player-surface: rgba(14, 23, 25, 0.94);
     --player-surface-soft: rgba(22, 34, 37, 0.9);
     --player-surface-raised: #10191b;
     --player-border: rgba(255, 255, 255, 0.1);
     --player-border-strong: rgba(98, 133, 255, 0.32);
     --player-text-muted: #aeb9bd;
+    --player-field-bg: rgba(22, 34, 37, 0.9);
+    --player-field-bg-soft: rgba(22, 34, 37, 0.9);
+    --player-field-panel: #10191b;
+    --player-field-border: rgba(255, 255, 255, 0.1);
+    --player-field-border-strong: rgba(255, 255, 255, 0.26);
+    --player-field-text: #f6f7f9;
+    --player-field-placeholder: #88969b;
+    --player-control-hover: rgba(98, 133, 255, 0.16);
+    --player-control-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
     --player-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
     --player-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.18);
   }
@@ -10086,17 +10110,17 @@ body {
   .app .ticket-price-summary > div,
   .app .ticket-confirmation-grid span,
   .app .ticket-session-summary span {
-    background: var(--player-surface-soft);
-    border-color: var(--player-border);
-    color: #f6f7f9;
+    background: var(--player-field-bg-soft);
+    border-color: var(--player-field-border);
+    color: var(--player-field-text);
   }
 
   .app .profile-account-form .country-phone-field .country-button,
   .app .profile-account-form .country-phone-field .country-menu,
   .app .profile-account-form .country-phone-field .country-menu input {
-    background: var(--player-surface-soft);
-    border-color: var(--player-border);
-    color: #f6f7f9;
+    background: var(--player-field-bg-soft);
+    border-color: var(--player-field-border);
+    color: var(--player-field-text);
   }
 
   .app .profile-account-form .country-phone-field .country-list button {
@@ -10105,7 +10129,7 @@ body {
 
   .app .profile-account-form .country-phone-field .country-list button:hover,
   .app .profile-account-form .country-phone-field .country-list button:focus-visible {
-    background: rgba(98, 133, 255, 0.16);
+    background: var(--player-control-hover);
   }
 
   .app .club-action-row .club-leave-button {
