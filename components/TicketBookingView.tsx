@@ -54,6 +54,7 @@ type TicketBookingConfirmation = {
 
 type GuestTicketAction = 'create-account' | 'guest'
 type TicketStatusVariant = 'info' | 'error'
+type GuestTicketActionPreparation = 'ready' | 'registered-account' | 'blocked'
 
 export type TicketBookingViewProps = {
   text: Record<string, string>
@@ -103,6 +104,7 @@ export type TicketBookingViewProps = {
   onTicketLoyaltyPointsChange: (value: string) => void
   onBookTickets: () => Promise<boolean>
   onValidateTicketSelection: () => boolean
+  onPrepareGuestTicketAction: (action: GuestTicketAction, options?: { continueWithoutAccount?: boolean }) => Promise<GuestTicketActionPreparation>
   onPromptLogin: () => void
   onPromptCreateAccount: () => void
   formatShortDate: (dateValue: string, language: LanguageCode) => string
@@ -162,6 +164,7 @@ export default function TicketBookingView({
   onTicketLoyaltyPointsChange,
   onBookTickets,
   onValidateTicketSelection,
+  onPrepareGuestTicketAction,
   onPromptLogin,
   onPromptCreateAccount,
   formatShortDate,
@@ -174,6 +177,7 @@ export default function TicketBookingView({
 }: TicketBookingViewProps) {
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
   const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
+  const [registeredAccountGuestPhone, setRegisteredAccountGuestPhone] = useState('')
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
@@ -190,6 +194,10 @@ export default function TicketBookingView({
     if (ticketConfirmation) setGuestTicketContactOpen(false)
   }, [ticketConfirmation])
 
+  useEffect(() => {
+    setRegisteredAccountGuestPhone('')
+  }, [guestTicketContact.phone])
+
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
       if (!onValidateTicketSelection()) return
@@ -200,6 +208,16 @@ export default function TicketBookingView({
   }
 
   async function handleGuestTicketAction(action: GuestTicketAction) {
+    const preparation = await onPrepareGuestTicketAction(action, {
+      continueWithoutAccount: action === 'guest' && registeredAccountGuestPhone === guestTicketContact.phone,
+    })
+    if (preparation !== 'ready') {
+      if (action === 'guest' && preparation === 'registered-account') {
+        setRegisteredAccountGuestPhone(guestTicketContact.phone)
+      }
+      return
+    }
+
     setGuestTicketAction(action)
     const booked = await onBookTickets()
     setGuestTicketAction(null)
