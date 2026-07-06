@@ -113,8 +113,6 @@ export default function BookingProfileView({ context }: { context: any }) {
     isDeletingAccount,
     isMfaLoading,
     isOAuthLoading,
-    isPasskeyCaptchaReady,
-    isPasskeyCaptchaVisible,
     isProfileAuthLoading,
     isPasskeyLoading,
     isRecoveryMode,
@@ -138,8 +136,6 @@ export default function BookingProfileView({ context }: { context: any }) {
     openInvitationText,
     openSessionFromProfile,
     passkeyButtonRef,
-    passkeyCaptchaContainerRef,
-    preparePasskeyCaptcha,
     pendingInvitationsHintText,
     pendingInvitationsText,
     pendingSessionInvites,
@@ -388,15 +384,11 @@ export default function BookingProfileView({ context }: { context: any }) {
                 </button>
                 {authMode === 'login' && (
                   <button
-                    aria-busy={isPasskeyLoading || !isPasskeyCaptchaReady}
+                    aria-busy={isPasskeyLoading}
                     aria-disabled={isPasskeyLoading}
                     className="secondary create-button passkey-auth-button"
                     disabled={isPasskeyLoading}
                     onClick={signInWithPasskey}
-                    onFocus={preparePasskeyCaptcha}
-                    onMouseEnter={preparePasskeyCaptcha}
-                    onPointerEnter={preparePasskeyCaptcha}
-                    onTouchStart={preparePasskeyCaptcha}
                     ref={passkeyButtonRef}
                     type="button"
                   >
@@ -409,13 +401,6 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <div className="auth-divider">
                   <span>{text.authOr}</span>
                 </div>
-                {authMode === 'login' && (
-                  <div
-                    aria-hidden={isPasskeyCaptchaVisible ? undefined : true}
-                    className={isPasskeyCaptchaVisible ? 'passkey-captcha-box visible' : 'passkey-captcha-box'}
-                    ref={passkeyCaptchaContainerRef}
-                  />
-                )}
               </div>
             )}
 

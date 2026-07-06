@@ -2,7 +2,7 @@
 
 import NextImage from 'next/image'
 import { Bold, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, Lock, MessageSquare, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
-import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
 import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, games, isEscapeSession, selectedTicketService, ticketArenaCount, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
@@ -16,7 +16,7 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
-import { HCAPTCHA_LOAD_TIMEOUT_MS, HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeyCaptchaPolicy, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
+import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
@@ -67,18 +67,6 @@ type BookingWidgetProps = {
 
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'staff']
-
-function subscribeToPasskeyCaptchaPolicy() {
-  return () => {}
-}
-
-function passkeyCaptchaModeSnapshot() {
-  return passkeyCaptchaPolicy().mode
-}
-
-function serverPasskeyCaptchaModeSnapshot(): ReturnType<typeof passkeyCaptchaPolicy>['mode'] {
-  return 'execute-on-click'
-}
 
 function isBookingAppView(value: unknown): value is AppView {
   return typeof value === 'string' && bookingAppViews.includes(value as AppView)
@@ -180,12 +168,6 @@ export default function WidgetPage({
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
-  const [isPasskeyCaptchaReady, setIsPasskeyCaptchaReady] = useState(false)
-  const passkeyCaptchaMode = useSyncExternalStore(
-    subscribeToPasskeyCaptchaPolicy,
-    passkeyCaptchaModeSnapshot,
-    serverPasskeyCaptchaModeSnapshot,
-  )
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [mfaFactors, setMfaFactors] = useState<TotpFactor[]>([])
@@ -360,11 +342,6 @@ export default function WidgetPage({
   const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
   const captchaContainerRef = useRef<HTMLDivElement | null>(null)
   const captchaWidgetId = useRef<string | null>(null)
-  const passkeyCaptchaContainerRef = useRef<HTMLDivElement | null>(null)
-  const passkeyCaptchaWidgetId = useRef<string | null>(null)
-  const passkeyCaptchaTokenRef = useRef('')
-  const passkeyCaptchaResolveRef = useRef<((token: string) => void) | null>(null)
-  const passkeyCaptchaRejectRef = useRef<((error: Error) => void) | null>(null)
   const passkeyButtonRef = useRef<HTMLButtonElement | null>(null)
   const warmedSupabaseClientRef = useRef<Awaited<ReturnType<typeof getSupabase>> | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
@@ -1040,131 +1017,10 @@ export default function WidgetPage({
     }
   }
 
-  function resetPasskeyCaptcha() {
-    passkeyCaptchaTokenRef.current = ''
-    setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-    passkeyCaptchaResolveRef.current = null
-    passkeyCaptchaRejectRef.current = null
-
-    const hcaptcha = getHCaptcha()
-
-    if (hcaptcha && passkeyCaptchaWidgetId.current) {
-      hcaptcha.reset(passkeyCaptchaWidgetId.current)
-    }
-  }
-
-  async function executePasskeyCaptcha({ forceFresh = false } = {}) {
-    if (!forceFresh && passkeyCaptchaTokenRef.current) return passkeyCaptchaTokenRef.current
-
-    const hcaptcha = getHCaptcha()
-    const widgetId = passkeyCaptchaWidgetId.current
-
-    if (!hcaptcha || !widgetId || !hcaptcha.execute) return ''
-
-    return new Promise<string>((resolve, reject) => {
-      let settled = false
-      const timeoutId = window.setTimeout(() => fail(new Error(text.captchaRequired)), HCAPTCHA_LOAD_TIMEOUT_MS)
-      const settle = (token: string) => {
-        if (settled) return
-        settled = true
-        window.clearTimeout(timeoutId)
-        passkeyCaptchaTokenRef.current = token
-        passkeyCaptchaResolveRef.current = null
-        passkeyCaptchaRejectRef.current = null
-        setIsPasskeyCaptchaReady(Boolean(token))
-        resolve(token)
-      }
-      const fail = (error: Error) => {
-        if (settled) return
-        settled = true
-        window.clearTimeout(timeoutId)
-        passkeyCaptchaTokenRef.current = ''
-        passkeyCaptchaResolveRef.current = null
-        passkeyCaptchaRejectRef.current = null
-        setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-        reject(error)
-      }
-
-      passkeyCaptchaResolveRef.current = settle
-      passkeyCaptchaRejectRef.current = fail
-
-      try {
-        const result = hcaptcha.execute?.(widgetId, { async: true })
-
-        if (result && typeof (result as Promise<string | { response?: string }>).then === 'function') {
-          ;(result as Promise<string | { response?: string }>).then((value) => {
-            const token = typeof value === 'string' ? value : value.response || ''
-
-            if (token) settle(token)
-            else fail(new Error(text.captchaRequired))
-          }).catch(fail)
-        }
-      } catch (error) {
-        passkeyCaptchaResolveRef.current = null
-        passkeyCaptchaRejectRef.current = null
-        fail(error instanceof Error ? error : new Error(String(error)))
-      }
-    })
-  }
-
-  async function waitForPasskeyCaptchaWidget(timeoutMs = 10000) {
-    if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) return true
-    if (typeof window === 'undefined') return false
-
-    const startedAt = Date.now()
-    await ensureHCaptcha().catch(() => undefined)
-
-    return new Promise<boolean>((resolve) => {
-      let settled = false
-      let timeoutId: number | null = null
-
-      const cleanup = () => {
-        if (timeoutId) window.clearTimeout(timeoutId)
-      }
-
-      const finish = () => {
-        if (settled) return
-        settled = true
-        cleanup()
-        resolve(Boolean(passkeyCaptchaWidgetId.current && getHCaptcha()?.execute))
-      }
-
-      const check = () => {
-        if (settled) return
-
-        if (passkeyCaptchaWidgetId.current && getHCaptcha()?.execute) {
-          finish()
-          return
-        }
-
-        if (Date.now() - startedAt >= timeoutMs) {
-          finish()
-          return
-        }
-
-        timeoutId = window.setTimeout(check, 75)
-      }
-
-      check()
-    })
-  }
-
   function warmSupabaseClient() {
     void getSupabase().then((client) => {
       warmedSupabaseClientRef.current = client
     }).catch(() => {})
-  }
-
-  function preparePasskeyCaptcha() {
-    if (typeof window === 'undefined') return
-    if (passkeyCaptchaPolicy().mode !== 'cached-before-passkey') return
-
-    window.setTimeout(() => {
-      void executePasskeyCaptcha({ forceFresh: true }).catch(() => {
-        passkeyCaptchaTokenRef.current = ''
-        setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-      })
-    }, 0)
   }
 
   function focusPasskeyDocument() {
@@ -2086,67 +1942,22 @@ export default function WidgetPage({
     try {
       setIsPasskeyLoading(true)
       setProfileStatus(text.passkeyStarting)
-      preparePasskeyCaptcha()
-      let captchaWidgetReady = await waitForPasskeyCaptchaWidget(1800)
-
-      if (!captchaWidgetReady && !passkeyCaptchaTokenRef.current) {
-        captchaWidgetReady = await waitForPasskeyCaptchaWidget(4500)
-      }
-
-      const cachedCaptchaToken = passkeyCaptchaTokenRef.current
-      const captchaTokenForPasskey = cachedCaptchaToken || (captchaWidgetReady ? await executePasskeyCaptcha() : '')
-
-      if (!captchaTokenForPasskey) {
-        setProfileStatus(text.captchaRequired)
-        setIsPasskeyLoading(false)
-        return
-      }
-
-      if (!cachedCaptchaToken) {
-        await restorePasskeyDocumentFocus()
-      } else {
-        focusPasskeyDocument()
-      }
+      await restorePasskeyDocumentFocus()
 
       const client = warmedSupabaseClientRef.current || await getSupabase()
       warmedSupabaseClientRef.current = client
-      let { data, error } = await client.auth.signInWithPasskey(
-        captchaTokenForPasskey
-          ? { options: { captchaToken: captchaTokenForPasskey } }
-          : undefined,
-      )
+      let { data, error } = await client.auth.signInWithPasskey()
 
       if (error && isDocumentFocusPasskeyError(error)) {
-        resetPasskeyCaptcha()
         await restorePasskeyDocumentFocus()
-        let retryCaptchaReady = await waitForPasskeyCaptchaWidget(1800)
-        if (!retryCaptchaReady) {
-          retryCaptchaReady = await waitForPasskeyCaptchaWidget(4500)
-        }
-        const retryCaptchaToken = retryCaptchaReady ? await executePasskeyCaptcha({ forceFresh: true }) : ''
-
-        if (!retryCaptchaToken) {
-          setProfileStatus(text.captchaRequired)
-          setIsPasskeyLoading(false)
-          return
-        }
-
-        await restorePasskeyDocumentFocus()
-        const retryResult = await client.auth.signInWithPasskey(
-          retryCaptchaToken
-            ? { options: { captchaToken: retryCaptchaToken } }
-            : undefined,
-        )
+        const retryResult = await client.auth.signInWithPasskey()
         data = retryResult.data
         error = retryResult.error
       }
 
-      resetPasskeyCaptcha()
-
       if (error) {
         setProfileStatus(error.message)
         setIsPasskeyLoading(false)
-        preparePasskeyCaptcha()
         return
       }
 
@@ -2171,10 +1982,8 @@ export default function WidgetPage({
       }
       setIsPasskeyLoading(false)
     } catch (error) {
-      resetPasskeyCaptcha()
       setProfileStatus(error instanceof Error ? error.message : String(error))
       setIsPasskeyLoading(false)
-      preparePasskeyCaptcha()
     }
   }
 
@@ -3871,58 +3680,11 @@ export default function WidgetPage({
   }, [activeView, authMode, authStep, profile])
 
   useEffect(() => {
-    const shouldPreparePasskeyCaptcha = !profile && !isRecoveryMode && activeView === 'profile' && authMode === 'login'
+    if (typeof window === 'undefined') return
+    if (profile || isRecoveryMode || activeView !== 'profile' || authMode !== 'login') return
 
-    if (typeof window === 'undefined' || !shouldPreparePasskeyCaptcha) return
-
-    let cancelled = false
     warmSupabaseClient()
-
-    ensureHCaptcha().then((hcaptcha) => {
-      if (cancelled || !passkeyCaptchaContainerRef.current || !hcaptcha || passkeyCaptchaWidgetId.current) return
-
-      setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-      passkeyCaptchaWidgetId.current = hcaptcha.render(passkeyCaptchaContainerRef.current, {
-        sitekey: HCAPTCHA_SITE_KEY,
-        ...(passkeyCaptchaPolicy().mode === 'visible-before-passkey' ? {} : { size: 'invisible' as const }),
-        callback: (token) => {
-          if (passkeyCaptchaResolveRef.current) {
-            passkeyCaptchaResolveRef.current(token)
-            return
-          }
-
-          if (passkeyCaptchaPolicy().mode === 'visible-before-passkey') {
-            passkeyCaptchaTokenRef.current = token
-            setIsPasskeyCaptchaReady(Boolean(token))
-          }
-        },
-        'expired-callback': () => {
-          passkeyCaptchaTokenRef.current = ''
-          setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-          passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
-          preparePasskeyCaptcha()
-        },
-        'error-callback': () => {
-          passkeyCaptchaTokenRef.current = ''
-          setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-          passkeyCaptchaRejectRef.current?.(new Error(text.captchaRequired))
-        },
-      })
-      setIsPasskeyCaptchaReady(passkeyCaptchaPolicy().mode === 'execute-on-click')
-      preparePasskeyCaptcha()
-    }).catch(() => {
-      if (!cancelled) setIsPasskeyCaptchaReady(false)
-    })
-
-    return () => {
-      cancelled = true
-      setIsPasskeyCaptchaReady(false)
-      resetPasskeyCaptcha()
-
-      removeHCaptchaWidget(passkeyCaptchaWidgetId.current)
-      passkeyCaptchaWidgetId.current = null
-    }
-  }, [activeView, authMode, authStep, isRecoveryMode, profile, text.captchaRequired])
+  }, [activeView, authMode, isRecoveryMode, profile])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -8477,7 +8239,7 @@ function handleSessionDateChange(value: string) {
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
 
-  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyCaptchaReady, isPasskeyCaptchaVisible: passkeyCaptchaMode === 'visible-before-passkey', isPasskeyLoading, isProfileAuthLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, passkeyCaptchaContainerRef, preparePasskeyCaptcha, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 
