@@ -6829,6 +6829,12 @@ body {
   line-height: 1;
 }
 
+.app .achievement-share-button {
+  color: #8a6600;
+  background: rgba(245, 197, 66, 0.16);
+  border-color: rgba(245, 197, 66, 0.28);
+}
+
 .app .achievement-rank-list {
   display: grid;
   gap: 8px;
@@ -7618,6 +7624,99 @@ body {
   font-weight: 850;
 }
 
+.app .achievement-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app .achievement-share-actions .small-button {
+  min-width: 0;
+}
+
+.app .achievement-unlock-sheet {
+  overflow: hidden;
+}
+
+.app .achievement-unlock-stage {
+  position: relative;
+  min-height: 232px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.app .achievement-unlock-stage::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(245, 197, 66, 0.42), transparent 58%),
+    radial-gradient(circle at 72% 28%, rgba(48, 89, 255, 0.26), transparent 38%);
+  animation: achievementGlowPop 900ms ease both;
+}
+
+.app .achievement-unlock-badge {
+  position: relative;
+  width: min(220px, 58vw);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid rgba(245, 197, 66, 0.68);
+  border-radius: 28px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3059ff, #00aeb3);
+  box-shadow: 0 22px 48px rgba(48, 89, 255, 0.22), 0 0 0 8px rgba(245, 197, 66, 0.14);
+  animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
+}
+
+.app .achievement-unlock-badge img {
+  object-fit: cover;
+}
+
+.app .achievement-unlock-copy h3 {
+  color: #8a6600;
+}
+
+.app .achievement-dismiss-button {
+  width: fit-content;
+}
+
+.app .achievement-confetti-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f5c542;
+  animation: achievementConfettiFloat 1.3s ease-in-out infinite alternate;
+}
+
+.app .achievement-confetti-dot.dot-one {
+  left: 16%;
+  top: 24%;
+}
+
+.app .achievement-confetti-dot.dot-two {
+  right: 17%;
+  top: 18%;
+  width: 12px;
+  height: 12px;
+  background: #3059ff;
+  animation-delay: 160ms;
+}
+
+.app .achievement-confetti-dot.dot-three {
+  right: 23%;
+  bottom: 18%;
+  width: 20px;
+  height: 20px;
+  background: #00aeb3;
+  animation-delay: 320ms;
+}
+
 @keyframes achievementLineDraw {
   to { stroke-dashoffset: 0; }
 }
@@ -7639,11 +7738,30 @@ body {
   96% { filter: hue-rotate(-30deg); transform: translateX(1px); }
 }
 
+@keyframes achievementBadgePop {
+  0% { opacity: 0; transform: translateY(16px) rotate(-4deg) scale(0.72); }
+  68% { opacity: 1; transform: translateY(0) rotate(2deg) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes achievementGlowPop {
+  0% { opacity: 0; transform: scale(0.72); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes achievementConfettiFloat {
+  from { transform: translateY(0) rotate(0); }
+  to { transform: translateY(-12px) rotate(18deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app .achievement-chart-line,
   .app .achievement-card::after,
   .app .achievement-sparked,
-  .app .achievement-secret-mark {
+  .app .achievement-secret-mark,
+  .app .achievement-unlock-stage::before,
+  .app .achievement-unlock-badge,
+  .app .achievement-confetti-dot {
     animation: none;
   }
 }
@@ -7786,6 +7904,12 @@ body {
     color: #dfe5ff;
   }
 
+  .app .achievement-share-button {
+    border-color: rgba(245, 197, 66, 0.28);
+    background: rgba(245, 197, 66, 0.16);
+    color: #f7d96a;
+  }
+
   .app .achievement-rank-list span.active {
     border-color: rgba(48, 89, 255, 0.36);
     background: rgba(48, 89, 255, 0.18);
@@ -7834,6 +7958,10 @@ body {
 
   .app .retention-achievement-copy small {
     color: #aeb9bd;
+  }
+
+  .app .achievement-unlock-copy h3 {
+    color: #f7d96a;
   }
 }
 
