@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import BookingWidget from '../../components/BookingWidget'
+import '../staff/staff.css'
 
 export const metadata: Metadata = {
   title: 'VRena Admin',
