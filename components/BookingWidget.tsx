@@ -216,6 +216,8 @@ export default function WidgetPage({
   const [ticketDuration, setTicketDuration] = useState(20)
   const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
   const [pendingGuestTicketClaim, setPendingGuestTicketClaim] = useState<{ phone: string; reference: string; name?: string; date?: string } | null>(null)
+  const [pendingTicketAuthAction, setPendingTicketAuthAction] = useState<'book-after-login' | 'claim-after-auth' | null>(null)
+  const pendingTicketAuthCompletingRef = useRef(false)
   const [ticketStatus, setTicketStatus] = useState('')
   const [ticketStatusVariant, setTicketStatusVariant] = useState<'info' | 'error'>('info')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
@@ -763,6 +765,52 @@ export default function WidgetPage({
     }
     updateAuthMode('create')
     setActiveView('profile')
+  }
+
+  function prefillProfileFromGuestTicketClaim(claimSource: { phone: string; reference?: string; name?: string; date?: string } | null) {
+    if (!claimSource?.phone) return
+
+    const phoneParts = splitPhoneNumber(claimSource.phone)
+    setProfileCountryCode(phoneParts.countryInput || '+84')
+    setProfilePhone(phoneParts.localPhone)
+    if (claimSource.name) setProfileName(claimSource.name)
+    if (claimSource.reference) {
+      setPendingGuestTicketClaim({
+        phone: claimSource.phone,
+        reference: claimSource.reference,
+        name: claimSource.name,
+        date: claimSource.date,
+      })
+    }
+  }
+
+  function promptTicketLogin() {
+    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
+      phone: ticketConfirmation.guestPhone,
+      reference: ticketConfirmation.reference,
+      name: ticketConfirmation.guestName,
+      date: ticketConfirmation.date,
+    } : null)
+
+    setPendingTicketAuthAction(claimSource?.phone && claimSource.reference ? 'claim-after-auth' : 'book-after-login')
+    prefillProfileFromGuestTicketClaim(claimSource)
+    goToLogin()
+  }
+
+  function promptTicketCreateAccount() {
+    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
+      phone: ticketConfirmation.guestPhone,
+      reference: ticketConfirmation.reference,
+      name: ticketConfirmation.guestName,
+      date: ticketConfirmation.date,
+    } : null)
+
+    setPendingTicketAuthAction(claimSource?.phone && claimSource.reference ? 'claim-after-auth' : 'book-after-login')
+    prefillProfileFromGuestTicketClaim(claimSource)
+    setLoginPromptOpen(false)
+    updateAuthMode('create')
+    setActiveView('profile')
+    setProfileStatus('')
   }
 
   function requireProfile() {
@@ -1551,17 +1599,17 @@ export default function WidgetPage({
         setProfile(null)
         if (/auth session missing/i.test(userError.message)) {
           setProfileStatus('')
-          return
+          return null
         }
         setProfileStatus(userError.message)
-        return
+        return null
       }
 
       if (!authUser) {
         setUserId('')
         setAuthEmail('')
         setProfile(null)
-        return
+        return null
       }
 
       setUserId(authUser.id)
@@ -1571,7 +1619,7 @@ export default function WidgetPage({
         const needsMfa = await prepareMfaChallengeIfNeeded()
         if (needsMfa) {
           setProfile(null)
-          return
+          return null
         }
       }
 
@@ -1594,7 +1642,7 @@ export default function WidgetPage({
 
       if (profileError) {
         setProfileStatus(profileError.message)
-        return
+        return null
       }
 
       if (profileRow) {
@@ -1617,7 +1665,7 @@ export default function WidgetPage({
         setAvatarColorDraft(profileRow.avatar_color || avatarColors[0])
         setAvatarTextColor(profileRow.avatar_text_color || avatarTextColors[0])
         setAvatarTextColorDraft(profileRow.avatar_text_color || avatarTextColors[0])
-        return
+        return profileRow
       }
 
       const email = authUser.email?.toLowerCase() || ''
@@ -1702,9 +1750,11 @@ export default function WidgetPage({
       })
 
       authDebug('loadProfile:profileRepairUpsert', repairResult)
+      return fallbackProfile
     } catch (error) {
       authDebug('loadProfile:thrown', error)
       setProfileStatus(error instanceof Error ? error.message : String(error))
+      return null
     } finally {
       if (shouldShowAuthLoading && profileAuthLoadSeqRef.current === authLoadSeq) {
         setIsProfileAuthLoading(false)
@@ -1884,11 +1934,12 @@ export default function WidgetPage({
         setUserId(signUpResult.data.user.id)
         setPersonalDataConsent(false)
         setProfilePassword('')
-        await loadProfile()
-        const claimError = await claimPendingGuestTicketForAccount()
-        if (!claimError) await loadProfile()
-        setProfileStatus(claimError || text.accountCreated)
-        setActiveView('profile')
+        const loadedProfile = await loadProfile()
+        const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
+        if (!completedTicketAuth) {
+          setProfileStatus(text.accountCreated)
+          setActiveView('profile')
+        }
         setIsSavingProfile(false)
         return
       }
@@ -1942,9 +1993,12 @@ export default function WidgetPage({
         setIsSavingProfile(false)
         return
       }
-      await loadProfile()
-      setProfileStatus('')
-      setActiveView('leaderboard')
+      const loadedProfile = await loadProfile()
+      const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
+      if (!completedTicketAuth) {
+        setProfileStatus('')
+        setActiveView('leaderboard')
+      }
       setIsSavingProfile(false)
     } catch (error) {
       authDebug('handleAuth:thrown', error)
@@ -2064,9 +2118,12 @@ export default function WidgetPage({
         setIsPasskeyLoading(false)
         return
       }
-      await loadProfile()
-      setProfileStatus('')
-      setActiveView('leaderboard')
+      const loadedProfile = await loadProfile()
+      const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
+      if (!completedTicketAuth) {
+        setProfileStatus('')
+        setActiveView('leaderboard')
+      }
       setIsPasskeyLoading(false)
     } catch (error) {
       resetPasskeyCaptcha()
@@ -4225,6 +4282,50 @@ function handleSessionDateChange(value: string) {
     }
     await loadSessions({ focusDate: claimDate })
     return ''
+  }
+
+  async function completePendingTicketAuth(activeProfile: Profile | null) {
+    if (!pendingTicketAuthAction || !activeProfile || pendingTicketAuthCompletingRef.current) return false
+
+    pendingTicketAuthCompletingRef.current = true
+    try {
+      if (pendingTicketAuthAction === 'claim-after-auth') {
+        const claimError = await claimPendingGuestTicketForAccount()
+        if (claimError) {
+          showTicketStatus(claimError, 'error')
+          setProfileStatus(claimError)
+          setActiveView('tickets')
+          return true
+        }
+
+        setTicketConfirmation((current) => current
+          ? { ...current, guestPhone: undefined, guestName: undefined }
+          : current)
+        showTicketStatus(text.guestTicketSavedToAccount)
+        setProfileStatus(text.guestTicketSavedToAccount)
+        await loadProfile()
+        setActiveView('tickets')
+        return true
+      }
+
+      if (pendingTicketAuthAction === 'book-after-login') {
+        const booked = ticketConfirmation ? true : await bookTickets(activeProfile)
+        if (booked) {
+          setTicketConfirmation((current) => current
+            ? { ...current, guestPhone: undefined, guestName: undefined }
+            : current)
+          showTicketStatus(text.guestTicketSavedToAccount)
+          setProfileStatus(text.guestTicketSavedToAccount)
+        }
+        setActiveView('tickets')
+        return true
+      }
+
+      return false
+    } finally {
+      setPendingTicketAuthAction(null)
+      pendingTicketAuthCompletingRef.current = false
+    }
   }
 
   function validateTicketSelection(activeProfile = profile) {
@@ -6771,8 +6872,8 @@ function handleSessionDateChange(value: string) {
     document.execCommand(command, false)
   }
 
-  async function bookTickets() {
-    const activeProfile = profile
+  async function bookTickets(profileOverride?: Profile | null) {
+    const activeProfile = profileOverride === undefined ? profile : profileOverride
 
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
@@ -6859,9 +6960,9 @@ function handleSessionDateChange(value: string) {
       })
     }
 
-    if (profile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
+    if (activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
       const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
-      const nextProfile = { ...profile, loyalty_points_total: nextPointsTotal }
+      const nextProfile = { ...activeProfile, loyalty_points_total: nextPointsTotal }
       setProfile(nextProfile)
       syncProfileEverywhere(nextProfile)
       setTicketLoyaltyRedemption((current) => current
@@ -8507,8 +8608,8 @@ function handleSessionDateChange(value: string) {
             onBookTickets={bookTickets}
             onGuestTicketContactChange={setGuestTicketContact}
             onPrepareGuestTicketAction={prepareGuestTicketAction}
-            onPromptCreateAccount={promptCreateAccount}
-            onPromptLogin={promptLogin}
+            onPromptCreateAccount={promptTicketCreateAccount}
+            onPromptLogin={promptTicketLogin}
             onValidateTicketSelection={validateTicketSelection}
             onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
             onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}

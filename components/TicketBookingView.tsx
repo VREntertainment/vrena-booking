@@ -477,7 +477,6 @@ export default function TicketBookingView({
                       <span>{text.guestTicketRegisteredConfirmPhone}</span>
                       <strong>{guestTicketContact.phone}</strong>
                     </div>
-                    <p className="guest-ticket-hold-note">{text.guestTicketRegisteredConfirmHoldNote}</p>
                     {ticketStatus && ticketStatus !== text.guestTicketExistingAccountGuestMessage && (
                       <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>
                     )}
@@ -587,7 +586,7 @@ export default function TicketBookingView({
                 <div className="guest-ticket-next-steps">
                   <strong>{text.guestTicketSavedTitle}</strong>
                   <span>{text.guestTicketSavedBody}</span>
-                  <button className="secondary small-button" type="button" onClick={onPromptLogin}>
+                  <button className="secondary small-button" type="button" onClick={onPromptCreateAccount}>
                     {text.guestTicketCreateAccountCta}
                   </button>
                 </div>
