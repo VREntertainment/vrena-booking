@@ -9,6 +9,7 @@ import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
+import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
@@ -76,6 +77,16 @@ function serverPasskeyCaptchaModeSnapshot(): ReturnType<typeof passkeyCaptchaPol
 
 function isBookingAppView(value: unknown): value is AppView {
   return typeof value === 'string' && bookingAppViews.includes(value as AppView)
+}
+
+function bookingUpdateKind(session: Pick<Session, 'booking_type'>) {
+  return session.booking_type === 'ticket' ? 'ticket' : 'session'
+}
+
+function bookingUpdateChanges(rows: Array<[string, unknown, unknown]>) {
+  return rows
+    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
+    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
 }
 
 export default function WidgetPage({
@@ -7638,6 +7649,33 @@ function handleSessionDateChange(value: string) {
     setIsUpdatingSession(false)
   }
 
+  async function sendSessionUpdateNotification(
+    session: Session,
+    payload: {
+      action: 'edited' | 'cancelled' | 'deleted'
+      summary: string
+      changes?: Array<{ label: string; before?: string | number | boolean | null; after?: string | number | boolean | null }>
+    },
+  ) {
+    try {
+      await notifyBookingUpdateEmail(await getSupabase(), {
+        action: payload.action,
+        bookingKind: bookingUpdateKind(session),
+        sessionId: session.id,
+        title: session.name,
+        reference: session.ticket_reference || null,
+        date: session.date,
+        time: session.start_time.slice(0, 5),
+        total: session.ticket_total_price ?? null,
+        summary: payload.summary,
+        changes: payload.changes || [],
+        source: 'Player booking flow',
+      })
+    } catch (error) {
+      console.warn('Could not send booking update email.', error)
+    }
+  }
+
   async function updateSession(session: Session) {
     if (!canManageSession(session)) {
       setCreateStatus(text.creatorOnlyEdit)
@@ -7722,6 +7760,22 @@ function handleSessionDateChange(value: string) {
     }
 
     await loadSessions({ focusDate: editSessionDate })
+    void sendSessionUpdateNotification(session, {
+      action: editBookingType === 'ticket' && editTicketStatus === 'cancelled' ? 'cancelled' : 'edited',
+      summary: editBookingType === 'ticket' && editTicketStatus === 'cancelled'
+        ? 'Booking status was changed to cancelled.'
+        : 'Booking details were edited.',
+      changes: bookingUpdateChanges([
+        ['Name', session.name, editSessionName.trim()],
+        ['Date', session.date, editSessionDate],
+        ['Time', session.start_time.slice(0, 5), editSessionTime],
+        ['Duration', session.duration_minutes, ticketEditDuration],
+        ['Max players', session.max_players, editSessionMaxPlayers],
+        ['Visibility', session.visibility, effectiveEditVisibility],
+        ['Ticket status', session.ticket_status, editBookingType === 'ticket' ? editTicketStatus : session.ticket_status],
+        ['Total', session.ticket_total_price, editBookingType === 'ticket' ? sanitizedTicketTotal : session.ticket_total_price],
+      ]),
+    })
     setCreateStatus(effectiveEditVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
     stopEditingSession()
   }
@@ -7748,6 +7802,11 @@ function handleSessionDateChange(value: string) {
     }
 
     await loadSessions()
+    void sendSessionUpdateNotification(session, {
+      action: 'cancelled',
+      summary: 'Booking status was changed to cancelled.',
+      changes: [{ label: 'Status', before: session.status, after: 'cancelled' }],
+    })
     setCreateStatus(text.sessionCancelled)
     setBusySessionId('')
   }
