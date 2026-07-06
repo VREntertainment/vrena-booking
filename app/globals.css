@@ -15441,6 +15441,62 @@ body {
   border-radius: 10px;
 }
 
+.app .sessions-section .ticket-session-row {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, #13a8d8 8%, transparent),
+      transparent 34%
+    ) !important;
+}
+
+.app .sessions-section .ticket-session-card {
+  position: relative;
+}
+
+.app .sessions-section .ticket-session-card::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto 12px -10px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #10b7b7, #3059ff);
+}
+
+.app .sessions-section .ticket-session-visual {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px dashed color-mix(in srgb, #13a8d8 44%, var(--player-border));
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #13a8d8 16%, var(--player-surface-soft)), color-mix(in srgb, #3059ff 10%, var(--player-surface)));
+  color: #168db6;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 48%, transparent);
+}
+
+.app .sessions-section .ticket-session-visual::before,
+.app .sessions-section .ticket-session-visual::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--player-bg);
+  transform: translateY(-50%);
+}
+
+.app .sessions-section .ticket-session-visual::before {
+  left: -5px;
+}
+
+.app .sessions-section .ticket-session-visual::after {
+  right: -5px;
+}
+
 .app .sessions-section .compact-session-title-row {
   gap: 8px;
   row-gap: 3px;
