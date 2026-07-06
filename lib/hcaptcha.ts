@@ -18,11 +18,6 @@ export type HCaptchaApi = {
   remove?: (widgetId: string) => void
 }
 
-export type PasskeyCaptchaPolicy = {
-  mode: 'unsupported' | 'execute-on-click' | 'cached-before-passkey' | 'visible-before-passkey'
-  reason: 'no-passkeys' | 'standard-browser' | 'webkit-focus-risk' | 'safari-visible-challenge'
-}
-
 export const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || 'a4be4d0e-2570-4642-a1a6-a44c02fa0d46'
 export const HCAPTCHA_SCRIPT_ID = 'vrena-hcaptcha-script'
 export const HCAPTCHA_PRIMARY_SCRIPT_URL = 'https://js.hcaptcha.com/1/api.js?render=explicit'
@@ -150,41 +145,4 @@ export function passkeysAvailable() {
     && 'credentials' in navigator
     && typeof navigator.credentials?.create === 'function'
     && typeof navigator.credentials?.get === 'function'
-}
-
-function isLikelyIOSWebKit() {
-  if (typeof navigator === 'undefined') return false
-
-  const userAgent = navigator.userAgent
-  const platform = navigator.platform || ''
-
-  return /iPad|iPhone|iPod/i.test(userAgent)
-    || (platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
-
-function isLikelyMacSafari() {
-  if (typeof navigator === 'undefined') return false
-
-  const userAgent = navigator.userAgent
-  const vendor = navigator.vendor || ''
-
-  return /Safari/i.test(userAgent)
-    && /Apple/i.test(vendor)
-    && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium|Android/i.test(userAgent)
-}
-
-export function passkeyCaptchaPolicy(): PasskeyCaptchaPolicy {
-  if (!passkeysAvailable()) {
-    return { mode: 'unsupported', reason: 'no-passkeys' }
-  }
-
-  if (isLikelyIOSWebKit()) {
-    return { mode: 'cached-before-passkey', reason: 'webkit-focus-risk' }
-  }
-
-  if (isLikelyMacSafari()) {
-    return { mode: 'visible-before-passkey', reason: 'safari-visible-challenge' }
-  }
-
-  return { mode: 'execute-on-click', reason: 'standard-browser' }
 }
