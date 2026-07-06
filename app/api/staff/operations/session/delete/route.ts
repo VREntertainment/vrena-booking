@@ -113,7 +113,6 @@ export async function POST(request: NextRequest) {
       deleted_at: now,
       deleted_by: userData.user.id,
       delete_reason: deleteReason,
-      updated_at: now,
     })
     .eq('session_id', sessionId)
     .is('deleted_at', null)
