@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 import type { Config, DriveStep, Driver, DriverHook, Side } from 'driver.js'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import type { AppView } from './AppSidebar'
+import 'driver.js/dist/driver.css'
+import './FirstLoginTour.css'
 
 const TOUR_VERSION = 'v1'
 const TOUR_STORAGE_PREFIX = 'vrena:first-login-tour'

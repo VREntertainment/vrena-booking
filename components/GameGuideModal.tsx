@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { X } from 'lucide-react'
 import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
+import './GameGuideModal.css'
 
 type GameAudience =
   | 'familyFriendly'
