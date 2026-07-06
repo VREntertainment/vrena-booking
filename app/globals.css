@@ -747,7 +747,7 @@ body {
 
 .app .profile-account-form .country-phone-field {
   display: grid;
-  grid-template-columns: minmax(66px, max-content) minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   gap: 10px;
   align-items: end;
 }
@@ -767,7 +767,7 @@ body {
 }
 
 .app .profile-account-form .country-phone-field .country-field {
-  width: min-content;
+  width: 100%;
 }
 
 .app .profile-account-form .country-phone-field .phone-field {
@@ -775,9 +775,10 @@ body {
 }
 
 .app .profile-account-form .country-phone-field .country-button {
-  width: auto;
-  min-width: 62px;
+  width: 100%;
+  min-width: 0;
   padding-inline: 10px;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -10088,6 +10089,23 @@ body {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
     color: #f6f7f9;
+  }
+
+  .app .profile-account-form .country-phone-field .country-button,
+  .app .profile-account-form .country-phone-field .country-menu,
+  .app .profile-account-form .country-phone-field .country-menu input {
+    background: var(--player-surface-soft);
+    border-color: var(--player-border);
+    color: #f6f7f9;
+  }
+
+  .app .profile-account-form .country-phone-field .country-list button {
+    color: #f6f7f9;
+  }
+
+  .app .profile-account-form .country-phone-field .country-list button:hover,
+  .app .profile-account-form .country-phone-field .country-list button:focus-visible {
+    background: rgba(98, 133, 255, 0.16);
   }
 
   .app .club-action-row .club-leave-button {
