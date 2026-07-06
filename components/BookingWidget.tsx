@@ -215,6 +215,7 @@ export default function WidgetPage({
   const [ticketPlayers, setTicketPlayers] = useState(1)
   const [ticketDuration, setTicketDuration] = useState(20)
   const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
+  const [pendingGuestTicketClaim, setPendingGuestTicketClaim] = useState<{ phone: string; reference: string; name?: string; date?: string } | null>(null)
   const [ticketStatus, setTicketStatus] = useState('')
   const [ticketStatusVariant, setTicketStatusVariant] = useState<'info' | 'error'>('info')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
@@ -747,6 +748,19 @@ export default function WidgetPage({
 
   function promptCreateAccount() {
     setLoginPromptOpen(false)
+    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
+      phone: ticketConfirmation.guestPhone,
+      reference: ticketConfirmation.reference,
+      name: ticketConfirmation.guestName,
+      date: ticketConfirmation.date,
+    } : null)
+    if (claimSource?.phone) {
+      const phoneParts = splitPhoneNumber(claimSource.phone)
+      setProfileCountryCode(phoneParts.countryInput || '+84')
+      setProfilePhone(phoneParts.localPhone)
+      if (claimSource.name) setProfileName(claimSource.name)
+      if (claimSource.reference) setPendingGuestTicketClaim(claimSource)
+    }
     updateAuthMode('create')
     setActiveView('profile')
   }
@@ -1814,6 +1828,8 @@ export default function WidgetPage({
       const nickname = limitDisplayName(profileNickname.trim())
       const display = nickname || compactDisplayName(fullName || loginEmail.split('@')[0])
       const consentAt = new Date().toISOString()
+      const countryCode = resolveCountryCode(profileCountryCode)
+      const normalizedProfilePhone = localPhone ? `${countryCode}${localPhone}` : ''
 
       if (authMode === 'create') {
         const signUpResult = await (await getSupabase()).auth.signUp({
@@ -1822,7 +1838,9 @@ export default function WidgetPage({
           options: {
             data: {
               display_name: display,
+              full_name: fullName || display,
               name: display,
+              phone: normalizedProfilePhone || null,
               gender: profileGender || null,
               marketing_consent: marketingConsent,
               marketing_consent_at: marketingConsent ? consentAt : null,
@@ -1867,7 +1885,9 @@ export default function WidgetPage({
         setPersonalDataConsent(false)
         setProfilePassword('')
         await loadProfile()
-        setProfileStatus(text.accountCreated)
+        const claimError = await claimPendingGuestTicketForAccount()
+        if (!claimError) await loadProfile()
+        setProfileStatus(claimError || text.accountCreated)
         setActiveView('profile')
         setIsSavingProfile(false)
         return
@@ -4147,6 +4167,64 @@ function handleSessionDateChange(value: string) {
   function clearTicketStatus() {
     setTicketStatus('')
     setTicketStatusVariant('info')
+  }
+
+  async function prepareGuestTicketAction(
+    action: 'create-account' | 'guest',
+    options: { continueWithoutAccount?: boolean } = {}
+  ): Promise<'ready' | 'registered-account' | 'blocked'> {
+    const validation = validateGuestTicketContact(guestTicketContact, looseText)
+    if (validation.error) {
+      showTicketStatus(validation.error, 'error')
+      return 'blocked'
+    }
+
+    const { data, error } = await (await getSupabase()).rpc('guest_ticket_phone_account_status', {
+      p_guest_phone: validation.normalizedPhone,
+    })
+
+    if (error) {
+      showTicketStatus(error.message || text.ticketBookingError, 'error')
+      return 'blocked'
+    }
+
+    const accountStatus = (data && typeof data === 'object' ? data : {}) as { has_account?: boolean }
+    if (!accountStatus.has_account) return 'ready'
+
+    if (action === 'create-account') {
+      showTicketStatus(text.guestTicketExistingAccountCreateMessage, 'error')
+      return 'registered-account'
+    }
+
+    if (!options.continueWithoutAccount) {
+      showTicketStatus(text.guestTicketExistingAccountGuestMessage, 'error')
+      return 'registered-account'
+    }
+
+    return 'ready'
+  }
+
+  async function claimPendingGuestTicketForAccount() {
+    if (!pendingGuestTicketClaim?.phone || !pendingGuestTicketClaim.reference) return ''
+
+    const claimDate = pendingGuestTicketClaim.date
+    const { data, error } = await (await getSupabase()).rpc('claim_guest_ticket_booking', {
+      p_guest_phone: pendingGuestTicketClaim.phone,
+      p_ticket_reference: pendingGuestTicketClaim.reference,
+    })
+
+    if (error) return error.message || text.ticketBookingError
+
+    const claimResult = (data && typeof data === 'object' ? data : {}) as { loyalty_points_total?: number | null }
+    setPendingGuestTicketClaim(null)
+    if (claimResult.loyalty_points_total !== undefined && claimResult.loyalty_points_total !== null) {
+      const nextPointsTotal = Math.max(0, Math.floor(Number(claimResult.loyalty_points_total) || 0))
+      setTicketLoyaltyRedemption((current) => current
+        ? { ...current, loyalty_points_total: nextPointsTotal }
+        : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
+    }
+    await loadSessions({ focusDate: claimDate })
+    return ''
   }
 
   function validateTicketSelection(activeProfile = profile) {
@@ -6772,6 +6850,15 @@ function handleSessionDateChange(value: string) {
       loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
     }
 
+    if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
+      setPendingGuestTicketClaim({
+        phone: confirmation.guestPhone,
+        reference: confirmation.reference,
+        name: confirmation.guestName,
+        date: confirmation.date,
+      })
+    }
+
     if (profile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
       const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
       const nextProfile = { ...profile, loyalty_points_total: nextPointsTotal }
@@ -8419,6 +8506,7 @@ function handleSessionDateChange(value: string) {
             language={language}
             onBookTickets={bookTickets}
             onGuestTicketContactChange={setGuestTicketContact}
+            onPrepareGuestTicketAction={prepareGuestTicketAction}
             onPromptCreateAccount={promptCreateAccount}
             onPromptLogin={promptLogin}
             onValidateTicketSelection={validateTicketSelection}

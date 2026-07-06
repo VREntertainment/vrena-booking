@@ -116,6 +116,8 @@ export const fr = {
   guestTicketSavedBody: 'Your ticket is saved with your phone number. Create an account when you want booking history and rewards.',
   guestTicketCreateAccountCta: 'Create account',
   guestTicketBookWithoutAccountCta: 'Book without an account',
+  guestTicketExistingAccountCreateMessage: 'This phone number is already linked to a VRena account. Please log in to book with that account.',
+  guestTicketExistingAccountGuestMessage: 'This phone number is already linked to a VRena account. Log in to keep this booking with your profile, or press Book without an account again to continue as guest.',
   guestTicketResumeHint: 'To manage this booking, contact VRena with {phone} and reference {reference}.',
   ticketRequired: 'Please choose a date and available time.',
   ticketPlayersInvalid: 'Please choose a valid number of players.',

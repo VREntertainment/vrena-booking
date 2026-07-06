@@ -356,7 +356,20 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 />
               )}
               {!isPast && isTicket ? (
-                <span className="ticket-session-label">{text.privateTicketSession}</span>
+                canExpandTicketSession ? (
+                  <span className="ticket-session-label">{text.privateTicketSession}</span>
+                ) : (
+                  <button
+                    className="primary compact-join"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setActiveView('tickets')
+                    }}
+                    type="button"
+                  >
+                    {text.bookTickets}
+                  </button>
+                )
               ) : !isPast && isChallenge ? (
                 invitedMe && !alreadyJoined ? (
                   <button
