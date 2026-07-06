@@ -169,9 +169,16 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   const theme = { ...defaultTheme, ...options.theme }
   const summary = achievementShareText({ ...options, appUrl })
 
+  let templateImage: HTMLImageElement | null = null
+  try {
+    templateImage = await loadCanvasImage(`${window.location.origin}/brand/tournament-leaderboard-template.jpg`)
+  } catch {
+    templateImage = null
+  }
+
   const canvas = document.createElement('canvas')
-  canvas.width = 1080
-  canvas.height = 1350
+  canvas.width = templateImage?.naturalWidth || 1080
+  canvas.height = templateImage?.naturalHeight || 1350
   const ctx = canvas.getContext('2d')
 
   if (!ctx) {
@@ -181,36 +188,50 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
     return 'ready'
   }
 
-  const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-  background.addColorStop(0, theme.background)
-  background.addColorStop(0.58, '#ffffff')
-  background.addColorStop(1, '#dfe8ff')
-  ctx.fillStyle = background
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  const templateWidth = 1080
+  const templateHeight = 1350
+  const canvasScale = Math.min(canvas.width / templateWidth, canvas.height / templateHeight)
+  const ss = (value: number) => value * canvasScale
+  const sx = (value: number) => value * canvasScale
+  const sy = (value: number) => value * canvasScale
 
-  ctx.fillStyle = 'rgba(48, 89, 255, 0.1)'
-  ctx.beginPath()
-  ctx.arc(130, 130, 260, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(245, 197, 66, 0.18)'
-  ctx.beginPath()
-  ctx.arc(960, 310, 230, 0, Math.PI * 2)
-  ctx.fill()
+  if (templateImage) {
+    ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = '#ffffff'
+    drawRoundRect(ctx, sx(160), sy(166), ss(760), ss(86), ss(26))
+    ctx.fill()
+  } else {
+    const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+    background.addColorStop(0, theme.background)
+    background.addColorStop(0.58, '#ffffff')
+    background.addColorStop(1, '#dfe8ff')
+    ctx.fillStyle = background
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    ctx.fillStyle = 'rgba(48, 89, 255, 0.1)'
+    ctx.beginPath()
+    ctx.arc(ss(130), ss(130), ss(260), 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(245, 197, 66, 0.18)'
+    ctx.beginPath()
+    ctx.arc(ss(960), ss(310), ss(230), 0, Math.PI * 2)
+    ctx.fill()
+  }
 
   ctx.fillStyle = '#071112'
   ctx.textBaseline = 'alphabetic'
-  fitText(ctx, 'VRena unlocked', canvas.width / 2, 168, 760, 34, '#657278', 900)
-  fitText(ctx, options.displayName, canvas.width / 2, 230, 820, 54)
+  fitText(ctx, 'ACHIEVEMENT UNLOCKED', canvas.width / 2, sy(214), ss(760), ss(44), theme.accent, 950)
+  fitText(ctx, options.displayName, canvas.width / 2, sy(292), ss(820), ss(48))
 
-  const badgeX = 260
-  const badgeY = 315
-  const badgeSize = 560
+  const badgeX = sx(290)
+  const badgeY = sy(352)
+  const badgeSize = ss(500)
   ctx.save()
   ctx.shadowColor = 'rgba(7, 17, 18, 0.18)'
-  ctx.shadowBlur = 34
-  ctx.shadowOffsetY = 18
+  ctx.shadowBlur = ss(34)
+  ctx.shadowOffsetY = ss(18)
   ctx.fillStyle = '#071112'
-  drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 48)
+  drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
   ctx.fill()
   ctx.restore()
 
@@ -222,7 +243,7 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
       const width = image.naturalWidth * scale
       const height = image.naturalHeight * scale
       ctx.save()
-      drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 48)
+      drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
       ctx.clip()
       ctx.drawImage(image, badgeX + (badgeSize - width) / 2, badgeY + (badgeSize - height) / 2, width, height)
       ctx.restore()
@@ -237,42 +258,44 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
     badgeGradient.addColorStop(0, theme.accent)
     badgeGradient.addColorStop(1, '#00aeb3')
     ctx.fillStyle = badgeGradient
-    drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 48)
+    drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
     ctx.fill()
-    fitText(ctx, '★', canvas.width / 2, badgeY + 360, 360, 220, '#ffffff', 900)
+    fitText(ctx, '★', canvas.width / 2, badgeY + ss(322), ss(360), ss(190), '#ffffff', 900)
   }
 
   ctx.fillStyle = 'rgba(7, 17, 18, 0.42)'
-  drawRoundRect(ctx, badgeX + 42, badgeY + badgeSize - 132, badgeSize - 84, 74, 28)
+  drawRoundRect(ctx, badgeX + ss(42), badgeY + badgeSize - ss(120), badgeSize - ss(84), ss(70), ss(28))
   ctx.fill()
-  fitText(ctx, options.kindLabel, canvas.width / 2, badgeY + badgeSize - 84, badgeSize - 140, 30, '#ffffff', 900)
+  fitText(ctx, options.kindLabel, canvas.width / 2, badgeY + badgeSize - ss(75), badgeSize - ss(140), ss(28), '#ffffff', 900)
 
-  fitText(ctx, options.title, canvas.width / 2, 965, 870, 60)
+  fitText(ctx, options.title, canvas.width / 2, sy(925), ss(870), ss(58))
   if (options.rarityLabel) {
-    fitText(ctx, options.rarityLabel, canvas.width / 2, 1012, 620, 28, theme.accent, 900)
+    fitText(ctx, options.rarityLabel, canvas.width / 2, sy(974), ss(620), ss(28), theme.accent, 900)
   }
 
-  ctx.font = '850 32px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-  const lines = wrapText(ctx, options.description, 820)
+  ctx.font = `850 ${ss(32)}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  const lines = wrapText(ctx, options.description, ss(820))
   lines.forEach((line, index) => {
-    fitText(ctx, line, canvas.width / 2, 1075 + index * 42, 820, 32, '#39464b', 850)
+    fitText(ctx, line, canvas.width / 2, sy(1032 + index * 42), ss(820), ss(32), '#39464b', 850)
   })
 
   if (typeof options.current === 'number' && typeof options.target === 'number' && options.target > 0) {
-    const trackX = 190
-    const trackY = 1210
-    const trackWidth = 700
+    const trackX = sx(190)
+    const trackY = sy(1168)
+    const trackWidth = ss(700)
     const percent = Math.max(0, Math.min(1, options.current / options.target))
     ctx.fillStyle = 'rgba(7, 17, 18, 0.1)'
-    drawRoundRect(ctx, trackX, trackY, trackWidth, 18, 999)
+    drawRoundRect(ctx, trackX, trackY, trackWidth, ss(18), ss(999))
     ctx.fill()
     ctx.fillStyle = theme.accent
-    drawRoundRect(ctx, trackX, trackY, trackWidth * percent, 18, 999)
+    drawRoundRect(ctx, trackX, trackY, trackWidth * percent, ss(18), ss(999))
     ctx.fill()
-    fitText(ctx, options.progressLabel || `${options.current}/${options.target}`, canvas.width / 2, 1262, 500, 26, '#657278', 850)
+    fitText(ctx, options.progressLabel || `${options.current}/${options.target}`, canvas.width / 2, sy(1214), ss(500), ss(26), '#657278', 850)
   }
 
-  fitText(ctx, options.footer || appUrl.replace(/^https?:\/\//, ''), canvas.width / 2, 1310, 760, 24, '#657278', 800)
+  if (!templateImage) {
+    fitText(ctx, options.footer || appUrl.replace(/^https?:\/\//, ''), canvas.width / 2, sy(1310), ss(760), ss(24), '#657278', 800)
+  }
 
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)
 
