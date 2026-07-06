@@ -32,6 +32,7 @@ import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import { supabase } from '../lib/supabase/client'
+import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import StaffAchievementAwardPanel, { type StaffAchievementAward } from './StaffAchievementAwardPanel'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
@@ -2823,6 +2824,47 @@ function normalizeTime(value: string | null | undefined) {
   return (value || '').slice(0, 5)
 }
 
+function operationBookingKind(session: Pick<StaffOperationSession, 'booking_type'>) {
+  return session.booking_type === 'ticket' ? 'ticket' : 'session'
+}
+
+function operationSessionChanges(session: StaffOperationSession, patch: Partial<StaffOperationSession>) {
+  const rows: Array<[string, unknown, unknown]> = [
+    ['Name', session.name, patch.name],
+    ['Date', session.date, patch.date],
+    ['Time', normalizeTime(session.start_time), patch.start_time ? normalizeTime(patch.start_time) : undefined],
+    ['Duration', session.duration_minutes, patch.duration_minutes],
+    ['Max players', session.max_players, patch.max_players],
+    ['Arena count', session.arena_count, patch.arena_count],
+    ['Visibility', session.visibility, patch.visibility],
+    ['Status', session.status, patch.status],
+    ['Game', session.confirmed_game_id, patch.confirmed_game_id],
+  ]
+
+  return rows
+    .filter(([, , after]) => after !== undefined)
+    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
+    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
+}
+
+function orderChanges(order: StaffOrder, patch: Partial<StaffOrder>) {
+  const rows: Array<[string, unknown, unknown]> = [
+    ['Payment status', order.payment_status, patch.payment_status],
+    ['Order status', order.order_status, patch.order_status],
+    ['Total', order.total, patch.total],
+    ['Customer name', order.customer_name, patch.customer_name],
+    ['Customer phone', order.customer_phone, patch.customer_phone],
+    ['Customer email', order.customer_email, patch.customer_email],
+    ['Date', order.booking_date, patch.booking_date],
+    ['Time', normalizeTime(order.booking_time), patch.booking_time ? normalizeTime(patch.booking_time) : undefined],
+  ]
+
+  return rows
+    .filter(([, , after]) => after !== undefined)
+    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
+    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
+}
+
 function parseStaffDuration(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === '') return null
   if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? Math.floor(value) : null
@@ -4363,6 +4405,43 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }, force)
   }
 
+  async function sendStaffBookingUpdateNotification(
+    session: StaffOperationSession | null,
+    order: StaffOrder | null,
+    payload: {
+      action: 'edited' | 'cancelled' | 'deleted'
+      title?: string | null
+      reference?: string | null
+      date?: string | null
+      time?: string | null
+      total?: number | null
+      summary?: string | null
+      changes?: Array<{ label: string; before?: string | number | boolean | null; after?: string | number | boolean | null }>
+    },
+  ) {
+    try {
+      await notifyBookingUpdateEmail(supabase, {
+        action: payload.action,
+        bookingKind: session ? operationBookingKind(session) : 'ticket',
+        sessionId: session?.id || order?.session_id || null,
+        orderId: order?.id || null,
+        title: payload.title || session?.name || null,
+        reference: payload.reference || order?.order_number || session?.ticket_reference || null,
+        date: payload.date || order?.booking_date || session?.date || null,
+        time: payload.time || normalizeTime(order?.booking_time || session?.start_time) || null,
+        customerName: order?.customer_name || null,
+        customerPhone: order?.customer_phone || null,
+        customerEmail: order?.customer_email || null,
+        total: payload.total ?? order?.total ?? session?.ticket_total_price ?? null,
+        summary: payload.summary || null,
+        changes: payload.changes || [],
+        source: 'Staff Console',
+      })
+    } catch (error) {
+      console.warn('Could not send booking update email.', error)
+    }
+  }
+
   async function updateOperationSession(session: StaffOperationSession, patch: Partial<StaffOperationSession>) {
     if (!canCreateOrders) {
       setStatus(text.messages.readOnlyBooking)
@@ -4390,6 +4469,14 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
 
     setStatus(text.messages.operationSessionSaved)
+    const linkedOrder = orders.find((order) => order.session_id === session.id) || null
+    void sendStaffBookingUpdateNotification(session, linkedOrder, {
+      action: patch.status === 'cancelled' ? 'cancelled' : 'edited',
+      summary: patch.status === 'cancelled'
+        ? 'Booking status was changed to cancelled.'
+        : 'Booking details were edited.',
+      changes: operationSessionChanges(session, patch),
+    })
     await loadTodaySessions(true)
   }
 
@@ -4462,6 +4549,10 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       return next
     })
     setStatus(text.messages.operationSessionDeleted)
+    void sendStaffBookingUpdateNotification(draft.session, draft.order, {
+      action: 'deleted',
+      summary: 'Booking was deleted from the Staff Console. Linked players were removed and any linked order was marked cancelled.',
+    })
     await Promise.all([
       loadTodaySessions(true),
       loadTodayOrders(true),
@@ -5531,6 +5622,20 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     setStatus(error ? error.message : text.messages.orderUpdated)
     if (!error) {
       setOrders((items) => items.map((item) => item.id === order.id ? { ...item, ...patch } : item))
+      const linkedSession = operationSessions.find((session) => session.id === order.session_id) || null
+      const updatedOrder = { ...order, ...patch }
+      void sendStaffBookingUpdateNotification(linkedSession, updatedOrder, {
+        action: patch.order_status === 'cancelled' ? 'cancelled' : 'edited',
+        title: linkedSession?.name || 'Ticket booking',
+        reference: order.order_number,
+        date: order.booking_date,
+        time: normalizeTime(order.booking_time),
+        total: updatedOrder.total,
+        summary: patch.order_status === 'cancelled'
+          ? 'Booking order was changed to cancelled.'
+          : 'Booking order details were edited.',
+        changes: orderChanges(order, patch),
+      })
       markStaffDataStale('today', 'orders', 'report')
       if (currentTab === 'today') await loadTodayOrders(true)
       if (currentTab === 'orders') await loadRecentOrders(true)
