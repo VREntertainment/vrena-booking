@@ -18,16 +18,18 @@ export default function ShortDateInput({
   language,
   placeholder,
   ariaLabel,
+  displayValueOverride,
 }: {
   value: string
   onChange: (value: string) => void
   language: LanguageCode
   placeholder: string
   ariaLabel: string
+  displayValueOverride?: string
 }) {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const displayValue = value ? formatShortDate(value, language) : placeholder
+  const displayValue = displayValueOverride || (value ? formatShortDate(value, language) : placeholder)
   const openPicker = () => {
     const input = inputRef.current
     if (!input) return

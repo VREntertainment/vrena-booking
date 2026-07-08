@@ -3732,15 +3732,32 @@ body {
 }
 
 .app .ticket-account-value-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   margin: 0;
   padding: 10px 12px;
   color: #075985;
   background: rgba(0, 174, 179, 0.08);
   border: 1px solid rgba(0, 174, 179, 0.18);
   border-radius: 10px;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 850;
   line-height: 1.35;
+  text-align: center;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.app .ticket-account-value-note:hover,
+.app .ticket-account-value-note:focus-visible {
+  background: rgba(0, 174, 179, 0.14);
+  border-color: rgba(0, 174, 179, 0.34);
+}
+
+.app .ticket-account-value-note:active {
+  transform: translateY(1px);
 }
 
 .app .ticket-total-line {
@@ -11949,6 +11966,12 @@ body {
     color: #9eefff;
     background: rgba(0, 181, 184, 0.1);
     border-color: rgba(98, 211, 255, 0.22);
+  }
+
+  .app .ticket-account-value-note:hover,
+  .app .ticket-account-value-note:focus-visible {
+    background: rgba(0, 181, 184, 0.16);
+    border-color: rgba(98, 211, 255, 0.34);
   }
 
   .app .profile-completion-head strong {
