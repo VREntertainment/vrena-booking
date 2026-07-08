@@ -3607,8 +3607,21 @@ body {
 }
 
 .app .ticket-control .date-input-display {
+  color: #071112;
+  -webkit-text-fill-color: #071112;
   font-size: 15px;
   font-weight: 800;
+}
+
+.app .ticket-control select:not(:disabled) {
+  color: #071112;
+  -webkit-text-fill-color: #071112;
+}
+
+.app .ticket-control select:disabled,
+.app .ticket-control .date-input-display.placeholder {
+  color: var(--player-field-placeholder);
+  -webkit-text-fill-color: var(--player-field-placeholder);
 }
 
 .app .ticket-price-summary {
@@ -10346,6 +10359,18 @@ body {
     background: var(--player-field-bg-soft);
     border-color: var(--player-field-border);
     color: var(--player-field-text);
+  }
+
+  .app .ticket-control select:not(:disabled),
+  .app .ticket-control .date-input-display:not(.placeholder) {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  .app .ticket-control select:disabled,
+  .app .ticket-control .date-input-display.placeholder {
+    color: var(--player-field-placeholder);
+    -webkit-text-fill-color: var(--player-field-placeholder);
   }
 
   .app .profile-account-form .country-phone-field .country-button,
