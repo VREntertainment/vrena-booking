@@ -784,7 +784,8 @@ export const vi = {
   shared: 'Đã chia sẻ',
   linkCopied: 'Đã chép link',
   loginToContinue: 'Đăng nhập trước nhé.',
-  loginPromptTitle: 'Một cửa ải nhỏ',
-  loginPromptMessage: 'Bạn cần đăng nhập trước. Sau đó cánh cổng phiên chơi sẽ mở ra.',
-  loginPromptButton: 'Đăng nhập',
+  loginPromptTitle: 'Tham gia phiên bằng tài khoản',
+  loginPromptMessage: 'Đăng nhập để tham gia phiên này bằng hồ sơ người chơi. Lần đầu dùng VRena? Bạn cũng có thể mua vé mà không cần tạo tài khoản.',
+  loginPromptButton: 'Đăng nhập để tham gia',
+  loginPromptTicketButton: 'Mua vé không cần tài khoản',
 } satisfies TranslationMap

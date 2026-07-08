@@ -784,7 +784,8 @@ export const ko = {
   shared: '공유됨',
   linkCopied: '링크 복사됨.',
   loginToContinue: '먼저 로그인하세요.',
-  loginPromptTitle: '작은 퀘스트 관문',
-  loginPromptMessage: '먼저 로그인하세요. 그러면 세션 문이 열리고 재미가 계속돼요.',
-  loginPromptButton: '로그인',
+  loginPromptTitle: '계정으로 세션 참가',
+  loginPromptMessage: '플레이어 프로필로 이 세션에 참가하려면 로그인하세요. 처음이라면 계정 없이 티켓을 구매할 수도 있어요.',
+  loginPromptButton: '로그인하고 참가',
+  loginPromptTicketButton: '계정 없이 티켓 구매',
 } satisfies TranslationMap

@@ -1765,6 +1765,15 @@ body {
   line-height: 1.45;
 }
 
+.app .login-prompt-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.app .login-prompt-actions .create-button {
+  width: 100%;
+}
+
 .app .payment-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

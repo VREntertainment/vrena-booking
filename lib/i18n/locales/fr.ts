@@ -784,7 +784,8 @@ export const fr = {
   shared: 'Partagé',
   linkCopied: 'Lien copié.',
   loginToContinue: 'Log in d’abord.',
-  loginPromptTitle: 'Mini checkpoint',
-  loginPromptMessage: 'Log in d’abord. Ensuite les portes de la partie s’ouvrent.',
-  loginPromptButton: 'Connexion',
+  loginPromptTitle: 'Rejoindre avec un compte',
+  loginPromptMessage: 'Connecte-toi pour rejoindre cette session avec ton profil joueur. Première visite ? Tu peux aussi acheter des tickets sans créer de compte.',
+  loginPromptButton: 'Connexion pour rejoindre',
+  loginPromptTicketButton: 'Acheter sans compte',
 } satisfies TranslationMap

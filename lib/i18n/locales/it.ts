@@ -784,7 +784,8 @@ export const it = {
   shared: 'Condiviso',
   linkCopied: 'Link copiato',
   loginToContinue: 'Fai login prima.',
-  loginPromptTitle: 'Mini checkpoint',
-  loginPromptMessage: 'Devi fare login prima. Poi i cancelli della partita si aprono.',
-  loginPromptButton: 'Accedi',
+  loginPromptTitle: 'Unisciti con un account',
+  loginPromptMessage: 'Accedi per unirti a questa sessione con il tuo profilo giocatore. Prima volta qui? Puoi anche comprare ticket senza creare un account.',
+  loginPromptButton: 'Accedi e unisciti',
+  loginPromptTicketButton: 'Compra ticket senza account',
 } satisfies TranslationMap

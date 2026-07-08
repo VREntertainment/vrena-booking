@@ -782,9 +782,10 @@ export const en = {
   shared: 'Shared',
   linkCopied: 'Link copied.',
   loginToContinue: 'Please log in first.',
-  loginPromptTitle: 'Tiny quest checkpoint',
-  loginPromptMessage: 'You must log in first. Then the session gates open and the fun can continue.',
-  loginPromptButton: 'Log in',
+  loginPromptTitle: 'Join sessions with an account',
+  loginPromptMessage: 'Log in to join this session with your player profile. First time here? You can buy tickets instead without creating an account.',
+  loginPromptButton: 'Log in to join',
+  loginPromptTicketButton: 'Buy tickets as guest',
 } as const
 
 export type TranslationKey = keyof typeof en
