@@ -10,6 +10,23 @@ import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 
+function localDateString(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function formatTicketDateDisplay(dateValue: string, language: LanguageCode) {
+  if (!dateValue) return ''
+
+  return new Date(`${dateValue}T12:00:00`).toLocaleDateString(language, {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
 type TicketType = 'individual' | 'birthday' | 'corporate'
 
 type TicketService = {
@@ -197,6 +214,9 @@ export default function TicketBookingView({
       .replace('{points}', String(estimatedLoyaltyPointsEarned))
       .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
     : text.ticketAccountValueNoPoints
+  const ticketDateDisplay = ticketDate === localDateString()
+    ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
+    : formatTicketDateDisplay(ticketDate, language)
 
   useEffect(() => {
     if (ticketConfirmation) setGuestTicketContactOpen(false)
@@ -269,6 +289,7 @@ export default function TicketBookingView({
                   <label>{text.date} <span className="required">*</span></label>
                   <ShortDateInput
                     ariaLabel={text.date}
+                    displayValueOverride={ticketDateDisplay}
                     language={language}
                     onChange={onTicketDateChange}
                     placeholder={text.chooseDate}
@@ -443,12 +464,6 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              {!isLoggedIn && !isSpecialTicket && (
-                <p className="ticket-account-value-note">
-                  {ticketAccountValueNote}
-                </p>
-              )}
-
               {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
@@ -463,6 +478,11 @@ export default function TicketBookingView({
               >
                 {isBookingTickets ? text.bookingTickets : text.bookTickets}
               </button>
+              {!isLoggedIn && !isSpecialTicket && (
+                <button className="ticket-account-value-note" type="button" onClick={onPromptCreateAccount}>
+                  {ticketAccountValueNote}
+                </button>
+              )}
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
