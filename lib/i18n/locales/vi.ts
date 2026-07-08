@@ -98,7 +98,7 @@ export const vi = {
   ticketNoSuggestedTimes: 'Không có giờ nhanh cho ngày này',
   ticketAccountValueWithPoints: 'Đừng bỏ lỡ điểm thưởng! Tạo tài khoản ngay và nhận {points} điểm thưởng trị giá {value} từ booking này.',
   ticketAccountValueNoPoints: 'Tạo tài khoản ngay để giữ booking này, đặt lại nhanh hơn và mở khóa ưu đãi sau.',
-  ticketTodayDateLabel: 'Hôm nay, {date}',
+  ticketTodayDateLabel: 'hôm nay, {date}',
   reservedPlayerSpots: 'Suất đã giữ',
   discount: 'Giảm giá',
   birthdayDiscount: 'Sinh nhật: giảm 10%',

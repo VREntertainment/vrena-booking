@@ -18,12 +18,13 @@ function localDateString(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
-function formatTicketDateDisplay(dateValue: string, language: LanguageCode) {
+function formatTicketDateDisplay(dateValue: string, language: LanguageCode, includeWeekday = false) {
   if (!dateValue) return ''
 
   return new Date(`${dateValue}T12:00:00`).toLocaleDateString(language, {
     day: 'numeric',
     month: 'short',
+    ...(includeWeekday ? { weekday: 'short' as const } : {}),
   })
 }
 
@@ -215,7 +216,7 @@ export default function TicketBookingView({
     : text.ticketAccountValueNoPoints
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
-    : formatTicketDateDisplay(ticketDate, language)
+    : formatTicketDateDisplay(ticketDate, language, true)
 
   useEffect(() => {
     if (ticketConfirmation) setGuestTicketContactOpen(false)
