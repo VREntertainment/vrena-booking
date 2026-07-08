@@ -201,13 +201,6 @@ export default function TicketBookingView({
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket
-  const currentTicketService = ticketServices.find((service) => service.id === ticketType)
-  const ticketSummaryMeta = currentTicketService
-    ? `20-120 min • ${currentTicketService.minPlayers}-${currentTicketService.maxPlayers} ${text.players}`
-    : ''
-  const ticketSummaryDetail = ticketType === 'individual'
-    ? ['1 ticket / person', ticketSummaryMeta].filter(Boolean).join(' • ')
-    : [ticketTypeDescription(ticketType, text), ticketSummaryMeta].filter(Boolean).join(' • ')
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
   const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
     ? text.ticketAccountValueWithPoints
@@ -272,21 +265,21 @@ export default function TicketBookingView({
       <>
           <div className="ticket-flow-grid">
             <div className="ticket-form-panel">
-              <div className="ticket-fast-path-summary">
-                <div>
-                  {isSpecialTicket && <strong>{ticketTypeLabel(ticketType, text)}</strong>}
-                  <small>{ticketSummaryDetail}</small>
-                </div>
-                {isSpecialTicket && (
+              {isSpecialTicket && (
+                <div className="ticket-fast-path-summary">
+                  <div>
+                    <strong>{ticketTypeLabel(ticketType, text)}</strong>
+                    <small>{ticketTypeDescription(ticketType, text)}</small>
+                  </div>
                   <button className="secondary small-button" type="button" onClick={() => onTicketTypeChange('individual')}>
                     {text.ticketUseIndividual}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="form-grid compact-form-grid ticket-form-grid">
                 <div className="ticket-control ticket-control-date">
-                  <label>{text.date} <span className="required">*</span></label>
+                  <label>{text.date}</label>
                   <ShortDateInput
                     ariaLabel={text.date}
                     displayValueOverride={ticketDateDisplay}
@@ -297,7 +290,7 @@ export default function TicketBookingView({
                   />
                 </div>
                 <div className="ticket-control ticket-control-time">
-                  <label htmlFor="ticket-available-time">{text.availableTime} <span className="required">*</span></label>
+                  <label htmlFor="ticket-available-time">{text.availableTime}</label>
                   <select id="ticket-available-time" value={ticketTime} onChange={(event) => onTicketTimeChange(event.target.value)}>
                     <option value="">{text.chooseTime}</option>
                     {ticketTimeOptions.map((option) => (
@@ -326,7 +319,7 @@ export default function TicketBookingView({
                   </select>
                 </div>
                 <div className="ticket-control ticket-control-players">
-                  <label htmlFor="ticket-player-count">{text.numberOfPlayers} <span className="required">*</span></label>
+                  <label htmlFor="ticket-player-count">{text.numberOfPlayers}</label>
                   <select id="ticket-player-count" value={ticketPlayers} onChange={(event) => onTicketPlayersChange(Number(event.target.value))}>
                     {ticketPlayerOptions.map((count) => (
                       <option key={count} value={count}>

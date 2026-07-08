@@ -494,7 +494,7 @@ body {
   pointer-events: none;
   overflow: hidden;
   color: var(--player-field-text);
-  font-weight: 800;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 1;
@@ -503,7 +503,7 @@ body {
 
 .app .date-input-display.placeholder {
   color: var(--player-field-placeholder);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .app .date-input-shell:focus-within {
@@ -3610,7 +3610,6 @@ body {
   color: #071112;
   -webkit-text-fill-color: #071112;
   font-size: 15px;
-  font-weight: 800;
 }
 
 .app .ticket-control select:not(:disabled) {
