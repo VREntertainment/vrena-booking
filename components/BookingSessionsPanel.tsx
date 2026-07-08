@@ -9,7 +9,7 @@ import { games, ticketServices, type GameId, type TicketType } from '../lib/book
 import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketArenaCountForPlayers, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type Participant } from '../lib/bookingWidgetDomain'
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
-import { ButtonIconText, ShareSymbol } from './BookingWidgetUi'
+import { ShareSymbol } from './BookingWidgetUi'
 import AppLoadingState from './AppLoadingState'
 import type { Session } from '../lib/bookingWidgetDomain'
 
@@ -330,10 +330,10 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
             <div className="compact-session-main">
               <div className="compact-session-title-row">
                 <h3>{session.name}</h3>
-                <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
+                <span className={session.session_type === 'tournament' ? 'pill private session-kind-pill session-kind-tournament' : 'pill ok session-kind-pill session-kind-normal'}>
                   {session.session_type === 'tournament' ? text.tournament : text.normalGame}
                 </span>
-                <span className={session.visibility === 'private' ? 'pill private' : 'pill ok'}>
+                <span className={session.visibility === 'private' ? 'pill private session-visibility-pill' : 'pill ok session-visibility-pill'}>
                   {session.visibility === 'private' ? text.private : text.public}
                 </span>
                 {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
@@ -459,13 +459,16 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
               {canExpandDetails && (
                 <button
                   className="secondary compact-expand"
+                  aria-label={isExpanded ? text.hideDetails : text.expandDetails}
+                  title={isExpanded ? text.hideDetails : text.expandDetails}
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation()
                     setSessionExpanded(session, !isExpanded)
                   }}
                 >
-                  <ButtonIconText icon={isExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{isExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
+                  {isExpanded ? <ChevronUp aria-hidden="true" size={18} /> : <ChevronDown aria-hidden="true" size={18} />}
+                  <span className="sr-only">{isExpanded ? text.hideDetails : text.expandDetails}</span>
                 </button>
               )}
             </div>

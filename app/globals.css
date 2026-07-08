@@ -10384,7 +10384,7 @@ body {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  gap: 14px;
+  gap: 16px;
 }
 
 .app .sessions-filter-head {
@@ -10394,16 +10394,16 @@ body {
 }
 
 .app .sessions-section .list {
-  gap: 0;
-  border-top: 1px solid var(--player-border);
+  gap: 6px;
+  border-top: 0;
 }
 
 .app .sessions-section .session {
   gap: 0;
   padding: 0 !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--player-border) !important;
-  border-radius: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 8px !important;
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -10413,19 +10413,22 @@ body {
 }
 
 .app .sessions-section .compact-session-card {
-  grid-template-columns: 52px minmax(0, 1fr) auto;
-  gap: 12px;
-  min-height: 72px;
-  padding: 12px 0 !important;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 80px;
+  padding: 12px 10px !important;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 8px !important;
   background: transparent !important;
   box-shadow: none !important;
+  transition:
+    background-color 160ms ease,
+    transform 180ms ease;
 }
 
 .app .sessions-section .compact-session-card:hover {
   transform: none;
-  background: color-mix(in srgb, var(--player-surface-soft) 52%, transparent) !important;
+  background: color-mix(in srgb, var(--player-surface-soft) 58%, transparent) !important;
 }
 
 .app .sessions-section .session-retention-card {
@@ -10436,8 +10439,9 @@ body {
   align-self: start;
   gap: 12px;
   min-height: 0;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--player-border);
+  padding: 14px 10px;
+  border-bottom: 0;
+  border-radius: 8px;
   box-sizing: border-box;
   overflow: visible;
   background:
@@ -10532,9 +10536,9 @@ body {
 }
 
 .app .sessions-section .compact-session-image {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
 }
 
 .app .sessions-section .ticket-session-row {
@@ -10544,6 +10548,7 @@ body {
       color-mix(in srgb, #13a8d8 8%, transparent),
       transparent 34%
     ) !important;
+  border-radius: 8px !important;
 }
 
 .app .sessions-section .ticket-session-card {
@@ -10554,7 +10559,7 @@ body {
   content: "";
   position: absolute;
   inset: 12px auto 12px -10px;
-  width: 3px;
+  width: 2px;
   border-radius: 999px;
   background: linear-gradient(180deg, #10b7b7, #3059ff);
 }
@@ -10563,10 +10568,10 @@ body {
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border: 1px dashed color-mix(in srgb, #13a8d8 44%, var(--player-border));
-  border-radius: 10px;
+  border-radius: 8px;
   background:
     linear-gradient(135deg, color-mix(in srgb, #13a8d8 16%, var(--player-surface-soft)), color-mix(in srgb, #3059ff 10%, var(--player-surface)));
   color: #168db6;
@@ -10595,10 +10600,13 @@ body {
 
 .app .sessions-section .compact-session-title-row {
   gap: 8px;
-  row-gap: 3px;
+  row-gap: 4px;
+  flex-wrap: wrap;
+  align-items: baseline;
 }
 
 .app .sessions-section .compact-session-title-row h3 {
+  flex: 1 1 auto;
   font-size: 16px;
   font-weight: 800;
   line-height: 1.18;
@@ -10621,22 +10629,23 @@ body {
   border-radius: 0;
   background: transparent;
   color: var(--player-text-muted);
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 11.5px;
+  font-weight: 720;
+  letter-spacing: 0;
 }
 
 .app .sessions-section .pill.ok {
-  color: #138060;
+  color: color-mix(in srgb, #138060 78%, var(--player-text-muted));
 }
 
 .app .sessions-section .pill.private {
-  color: #b45a1c;
+  color: color-mix(in srgb, #b45a1c 78%, var(--player-text-muted));
 }
 
 .app .sessions-section .ticket-pill,
 .app .sessions-section .challenge-pill,
 .app .sessions-section .soft-opening-pill {
-  color: #3059ff;
+  color: color-mix(in srgb, #3059ff 82%, var(--player-text-muted));
 }
 
 .app .sessions-section .compact-game-guide-link,
@@ -10700,24 +10709,30 @@ body {
 }
 
 .app .sessions-section .compact-session-actions {
-  gap: 8px;
+  gap: 7px;
+  flex-wrap: nowrap;
 }
 
 .app .sessions-section .compact-join {
   min-height: 34px;
-  border-radius: 9px;
-  padding: 6px 13px;
+  border-radius: 8px;
+  padding: 6px 12px;
   white-space: nowrap;
+  box-shadow: none;
 }
 
 .app .sessions-section .compact-expand,
 .app .sessions-section .compact-session-actions .compact-expand {
-  width: auto;
-  min-height: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
   border: 0 !important;
+  border-radius: 8px !important;
   background: transparent !important;
   color: var(--player-text-muted) !important;
-  padding: 4px 0;
+  padding: 0;
   box-shadow: none !important;
 }
 
@@ -10729,12 +10744,61 @@ body {
 .app .sessions-section .compact-share {
   width: 34px;
   height: 34px;
+  min-width: 34px;
   color: var(--player-text-muted);
 }
 
 .app .sessions-section .session-expanded {
   gap: 10px;
-  padding: 0 0 14px 64px;
+  padding: 0 10px 14px 80px;
+}
+
+.app .sessions-section .reminder-strip {
+  gap: 10px;
+  padding: 14px 16px;
+  border: 0 !important;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #70dfff 14%, transparent), transparent 58%),
+    color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.app .sessions-section .reminder-strip-head {
+  align-items: center;
+  min-width: 0;
+}
+
+.app .sessions-section .reminder-strip-head .small-button {
+  flex: 0 0 auto;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.app .sessions-section .reminder-strip > button {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--player-surface) 88%, var(--player-surface-soft) 12%) !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .reminder-strip > button span,
+.app .sessions-section .reminder-strip > button small {
+  min-width: 0;
+}
+
+.app .sessions-section .reminder-strip > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app .sessions-section .notes-block,
@@ -10834,30 +10898,80 @@ body {
 }
 
 @media (max-width: 720px) {
+  .app .tabs {
+    gap: 4px;
+  }
+
+  .app .tab {
+    min-height: 38px;
+    border-color: color-mix(in srgb, var(--player-border) 72%, transparent);
+    padding: 7px 6px;
+    box-shadow: none;
+  }
+
   .app .sessions-filter-head {
     gap: 10px;
   }
 
+  .app .sessions-section {
+    gap: 12px;
+  }
+
+  .app .sessions-section .list {
+    gap: 10px;
+  }
+
   .app .sessions-section .compact-session-card {
-    grid-template-columns: 46px minmax(0, 1fr);
-    gap: 9px;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
     min-height: 0;
-    padding: 10px 0 !important;
+    padding: 12px 0 !important;
   }
 
   .app .sessions-section .compact-session-image {
-    width: 46px;
-    height: 46px;
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+  }
+
+  .app .sessions-section .ticket-session-visual {
+    width: 52px;
+    height: 52px;
+  }
+
+  .app .sessions-section .compact-session-title-row {
+    gap: 3px 8px;
   }
 
   .app .sessions-section .compact-session-title-row h3 {
-    font-size: 15px;
+    flex-basis: 100%;
+    font-size: 15.5px;
+    line-height: 1.18;
+  }
+
+  .app .sessions-section .session-kind-normal {
+    display: none;
+  }
+
+  .app .sessions-section .row-meta,
+  .app .sessions-section .compact-meta {
+    gap: 7px;
+    row-gap: 2px;
+  }
+
+  .app .sessions-section .row-meta span,
+  .app .sessions-section .compact-meta span,
+  .app .sessions-section .pill,
+  .app .sessions-section .status-pill,
+  .app .sessions-section .host-pill {
+    font-size: 11.5px;
+    line-height: 1.15;
   }
 
   .app .sessions-section .session-retention-card {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 9px 11px;
-    padding: 12px 0;
+    padding: 13px 10px;
   }
 
   .app .sessions-section .session-retention-card-cta {
@@ -10868,12 +10982,12 @@ body {
   }
 
   .app .sessions-section .compact-session-actions {
-    grid-column: 1 / -1;
+    grid-column: 2;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) 40px 40px;
     align-items: center;
-    gap: 8px;
-    padding-left: 55px;
+    gap: 7px;
+    padding-left: 0;
   }
 
   .app .sessions-section .compact-session-actions .compact-code {
@@ -10883,7 +10997,8 @@ body {
 
   .app .sessions-section .compact-session-actions .compact-join {
     width: 100%;
-    min-height: 38px;
+    min-width: 0;
+    min-height: 40px;
     padding-inline: 11px;
   }
 
@@ -10892,18 +11007,52 @@ body {
   }
 
   .app .sessions-section .compact-share {
-    width: 38px;
-    height: 38px;
-    min-height: 38px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .app .sessions-section .compact-expand,
+  .app .sessions-section .compact-session-actions .compact-expand {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
   }
 
   .app .sessions-section .compact-share .share-symbol-icon {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
   }
 
   .app .sessions-section .session-expanded {
     padding: 0 0 12px;
+  }
+
+  .app .sessions-section .reminder-strip {
+    padding: 14px 12px;
+  }
+
+  .app .sessions-section .reminder-strip-head {
+    display: grid;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .app .sessions-section .reminder-strip-head .small-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .app .sessions-section .reminder-strip > button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    align-items: start;
+  }
+
+  .app .sessions-section .reminder-strip > button small {
+    overflow: visible;
+    white-space: normal;
   }
 
   .app .sessions-section .confirm-game-panel {
