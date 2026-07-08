@@ -3596,6 +3596,40 @@ body {
   font-size: 15px;
 }
 
+.app .ticket-smart-defaults {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  min-height: 24px;
+}
+
+.app .ticket-smart-defaults button {
+  min-height: 24px;
+  padding: 4px 8px;
+  color: #3059ff;
+  background: rgba(48, 89, 255, 0.08);
+  border: 1px solid rgba(48, 89, 255, 0.16);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.app .ticket-smart-defaults button.active {
+  color: #ffffff;
+  background: #3059ff;
+  border-color: #3059ff;
+}
+
+.app .ticket-smart-defaults span {
+  color: #65727a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .app .ticket-price-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3651,6 +3685,16 @@ body {
 }
 
 .app .ticket-discount-line strong {
+  color: #0f766e;
+}
+
+.app .ticket-price-context {
+  grid-column: span 2;
+  border: 1px solid rgba(48, 89, 255, 0.14);
+  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08));
+}
+
+.app .ticket-price-context strong {
   color: #0f766e;
 }
 
@@ -6188,6 +6232,54 @@ body {
   color: #657278;
   font-size: 11px;
   font-weight: 700;
+}
+
+.app .profile-completion-card {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08));
+  border: 1px solid rgba(48, 89, 255, 0.14);
+  border-radius: 12px;
+}
+
+.app .profile-completion-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app .profile-completion-head div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .profile-completion-head strong {
+  color: #071112;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.app .profile-completion-head span,
+.app .profile-completion-footer {
+  color: #65727a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.app .profile-completion-head b {
+  color: #3059ff;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app .profile-completion-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .app .leaderboard-metric {
@@ -11810,5 +11902,70 @@ body {
     background:
       linear-gradient(135deg, var(--club-theme-soft, rgba(98, 133, 255, 0.18)), rgba(112, 223, 255, 0.08)),
       #101d21;
+  }
+}
+
+.app .ticket-price-summary > .ticket-price-context {
+  border-color: rgba(48, 89, 255, 0.14) !important;
+  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08)) !important;
+  border-radius: var(--player-radius-sm) !important;
+}
+
+.app .ticket-smart-defaults button {
+  display: inline-flex !important;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100%;
+  min-height: 24px !important;
+  padding: 4px 8px !important;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .ticket-smart-defaults button {
+    color: #9eefff;
+    background: rgba(98, 211, 255, 0.12);
+    border-color: rgba(98, 211, 255, 0.22);
+  }
+
+  .app .ticket-smart-defaults button.active {
+    color: #071112;
+    background: #9eefff;
+    border-color: #9eefff;
+  }
+
+  .app .ticket-smart-defaults span,
+  .app .profile-completion-head span,
+  .app .profile-completion-footer {
+    color: var(--player-text-muted);
+  }
+
+  .app .ticket-price-summary > .ticket-price-context,
+  .app .profile-completion-card {
+    border-color: rgba(98, 211, 255, 0.22) !important;
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(48, 89, 255, 0.16)) !important;
+  }
+
+  .app .profile-completion-head strong {
+    color: var(--player-text);
+  }
+
+  .app .profile-completion-head b {
+    color: #9eefff;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .ticket-price-context {
+    grid-column: 1 / -1;
+  }
+
+  .app .profile-completion-head,
+  .app .profile-completion-footer {
+    display: grid;
   }
 }

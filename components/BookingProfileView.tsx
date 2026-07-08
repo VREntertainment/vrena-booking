@@ -217,6 +217,20 @@ export default function BookingProfileView({ context }: { context: any }) {
     verifyMfaChallenge
   } = context
   const profileTabs = profileTabCopy[language as keyof typeof profileTabCopy] ?? profileTabCopy.en
+  const profileCompletionSteps = [
+    { done: Boolean(profile), label: text.profileStepAccount },
+    { done: Boolean(profileName.trim()), label: text.profileStepName },
+    { done: Boolean(profileBirthday), label: text.profileStepBirthday },
+    { done: Boolean(profileNickname.trim()), label: text.profileStepNickname },
+    {
+      done: Boolean(avatarPreview || profile?.avatar_url || profile?.avatar_emoji || avatarInitials.trim()),
+      label: text.profileStepAvatar,
+    },
+    { done: ((profilePastSessions?.length ?? 0) + (profileUpcomingSessions?.length ?? 0)) > 0, label: text.profileStepFirstBooking },
+  ]
+  const completedProfileSteps = profileCompletionSteps.filter((step) => step.done).length
+  const profileCompletionPercent = Math.round((completedProfileSteps / profileCompletionSteps.length) * 100)
+  const nextProfileStep = profileCompletionSteps.find((step) => !step.done)
 
   function renderProfileSessionCard(session: any) {
     const participants = session.session_participants ?? []
@@ -435,24 +449,50 @@ export default function BookingProfileView({ context }: { context: any }) {
             ) : (
               <>
             {profile && (
-              <div className="action-row profile-save-actions profile-settings-actions">
-                <button
-                  className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
-                  disabled={isSavingProfile}
-                  onClick={saveProfile}
-                  type="button"
-                >
-                  {isSavingProfile ? text.saving : text.saveProfile}
-                </button>
-                <button className="secondary create-button" onClick={logout} type="button">
-                  {text.logOut}
-                </button>
-                {canAccessStaffConsole && (
-                  <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
-                    Staff Console
+              <>
+                <section className="profile-completion-card" aria-label={text.profileCompletionTitle}>
+                  <div className="profile-completion-head">
+                    <div>
+                      <strong>{text.profileCompletionTitle}</strong>
+                      <span>{nextProfileStep ? text.profileCompletionBody : text.profileCompletionComplete}</span>
+                    </div>
+                    <b>{profileCompletionPercent}%</b>
+                  </div>
+                  <span className="rank-progress-track" aria-hidden="true">
+                    <span style={{ width: `${profileCompletionPercent}%` }} />
+                  </span>
+                  <div className="profile-completion-footer">
+                    <span>
+                      {text.profileCompletionSteps
+                        .replace('{done}', String(completedProfileSteps))
+                        .replace('{total}', String(profileCompletionSteps.length))}
+                    </span>
+                    {nextProfileStep && (
+                      <span>
+                        {text.profileCompletionNext.replace('{step}', nextProfileStep.label)}
+                      </span>
+                    )}
+                  </div>
+                </section>
+                <div className="action-row profile-save-actions profile-settings-actions">
+                  <button
+                    className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
+                    disabled={isSavingProfile}
+                    onClick={saveProfile}
+                    type="button"
+                  >
+                    {isSavingProfile ? text.saving : text.saveProfile}
                   </button>
-                )}
-              </div>
+                  <button className="secondary create-button" onClick={logout} type="button">
+                    {text.logOut}
+                  </button>
+                  {canAccessStaffConsole && (
+                    <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
+                      Staff Console
+                    </button>
+                  )}
+                </div>
+              </>
             )}
             <div className={[
               'form-grid profile-form',
