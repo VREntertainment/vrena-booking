@@ -784,7 +784,8 @@ export const ja = {
   shared: '共有済',
   linkCopied: 'リンクコピー済み。',
   loginToContinue: '先にログインしてください。',
-  loginPromptTitle: '小さなクエスト門',
-  loginPromptMessage: '先にログインが必要です。するとセッションの門が開きます。',
-  loginPromptButton: 'ログイン',
+  loginPromptTitle: 'アカウントでセッション参加',
+  loginPromptMessage: 'このセッションに参加するにはプレイヤープロフィールでログインしてください。初めての方は、アカウントなしでチケット購入もできます。',
+  loginPromptButton: 'ログインして参加',
+  loginPromptTicketButton: 'アカウントなしで購入',
 } satisfies TranslationMap

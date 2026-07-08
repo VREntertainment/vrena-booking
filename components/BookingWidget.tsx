@@ -9021,8 +9021,13 @@ function handleSessionDateChange(value: string) {
           title={text.loginPromptTitle}
           message={text.loginPromptMessage}
           buttonText={text.loginPromptButton}
+          secondaryButtonText={text.loginPromptTicketButton}
           onClose={() => setLoginPromptOpen(false)}
           onLogin={goToLogin}
+          onSecondaryAction={() => {
+            setLoginPromptOpen(false)
+            setActiveView('tickets')
+          }}
         />
       )}
 

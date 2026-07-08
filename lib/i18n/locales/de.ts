@@ -784,7 +784,8 @@ export const de = {
   shared: 'Geteilt',
   linkCopied: 'Link kopiert',
   loginToContinue: 'Erst anmelden bitte.',
-  loginPromptTitle: 'Mini-Quest-Check',
-  loginPromptMessage: 'Erst einloggen. Dann öffnen sich die Rundentore.',
-  loginPromptButton: 'Anmelden',
+  loginPromptTitle: 'Sessions mit Account beitreten',
+  loginPromptMessage: 'Melde dich an, um dieser Session mit deinem Spielerprofil beizutreten. Zum ersten Mal hier? Du kannst auch Tickets ohne Account kaufen.',
+  loginPromptButton: 'Einloggen und beitreten',
+  loginPromptTicketButton: 'Tickets ohne Account kaufen',
 } satisfies TranslationMap

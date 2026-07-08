@@ -19,8 +19,10 @@ type LoginPromptModalProps = {
   title: string
   message: string
   buttonText: string
+  secondaryButtonText?: string
   onClose: () => void
   onLogin: () => void
+  onSecondaryAction?: () => void
 }
 
 export function LoginPromptModal({
@@ -28,8 +30,10 @@ export function LoginPromptModal({
   title,
   message,
   buttonText,
+  secondaryButtonText,
   onClose,
   onLogin,
+  onSecondaryAction,
 }: LoginPromptModalProps) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="login-prompt-title">
@@ -39,9 +43,16 @@ export function LoginPromptModal({
         </button>
         <h3 id="login-prompt-title">{title}</h3>
         <p>{message}</p>
-        <button className="primary create-button" type="button" onClick={onLogin}>
-          {buttonText}
-        </button>
+        <div className="login-prompt-actions">
+          <button className="primary create-button" type="button" onClick={onLogin}>
+            {buttonText}
+          </button>
+          {secondaryButtonText && onSecondaryAction && (
+            <button className="secondary create-button" type="button" onClick={onSecondaryAction}>
+              {secondaryButtonText}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
