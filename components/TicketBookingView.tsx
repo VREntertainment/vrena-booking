@@ -33,6 +33,7 @@ type TicketPricingSummary = {
   chargedPlayerSpots: number
   discountRate: number
   discountAmount: number
+  grossPrice: number
 }
 
 type TicketBookingConfirmation = {
@@ -190,6 +191,15 @@ export default function TicketBookingView({
     ? ['1 ticket / person', ticketSummaryMeta].filter(Boolean).join(' • ')
     : [ticketTypeDescription(ticketType, text), ticketSummaryMeta].filter(Boolean).join(' • ')
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
+  const suggestedTicketTimes = ticketTimeOptions.slice(0, 3)
+  const ticketSubtotalBeforeRewards = currentTicketPricing.grossPrice
+  const ticketTotalSavings = Math.max(0, ticketSubtotalBeforeRewards - currentTicketTotalPrice)
+  const ticketValueNote = !isSpecialTicket
+    ? text.ticketPriceContextBody
+      .replace('{subtotal}', formatVnd(ticketSubtotalBeforeRewards))
+      .replace('{savings}', formatVnd(ticketTotalSavings))
+      .replace('{total}', formatVnd(currentTicketTotalPrice))
+    : ''
 
   useEffect(() => {
     if (ticketConfirmation) setGuestTicketContactOpen(false)
@@ -278,6 +288,21 @@ export default function TicketBookingView({
                       </option>
                     ))}
                   </select>
+                  <div className="ticket-smart-defaults" aria-label={text.ticketSmartDefaultsLabel}>
+                    {suggestedTicketTimes.length > 0 ? suggestedTicketTimes.map((option, index) => (
+                      <button
+                        className={ticketTime === option.value ? 'active' : ''}
+                        key={option.value}
+                        title={option.label}
+                        type="button"
+                        onClick={() => onTicketTimeChange(option.value)}
+                      >
+                        {index === 0 ? text.ticketNextAvailableTime : option.value}
+                      </button>
+                    )) : (
+                      <span>{text.ticketNoSuggestedTimes}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="ticket-control ticket-control-duration">
                   <label htmlFor="ticket-duration">{text.duration}</label>
@@ -413,6 +438,13 @@ export default function TicketBookingView({
                     <span>{text.ticketLoyaltyDiscount}</span>
                     <strong>-{formatVnd(loyaltyDiscountAmount)}</strong>
                     <small>{loyaltyPointsToRedeem || 0} {text.loyaltyPoints}</small>
+                  </div>
+                )}
+                {!isSpecialTicket && (
+                  <div className="ticket-price-context">
+                    <span>{text.ticketPriceContextTitle}</span>
+                    <strong>{ticketTotalSavings > 0 ? `-${formatVnd(ticketTotalSavings)}` : formatVnd(currentTicketTotalPrice)}</strong>
+                    <small>{ticketValueNote}</small>
                   </div>
                 )}
                 <div className="ticket-total-line">
