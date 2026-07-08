@@ -45,6 +45,7 @@ const CLUB_MESSAGE_MAX_LENGTH = 150
 const CLUB_MESSAGE_LIMIT = 30
 
 const SESSION_MESSAGE_PAGE_SIZE = 30
+const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
 
@@ -230,6 +231,7 @@ export default function WidgetPage({
   const [ticketAutomaticDiscountQuote, setTicketAutomaticDiscountQuote] = useState<TicketDiscountQuote | null>(null)
   const [ticketDiscountStatus, setTicketDiscountStatus] = useState('')
   const [isCheckingTicketDiscount, setIsCheckingTicketDiscount] = useState(false)
+  const [ticketAvailabilitySearchTick, setTicketAvailabilitySearchTick] = useState(0)
   const [gameGuideOpen, setGameGuideOpen] = useState(false)
   const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
   const [staffGameGuides, setStaffGameGuides] = useState<Partial<Record<GameId, StaffGameGuide>>>({})
@@ -378,6 +380,7 @@ export default function WidgetPage({
   const sessionsLoadedRef = useRef(false)
   const upcomingSessionsThroughRef = useRef('')
   const loadingSessionRangeRef = useRef(false)
+  const ticketAvailabilitySearchLoadingRef = useRef(false)
   const pastSessionsLoadedRef = useRef(false)
   const pastSessionsLoadingRef = useRef(false)
   const ensureClubsLoadedRef = useRef(ensureClubsLoaded)
@@ -3791,6 +3794,70 @@ export default function WidgetPage({
   const ticketTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, getAvailableTimeOptions, ticketDate])
+  const ticketNextAvailableSearchEndDate = useMemo(() => {
+    if (!ticketDate) return ''
+
+    const searchStartDate = ticketDate < localDateString() ? localDateString() : ticketDate
+    return addDaysToDateValue(searchStartDate, TICKET_NEXT_AVAILABLE_SCAN_DAYS)
+  }, [ticketDate])
+  const nextTicketDateWithAvailability = useMemo(() => {
+    if (!ticketDate || ticketTimeOptions.length > 0 || !ticketNextAvailableSearchEndDate) return ''
+
+    const searchStartDate = ticketDate < localDateString() ? localDateString() : ticketDate
+    for (let offset = 1; offset <= TICKET_NEXT_AVAILABLE_SCAN_DAYS; offset += 1) {
+      const candidateDate = addDaysToDateValue(searchStartDate, offset)
+      const candidateOptions = getAvailableTimeOptions(candidateDate, activeTicketDuration, activeTicketArenaCount)
+      if (candidateOptions.length > 0) return candidateDate
+    }
+
+    return ''
+  }, [
+    activeTicketArenaCount,
+    activeTicketDuration,
+    getAvailableTimeOptions,
+    ticketDate,
+    ticketAvailabilitySearchTick,
+    ticketNextAvailableSearchEndDate,
+    ticketTimeOptions.length,
+  ])
+  useEffect(() => {
+    if (activeView !== 'tickets' || !ticketDate || ticketTimeOptions.length > 0 || !ticketNextAvailableSearchEndDate) return
+
+    const loadedThroughDate = upcomingSessionsThroughRef.current || ''
+    if (loadingSessionRangeRef.current) {
+      const retryTimer = window.setTimeout(() => {
+        setTicketAvailabilitySearchTick((tick) => tick + 1)
+      }, 250)
+      return () => window.clearTimeout(retryTimer)
+    }
+
+    if (!sessionsLoadedRef.current || !loadedThroughDate || loadedThroughDate < ticketNextAvailableSearchEndDate) {
+      if (ticketAvailabilitySearchLoadingRef.current) return
+      ticketAvailabilitySearchLoadingRef.current = true
+      void ensureUpcomingSessionsThroughDateRef.current(ticketNextAvailableSearchEndDate)
+        .finally(() => {
+          ticketAvailabilitySearchLoadingRef.current = false
+          setTicketAvailabilitySearchTick((tick) => tick + 1)
+        })
+      return
+    }
+
+    if (!nextTicketDateWithAvailability || nextTicketDateWithAvailability === ticketDate) return
+
+    return schedulePostEffectStateUpdate(() => {
+      setTicketDate((currentDate) => currentDate === ticketDate ? nextTicketDateWithAvailability : currentDate)
+      setTicketTime('')
+      setTicketConfirmation(null)
+      clearTicketStatus()
+    })
+  }, [
+    activeView,
+    nextTicketDateWithAvailability,
+    ticketAvailabilitySearchTick,
+    ticketDate,
+    ticketNextAvailableSearchEndDate,
+    ticketTimeOptions.length,
+  ])
   const challengeTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
