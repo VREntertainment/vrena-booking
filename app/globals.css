@@ -3580,10 +3580,15 @@ body {
 }
 
 .app .ticket-control {
+  display: grid;
+  grid-template-rows: 16px 40px;
+  gap: 5px;
+  align-content: start;
   min-width: 0;
 }
 
 .app .ticket-control label {
+  margin: 0;
   font-size: 12px;
   line-height: 1.15;
 }
@@ -3591,43 +3596,32 @@ body {
 .app .ticket-control input,
 .app .ticket-control select,
 .app .ticket-control .date-input-shell {
+  height: 40px;
   min-height: 40px;
   border-radius: 12px;
   font-size: 15px;
 }
 
-.app .ticket-smart-defaults {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-  min-height: 24px;
+.app .ticket-control .date-input-native {
+  min-height: 40px;
 }
 
-.app .ticket-smart-defaults button {
-  min-height: 24px;
-  padding: 4px 8px;
-  color: #3059ff;
-  background: rgba(48, 89, 255, 0.08);
-  border: 1px solid rgba(48, 89, 255, 0.16);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1.15;
-  cursor: pointer;
-}
-
-.app .ticket-smart-defaults button.active {
-  color: #ffffff;
-  background: #3059ff;
-  border-color: #3059ff;
-}
-
-.app .ticket-smart-defaults span {
-  color: #65727a;
-  font-size: 11px;
+.app .ticket-control .date-input-display {
+  color: #071112;
+  -webkit-text-fill-color: #071112;
+  font-size: 15px;
   font-weight: 800;
-  line-height: 1.3;
+}
+
+.app .ticket-control select:not(:disabled) {
+  color: #071112;
+  -webkit-text-fill-color: #071112;
+}
+
+.app .ticket-control select:disabled,
+.app .ticket-control .date-input-display.placeholder {
+  color: var(--player-field-placeholder);
+  -webkit-text-fill-color: var(--player-field-placeholder);
 }
 
 .app .ticket-price-summary {
@@ -10226,6 +10220,10 @@ body {
     gap: 8px;
   }
 
+  .app .ticket-control {
+    grid-template-rows: 28px 40px;
+  }
+
   .app .ticket-control label {
     min-height: 28px;
     display: flex;
@@ -10361,6 +10359,18 @@ body {
     background: var(--player-field-bg-soft);
     border-color: var(--player-field-border);
     color: var(--player-field-text);
+  }
+
+  .app .ticket-control select:not(:disabled),
+  .app .ticket-control .date-input-display:not(.placeholder) {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  .app .ticket-control select:disabled,
+  .app .ticket-control .date-input-display.placeholder {
+    color: var(--player-field-placeholder);
+    -webkit-text-fill-color: var(--player-field-placeholder);
   }
 
   .app .profile-account-form .country-phone-field .country-button,
@@ -11924,34 +11934,7 @@ body {
   }
 }
 
-.app .ticket-smart-defaults button {
-  display: inline-flex !important;
-  flex: 0 1 auto;
-  align-items: center;
-  justify-content: center;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: 100%;
-  min-height: 24px !important;
-  padding: 4px 8px !important;
-  text-align: center;
-  white-space: nowrap;
-}
-
 @media (prefers-color-scheme: dark) {
-  .app .ticket-smart-defaults button {
-    color: #9eefff;
-    background: rgba(98, 211, 255, 0.12);
-    border-color: rgba(98, 211, 255, 0.22);
-  }
-
-  .app .ticket-smart-defaults button.active {
-    color: #071112;
-    background: #9eefff;
-    border-color: #9eefff;
-  }
-
-  .app .ticket-smart-defaults span,
   .app .profile-completion-head span,
   .app .profile-completion-footer {
     color: var(--player-text-muted);

@@ -3794,6 +3794,21 @@ export default function WidgetPage({
   const ticketTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, getAvailableTimeOptions, ticketDate])
+  useEffect(() => {
+    if (activeView !== 'tickets' || ticketTimeOptions.length === 0) return
+
+    const selectedTimeStillAvailable = ticketTimeOptions.some((option) => option.value === ticketTime)
+    if (ticketTime && selectedTimeStillAvailable) return
+
+    return schedulePostEffectStateUpdate(() => {
+      setTicketTime((currentTime) => (
+        currentTime && ticketTimeOptions.some((option) => option.value === currentTime)
+          ? currentTime
+          : ticketTimeOptions[0].value
+      ))
+      if (ticketTime && !selectedTimeStillAvailable) setTicketConfirmation(null)
+    })
+  }, [activeView, ticketTime, ticketTimeOptions])
   const ticketNextAvailableSearchEndDate = useMemo(() => {
     if (!ticketDate) return ''
 

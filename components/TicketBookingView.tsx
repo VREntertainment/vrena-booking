@@ -18,12 +18,13 @@ function localDateString(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
-function formatTicketDateDisplay(dateValue: string, language: LanguageCode) {
+function formatTicketDateDisplay(dateValue: string, language: LanguageCode, includeWeekday = false) {
   if (!dateValue) return ''
 
   return new Date(`${dateValue}T12:00:00`).toLocaleDateString(language, {
     day: 'numeric',
     month: 'short',
+    ...(includeWeekday ? { weekday: 'short' as const } : {}),
   })
 }
 
@@ -208,7 +209,6 @@ export default function TicketBookingView({
     ? ['1 ticket / person', ticketSummaryMeta].filter(Boolean).join(' • ')
     : [ticketTypeDescription(ticketType, text), ticketSummaryMeta].filter(Boolean).join(' • ')
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
-  const suggestedTicketTimes = ticketTimeOptions.slice(0, 3)
   const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
     ? text.ticketAccountValueWithPoints
       .replace('{points}', String(estimatedLoyaltyPointsEarned))
@@ -216,7 +216,7 @@ export default function TicketBookingView({
     : text.ticketAccountValueNoPoints
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
-    : formatTicketDateDisplay(ticketDate, language)
+    : formatTicketDateDisplay(ticketDate, language, true)
 
   useEffect(() => {
     if (ticketConfirmation) setGuestTicketContactOpen(false)
@@ -306,21 +306,6 @@ export default function TicketBookingView({
                       </option>
                     ))}
                   </select>
-                  <div className="ticket-smart-defaults" aria-label={text.ticketSmartDefaultsLabel}>
-                    {suggestedTicketTimes.length > 0 ? suggestedTicketTimes.map((option, index) => (
-                      <button
-                        className={ticketTime === option.value ? 'active' : ''}
-                        key={option.value}
-                        title={option.label}
-                        type="button"
-                        onClick={() => onTicketTimeChange(option.value)}
-                      >
-                        {index === 0 ? text.ticketNextAvailableTime : option.value}
-                      </button>
-                    )) : (
-                      <span>{text.ticketNoSuggestedTimes}</span>
-                    )}
-                  </div>
                 </div>
                 <div className="ticket-control ticket-control-duration">
                   <label htmlFor="ticket-duration">{text.duration}</label>
