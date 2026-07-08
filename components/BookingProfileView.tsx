@@ -815,28 +815,31 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </div>
                   {authMode === 'create' && <p className="field-help">{text.passwordHelp}</p>}
                   {authMode === 'login' && (
-                    <div className="auth-utility-row">
-                      <label className="remember-field">
-                        <input
-                          checked={rememberLogin}
-                          onChange={(event) => setRememberLogin(event.target.checked)}
-                          type="checkbox"
-                        />
-                        <span>{text.rememberMe}</span>
-                      </label>
-                      <button
-                        className="auth-inline-link"
-                        onClick={() => {
-                          setAuthMode('reset')
-                          setAuthStep('email')
-                          setProfileStatus('')
-                          resetCaptcha()
-                        }}
-                        type="button"
-                      >
-                        {text.forgotPassword}
-                      </button>
-                    </div>
+                    <>
+                      <div className="auth-utility-row">
+                        <label className="remember-field">
+                          <input
+                            checked={rememberLogin}
+                            onChange={(event) => setRememberLogin(event.target.checked)}
+                            type="checkbox"
+                          />
+                          <span>{text.rememberMe}</span>
+                        </label>
+                        <button
+                          className="auth-inline-link"
+                          onClick={() => {
+                            setAuthMode('reset')
+                            setAuthStep('email')
+                            setProfileStatus('')
+                            resetCaptcha()
+                          }}
+                          type="button"
+                        >
+                          {text.forgotPassword}
+                        </button>
+                      </div>
+                      <p className="field-help">{text.passwordLoginHelp}</p>
+                    </>
                   )}
                 </div>
               )}
