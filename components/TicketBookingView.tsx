@@ -192,14 +192,11 @@ export default function TicketBookingView({
     : [ticketTypeDescription(ticketType, text), ticketSummaryMeta].filter(Boolean).join(' • ')
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
   const suggestedTicketTimes = ticketTimeOptions.slice(0, 3)
-  const ticketSubtotalBeforeRewards = currentTicketPricing.grossPrice
-  const ticketTotalSavings = Math.max(0, ticketSubtotalBeforeRewards - currentTicketTotalPrice)
-  const ticketValueNote = !isSpecialTicket
-    ? text.ticketPriceContextBody
-      .replace('{subtotal}', formatVnd(ticketSubtotalBeforeRewards))
-      .replace('{savings}', formatVnd(ticketTotalSavings))
-      .replace('{total}', formatVnd(currentTicketTotalPrice))
-    : ''
+  const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
+    ? text.ticketAccountValueWithPoints
+      .replace('{points}', String(estimatedLoyaltyPointsEarned))
+      .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
+    : text.ticketAccountValueNoPoints
 
   useEffect(() => {
     if (ticketConfirmation) setGuestTicketContactOpen(false)
@@ -440,18 +437,17 @@ export default function TicketBookingView({
                     <small>{loyaltyPointsToRedeem || 0} {text.loyaltyPoints}</small>
                   </div>
                 )}
-                {!isSpecialTicket && (
-                  <div className="ticket-price-context">
-                    <span>{text.ticketPriceContextTitle}</span>
-                    <strong>{ticketTotalSavings > 0 ? `-${formatVnd(ticketTotalSavings)}` : formatVnd(currentTicketTotalPrice)}</strong>
-                    <small>{ticketValueNote}</small>
-                  </div>
-                )}
                 <div className="ticket-total-line">
                   <span>{text.totalPrice}</span>
                   <strong>{ticketTotalDisplay}</strong>
                 </div>
               </div>
+
+              {!isLoggedIn && !isSpecialTicket && (
+                <p className="ticket-account-value-note">
+                  {ticketAccountValueNote}
+                </p>
+              )}
 
               {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
               {ticketType !== 'individual' && (

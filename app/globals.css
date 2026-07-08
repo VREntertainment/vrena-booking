@@ -3688,16 +3688,6 @@ body {
   color: #0f766e;
 }
 
-.app .ticket-price-context {
-  grid-column: span 2;
-  border: 1px solid rgba(48, 89, 255, 0.14);
-  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08));
-}
-
-.app .ticket-price-context strong {
-  color: #0f766e;
-}
-
 .app .ticket-loyalty-redemption {
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3738,6 +3728,18 @@ body {
   color: #65727a;
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.35;
+}
+
+.app .ticket-account-value-note {
+  margin: 0;
+  padding: 10px 12px;
+  color: #075985;
+  background: rgba(0, 174, 179, 0.08);
+  border: 1px solid rgba(0, 174, 179, 0.18);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 850;
   line-height: 1.35;
 }
 
@@ -11905,12 +11907,6 @@ body {
   }
 }
 
-.app .ticket-price-summary > .ticket-price-context {
-  border-color: rgba(48, 89, 255, 0.14) !important;
-  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08)) !important;
-  border-radius: var(--player-radius-sm) !important;
-}
-
 .app .ticket-smart-defaults button {
   display: inline-flex !important;
   flex: 0 1 auto;
@@ -11944,10 +11940,15 @@ body {
     color: var(--player-text-muted);
   }
 
-  .app .ticket-price-summary > .ticket-price-context,
   .app .profile-completion-card {
     border-color: rgba(98, 211, 255, 0.22) !important;
     background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(48, 89, 255, 0.16)) !important;
+  }
+
+  .app .ticket-account-value-note {
+    color: #9eefff;
+    background: rgba(0, 181, 184, 0.1);
+    border-color: rgba(98, 211, 255, 0.22);
   }
 
   .app .profile-completion-head strong {
@@ -11960,10 +11961,6 @@ body {
 }
 
 @media (max-width: 720px) {
-  .app .ticket-price-context {
-    grid-column: 1 / -1;
-  }
-
   .app .profile-completion-head,
   .app .profile-completion-footer {
     display: grid;
