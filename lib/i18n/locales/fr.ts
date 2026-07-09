@@ -96,7 +96,7 @@ export const fr = {
   ticketSmartDefaultsLabel: 'Suggested times',
   ticketNextAvailableTime: 'Next available',
   ticketNoSuggestedTimes: 'No quick times for this date',
-  ticketAccountValueWithPoints: 'Don\'t lose your loyalty points! Create a free account right now and get {points} loyalty points worth {value} from this booking.',
+  ticketAccountValueWithPoints: 'Don\'t lose your loyalty points!\nCreate a free account right now and get {points} loyalty points worth {value}',
   ticketAccountValueNoPoints: 'Create a free account right now to keep this booking, join the Hall of Fame, challenge friends, and unlock birthday rewards.',
   ticketTodayDateLabel: 'today, {date}',
   reservedPlayerSpots: 'Places réservées',

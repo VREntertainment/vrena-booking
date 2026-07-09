@@ -3881,9 +3881,11 @@ export default function WidgetPage({
   const isSpecialTicketType = ticketType !== 'individual'
   const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
   const ticketAutomaticDiscountAmount = Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
+  const ticketBuiltInDiscountAmount = Math.max(0, Math.floor(Number(currentTicketPricing.discountAmount ?? 0) || 0))
   const hasTicketVoucherDiscount = !isSpecialTicketType && ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
-  const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(ticketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
-  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > ticketAutomaticDiscountAmount ? 'voucher' : 'automatic'
+  const activeTicketAutomaticDiscountAmount = Math.max(ticketBuiltInDiscountAmount, ticketAutomaticDiscountAmount)
+  const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(activeTicketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
+  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > activeTicketAutomaticDiscountAmount ? 'voucher' : 'automatic'
   const currentTicketPriceBeforeLoyalty = isSpecialTicketType ? 0 : Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
   const ticketLoyaltyBalance = Math.max(
     0,

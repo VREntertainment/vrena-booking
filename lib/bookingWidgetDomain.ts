@@ -730,7 +730,11 @@ export function ticketPricingSummary(
   const chargedPlayerSpots = durationBlocks * chargedPlayersPerBlock
   const unitPrice = baseUnitPrice
   const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = 0
+  const discountRate = players >= 9 && players <= 12
+    ? 0.15
+    : players >= 5 && players <= 8
+      ? 0.1
+      : 0
   const discountAmount = Math.round(grossPrice * discountRate)
 
   return {

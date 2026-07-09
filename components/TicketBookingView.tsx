@@ -207,6 +207,8 @@ export default function TicketBookingView({
       .replace('{points}', String(estimatedLoyaltyPointsEarned))
       .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
     : text.ticketAccountValueNoPoints
+  const ticketAccountValueLines = ticketAccountValueNote.split('\n')
+  const showDiscountedTotal = !isSpecialTicket && currentTicketPricing.grossPrice > currentTicketTotalPrice
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
@@ -364,18 +366,18 @@ export default function TicketBookingView({
                   <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
                   <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
                 </div>
-                {!isSpecialTicket && currentTicketPricing.discountRate > 0 && (
-                  <div className="ticket-discount-line">
-                    <span>{text.discount}</span>
-                    <strong>{Math.round(currentTicketPricing.discountRate * 100)}%</strong>
-                    <small>-{formatVnd(currentTicketPricing.discountAmount)}</small>
-                  </div>
-                )}
+                <div className="ticket-total-line">
+                  <span>{text.totalPrice}</span>
+                  {showDiscountedTotal && (
+                    <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>
+                  )}
+                  <strong>{ticketTotalDisplay}</strong>
+                </div>
                 {!isSpecialTicket && ticketDiscountAmount > 0 && (
                   <div className="ticket-discount-line">
                     <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
-                    <strong>-{formatVnd(ticketDiscountAmount)}</strong>
-                    <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName}</small>
+                    <strong>{ticketDiscountSource === 'automatic' && currentTicketPricing.discountRate > 0 ? `${Math.round(currentTicketPricing.discountRate * 100)}%` : `-${formatVnd(ticketDiscountAmount)}`}</strong>
+                    <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName || `-${formatVnd(ticketDiscountAmount)}`}</small>
                   </div>
                 )}
                 {showLoyaltyTools && (
@@ -436,10 +438,6 @@ export default function TicketBookingView({
                     <small>{loyaltyPointsToRedeem || 0} {text.loyaltyPoints}</small>
                   </div>
                 )}
-                <div className="ticket-total-line">
-                  <span>{text.totalPrice}</span>
-                  <strong>{ticketTotalDisplay}</strong>
-                </div>
               </div>
 
               {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
@@ -458,7 +456,9 @@ export default function TicketBookingView({
               </button>
               {!isLoggedIn && !isSpecialTicket && (
                 <button className="ticket-account-value-note" type="button" onClick={onPromptCreateAccount}>
-                  {ticketAccountValueNote}
+                  {ticketAccountValueLines.map((line, index) => (
+                    <span key={`${line}-${index}`}>{line}</span>
+                  ))}
                 </button>
               )}
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
