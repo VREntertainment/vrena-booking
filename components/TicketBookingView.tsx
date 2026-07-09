@@ -209,6 +209,11 @@ export default function TicketBookingView({
     : text.ticketAccountValueNoPoints
   const ticketAccountValueLines = ticketAccountValueNote.split('\n')
   const showDiscountedTotal = !isSpecialTicket && currentTicketPricing.grossPrice > currentTicketTotalPrice
+  const ticketTotalReductionLabel = !isSpecialTicket && ticketDiscountAmount > 0
+    ? ticketDiscountSource === 'automatic' && currentTicketPricing.discountRate > 0
+      ? `-${Math.round(currentTicketPricing.discountRate * 100)}%`
+      : `-${formatVnd(ticketDiscountAmount)}`
+    : ''
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
@@ -367,19 +372,15 @@ export default function TicketBookingView({
                   <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
                 </div>
                 <div className="ticket-total-line">
-                  <span>{text.totalPrice}</span>
+                  <span className="ticket-total-heading">
+                    {text.totalPrice}
+                    {ticketTotalReductionLabel && <em className="ticket-total-reduction">{ticketTotalReductionLabel}</em>}
+                  </span>
                   {showDiscountedTotal && (
                     <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>
                   )}
                   <strong>{ticketTotalDisplay}</strong>
                 </div>
-                {!isSpecialTicket && ticketDiscountAmount > 0 && (
-                  <div className="ticket-discount-line">
-                    <span>{ticketDiscountSource === 'voucher' ? text.ticketDiscountCodeSummary : text.discount}</span>
-                    <strong>{ticketDiscountSource === 'automatic' && currentTicketPricing.discountRate > 0 ? `${Math.round(currentTicketPricing.discountRate * 100)}%` : `-${formatVnd(ticketDiscountAmount)}`}</strong>
-                    <small>{ticketDiscountSource === 'voucher' ? ticketDiscountCode.trim().toUpperCase() : ticketDiscountName || `-${formatVnd(ticketDiscountAmount)}`}</small>
-                  </div>
-                )}
                 {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
                     <p className="ticket-loyalty-zero">
