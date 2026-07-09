@@ -96,7 +96,7 @@ export const vi = {
   ticketSmartDefaultsLabel: 'Giờ gợi ý',
   ticketNextAvailableTime: 'Giờ gần nhất',
   ticketNoSuggestedTimes: 'Không có giờ nhanh cho ngày này',
-  ticketAccountValueWithPoints: 'Đừng bỏ lỡ điểm thưởng! Tạo tài khoản miễn phí ngay và nhận {points} điểm thưởng trị giá {value} từ booking này.',
+  ticketAccountValueWithPoints: 'Đừng bỏ lỡ điểm thưởng!\nTạo tài khoản miễn phí ngay và nhận {points} điểm thưởng trị giá {value}',
   ticketAccountValueNoPoints: 'Tạo tài khoản miễn phí ngay để giữ booking này, vào Hall of Fame, thách đấu bạn bè và mở ưu đãi sinh nhật.',
   ticketTodayDateLabel: 'hôm nay, {date}',
   reservedPlayerSpots: 'Suất đã giữ',
