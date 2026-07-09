@@ -11983,6 +11983,24 @@ body {
     gap: 0;
   }
 
+  .app .profile-account-form .profile-account-hero,
+  .app .profile-account-form .avatar-options,
+  .app .profile-account-form .country-phone-field,
+  .app .profile-account-form .email-field,
+  .app .profile-account-form .name-field,
+  .app .profile-account-form .nickname-field,
+  .app .profile-account-form .birthday-field,
+  .app .profile-account-form .gender-field,
+  .app .profile-account-form .motto-field,
+  .app .profile-account-form .profile-consent-panel,
+  .app .profile-account-form .marketing-consent-field,
+  .app .profile-security-panel,
+  .app .mfa-security-card,
+  .app .mfa-enroll-panel,
+  .app .mfa-challenge-panel {
+    border-bottom: 0 !important;
+  }
+
   .app .profile-legal-panel .legal-links {
     gap: 8px 14px;
   }
@@ -12004,14 +12022,37 @@ body {
   }
 
   .app .profile-account-form .country-phone-field {
-    grid-template-columns: minmax(76px, 92px) minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+    align-items: flex-end;
   }
 
+  .app .profile-account-form .country-phone-field .country-phone-label {
+    flex: 0 0 100%;
+  }
+
+  .app .profile-account-form .country-phone-field .country-field {
+    flex: 0 0 92px;
+    width: 92px;
+  }
+
+  .app .profile-account-form .country-phone-field .phone-field {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+
+  .app .profile-account-form .country-phone-field .country-button,
   .app .profile-account-form .country-phone-field input {
     min-width: 0;
     width: 100%;
+  }
+
+  .app .profile-account-form .country-phone-field input {
     font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .app .profile-security-panel .account-links {
