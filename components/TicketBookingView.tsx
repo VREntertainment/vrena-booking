@@ -111,7 +111,6 @@ export type TicketBookingViewProps = {
   estimatedLoyaltyPointsEarned: number
   estimatedLoyaltyReductionValue: number
   maxLoyaltyPointsToRedeem: number
-  ticketDurationMessage: string
   useLoyaltyPoints: boolean
   onTicketTypeChange: (value: TicketType) => void
   onTicketDateChange: (value: string) => void
@@ -171,7 +170,6 @@ export default function TicketBookingView({
   estimatedLoyaltyPointsEarned,
   estimatedLoyaltyReductionValue,
   maxLoyaltyPointsToRedeem,
-  ticketDurationMessage,
   useLoyaltyPoints,
   onTicketTypeChange,
   onTicketDateChange,
@@ -441,7 +439,6 @@ export default function TicketBookingView({
                 )}
               </div>
 
-              {ticketDurationMessage && <p className="field-help ticket-helper-note">{ticketDurationMessage}</p>}
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
               )}
