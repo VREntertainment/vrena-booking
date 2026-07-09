@@ -5648,16 +5648,40 @@ body {
   margin: 0;
 }
 
+.app .profile-consent-panel {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 10px;
+}
+
+.app .profile-consent-panel .marketing-consent-field {
+  padding: 0;
+  border: 0 !important;
+}
+
 .app .profile-legal-panel {
   display: grid;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .app .profile-legal-panel .legal-links {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+}
+
+.app .profile-legal-panel .legal-links .link-button {
+  width: auto;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #3059ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .app .profile-toggle-field {
@@ -10524,6 +10548,7 @@ body {
   .app .profile-account-form .birthday-field,
   .app .profile-account-form .gender-field,
   .app .profile-account-form .motto-field,
+  .app .profile-account-form .profile-consent-panel,
   .app .profile-account-form .marketing-consent-field,
   .app .profile-security-panel,
   .app .mfa-security-card,
@@ -10572,6 +10597,10 @@ body {
   .app .mfa-security-copy small,
   .app .mfa-panel-copy span {
     color: var(--player-text-muted);
+  }
+
+  .app .profile-legal-panel .legal-links .link-button {
+    color: #9eefff;
   }
 
   .app .profile-account-form .avatar-options {
@@ -11392,6 +11421,7 @@ body {
 .app .profile-account-form .birthday-field,
 .app .profile-account-form .gender-field,
 .app .profile-account-form .motto-field,
+.app .profile-account-form .profile-consent-panel,
 .app .profile-account-form .marketing-consent-field,
 .app .profile-security-panel,
 .app .mfa-security-card,
@@ -11415,11 +11445,13 @@ body {
 .app .profile-account-form .birthday-field,
 .app .profile-account-form .gender-field,
 .app .profile-account-form .motto-field,
+.app .profile-account-form .profile-consent-panel,
 .app .profile-account-form .marketing-consent-field {
   padding: 12px 0;
 }
 
 .app .profile-account-form .motto-field,
+.app .profile-account-form .profile-consent-panel,
 .app .profile-account-form .marketing-consent-field,
 .app .profile-security-panel,
 .app .mfa-enroll-panel,
@@ -11428,7 +11460,7 @@ body {
 }
 
 .app .profile-security-panel {
-  padding: 14px 0 0;
+  padding: 12px 0 0;
 }
 
 .app .profile-security-panel .account-links {
@@ -11946,6 +11978,10 @@ body {
 
   .app .profile-account-form {
     gap: 0;
+  }
+
+  .app .profile-legal-panel .legal-links {
+    gap: 8px 14px;
   }
 
   .app .profile-security-panel .account-links {
