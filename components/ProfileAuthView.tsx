@@ -46,21 +46,31 @@ export default function ProfileAuthView({
       )}
 
       {!loading && !mfaRequired && !profileExists && !isRecoveryMode && authMode !== 'reset' && (
-        <div className="segmented auth-toggle">
-          <button
-            className={authMode === 'login' ? 'active' : ''}
-            onClick={() => onAuthModeChange('login')}
-            type="button"
-          >
-            {text.logIn}
-          </button>
-          <button
-            className={authMode === 'create' ? 'active' : ''}
-            onClick={() => onAuthModeChange('create')}
-            type="button"
-          >
-            {text.createAccountTab}
-          </button>
+        <div className="auth-entry-stack">
+          <div className="auth-benefit-strip">
+            <strong>{text.authWelcomeBody}</strong>
+            <div>
+              <span>{text.authBenefitBookings}</span>
+              <span>{text.authBenefitLoyalty}</span>
+              <span>{text.authBenefitBirthday}</span>
+            </div>
+          </div>
+          <div className="segmented auth-toggle">
+            <button
+              className={authMode === 'login' ? 'active' : ''}
+              onClick={() => onAuthModeChange('login')}
+              type="button"
+            >
+              {text.logIn}
+            </button>
+            <button
+              className={authMode === 'create' ? 'active' : ''}
+              onClick={() => onAuthModeChange('create')}
+              type="button"
+            >
+              {text.createAccountTab}
+            </button>
+          </div>
         </div>
       )}
 

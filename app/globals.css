@@ -5166,11 +5166,52 @@ body {
   text-align: center;
 }
 
+.app .profile-auth-section .auth-entry-stack {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.app .profile-auth-section .auth-benefit-strip {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(0, 174, 179, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.08));
+}
+
+.app .profile-auth-section .auth-benefit-strip strong {
+  color: #071112;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.app .profile-auth-section .auth-benefit-strip div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app .profile-auth-section .auth-benefit-strip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(48, 89, 255, 0.16);
+  border-radius: 999px;
+  color: #526168;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .app .profile-auth-section .auth-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
-  margin: 22px 0 20px;
+  margin: 0;
   border: 1px solid rgba(7, 17, 18, 0.08);
   border-radius: 12px;
   background: #ffffff;
@@ -10437,6 +10478,7 @@ body {
   .app .mfa-security-card,
   .app .mfa-enroll-panel,
   .app .mfa-challenge-panel,
+  .app .profile-auth-section .auth-benefit-strip,
   .app .profile-auth-section .consent-field,
   .app .profile-auth-section .captcha-field,
   .app .profile-auth-section .auth-toggle,
@@ -10455,6 +10497,8 @@ body {
 
   .app .profile-identity-copy strong,
   .app .profile-card-section-title,
+  .app .profile-auth-section h2,
+  .app .profile-auth-section .auth-benefit-strip strong,
   .app .profile-auth-section .auth-email-review,
   .app .profile-auth-section .passkey-mark,
   .app .profile-toggle-field strong,
@@ -10481,6 +10525,12 @@ body {
 
   .app .profile-account-form .avatar-options {
     border-top-color: var(--player-border);
+  }
+
+  .app .profile-auth-section .auth-benefit-strip span {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--player-text-muted);
   }
 
   .app .profile-auth-section .auth-divider::before,
