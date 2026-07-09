@@ -20,15 +20,14 @@ const CONTACT_CHANNELS = [
 
 type ContactChannelsProps = {
   className?: string
-  label: string
+  label?: string
 }
 
 export default function ContactChannels({ className, label }: ContactChannelsProps) {
   const rootClassName = className ? `contact-channels ${className}` : 'contact-channels'
 
   return (
-    <div className={rootClassName}>
-      <strong>{label}</strong>
+    <div aria-label={label} className={rootClassName}>
       <div className="contact-channel-buttons">
         {CONTACT_CHANNELS.map((channel) => (
           <a
