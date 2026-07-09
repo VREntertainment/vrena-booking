@@ -88,6 +88,7 @@ export type TicketBookingViewProps = {
   ticketPlayers: number
   ticketStatus: string
   ticketStatusVariant: TicketStatusVariant
+  ticketSpecialNote: string
   isBookingTickets: boolean
   isLoadingTicketLoyalty: boolean
   ticketConfirmation: TicketBookingConfirmation | null
@@ -118,6 +119,7 @@ export type TicketBookingViewProps = {
   onTicketTimeChange: (value: string) => void
   onTicketDurationChange: (value: number) => void
   onTicketPlayersChange: (value: number) => void
+  onTicketSpecialNoteChange: (value: string) => void
   onTicketDiscountCodeChange: (value: string) => void
   onTicketUseLoyaltyPointsChange: (checked: boolean) => void
   onTicketLoyaltyPointsChange: (value: string) => void
@@ -148,6 +150,7 @@ export default function TicketBookingView({
   ticketPlayers,
   ticketStatus,
   ticketStatusVariant,
+  ticketSpecialNote,
   isBookingTickets,
   isLoadingTicketLoyalty,
   ticketConfirmation,
@@ -178,6 +181,7 @@ export default function TicketBookingView({
   onTicketTimeChange,
   onTicketDurationChange,
   onTicketPlayersChange,
+  onTicketSpecialNoteChange,
   onTicketDiscountCodeChange,
   onTicketUseLoyaltyPointsChange,
   onTicketLoyaltyPointsChange,
@@ -351,6 +355,20 @@ export default function TicketBookingView({
                   {(isCheckingTicketDiscount || ticketDiscountStatus) && (
                     <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
                   )}
+                </label>
+              )}
+
+              {isSpecialTicket && (
+                <label className="ticket-special-note-field">
+                  <span>{text.ticketSpecialNoteLabel}</span>
+                  <textarea
+                    disabled={isBookingTickets}
+                    maxLength={500}
+                    onChange={(event) => onTicketSpecialNoteChange(event.target.value)}
+                    placeholder={text.ticketSpecialNotePlaceholder}
+                    value={ticketSpecialNote}
+                  />
+                  <small>{text.ticketSpecialNoteCharacterCount.replace('{count}', String(ticketSpecialNote.length))}</small>
                 </label>
               )}
 

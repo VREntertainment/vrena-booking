@@ -213,6 +213,7 @@ export default function WidgetPage({
   const [ticketTime, setTicketTime] = useState('')
   const [ticketPlayers, setTicketPlayers] = useState(1)
   const [ticketDuration, setTicketDuration] = useState(20)
+  const [ticketSpecialNote, setTicketSpecialNote] = useState('')
   const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
   const [pendingGuestTicketClaim, setPendingGuestTicketClaim] = useState<{ phone: string; reference: string; name?: string; date?: string } | null>(null)
   const [pendingTicketAuthAction, setPendingTicketAuthAction] = useState<'book-after-login' | 'claim-after-auth' | null>(null)
@@ -4270,7 +4271,15 @@ function handleSessionDateChange(value: string) {
       setTicketAutomaticDiscountQuote(null)
       setTicketUseLoyaltyPoints(false)
       setTicketLoyaltyPointsToRedeem('')
+    } else {
+      setTicketSpecialNote('')
     }
+  }
+
+  function handleTicketSpecialNoteChange(value: string) {
+    setTicketSpecialNote(value.slice(0, 500))
+    setTicketConfirmation(null)
+    clearTicketStatus()
   }
 
   function handleTicketPlayersChange(value: number) {
@@ -6832,17 +6841,20 @@ function handleSessionDateChange(value: string) {
       p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
       p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
     }
+    const trimmedTicketSpecialNote = ticketSpecialNote.trim().slice(0, 500)
 
     const { data, error } = activeProfile
       ? await (await getSupabase()).rpc('create_ticket_booking', {
         ...ticketRpcArgs,
         p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
         p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+        ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
       })
       : await (await getSupabase()).rpc('create_guest_ticket_booking', {
         ...ticketRpcArgs,
         p_guest_name: guestTicketContact.name.trim() || null,
         p_guest_phone: guestContactValidation.normalizedPhone,
+        ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
       })
 
     if (error) {
@@ -8732,6 +8744,7 @@ function handleSessionDateChange(value: string) {
             ticketServices={ticketServices}
             ticketStatus={ticketStatus}
             ticketStatusVariant={ticketStatusVariant}
+            ticketSpecialNote={ticketSpecialNote}
             ticketTime={ticketTime}
             ticketTimeOptions={ticketTimeOptions}
             ticketType={ticketType}
@@ -8739,6 +8752,7 @@ function handleSessionDateChange(value: string) {
             ticketTypeLabel={ticketTypeLabel}
             ticketUnitFormulaText={ticketUnitFormulaText}
             useLoyaltyPoints={ticketUseLoyaltyPoints}
+            onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
           />
         )}
 
