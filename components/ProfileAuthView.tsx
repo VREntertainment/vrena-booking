@@ -52,7 +52,7 @@ export default function ProfileAuthView({
             <div>
               <span>{text.authBenefitBookings}</span>
               <span>{text.authBenefitLoyalty}</span>
-              <span>{text.authBenefitRebooking}</span>
+              <span>{text.authBenefitBirthday}</span>
             </div>
           </div>
           <div className="segmented auth-toggle">
