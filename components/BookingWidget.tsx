@@ -3778,20 +3778,8 @@ export default function WidgetPage({
   }, [editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, getAvailableTimeOptions])
 
   const activeTicketService = selectedTicketService(ticketType)
-  const activeTicketMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers)
   const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
   const activeTicketArenaCount = ticketArenaCountForPlayers()
-  const isTicketDurationBelowRecommended = activeTicketDuration < activeTicketMinimumDuration
-  const ticketDurationMessage =
-    isTicketDurationBelowRecommended
-      ? text.ticketDurationBelowRecommended
-      : ticketPlayers > 12
-      ? text.ticketDurationMinimum80
-      : ticketPlayers > 8
-      ? text.ticketDurationMinimum60
-      : ticketPlayers > 4
-        ? text.ticketDurationMinimum40
-        : ''
   const ticketTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, getAvailableTimeOptions, ticketDate])
@@ -8737,7 +8725,6 @@ function handleSessionDateChange(value: string) {
             ticketDiscountName={ticketAutomaticDiscountQuote?.discount_name || ticketDiscountQuote?.discount_name || ''}
             ticketDiscountSource={activeTicketDiscountSource}
             ticketDiscountStatus={ticketDiscountStatus}
-            ticketDurationMessage={ticketDurationMessage}
             ticketDurationOptions={ticketDurationOptions}
             ticketPlayerOptions={ticketPlayerOptions}
             ticketPlayers={ticketPlayers}
