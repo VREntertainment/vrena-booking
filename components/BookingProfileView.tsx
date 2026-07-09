@@ -756,22 +756,46 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <p className="minor-policy-note profile-age-policy-note">{text.under13AccountNotice}</p>
               )}
               {profile && showProfileFields && (
-                <div className="profile-card-section-title profile-preferences-title">
-                  <Bell aria-hidden="true" size={17} />
-                  <span>{text.profilePreferences}</span>
+                <div className="profile-consent-panel">
+                  <div className="profile-card-section-title profile-preferences-title">
+                    <Bell aria-hidden="true" size={17} />
+                    <span>{text.profilePreferences}</span>
+                  </div>
+                  <label className="consent-field marketing-consent-field">
+                    <input
+                      checked={marketingConsent}
+                      onChange={(event) => {
+                        const nextConsent = event.target.checked
+                        updateMarketingConsent(nextConsent)
+                      }}
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>{text.marketingConsent}</strong>
+                      <small>{text.marketingConsentHint}</small>
+                    </span>
+                  </label>
+                  <div className="profile-legal-panel">
+                    <div className="account-links legal-links">
+                      <a className="link-button" href={termsConditionsUrl} rel="noreferrer" target="_blank">{text.termsConditions}</a>
+                      <a className="link-button" href={privacyPolicyUrl} rel="noreferrer" target="_blank">{text.privacyPolicy}</a>
+                      <a className="link-button" href={consentWaiverUrl} rel="noreferrer" target="_blank">{text.consentWaiver}</a>
+                    </div>
+                    {isAdultProfile && profile.personal_data_consent_at && (
+                      <p className="field-help">{text.legalAcceptedPrefix} {formatShortDate(profile.personal_data_consent_at.slice(0, 10), language)}</p>
+                    )}
+                    {isTeenMinorProfile && <p className="minor-policy-note">{text.minorConsentNotice}</p>}
+                    {isUnder13Profile && <p className="minor-policy-note">{text.under13AccountNotice}</p>}
+                  </div>
                 </div>
               )}
-              {showProfileFields && (
+              {!profile && showProfileFields && (
                 <label className="consent-field marketing-consent-field">
                   <input
                     checked={marketingConsent}
                     onChange={(event) => {
                       const nextConsent = event.target.checked
-                      if (profile) {
-                        updateMarketingConsent(nextConsent)
-                      } else {
-                        setMarketingConsent(nextConsent)
-                      }
+                      setMarketingConsent(nextConsent)
                     }}
                     type="checkbox"
                   />
@@ -1031,24 +1055,6 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </div>
                 )}
                 {mfaStatus && <p className="notice compact-notice">{mfaStatus}</p>}
-              </div>
-            )}
-            {profile && (
-              <div className="profile-legal-panel">
-                <div className="profile-card-section-title">
-                  <ShieldCheck aria-hidden="true" size={17} />
-                  <span>{text.legal}</span>
-                </div>
-                <div className="account-links legal-links">
-                  <a className="link-button" href={termsConditionsUrl} rel="noreferrer" target="_blank">{text.termsConditions}</a>
-                  <a className="link-button" href={privacyPolicyUrl} rel="noreferrer" target="_blank">{text.privacyPolicy}</a>
-                  <a className="link-button" href={consentWaiverUrl} rel="noreferrer" target="_blank">{text.consentWaiver}</a>
-                </div>
-                {isAdultProfile && profile.personal_data_consent_at && (
-                  <p className="field-help">{text.legalAcceptedPrefix} {formatShortDate(profile.personal_data_consent_at.slice(0, 10), language)}</p>
-                )}
-                {isTeenMinorProfile && <p className="minor-policy-note">{text.minorConsentNotice}</p>}
-                {isUnder13Profile && <p className="minor-policy-note">{text.under13AccountNotice}</p>}
               </div>
             )}
             {profileStatus && <p className="notice">{profileStatus}</p>}
