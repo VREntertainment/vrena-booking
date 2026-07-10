@@ -3,11 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --vrena-bg: #fff8f1;
-  --vrena-bg-soft: #fffaf4;
+  --vrena-bg: #fffdf9;
+  --vrena-bg-soft: #fffbf7;
   --vrena-surface: #ffffff;
-  --vrena-surface-warm: #fff3e6;
-  --vrena-line-warm: rgba(92, 52, 25, 0.14);
+  --vrena-surface-warm: #fff8f0;
+  --vrena-line-warm: rgba(92, 52, 25, 0.1);
   --vrena-brand-cyan: #00aeb3;
   --vrena-brand-deep: #006d77;
   --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
@@ -10967,7 +10967,7 @@ body {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #2d7ff9;
+  color: var(--vrena-brand-deep);
   font-size: 12px;
   font-weight: 850;
 }
@@ -10978,7 +10978,7 @@ body {
   border: 0 !important;
   border-radius: 0;
   background: transparent !important;
-  color: #70dfff;
+  color: var(--vrena-brand-deep);
   padding: 0;
   box-shadow: none !important;
 }
@@ -11005,7 +11005,7 @@ body {
 }
 
 .app .sessions-section .sub-tabs button.active {
-  border-bottom-color: #70dfff !important;
+  border-bottom-color: var(--vrena-brand-deep) !important;
   color: #071112;
 }
 
@@ -11072,7 +11072,7 @@ body {
   border: 0 !important;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, #70dfff 14%, transparent), transparent 58%),
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-brand-deep) 9%, transparent), transparent 58%),
     color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
   box-shadow: none !important;
   overflow: hidden;
@@ -11459,7 +11459,7 @@ body {
 .app .profile-account-section-unframed .profile-sub-tabs button.active,
 .app .clubs-section .form-segmented button.active,
 .app .create-session-section .create-session-mode-toggle button.active {
-  border-bottom-color: #70dfff !important;
+  border-bottom-color: var(--vrena-brand-deep) !important;
   color: #071112;
 }
 
@@ -11982,7 +11982,7 @@ body {
 .app .create-session-section .tournament-create-box {
   padding: 14px 0 14px 14px;
   border: 0 !important;
-  border-left: 3px solid #70dfff !important;
+  border-left: 3px solid var(--vrena-brand-deep) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
