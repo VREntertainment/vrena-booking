@@ -256,6 +256,7 @@ export const ja = {
   allDays: '全て',
   private: '非公開',
   public: '公開',
+  sessionOpen: '受付中',
   host: 'ホスト',
   privateCode: '非公開コード',
   copy: 'コピー',

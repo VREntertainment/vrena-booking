@@ -254,6 +254,7 @@ export const en = {
   allDays: 'All',
   private: 'Private',
   public: 'Public',
+  sessionOpen: 'Open',
   host: 'Host',
   privateCode: 'Private code',
   copy: 'Copy',

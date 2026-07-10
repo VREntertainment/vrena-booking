@@ -256,6 +256,7 @@ export const it = {
   allDays: 'Tutti',
   private: 'Privata',
   public: 'Aperta',
+  sessionOpen: 'Aperta',
   host: 'Host',
   privateCode: 'Codice priv.',
   copy: 'Copia',

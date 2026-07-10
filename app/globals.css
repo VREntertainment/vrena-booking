@@ -10965,6 +10965,24 @@ body {
   color: color-mix(in srgb, #b45a1c 78%, var(--player-text-muted));
 }
 
+.app .sessions-section .pill.session-visibility-open {
+  color: #138060;
+}
+
+.app .sessions-section .pill.session-visibility-private {
+  color: #c4322d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .sessions-section .pill.session-visibility-open {
+    color: #54d69c;
+  }
+
+  .app .sessions-section .pill.session-visibility-private {
+    color: #ff7b72;
+  }
+}
+
 .app .sessions-section .ticket-pill,
 .app .sessions-section .challenge-pill,
 .app .sessions-section .soft-opening-pill {
