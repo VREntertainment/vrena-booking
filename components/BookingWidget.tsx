@@ -9576,9 +9576,11 @@ function handleSessionDateChange(value: string) {
                               <div className="compact-session-main">
                                 <div className="compact-session-title-row">
                                   <h3>{session.name}</h3>
-                                  <span className={session.session_type === 'tournament' ? 'pill private' : 'pill ok'}>
-                                    {session.session_type === 'tournament' ? text.tournament : text.normalGame}
-                                  </span>
+                                  {session.session_type === 'tournament' && (
+                                    <span className="pill private">
+                                      {text.tournament}
+                                    </span>
+                                  )}
                                   <span className="pill">{text.clubSession}</span>
                                 </div>
                                 <div className="row-meta compact-meta">
