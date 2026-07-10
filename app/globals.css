@@ -10436,6 +10436,15 @@ body {
 
 @media (prefers-color-scheme: dark) {
   .app {
+    --vrena-brand-cyan: #ffb84d;
+    --vrena-brand-deep: #ff6a2a;
+    --vrena-brand-gradient: linear-gradient(135deg, #ffb84d 0%, #ff6a2a 100%);
+    --vrena-brand-gradient-reverse: linear-gradient(135deg, #ff6a2a 0%, #ffb84d 100%);
+    --vrena-brand-soft: linear-gradient(135deg, rgba(255, 184, 77, 0.12), rgba(255, 106, 42, 0.14));
+    --vrena-cta: var(--vrena-brand-gradient);
+    --vrena-cta-ink: #24120b;
+    --vrena-cta-shadow: rgba(255, 106, 42, 0.32);
+    --vrena-cta-soft: rgba(255, 139, 61, 0.16);
     --player-bg: #071112;
     --player-text: var(--vrena-bg);
     --player-surface: rgba(14, 23, 25, 0.94);
@@ -11564,12 +11573,12 @@ body {
 }
 
 .app .ticket-quick-actions .game-guide-link,
-.app .ticket-quick-actions .ticket-tariff-link {
+.app .ticket-quick-actions .session-tariff-link {
   width: auto;
   min-height: 36px;
   margin: 0;
   padding: 7px 12px;
-  border: 1px solid rgba(0, 109, 119, 0.22) !important;
+  border: 1px solid rgba(47, 69, 255, 0.22) !important;
   border-radius: 12px !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -12296,5 +12305,60 @@ body {
   .app .clubs-section .club-card-main h3,
   .app .clubs-section .club-card-signal strong {
     color: var(--player-text);
+  }
+
+  .app .link-button,
+  .app .session-tariff-link,
+  .app .tariff-payment-section a,
+  .app .ticket-account-value-note,
+  .app .ticket-game-guide-link,
+  .app .ticket-tariff-link,
+  .app .game-guide-link,
+  .app .profile-legal-panel .legal-links .link-button,
+  .app .message-translation-toggle,
+  .app .message-translation-status svg,
+  .app .guest-ticket-country-list span,
+  .app .player-name-line small {
+    color: #ffcf82 !important;
+  }
+
+  .app .game-guide-link,
+  .app .session-tariff-link,
+  .app .ticket-account-value-note,
+  .app .ticket-quick-actions .game-guide-link,
+  .app .ticket-quick-actions .session-tariff-link {
+    background: rgba(255, 139, 61, 0.12) !important;
+    border-color: rgba(255, 184, 77, 0.28) !important;
+  }
+
+  .app .ticket-pill,
+  .app .ticket-session-label,
+  .app .host-pill {
+    background: rgba(255, 139, 61, 0.14) !important;
+    border-color: rgba(255, 184, 77, 0.24) !important;
+    color: #ffcf82 !important;
+  }
+
+  .app .compact-session-card-expanded,
+  .app .leaderboard-row.current-user,
+  .app .current-rank-card,
+  .app .score-context-card,
+  .app .ticket-service-card.active,
+  .app .ticket-explainer,
+  .app .ticket-fast-path-summary,
+  .app .profile-account-form .profile-account-hero {
+    background:
+      linear-gradient(135deg, rgba(255, 184, 77, 0.1), rgba(255, 106, 42, 0.1)),
+      var(--player-surface-raised) !important;
+    border-color: rgba(255, 184, 77, 0.24) !important;
+  }
+
+  .app input:focus,
+  .app select:focus,
+  .app textarea:focus,
+  .app .date-input-shell:focus-within,
+  .app .rich-note-editor:focus {
+    border-color: rgba(255, 184, 77, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(255, 139, 61, 0.14) !important;
   }
 }
