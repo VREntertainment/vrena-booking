@@ -8,11 +8,11 @@
   --vrena-surface: #ffffff;
   --vrena-surface-warm: #fff8f0;
   --vrena-line-warm: rgba(92, 52, 25, 0.1);
-  --vrena-brand-cyan: #00aeb3;
-  --vrena-brand-deep: #006d77;
+  --vrena-brand-cyan: #4f7cff;
+  --vrena-brand-deep: #2f45ff;
   --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
   --vrena-brand-gradient-reverse: linear-gradient(135deg, var(--vrena-brand-deep) 0%, var(--vrena-brand-cyan) 100%);
-  --vrena-brand-soft: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.1));
+  --vrena-brand-soft: linear-gradient(135deg, rgba(79, 124, 255, 0.08), rgba(47, 69, 255, 0.1));
   --vrena-cta: linear-gradient(135deg, #ff6a3d 0%, #ff8a3d 46%, #ffc247 100%);
   --vrena-cta-ink: #24120b;
   --vrena-cta-shadow: rgba(255, 106, 61, 0.26);
@@ -556,7 +556,7 @@ body {
 }
 
 .app .share-button.copied {
-  color: #0d7c51;
+  color: var(--vrena-brand-deep);
 }
 
 .app .share-icon-button {
@@ -581,7 +581,7 @@ body {
 }
 
 .app .share-icon-button.copied {
-  color: #0d7c51;
+  color: var(--vrena-brand-deep);
 }
 
 .app .button-icon-text {
@@ -4150,9 +4150,9 @@ body {
 }
 
 .app .invite-code button.copied {
-  border-color: rgba(13, 124, 81, 0.35);
-  background: #e9f8f1;
-  color: #0d7c51;
+  border-color: color-mix(in srgb, var(--vrena-brand-deep) 30%, transparent);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
+  color: var(--vrena-brand-deep);
 }
 
 .app .invite-code.compact {
@@ -4174,7 +4174,7 @@ body {
 }
 
 .app .pill.ok {
-  color: #0d7c51;
+  color: var(--vrena-brand-deep);
 }
 
 .app .pill.private {
@@ -4357,7 +4357,7 @@ body {
   bottom: -4px;
   width: 15px;
   height: 15px;
-  background: #0d7c51;
+  background: var(--vrena-brand-deep);
   color: #ffffff;
 }
 
@@ -4472,8 +4472,8 @@ body {
 }
 
 .app .match-card.completed {
-  border-color: rgba(13, 124, 81, 0.3);
-  background: #f3fbf7;
+  border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 8%, #ffffff);
 }
 
 .app .match-head, .app .match-versus, .app .score-row {
@@ -4754,8 +4754,8 @@ body {
 }
 
 .app .queue-match.next {
-  border-color: rgba(13, 124, 81, 0.3);
-  background: #e9f8f1;
+  border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
 }
 
 .app .queue-controls {
@@ -4843,9 +4843,9 @@ body {
 }
 
 .app .checkin-mini {
-  border: 1px solid rgba(13, 124, 81, 0.22);
-  background: #e9f8f1;
-  color: #0d7c51;
+  border: 1px solid color-mix(in srgb, var(--vrena-brand-deep) 22%, transparent);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
+  color: var(--vrena-brand-deep);
   padding: 3px 5px;
   font-size: 10px;
   min-height: 24px;
@@ -10948,7 +10948,7 @@ body {
 }
 
 .app .sessions-section .pill.ok {
-  color: color-mix(in srgb, #138060 78%, var(--player-text-muted));
+  color: color-mix(in srgb, var(--vrena-brand-deep) 78%, var(--player-text-muted));
 }
 
 .app .sessions-section .pill.private {
@@ -11035,9 +11035,9 @@ body {
 }
 
 .app .sessions-section .compact-join.primary {
-  background: var(--vrena-brand-gradient);
-  color: #ffffff;
-  box-shadow: none;
+  background: var(--vrena-cta);
+  color: var(--vrena-cta-ink);
+  box-shadow: 0 10px 22px var(--vrena-cta-shadow);
 }
 
 .app .sessions-section .compact-expand,
