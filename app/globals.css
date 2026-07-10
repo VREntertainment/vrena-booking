@@ -3,11 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --vrena-bg: #fffdf9;
-  --vrena-bg-soft: #fffbf7;
+  --vrena-bg: #fffefd;
+  --vrena-bg-soft: #ffffff;
   --vrena-surface: #ffffff;
-  --vrena-surface-warm: #fff8f0;
-  --vrena-line-warm: rgba(92, 52, 25, 0.1);
+  --vrena-surface-warm: #fffdf9;
+  --vrena-line-warm: rgba(7, 17, 18, 0.08);
   --vrena-brand-cyan: #4f7cff;
   --vrena-brand-deep: #2f45ff;
   --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
@@ -76,7 +76,7 @@ body {
 }
 
 .app aside {
-  background: var(--vrena-surface);
+  background: #ffffff;
   border-right: 1px solid var(--vrena-line-warm);
   padding: 22px;
   display: flex;
@@ -88,6 +88,7 @@ body {
 }
 
 .app main {
+  background: var(--vrena-bg);
   padding: 22px;
   height: 100vh;
   box-sizing: border-box;
