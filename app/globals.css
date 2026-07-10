@@ -12203,3 +12203,98 @@ body {
     display: grid;
   }
 }
+
+/* Final booking-app dark-mode guard after the late player-surface refinements. */
+@media (prefers-color-scheme: dark) {
+  body:has(.app) {
+    background-color: #071112;
+  }
+
+  .app {
+    --player-bg: #071112;
+    --player-text: var(--vrena-bg);
+    --player-surface: rgba(14, 23, 25, 0.94);
+    --player-surface-soft: rgba(22, 34, 37, 0.9);
+    --player-surface-raised: #10191b;
+    --player-border: rgba(255, 255, 255, 0.1);
+    --player-border-strong: rgba(98, 133, 255, 0.32);
+    --player-text-muted: #aeb9bd;
+    --player-field-bg: rgba(22, 34, 37, 0.9);
+    --player-field-bg-soft: rgba(22, 34, 37, 0.9);
+    --player-field-panel: #10191b;
+    --player-field-border: rgba(255, 255, 255, 0.1);
+    --player-field-border-strong: rgba(255, 255, 255, 0.26);
+    --player-field-text: var(--vrena-bg);
+    --player-field-placeholder: #88969b;
+    --player-control-hover: rgba(98, 133, 255, 0.16);
+    --player-control-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    --player-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+    --player-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.18);
+    background: var(--player-bg) !important;
+    background-color: var(--player-bg) !important;
+    color: var(--player-text);
+  }
+
+  .app main,
+  .app-route-loader {
+    background: var(--player-bg) !important;
+    background-color: var(--player-bg) !important;
+    color: var(--player-text);
+  }
+
+  .app .compact-session-card,
+  .app .ticket-service-card,
+  .app .current-rank-card,
+  .app .leaderboard-row,
+  .app .profile-photo-panel,
+  .app .game-card,
+  .app .player-profile-panel,
+  .app .staff-player-card-editor,
+  .app .score-context-card,
+  .app .ticket-price-summary > div,
+  .app .ticket-confirmation-grid span,
+  .app .ticket-session-summary span {
+    background: var(--player-surface-raised) !important;
+    background-color: var(--player-surface-raised) !important;
+    border-color: var(--player-border);
+    color: var(--player-text);
+  }
+
+  .app .ticket-explainer,
+  .app .ticket-fast-path-summary,
+  .app .profile-account-form .profile-account-hero,
+  .app .profile-account-form .country-phone-field,
+  .app .profile-account-form .email-field,
+  .app .profile-account-form .name-field,
+  .app .profile-account-form .nickname-field,
+  .app .profile-account-form .birthday-field,
+  .app .profile-account-form .gender-field,
+  .app .profile-account-form .motto-field,
+  .app .profile-account-form .profile-consent-panel,
+  .app .profile-account-form .marketing-consent-field,
+  .app .profile-security-panel,
+  .app .mfa-security-card,
+  .app .mfa-enroll-panel,
+  .app .mfa-challenge-panel {
+    color: var(--player-text);
+  }
+
+  .app .section-copy,
+  .app .notes,
+  .app .field-help,
+  .app .clubs-section .club-empty-state span,
+  .app .clubs-section .club-create-copy span,
+  .app .clubs-section .club-private-note,
+  .app .clubs-section .club-card .player > span,
+  .app .clubs-section .club-card-more-members {
+    color: var(--player-text-muted);
+  }
+
+  .app .clubs-section .club-create-copy strong,
+  .app .clubs-section .club-list-group-head h3,
+  .app .clubs-section .club-empty-state strong,
+  .app .clubs-section .club-card-main h3,
+  .app .clubs-section .club-card-signal strong {
+    color: var(--player-text);
+  }
+}
