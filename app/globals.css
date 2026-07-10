@@ -13,10 +13,10 @@
   --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
   --vrena-brand-gradient-reverse: linear-gradient(135deg, var(--vrena-brand-deep) 0%, var(--vrena-brand-cyan) 100%);
   --vrena-brand-soft: linear-gradient(135deg, rgba(79, 124, 255, 0.08), rgba(47, 69, 255, 0.1));
-  --vrena-cta: linear-gradient(135deg, #ff6a3d 0%, #ff8a3d 46%, #ffc247 100%);
-  --vrena-cta-ink: #24120b;
-  --vrena-cta-shadow: rgba(255, 106, 61, 0.26);
-  --vrena-cta-soft: rgba(255, 138, 61, 0.12);
+  --vrena-cta: var(--vrena-brand-gradient);
+  --vrena-cta-ink: #ffffff;
+  --vrena-cta-shadow: rgba(47, 69, 255, 0.22);
+  --vrena-cta-soft: rgba(79, 124, 255, 0.12);
 }
 
 @theme inline {
