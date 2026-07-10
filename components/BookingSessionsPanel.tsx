@@ -330,9 +330,11 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
             <div className="compact-session-main">
               <div className="compact-session-title-row">
                 <h3>{session.name}</h3>
-                <span className={session.session_type === 'tournament' ? 'pill private session-kind-pill session-kind-tournament' : 'pill ok session-kind-pill session-kind-normal'}>
-                  {session.session_type === 'tournament' ? text.tournament : text.normalGame}
-                </span>
+                {session.session_type === 'tournament' && (
+                  <span className="pill private session-kind-pill session-kind-tournament">
+                    {text.tournament}
+                  </span>
+                )}
                 <span className={session.visibility === 'private' ? 'pill private session-visibility-pill session-visibility-private' : 'pill ok session-visibility-pill session-visibility-open'}>
                   {session.visibility === 'private' ? text.private : text.sessionOpen}
                 </span>
