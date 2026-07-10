@@ -3,6 +3,20 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --vrena-bg: #fff8f1;
+  --vrena-bg-soft: #fffaf4;
+  --vrena-surface: #ffffff;
+  --vrena-surface-warm: #fff3e6;
+  --vrena-line-warm: rgba(92, 52, 25, 0.14);
+  --vrena-brand-cyan: #00aeb3;
+  --vrena-brand-deep: #006d77;
+  --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
+  --vrena-brand-gradient-reverse: linear-gradient(135deg, var(--vrena-brand-deep) 0%, var(--vrena-brand-cyan) 100%);
+  --vrena-brand-soft: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.1));
+  --vrena-cta: linear-gradient(135deg, #ff6a3d 0%, #ff8a3d 46%, #ffc247 100%);
+  --vrena-cta-ink: #24120b;
+  --vrena-cta-shadow: rgba(255, 106, 61, 0.26);
+  --vrena-cta-soft: rgba(255, 138, 61, 0.12);
 }
 
 @theme inline {
@@ -27,7 +41,7 @@ body {
 
 /* Booking widget styles moved from styled-jsx for deterministic split chunks. */
 .app {
-  background: #f6f7f9;
+  background: var(--vrena-bg);
   color: #071112;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --avatar-xs: 34px;
@@ -62,8 +76,8 @@ body {
 }
 
 .app aside {
-  background: #ffffff;
-  border-right: 1px solid rgba(7, 17, 18, 0.12);
+  background: var(--vrena-surface);
+  border-right: 1px solid var(--vrena-line-warm);
   padding: 22px;
   display: flex;
   flex-direction: column;
@@ -85,7 +99,7 @@ body {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  background: #f6f7f9;
+  background: var(--vrena-bg);
   color: #071112;
   padding: 24px;
 }
@@ -296,7 +310,7 @@ body {
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   color: #071112;
   text-align: center;
 }
@@ -315,7 +329,7 @@ body {
 .app .day-chip.active {
   color: #ffffff;
   border-color: transparent;
-  background: linear-gradient(135deg, #13c9c9, #3059ff);
+  background: var(--vrena-brand-gradient);
 }
 
 .app .day-chip.active span {
@@ -356,7 +370,7 @@ body {
 
 .app .language-picker > button:hover, .app .language-menu button:hover {
   transform: translateY(-1px) scale(1.03);
-  border-color: rgba(48, 89, 255, 0.38);
+  border-color: rgba(0, 109, 119, 0.38);
 }
 
 .app .language-menu {
@@ -423,14 +437,14 @@ body {
 }
 
 .app .profile-chip:hover {
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   color: #071112;
   box-shadow: 0 12px 26px rgba(11, 21, 24, 0.12);
 }
 
 .app .profile-chip.active {
-  border-color: rgba(48, 89, 255, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(48, 89, 255, 0.14);
+  border-color: rgba(0, 109, 119, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(0, 109, 119, 0.14);
 }
 
 .app .profile-chip strong, .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo) {
@@ -507,8 +521,8 @@ body {
 }
 
 .app .date-input-shell:focus-within {
-  border-color: rgba(48, 89, 255, 0.58);
-  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12);
+  border-color: rgba(0, 109, 119, 0.58);
+  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12);
 }
 
 .app .link-button {
@@ -518,7 +532,7 @@ body {
   margin-top: 8px;
   border: 0;
   background: transparent;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   padding: 0;
   font-size: 12px;
   font-weight: 800;
@@ -628,17 +642,17 @@ body {
   grid-template-columns: 92px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  border-color: rgba(48, 89, 255, 0.16);
+  border-color: rgba(0, 109, 119, 0.16);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 252, 0.96)),
     radial-gradient(circle at top left, rgba(0, 174, 179, 0.13), transparent 34%),
-    radial-gradient(circle at top right, rgba(48, 89, 255, 0.12), transparent 30%);
+    radial-gradient(circle at top right, rgba(0, 109, 119, 0.12), transparent 30%);
   padding: 16px;
   box-shadow: 0 12px 28px rgba(7, 17, 18, 0.07);
 }
 
 .app .profile-account-hero .profile-photo-preview {
-  box-shadow: 0 8px 22px rgba(48, 89, 255, 0.18);
+  box-shadow: 0 8px 22px rgba(0, 109, 119, 0.18);
 }
 
 .app .profile-identity-copy {
@@ -681,7 +695,7 @@ body {
 
 .app .profile-summary-pills svg {
   flex: 0 0 auto;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .profile-summary-text {
@@ -711,7 +725,7 @@ body {
 }
 
 .app .profile-card-section-title svg {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .profile-account-form .country-field,
@@ -846,7 +860,7 @@ body {
 
 .app .profile-security-panel .link-button:hover,
 .app .profile-security-panel .link-button:focus-visible {
-  border-color: rgba(48, 89, 255, 0.28);
+  border-color: rgba(0, 109, 119, 0.28);
   background: #f7f9ff;
 }
 
@@ -896,7 +910,7 @@ body {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .mfa-enroll-panel,
@@ -1153,7 +1167,7 @@ body {
 }
 
 .app .mini-session.clickable:hover {
-  border-color: rgba(48, 89, 255, 0.35);
+  border-color: rgba(0, 109, 119, 0.35);
   box-shadow: 0 10px 26px rgba(11, 21, 24, 0.08);
 }
 
@@ -1192,7 +1206,7 @@ body {
 }
 
 .app .invite-session {
-  border-color: rgba(48, 89, 255, 0.24);
+  border-color: rgba(0, 109, 119, 0.24);
   background: #f7f9ff;
 }
 
@@ -1234,7 +1248,7 @@ body {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: linear-gradient(135deg, #00cbd1, #3059ff);
+  background: var(--vrena-brand-gradient);
   font-size: 30px;
   font-weight: 900;
   cursor: pointer;
@@ -1325,8 +1339,8 @@ body {
 }
 
 .app .emoji-row button.active, .app .color-row button.active {
-  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.22);
-  border-color: #3059ff;
+  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.22);
+  border-color: var(--vrena-brand-deep);
 }
 
 .app .emoji-row input, .app .avatar-options input {
@@ -1378,7 +1392,7 @@ body {
   display: grid;
   place-items: center;
   overflow: visible;
-  background: linear-gradient(135deg, #00cbd1, #3059ff);
+  background: var(--vrena-brand-gradient);
   color: #ffffff;
   font-weight: 800;
   line-height: 1;
@@ -1521,7 +1535,7 @@ body {
 }
 
 .app .shop-contact a {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
@@ -1648,7 +1662,7 @@ body {
 }
 
 .app .tab.active, .app .segmented button.active {
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   border-color: rgba(7, 17, 18, 0.12);
 }
 
@@ -1693,7 +1707,7 @@ body {
   display: grid;
   gap: 12px;
   border: 1px solid rgba(7, 17, 18, 0.12);
-  border-left: 4px solid var(--club-theme, #3059ff);
+  border-left: 4px solid var(--club-theme, var(--vrena-brand-deep));
   border-radius: 8px;
   padding: 14px;
   background: #ffffff;
@@ -1705,7 +1719,7 @@ body {
   overflow: hidden;
   border-radius: 10px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), transparent),
+    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), transparent),
     #eef4f7;
 }
 
@@ -1714,7 +1728,7 @@ body {
 }
 
 .app .club-card-motto {
-  color: var(--club-theme, #3059ff);
+  color: var(--club-theme, var(--vrena-brand-deep));
   font-size: 13px;
   font-weight: 900;
   margin-top: 3px;
@@ -1733,7 +1747,7 @@ body {
   gap: 10px;
   align-items: center;
   border-radius: 8px;
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   padding: 8px 10px;
   font-weight: 800;
 }
@@ -1803,8 +1817,8 @@ body {
 }
 
 .app .payment-grid .active {
-  border-color: #3059ff;
-  box-shadow: 0 0 0 2px rgba(48, 89, 255, 0.14);
+  border-color: var(--vrena-brand-deep);
+  box-shadow: 0 0 0 2px rgba(0, 109, 119, 0.14);
 }
 
 .app .amount-field {
@@ -2502,7 +2516,7 @@ body {
 }
 
 .app .message-translation-status svg {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   flex: 0 0 auto;
 }
 
@@ -2511,7 +2525,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   padding: 0;
   box-shadow: none;
   font-size: 11px;
@@ -2610,7 +2624,7 @@ body {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 10px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), rgba(0, 181, 184, 0.08)),
+    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), rgba(0, 181, 184, 0.08)),
     #f4f7f8;
 }
 
@@ -2668,12 +2682,12 @@ body {
 }
 
 .app .club-motto {
-  color: var(--club-theme, #3059ff);
+  color: var(--club-theme, var(--vrena-brand-deep));
   font-weight: 900;
 }
 
 .app .club-description {
-  border-left: 3px solid var(--club-theme, #3059ff);
+  border-left: 3px solid var(--club-theme, var(--vrena-brand-deep));
   padding-left: 10px;
 }
 
@@ -2681,7 +2695,7 @@ body {
 .app .club-member-row {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 10px;
-  background: var(--club-theme-faint, rgba(48, 89, 255, 0.07));
+  background: var(--club-theme-faint, rgba(0, 109, 119, 0.07));
 }
 
 .app .club-invite-box {
@@ -2766,9 +2780,9 @@ body {
   place-items: center;
   min-height: 140px;
   overflow: hidden;
-  border: 1px dashed rgba(48, 89, 255, 0.34);
+  border: 1px dashed rgba(0, 109, 119, 0.34);
   border-radius: 10px;
-  background: var(--club-theme-faint, rgba(48, 89, 255, 0.07));
+  background: var(--club-theme-faint, rgba(0, 109, 119, 0.07));
   color: #637075;
   font-weight: 900;
   text-align: center;
@@ -2842,7 +2856,7 @@ body {
 }
 
 .app .club-session-preview:hover {
-  border-color: rgba(48, 89, 255, 0.22);
+  border-color: rgba(0, 109, 119, 0.22);
   box-shadow: 0 10px 24px rgba(11, 21, 24, 0.08);
   transform: translateY(-1px);
 }
@@ -2891,7 +2905,7 @@ body {
 }
 
 .app .modal-close:focus-visible {
-  outline: 3px solid rgba(48, 89, 255, 0.34);
+  outline: 3px solid rgba(0, 109, 119, 0.34);
   outline-offset: 2px;
 }
 
@@ -2996,10 +3010,10 @@ body {
   align-items: center;
   min-height: 40px;
   margin: 10px 0 12px;
-  border: 1px solid rgba(48, 89, 255, 0.22);
+  border: 1px solid rgba(0, 109, 119, 0.22);
   border-radius: 8px;
-  background: #f7fafb;
-  color: #3059ff;
+  background: var(--vrena-bg-soft);
+  color: var(--vrena-brand-deep);
   padding: 8px 11px;
   cursor: pointer;
   font-weight: 900;
@@ -3031,7 +3045,7 @@ body {
   gap: 6px;
   border: 1px solid rgba(7, 17, 18, 0.08);
   border-radius: 8px;
-  background: #f7fafb;
+  background: var(--vrena-bg-soft);
   padding: 12px;
 }
 
@@ -3050,7 +3064,7 @@ body {
 }
 
 .app .tariff-payment-section a {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-weight: 900;
 }
 
@@ -3098,15 +3112,15 @@ body {
 }
 
 .app .compact-session-card:focus-visible {
-  outline: 3px solid rgba(48, 89, 255, 0.35);
+  outline: 3px solid rgba(0, 109, 119, 0.35);
   outline-offset: 4px;
 }
 
 .app .session-highlighted .compact-session-card {
-  border-color: rgba(48, 89, 255, 0.62);
+  border-color: rgba(0, 109, 119, 0.62);
   box-shadow:
-    0 0 0 3px rgba(48, 89, 255, 0.18),
-    0 18px 42px rgba(48, 89, 255, 0.2);
+    0 0 0 3px rgba(0, 109, 119, 0.18),
+    0 18px 42px rgba(0, 109, 119, 0.2);
   animation: sessionTargetPulse 1400ms ease-in-out 2;
 }
 
@@ -3261,7 +3275,7 @@ body {
   border-color: rgba(7, 17, 18, 0.08);
   border-radius: 12px;
   background: rgba(246, 248, 250, 0.78);
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 14px;
   box-shadow: none;
 }
@@ -3492,7 +3506,7 @@ body {
   padding: 12px 14px;
   border: 1px solid rgba(7, 17, 18, 0.08);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(112, 223, 255, 0.12), rgba(48, 89, 255, 0.08)), rgba(255, 255, 255, 0.82);
+  background: linear-gradient(135deg, rgba(112, 223, 255, 0.12), rgba(0, 109, 119, 0.08)), rgba(255, 255, 255, 0.82);
 }
 
 .app .ticket-fast-path-summary div {
@@ -3562,7 +3576,7 @@ body {
 
 .app .ticket-service-card.active {
   background: rgba(246, 249, 255, 0.96);
-  border-color: rgba(48, 89, 255, 0.28);
+  border-color: rgba(0, 109, 119, 0.28);
 }
 
 .app .ticket-form-panel {
@@ -3807,7 +3821,7 @@ body {
 }
 
 .app .ticket-total-line strong {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 17px;
   line-height: 1.1;
 }
@@ -3835,7 +3849,7 @@ body {
 
 .app .ticket-confirmation-grid span {
   padding: 9px;
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   border-radius: 8px;
   font-weight: 800;
   color: #071112;
@@ -3849,7 +3863,7 @@ body {
 
 .app .ticket-session-summary span {
   padding: 7px 9px;
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   border-radius: 8px;
   color: #65727a;
 }
@@ -3962,8 +3976,8 @@ body {
 }
 
 .app .host-pill {
-  background: rgba(48, 89, 255, 0.1);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.1);
+  color: var(--vrena-brand-deep);
 }
 
 .app .hide-expanded-button {
@@ -3996,7 +4010,7 @@ body {
 .app .edit-panel {
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(48, 89, 255, 0.2);
+  border: 1px solid rgba(0, 109, 119, 0.2);
   border-radius: 8px;
   background: #f8fbff;
   padding: 12px;
@@ -4038,7 +4052,7 @@ body {
   min-height: auto;
   border: 0;
   background: transparent;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   padding: 0;
   font-size: 12px;
   font-weight: 900;
@@ -4068,11 +4082,11 @@ body {
 
 .app .format-toolbar button:hover, .app .format-toolbar button:focus-visible {
   transform: translateY(-1px) scale(1.03);
-  border-color: rgba(48, 89, 255, 0.42);
+  border-color: rgba(0, 109, 119, 0.42);
 }
 
 .app .format-toolbar button:active {
-  background: linear-gradient(135deg, #13c9c9, #3059ff);
+  background: var(--vrena-brand-gradient);
   color: #ffffff;
   border-color: transparent;
   transform: translateY(0) scale(0.98);
@@ -4095,8 +4109,8 @@ body {
 }
 
 .app .rich-note-editor:focus {
-  border-color: #3059ff;
-  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.14), inset 0 0 0 1px rgba(48, 89, 255, 0.16);
+  border-color: var(--vrena-brand-deep);
+  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.14), inset 0 0 0 1px rgba(0, 109, 119, 0.16);
 }
 
 .app .rich-note-editor:empty::before {
@@ -4109,7 +4123,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  border: 1px solid rgba(48, 89, 255, 0.18);
+  border: 1px solid rgba(0, 109, 119, 0.18);
   border-radius: 8px;
   background: #f5f8ff;
   padding: 9px 10px;
@@ -4154,7 +4168,7 @@ body {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   color: #637075;
   white-space: nowrap;
 }
@@ -4208,7 +4222,7 @@ body {
 
 .app .player-name-line small {
   display: block;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 10px;
   font-weight: 900;
   line-height: 1.1;
@@ -4260,7 +4274,7 @@ body {
   aspect-ratio: 1;
   border-radius: 999px;
   border: 0;
-  background: linear-gradient(135deg, #13c9c9, #3059ff);
+  background: var(--vrena-brand-gradient);
   color: #ffffff;
   font-weight: 900;
   padding: 0;
@@ -4543,9 +4557,9 @@ body {
 .app .tournament-settings-box {
   display: grid;
   gap: 10px;
-  border-color: rgba(48, 89, 255, 0.2);
+  border-color: rgba(0, 109, 119, 0.2);
   background:
-    linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.08)),
+    linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.08)),
     #ffffff;
 }
 
@@ -4569,8 +4583,8 @@ body {
 }
 
 .app .session-type-toggle button.active {
-  border-color: rgba(48, 89, 255, 0.28);
-  box-shadow: 0 0 0 2px rgba(48, 89, 255, 0.1);
+  border-color: rgba(0, 109, 119, 0.28);
+  box-shadow: 0 0 0 2px rgba(0, 109, 119, 0.1);
 }
 
 .app .public-leaderboard {
@@ -4579,7 +4593,7 @@ body {
   overflow: hidden;
   background:
     radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.16), transparent 34%),
-    radial-gradient(circle at 100% 100%, rgba(48, 89, 255, 0.14), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(0, 109, 119, 0.14), transparent 38%),
     #ffffff;
 }
 
@@ -4720,11 +4734,11 @@ body {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   padding: 8px;
-  background: #f6f7f9;
+  background: var(--vrena-bg);
 }
 
 .app .queue-match span {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.03em;
@@ -5070,7 +5084,7 @@ body {
 }
 
 .app .calendar-slot:not(:disabled):hover {
-  background: rgba(48, 89, 255, 0.08);
+  background: rgba(0, 109, 119, 0.08);
 }
 
 .app .calendar-slot.unavailable {
@@ -5096,9 +5110,9 @@ body {
   min-height: 36px;
   padding: 6px 7px;
   overflow: visible;
-  border: 1px solid rgba(48, 89, 255, 0.28);
+  border: 1px solid rgba(0, 109, 119, 0.28);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(19, 201, 201, 0.18), rgba(48, 89, 255, 0.16)), #f7fbff;
+  background: linear-gradient(135deg, rgba(19, 201, 201, 0.18), rgba(0, 109, 119, 0.16)), #f7fbff;
   color: #071112;
   text-align: left;
   box-shadow: 0 8px 20px rgba(7, 17, 18, 0.12);
@@ -5107,7 +5121,7 @@ body {
 
 .app .calendar-session-block.ticket {
   border-color: rgba(245, 158, 11, 0.32);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(48, 89, 255, 0.12)), #fffaf2;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(0, 109, 119, 0.12)), #fffaf2;
 }
 
 .app .calendar-session-compact {
@@ -5238,7 +5252,7 @@ body {
   padding: 12px;
   border: 1px solid rgba(0, 174, 179, 0.2);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.08));
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.08));
 }
 
 .app .profile-auth-section .auth-benefit-strip strong {
@@ -5258,7 +5272,7 @@ body {
   align-items: center;
   min-height: 24px;
   padding: 0 9px;
-  border: 1px solid rgba(48, 89, 255, 0.16);
+  border: 1px solid rgba(0, 109, 119, 0.16);
   border-radius: 999px;
   color: #526168;
   background: rgba(255, 255, 255, 0.62);
@@ -5358,9 +5372,9 @@ body {
 }
 
 .app .profile-auth-section input:focus {
-  border-color: rgba(48, 89, 255, 0.42);
+  border-color: rgba(0, 109, 119, 0.42);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(48, 89, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(0, 109, 119, 0.1);
 }
 
 .app .profile-auth-section .password-control {
@@ -5381,7 +5395,7 @@ body {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -5429,7 +5443,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   padding: 0;
   box-shadow: none;
   font-size: 12px;
@@ -5665,7 +5679,7 @@ body {
 }
 
 .app .consent-field a {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-weight: 800;
 }
 
@@ -5713,7 +5727,7 @@ body {
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -5726,7 +5740,7 @@ body {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 8px;
   padding: 9px 10px;
-  background: #f7fafb;
+  background: var(--vrena-bg-soft);
   color: #637075;
   font-size: 12px;
   line-height: 1.35;
@@ -5890,7 +5904,7 @@ body {
 }
 
 .app .country-list span {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-weight: 800;
 }
 
@@ -5964,7 +5978,7 @@ body {
 }
 
 .app button:focus-visible {
-  outline: 3px solid rgba(48, 89, 255, 0.28);
+  outline: 3px solid rgba(0, 109, 119, 0.28);
   outline-offset: 2px;
 }
 
@@ -5975,7 +5989,7 @@ body {
 
 .app .share-button:focus-visible .share-symbol-icon,
 .app .share-icon-button:focus-visible .share-symbol-icon {
-  filter: drop-shadow(0 0 0 rgba(48, 89, 255, 0.6)) drop-shadow(0 0 4px rgba(48, 89, 255, 0.45));
+  filter: drop-shadow(0 0 0 rgba(0, 109, 119, 0.6)) drop-shadow(0 0 4px rgba(0, 109, 119, 0.45));
 }
 
 .app button:disabled {
@@ -6152,9 +6166,9 @@ body {
   gap: 8px;
   align-items: end;
   padding: 10px;
-  border: 1px solid rgba(48, 89, 255, 0.18);
+  border: 1px solid rgba(0, 109, 119, 0.18);
   border-radius: 10px;
-  background: #f7fafb;
+  background: var(--vrena-bg-soft);
 }
 
 .app .leaderboard-club-pin-copy {
@@ -6201,9 +6215,9 @@ body {
   gap: 8px;
   align-items: center;
   padding: 10px 12px;
-  border: 1px solid rgba(48, 89, 255, 0.18);
+  border: 1px solid rgba(0, 109, 119, 0.18);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(48, 89, 255, 0.1)), #ffffff;
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(0, 109, 119, 0.1)), #ffffff;
 }
 
 .app .current-rank-card > span {
@@ -6274,8 +6288,8 @@ body {
 }
 
 .app .leaderboard-row.current-user {
-  border-color: rgba(48, 89, 255, 0.34);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(48, 89, 255, 0.1)), #ffffff;
+  border-color: rgba(0, 109, 119, 0.34);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.1)), #ffffff;
 }
 
 .app .leaderboard-avatar-button {
@@ -6362,7 +6376,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  background: var(--vrena-brand-gradient);
 }
 
 .app .rank-progress small {
@@ -6375,8 +6389,8 @@ body {
   display: grid;
   gap: 10px;
   padding: 13px;
-  background: linear-gradient(135deg, rgba(48, 89, 255, 0.1), rgba(0, 174, 179, 0.08));
-  border: 1px solid rgba(48, 89, 255, 0.14);
+  background: linear-gradient(135deg, rgba(0, 109, 119, 0.1), rgba(0, 174, 179, 0.08));
+  border: 1px solid rgba(0, 109, 119, 0.14);
   border-radius: 12px;
 }
 
@@ -6407,7 +6421,7 @@ body {
 }
 
 .app .profile-completion-head b {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 18px;
   line-height: 1;
 }
@@ -6550,11 +6564,13 @@ body {
 }
 
 .app button.primary {
-  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  background: var(--vrena-cta);
+  color: var(--vrena-cta-ink);
+  box-shadow: 0 12px 26px var(--vrena-cta-shadow);
 }
 
 .app button.secondary {
-  background: #f0f4f6;
+  background: var(--vrena-surface-warm);
   color: #071112;
   border: 1px solid rgba(7, 17, 18, 0.12);
 }
@@ -6600,8 +6616,8 @@ body {
 }
 
 .app .notice {
-  border-left: 4px solid #00aeb3;
-  background: #f0f4f6;
+  border-left: 4px solid var(--vrena-brand-cyan);
+  background: var(--vrena-surface-warm);
   padding: 10px 12px;
   border-radius: 6px;
   color: #637075;
@@ -6686,7 +6702,7 @@ body {
 }
 
 .app .game-card.selected {
-  border-color: #00aeb3;
+  border-color: var(--vrena-brand-cyan);
   box-shadow: 0 0 0 3px rgba(0, 174, 179, 0.15);
 }
 
@@ -6718,10 +6734,10 @@ body {
   justify-content: center;
   width: fit-content;
   min-height: 30px;
-  border: 1px solid rgba(48, 89, 255, 0.22);
+  border: 1px solid rgba(0, 109, 119, 0.22);
   border-radius: 999px;
-  background: #f7fafb;
-  color: #3059ff;
+  background: var(--vrena-bg-soft);
+  color: var(--vrena-brand-deep);
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 900;
@@ -6966,8 +6982,8 @@ body {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 12% 0%, rgba(48, 89, 255, 0.12), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at 12% 0%, rgba(0, 109, 119, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
   box-shadow: 0 18px 42px rgba(11, 21, 24, 0.1);
 }
 
@@ -6996,8 +7012,8 @@ body {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(#3059ff var(--rank-progress), rgba(0, 174, 179, 0.18) 0);
-  box-shadow: 0 0 0 5px rgba(48, 89, 255, 0.08);
+  background: conic-gradient(var(--vrena-brand-deep) var(--rank-progress), rgba(0, 174, 179, 0.18) 0);
+  box-shadow: 0 0 0 5px rgba(0, 109, 119, 0.08);
 }
 
 .app .achievement-rank-ring::after {
@@ -7058,10 +7074,10 @@ body {
   min-height: 28px;
   margin-top: 2px;
   padding: 5px 9px;
-  border: 1px solid rgba(48, 89, 255, 0.18);
+  border: 1px solid rgba(0, 109, 119, 0.18);
   border-radius: 999px;
-  background: rgba(48, 89, 255, 0.08);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.08);
+  color: var(--vrena-brand-deep);
   font-size: 12px;
   font-weight: 950;
   line-height: 1;
@@ -7092,9 +7108,9 @@ body {
 }
 
 .app .achievement-rank-list span.active {
-  border-color: rgba(48, 89, 255, 0.28);
-  background: rgba(48, 89, 255, 0.1);
-  color: #3059ff;
+  border-color: rgba(0, 109, 119, 0.28);
+  background: rgba(0, 109, 119, 0.1);
+  color: var(--vrena-brand-deep);
 }
 
 .app .achievement-rank-list strong {
@@ -7125,7 +7141,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #00aeb3, #3059ff);
+  background: var(--vrena-brand-gradient);
 }
 
 .app .achievement-rank-badge {
@@ -7133,10 +7149,10 @@ body {
   height: 64px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(48, 89, 255, 0.2);
+  border: 1px solid rgba(0, 109, 119, 0.2);
   border-radius: 16px;
-  color: #3059ff;
-  background: rgba(48, 89, 255, 0.08);
+  color: var(--vrena-brand-deep);
+  background: rgba(0, 109, 119, 0.08);
 }
 
 .app .achievement-rank-badge span {
@@ -7158,7 +7174,7 @@ body {
   border: 1px solid rgba(7, 17, 18, 0.1);
   border-radius: 10px;
   background: #ffffff;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .achievement-summary-card strong {
@@ -7176,7 +7192,7 @@ body {
 
 .app .achievement-summary-progress-card {
   background:
-    radial-gradient(circle at 100% 0%, rgba(48, 89, 255, 0.1), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(0, 109, 119, 0.1), transparent 42%),
     #ffffff;
 }
 
@@ -7212,7 +7228,7 @@ body {
 .app .achievement-spotlight-card {
   background:
     radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.16), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
 }
 
 .app .achievement-streak-card {
@@ -7230,8 +7246,8 @@ body {
   min-height: 24px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(48, 89, 255, 0.08);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.08);
+  color: var(--vrena-brand-deep);
   font-size: 11px;
   font-weight: 950;
 }
@@ -7266,13 +7282,13 @@ body {
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .achievement-reward-card {
   position: relative;
   overflow: hidden;
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
 }
 
 .app .achievement-reward-card.reward-unlocked {
@@ -7309,7 +7325,7 @@ body {
 }
 
 .app .achievement-filter-bar button.active {
-  border-color: rgba(48, 89, 255, 0.28);
+  border-color: rgba(0, 109, 119, 0.28);
   background: #071112;
   color: #ffffff;
 }
@@ -7350,11 +7366,11 @@ body {
   height: auto;
   min-height: 112px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(48, 89, 255, 0.07), rgba(0, 174, 179, 0.04));
+  background: linear-gradient(180deg, rgba(0, 109, 119, 0.07), rgba(0, 174, 179, 0.04));
 }
 
 .app .achievement-chart-area {
-  fill: rgba(48, 89, 255, 0.13);
+  fill: rgba(0, 109, 119, 0.13);
 }
 
 .app .achievement-chart-line {
@@ -7370,7 +7386,7 @@ body {
 
 .app .achievement-chart-dot {
   fill: #ffffff;
-  stroke: #3059ff;
+  stroke: var(--vrena-brand-deep);
   stroke-width: 3;
 }
 
@@ -7408,8 +7424,8 @@ body {
   min-height: 28px;
   padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(48, 89, 255, 0.08);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.08);
+  color: var(--vrena-brand-deep);
   font-size: 12px;
   font-weight: 900;
 }
@@ -7489,7 +7505,7 @@ body {
   clip-path: polygon(50% 0, 82% 14%, 100% 50%, 82% 86%, 50% 100%, 18% 86%, 0 50%, 18% 14%);
   box-shadow:
     inset 0 0 18px rgba(255, 255, 255, 0.12),
-    0 0 20px rgba(48, 89, 255, 0.3);
+    0 0 20px rgba(0, 109, 119, 0.3);
 }
 
 .app .achievement-card-body {
@@ -7524,8 +7540,8 @@ body {
   min-height: 24px;
   padding: 4px 7px;
   border-radius: 999px;
-  background: rgba(48, 89, 255, 0.08);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.08);
+  color: var(--vrena-brand-deep);
   font-size: 11px;
   font-weight: 950;
   line-height: 1;
@@ -7562,8 +7578,8 @@ body {
 }
 
 .app .achievement-rarity-pill.rarity-rare {
-  background: rgba(48, 89, 255, 0.1);
-  color: #3059ff;
+  background: rgba(0, 109, 119, 0.1);
+  color: var(--vrena-brand-deep);
 }
 
 .app .achievement-rarity-pill.rarity-epic {
@@ -7596,7 +7612,7 @@ body {
 .app .achievement-unlocked,
 .app .achievement-card.achievement-tier-silver,
 .app .achievement-card.achievement-tier-gold {
-  box-shadow: 0 12px 28px rgba(48, 89, 255, 0.1);
+  box-shadow: 0 12px 28px rgba(0, 109, 119, 0.1);
 }
 
 .app .achievement-mastered,
@@ -7612,8 +7628,8 @@ body {
 .app .achievement-secret {
   min-height: 100%;
   background:
-    repeating-linear-gradient(90deg, rgba(48, 89, 255, 0.08) 0 8px, transparent 8px 16px),
-    linear-gradient(180deg, #ffffff, #f7fafb);
+    repeating-linear-gradient(90deg, rgba(0, 109, 119, 0.08) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, #ffffff, var(--vrena-bg-soft));
 }
 
 .app .achievement-secret-mark {
@@ -7635,7 +7651,7 @@ body {
 .app .retention-achievements-card {
   background:
     radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.12), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
 }
 
 .app .retention-achievement-grid {
@@ -7790,7 +7806,7 @@ body {
 }
 
 .app .achievement-detail-copy > strong {
-  color: #3059ff;
+  color: var(--vrena-brand-deep);
   font-size: 15px;
 }
 
@@ -7892,7 +7908,7 @@ body {
   border-radius: 999px;
   background:
     radial-gradient(circle, rgba(245, 197, 66, 0.42), transparent 58%),
-    radial-gradient(circle at 72% 28%, rgba(48, 89, 255, 0.26), transparent 38%);
+    radial-gradient(circle at 72% 28%, rgba(0, 109, 119, 0.26), transparent 38%);
   animation: achievementGlowPop 900ms ease both;
 }
 
@@ -7906,8 +7922,8 @@ body {
   border: 3px solid rgba(245, 197, 66, 0.68);
   border-radius: 28px;
   color: #ffffff;
-  background: linear-gradient(135deg, #3059ff, #00aeb3);
-  box-shadow: 0 22px 48px rgba(48, 89, 255, 0.22), 0 0 0 8px rgba(245, 197, 66, 0.14);
+  background: var(--vrena-brand-gradient-reverse);
+  box-shadow: 0 22px 48px rgba(0, 109, 119, 0.22), 0 0 0 8px rgba(245, 197, 66, 0.14);
   animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
 }
 
@@ -7942,7 +7958,7 @@ body {
   top: 18%;
   width: 12px;
   height: 12px;
-  background: #3059ff;
+  background: var(--vrena-brand-deep);
   animation-delay: 160ms;
 }
 
@@ -7951,7 +7967,7 @@ body {
   bottom: 18%;
   width: 20px;
   height: 20px;
-  background: #00aeb3;
+  background: var(--vrena-brand-cyan);
   animation-delay: 320ms;
 }
 
@@ -7967,7 +7983,7 @@ body {
 
 @keyframes achievementPulse {
   0%, 100% { transform: scale(1); }
-  45% { transform: scale(1.025); box-shadow: 0 18px 44px rgba(48, 89, 255, 0.22); }
+  45% { transform: scale(1.025); box-shadow: 0 18px 44px rgba(0, 109, 119, 0.22); }
 }
 
 @keyframes achievementGlitch {
@@ -8055,9 +8071,9 @@ body {
   .app .achievement-detail-sheet {
     border-color: rgba(255, 255, 255, 0.12);
     background:
-      radial-gradient(circle at 12% 0%, rgba(48, 89, 255, 0.18), transparent 34%),
+      radial-gradient(circle at 12% 0%, rgba(0, 109, 119, 0.18), transparent 34%),
       linear-gradient(180deg, #10191b 0%, #0c1517 100%);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
   }
 
@@ -8076,7 +8092,7 @@ body {
   .app .achievement-card-body strong,
   .app .achievement-detail-copy h3,
   .app .achievement-detail-list dd {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .achievement-rank-copy > span,
@@ -8102,12 +8118,12 @@ body {
   .app .retention-achievement-card {
     border-color: rgba(255, 255, 255, 0.12);
     background: #182225;
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .achievement-summary-progress-card {
     background:
-      radial-gradient(circle at 100% 0%, rgba(48, 89, 255, 0.16), transparent 42%),
+      radial-gradient(circle at 100% 0%, rgba(0, 109, 119, 0.16), transparent 42%),
       #182225;
   }
 
@@ -8132,13 +8148,13 @@ body {
 
   .app .achievement-filter-bar button.active {
     border-color: rgba(255, 255, 255, 0.18);
-    background: #f6f7f9;
+    background: var(--vrena-bg);
     color: #071112;
   }
 
   .app .achievement-rank-list-button {
     border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(48, 89, 255, 0.18);
+    background: rgba(0, 109, 119, 0.18);
     color: #dfe5ff;
   }
 
@@ -8149,8 +8165,8 @@ body {
   }
 
   .app .achievement-rank-list span.active {
-    border-color: rgba(48, 89, 255, 0.36);
-    background: rgba(48, 89, 255, 0.18);
+    border-color: rgba(0, 109, 119, 0.36);
+    background: rgba(0, 109, 119, 0.18);
     color: #dfe5ff;
   }
 
@@ -8165,7 +8181,7 @@ body {
   }
 
   .app .achievement-chart svg {
-    background: linear-gradient(180deg, rgba(48, 89, 255, 0.16), rgba(0, 174, 179, 0.08));
+    background: linear-gradient(180deg, rgba(0, 109, 119, 0.16), rgba(0, 174, 179, 0.08));
   }
 
   .app .achievement-detail-list div {
@@ -8180,7 +8196,7 @@ body {
 
   .app .achievement-secret {
     background:
-      repeating-linear-gradient(90deg, rgba(48, 89, 255, 0.12) 0 8px, transparent 8px 16px),
+      repeating-linear-gradient(90deg, rgba(0, 109, 119, 0.12) 0 8px, transparent 8px 16px),
       linear-gradient(180deg, #182225, #10191b);
   }
 
@@ -8191,7 +8207,7 @@ body {
   }
 
   .app .retention-achievement-copy strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .retention-achievement-copy small {
@@ -8418,7 +8434,7 @@ body {
   }
 
   .app .profile-mobile-contact a {
-    color: #3059ff;
+    color: var(--vrena-brand-deep);
     text-decoration: none;
     overflow-wrap: anywhere;
   }
@@ -8610,7 +8626,7 @@ body {
     place-items: center;
     width: 46px;
     height: 46px;
-    border: 1px solid rgba(48, 89, 255, 0.2);
+    border: 1px solid rgba(0, 109, 119, 0.2);
     border-radius: 999px;
     background: #ffffff;
     box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
@@ -8826,7 +8842,7 @@ body {
     min-height: 26px;
     padding: 2px 8px;
     border-radius: 999px;
-    background: #f0f4f6;
+    background: var(--vrena-surface-warm);
     font-size: 12px;
   }
 
@@ -9268,13 +9284,13 @@ body {
 @media (prefers-color-scheme: dark) {
   .app {
     background: #071112;
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-tab-categories button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
   }
 
@@ -9292,7 +9308,7 @@ body {
 
   .app .profile-toggle-field strong,
   .app .marketing-consent-field strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .profile-toggle-field small,
@@ -9303,7 +9319,7 @@ body {
   .app .club-hero,
   .app .club-banner-upload {
     background:
-      linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.2)), rgba(7, 17, 18, 0.4)),
+      linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.2)), rgba(7, 17, 18, 0.4)),
       #10191b;
     border-color: rgba(255, 255, 255, 0.14);
     color: #d7e1e4;
@@ -9311,7 +9327,7 @@ body {
 
   .app .club-banner-empty strong,
   .app .club-member-main strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .club-invite-box span,
@@ -9343,7 +9359,7 @@ body {
   .app .sessions-section .session {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .expanded-session {
@@ -9360,7 +9376,7 @@ body {
   }
 
   .app .sub-tabs button.active {
-    background: #f6f7f9;
+    background: var(--vrena-bg);
     color: #071112;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
   }
@@ -9371,7 +9387,7 @@ body {
   .app .calendar-day-header {
     background: #10191b;
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .calendar-day-column {
@@ -9414,14 +9430,14 @@ body {
   }
 
   .app .calendar-session-block {
-    background: linear-gradient(135deg, rgba(19, 201, 201, 0.24), rgba(48, 89, 255, 0.24)), #172224;
+    background: linear-gradient(135deg, rgba(19, 201, 201, 0.24), rgba(0, 109, 119, 0.24)), #172224;
     border-color: rgba(98, 211, 255, 0.28);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
   }
 
   .app .calendar-session-block.ticket {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(48, 89, 255, 0.2)), #172224;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(0, 109, 119, 0.2)), #172224;
     border-color: rgba(245, 158, 11, 0.32);
   }
 
@@ -9432,12 +9448,12 @@ body {
   .app .calendar-session-popover {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.14);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
   }
 
   .app .calendar-session-popover strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .calendar-session-popover span {
@@ -9463,7 +9479,7 @@ body {
 
   .app .current-rank-card,
   .app .leaderboard-row.current-user {
-    background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(48, 89, 255, 0.14)), #10191b;
+    background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(0, 109, 119, 0.14)), #10191b;
     border-color: rgba(98, 211, 255, 0.28);
   }
 
@@ -9562,12 +9578,12 @@ body {
   }
 
   .app .ticket-explainer {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(48, 89, 255, 0.16)), #182225;
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(0, 109, 119, 0.16)), #182225;
     border-color: rgba(98, 211, 255, 0.22);
   }
 
   .app .ticket-explainer strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .ticket-explainer span {
@@ -9591,7 +9607,7 @@ body {
   }
 
   .app .tariff-payment-section h4 {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .tariff-payment-section a {
@@ -9608,12 +9624,12 @@ body {
   }
 
   .app .ticket-fast-path-summary {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(48, 89, 255, 0.16)), #182225;
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(0, 109, 119, 0.16)), #182225;
     border-color: rgba(255, 255, 255, 0.12);
   }
 
   .app .ticket-fast-path-summary strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .ticket-fast-path-summary span,
@@ -9627,13 +9643,13 @@ body {
 
   .app .guest-ticket-copy strong,
   .app .guest-ticket-contact label span {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .guest-ticket-country-button,
@@ -9641,11 +9657,11 @@ body {
   .app .guest-ticket-country-menu input {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .guest-ticket-country-list button {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .guest-ticket-country-list button:hover,
@@ -9658,11 +9674,11 @@ body {
   }
 
   .app .ticket-service-card strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .ticket-service-card.active {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(48, 89, 255, 0.18)), #10191b;
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(0, 109, 119, 0.18)), #10191b;
     border-color: rgba(98, 211, 255, 0.28);
   }
 
@@ -9683,7 +9699,7 @@ body {
   }
 
   .app .ticket-loyalty-toggle {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .ticket-loyalty-toggle input {
@@ -9691,7 +9707,7 @@ body {
   }
 
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count, .app .message-translation-row {
@@ -9729,7 +9745,7 @@ body {
 
   .app .tab, .app .segmented button, .app button.secondary, .app .language-picker > button, .app .language-menu, .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .format-toolbar button, .app .country-button, .app .search-close, .app .mobile-search-toggle, .app .day-chip, .app .game-card, .app .editor-results button, .app .emoji-row button, .app .color-row button, .app .custom-color-row input, .app .invite-code button {
     background: #182225;
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     border-color: rgba(255, 255, 255, 0.14);
   }
 
@@ -9740,8 +9756,8 @@ body {
   }
 
   .app .language-menu button.active {
-    background: #f6f7f9;
-    border-color: #f6f7f9;
+    background: var(--vrena-bg);
+    border-color: var(--vrena-bg);
     color: #071112;
   }
 
@@ -9768,7 +9784,7 @@ body {
 
   .app .stat-card strong,
   .app .score-value {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .stat-subline {
@@ -9779,7 +9795,7 @@ body {
   .app .inline-score-input {
     background: #182225;
     border-color: rgba(255, 255, 255, 0.26);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .date-input-native {
@@ -9788,7 +9804,7 @@ body {
   }
 
   .app .date-input-display {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .date-input-display.placeholder {
@@ -9834,12 +9850,12 @@ body {
 
   .app .profile-chip:hover {
     background: #182225;
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     border-color: rgba(255, 255, 255, 0.24);
   }
 
   .app .profile-chip:hover span, .app .profile-chip:hover strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .tab.active, .app .segmented button.active, .app .notice, .app .row-meta span, .app .pill, .app .pending-member, .app .stats span, .app .match-card.completed {
@@ -9880,7 +9896,7 @@ body {
   }
 
   .app .match-player {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .match-player.winner {
@@ -9891,13 +9907,13 @@ body {
   .app .public-leaderboard {
     background:
       radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.18), transparent 34%),
-      radial-gradient(circle at 100% 100%, rgba(48, 89, 255, 0.18), transparent 38%),
+      radial-gradient(circle at 100% 100%, rgba(0, 109, 119, 0.18), transparent 38%),
       #10191b;
   }
 
   .app .public-leaderboard .podium-player {
     background: rgba(24, 34, 37, 0.92);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     border-color: rgba(255, 255, 255, 0.14);
     box-shadow: none;
   }
@@ -9921,7 +9937,7 @@ body {
 
   .app .tournament-settings-box {
     background:
-      linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(48, 89, 255, 0.12)),
+      linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(0, 109, 119, 0.12)),
       #10191b;
     border-color: rgba(75, 132, 255, 0.24);
   }
@@ -9936,7 +9952,7 @@ body {
 
   .app .modal-close {
     background: rgba(255, 255, 255, 0.08);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .modal-close:hover {
@@ -9968,7 +9984,7 @@ body {
     border: 0;
     border-radius: 12px;
     background: rgba(246, 247, 249, 0.11);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
   }
 
@@ -9983,28 +9999,28 @@ body {
   }
 
   .app .invite-code strong, .app h1, .app h2, .app h3, .app .profile-chip, .app .club-card, .app .game-card, .app .country-list button, .app .profile-photo-panel strong, .app .player-profile-panel h3, .app .modal-close {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 }
 
 /* Player-side refinement: quieter Apple-like surfaces without touching Staff Console. */
 .app {
-  --player-bg: #f6f7f9;
+  --player-bg: var(--vrena-bg);
   --player-text: #071112;
   --player-surface: rgba(255, 255, 255, 0.94);
   --player-surface-soft: rgba(246, 248, 250, 0.88);
   --player-surface-raised: #ffffff;
   --player-border: rgba(7, 17, 18, 0.09);
-  --player-border-strong: rgba(48, 89, 255, 0.22);
+  --player-border-strong: rgba(0, 109, 119, 0.22);
   --player-text-muted: #637075;
-  --player-field-bg: #f0f4f6;
+  --player-field-bg: var(--vrena-surface-warm);
   --player-field-bg-soft: #f8fafb;
   --player-field-panel: #ffffff;
   --player-field-border: rgba(7, 17, 18, 0.12);
   --player-field-border-strong: rgba(7, 17, 18, 0.16);
   --player-field-text: #071112;
   --player-field-placeholder: #8a9498;
-  --player-control-hover: #f0f4f6;
+  --player-control-hover: var(--vrena-surface-warm);
   --player-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --player-shadow: 0 10px 30px rgba(7, 17, 18, 0.06);
   --player-shadow-soft: 0 5px 16px rgba(7, 17, 18, 0.045);
@@ -10137,13 +10153,13 @@ body {
 }
 
 .app .compact-session-card-expanded {
-  border-color: rgba(48, 89, 255, 0.18);
+  border-color: rgba(0, 109, 119, 0.18);
   box-shadow: var(--player-shadow);
 }
 
 .app .session-highlighted .compact-session-card {
-  border-color: rgba(48, 89, 255, 0.48);
-  box-shadow: 0 0 0 3px rgba(48, 89, 255, 0.12), var(--player-shadow);
+  border-color: rgba(0, 109, 119, 0.48);
+  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12), var(--player-shadow);
 }
 
 .app .compact-session-image {
@@ -10191,9 +10207,9 @@ body {
 }
 
 .app .ticket-service-card.active {
-  border-color: rgba(48, 89, 255, 0.36);
+  border-color: rgba(0, 109, 119, 0.36);
   background: rgba(246, 249, 255, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(48, 89, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 109, 119, 0.08);
 }
 
 .app .ticket-service-card strong {
@@ -10230,9 +10246,9 @@ body {
 }
 
 .app .current-rank-card {
-  border-color: rgba(48, 89, 255, 0.18);
+  border-color: rgba(0, 109, 119, 0.18);
   border-radius: var(--player-radius);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.07), rgba(48, 89, 255, 0.09)), #ffffff;
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.07), rgba(0, 109, 119, 0.09)), #ffffff;
   box-shadow: var(--player-shadow-soft);
 }
 
@@ -10250,8 +10266,8 @@ body {
 }
 
 .app .leaderboard-row.current-user {
-  border-color: rgba(48, 89, 255, 0.32);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.075), rgba(48, 89, 255, 0.11)), #ffffff;
+  border-color: rgba(0, 109, 119, 0.32);
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.075), rgba(0, 109, 119, 0.11)), #ffffff;
 }
 
 .app .leaderboard-rank {
@@ -10311,7 +10327,7 @@ body {
 }
 
 .app .game-guide-link {
-  background: rgba(48, 89, 255, 0.06);
+  background: rgba(0, 109, 119, 0.06);
 }
 
 .app .player-profile-panel {
@@ -10349,7 +10365,7 @@ body {
 .app .score-context-card {
   border-color: rgba(0, 174, 179, 0.16);
   border-radius: var(--player-radius);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.05), rgba(48, 89, 255, 0.06)), #ffffff;
+  background: linear-gradient(135deg, rgba(0, 174, 179, 0.05), rgba(0, 109, 119, 0.06)), #ffffff;
 }
 
 @media (max-width: 760px) {
@@ -10420,7 +10436,7 @@ body {
 @media (prefers-color-scheme: dark) {
   .app {
     --player-bg: #071112;
-    --player-text: #f6f7f9;
+    --player-text: var(--vrena-bg);
     --player-surface: rgba(14, 23, 25, 0.94);
     --player-surface-soft: rgba(22, 34, 37, 0.9);
     --player-surface-raised: #10191b;
@@ -10432,7 +10448,7 @@ body {
     --player-field-panel: #10191b;
     --player-field-border: rgba(255, 255, 255, 0.1);
     --player-field-border-strong: rgba(255, 255, 255, 0.26);
-    --player-field-text: #f6f7f9;
+    --player-field-text: var(--vrena-bg);
     --player-field-placeholder: #88969b;
     --player-control-hover: rgba(98, 133, 255, 0.16);
     --player-control-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
@@ -10458,7 +10474,7 @@ body {
   .app .contact-channel {
     background: var(--player-surface-raised);
     border-color: var(--player-border);
-    color: #f6f7f9 !important;
+    color: var(--vrena-bg) !important;
     box-shadow: var(--player-shadow-soft);
   }
 
@@ -10475,7 +10491,7 @@ body {
   .app .current-rank-card,
   .app .score-context-card,
   .app .ticket-service-card.active {
-    background: linear-gradient(135deg, rgba(0, 174, 179, 0.11), rgba(48, 89, 255, 0.12)), #10191b;
+    background: linear-gradient(135deg, rgba(0, 174, 179, 0.11), rgba(0, 109, 119, 0.12)), #10191b;
   }
 
   .app .section:not(.staff-console) input,
@@ -10535,7 +10551,7 @@ body {
   }
 
   .app .profile-account-form .country-phone-field .country-list button {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .profile-account-form .country-phone-field .country-list button:hover,
@@ -10599,13 +10615,13 @@ body {
   .app .profile-auth-section .auth-email-review {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
     box-shadow: none;
   }
 
   .app .profile-account-form .profile-account-hero {
     background:
-      linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(48, 89, 255, 0.12)),
+      linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(0, 109, 119, 0.12)),
       var(--player-surface-raised);
   }
 
@@ -10619,7 +10635,7 @@ body {
   .app .marketing-consent-field strong,
   .app .mfa-security-copy strong,
   .app .mfa-panel-copy strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .profile-identity-copy > span,
@@ -10661,12 +10677,12 @@ body {
   .app .profile-auth-section .auth-method-stack .secondary.create-button {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .profile-security-panel .link-button:hover,
   .app .profile-security-panel .link-button:focus-visible {
-    background: rgba(48, 89, 255, 0.18);
+    background: rgba(0, 109, 119, 0.18);
     border-color: rgba(98, 133, 255, 0.36);
   }
 
@@ -10729,7 +10745,7 @@ body {
 }
 
 .app .sessions-section .session-retention-card {
-  --session-retention-accent: #3059ff;
+  --session-retention-accent: var(--vrena-brand-deep);
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
@@ -10858,7 +10874,7 @@ body {
   inset: 12px auto 12px -10px;
   width: 2px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #10b7b7, #3059ff);
+  background: linear-gradient(180deg, var(--vrena-brand-cyan), var(--vrena-brand-deep));
 }
 
 .app .sessions-section .ticket-session-visual {
@@ -10870,7 +10886,7 @@ body {
   border: 1px dashed color-mix(in srgb, #13a8d8 44%, var(--player-border));
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, #13a8d8 16%, var(--player-surface-soft)), color-mix(in srgb, #3059ff 10%, var(--player-surface)));
+    linear-gradient(135deg, color-mix(in srgb, #13a8d8 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-brand-deep) 10%, var(--player-surface)));
   color: #168db6;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 48%, transparent);
 }
@@ -10942,7 +10958,7 @@ body {
 .app .sessions-section .ticket-pill,
 .app .sessions-section .challenge-pill,
 .app .sessions-section .soft-opening-pill {
-  color: color-mix(in srgb, #3059ff 82%, var(--player-text-muted));
+  color: color-mix(in srgb, var(--vrena-brand-deep) 82%, var(--player-text-muted));
 }
 
 .app .sessions-section .compact-game-guide-link,
@@ -11034,7 +11050,7 @@ body {
 }
 
 .app .sessions-section .compact-expand:hover {
-  color: #3059ff !important;
+  color: var(--vrena-brand-deep) !important;
   transform: none;
 }
 
@@ -11378,13 +11394,13 @@ body {
 
 @media (prefers-color-scheme: dark) and (min-width: 961px) {
   .app .tab.active {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 }
 
 @media (prefers-color-scheme: dark) {
   .app .sessions-section .sub-tabs button.active {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 }
 
@@ -11544,7 +11560,7 @@ body {
   min-height: 36px;
   margin: 0;
   padding: 7px 12px;
-  border: 1px solid rgba(48, 89, 255, 0.22) !important;
+  border: 1px solid rgba(0, 109, 119, 0.22) !important;
   border-radius: 12px !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -11616,7 +11632,7 @@ body {
   padding: 14px;
   border-bottom: 1px solid var(--player-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--player-surface) 86%, var(--club-theme-faint, rgba(48, 89, 255, 0.07)));
+  background: color-mix(in srgb, var(--player-surface) 86%, var(--club-theme-faint, rgba(0, 109, 119, 0.07)));
 }
 
 .app .clubs-section .club-create-copy {
@@ -11725,9 +11741,9 @@ body {
   gap: 13px;
   padding: 12px;
   border: 1px solid var(--player-border) !important;
-  border-left: 4px solid var(--club-theme, #3059ff) !important;
+  border-left: 4px solid var(--club-theme, var(--vrena-brand-deep)) !important;
   border-radius: 8px !important;
-  background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, rgba(48, 89, 255, 0.07))) !important;
+  background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, rgba(0, 109, 119, 0.07))) !important;
   box-shadow: 0 8px 24px rgba(7, 17, 18, 0.055) !important;
 }
 
@@ -11740,7 +11756,7 @@ body {
   justify-content: flex-end;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(48, 89, 255, 0.14)), rgba(112, 223, 255, 0.18)),
+    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), rgba(112, 223, 255, 0.18)),
     linear-gradient(90deg, rgba(255, 255, 255, 0.65), transparent);
 }
 
@@ -11750,7 +11766,7 @@ body {
   inset: auto 12px 12px 12px;
   height: 3px;
   border-radius: 999px;
-  background: var(--club-theme, #3059ff);
+  background: var(--club-theme, var(--vrena-brand-deep));
   opacity: 0.7;
 }
 
@@ -11821,7 +11837,7 @@ body {
 }
 
 .app .clubs-section .club-card-signal svg {
-  color: var(--club-theme, #3059ff);
+  color: var(--club-theme, var(--vrena-brand-deep));
 }
 
 .app .clubs-section .club-card-signal span {
@@ -12112,7 +12128,7 @@ body {
   .app .profile-account-section-unframed .profile-sub-tabs button.active,
   .app .clubs-section .form-segmented button.active,
   .app .create-session-section .create-session-mode-toggle button.active {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .clubs-section .club-create-panel,
@@ -12126,7 +12142,7 @@ body {
   .app .clubs-section .club-card-main h3,
   .app .clubs-section .club-card-signal,
   .app .clubs-section .club-card-signal strong {
-    color: #f6f7f9;
+    color: var(--vrena-bg);
   }
 
   .app .clubs-section .club-card-signal {
@@ -12148,7 +12164,7 @@ body {
 
   .app .profile-completion-card {
     border-color: rgba(98, 211, 255, 0.22) !important;
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(48, 89, 255, 0.16)) !important;
+    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(0, 109, 119, 0.16)) !important;
   }
 
   .app .ticket-account-value-note {
