@@ -333,8 +333,8 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 <span className={session.session_type === 'tournament' ? 'pill private session-kind-pill session-kind-tournament' : 'pill ok session-kind-pill session-kind-normal'}>
                   {session.session_type === 'tournament' ? text.tournament : text.normalGame}
                 </span>
-                <span className={session.visibility === 'private' ? 'pill private session-visibility-pill' : 'pill ok session-visibility-pill'}>
-                  {session.visibility === 'private' ? text.private : text.public}
+                <span className={session.visibility === 'private' ? 'pill private session-visibility-pill session-visibility-private' : 'pill ok session-visibility-pill session-visibility-open'}>
+                  {session.visibility === 'private' ? text.private : text.sessionOpen}
                 </span>
                 {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
                 {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}

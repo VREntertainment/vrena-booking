@@ -256,6 +256,7 @@ export const ko = {
   allDays: '전체',
   private: '비공개',
   public: '공개',
+  sessionOpen: '오픈',
   host: '호스트',
   privateCode: '비공개 코드',
   copy: '복사',

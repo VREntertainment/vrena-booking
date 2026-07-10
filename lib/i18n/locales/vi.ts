@@ -256,6 +256,7 @@ export const vi = {
   allDays: 'Tất cả',
   private: 'Riêng',
   public: 'Mở',
+  sessionOpen: 'Mở',
   host: 'Chủ phiên',
   privateCode: 'Mã riêng tư',
   copy: 'Chép',

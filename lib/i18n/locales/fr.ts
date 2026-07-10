@@ -256,6 +256,7 @@ export const fr = {
   allDays: 'Tous',
   private: 'Privée',
   public: 'Public',
+  sessionOpen: 'Ouverte',
   host: 'Hôte',
   privateCode: 'Code privé',
   copy: 'Copier',
