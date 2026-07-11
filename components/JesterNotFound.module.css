@@ -1,0 +1,663 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 34px clamp(18px, 4vw, 56px) 42px;
+  background:
+    radial-gradient(circle at 17% 19%, rgb(var(--vrena-cyan-500-rgb) / 0.16), transparent 26vw),
+    radial-gradient(circle at 83% 18%, rgb(var(--vrena-orange-500-rgb) / 0.16), transparent 27vw),
+    linear-gradient(180deg, var(--vrena-neutral-50), var(--vrena-white) 48%, var(--vrena-neutral-100));
+  color: var(--vrena-neutral-950);
+  font-family: var(--font-geist-sans), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.gridBackdrop {
+  position: absolute;
+  inset: 96px -4vw 0;
+  z-index: -3;
+  opacity: 0.74;
+  background-image:
+    linear-gradient(rgb(var(--vrena-neutral-950-rgb) / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--vrena-neutral-950-rgb) / 0.055) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse at 50% 28%, #000 12%, transparent 68%);
+  transform: perspective(620px) rotateX(60deg) translateY(-42px);
+  transform-origin: top center;
+}
+
+.sparkField {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.sparkField span {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  opacity: 0.78;
+  box-shadow: 0 0 22px currentColor;
+}
+
+.sparkOne {
+  top: 22%;
+  left: 23%;
+  color: var(--vrena-cyan-500);
+  background: currentColor;
+  animation: driftSpark 7s ease-in-out infinite;
+}
+
+.sparkTwo {
+  top: 31%;
+  right: 23%;
+  color: var(--vrena-orange-500);
+  background: currentColor;
+  animation: driftSpark 8s ease-in-out 800ms infinite reverse;
+}
+
+.sparkThree {
+  right: 34%;
+  bottom: 22%;
+  color: var(--vrena-yellow-500);
+  background: currentColor;
+  animation: driftSpark 6.5s ease-in-out 400ms infinite;
+}
+
+.sparkFour {
+  bottom: 34%;
+  left: 32%;
+  color: var(--vrena-purple-500);
+  background: currentColor;
+  animation: driftSpark 9s ease-in-out 1200ms infinite reverse;
+}
+
+.header {
+  position: relative;
+  z-index: 2;
+  align-self: start;
+}
+
+.logoLink {
+  display: inline-flex;
+  width: 176px;
+  max-width: min(176px, 48vw);
+  line-height: 0;
+}
+
+.logoLink img,
+.logoLink .logoLight {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.logoLink .logoDark {
+  display: none;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  width: min(900px, 100%);
+  align-self: center;
+  justify-self: center;
+  justify-items: center;
+  padding: clamp(28px, 5vw, 56px);
+  text-align: center;
+}
+
+.portalWrap {
+  position: absolute;
+  top: clamp(8px, 2vw, 18px);
+  left: 50%;
+  z-index: -1;
+  width: min(500px, 76vw);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  opacity: 0.78;
+}
+
+.portalRing,
+.portalCore {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.portalRing {
+  background:
+    conic-gradient(from 70deg, var(--vrena-cyan-500), var(--vrena-purple-500), var(--vrena-orange-500), var(--vrena-yellow-500), var(--vrena-cyan-500));
+  filter: drop-shadow(0 18px 44px rgb(var(--vrena-cyan-500-rgb) / 0.18));
+  mask-image: radial-gradient(circle, transparent 0 55%, #000 56% 64%, transparent 65%);
+  animation: portalSpin 18s linear infinite;
+}
+
+.portalCore {
+  inset: 19%;
+  background:
+    radial-gradient(circle, rgb(var(--vrena-white-rgb) / 0.7) 0 26%, transparent 27%),
+    repeating-conic-gradient(from 15deg, rgb(var(--vrena-neutral-950-rgb) / 0.05) 0 10deg, transparent 10deg 24deg);
+  opacity: 0.62;
+  animation: portalPulse 3.6s ease-in-out infinite;
+}
+
+.errorCode {
+  margin: 32px 0 0;
+  background: linear-gradient(112deg, var(--vrena-cyan-500) 3%, var(--vrena-purple-500) 48%, var(--vrena-orange-600) 82%, var(--vrena-yellow-500));
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(94px, 16vw, 208px);
+  font-weight: 950;
+  line-height: 0.84;
+  letter-spacing: 0;
+  text-shadow: 0 18px 40px rgb(var(--vrena-neutral-950-rgb) / 0.08);
+}
+
+.title {
+  margin: clamp(16px, 2vw, 24px) 0 0;
+  color: var(--vrena-neutral-950);
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 900;
+  line-height: 1.03;
+  letter-spacing: 0;
+}
+
+.copy {
+  width: min(620px, 100%);
+  margin: 14px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: clamp(16px, 2vw, 18px);
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.gameShell {
+  display: grid;
+  width: min(720px, 100%);
+  gap: 18px;
+  margin-top: clamp(26px, 4vw, 42px);
+}
+
+.gameHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgb(var(--vrena-neutral-950-rgb) / 0.1);
+  padding-bottom: 10px;
+  text-align: left;
+}
+
+.gameHeader h2,
+.gameHeader span,
+.countdownBlock span,
+.countdownBlock strong,
+.glitchLabel,
+.glitchHint {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.gameHeader h2 {
+  color: var(--vrena-neutral-950);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.gameHeader span {
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.glitchTile {
+  --tile-accent: var(--vrena-cyan-500);
+  position: relative;
+  display: grid;
+  min-height: 132px;
+  place-items: center;
+  gap: 7px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tile-accent) 34%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgb(var(--vrena-white-rgb) / 0.94), rgb(var(--vrena-white-rgb) / 0.72)),
+    radial-gradient(circle at 50% 0, color-mix(in srgb, var(--tile-accent) 20%, transparent), transparent 62%);
+  box-shadow:
+    0 14px 32px rgb(var(--vrena-neutral-950-rgb) / 0.08),
+    inset 0 1px 0 rgb(var(--vrena-white-rgb) / 0.9);
+  color: var(--vrena-neutral-950);
+  cursor: pointer;
+  font: inherit;
+  padding: 18px 10px;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.glitchTile[data-tone="1"] {
+  --tile-accent: var(--vrena-purple-500);
+}
+
+.glitchTile[data-tone="2"] {
+  --tile-accent: var(--vrena-orange-500);
+}
+
+.glitchTile[data-tone="3"] {
+  --tile-accent: var(--vrena-yellow-500);
+}
+
+.glitchTile::before,
+.glitchTile::after {
+  position: absolute;
+  inset: auto 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  content: "";
+  opacity: 0.72;
+  transform: translateX(-18px);
+}
+
+.glitchTile::before {
+  top: 28px;
+  width: 34px;
+}
+
+.glitchTile::after {
+  right: 20px;
+  bottom: 30px;
+  left: auto;
+  width: 44px;
+  transform: translateX(18px);
+}
+
+.glitchTile:hover:not(:disabled),
+.glitchTile:focus-visible:not(:disabled) {
+  border-color: color-mix(in srgb, var(--tile-accent) 78%, transparent);
+  box-shadow:
+    0 18px 40px color-mix(in srgb, var(--tile-accent) 22%, transparent),
+    inset 0 1px 0 rgb(var(--vrena-white-rgb) / 0.95);
+  outline: none;
+  transform: translateY(-5px) rotate(-0.6deg);
+}
+
+.glitchTile:active:not(:disabled) {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.glitchTile[data-caught="true"] {
+  border-color: rgb(var(--vrena-green-600-rgb) / 0.44);
+  background:
+    linear-gradient(180deg, rgb(var(--vrena-green-50-rgb, 244 254 246) / 0.96), rgb(var(--vrena-white-rgb) / 0.86)),
+    radial-gradient(circle at 50% 0, rgb(var(--vrena-green-500-rgb) / 0.2), transparent 60%);
+  color: var(--vrena-green-800);
+  cursor: default;
+}
+
+.glitchTile:disabled {
+  opacity: 0.86;
+}
+
+.glitchIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tile-accent) 12%, var(--vrena-white));
+  color: var(--tile-accent);
+}
+
+.glitchLabel {
+  display: block;
+  color: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.glitchHint {
+  display: block;
+  max-width: 132px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.progressRow {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.progressDot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(var(--vrena-neutral-950-rgb) / 0.26);
+  border-radius: 999px;
+  background: var(--vrena-white);
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.progressDot[data-active="true"] {
+  border-color: var(--vrena-green-600);
+  background: var(--vrena-green-500);
+  transform: scale(1.08);
+}
+
+.returnDock {
+  display: grid;
+  grid-template-columns: minmax(144px, auto) minmax(180px, auto);
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(24px, 4vw, 38px);
+}
+
+.countdownBlock {
+  display: grid;
+  min-height: 70px;
+  place-items: center;
+  border: 1px solid rgb(var(--vrena-neutral-950-rgb) / 0.1);
+  border-radius: 8px;
+  background: rgb(var(--vrena-white-rgb) / 0.72);
+  box-shadow: inset 0 1px 0 rgb(var(--vrena-white-rgb) / 0.92);
+  padding: 9px 22px;
+}
+
+.countdownBlock span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.countdownBlock strong {
+  color: var(--vrena-neutral-950);
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.returnDock[data-ready="true"] .countdownBlock {
+  border-color: rgb(var(--vrena-orange-500-rgb) / 0.42);
+  box-shadow:
+    0 14px 30px rgb(var(--vrena-orange-500-rgb) / 0.12),
+    inset 0 1px 0 rgb(var(--vrena-white-rgb) / 0.94);
+}
+
+.homeButton {
+  display: inline-flex;
+  min-height: 70px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--vrena-orange-600), var(--vrena-yellow-500));
+  box-shadow: 0 16px 34px rgb(var(--vrena-orange-600-rgb) / 0.24);
+  color: var(--vrena-neutral-950);
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1;
+  padding: 0 30px;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.homeButton:hover,
+.homeButton:focus-visible {
+  box-shadow: 0 18px 42px rgb(var(--vrena-orange-600-rgb) / 0.32);
+  outline: none;
+  transform: translateY(-3px);
+}
+
+@keyframes portalSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes portalPulse {
+  0%, 100% {
+    opacity: 0.46;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 0.74;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes driftSpark {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  50% {
+    transform: translate3d(16px, -12px, 0) rotate(18deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .page {
+    background:
+      radial-gradient(circle at 14% 17%, rgb(var(--vrena-cyan-500-rgb) / 0.14), transparent 28vw),
+      radial-gradient(circle at 86% 18%, rgb(var(--vrena-orange-500-rgb) / 0.18), transparent 30vw),
+      linear-gradient(180deg, var(--vrena-neutral-950), var(--vrena-neutral-900) 54%, #061111);
+    color: var(--vrena-neutral-50);
+  }
+
+  .gridBackdrop {
+    opacity: 0.45;
+    background-image:
+      linear-gradient(rgb(var(--vrena-neutral-50-rgb) / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--vrena-neutral-50-rgb) / 0.08) 1px, transparent 1px);
+  }
+
+  .logoLink .logoLight {
+    display: none;
+  }
+
+  .logoLink .logoDark {
+    display: block;
+  }
+
+  .portalCore {
+    background:
+      radial-gradient(circle, rgb(var(--vrena-neutral-950-rgb) / 0.62) 0 24%, transparent 25%),
+      repeating-conic-gradient(from 15deg, rgb(var(--vrena-neutral-50-rgb) / 0.08) 0 10deg, transparent 10deg 24deg);
+  }
+
+  .title,
+  .gameHeader h2,
+  .countdownBlock strong {
+    color: var(--vrena-neutral-50);
+  }
+
+  .copy,
+  .gameHeader span,
+  .glitchHint,
+  .countdownBlock span {
+    color: var(--vrena-neutral-300);
+  }
+
+  .gameHeader {
+    border-bottom-color: rgb(var(--vrena-neutral-50-rgb) / 0.14);
+  }
+
+  .glitchTile {
+    background:
+      linear-gradient(180deg, rgb(var(--vrena-neutral-900-rgb, 11 23 23) / 0.94), rgb(var(--vrena-neutral-950-rgb) / 0.74)),
+      radial-gradient(circle at 50% 0, color-mix(in srgb, var(--tile-accent) 24%, transparent), transparent 64%);
+    box-shadow:
+      0 16px 36px rgb(0 0 0 / 0.24),
+      inset 0 1px 0 rgb(var(--vrena-neutral-50-rgb) / 0.08);
+    color: var(--vrena-neutral-50);
+  }
+
+  .glitchTile[data-caught="true"] {
+    background:
+      linear-gradient(180deg, rgb(var(--vrena-green-950-rgb, 13 79 52) / 0.64), rgb(var(--vrena-neutral-950-rgb) / 0.82)),
+      radial-gradient(circle at 50% 0, rgb(var(--vrena-green-500-rgb) / 0.18), transparent 60%);
+    color: var(--vrena-green-300);
+  }
+
+  .glitchIcon {
+    background: color-mix(in srgb, var(--tile-accent) 16%, var(--vrena-neutral-950));
+  }
+
+  .progressDot {
+    border-color: rgb(var(--vrena-neutral-50-rgb) / 0.32);
+    background: var(--vrena-neutral-950);
+  }
+
+  .countdownBlock {
+    border-color: rgb(var(--vrena-neutral-50-rgb) / 0.13);
+    background: rgb(var(--vrena-neutral-950-rgb) / 0.56);
+    box-shadow: inset 0 1px 0 rgb(var(--vrena-neutral-50-rgb) / 0.08);
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    min-height: 100svh;
+    padding: 24px 16px 30px;
+  }
+
+  .logoLink {
+    width: 142px;
+  }
+
+  .stage {
+    padding: 18px 0 0;
+  }
+
+  .portalWrap {
+    top: 12px;
+    width: min(318px, 84vw);
+    opacity: 0.5;
+  }
+
+  .errorCode {
+    margin-top: 18px;
+  }
+
+  .copy {
+    max-width: 36ch;
+    margin-top: 10px;
+  }
+
+  .gameHeader {
+    align-items: start;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .tileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .glitchTile {
+    min-height: 108px;
+  }
+
+  .returnDock {
+    width: 100%;
+    margin-top: 16px;
+    grid-template-columns: 1fr;
+  }
+
+  .homeButton,
+  .countdownBlock {
+    min-height: 58px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding-top: 18px;
+    padding-bottom: 22px;
+  }
+
+  .portalWrap {
+    width: min(286px, 76vw);
+  }
+
+  .errorCode {
+    margin-top: 10px;
+    font-size: clamp(72px, 22vw, 96px);
+  }
+
+  .title {
+    margin-top: 10px;
+    font-size: clamp(26px, 8.4vw, 32px);
+  }
+
+  .copy {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.38;
+  }
+
+  .gameShell {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .tileGrid {
+    gap: 10px;
+  }
+
+  .glitchTile {
+    min-height: 92px;
+    padding: 12px 8px;
+  }
+
+  .glitchIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .returnDock {
+    margin-top: 12px;
+  }
+
+  .homeButton,
+  .countdownBlock {
+    min-height: 54px;
+  }
+
+  .glitchHint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portalRing,
+  .portalCore,
+  .sparkField span {
+    animation: none;
+  }
+
+  .glitchTile,
+  .homeButton,
+  .progressDot {
+    transition: none;
+  }
+}
