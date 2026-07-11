@@ -67,6 +67,11 @@ type BookingWidgetProps = {
   restoreStoredView?: boolean
 }
 
+type ActionToast = {
+  id: number
+  message: string
+}
+
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'staff']
 
@@ -166,6 +171,8 @@ export default function WidgetPage({
   const [avatarTextColor, setAvatarTextColor] = useState(avatarTextColors[0])
   const [avatarTextColorDraft, setAvatarTextColorDraft] = useState(avatarTextColors[0])
   const [profileStatus, setProfileStatus] = useState('')
+  const [actionToast, setActionToast] = useState<ActionToast | null>(null)
+  const actionToastTimerRef = useRef<number | null>(null)
   const [isProfileAuthLoading, setIsProfileAuthLoading] = useState(true)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
@@ -729,11 +736,34 @@ export default function WidgetPage({
     )
   }
 
+  const showActionToast = useCallback((message: string) => {
+    const cleanMessage = message.trim()
+    if (!cleanMessage) return
+
+    if (actionToastTimerRef.current !== null) {
+      window.clearTimeout(actionToastTimerRef.current)
+    }
+
+    const id = Date.now()
+    setActionToast({ id, message: cleanMessage })
+    actionToastTimerRef.current = window.setTimeout(() => {
+      setActionToast((currentToast) => (currentToast?.id === id ? null : currentToast))
+      actionToastTimerRef.current = null
+    }, 2600)
+  }, [])
+
+  useEffect(() => () => {
+    if (actionToastTimerRef.current !== null) {
+      window.clearTimeout(actionToastTimerRef.current)
+    }
+  }, [])
+
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
 
     await navigator.clipboard?.writeText(inviteCode)
     setCopiedInviteId(sessionId)
+    showActionToast(text.copied)
     window.setTimeout(() => setCopiedInviteId((current) => (current === sessionId ? '' : current)), 1400)
   }
 
@@ -6292,6 +6322,7 @@ function handleSessionDateChange(value: string) {
     const currentMembership = clubMembers(club).find((member) => member.profile_id === userId)
     if (currentMembership) {
       setClubStatus(currentMembership.status === 'pending' ? text.requestSent : text.joinedClub)
+      showActionToast(currentMembership.status === 'pending' ? text.requestSent : text.joinedClub)
       return
     }
 
@@ -6324,12 +6355,14 @@ function handleSessionDateChange(value: string) {
       if (fallbackMembershipResult.data) {
         await loadClubs()
         setClubStatus(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
+        showActionToast(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
         setBusyClubId('')
         return
       }
     } else if (existingMembershipResult.data) {
       await loadClubs()
       setClubStatus(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
+      showActionToast(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
       setBusyClubId('')
       return
     }
@@ -6346,6 +6379,7 @@ function handleSessionDateChange(value: string) {
       if (isDuplicateClubMembershipError(error)) {
         await loadClubs()
         setClubStatus(desiredStatus === 'pending' ? text.requestSent : text.joinedClub)
+        showActionToast(desiredStatus === 'pending' ? text.requestSent : text.joinedClub)
       } else {
         setClubStatus(error.message)
       }
@@ -6355,6 +6389,7 @@ function handleSessionDateChange(value: string) {
 
     await loadClubs()
     setClubStatus(club.visibility === 'private' ? text.requestSent : text.joinedClub)
+    showActionToast(club.visibility === 'private' ? text.requestSent : text.joinedClub)
     setBusyClubId('')
   }
 
@@ -6722,6 +6757,7 @@ function handleSessionDateChange(value: string) {
     setProfileBirthday(data.birthday || '')
     setProfileGender(normalizeProfileGender(data.gender))
     setProfileStatus(text.profileSaved)
+    showActionToast(text.profileSaved)
     setIsSavingProfile(false)
   }
 
@@ -6897,6 +6933,7 @@ function handleSessionDateChange(value: string) {
 
     setTicketConfirmation(confirmation)
     showTicketStatus(text.ticketBookingCreated)
+    showActionToast(text.ticketBookingCreated)
     setTicketTime('')
     setTicketUseLoyaltyPoints(false)
     setTicketLoyaltyPointsToRedeem('')
@@ -7012,6 +7049,7 @@ function handleSessionDateChange(value: string) {
         ? `${text.privateCreated} ${inviteCode}`
         : text.sessionCreated
     )
+    showActionToast(sessionVisibility === 'private' ? text.privateCreated : text.sessionCreated)
 
     setSessionName('')
     setSessionNotes('')
@@ -7134,6 +7172,7 @@ function handleSessionDateChange(value: string) {
     await loadNetworkData()
     setBusySessionId('')
     setCreateStatus(text.joinedSession)
+    showActionToast(text.joinedSession)
     await prepareJoinedSessionReminders(session)
   }
 
@@ -9101,6 +9140,12 @@ function handleSessionDateChange(value: string) {
 
   const appOverlays = (
     <>
+      {actionToast && (
+        <div className="action-toast" role="status" aria-live="polite" aria-atomic="true" key={actionToast.id}>
+          {actionToast.message}
+        </div>
+      )}
+
       {loginPromptOpen && (
         <LoginPromptModal
           closeText={text.close}
