@@ -218,14 +218,61 @@
 }
 
 .tileGrid {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
+.tileGrid::before,
+.tileGrid::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.tileGrid::before {
+  inset: -18px -16px;
+  z-index: -1;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 50%, rgb(var(--vrena-cyan-500-rgb) / 0.16), transparent 20%),
+    radial-gradient(circle at 88% 50%, rgb(var(--vrena-yellow-500-rgb) / 0.16), transparent 20%),
+    linear-gradient(90deg, transparent, rgb(var(--vrena-purple-500-rgb) / 0.08), transparent);
+  opacity: 0.62;
+  animation: glitchRailBreathe 3600ms ease-in-out infinite;
+}
+
+.tileGrid::after {
+  top: 50%;
+  right: 4%;
+  left: 4%;
+  z-index: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--vrena-cyan-500), var(--vrena-purple-500), var(--vrena-orange-500), var(--vrena-yellow-500), transparent);
+  box-shadow: 0 0 22px rgb(var(--vrena-cyan-500-rgb) / 0.24);
+  opacity: 0.38;
+  transform: scaleX(0.62);
+  transform-origin: center;
+  animation: glitchSignalRun 2600ms ease-in-out infinite;
+}
+
+.tileGrid[data-complete="true"]::before {
+  animation: glitchRailComplete 900ms ease-out both;
+}
+
+.tileGrid[data-complete="true"]::after {
+  opacity: 0.86;
+  animation: glitchSignalComplete 900ms ease-out both;
+}
+
 .glitchTile {
   --tile-accent: var(--vrena-cyan-500);
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   display: grid;
   min-height: 132px;
   place-items: center;
@@ -244,6 +291,156 @@
   font: inherit;
   padding: 18px 10px;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.glitchAura,
+.glitchSweep,
+.glitchFragments,
+.glitchBurst {
+  position: absolute;
+  pointer-events: none;
+}
+
+.glitchAura {
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    conic-gradient(from 90deg, transparent, color-mix(in srgb, var(--tile-accent) 70%, transparent), transparent 34%, color-mix(in srgb, var(--tile-accent) 46%, transparent), transparent 72%),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--tile-accent) 20%, transparent), transparent 66%);
+  opacity: 0.36;
+  filter: blur(0.2px);
+  animation: tileAuraSpin 5200ms linear infinite;
+}
+
+.glitchSweep {
+  inset: -40% -72%;
+  z-index: 0;
+  background:
+    linear-gradient(112deg, transparent 37%, color-mix(in srgb, var(--tile-accent) 30%, transparent) 46%, rgb(var(--vrena-white-rgb) / 0.72) 50%, color-mix(in srgb, var(--tile-accent) 34%, transparent) 54%, transparent 63%);
+  opacity: 0.58;
+  transform: translateX(-46%) rotate(8deg);
+  animation: tileScanSweep 3000ms cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.glitchTile[data-tone="1"] .glitchSweep,
+.glitchTile[data-tone="1"] .glitchAura {
+  animation-delay: 160ms;
+}
+
+.glitchTile[data-tone="2"] .glitchSweep,
+.glitchTile[data-tone="2"] .glitchAura {
+  animation-delay: 320ms;
+}
+
+.glitchTile[data-tone="3"] .glitchSweep,
+.glitchTile[data-tone="3"] .glitchAura {
+  animation-delay: 480ms;
+}
+
+.glitchFragments {
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.glitchFragments span {
+  position: absolute;
+  width: 30px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  opacity: 0.68;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--tile-accent) 34%, transparent);
+  animation: fragmentTwitch 1700ms steps(2, end) infinite;
+}
+
+.glitchFragments span:nth-child(1) {
+  top: 23px;
+  left: 18px;
+}
+
+.glitchFragments span:nth-child(2) {
+  right: 24px;
+  bottom: 29px;
+  width: 42px;
+  animation-delay: 220ms;
+}
+
+.glitchFragments span:nth-child(3) {
+  top: 44%;
+  left: 50%;
+  width: 18px;
+  opacity: 0.36;
+  animation-delay: 420ms;
+}
+
+.glitchFragments span:nth-child(4) {
+  right: 17%;
+  top: 28%;
+  width: 12px;
+  opacity: 0.28;
+  animation-delay: 640ms;
+}
+
+.glitchBurst {
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 0;
+  height: 0;
+}
+
+.glitchBurst span {
+  --burst-x: 0px;
+  --burst-y: 0px;
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 3px;
+  background: var(--tile-accent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--tile-accent) 64%, transparent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+}
+
+.glitchBurst span:nth-child(1) {
+  --burst-x: -58px;
+  --burst-y: -42px;
+}
+
+.glitchBurst span:nth-child(2) {
+  --burst-x: 54px;
+  --burst-y: -38px;
+  width: 16px;
+  height: 4px;
+}
+
+.glitchBurst span:nth-child(3) {
+  --burst-x: -48px;
+  --burst-y: 34px;
+  width: 18px;
+  height: 4px;
+}
+
+.glitchBurst span:nth-child(4) {
+  --burst-x: 52px;
+  --burst-y: 38px;
+}
+
+.glitchBurst span:nth-child(5) {
+  --burst-x: 0px;
+  --burst-y: -58px;
+  width: 5px;
+  height: 18px;
+}
+
+.glitchBurst span:nth-child(6) {
+  --burst-x: 0px;
+  --burst-y: 56px;
+  width: 5px;
+  height: 18px;
 }
 
 .glitchTile[data-tone="1"] {
@@ -304,6 +501,44 @@
     radial-gradient(circle at 50% 0, rgb(var(--vrena-green-500-rgb) / 0.2), transparent 60%);
   color: var(--vrena-green-800);
   cursor: default;
+  animation: caughtTilePop 720ms cubic-bezier(0.2, 1, 0.2, 1) both;
+}
+
+.glitchTile[data-caught="true"] .glitchAura {
+  opacity: 0.72;
+  animation: caughtAuraFlash 780ms ease-out both;
+}
+
+.glitchTile[data-caught="true"] .glitchSweep {
+  animation: caughtSweepFlash 720ms ease-out both;
+}
+
+.glitchTile[data-caught="true"] .glitchFragments span {
+  animation: caughtFragmentExit 620ms ease-out both;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span {
+  animation: catchParticleBurst 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span:nth-child(2) {
+  animation-delay: 30ms;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span:nth-child(3) {
+  animation-delay: 50ms;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span:nth-child(4) {
+  animation-delay: 70ms;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span:nth-child(5) {
+  animation-delay: 90ms;
+}
+
+.glitchTile[data-caught="true"] .glitchBurst span:nth-child(6) {
+  animation-delay: 110ms;
 }
 
 .glitchTile:disabled {
@@ -311,6 +546,8 @@
 }
 
 .glitchIcon {
+  position: relative;
+  z-index: 2;
   display: grid;
   width: 46px;
   height: 46px;
@@ -321,6 +558,8 @@
 }
 
 .glitchLabel {
+  position: relative;
+  z-index: 2;
   display: block;
   color: inherit;
   font-size: 16px;
@@ -329,6 +568,8 @@
 }
 
 .glitchHint {
+  position: relative;
+  z-index: 2;
   display: block;
   max-width: 132px;
   color: var(--vrena-neutral-600);
@@ -344,6 +585,7 @@
 }
 
 .progressDot {
+  position: relative;
   display: block;
   width: 14px;
   height: 14px;
@@ -353,10 +595,24 @@
   transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
+.progressDot::after {
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgb(var(--vrena-green-500-rgb) / 0.72);
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
+  transform: scale(0.35);
+}
+
 .progressDot[data-active="true"] {
   border-color: var(--vrena-green-600);
   background: var(--vrena-green-500);
   transform: scale(1.08);
+}
+
+.progressDot[data-active="true"]::after {
+  animation: progressPing 820ms ease-out both;
 }
 
 .returnDock {
@@ -453,6 +709,202 @@
   }
 }
 
+@keyframes glitchRailBreathe {
+  0%, 100% {
+    opacity: 0.42;
+    transform: scaleX(0.96);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: scaleX(1.02);
+  }
+}
+
+@keyframes glitchRailComplete {
+  0% {
+    opacity: 0.56;
+    transform: scaleX(0.98);
+  }
+
+  45% {
+    opacity: 0.96;
+    transform: scaleX(1.05);
+  }
+
+  100% {
+    opacity: 0.64;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes glitchSignalRun {
+  0%, 100% {
+    filter: hue-rotate(0deg);
+    transform: scaleX(0.58);
+  }
+
+  42% {
+    filter: hue-rotate(18deg);
+    transform: scaleX(0.88);
+  }
+
+  58% {
+    transform: scaleX(0.68);
+  }
+}
+
+@keyframes glitchSignalComplete {
+  0% {
+    filter: brightness(1);
+    transform: scaleX(0.62);
+  }
+
+  40% {
+    filter: brightness(1.45);
+    transform: scaleX(1);
+  }
+
+  100% {
+    filter: brightness(1.1);
+    transform: scaleX(0.92);
+  }
+}
+
+@keyframes tileAuraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tileScanSweep {
+  0%, 18% {
+    opacity: 0;
+    transform: translateX(-50%) rotate(8deg);
+  }
+
+  33%, 44% {
+    opacity: 0.62;
+  }
+
+  68%, 100% {
+    opacity: 0;
+    transform: translateX(50%) rotate(8deg);
+  }
+}
+
+@keyframes fragmentTwitch {
+  0%, 100% {
+    opacity: 0.16;
+    transform: translate3d(0, 0, 0) scaleX(0.7);
+  }
+
+  18% {
+    opacity: 0.74;
+    transform: translate3d(11px, -1px, 0) scaleX(1);
+  }
+
+  38% {
+    opacity: 0.22;
+    transform: translate3d(-7px, 1px, 0) scaleX(0.52);
+  }
+
+  54% {
+    opacity: 0.82;
+    transform: translate3d(4px, 0, 0) scaleX(1.08);
+  }
+}
+
+@keyframes caughtTilePop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  36% {
+    transform: translateY(-9px) scale(1.035) rotate(0.8deg);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes caughtAuraFlash {
+  0% {
+    filter: blur(0) brightness(1);
+    opacity: 0.3;
+    transform: rotate(0deg) scale(1);
+  }
+
+  44% {
+    filter: blur(1px) brightness(1.5);
+    opacity: 0.92;
+    transform: rotate(90deg) scale(1.08);
+  }
+
+  100% {
+    filter: blur(0.2px) brightness(1);
+    opacity: 0.34;
+    transform: rotate(180deg) scale(1);
+  }
+}
+
+@keyframes caughtSweepFlash {
+  0% {
+    opacity: 0;
+    transform: translateX(-54%) rotate(8deg);
+  }
+
+  42% {
+    opacity: 0.86;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(48%) rotate(8deg);
+  }
+}
+
+@keyframes caughtFragmentExit {
+  0% {
+    opacity: 0.7;
+    transform: translate3d(0, 0, 0) scaleX(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(18px, -8px, 0) scaleX(0.12);
+  }
+}
+
+@keyframes catchParticleBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.26) rotate(0deg);
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(1) rotate(22deg);
+  }
+}
+
+@keyframes progressPing {
+  0% {
+    opacity: 0.92;
+    transform: scale(0.34);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.62);
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .page {
     background:
@@ -508,6 +960,18 @@
       0 16px 36px rgb(0 0 0 / 0.24),
       inset 0 1px 0 rgb(var(--vrena-neutral-50-rgb) / 0.08);
     color: var(--vrena-neutral-50);
+  }
+
+  .tileGrid::before {
+    background:
+      radial-gradient(circle at 12% 50%, rgb(var(--vrena-cyan-500-rgb) / 0.14), transparent 20%),
+      radial-gradient(circle at 88% 50%, rgb(var(--vrena-yellow-500-rgb) / 0.14), transparent 20%),
+      linear-gradient(90deg, transparent, rgb(var(--vrena-orange-500-rgb) / 0.08), transparent);
+  }
+
+  .glitchSweep {
+    background:
+      linear-gradient(112deg, transparent 37%, color-mix(in srgb, var(--tile-accent) 24%, transparent) 46%, rgb(var(--vrena-neutral-50-rgb) / 0.32) 50%, color-mix(in srgb, var(--tile-accent) 30%, transparent) 54%, transparent 63%);
   }
 
   .glitchTile[data-caught="true"] {
@@ -651,7 +1115,15 @@
 @media (prefers-reduced-motion: reduce) {
   .portalRing,
   .portalCore,
-  .sparkField span {
+  .sparkField span,
+  .tileGrid::before,
+  .tileGrid::after,
+  .glitchTile[data-caught="true"],
+  .glitchAura,
+  .glitchSweep,
+  .glitchFragments span,
+  .glitchBurst span,
+  .progressDot::after {
     animation: none;
   }
 
