@@ -134,9 +134,9 @@ export default function AppSidebar({
 
       <div className="shop-contact">
         <strong>VRena Vietnam</strong>
+        <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
         <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
         <ContactChannels label={text.contactUs} />
-        <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
       </div>
     </aside>
   )
