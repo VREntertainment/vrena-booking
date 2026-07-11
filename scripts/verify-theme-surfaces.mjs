@@ -3,7 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const root = new URL('..', import.meta.url)
-const css = await readFile(new URL('app/globals.css', root), 'utf8')
+const tokensCss = await readFile(new URL('styles/vrena-tokens.css', root), 'utf8')
+const globalsCss = await readFile(new URL('app/globals.css', root), 'utf8')
+const css = `${tokensCss}\n${globalsCss.replace(/^@import .*$/gm, '')}`
 const outputDir = process.env.THEME_AUDIT_OUTPUT_DIR || '/tmp/vrena-theme-audit'
 const baseUrl = process.env.THEME_AUDIT_BASE_URL || ''
 
@@ -24,6 +26,34 @@ const fixture = `<!doctype html>
   </head>
   <body>
     <div class="app">
+      <aside>
+        <a class="profile-chip" href="#">
+          <span class="avatar">P</span>
+          <span>
+            <strong>No profile yet</strong>
+            <span>Click to log in</span>
+          </span>
+        </a>
+        <div class="language-picker">
+          <button type="button">EN</button>
+          <div class="language-menu">
+            <button class="active" type="button">EN</button>
+          </div>
+        </div>
+        <nav class="tabs">
+          <a class="tab active" href="#">Sessions</a>
+          <a class="tab" href="#">Tickets</a>
+        </nav>
+        <div class="shop-contact">
+          <strong>VRena Vietnam</strong>
+          <a href="#">www.vre-vietnam.com</a>
+          <div class="contact-channel-buttons">
+            <a class="contact-channel whatsapp" href="#"><span>WhatsApp</span></a>
+            <a class="contact-channel zalo" href="#"><span>Zalo</span></a>
+          </div>
+        </div>
+      </aside>
+      <main>
       <section class="section profile-account-section profile-account-section-unframed">
         <form class="profile-form profile-account-form">
           <div class="profile-account-hero">
@@ -76,6 +106,22 @@ const fixture = `<!doctype html>
         <div class="rich-note-editor" contenteditable="true" data-placeholder="Notes"></div>
       </section>
       <section class="section sessions-section">
+        <article class="session">
+          <div class="compact-session-card">
+            <div class="compact-session-main">
+              <div class="compact-session-title-row">
+                <h3>Ladies VR Night</h3>
+                <span class="pill ok session-visibility-pill session-visibility-open">Open</span>
+                <span class="pill host-pill">Official VRena</span>
+              </div>
+              <div class="row-meta compact-meta">
+                <span>14 Jul</span>
+                <span>20:00</span>
+                <a class="game-guide-link compact-game-guide-link" href="#">Guide</a>
+              </div>
+            </div>
+          </div>
+        </article>
         <div class="session-retention-card">
           <div class="session-retention-card-icon">VR</div>
           <div class="session-retention-card-copy">
@@ -85,6 +131,7 @@ const fixture = `<!doctype html>
           <button class="session-retention-card-cta" type="button">Open</button>
         </div>
       </section>
+      </main>
     </div>
   </body>
 </html>`
@@ -101,10 +148,33 @@ async function auditFixture(page, theme, device) {
       '.profile-account-form .country-menu',
       '.profile-account-form input',
       '.profile-account-form .date-input-shell',
+      '.profile-account-form .date-input-display',
+      '.profile-account-form label',
+      '.profile-identity-copy strong',
+      '.profile-identity-copy > span',
+      '.profile-card-section-title',
+      '.profile-account-form .marketing-consent-field strong',
+      '.profile-account-form .marketing-consent-field small',
+      '.profile-chip',
+      '.profile-chip strong',
+      '.profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo)',
+      '.language-picker > button',
+      '.language-menu button.active',
       '.profile-security-panel',
       '.profile-security-panel .link-button',
+      '.tab.active',
+      '.shop-contact strong',
+      '.shop-contact a',
+      '.contact-channel',
+      '.contact-channel span',
       '.ticket-price-summary > div',
       '.rich-note-editor',
+      '.sessions-section .compact-session-title-row h3',
+      '.sessions-section .host-pill',
+      '.sessions-section .compact-game-guide-link',
+      '.sessions-section .session-retention-card',
+      '.sessions-section .session-retention-card-copy strong',
+      '.sessions-section .session-retention-card-copy span',
       '.session-retention-card-cta',
     ]
 
@@ -131,11 +201,20 @@ async function auditFixture(page, theme, device) {
           'rgb(240, 244, 246)',
         ].includes(item.background))
       : []
+    const darkInkLeaks = currentTheme === 'dark'
+      ? watched.filter((item) => [
+          'rgb(0, 0, 0)',
+          'rgb(2, 14, 14)',
+          'rgb(11, 23, 23)',
+          'rgb(27, 41, 41)',
+        ].includes(item.color))
+      : []
 
     return {
       viewport: { width: innerWidth, height: innerHeight },
       overflow: document.documentElement.scrollWidth > innerWidth,
       darkLightLeaks,
+      darkInkLeaks,
       watched,
     }
   }, theme)
@@ -147,7 +226,7 @@ async function auditFixture(page, theme, device) {
     name: `fixture:${device.name}:${theme}`,
     screenshot,
     ...result,
-    ok: !result.overflow && result.darkLightLeaks.length === 0,
+    ok: !result.overflow && result.darkLightLeaks.length === 0 && result.darkInkLeaks.length === 0,
   }
 }
 
@@ -217,6 +296,10 @@ const summary = {
     darkLightLeaks: failure.darkLightLeaks?.map((item) => ({
       selector: item.selector,
       background: item.background,
+    })),
+    darkInkLeaks: failure.darkInkLeaks?.map((item) => ({
+      selector: item.selector,
+      color: item.color,
     })),
     overlay: failure.overlay,
     bodyTextLength: failure.bodyTextLength,

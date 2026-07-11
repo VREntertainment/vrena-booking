@@ -155,6 +155,8 @@
   --vrena-secondary: var(--vrena-cyan-500);
   --vrena-secondary-hover: var(--vrena-cyan-600);
   --vrena-secondary-contrast: var(--vrena-neutral-950);
+  --vrena-accent-text: var(--vrena-cyan-700);
+  --vrena-accent-text-strong: var(--vrena-cyan-800);
 
   --vrena-success: var(--vrena-green-500);
   --vrena-info: var(--vrena-blue-500);
@@ -211,6 +213,8 @@
     --vrena-primary-contrast: var(--vrena-neutral-950);
     --vrena-secondary: var(--vrena-cyan-500);
     --vrena-secondary-hover: var(--vrena-cyan-400);
+    --vrena-accent-text: var(--vrena-orange-300);
+    --vrena-accent-text-strong: var(--vrena-orange-300);
 
     --vrena-brand-cyan: var(--vrena-orange-500);
     --vrena-brand-deep: var(--vrena-orange-600);
