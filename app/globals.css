@@ -508,7 +508,7 @@ body {
   margin-top: 8px;
   border: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 0;
   font-size: 12px;
   font-weight: 800;
@@ -532,7 +532,7 @@ body {
 }
 
 .app .share-button.copied {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .share-icon-button {
@@ -557,7 +557,7 @@ body {
 }
 
 .app .share-icon-button.copied {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .button-icon-text {
@@ -671,7 +671,7 @@ body {
 
 .app .profile-summary-pills svg {
   flex: 0 0 auto;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .profile-summary-text {
@@ -701,7 +701,7 @@ body {
 }
 
 .app .profile-card-section-title svg {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .profile-account-form .country-field,
@@ -886,7 +886,7 @@ body {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .mfa-enroll-panel,
@@ -1316,7 +1316,7 @@ body {
 
 .app .emoji-row button.active, .app .color-row button.active {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
-  border-color: var(--vrena-brand-deep);
+  border-color: var(--vrena-accent-text);
 }
 
 .app .emoji-row input, .app .avatar-options input {
@@ -1511,7 +1511,7 @@ body {
 }
 
 .app .shop-contact a {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
@@ -1793,7 +1793,7 @@ body {
 }
 
 .app .payment-grid .active {
-  border-color: var(--vrena-brand-deep);
+  border-color: var(--vrena-accent-text);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
 }
 
@@ -2492,7 +2492,7 @@ body {
 }
 
 .app .message-translation-status svg {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   flex: 0 0 auto;
 }
 
@@ -2501,7 +2501,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 0;
   box-shadow: none;
   font-size: 11px;
@@ -2989,7 +2989,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
   border-radius: 8px;
   background: var(--vrena-bg-soft);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 8px 11px;
   cursor: pointer;
   font-weight: 900;
@@ -3040,7 +3040,7 @@ body {
 }
 
 .app .tariff-payment-section a {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-weight: 900;
 }
 
@@ -3251,7 +3251,7 @@ body {
   border-color: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 14px;
   box-shadow: none;
 }
@@ -3801,7 +3801,7 @@ body {
 }
 
 .app .ticket-total-line strong {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 17px;
   line-height: 1.1;
 }
@@ -3957,7 +3957,7 @@ body {
 
 .app .host-pill {
   background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text-strong);
 }
 
 .app .hide-expanded-button {
@@ -4032,7 +4032,7 @@ body {
   min-height: auto;
   border: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 0;
   font-size: 12px;
   font-weight: 900;
@@ -4089,7 +4089,7 @@ body {
 }
 
 .app .rich-note-editor:focus {
-  border-color: var(--vrena-brand-deep);
+  border-color: var(--vrena-accent-text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
 }
 
@@ -4132,7 +4132,7 @@ body {
 .app .invite-code button.copied {
   border-color: color-mix(in srgb, var(--vrena-brand-deep) 30%, transparent);
   background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .invite-code.compact {
@@ -4154,7 +4154,7 @@ body {
 }
 
 .app .pill.ok {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .pill.private {
@@ -4202,7 +4202,7 @@ body {
 
 .app .player-name-line small {
   display: block;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 10px;
   font-weight: 900;
   line-height: 1.1;
@@ -4718,7 +4718,7 @@ body {
 }
 
 .app .queue-match span {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.03em;
@@ -4825,7 +4825,7 @@ body {
 .app .checkin-mini {
   border: 1px solid color-mix(in srgb, var(--vrena-brand-deep) 22%, transparent);
   background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 3px 5px;
   font-size: 10px;
   min-height: 24px;
@@ -5375,7 +5375,7 @@ body {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -5423,7 +5423,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 0;
   box-shadow: none;
   font-size: 12px;
@@ -5659,7 +5659,7 @@ body {
 }
 
 .app .consent-field a {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-weight: 800;
 }
 
@@ -5707,7 +5707,7 @@ body {
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -5884,7 +5884,7 @@ body {
 }
 
 .app .country-list span {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-weight: 800;
 }
 
@@ -6401,7 +6401,7 @@ body {
 }
 
 .app .profile-completion-head b {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 18px;
   line-height: 1;
 }
@@ -6717,7 +6717,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
   border-radius: 999px;
   background: var(--vrena-bg-soft);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 900;
@@ -7057,7 +7057,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 12px;
   font-weight: 950;
   line-height: 1;
@@ -7090,7 +7090,7 @@ body {
 .app .achievement-rank-list span.active {
   border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
   background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .achievement-rank-list strong {
@@ -7131,7 +7131,7 @@ body {
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
   border-radius: 16px;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
@@ -7154,7 +7154,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
   background: var(--vrena-white);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .achievement-summary-card strong {
@@ -7227,7 +7227,7 @@ body {
   padding: 4px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 11px;
   font-weight: 950;
 }
@@ -7262,13 +7262,13 @@ body {
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .achievement-reward-card {
   position: relative;
   overflow: hidden;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .achievement-reward-card.reward-unlocked {
@@ -7405,7 +7405,7 @@ body {
   padding: 5px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 12px;
   font-weight: 900;
 }
@@ -7521,7 +7521,7 @@ body {
   padding: 4px 7px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 11px;
   font-weight: 950;
   line-height: 1;
@@ -7559,7 +7559,7 @@ body {
 
 .app .achievement-rarity-pill.rarity-rare {
   background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
 }
 
 .app .achievement-rarity-pill.rarity-epic {
@@ -7786,7 +7786,7 @@ body {
 }
 
 .app .achievement-detail-copy > strong {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 15px;
 }
 
@@ -8053,7 +8053,7 @@ body {
     background:
       radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent), transparent 34%),
       linear-gradient(180deg, var(--vrena-neutral-900) 0%, var(--vrena-neutral-900) 100%);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
   }
 
@@ -8072,7 +8072,7 @@ body {
   .app .achievement-card-body strong,
   .app .achievement-detail-copy h3,
   .app .achievement-detail-list dd {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .achievement-rank-copy > span,
@@ -8098,7 +8098,7 @@ body {
   .app .retention-achievement-card {
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     background: var(--vrena-neutral-800);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .achievement-summary-progress-card {
@@ -8187,7 +8187,7 @@ body {
   }
 
   .app .retention-achievement-copy strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .retention-achievement-copy small {
@@ -8414,7 +8414,7 @@ body {
   }
 
   .app .profile-mobile-contact a {
-    color: var(--vrena-brand-deep);
+    color: var(--vrena-accent-text);
     text-decoration: none;
     overflow-wrap: anywhere;
   }
@@ -9264,13 +9264,13 @@ body {
 @media (prefers-color-scheme: dark) {
   .app {
     background: var(--vrena-neutral-950);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-tab-categories button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
     background: var(--vrena-neutral-900);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
   }
 
@@ -9288,7 +9288,7 @@ body {
 
   .app .profile-toggle-field strong,
   .app .marketing-consent-field strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .profile-toggle-field small,
@@ -9307,7 +9307,7 @@ body {
 
   .app .club-banner-empty strong,
   .app .club-member-main strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .club-invite-box span,
@@ -9339,7 +9339,7 @@ body {
   .app .sessions-section .session {
     background: var(--vrena-neutral-900);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .expanded-session {
@@ -9367,7 +9367,7 @@ body {
   .app .calendar-day-header {
     background: var(--vrena-neutral-900);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .calendar-day-column {
@@ -9412,7 +9412,7 @@ body {
   .app .calendar-session-block {
     background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 24%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent)), var(--vrena-neutral-800);
     border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-950) 32%, transparent);
   }
 
@@ -9428,12 +9428,12 @@ body {
   .app .calendar-session-popover {
     background: var(--vrena-neutral-800);
     border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: 0 18px 44px color-mix(in srgb, var(--vrena-neutral-950) 42%, transparent);
   }
 
   .app .calendar-session-popover strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .calendar-session-popover span {
@@ -9563,7 +9563,7 @@ body {
   }
 
   .app .ticket-explainer strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .ticket-explainer span {
@@ -9587,7 +9587,7 @@ body {
   }
 
   .app .tariff-payment-section h4 {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .tariff-payment-section a {
@@ -9609,7 +9609,7 @@ body {
   }
 
   .app .ticket-fast-path-summary strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .ticket-fast-path-summary span,
@@ -9623,13 +9623,13 @@ body {
 
   .app .guest-ticket-copy strong,
   .app .guest-ticket-contact label span {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
     background: var(--vrena-neutral-800);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .guest-ticket-country-button,
@@ -9637,11 +9637,11 @@ body {
   .app .guest-ticket-country-menu input {
     background: var(--vrena-neutral-800);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .guest-ticket-country-list button {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .guest-ticket-country-list button:hover,
@@ -9654,7 +9654,7 @@ body {
   }
 
   .app .ticket-service-card strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .ticket-service-card.active {
@@ -9679,7 +9679,7 @@ body {
   }
 
   .app .ticket-loyalty-toggle {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .ticket-loyalty-toggle input {
@@ -9687,7 +9687,7 @@ body {
   }
 
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count, .app .message-translation-row {
@@ -9725,7 +9725,7 @@ body {
 
   .app .tab, .app .segmented button, .app button.secondary, .app .language-picker > button, .app .language-menu, .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .format-toolbar button, .app .country-button, .app .search-close, .app .mobile-search-toggle, .app .day-chip, .app .game-card, .app .editor-results button, .app .emoji-row button, .app .color-row button, .app .custom-color-row input, .app .invite-code button {
     background: var(--vrena-neutral-800);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
@@ -9736,9 +9736,9 @@ body {
   }
 
   .app .language-menu button.active {
-    background: var(--vrena-bg);
-    border-color: var(--vrena-bg);
-    color: var(--vrena-neutral-950);
+    background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
+    border-color: var(--player-border);
+    color: var(--player-text);
   }
 
   .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .country-button {
@@ -9768,7 +9768,7 @@ body {
 
   .app .stat-card strong,
   .app .score-value {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .stat-subline {
@@ -9779,7 +9779,7 @@ body {
   .app .inline-score-input {
     background: var(--vrena-neutral-800);
     border-color: color-mix(in srgb, var(--vrena-white) 26%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .date-input-native {
@@ -9788,7 +9788,7 @@ body {
   }
 
   .app .date-input-display {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .date-input-display.placeholder {
@@ -9834,12 +9834,12 @@ body {
 
   .app .profile-chip:hover {
     background: var(--vrena-neutral-800);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     border-color: color-mix(in srgb, var(--vrena-white) 24%, transparent);
   }
 
   .app .profile-chip:hover span, .app .profile-chip:hover strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .tab.active, .app .segmented button.active, .app .notice, .app .row-meta span, .app .pill, .app .pending-member, .app .stats span, .app .match-card.completed {
@@ -9880,7 +9880,7 @@ body {
   }
 
   .app .match-player {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .match-player.winner {
@@ -9897,7 +9897,7 @@ body {
 
   .app .public-leaderboard .podium-player {
     background: color-mix(in srgb, var(--vrena-neutral-800) 92%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
     box-shadow: none;
   }
@@ -9936,7 +9936,7 @@ body {
 
   .app .modal-close {
     background: color-mix(in srgb, var(--vrena-white) 8%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .modal-close:hover {
@@ -9968,7 +9968,7 @@ body {
     border: 0;
     border-radius: 12px;
     background: color-mix(in srgb, var(--vrena-neutral-100) 11%, transparent);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: 0 5px 14px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
   }
 
@@ -9983,7 +9983,7 @@ body {
   }
 
   .app .invite-code strong, .app h1, .app h2, .app h3, .app .profile-chip, .app .club-card, .app .game-card, .app .country-list button, .app .profile-photo-panel strong, .app .player-profile-panel h3, .app .modal-close {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 }
 
@@ -10417,7 +10417,7 @@ body {
   .app .contact-channel {
     background: var(--player-surface-raised);
     border-color: var(--player-border);
-    color: var(--vrena-bg) !important;
+    color: var(--player-text) !important;
     box-shadow: var(--player-shadow-soft);
   }
 
@@ -10498,7 +10498,7 @@ body {
   }
 
   .app .profile-account-form .country-phone-field .country-list button {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .profile-account-form .country-phone-field .country-list button:hover,
@@ -10562,7 +10562,7 @@ body {
   .app .profile-auth-section .auth-email-review {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
-    color: var(--vrena-bg);
+    color: var(--player-text);
     box-shadow: none;
   }
 
@@ -10582,7 +10582,7 @@ body {
   .app .marketing-consent-field strong,
   .app .mfa-security-copy strong,
   .app .mfa-panel-copy strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .profile-identity-copy > span,
@@ -10624,7 +10624,7 @@ body {
   .app .profile-auth-section .auth-method-stack .secondary.create-button {
     background: var(--player-surface-soft);
     border-color: var(--player-border);
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .profile-security-panel .link-button:hover,
@@ -10895,7 +10895,7 @@ body {
 }
 
 .app .sessions-section .pill.ok {
-  color: color-mix(in srgb, var(--vrena-brand-deep) 78%, var(--player-text-muted));
+  color: color-mix(in srgb, var(--vrena-accent-text) 78%, var(--player-text-muted));
 }
 
 .app .sessions-section .pill.private {
@@ -10923,7 +10923,7 @@ body {
 .app .sessions-section .ticket-pill,
 .app .sessions-section .challenge-pill,
 .app .sessions-section .soft-opening-pill {
-  color: color-mix(in srgb, var(--vrena-brand-deep) 82%, var(--player-text-muted));
+  color: color-mix(in srgb, var(--vrena-accent-text) 82%, var(--player-text-muted));
 }
 
 .app .sessions-section .compact-game-guide-link,
@@ -10932,7 +10932,7 @@ body {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   font-size: 12px;
   font-weight: 850;
 }
@@ -10943,7 +10943,7 @@ body {
   border: 0 !important;
   border-radius: 0;
   background: transparent !important;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-accent-text);
   padding: 0;
   box-shadow: none !important;
 }
@@ -10970,7 +10970,7 @@ body {
 }
 
 .app .sessions-section .sub-tabs button.active {
-  border-bottom-color: var(--vrena-brand-deep) !important;
+  border-bottom-color: var(--vrena-accent-text) !important;
   color: var(--vrena-neutral-950);
 }
 
@@ -11021,7 +11021,7 @@ body {
 }
 
 .app .sessions-section .compact-expand:hover {
-  color: var(--vrena-brand-deep) !important;
+  color: var(--vrena-accent-text) !important;
   transform: none;
 }
 
@@ -11367,13 +11367,13 @@ body {
 
 @media (prefers-color-scheme: dark) and (min-width: 961px) {
   .app .tab.active {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 }
 
 @media (prefers-color-scheme: dark) {
   .app .sessions-section .sub-tabs button.active {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 }
 
@@ -11432,7 +11432,7 @@ body {
 .app .profile-account-section-unframed .profile-sub-tabs button.active,
 .app .clubs-section .form-segmented button.active,
 .app .create-session-section .create-session-mode-toggle button.active {
-  border-bottom-color: var(--vrena-brand-deep) !important;
+  border-bottom-color: var(--vrena-accent-text) !important;
   color: var(--vrena-neutral-950);
 }
 
@@ -12101,7 +12101,7 @@ body {
   .app .profile-account-section-unframed .profile-sub-tabs button.active,
   .app .clubs-section .form-segmented button.active,
   .app .create-session-section .create-session-mode-toggle button.active {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .clubs-section .club-create-panel,
@@ -12115,7 +12115,7 @@ body {
   .app .clubs-section .club-card-main h3,
   .app .clubs-section .club-card-signal,
   .app .clubs-section .club-card-signal strong {
-    color: var(--vrena-bg);
+    color: var(--player-text);
   }
 
   .app .clubs-section .club-card-signal {
@@ -12176,7 +12176,7 @@ body {
 
   .app {
     --player-bg: var(--vrena-neutral-950);
-    --player-text: var(--vrena-bg);
+    --player-text: var(--vrena-neutral-50);
     --player-surface: color-mix(in srgb, var(--vrena-neutral-900) 94%, transparent);
     --player-surface-soft: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
     --player-surface-raised: var(--vrena-neutral-900);
@@ -12188,7 +12188,7 @@ body {
     --player-field-panel: var(--vrena-neutral-900);
     --player-field-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
     --player-field-border-strong: color-mix(in srgb, var(--vrena-white) 26%, transparent);
-    --player-field-text: var(--vrena-bg);
+    --player-field-text: var(--vrena-neutral-50);
     --player-field-placeholder: var(--vrena-neutral-500);
     --player-control-hover: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
     --player-control-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 4%, transparent);
@@ -12260,6 +12260,42 @@ body {
   .app .clubs-section .club-card-main h3,
   .app .clubs-section .club-card-signal strong {
     color: var(--player-text);
+  }
+
+  .app .profile-chip,
+  .app .contact-channel,
+  .app .sessions-section .session-retention-card {
+    background: var(--player-surface-raised) !important;
+    border-color: var(--player-border) !important;
+    color: var(--player-text) !important;
+  }
+
+  .app .profile-chip strong,
+  .app .shop-contact strong,
+  .app .contact-channels > strong,
+  .app .contact-channel span,
+  .app .sessions-section .compact-session-title-row h3,
+  .app .sessions-section .session-retention-card-copy strong {
+    color: var(--player-text) !important;
+  }
+
+  .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo),
+  .app .sessions-section .session-retention-card-copy span {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .tab {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .tab.active {
+    background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent) !important;
+    color: var(--player-text) !important;
+  }
+
+  .app .language-picker > button,
+  .app .share-button.app-share {
+    color: var(--player-text) !important;
   }
 
   .app .link-button,
