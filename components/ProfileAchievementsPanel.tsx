@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import {
   achievementMilestoneRewards,
   achievementRarityForGame,
@@ -739,8 +740,8 @@ function progressPath(points: AchievementProgressPoint[]) {
 
 function AchievementAvatar({ profile }: { profile: ProfileAchievementsPanelProps['profile'] }) {
   const isAnonymous = Boolean(profile.anonymous_mode)
-  const background = isAnonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || '#3059ff'
-  const color = isAnonymous ? ANONYMOUS_MASK_TEXT_COLOR : profile.avatar_text_color || '#ffffff'
+  const background = isAnonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || vrenaPalette.purple[500]
+  const color = isAnonymous ? ANONYMOUS_MASK_TEXT_COLOR : profile.avatar_text_color || vrenaPalette.white
   const fallbackName = profile.nickname || profile.full_name || 'VR'
 
   return (
@@ -1344,8 +1345,8 @@ export default function ProfileAchievementsPanel({
             <svg aria-hidden="true" viewBox="0 0 320 112">
               <defs>
                 <linearGradient id="achievementLineGradient" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor="#00aeb3" />
-                  <stop offset="100%" stopColor="#3059ff" />
+                  <stop offset="0%" stopColor={vrenaPalette.cyan[500]} />
+                  <stop offset="100%" stopColor={vrenaPalette.purple[500]} />
                 </linearGradient>
               </defs>
               <path className="achievement-chart-area" d={graphArea} />

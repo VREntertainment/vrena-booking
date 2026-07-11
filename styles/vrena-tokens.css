@@ -1,0 +1,246 @@
+:root {
+  --vrena-white: #ffffff;
+  --vrena-white-rgb: 255 255 255;
+
+  --vrena-purple-50: #edf2ff;
+  --vrena-purple-100: #dde6ff;
+  --vrena-purple-200: #c2d0ff;
+  --vrena-purple-300: #9eb2ff;
+  --vrena-purple-400: #7788ff;
+  --vrena-purple-500: #525bfd;
+  --vrena-purple-600: #3d38f3;
+  --vrena-purple-700: #332cd6;
+  --vrena-purple-800: #2a26ad;
+  --vrena-purple-900: #272788;
+  --vrena-purple-950: #19174f;
+  --vrena-purple-300-rgb: 158 178 255;
+  --vrena-purple-400-rgb: 119 136 255;
+  --vrena-purple-500-rgb: 82 91 253;
+  --vrena-purple-600-rgb: 61 56 243;
+
+  --vrena-cyan-50: #ebfffd;
+  --vrena-cyan-100: #cefffd;
+  --vrena-cyan-200: #a2fffd;
+  --vrena-cyan-300: #63fdfb;
+  --vrena-cyan-400: #1cf3f4;
+  --vrena-cyan-500: #00e9ed;
+  --vrena-cyan-600: #03abb7;
+  --vrena-cyan-700: #0a8894;
+  --vrena-cyan-800: #126d78;
+  --vrena-cyan-900: #145965;
+  --vrena-cyan-950: #063c46;
+  --vrena-cyan-300-rgb: 99 253 251;
+  --vrena-cyan-500-rgb: 0 233 237;
+  --vrena-cyan-600-rgb: 3 171 183;
+  --vrena-cyan-700-rgb: 10 136 148;
+
+  --vrena-orange-50: #fff7ec;
+  --vrena-orange-100: #ffecd3;
+  --vrena-orange-200: #ffd6a6;
+  --vrena-orange-300: #ffb96d;
+  --vrena-orange-400: #ff9033;
+  --vrena-orange-500: #ff710b;
+  --vrena-orange-600: #fd5901;
+  --vrena-orange-700: #cb3f03;
+  --vrena-orange-800: #a1320b;
+  --vrena-orange-900: #812b0d;
+  --vrena-orange-950: #461304;
+  --vrena-orange-300-rgb: 255 185 109;
+  --vrena-orange-400-rgb: 255 144 51;
+  --vrena-orange-500-rgb: 255 113 11;
+  --vrena-orange-600-rgb: 253 89 1;
+
+  --vrena-yellow-50: #fffdea;
+  --vrena-yellow-100: #fff9c5;
+  --vrena-yellow-200: #fff285;
+  --vrena-yellow-300: #ffe546;
+  --vrena-yellow-400: #ffd51b;
+  --vrena-yellow-500: #ffb800;
+  --vrena-yellow-600: #e28e00;
+  --vrena-yellow-700: #bb6302;
+  --vrena-yellow-800: #984c08;
+  --vrena-yellow-900: #7c3e0b;
+  --vrena-yellow-950: #482000;
+  --vrena-yellow-300-rgb: 255 229 70;
+  --vrena-yellow-500-rgb: 255 184 0;
+  --vrena-yellow-600-rgb: 226 142 0;
+
+  --vrena-green-50: #f4fef6;
+  --vrena-green-100: #eafdef;
+  --vrena-green-200: #d6fce2;
+  --vrena-green-300: #b9facf;
+  --vrena-green-400: #87f8b9;
+  --vrena-green-500: #49f59f;
+  --vrena-green-600: #16d07b;
+  --vrena-green-700: #12b469;
+  --vrena-green-800: #0d9458;
+  --vrena-green-900: #097f4e;
+  --vrena-green-950: #0d4f34;
+  --vrena-green-400-rgb: 135 248 185;
+  --vrena-green-500-rgb: 73 245 159;
+  --vrena-green-600-rgb: 22 208 123;
+  --vrena-green-700-rgb: 18 180 105;
+
+  --vrena-blue-50: #f0f8fe;
+  --vrena-blue-100: #e2f1fd;
+  --vrena-blue-200: #cae4fd;
+  --vrena-blue-300: #a8d4fc;
+  --vrena-blue-400: #7cbdfd;
+  --vrena-blue-500: #47a8fc;
+  --vrena-blue-600: #0d8ce1;
+  --vrena-blue-700: #0979c2;
+  --vrena-blue-800: #0663a2;
+  --vrena-blue-900: #1b5486;
+  --vrena-blue-950: #173251;
+  --vrena-blue-300-rgb: 168 212 252;
+  --vrena-blue-400-rgb: 124 189 253;
+  --vrena-blue-500-rgb: 71 168 252;
+  --vrena-blue-600-rgb: 13 140 225;
+
+  --vrena-red-50: #fff1f0;
+  --vrena-red-100: #ffe4e3;
+  --vrena-red-200: #feccc9;
+  --vrena-red-300: #feaba6;
+  --vrena-red-400: #fc7c75;
+  --vrena-red-500: #f5454a;
+  --vrena-red-600: #dc0e31;
+  --vrena-red-700: #be0a29;
+  --vrena-red-800: #9d071f;
+  --vrena-red-900: #82181c;
+  --vrena-red-950: #4d120e;
+  --vrena-red-300-rgb: 254 171 166;
+  --vrena-red-400-rgb: 252 124 117;
+  --vrena-red-500-rgb: 245 69 74;
+  --vrena-red-600-rgb: 220 14 49;
+  --vrena-red-700-rgb: 190 10 41;
+
+  --vrena-neutral-50: #fafbfb;
+  --vrena-neutral-100: #f5f7f7;
+  --vrena-neutral-200: #eeeeee;
+  --vrena-neutral-300: #d8dede;
+  --vrena-neutral-400: #b8c3c3;
+  --vrena-neutral-500: #879595;
+  --vrena-neutral-600: #5f6d6d;
+  --vrena-neutral-700: #3b4a4a;
+  --vrena-neutral-800: #1b2929;
+  --vrena-neutral-900: #0b1717;
+  --vrena-neutral-950: #020e0e;
+  --vrena-neutral-50-rgb: 250 251 251;
+  --vrena-neutral-100-rgb: 245 247 247;
+  --vrena-neutral-200-rgb: 238 238 238;
+  --vrena-neutral-300-rgb: 216 222 222;
+  --vrena-neutral-400-rgb: 184 195 195;
+  --vrena-neutral-500-rgb: 135 149 149;
+  --vrena-neutral-600-rgb: 95 109 109;
+  --vrena-neutral-700-rgb: 59 74 74;
+  --vrena-neutral-800-rgb: 27 41 41;
+  --vrena-neutral-900-rgb: 11 23 23;
+  --vrena-neutral-950-rgb: 2 14 14;
+
+  --vrena-logo-gradient-cool: linear-gradient(227.966deg, #525bfd 0%, #00ffe5 100%);
+  --vrena-logo-gradient-warm: linear-gradient(226.29deg, #ff3c00 0%, #ffb800 100%);
+
+  --background: var(--vrena-white);
+  --foreground: var(--vrena-neutral-950);
+
+  --vrena-bg: var(--vrena-neutral-50);
+  --vrena-bg-soft: var(--vrena-neutral-100);
+  --vrena-surface: var(--vrena-white);
+  --vrena-surface-warm: var(--vrena-neutral-100);
+  --vrena-line-warm: rgb(var(--vrena-neutral-950-rgb) / 0.12);
+
+  --vrena-primary: var(--vrena-purple-500);
+  --vrena-primary-hover: var(--vrena-purple-600);
+  --vrena-primary-contrast: var(--vrena-white);
+  --vrena-secondary: var(--vrena-cyan-500);
+  --vrena-secondary-hover: var(--vrena-cyan-600);
+  --vrena-secondary-contrast: var(--vrena-neutral-950);
+
+  --vrena-success: var(--vrena-green-500);
+  --vrena-info: var(--vrena-blue-500);
+  --vrena-warning: var(--vrena-yellow-500);
+  --vrena-danger: var(--vrena-red-500);
+
+  --vrena-brand-cyan: var(--vrena-primary);
+  --vrena-brand-deep: var(--vrena-secondary);
+  --vrena-brand-gradient: var(--vrena-logo-gradient-cool);
+  --vrena-brand-gradient-reverse: linear-gradient(227.966deg, #00ffe5 0%, #525bfd 100%);
+  --vrena-brand-soft: linear-gradient(135deg, rgb(var(--vrena-purple-500-rgb) / 0.08), rgb(var(--vrena-cyan-500-rgb) / 0.1));
+
+  --vrena-cta: var(--vrena-brand-gradient);
+  --vrena-cta-ink: var(--vrena-white);
+  --vrena-cta-shadow: rgb(var(--vrena-purple-500-rgb) / 0.22);
+  --vrena-cta-soft: rgb(var(--vrena-purple-500-rgb) / 0.12);
+
+  --player-bg: var(--vrena-bg);
+  --player-text: var(--vrena-neutral-950);
+  --player-surface: rgb(var(--vrena-white-rgb) / 0.94);
+  --player-surface-soft: rgb(var(--vrena-neutral-100-rgb) / 0.88);
+  --player-surface-raised: var(--vrena-white);
+  --player-border: rgb(var(--vrena-neutral-950-rgb) / 0.09);
+  --player-border-strong: rgb(var(--vrena-purple-500-rgb) / 0.22);
+  --player-text-muted: var(--vrena-neutral-600);
+  --player-field-bg: var(--vrena-surface-warm);
+  --player-field-bg-soft: var(--vrena-neutral-100);
+  --player-field-panel: var(--vrena-white);
+  --player-field-border: rgb(var(--vrena-neutral-950-rgb) / 0.12);
+  --player-field-border-strong: rgb(var(--vrena-neutral-950-rgb) / 0.16);
+  --player-field-text: var(--vrena-neutral-950);
+  --player-field-placeholder: var(--vrena-neutral-500);
+  --player-control-hover: var(--vrena-surface-warm);
+  --player-control-shadow: inset 0 1px 0 rgb(var(--vrena-white-rgb) / 0.55);
+  --player-shadow: 0 10px 30px rgb(var(--vrena-neutral-950-rgb) / 0.06);
+  --player-shadow-soft: 0 5px 16px rgb(var(--vrena-neutral-950-rgb) / 0.045);
+  --player-radius: 14px;
+  --player-radius-sm: 11px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--vrena-neutral-950);
+    --foreground: var(--vrena-neutral-50);
+
+    --vrena-bg: var(--vrena-neutral-950);
+    --vrena-bg-soft: var(--vrena-neutral-900);
+    --vrena-surface: var(--vrena-neutral-900);
+    --vrena-surface-warm: var(--vrena-neutral-800);
+    --vrena-line-warm: rgb(var(--vrena-neutral-300-rgb) / 0.14);
+
+    --vrena-primary: var(--vrena-orange-600);
+    --vrena-primary-hover: var(--vrena-orange-500);
+    --vrena-primary-contrast: var(--vrena-neutral-950);
+    --vrena-secondary: var(--vrena-cyan-500);
+    --vrena-secondary-hover: var(--vrena-cyan-400);
+
+    --vrena-brand-cyan: var(--vrena-orange-500);
+    --vrena-brand-deep: var(--vrena-orange-600);
+    --vrena-brand-gradient: var(--vrena-logo-gradient-warm);
+    --vrena-brand-gradient-reverse: linear-gradient(226.29deg, #ffb800 0%, #ff3c00 100%);
+    --vrena-brand-soft: linear-gradient(135deg, rgb(var(--vrena-orange-300-rgb) / 0.12), rgb(var(--vrena-orange-600-rgb) / 0.14));
+
+    --vrena-cta: var(--vrena-brand-gradient);
+    --vrena-cta-ink: var(--vrena-neutral-950);
+    --vrena-cta-shadow: rgb(var(--vrena-orange-600-rgb) / 0.32);
+    --vrena-cta-soft: rgb(var(--vrena-orange-500-rgb) / 0.16);
+
+    --player-bg: var(--vrena-neutral-950);
+    --player-text: var(--vrena-neutral-50);
+    --player-surface: rgb(var(--vrena-neutral-900-rgb) / 0.94);
+    --player-surface-soft: rgb(var(--vrena-neutral-800-rgb) / 0.9);
+    --player-surface-raised: var(--vrena-neutral-900);
+    --player-border: rgb(var(--vrena-neutral-300-rgb) / 0.14);
+    --player-border-strong: rgb(var(--vrena-orange-600-rgb) / 0.34);
+    --player-text-muted: var(--vrena-neutral-400);
+    --player-field-bg: rgb(var(--vrena-neutral-800-rgb) / 0.9);
+    --player-field-bg-soft: rgb(var(--vrena-neutral-800-rgb) / 0.9);
+    --player-field-panel: var(--vrena-neutral-900);
+    --player-field-border: rgb(var(--vrena-neutral-300-rgb) / 0.14);
+    --player-field-border-strong: rgb(var(--vrena-neutral-300-rgb) / 0.28);
+    --player-field-text: var(--vrena-neutral-50);
+    --player-field-placeholder: var(--vrena-neutral-500);
+    --player-control-hover: rgb(var(--vrena-orange-600-rgb) / 0.16);
+    --player-control-shadow: inset 0 0 0 1px rgb(var(--vrena-white-rgb) / 0.04);
+    --player-shadow: 0 14px 34px rgb(0 0 0 / 0.25);
+    --player-shadow-soft: 0 8px 22px rgb(0 0 0 / 0.18);
+  }
+}

@@ -35,8 +35,8 @@
 .app .staff-role-pill {
   align-self: start;
   border-radius: 999px;
-  background: #e7f7f8;
-  color: #0d7c51;
+  background: var(--vrena-blue-100);
+  color: var(--vrena-green-700);
   font-size: 12px;
   font-weight: 900;
   padding: 5px 9px;
@@ -68,7 +68,7 @@
 }
 
 .app .staff-tab-group-label {
-  color: #647174;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0;
@@ -87,9 +87,9 @@
 .app .staff-tab-categories button {
   flex: 0 0 auto;
   min-height: 38px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 7px 12px;
   font-size: 14px;
   white-space: nowrap;
@@ -99,7 +99,7 @@
 .app .staff-tab-categories button.active {
   background: var(--vrena-brand-gradient);
   border-color: transparent;
-  color: #ffffff;
+  color: var(--vrena-white);
 }
 
 .app .staff-commerce-switcher {
@@ -112,9 +112,9 @@
 .app .staff-commerce-switcher button {
   width: 100%;
   min-height: 38px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   text-align: center;
   white-space: normal;
 }
@@ -122,7 +122,7 @@
 .app .staff-commerce-switcher button.active {
   background: var(--vrena-brand-gradient);
   border-color: transparent;
-  color: #ffffff;
+  color: var(--vrena-white);
 }
 
 .app .staff-card-heading {
@@ -143,7 +143,7 @@
   border: 0;
   border-radius: 8px;
   background: var(--vrena-brand-gradient);
-  color: #ffffff;
+  color: var(--vrena-white);
   font-size: 13px;
   font-weight: 900;
   padding: 8px 12px;
@@ -169,7 +169,7 @@
 
 .app .staff-readonly-note {
   margin: 0 0 6px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 800;
 }
@@ -200,11 +200,11 @@
   box-sizing: border-box;
   width: min(340px, calc(100vw - 36px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   max-width: 100%;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 18px;
-  box-shadow: 0 20px 60px rgba(7, 17, 18, 0.18);
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
 }
 
 .app .staff-mode-panel h2,
@@ -213,7 +213,7 @@
 }
 
 .app .staff-mode-panel p {
-  color: #637075;
+  color: var(--vrena-neutral-600);
 }
 
 .app .staff-mode-actions {
@@ -232,9 +232,9 @@
 .app .staff-card {
   display: grid;
   gap: 9px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 12px;
   --staff-control-height: 40px;
 }
@@ -277,10 +277,10 @@
   display: grid;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid rgba(7, 17, 18, 0.14);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(7, 17, 18, 0.14);
+  background: var(--vrena-white);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   padding: 5px;
 }
 
@@ -291,7 +291,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 7px 9px;
   text-align: left;
   box-shadow: none;
@@ -300,8 +300,8 @@
 .app .staff-customer-suggestion:hover,
 .app .staff-customer-suggestion:focus-visible,
 .app .staff-customer-suggestion[aria-selected="true"] {
-  background: rgba(0, 109, 119, 0.08);
-  color: #071112;
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-customer-suggestion span {
@@ -317,7 +317,7 @@
 .app .staff-customer-suggestion small {
   min-width: 0;
   overflow: hidden;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
@@ -334,16 +334,16 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid rgba(7, 17, 18, 0.16);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
   border-radius: 8px;
   background: var(--vrena-surface-warm);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-weight: 900;
   box-sizing: border-box;
 }
 
 .app .staff-picker-shell.placeholder {
-  color: #8a9498;
+  color: var(--vrena-neutral-500);
 }
 
 .app .staff-picker-native {
@@ -381,8 +381,8 @@
 }
 
 .app .staff-picker-shell:focus-within {
-  border-color: rgba(0, 109, 119, 0.58);
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 58%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent);
 }
 
 .app .staff-picker-shell.staff-time-picker {
@@ -419,20 +419,20 @@
   max-height: 260px;
   overflow: hidden;
   padding: 6px;
-  border: 1px solid rgba(7, 17, 18, 0.14);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 16px 32px rgba(7, 17, 18, 0.16);
+  background: var(--vrena-white);
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
 }
 
 .app .staff-time-manual {
   width: 100%;
   min-height: 34px;
   padding: 0 8px;
-  border: 1px solid rgba(7, 17, 18, 0.16);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
   border-radius: 8px;
   background: var(--vrena-surface-warm);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   font-weight: 900;
   text-align: center;
@@ -455,15 +455,15 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
 }
 
 .app .staff-time-option:hover, .app .staff-time-option.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  background: rgba(0, 109, 119, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
   color: var(--vrena-brand-deep);
 }
 
@@ -475,13 +475,13 @@
 }
 
 .app .staff-label-line small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 700;
 }
 
 .app .staff-form-section-label {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -511,7 +511,7 @@
 .app .staff-table span,
 .app .staff-list-item span,
 .app .staff-summary-grid span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
@@ -567,7 +567,7 @@
 
 .app .staff-field-label {
   display: block;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 4px;
@@ -595,9 +595,9 @@
 .app .staff-game-guide-editor {
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 10px;
 }
 
@@ -610,7 +610,7 @@
 
 .app .staff-game-guide-head small {
   display: block;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;
@@ -632,7 +632,7 @@
   display: grid;
   gap: 4px;
   min-width: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -658,10 +658,10 @@
   justify-content: space-between;
   gap: 6px;
   min-height: 38px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
-  color: #071112;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
   cursor: pointer;
   font-weight: 900;
   list-style: none;
@@ -701,12 +701,12 @@
 }
 
 .app .staff-audience-chip {
-  background: rgba(0, 109, 119, 0.09);
-  color: #254be8;
+  background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
+  color: var(--vrena-purple-600);
 }
 
 .app .staff-audience-placeholder {
-  color: #637075;
+  color: var(--vrena-neutral-600);
 }
 
 .app .staff-audience-dropdown {
@@ -719,10 +719,10 @@
   gap: 5px;
   max-height: 226px;
   overflow: auto;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 14px 30px rgba(7, 17, 18, 0.14);
+  background: var(--vrena-white);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   padding: 6px;
 }
 
@@ -733,10 +733,10 @@
   align-items: center;
   gap: 7px;
   min-height: 38px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
-  color: #071112;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
   font-weight: 900;
   padding: 7px 9px;
 }
@@ -763,10 +763,10 @@
   place-items: center;
   min-height: 0;
   overflow: hidden;
-  border: 1px dashed rgba(0, 109, 119, 0.38);
+  border: 1px dashed color-mix(in srgb, var(--vrena-cyan-700) 38%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(19, 201, 201, 0.08), rgba(0, 109, 119, 0.1));
-  color: #637075;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 8%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent));
+  color: var(--vrena-neutral-600);
   cursor: pointer;
   justify-self: start;
   text-align: center;
@@ -810,11 +810,11 @@
 }
 
 .app .staff-game-photo-upload strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-game-photo-upload small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -823,8 +823,8 @@
   position: absolute;
   inset: auto 10px 10px auto;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.76);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 76%, transparent);
+  color: var(--vrena-white);
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
@@ -847,15 +847,15 @@
   gap: 3px;
   width: 100%;
   min-height: 0;
-  border: 1px solid rgba(7, 17, 18, 0.1);
-  background: #f8fafb;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
   padding: 9px 10px;
   text-align: left;
 }
 
 .app .staff-list-item:hover {
-  border-color: rgba(0, 109, 119, 0.3);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 30%, transparent);
 }
 
 .app .staff-role-list,
@@ -877,10 +877,10 @@
 }
 
 .app .staff-account-delete-warning {
-  border: 1px solid rgba(180, 35, 24, 0.18);
+  border: 1px solid color-mix(in srgb, var(--vrena-red-700) 18%, transparent);
   border-radius: 8px;
-  background: #fff3f0;
-  color: #9b1c14;
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-800);
   padding: 8px 10px;
   font-size: 13px;
   font-weight: 800;
@@ -894,14 +894,14 @@
 .app .staff-role-help-item {
   display: grid;
   gap: 3px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 8px;
 }
 
 .app .staff-role-help-item span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -929,7 +929,7 @@
 }
 
 .app .staff-customer-invite-copy span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.25;
 }
@@ -976,7 +976,7 @@
   gap: 12px;
   margin: 0 0 18px;
   padding: 0 0 18px;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .staff-achievement-award-copy {
@@ -993,7 +993,7 @@
   justify-content: center;
   flex: 0 0 auto;
   color: var(--vrena-brand-deep);
-  background: rgba(0, 109, 119, 0.09);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
 }
 
 .app .staff-achievement-award-mark {
@@ -1012,7 +1012,7 @@
 .app .staff-achievement-award-copy span,
 .app .staff-achievement-preview span,
 .app .staff-achievement-awarded-list small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -1046,9 +1046,9 @@
   gap: 7px;
   min-height: 38px;
   padding: 0 10px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 9px;
-  background: #fff;
+  background: var(--vrena-white);
 }
 
 .app .staff-search-control input {
@@ -1074,7 +1074,7 @@
   width: 100%;
   min-height: 48px;
   padding: 6px 8px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 9px;
   background: transparent;
   color: inherit;
@@ -1082,8 +1082,8 @@
 }
 
 .app .staff-achievement-player.active {
-  border-color: rgba(0, 109, 119, 0.35);
-  background: rgba(0, 109, 119, 0.07);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 35%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent);
 }
 
 .app .staff-achievement-player-avatar {
@@ -1106,7 +1106,7 @@
 }
 
 .app .staff-achievement-player small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
@@ -1116,8 +1116,8 @@
   gap: 10px;
   align-items: center;
   padding: 8px 0;
-  border-top: 1px solid rgba(7, 17, 18, 0.07);
-  border-bottom: 1px solid rgba(7, 17, 18, 0.07);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
 }
 
 .app .staff-achievement-preview-image,
@@ -1170,8 +1170,8 @@
   min-height: 28px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(0, 174, 179, 0.09);
-  color: #0f7478;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 9%, transparent);
+  color: var(--vrena-cyan-800);
   font-size: 12px;
   font-weight: 800;
 }
@@ -1195,9 +1195,9 @@
   display: grid;
   gap: 10px;
   align-items: center;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 8px 10px;
 }
 
@@ -1251,7 +1251,7 @@
   --avatar-size: var(--avatar-sm);
   --avatar-emoji-size: var(--avatar-sm-emoji);
   --avatar-text-size: var(--avatar-sm-text);
-  border: 1px solid rgba(0, 109, 119, 0.24);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent);
   grid-column: 1;
   justify-self: start;
   flex: 0 0 var(--avatar-size);
@@ -1262,14 +1262,14 @@
 .app .staff-role-row small,
 .app .staff-restore-row span,
 .app .staff-restore-row small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
 
 .app .staff-role-row small,
 .app .staff-restore-row small {
-  color: #0d7c51;
+  color: var(--vrena-green-700);
   font-weight: 800;
 }
 
@@ -1308,8 +1308,8 @@
   width: auto;
   min-width: 132px;
   min-height: 38px;
-  border-color: rgba(180, 35, 24, 0.42);
-  color: #b42318;
+  border-color: color-mix(in srgb, var(--vrena-red-700) 42%, transparent);
+  color: var(--vrena-red-700);
   font-weight: 900;
   padding-inline: 14px;
   white-space: nowrap;
@@ -1321,18 +1321,18 @@
 }
 
 .app .staff-role-feedback.saving {
-  background: rgba(0, 109, 119, 0.1);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
   color: var(--vrena-brand-deep);
 }
 
 .app .staff-role-feedback.success {
-  background: rgba(13, 124, 81, 0.12);
-  color: #0d7c51;
+  background: color-mix(in srgb, var(--vrena-green-700) 12%, transparent);
+  color: var(--vrena-green-700);
 }
 
 .app .staff-role-feedback.error {
-  background: rgba(185, 40, 31, 0.12);
-  color: #b9281f;
+  background: color-mix(in srgb, var(--vrena-red-700) 12%, transparent);
+  color: var(--vrena-red-700);
 }
 
 .app .staff-table-wrap {
@@ -1349,14 +1349,14 @@
 
 .app .staff-table th,
 .app .staff-table td {
-  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding: 7px 8px;
   text-align: left;
   vertical-align: top;
 }
 
 .app .staff-table th {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
@@ -1381,7 +1381,7 @@
 .app .staff-accountant-download.primary {
   background: var(--vrena-brand-gradient);
   border-color: transparent;
-  color: #ffffff;
+  color: var(--vrena-white);
 }
 
 .app .staff-chart-mode button.active {
@@ -1391,9 +1391,9 @@
 .app .staff-report-date-actions > button,
 .app .staff-report-compare-actions > button,
 .app .staff-report-export-actions > button {
-  border-color: rgba(7, 17, 18, 0.1);
-  background: #ffffff;
-  color: #071112;
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-report-head {
@@ -1435,7 +1435,7 @@
 
 .app .staff-report-date-actions {
   padding: 4px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 12px;
   background: var(--vrena-bg-soft);
 }
@@ -1450,7 +1450,7 @@
   gap: 6px;
   align-items: center;
   padding-left: 8px;
-  border-left: 1px solid rgba(7, 17, 18, 0.1);
+  border-left: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
 }
 
 .app .staff-accountant-export {
@@ -1459,7 +1459,7 @@
 }
 
 .app .staff-accountant-export > button.active {
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
 }
 
 .app .staff-accountant-export-panel {
@@ -1472,12 +1472,12 @@
   overflow: auto;
   display: grid;
   gap: 14px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
   padding: 16px;
-  background: #ffffff;
-  color: #071112;
-  box-shadow: 0 24px 60px rgba(7, 17, 18, 0.16);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
   text-align: left;
 }
 
@@ -1500,16 +1500,16 @@
 
 .app .staff-accountant-export-head span,
 .app .staff-accountant-report-list span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
 
 .app .staff-accountant-export-panel button {
   min-height: 32px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-accountant-export-head button.staff-accountant-export-close {
@@ -1518,7 +1518,7 @@
   padding: 0;
   border-color: transparent;
   background: transparent;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 24px;
   line-height: 1;
   box-shadow: none;
@@ -1526,7 +1526,7 @@
 
 .app .staff-accountant-export-head button.staff-accountant-export-close:hover {
   background: var(--vrena-surface-warm);
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-accountant-export-grid {
@@ -1535,13 +1535,13 @@
   gap: 8px;
   align-items: end;
   padding: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 10px;
   background: var(--vrena-bg-soft);
 }
 
 .app .staff-accountant-export-grid label {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 760;
 }
@@ -1563,11 +1563,11 @@
   gap: 7px;
   align-items: center;
   margin: 0;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 6px 9px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font-size: 12px;
   font-weight: 760;
 }
@@ -1577,7 +1577,7 @@
   justify-content: space-between;
   gap: 10px;
   align-items: center;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 10px;
 }
 
@@ -1586,7 +1586,7 @@
 }
 
 .app .staff-accountant-report-heading span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -1606,7 +1606,7 @@
   overflow: auto;
   padding: 2px 2px 2px 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(7, 17, 18, 0.26) transparent;
+  scrollbar-color: color-mix(in srgb, var(--vrena-neutral-950) 26%, transparent) transparent;
 }
 
 .app .staff-accountant-report-list button {
@@ -1617,8 +1617,8 @@
   min-height: 54px;
   padding: 9px 40px 9px 12px;
   border-radius: 8px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   text-align: left;
 }
 
@@ -1643,32 +1643,32 @@
   right: 14px;
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(99, 112, 117, 0.34);
+  border: 2px solid color-mix(in srgb, var(--vrena-neutral-600) 34%, transparent);
   border-radius: 999px;
   transform: translateY(-50%);
 }
 
 .app .staff-accountant-report-list button.active {
-  border-color: rgba(0, 113, 227, 0.48);
-  background: #f5f9ff;
-  color: #071112;
-  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.09);
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 48%, transparent);
+  background: var(--vrena-blue-50);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-blue-600) 9%, transparent);
 }
 
 .app .staff-accountant-report-list button.active::after {
   content: '✓';
   display: grid;
   place-items: center;
-  border-color: #0071e3;
-  background: #0071e3;
-  color: #ffffff;
+  border-color: var(--vrena-blue-600);
+  background: var(--vrena-blue-600);
+  color: var(--vrena-white);
   font-size: 11px;
   font-weight: 900;
 }
 
 .app .staff-accountant-download.primary {
   width: 100%;
-  color: #ffffff;
+  color: var(--vrena-white);
   min-height: 38px;
   border-radius: 9px;
   font-weight: 780;
@@ -1680,7 +1680,7 @@
 }
 
 .app .staff-report-compare-row > span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -1692,11 +1692,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 5px 10px 5px 7px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
@@ -1713,9 +1713,9 @@
 }
 
 .app .staff-compare-toggle.active {
-  border-color: rgba(0, 113, 227, 0.38);
-  background: #f5f9ff;
-  color: #0a57c8;
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 38%, transparent);
+  background: var(--vrena-blue-50);
+  color: var(--vrena-blue-700);
 }
 
 .app .staff-compare-switch {
@@ -1723,7 +1723,7 @@
   width: 28px;
   height: 16px;
   border-radius: 999px;
-  background: #c9d2d7;
+  background: var(--vrena-neutral-300);
   transition: background 160ms ease;
 }
 
@@ -1735,13 +1735,13 @@
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(7, 17, 18, 0.22);
+  background: var(--vrena-white);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
   transition: transform 160ms ease;
 }
 
 .app .staff-compare-toggle.active .staff-compare-switch {
-  background: #0071e3;
+  background: var(--vrena-blue-600);
 }
 
 .app .staff-compare-toggle.active .staff-compare-switch::after {
@@ -1754,10 +1754,10 @@
   display: grid;
   gap: 2px;
   justify-items: start;
-  border: 1px solid rgba(7, 17, 18, 0.14);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   border-radius: 8px;
   background: var(--vrena-surface-warm);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 6px 10px;
   text-align: left;
 }
@@ -1766,7 +1766,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -1815,7 +1815,7 @@
 
 .app .staff-report-date-modal-head p {
   margin: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 800;
 }
@@ -1831,24 +1831,24 @@
   gap: 2px;
   justify-items: start;
   min-height: 54px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 8px 10px;
   text-align: left;
 }
 
 .app .staff-report-date-mode button.active {
-  border-color: rgba(0, 109, 119, 0.48);
-  background: #f4f8ff;
-  box-shadow: 0 0 0 2px rgba(0, 109, 119, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 48%, transparent);
+  background: var(--vrena-blue-50);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
 .app .staff-report-date-mode button.compare.active {
-  border-color: rgba(0, 174, 179, 0.55);
-  background: #f1fbfc;
-  box-shadow: 0 0 0 2px rgba(0, 174, 179, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 55%, transparent);
+  background: var(--vrena-blue-50);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent);
 }
 
 .app .staff-report-date-mode button:disabled {
@@ -1856,7 +1856,7 @@
 }
 
 .app .staff-report-date-mode button span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -1877,7 +1877,7 @@
 .app .staff-report-date-presets {
   display: grid;
   align-content: start;
-  border-right: 1px solid rgba(7, 17, 18, 0.08);
+  border-right: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-right: 10px;
 }
 
@@ -1885,16 +1885,16 @@
   min-height: 38px;
   justify-content: flex-start;
   border: 0;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 0;
   background: transparent;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   padding: 7px 9px;
   text-align: left;
 }
 
 .app .staff-report-date-presets button.active {
-  background: #eef6ff;
+  background: var(--vrena-blue-50);
   color: var(--vrena-brand-deep);
 }
 
@@ -1921,7 +1921,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
 }
@@ -1940,12 +1940,12 @@
 }
 
 .app .staff-report-calendar-legend i.reference {
-  background: #0b6edb;
+  background: var(--vrena-blue-700);
 }
 
 .app .staff-report-calendar-legend i.compare {
   border: 2px solid var(--vrena-brand-cyan);
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .staff-report-date-inputs,
@@ -1963,7 +1963,7 @@
 
 .app .staff-report-date-inputs label > span,
 .app .staff-report-date-compare-fields label > span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -1985,7 +1985,7 @@
 
 .app .staff-report-calendar-nav span {
   min-width: 190px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   font-weight: 900;
   text-align: center;
@@ -2017,7 +2017,7 @@
 }
 
 .app .staff-report-calendar-weekdays span {
-  color: #7b858b;
+  color: var(--vrena-neutral-500);
   font-size: 11px;
   font-weight: 900;
   text-align: center;
@@ -2029,8 +2029,8 @@
   min-width: 0;
   border: 0;
   border-radius: 7px;
-  background: #f1f4f6;
-  color: #071112;
+  background: var(--vrena-neutral-100);
+  color: var(--vrena-neutral-950);
   padding: 0;
 }
 
@@ -2039,16 +2039,16 @@
 }
 
 .app .staff-report-calendar-day.in-range {
-  background: #dbeeff;
+  background: var(--vrena-blue-100);
 }
 
 .app .staff-report-calendar-day.range-edge {
-  background: #0b6edb;
-  color: #ffffff;
+  background: var(--vrena-blue-700);
+  color: var(--vrena-white);
 }
 
 .app .staff-report-calendar-day.compare-range {
-  box-shadow: inset 0 0 0 2px rgba(0, 174, 179, 0.36);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-500) 36%, transparent);
 }
 
 .app .staff-report-calendar-day.compare-edge {
@@ -2058,7 +2058,7 @@
 .app .staff-report-date-compare {
   display: grid;
   gap: 8px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 10px;
 }
 
@@ -2069,7 +2069,7 @@
 
 .app .staff-report-date-compare-fields p {
   margin: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -2078,7 +2078,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 6px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   margin-top: 12px;
   padding-top: 10px;
 }
@@ -2109,7 +2109,7 @@
 
 .app .staff-operations-card .staff-card-heading p {
   margin: 2px 0 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 700;
 }
@@ -2149,9 +2149,9 @@
   grid-template-columns: 76px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 10px;
 }
 
@@ -2168,7 +2168,7 @@
 .app .staff-operation-time span,
 .app .staff-operation-meta span,
 .app .staff-operation-order span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -2192,8 +2192,8 @@
 
 .app .staff-operation-title-row span {
   border-radius: 999px;
-  background: rgba(0, 174, 179, 0.12);
-  color: #0d7c51;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
+  color: var(--vrena-green-700);
   font-size: 12px;
   font-weight: 900;
   padding: 4px 8px;
@@ -2207,7 +2207,7 @@
 }
 
 .app .staff-operation-order {
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 6px;
 }
 
@@ -2224,7 +2224,7 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 10px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 10px;
 }
 
@@ -2251,7 +2251,7 @@
 .app .staff-operation-chapters label {
   display: grid;
   gap: 4px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -2262,10 +2262,10 @@
 .app .staff-operation-chapters input {
   width: 100%;
   min-height: 36px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 7px;
-  background: #fff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 7px 9px;
   font: inherit;
   font-size: 13px;
@@ -2304,10 +2304,10 @@
   display: grid;
   max-height: 260px;
   overflow-y: auto;
-  border: 1px solid rgba(7, 17, 18, 0.14);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(7, 17, 18, 0.14);
+  background: var(--vrena-white);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
   padding: 5px;
 }
 
@@ -2318,7 +2318,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 7px 9px;
   text-align: left;
   box-shadow: none;
@@ -2327,8 +2327,8 @@
 .app .staff-operation-player-result:hover,
 .app .staff-operation-player-result:focus-visible,
 .app .staff-operation-player-result[aria-selected="true"] {
-  background: rgba(0, 109, 119, 0.08);
-  color: #071112;
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-operation-player-result span {
@@ -2345,7 +2345,7 @@
 .app .staff-operation-player-empty {
   min-width: 0;
   overflow: hidden;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
@@ -2365,7 +2365,7 @@
 .app .staff-operation-participant {
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 8px;
   padding: 8px;
 }
@@ -2385,13 +2385,13 @@
 
 .app .staff-operation-chapters > span {
   grid-column: 1 / -1;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
 
 .app .staff-operations-orders {
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 8px;
 }
 
@@ -2412,7 +2412,7 @@
 
 .app .staff-attendance-range {
   margin: 2px 0 6px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -2471,9 +2471,9 @@
   display: grid;
   gap: 8px;
   margin-bottom: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 8px;
 }
 
@@ -2498,7 +2498,7 @@
 .app .staff-planning-title span,
 .app .staff-shift-chip small,
 .app .staff-shift-chip em {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -2507,7 +2507,7 @@
   display: grid;
   gap: 2px;
   min-width: 160px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
 }
@@ -2545,9 +2545,9 @@
 .app .staff-planning-day,
 .app .staff-planning-staff,
 .app .staff-planning-cell {
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 7px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 6px;
 }
 
@@ -2558,7 +2558,7 @@
 }
 
 .app .staff-planning-day span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2597,7 +2597,7 @@
 }
 
 .app .staff-planning-staff small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
@@ -2617,9 +2617,9 @@
 .app .staff-planning-cell-button {
   min-height: 24px;
   border-style: solid;
-  border-color: rgba(0, 109, 119, 0.16);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
   border-radius: 6px;
-  background: rgba(0, 109, 119, 0.05);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 5%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 16px;
   line-height: 1;
@@ -2630,8 +2630,8 @@
   gap: 1px;
   min-height: 0;
   border-radius: 6px;
-  border-color: rgba(0, 174, 179, 0.24);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(0, 109, 119, 0.1));
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 24%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent));
   padding: 5px 6px;
   text-align: left;
 }
@@ -2649,13 +2649,13 @@
 }
 
 .app .staff-shift-chip.has-warning {
-  border-color: rgba(185, 40, 31, 0.3);
-  background: rgba(185, 40, 31, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-red-700) 30%, transparent);
+  background: color-mix(in srgb, var(--vrena-red-700) 8%, transparent);
 }
 
 .app .staff-shift-chip em,
 .app .staff-warning-text {
-  color: #b9281f;
+  color: var(--vrena-red-700);
   font-style: normal;
 }
 
@@ -2681,9 +2681,9 @@
   grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 7px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 8px;
 }
 
@@ -2713,7 +2713,7 @@
 
 .app .staff-attendance-person span,
 .app .staff-attendance-meta span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -2733,9 +2733,9 @@
 .app .staff-attendance-form {
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 8px;
 }
 
@@ -2749,7 +2749,7 @@
 }
 
 .app .staff-employee-list > .staff-helper-text {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   margin: 0;
@@ -2757,8 +2757,8 @@
 
 .app .staff-employee-row {
   align-items: center;
-  background: #f8fafb;
-  border: 1px solid #d8dde0;
+  background: var(--vrena-neutral-50);
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
   color: inherit;
   display: flex;
@@ -2770,8 +2770,8 @@
 }
 
 .app .staff-employee-row.active {
-  background: linear-gradient(120deg, rgba(0, 184, 184, 0.12), rgba(0, 109, 119, 0.12));
-  border-color: rgba(0, 109, 119, 0.45);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--vrena-cyan-600) 12%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent));
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 45%, transparent);
 }
 
 .app .staff-employee-row.inactive:not(.active) {
@@ -2794,15 +2794,15 @@
 
 .app .staff-employee-row small,
 .app .staff-employee-selected span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
 
 .app .staff-employee-selected {
   align-items: center;
-  background: #f8fafb;
-  border: 1px solid #d8dde0;
+  background: var(--vrena-neutral-50);
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
   display: flex;
   gap: 8px;
@@ -2819,10 +2819,10 @@
 
 .app .staff-checkbox-row {
   align-items: center;
-  background: #f8fafb;
-  border: 1px solid #d8dde0;
+  background: var(--vrena-neutral-50);
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   display: inline-flex;
   font-weight: 900;
   gap: 8px;
@@ -2840,7 +2840,7 @@
   min-height: 22px;
   margin: 0;
   padding: 0;
-  accent-color: #1683ff;
+  accent-color: var(--vrena-blue-600);
 }
 
 .app .staff-checkbox-row span {
@@ -2868,14 +2868,14 @@
 }
 
 .app .staff-standard-shifts > strong {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
 }
 
 .app .staff-standard-shift-row {
   align-items: end;
-  background: #f8fafb;
-  border: 1px solid #d8dde0;
+  background: var(--vrena-neutral-50);
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
   display: grid;
   gap: 8px;
@@ -2892,7 +2892,7 @@
 
 .app .staff-standard-shift-row > strong {
   align-self: center;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
 }
 
@@ -2924,7 +2924,7 @@
   display: grid;
   gap: 10px;
   min-width: 0;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 10px;
 }
 
@@ -2945,15 +2945,15 @@
   display: inline-flex;
   gap: 4px;
   padding: 2px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: #f6f8f9;
+  background: var(--vrena-neutral-100);
 }
 
 .app .staff-chart-mode button {
   border-radius: 999px;
   background: transparent;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   border-color: transparent;
 }
 
@@ -2965,7 +2965,7 @@
 .app .staff-report-graph-head span,
 .app .staff-comparison-list small,
 .app .staff-report-bar-group small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -3020,7 +3020,7 @@
 }
 
 .app .staff-report-bar.compare {
-  background: #b8c3c8;
+  background: var(--vrena-neutral-400);
 }
 
 .app .staff-weekday-bars {
@@ -3068,12 +3068,12 @@
 }
 
 .app .staff-weekday-bar.current {
-  background: linear-gradient(180deg, #0b6fb8, #3f87c5);
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, var(--vrena-blue-700), var(--vrena-blue-700));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .staff-weekday-bar.compare {
-  background: #ff9824;
+  background: var(--vrena-orange-500);
   opacity: 0.78;
 }
 
@@ -3082,7 +3082,7 @@
 }
 
 .app .staff-weekday-bar-group small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -3140,11 +3140,11 @@
   width: 100%;
   min-height: 190px;
   border-radius: 8px;
-  background: linear-gradient(180deg, #f6f8f9, var(--vrena-surface-warm));
+  background: linear-gradient(180deg, var(--vrena-neutral-100), var(--vrena-surface-warm));
 }
 
 .app .staff-report-curve-fill {
-  fill: rgba(0, 174, 179, 0.12);
+  fill: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
 }
 
 .app .staff-report-curve-line {
@@ -3162,7 +3162,7 @@
 }
 
 .app .staff-report-curve-line.compare {
-  stroke: #b8c3c8;
+  stroke: var(--vrena-neutral-400);
   stroke-width: 3;
 }
 
@@ -3170,7 +3170,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -3192,11 +3192,11 @@
 }
 
 .app .staff-report-curve-legend i.compare {
-  background: #b8c3c8;
+  background: var(--vrena-neutral-400);
 }
 
 .app .staff-report-curve-legend i.hourly-compare {
-  background: #ff9824;
+  background: var(--vrena-orange-500);
 }
 
 .app .staff-hourly-chart-wrap {
@@ -3209,17 +3209,17 @@
   width: 100%;
   min-height: 230px;
   border-radius: 8px;
-  background: linear-gradient(180deg, #f6f8f9, var(--vrena-surface-warm));
+  background: linear-gradient(180deg, var(--vrena-neutral-100), var(--vrena-surface-warm));
   overflow: visible;
 }
 
 .app .staff-hourly-grid {
-  stroke: rgba(7, 17, 18, 0.13);
+  stroke: color-mix(in srgb, var(--vrena-neutral-950) 13%, transparent);
   stroke-width: 0.45;
 }
 
 .app .staff-hourly-grid-label {
-  fill: #637075;
+  fill: var(--vrena-neutral-600);
   font-size: 3px;
   font-weight: 800;
 }
@@ -3247,11 +3247,11 @@
 }
 
 .app .staff-hourly-line.current {
-  stroke: #0b6fb8;
+  stroke: var(--vrena-blue-700);
 }
 
 .app .staff-hourly-line.compare {
-  stroke: #ff9824;
+  stroke: var(--vrena-orange-500);
   stroke-width: 2.6;
 }
 
@@ -3259,7 +3259,7 @@
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: 4px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -3282,7 +3282,7 @@
   display: grid;
   place-items: center;
   margin-inline: auto;
-  box-shadow: inset 0 0 0 18px rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 18px color-mix(in srgb, var(--vrena-white) 68%, transparent);
   animation: staffPieSpin 640ms ease both;
 }
 
@@ -3292,8 +3292,8 @@
   width: 62%;
   aspect-ratio: 1;
   border-radius: inherit;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   font-weight: 900;
   text-align: center;
@@ -3302,7 +3302,7 @@
 .app .staff-player-card-editor {
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   background: var(--vrena-bg-soft);
   padding: 12px;
@@ -3327,7 +3327,7 @@
 
 .app .staff-player-card-editor-head span {
   margin-top: 3px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -3350,7 +3350,7 @@
 }
 
 .app .staff-player-card-editor-grid label > span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
 }
@@ -3377,7 +3377,7 @@
 
 .app .staff-player-card-editor-actions > span {
   min-width: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -3390,7 +3390,7 @@
     display: grid;
     place-items: center;
     padding: 18px;
-    background: rgba(7, 17, 18, 0.42);
+    background: color-mix(in srgb, var(--vrena-neutral-950) 42%, transparent);
     backdrop-filter: blur(8px);
   }
 
@@ -3517,7 +3517,7 @@
   .app .staff-report-date-presets {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     border-right: 0;
-    border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+    border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
     padding-right: 0;
     padding-bottom: 10px;
   }
@@ -3697,7 +3697,7 @@
   padding: 3px 4px 3px 8px;
   border: 1px solid var(--staff-modern-border);
   border-radius: 12px;
-  background: rgba(246, 248, 249, 0.74);
+  background: color-mix(in srgb, var(--vrena-neutral-100) 74%, transparent);
 }
 
 .app .staff-tab-group-label {
@@ -3712,7 +3712,7 @@
   border-radius: 10px;
   padding: 7px 14px;
   border-color: var(--staff-modern-border);
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--vrena-white) 72%, transparent);
   box-shadow: none;
   font-size: 14px;
   font-weight: 780;
@@ -3722,7 +3722,7 @@
 .app .staff-tab-categories button:not(.active):hover,
 .app .staff-commerce-switcher button:not(.active):hover,
 .app .staff-attendance-tabs button:not(.active):hover {
-  border-color: rgba(0, 109, 119, 0.24);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent);
   background: var(--staff-modern-soft);
 }
 
@@ -3732,8 +3732,8 @@
 .app .staff-attendance-tabs button.active {
   border-color: transparent;
   background: var(--vrena-brand-gradient);
-  box-shadow: 0 10px 22px rgba(0, 109, 119, 0.2);
-  color: #ffffff;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
+  color: var(--vrena-white);
 }
 
 .app .staff-grid {
@@ -3799,8 +3799,8 @@
   width: auto;
   border: 1px solid var(--staff-modern-border);
   border-radius: 999px;
-  background: #ffffff;
-  color: #637075;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   padding: 4px 9px;
@@ -3808,8 +3808,8 @@
 }
 
 .app .staff-duration-presets button.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  background: rgba(0, 109, 119, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
   color: var(--vrena-brand-deep);
 }
 
@@ -3848,7 +3848,7 @@
 .app .staff-time-panel {
   max-height: 288px;
   border-radius: 12px;
-  box-shadow: 0 22px 48px rgba(7, 17, 18, 0.16);
+  box-shadow: 0 22px 48px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
 }
 
 .app .staff-time-custom-row {
@@ -3925,7 +3925,7 @@
 
 .app .staff-accountant-export-panel {
   border-radius: 12px;
-  box-shadow: 0 18px 44px rgba(7, 17, 18, 0.14);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
 }
 
 .app .staff-accountant-report-list {
@@ -3936,14 +3936,14 @@
   min-height: 54px;
   border-radius: 8px;
   border-color: var(--staff-modern-border);
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-accountant-report-list button.active {
-  border-color: rgba(0, 113, 227, 0.48);
-  background: #f5f9ff;
-  color: #071112;
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 48%, transparent);
+  background: var(--vrena-blue-50);
+  color: var(--vrena-neutral-950);
 }
 
 .app .staff-accountant-report-list button strong,
@@ -3988,7 +3988,7 @@
 .app .staff-planning-cell-button {
   min-height: 24px;
   border-radius: 8px;
-  background: rgba(0, 109, 119, 0.07);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent);
   font-size: 16px;
 }
 
@@ -4102,31 +4102,31 @@
 
 @media (prefers-color-scheme: dark) {
   .app .staff-game-guide-editor {
-    background: #0c1517;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .staff-game-guide-head small,
   .app .staff-game-guide-fields label {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-tabs button.active,
   .app .staff-tab-categories button.active {
     background: var(--vrena-brand-gradient);
     border-color: transparent;
-    color: #ffffff;
+    color: var(--vrena-white);
   }
 
   .app .staff-commerce-switcher button.active {
     background: var(--vrena-brand-gradient);
     border-color: transparent;
-    color: #ffffff;
+    color: var(--vrena-white);
   }
 
   .app .staff-role-pill {
-    background: rgba(13, 124, 81, 0.22);
-    color: #8ce8b5;
+    background: color-mix(in srgb, var(--vrena-green-700) 22%, transparent);
+    color: var(--vrena-green-400);
   }
 
   .app .staff-price-lines,
@@ -4176,46 +4176,46 @@
   .app .staff-search-control,
   .app .staff-achievement-player,
   .app .staff-achievement-preview {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-achievement-player.active {
-    background: rgba(0, 109, 119, 0.22);
-    border-color: rgba(90, 130, 255, 0.55);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 55%, transparent);
   }
 
   .app .staff-achievement-award-mark,
   .app .staff-achievement-preview-icon,
   .app .staff-achievement-player-avatar {
-    background: rgba(0, 109, 119, 0.22);
-    color: #c7d5ff;
+    background: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-achievement-awarded-list span {
-    background: rgba(0, 174, 179, 0.18);
-    color: #9df4f4;
+    background: color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent);
+    color: var(--vrena-cyan-200);
   }
 
   .app .staff-audience-chip {
-    background: rgba(0, 109, 119, 0.24);
-    color: #c7d5ff;
+    background: color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-audience-placeholder {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-employee-row.active {
-    background: linear-gradient(120deg, rgba(0, 184, 184, 0.18), rgba(0, 109, 119, 0.18));
-    border-color: rgba(90, 130, 255, 0.55);
+    background: linear-gradient(120deg, color-mix(in srgb, var(--vrena-cyan-600) 18%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent));
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 55%, transparent);
   }
 
   .app .staff-account-delete-warning {
-    background: rgba(185, 40, 31, 0.18);
-    border-color: rgba(255, 123, 113, 0.28);
-    color: #ffb8ae;
+    background: color-mix(in srgb, var(--vrena-red-700) 18%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-red-400) 28%, transparent);
+    color: var(--vrena-red-300);
   }
 
   .app .staff-price-lines span,
@@ -4256,25 +4256,25 @@
   .app .staff-shift-chip small,
   .app .staff-report-bar-group small,
   .app .staff-weekday-bar-group small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-hourly-grid {
-    stroke: rgba(255, 255, 255, 0.13);
+    stroke: color-mix(in srgb, var(--vrena-white) 13%, transparent);
   }
 
   .app .staff-hourly-grid-label {
-    fill: #aeb9bd;
+    fill: var(--vrena-neutral-400);
   }
 
   .app .staff-checkbox-row {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #f4f8f8;
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    color: var(--vrena-neutral-100);
   }
 
   .app .staff-standard-shift-row > strong {
-    color: #f4f8f8;
+    color: var(--vrena-neutral-100);
   }
 
   .app .staff-operations-card .staff-card-heading p,
@@ -4287,7 +4287,7 @@
   .app .staff-operation-order span,
   .app .staff-operation-player-result small,
   .app .staff-operation-player-empty {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-operation-player-result {
@@ -4297,122 +4297,122 @@
   .app .staff-operation-player-result:hover,
   .app .staff-operation-player-result:focus-visible,
   .app .staff-operation-player-result[aria-selected="true"] {
-    background: rgba(98, 133, 255, 0.16);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
+    color: var(--vrena-white);
   }
 
   .app .staff-shift-chip.has-warning {
-    background: rgba(255, 123, 113, 0.12);
-    border-color: rgba(255, 123, 113, 0.28);
+    background: color-mix(in srgb, var(--vrena-red-400) 12%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-red-400) 28%, transparent);
   }
 
   .app .staff-shift-chip em,
   .app .staff-warning-text {
-    color: #ffb8ae;
+    color: var(--vrena-red-300);
   }
 
   .app .staff-operation-title-row span {
-    background: rgba(0, 174, 179, 0.18);
-    color: #8ce8b5;
+    background: color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent);
+    color: var(--vrena-green-400);
   }
 
   .app .staff-operation-order,
   .app .staff-operations-orders {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .staff-report-export-actions > .staff-accountant-export > button,
   .app .staff-accountant-download.primary,
   .app .staff-chart-mode button.active {
     background: var(--vrena-brand-gradient);
-    color: #ffffff;
+    color: var(--vrena-white);
   }
 
   .app .staff-report-date-actions > button,
   .app .staff-report-compare-actions > button,
   .app .staff-report-export-actions > button {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-report-export-actions .staff-accountant-export-panel button:not(.primary) {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-accountant-export-head button.staff-accountant-export-close {
     background: transparent;
     border-color: transparent;
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-accountant-export-head button.staff-accountant-export-close:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--vrena-white) 8%, transparent);
+    color: var(--vrena-white);
   }
 
   .app .staff-accountant-report-heading {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: color-mix(in srgb, var(--vrena-white) 8%, transparent);
   }
 
   .app .staff-accountant-report-heading span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-accountant-export-grid label {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-duration-presets button {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #aeb9bd;
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-duration-presets button.active {
-    border-color: rgba(98, 133, 255, 0.38);
-    background: rgba(0, 109, 119, 0.18);
-    color: #c7d5ff;
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 38%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-accountant-report-list button {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-accountant-report-list button.active {
-    border-color: rgba(41, 151, 255, 0.58);
-    background: #102033;
-    color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(41, 151, 255, 0.14);
+    border-color: color-mix(in srgb, var(--vrena-blue-500) 58%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-white);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-blue-500) 14%, transparent);
   }
 
   .app .staff-chart-mode button {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-picker-shell {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.18);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-picker-shell.placeholder {
-    color: #8a9498;
+    color: var(--vrena-neutral-500);
   }
 
   .app .staff-time-panel {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: #10191b;
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: var(--vrena-neutral-900);
+    box-shadow: 0 18px 36px color-mix(in srgb, var(--vrena-neutral-950) 45%, transparent);
   }
 
   .app .staff-time-manual {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: #182225;
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
   }
 
@@ -4421,62 +4421,62 @@
   }
 
   .app .staff-time-option:hover, .app .staff-time-option.active {
-    border-color: rgba(104, 130, 255, 0.5);
-    background: rgba(0, 109, 119, 0.2);
-    color: #c7d5ff;
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 50%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-report-date-presets button.active {
-    background: rgba(0, 109, 119, 0.2);
-    color: #c7d5ff;
+    background: color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-report-calendar-day.in-range {
-    background: rgba(0, 109, 119, 0.22);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .staff-report-calendar-day.range-edge {
     background: var(--vrena-brand-deep);
-    color: #ffffff;
+    color: var(--vrena-white);
   }
 
   .app .staff-report-date-presets,
   .app .staff-report-date-compare,
   .app .staff-report-date-modal-actions {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .staff-report-pie {
-    box-shadow: inset 0 0 0 18px rgba(24, 34, 37, 0.7);
+    box-shadow: inset 0 0 0 18px color-mix(in srgb, var(--vrena-neutral-800) 70%, transparent);
   }
 
   .app .staff-report-pie span {
-    background: #10191b;
+    background: var(--vrena-neutral-900);
     color: var(--vrena-bg);
   }
 
   .app .staff-compare-toggle {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: #182225;
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
   }
 
   .app .staff-compare-toggle.active {
-    border-color: rgba(41, 151, 255, 0.48);
-    background: #102033;
-    color: #c7d5ff;
+    border-color: color-mix(in srgb, var(--vrena-blue-500) 48%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-purple-200);
   }
 
   .app .staff-report-graph {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .staff-field-label,
   .app .staff-game-photo-upload small,
   .app .staff-mode-panel p,
   .app .staff-label-line small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-game-photo-upload strong {
@@ -4485,35 +4485,35 @@
 
   .app .staff-role-row small,
   .app .staff-restore-row small {
-    color: #8ce8b5;
+    color: var(--vrena-green-400);
   }
 
   .app .staff-link-button {
-    color: #7f99ff;
+    color: var(--vrena-purple-400);
   }
 
   .app .staff-readonly-note {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-table th,
   .app .staff-table td {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 }
 
 @media (prefers-color-scheme: dark) {
   .app .staff-console {
-    --staff-modern-surface: rgba(16, 25, 27, 0.92);
-    --staff-modern-soft: #142023;
-    --staff-modern-border: rgba(255, 255, 255, 0.1);
-    --staff-modern-border-strong: rgba(255, 255, 255, 0.15);
-    --staff-modern-muted: #aeb9bd;
-    --staff-modern-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+    --staff-modern-surface: color-mix(in srgb, var(--vrena-neutral-900) 92%, transparent);
+    --staff-modern-soft: var(--vrena-neutral-800);
+    --staff-modern-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    --staff-modern-border-strong: color-mix(in srgb, var(--vrena-white) 15%, transparent);
+    --staff-modern-muted: var(--vrena-neutral-400);
+    --staff-modern-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
   }
 
   .app .staff-tab-group {
-    background: rgba(20, 32, 35, 0.78);
+    background: color-mix(in srgb, var(--vrena-neutral-800) 78%, transparent);
     border-color: var(--staff-modern-border);
   }
 
@@ -4522,7 +4522,7 @@
   .app .staff-commerce-switcher button,
   .app .staff-attendance-tabs button {
     border-color: var(--staff-modern-border);
-    background: rgba(16, 25, 27, 0.84);
+    background: color-mix(in srgb, var(--vrena-neutral-900) 84%, transparent);
     color: var(--vrena-bg);
   }
 
@@ -4530,8 +4530,8 @@
   .app .staff-tab-categories button:not(.active):hover,
   .app .staff-commerce-switcher button:not(.active):hover,
   .app .staff-attendance-tabs button:not(.active):hover {
-    border-color: rgba(98, 133, 255, 0.32);
-    background: #182427;
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 32%, transparent);
+    background: var(--vrena-neutral-800);
   }
 
   .app .staff-card,
@@ -4564,8 +4564,8 @@
   .app .staff-customer-suggestions,
   .app .staff-operation-player-results {
     border-color: var(--staff-modern-border);
-    background: #10191b;
-    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.32);
+    background: var(--vrena-neutral-900);
+    box-shadow: 0 22px 52px color-mix(in srgb, var(--vrena-neutral-950) 32%, transparent);
   }
 
   .app .staff-customer-suggestion,
@@ -4579,14 +4579,14 @@
   .app .staff-operation-player-result:hover,
   .app .staff-operation-player-result:focus-visible,
   .app .staff-operation-player-result[aria-selected="true"] {
-    background: rgba(98, 133, 255, 0.16);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
+    color: var(--vrena-white);
   }
 
   .app .staff-customer-suggestion small,
   .app .staff-operation-player-result small,
   .app .staff-operation-player-empty {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-summary-grid > div,
@@ -4602,13 +4602,13 @@
   }
 
   .app .staff-accountant-report-list button.active {
-    border-color: rgba(98, 133, 255, 0.44);
-    background: #14253b;
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 44%, transparent);
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
   }
 
   .app .staff-planning-cell-button {
-    background: rgba(98, 133, 255, 0.12);
+    background: color-mix(in srgb, var(--vrena-purple-400) 12%, transparent);
   }
 }
 

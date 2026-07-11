@@ -3,21 +3,21 @@
   z-index: 1000001;
   width: min(340px, calc(100vw - 28px));
   max-width: calc(100vw - 28px);
-  border: 1px solid rgba(8, 21, 23, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-900) 12%, transparent);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 20px 56px rgba(7, 17, 18, 0.24);
-  color: #0c1b1e;
+  background: color-mix(in srgb, var(--vrena-white) 98%, transparent);
+  box-shadow: 0 20px 56px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
+  color: var(--vrena-neutral-950);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-title {
-  color: #0c1b1e;
+  color: var(--vrena-neutral-950);
   font-size: 1rem;
   line-height: 1.25;
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-description {
-  color: #4d5d63;
+  color: var(--vrena-neutral-600);
   font-size: 0.92rem;
   line-height: 1.45;
 }
@@ -27,7 +27,7 @@
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-progress-text {
-  color: #66757b;
+  color: var(--vrena-neutral-600);
   font-size: 0.78rem;
 }
 
@@ -38,25 +38,25 @@
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-footer-btn {
-  border: 1px solid rgba(7, 17, 18, 0.12);
-  background: #f5f8f8;
-  color: #0c1b1e;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-neutral-100);
+  color: var(--vrena-neutral-950);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-next-btn,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn {
-  border-color: rgba(7, 17, 18, 0.9);
-  background: #071112;
-  color: #ffffff;
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-next-btn:hover,
 .driver-popover.vrena-tour-popover .driver-popover-next-btn:focus,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn:hover,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn:focus {
-  border-color: rgba(7, 17, 18, 0.9);
-  background: #071112;
-  color: #ffffff;
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-btn-disabled {
@@ -69,7 +69,7 @@
 }
 
 .driver-active .driver-active-element {
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.34), 0 16px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--vrena-cyan-600) 34%, transparent), 0 16px 40px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
 }
 
 @media (max-width: 520px) {

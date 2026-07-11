@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import type { Config, DriveStep, Driver, DriverHook, Side } from 'driver.js'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { AppView } from './AppSidebar'
 import 'driver.js/dist/driver.css'
 import './FirstLoginTour.css'
@@ -157,7 +158,7 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           disableActiveInteraction: false,
           doneBtnText: text.onboardingDone,
           nextBtnText: text.onboardingNext,
-          overlayColor: '#020617',
+          overlayColor: vrenaPalette.neutral[950],
           overlayOpacity: 0.72,
           popoverClass: 'vrena-tour-popover',
           popoverOffset: 12,

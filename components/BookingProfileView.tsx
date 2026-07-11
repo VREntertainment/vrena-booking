@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { avatarColors, avatarEmojis, avatarTextColors } from '../lib/bookingStaticData'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import {
   ANONYMOUS_MASK_COLOR,
   ANONYMOUS_MASK_EMOJI,
@@ -603,7 +604,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                                 value={avatarColorDraft}
                                 onBlur={() => setAvatarColorDraft(avatarColor)}
                                 onChange={(event) => updateAvatarColorDraft(event.target.value)}
-                                placeholder="#3059ff"
+                                placeholder={vrenaPalette.purple[500]}
                               />
                             </label>
                           </div>
@@ -634,7 +635,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                                     value={avatarTextColorDraft}
                                     onBlur={() => setAvatarTextColorDraft(avatarTextColor)}
                                     onChange={(event) => updateAvatarTextColorDraft(event.target.value)}
-                                    placeholder="#ffffff"
+                                    placeholder={vrenaPalette.white}
                                   />
                                 </label>
                               </div>
