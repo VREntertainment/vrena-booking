@@ -132,7 +132,7 @@ export default function JesterNotFound() {
             </span>
           </div>
 
-          <div className={styles.tileGrid}>
+          <div className={styles.tileGrid} data-complete={isComplete ? "true" : "false"}>
             {glitchTiles.map(({ id, label, hint, Icon }, index) => {
               const isCaught = caughtGlitches.includes(id);
 
@@ -149,6 +149,22 @@ export default function JesterNotFound() {
                   disabled={isCaught || isComplete}
                   aria-pressed={isCaught}
                 >
+                  <span className={styles.glitchAura} aria-hidden="true" />
+                  <span className={styles.glitchSweep} aria-hidden="true" />
+                  <span className={styles.glitchFragments} aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span className={styles.glitchBurst} aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </span>
                   <span className={styles.glitchIcon}>
                     <Icon size={24} strokeWidth={2.2} aria-hidden="true" />
                   </span>
