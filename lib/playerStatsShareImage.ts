@@ -1,4 +1,5 @@
 import { buildPlayerStatsShareSummary, formatWholePercent } from './playerStatsShare'
+import { vrenaPalette } from './theme/vrenaPalette'
 
 type ShareStatsImageLabels = {
   accuracy: string
@@ -209,7 +210,7 @@ export async function sharePlayerStatsImage({
   const sy = (value: number) => overlayOffsetY + value * overlayScale
   const ss = (value: number) => value * overlayScale
 
-  const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900, align: CanvasTextAlign = 'center') => {
+  const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color: string = vrenaPalette.neutral[950], weight = 900, align: CanvasTextAlign = 'center') => {
     let fontSize = size
     ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     while (ctx.measureText(value).width > maxWidth && fontSize > 18) {
@@ -245,11 +246,11 @@ export async function sharePlayerStatsImage({
 
     if (!drewPhoto) {
       const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
-      avatarGradient.addColorStop(0, player.avatarColor || '#00b6c6')
-      avatarGradient.addColorStop(1, '#3059ff')
+      avatarGradient.addColorStop(0, player.avatarColor || vrenaPalette.cyan[500])
+      avatarGradient.addColorStop(1, vrenaPalette.purple[500])
       ctx.fillStyle = avatarGradient
       ctx.fillRect(x, y, size, size)
-      ctx.fillStyle = player.avatarTextColor || '#ffffff'
+      ctx.fillStyle = player.avatarTextColor || vrenaPalette.white
       ctx.font = `900 ${player.avatarEmoji ? size * 0.5 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -263,8 +264,8 @@ export async function sharePlayerStatsImage({
     ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
   } else {
     const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-    background.addColorStop(0, '#f6fbfb')
-    background.addColorStop(1, '#dfe8ff')
+    background.addColorStop(0, vrenaPalette.neutral[50])
+    background.addColorStop(1, vrenaPalette.purple[100])
     ctx.fillStyle = background
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
@@ -273,7 +274,7 @@ export async function sharePlayerStatsImage({
 
   await drawShareAvatar(canvas.width / 2 - ss(104), sy(278), ss(208))
 
-  ctx.strokeStyle = '#3059ff'
+  ctx.strokeStyle = vrenaPalette.purple[500]
   ctx.lineWidth = ss(7)
   ctx.beginPath()
   ctx.arc(canvas.width / 2, sy(382), ss(108), 0, Math.PI * 2)
@@ -281,14 +282,14 @@ export async function sharePlayerStatsImage({
 
   fitText(displayName, canvas.width / 2, sy(528), ss(740), ss(52))
   if (contextLabel) {
-    fitText(contextLabel, canvas.width / 2, sy(570), ss(660), ss(25), '#657278', 800)
+    fitText(contextLabel, canvas.width / 2, sy(570), ss(660), ss(25), vrenaPalette.neutral[600], 800)
   }
 
   if (currentRank) {
-    fitText(`#${currentRank}`, canvas.width / 2, sy(contextLabel ? 616 : 590), ss(300), ss(38), '#3059ff', 900)
-    fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 650 : 624), ss(620), ss(26), '#657278', 850)
+    fitText(`#${currentRank}`, canvas.width / 2, sy(contextLabel ? 616 : 590), ss(300), ss(38), vrenaPalette.purple[500], 900)
+    fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 650 : 624), ss(620), ss(26), vrenaPalette.neutral[600], 850)
   } else {
-    fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 620 : 596), ss(620), ss(27), '#657278', 850)
+    fitText(rankTitle, canvas.width / 2, sy(contextLabel ? 620 : 596), ss(620), ss(27), vrenaPalette.neutral[600], 850)
   }
 
   const primaryStats = [
@@ -313,23 +314,23 @@ export async function sharePlayerStatsImage({
     const x = startX + col * (cardWidth + cardGap)
     const y = startY + row * (cardHeight + rowGap)
 
-    ctx.fillStyle = '#f0f4f6'
+    ctx.fillStyle = vrenaPalette.neutral[100]
     drawCanvasRoundRect(ctx, x, y, cardWidth, cardHeight, ss(24))
     ctx.fill()
-    fitText(stat.label, x + cardWidth / 2, y + ss(44), cardWidth - ss(36), ss(24), '#657278', 800)
-    fitText(stat.value, x + cardWidth / 2, y + ss(98), cardWidth - ss(36), ss(46), '#071112', 900)
+    fitText(stat.label, x + cardWidth / 2, y + ss(44), cardWidth - ss(36), ss(24), vrenaPalette.neutral[600], 800)
+    fitText(stat.value, x + cardWidth / 2, y + ss(98), cardWidth - ss(36), ss(46), vrenaPalette.neutral[950], 900)
   })
 
   const bestScores = player.bestByGame.slice(0, 3)
   if (bestScores.length > 0) {
-    fitText(labels.bestScores, canvas.width / 2, sy(1064), ss(700), ss(30), '#071112', 900)
+    fitText(labels.bestScores, canvas.width / 2, sy(1064), ss(700), ss(30), vrenaPalette.neutral[950], 900)
     bestScores.forEach((item, index) => {
-      fitText(`${item.game}: ${item.score}`, canvas.width / 2, sy(1110 + index * 40), ss(720), ss(28), '#39464b', 800)
+      fitText(`${item.game}: ${item.score}`, canvas.width / 2, sy(1110 + index * 40), ss(720), ss(28), vrenaPalette.neutral[700], 800)
     })
   }
 
   if (!templateImage) {
-    fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, '#657278', 800)
+    fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, vrenaPalette.neutral[600], 800)
   }
 
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)

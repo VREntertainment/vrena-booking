@@ -1,4 +1,5 @@
 import type { BookingUpdateEmailChange, BookingUpdateEmailPayload } from './bookingUpdateEmailTypes'
+import { vrenaPalette } from './theme/vrenaPalette'
 
 const DEFAULT_TO_EMAIL = 'contact@vre-vietnam.com'
 const DEFAULT_FROM_EMAIL = 'VRena Booking <bookings@vre-vietnam.com>'
@@ -105,7 +106,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
     .map((line) => line ? line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<br>')
     .join('<br>')
   const html = escapedMinorWarning
-    ? htmlBody.replace(escapedMinorWarning, `<span style="color:#b00020;font-weight:800">${escapedMinorWarning}</span>`)
+    ? htmlBody.replace(escapedMinorWarning, `<span style="color:${vrenaPalette.red[700]};font-weight:800">${escapedMinorWarning}</span>`)
     : htmlBody
 
   const response = await fetch('https://api.resend.com/emails', {

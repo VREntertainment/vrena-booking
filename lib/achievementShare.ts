@@ -1,4 +1,5 @@
 import { DEFAULT_APP_URL, loadCanvasImage } from './bookingWidgetDomain'
+import { vrenaPalette, vrenaRgba } from './theme/vrenaPalette'
 
 export type AchievementShareResult = 'shared' | 'ready' | 'cancelled'
 
@@ -24,8 +25,8 @@ export type AchievementShareOptions = {
 }
 
 const defaultTheme = {
-  accent: '#3059ff',
-  background: '#f6fbfb',
+  accent: vrenaPalette.purple[500],
+  background: vrenaPalette.neutral[50],
 }
 
 function safeDownloadSlug(value: string, fallback: string) {
@@ -60,7 +61,7 @@ function fitText(
   y: number,
   maxWidth: number,
   size: number,
-  color = '#071112',
+  color: string = vrenaPalette.neutral[950],
   weight = 900,
   align: CanvasTextAlign = 'center',
 ) {
@@ -197,28 +198,28 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
 
   if (templateImage) {
     ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = vrenaPalette.white
     drawRoundRect(ctx, sx(160), sy(166), ss(760), ss(86), ss(26))
     ctx.fill()
   } else {
     const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
     background.addColorStop(0, theme.background)
-    background.addColorStop(0.58, '#ffffff')
-    background.addColorStop(1, '#dfe8ff')
+    background.addColorStop(0.58, vrenaPalette.white)
+    background.addColorStop(1, vrenaPalette.purple[100])
     ctx.fillStyle = background
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    ctx.fillStyle = 'rgba(48, 89, 255, 0.1)'
+    ctx.fillStyle = vrenaRgba(vrenaPalette.purple[500], 0.1)
     ctx.beginPath()
     ctx.arc(ss(130), ss(130), ss(260), 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = 'rgba(245, 197, 66, 0.18)'
+    ctx.fillStyle = vrenaRgba(vrenaPalette.yellow[500], 0.18)
     ctx.beginPath()
     ctx.arc(ss(960), ss(310), ss(230), 0, Math.PI * 2)
     ctx.fill()
   }
 
-  ctx.fillStyle = '#071112'
+  ctx.fillStyle = vrenaPalette.neutral[950]
   ctx.textBaseline = 'alphabetic'
   fitText(ctx, 'ACHIEVEMENT UNLOCKED', canvas.width / 2, sy(214), ss(760), ss(44), theme.accent, 950)
   fitText(ctx, options.displayName, canvas.width / 2, sy(292), ss(820), ss(48))
@@ -227,10 +228,10 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   const badgeY = sy(352)
   const badgeSize = ss(500)
   ctx.save()
-  ctx.shadowColor = 'rgba(7, 17, 18, 0.18)'
+  ctx.shadowColor = vrenaRgba(vrenaPalette.neutral[950], 0.18)
   ctx.shadowBlur = ss(34)
   ctx.shadowOffsetY = ss(18)
-  ctx.fillStyle = '#071112'
+  ctx.fillStyle = vrenaPalette.neutral[950]
   drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
   ctx.fill()
   ctx.restore()
@@ -256,17 +257,17 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   if (!drewBadge) {
     const badgeGradient = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeSize, badgeY + badgeSize)
     badgeGradient.addColorStop(0, theme.accent)
-    badgeGradient.addColorStop(1, '#00aeb3')
+    badgeGradient.addColorStop(1, vrenaPalette.cyan[500])
     ctx.fillStyle = badgeGradient
     drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
     ctx.fill()
-    fitText(ctx, '★', canvas.width / 2, badgeY + ss(322), ss(360), ss(190), '#ffffff', 900)
+    fitText(ctx, '★', canvas.width / 2, badgeY + ss(322), ss(360), ss(190), vrenaPalette.white, 900)
   }
 
-  ctx.fillStyle = 'rgba(7, 17, 18, 0.42)'
+  ctx.fillStyle = vrenaRgba(vrenaPalette.neutral[950], 0.42)
   drawRoundRect(ctx, badgeX + ss(42), badgeY + badgeSize - ss(120), badgeSize - ss(84), ss(70), ss(28))
   ctx.fill()
-  fitText(ctx, options.kindLabel, canvas.width / 2, badgeY + badgeSize - ss(75), badgeSize - ss(140), ss(28), '#ffffff', 900)
+  fitText(ctx, options.kindLabel, canvas.width / 2, badgeY + badgeSize - ss(75), badgeSize - ss(140), ss(28), vrenaPalette.white, 900)
 
   fitText(ctx, options.title, canvas.width / 2, sy(925), ss(870), ss(58))
   if (options.rarityLabel) {
@@ -276,7 +277,7 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   ctx.font = `850 ${ss(32)}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
   const lines = wrapText(ctx, options.description, ss(820))
   lines.forEach((line, index) => {
-    fitText(ctx, line, canvas.width / 2, sy(1032 + index * 42), ss(820), ss(32), '#39464b', 850)
+    fitText(ctx, line, canvas.width / 2, sy(1032 + index * 42), ss(820), ss(32), vrenaPalette.neutral[700], 850)
   })
 
   if (typeof options.current === 'number' && typeof options.target === 'number' && options.target > 0) {
@@ -284,17 +285,17 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
     const trackY = sy(1168)
     const trackWidth = ss(700)
     const percent = Math.max(0, Math.min(1, options.current / options.target))
-    ctx.fillStyle = 'rgba(7, 17, 18, 0.1)'
+    ctx.fillStyle = vrenaRgba(vrenaPalette.neutral[950], 0.1)
     drawRoundRect(ctx, trackX, trackY, trackWidth, ss(18), ss(999))
     ctx.fill()
     ctx.fillStyle = theme.accent
     drawRoundRect(ctx, trackX, trackY, trackWidth * percent, ss(18), ss(999))
     ctx.fill()
-    fitText(ctx, options.progressLabel || `${options.current}/${options.target}`, canvas.width / 2, sy(1214), ss(500), ss(26), '#657278', 850)
+    fitText(ctx, options.progressLabel || `${options.current}/${options.target}`, canvas.width / 2, sy(1214), ss(500), ss(26), vrenaPalette.neutral[600], 850)
   }
 
   if (!templateImage) {
-    fitText(ctx, options.footer || appUrl.replace(/^https?:\/\//, ''), canvas.width / 2, sy(1310), ss(760), ss(24), '#657278', 800)
+    fitText(ctx, options.footer || appUrl.replace(/^https?:\/\//, ''), canvas.width / 2, sy(1310), ss(760), ss(24), vrenaPalette.neutral[600], 800)
   }
 
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)

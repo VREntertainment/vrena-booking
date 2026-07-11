@@ -1,36 +1,11 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --vrena-bg: #fffefd;
-  --vrena-bg-soft: #ffffff;
-  --vrena-surface: #ffffff;
-  --vrena-surface-warm: #fffdf9;
-  --vrena-line-warm: rgba(7, 17, 18, 0.08);
-  --vrena-brand-cyan: #4f7cff;
-  --vrena-brand-deep: #2f45ff;
-  --vrena-brand-gradient: linear-gradient(135deg, var(--vrena-brand-cyan) 0%, var(--vrena-brand-deep) 100%);
-  --vrena-brand-gradient-reverse: linear-gradient(135deg, var(--vrena-brand-deep) 0%, var(--vrena-brand-cyan) 100%);
-  --vrena-brand-soft: linear-gradient(135deg, rgba(79, 124, 255, 0.08), rgba(47, 69, 255, 0.1));
-  --vrena-cta: var(--vrena-brand-gradient);
-  --vrena-cta-ink: #ffffff;
-  --vrena-cta-shadow: rgba(47, 69, 255, 0.22);
-  --vrena-cta-soft: rgba(79, 124, 255, 0.12);
-}
+@import "../styles/vrena-tokens.css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -42,7 +17,7 @@ body {
 /* Booking widget styles moved from styled-jsx for deterministic split chunks. */
 .app {
   background: var(--vrena-bg);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --avatar-xs: 34px;
   --avatar-xs-emoji: 26px;
@@ -76,7 +51,7 @@ body {
 }
 
 .app aside {
-  background: #ffffff;
+  background: var(--vrena-white);
   border-right: 1px solid var(--vrena-line-warm);
   padding: 22px;
   display: flex;
@@ -101,7 +76,7 @@ body {
   min-height: 100vh;
   place-items: center;
   background: var(--vrena-bg);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 24px;
 }
 
@@ -110,7 +85,7 @@ body {
   place-items: center;
   gap: 10px;
   min-height: 220px;
-  color: #263235;
+  color: var(--vrena-neutral-800);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0;
@@ -140,7 +115,7 @@ body {
   width: min(110px, 36vw);
   line-height: 0;
   animation: brandLoaderPulse 1400ms ease-in-out infinite;
-  filter: drop-shadow(0 10px 18px rgba(7, 17, 18, 0.1));
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent));
 }
 
 .brand-loader-mark img {
@@ -226,18 +201,18 @@ body {
 }
 
 .app .muted {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .app .section {
   position: relative;
-  background: #ffffff;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  background: var(--vrena-white);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 10px 22px rgba(7, 17, 18, 0.08);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .sessions-section {
@@ -269,9 +244,9 @@ body {
   height: 34px;
   min-height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(7, 17, 18, 0.14);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font-size: 20px;
   font-weight: 800;
   padding: 0;
@@ -295,10 +270,10 @@ body {
   box-sizing: border-box;
   padding: 8px;
   margin: 0;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 16px 40px rgba(11, 21, 24, 0.14);
+  background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--vrena-neutral-900) 14%, transparent);
   scrollbar-width: thin;
 }
 
@@ -310,14 +285,14 @@ body {
   min-height: 48px;
   padding: 7px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   background: var(--vrena-surface-warm);
-  color: #071112;
+  color: var(--vrena-neutral-950);
   text-align: center;
 }
 
 .app .day-chip span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -328,18 +303,18 @@ body {
 }
 
 .app .day-chip.active {
-  color: #ffffff;
+  color: var(--vrena-white);
   border-color: transparent;
   background: var(--vrena-brand-gradient);
 }
 
 .app .day-chip.active span {
-  color: rgba(255, 255, 255, 0.82);
+  color: color-mix(in srgb, var(--vrena-white) 82%, transparent);
 }
 
 .app .mobile-search-toggle {
   display: none;
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .app-title-row {
@@ -358,10 +333,10 @@ body {
 
 .app .language-picker > button, .app .language-menu button {
   min-height: 34px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 6px 11px;
   font-size: 12px;
   font-weight: 900;
@@ -371,7 +346,7 @@ body {
 
 .app .language-picker > button:hover, .app .language-menu button:hover {
   transform: translateY(-1px) scale(1.03);
-  border-color: rgba(0, 109, 119, 0.38);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 38%, transparent);
 }
 
 .app .language-menu {
@@ -388,12 +363,12 @@ body {
   overflow: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 20px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 6px;
   scroll-padding-inline: 8px;
-  box-shadow: 0 12px 32px rgba(11, 21, 24, 0.14);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--vrena-neutral-900) 14%, transparent);
   transform: translateX(var(--language-menu-x));
   animation: languagePickerIn 160ms ease-out;
 }
@@ -405,9 +380,9 @@ body {
 }
 
 .app .language-menu button.active {
-  background: #071112;
-  border-color: #071112;
-  color: #ffffff;
+  background: var(--vrena-neutral-950);
+  border-color: var(--vrena-neutral-950);
+  color: var(--vrena-white);
 }
 
 @keyframes languagePickerIn {
@@ -429,9 +404,9 @@ body {
   align-items: center;
   width: 100%;
   text-align: left;
-  color: #071112;
-  background: #ffffff;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  color: var(--vrena-neutral-950);
+  background: var(--vrena-white);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 10px;
   cursor: pointer;
@@ -439,13 +414,13 @@ body {
 
 .app .profile-chip:hover {
   background: var(--vrena-surface-warm);
-  color: #071112;
-  box-shadow: 0 12px 26px rgba(11, 21, 24, 0.12);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--vrena-neutral-900) 12%, transparent);
 }
 
 .app .profile-chip.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(0, 109, 119, 0.14);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
 }
 
 .app .profile-chip strong, .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo) {
@@ -456,12 +431,12 @@ body {
 }
 
 .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo) {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
 .app .field-help {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.35;
   margin-top: 6px;
@@ -522,8 +497,8 @@ body {
 }
 
 .app .date-input-shell:focus-within {
-  border-color: rgba(0, 109, 119, 0.58);
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 58%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent);
 }
 
 .app .link-button {
@@ -552,7 +527,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 0;
 }
 
@@ -570,7 +545,7 @@ body {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   padding: 0;
 }
 
@@ -603,7 +578,7 @@ body {
 }
 
 .app .danger-link {
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .account-links {
@@ -643,17 +618,17 @@ body {
   grid-template-columns: 92px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  border-color: rgba(0, 109, 119, 0.16);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 252, 0.96)),
-    radial-gradient(circle at top left, rgba(0, 174, 179, 0.13), transparent 34%),
-    radial-gradient(circle at top right, rgba(0, 109, 119, 0.12), transparent 30%);
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-white) 96%, transparent), color-mix(in srgb, var(--vrena-neutral-50) 96%, transparent)),
+    radial-gradient(circle at top left, color-mix(in srgb, var(--vrena-cyan-500) 13%, transparent), transparent 34%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent), transparent 30%);
   padding: 16px;
-  box-shadow: 0 12px 28px rgba(7, 17, 18, 0.07);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
 }
 
 .app .profile-account-hero .profile-photo-preview {
-  box-shadow: 0 8px 22px rgba(0, 109, 119, 0.18);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
 }
 
 .app .profile-identity-copy {
@@ -663,14 +638,14 @@ body {
 }
 
 .app .profile-identity-copy strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: clamp(20px, 3vw, 28px);
   line-height: 1.05;
 }
 
 .app .profile-identity-copy > span {
   margin: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
 }
 
 .app .profile-summary-pills {
@@ -687,7 +662,7 @@ body {
   min-width: 0;
   max-width: 100%;
   min-height: 22px;
-  color: #5e6b70;
+  color: var(--vrena-neutral-600);
   padding: 0;
   font-size: 13px;
   font-weight: 800;
@@ -708,7 +683,7 @@ body {
 
 .app .profile-account-form .avatar-options {
   grid-column: 1 / -1;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   margin-top: 4px;
   padding-top: 12px;
 }
@@ -719,7 +694,7 @@ body {
   align-items: center;
   gap: 8px;
   margin-top: 6px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   font-weight: 950;
   letter-spacing: 0;
@@ -743,7 +718,7 @@ body {
   border-radius: 8px;
   background: var(--player-field-panel);
   padding: 10px;
-  box-shadow: 0 1px 0 rgba(7, 17, 18, 0.04);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
 }
 
 .app .profile-account-form .motto-field,
@@ -798,7 +773,7 @@ body {
 }
 
 .app .profile-account-form label {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -861,12 +836,12 @@ body {
 
 .app .profile-security-panel .link-button:hover,
 .app .profile-security-panel .link-button:focus-visible {
-  border-color: rgba(0, 109, 119, 0.28);
-  background: #f7f9ff;
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: var(--vrena-purple-50);
 }
 
 .app .profile-security-panel .danger-link {
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .mfa-security-card,
@@ -895,13 +870,13 @@ body {
 .app .mfa-security-copy strong,
 .app .mfa-panel-copy strong {
   display: block;
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .mfa-security-copy small,
 .app .mfa-panel-copy span {
   display: block;
-  color: #627074;
+  color: var(--vrena-neutral-600);
   line-height: 1.35;
 }
 
@@ -928,9 +903,9 @@ body {
 .app .mfa-qr {
   width: 148px;
   height: 148px;
-  border: 1px solid rgba(7, 17, 18, 0.09);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 8px;
 }
 
@@ -973,7 +948,7 @@ body {
 @media (min-width: 721px) {
   .app .profile-account-form .avatar-options {
     gap: 10px;
-    border-top-color: rgba(7, 17, 18, 0.06);
+    border-top-color: color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
     padding-top: 14px;
   }
 
@@ -1117,7 +1092,7 @@ body {
 .app .my-sessions {
   display: grid;
   gap: 12px;
-  border-top: 1px solid rgba(7, 17, 18, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   margin-top: 18px;
   padding-top: 18px;
 }
@@ -1134,7 +1109,7 @@ body {
 }
 
 .app .profile-session-group + .profile-session-group {
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 14px;
 }
 
@@ -1157,10 +1132,10 @@ body {
 .app .mini-session {
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .mini-session.clickable {
@@ -1168,8 +1143,8 @@ body {
 }
 
 .app .mini-session.clickable:hover {
-  border-color: rgba(0, 109, 119, 0.35);
-  box-shadow: 0 10px 26px rgba(11, 21, 24, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 35%, transparent);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-900) 8%, transparent);
 }
 
 .app .mini-session-title {
@@ -1197,7 +1172,7 @@ body {
   height: 42px;
   border-radius: 7px;
   object-fit: cover;
-  background: #071112;
+  background: var(--vrena-neutral-950);
 }
 
 .app .mini-session-actions {
@@ -1207,8 +1182,8 @@ body {
 }
 
 .app .invite-session {
-  border-color: rgba(0, 109, 119, 0.24);
-  background: #f7f9ff;
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent);
+  background: var(--vrena-purple-50);
 }
 
 .app .invite-popup-actions {
@@ -1223,10 +1198,10 @@ body {
   grid-template-columns: 92px minmax(0, 1fr);
   gap: 14px;
   align-items: center;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .profile-photo-panel strong, .app .profile-photo-panel span {
@@ -1234,7 +1209,7 @@ body {
 }
 
 .app .profile-photo-panel span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   margin-top: 4px;
 }
@@ -1332,15 +1307,15 @@ body {
   min-height: 36px;
   border-radius: 999px;
   padding: 0;
-  border: 1px solid rgba(7, 17, 18, 0.14);
-  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  background: var(--vrena-white);
   display: grid;
   place-items: center;
   font-size: 20px;
 }
 
 .app .emoji-row button.active, .app .color-row button.active {
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.22);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
   border-color: var(--vrena-brand-deep);
 }
 
@@ -1358,7 +1333,7 @@ body {
 .app .custom-color-row label {
   display: grid;
   gap: 4px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -1394,7 +1369,7 @@ body {
   place-items: center;
   overflow: visible;
   background: var(--vrena-brand-gradient);
-  color: #ffffff;
+  color: var(--vrena-white);
   font-weight: 800;
   line-height: 1;
   padding: 0;
@@ -1458,8 +1433,8 @@ body {
   overflow: hidden !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
 }
 
 .app .avatar-photo img {
@@ -1476,8 +1451,8 @@ body {
   border: 0;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
 }
 
 .app .champion-badge {
@@ -1493,7 +1468,7 @@ body {
   font-size: 18px;
   line-height: 1;
   box-shadow: none;
-  filter: drop-shadow(0 2px 4px rgba(11, 21, 24, 0.26));
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--vrena-neutral-900) 26%, transparent));
   animation: crownBob 1.8s ease-in-out infinite;
   z-index: 3;
   pointer-events: none;
@@ -1515,8 +1490,8 @@ body {
   object-position: center center !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
   z-index: 0;
 }
 
@@ -1525,7 +1500,7 @@ body {
   gap: 7px;
   justify-items: center;
   margin-top: auto;
-  border-top: 1px solid rgba(7, 17, 18, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   padding-top: 16px;
   font-size: 13px;
   text-align: center;
@@ -1569,26 +1544,26 @@ body {
   justify-content: center;
   gap: 7px;
   min-height: 38px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--vrena-white) 92%, transparent);
   padding: 8px 10px;
-  color: #071112 !important;
+  color: var(--vrena-neutral-950) !important;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
   text-decoration: none !important;
   white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(7, 17, 18, 0.06);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .app .contact-channel.whatsapp {
-  border-color: rgba(37, 211, 102, 0.34);
+  border-color: color-mix(in srgb, var(--vrena-green-600) 34%, transparent);
 }
 
 .app .contact-channel.zalo {
-  border-color: rgba(0, 104, 255, 0.3);
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 30%, transparent);
 }
 
 .app .contact-channel img {
@@ -1603,17 +1578,17 @@ body {
 }
 
 .app .contact-channel:hover {
-  box-shadow: 0 8px 20px rgba(7, 17, 18, 0.1);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   text-decoration: none;
   transform: translateY(-1px);
 }
 
 .app .contact-channel.whatsapp:hover {
-  border-color: rgba(37, 211, 102, 0.7);
+  border-color: color-mix(in srgb, var(--vrena-green-600) 70%, transparent);
 }
 
 .app .contact-channel.zalo:hover {
-  border-color: rgba(0, 104, 255, 0.62);
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 62%, transparent);
 }
 
 .app .tariff-contact-channels {
@@ -1653,7 +1628,7 @@ body {
 .app .tab, .app .segmented button {
   text-align: left;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 10px 13px;
@@ -1664,13 +1639,13 @@ body {
 
 .app .tab.active, .app .segmented button.active {
   background: var(--vrena-surface-warm);
-  border-color: rgba(7, 17, 18, 0.12);
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .segmented {
   display: inline-flex;
   gap: 4px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 4px;
 }
@@ -1707,11 +1682,11 @@ body {
 .app .club-card {
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-left: 4px solid var(--club-theme, var(--vrena-brand-deep));
   border-radius: 8px;
   padding: 14px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .club-card-banner {
@@ -1720,8 +1695,8 @@ body {
   overflow: hidden;
   border-radius: 10px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), transparent),
-    #eef4f7;
+    linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), transparent),
+    var(--vrena-neutral-100);
 }
 
 .app .club-card-banner img {
@@ -1738,7 +1713,7 @@ body {
 .app .pending-list {
   display: grid;
   gap: 8px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 10px;
 }
 
@@ -1760,7 +1735,7 @@ body {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(7, 17, 18, 0.32);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 32%, transparent);
 }
 
 .app .login-modal {
@@ -1768,15 +1743,15 @@ body {
   width: min(420px, 100%);
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 20px;
-  background: #ffffff;
-  box-shadow: 0 28px 80px rgba(11, 21, 24, 0.2);
+  background: var(--vrena-white);
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--vrena-neutral-900) 20%, transparent);
 }
 
 .app .login-modal p {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   line-height: 1.45;
 }
 
@@ -1819,7 +1794,7 @@ body {
 
 .app .payment-grid .active {
   border-color: var(--vrena-brand-deep);
-  box-shadow: 0 0 0 2px rgba(0, 109, 119, 0.14);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
 }
 
 .app .amount-field {
@@ -1836,7 +1811,7 @@ body {
 }
 
 .app .private-payment {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -1850,12 +1825,12 @@ body {
   -webkit-overflow-scrolling: touch;
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 12px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 18px;
-  box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--vrena-neutral-900) 22%, transparent);
 }
 
 .app .player-profile-head {
@@ -1873,7 +1848,7 @@ body {
 
 .app .player-motto {
   margin: 3px 0 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 800;
 }
@@ -1881,9 +1856,9 @@ body {
 .app .challenge-card {
   display: grid;
   gap: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
-  background: #f4f8f9;
+  background: var(--vrena-neutral-100);
   padding: 10px;
 }
 
@@ -1906,7 +1881,7 @@ body {
 
 .app .challenge-card-head span,
 .app .challenge-summary {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -1923,7 +1898,7 @@ body {
 }
 
 .app .challenge-form-grid label > span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
 }
@@ -1935,8 +1910,8 @@ body {
 .app .challenge-sent-pill {
   justify-self: end;
   border-radius: 999px;
-  background: #e8f6ee;
-  color: #0f7c4a;
+  background: var(--vrena-green-100);
+  color: var(--vrena-green-900);
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 900;
@@ -1964,7 +1939,7 @@ body {
 .app .birthday-cake {
   font-size: 54px;
   line-height: 1;
-  filter: drop-shadow(0 4px 8px rgba(11, 21, 24, 0.16));
+  filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent));
   animation: birthdayCakeBounce 1.2s ease-in-out infinite;
 }
 
@@ -1982,7 +1957,7 @@ body {
 }
 
 .app .champion-avatar {
-  box-shadow: 0 0 0 3px #f6c244;
+  box-shadow: 0 0 0 3px var(--vrena-yellow-300);
 }
 
 .app .podium-row {
@@ -1999,10 +1974,10 @@ body {
   justify-items: center;
   min-width: 0;
   min-height: 72px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 7px;
   font-weight: 900;
   text-align: center;
@@ -2067,7 +2042,7 @@ body {
 
 .app .best-score-list {
   margin-top: 8px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
 }
 
@@ -2075,8 +2050,8 @@ body {
   width: fit-content;
   border-radius: 999px;
   padding: 2px 8px;
-  background: #fff2a8;
-  color: #716000;
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-900);
   font-weight: 800;
 }
 
@@ -2086,10 +2061,10 @@ body {
   gap: 8px;
   margin-top: 8px;
   padding: 10px 12px;
-  border: 1px solid #dce5e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #f5f9fa;
-  color: #091213;
+  background: var(--vrena-neutral-100);
+  color: var(--vrena-neutral-950);
   font-size: 14px;
 }
 
@@ -2115,12 +2090,12 @@ body {
 }
 
 .app .score-line span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 800;
 }
 
 .app .score-line.total-line {
-  border-top: 1px solid #dce5e8;
+  border-top: 1px solid var(--vrena-neutral-300);
   padding-top: 4px;
 }
 
@@ -2135,15 +2110,15 @@ body {
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font: inherit;
   font-weight: 900;
   text-align: right;
 }
 
 .app .score-value.editable {
-  border-color: #dce5e8;
-  background: #ffffff;
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-white);
   cursor: pointer;
 }
 
@@ -2154,11 +2129,11 @@ body {
 .app .inline-score-input {
   width: 84px;
   min-height: 34px;
-  border: 1px solid #cfd8dc;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 4px 8px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font: inherit;
   font-weight: 900;
   text-align: right;
@@ -2168,9 +2143,9 @@ body {
   display: grid;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid #dce5e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #f5f9fa;
+  background: var(--vrena-neutral-100);
 }
 
 .app .reminder-strip-head {
@@ -2193,15 +2168,15 @@ body {
   gap: 10px;
   width: 100%;
   min-height: 36px;
-  border: 1px solid #dce5e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   text-align: left;
 }
 
 .app .reminder-strip small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 700;
 }
 
@@ -2224,9 +2199,9 @@ body {
   display: grid;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid #dce5e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #f8fbfc;
+  background: var(--vrena-neutral-50);
 }
 
 .app .invite-scroll {
@@ -2242,16 +2217,16 @@ body {
   align-items: center;
   gap: 4px 8px;
   min-width: 132px;
-  border: 1px solid #dce5e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 8px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   text-align: left;
 }
 
 .app .invite-chip small {
   grid-column: 2;
-  color: #315dff;
+  color: var(--vrena-purple-500);
   font-weight: 800;
 }
 
@@ -2315,10 +2290,10 @@ body {
   align-items: center;
   gap: 9px;
   min-height: 48px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
-  color: #071112;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
   padding: 7px 9px;
   text-align: left;
 }
@@ -2337,13 +2312,13 @@ body {
 }
 
 .app .invite-result-copy small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 750;
 }
 
 .app .invite-result-row > small {
-  color: #315dff;
+  color: var(--vrena-purple-500);
   font-size: 12px;
   font-weight: 900;
 }
@@ -2372,9 +2347,9 @@ body {
   gap: 8px;
   align-content: start;
   padding: 10px;
-  border: 1px solid #e4ecef;
+  border: 1px solid var(--vrena-neutral-200);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .message-channel-head {
@@ -2386,7 +2361,7 @@ body {
 
 .app .message-channel-head small,
 .app .character-count {
-  color: #66777d;
+  color: var(--vrena-neutral-600);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -2413,7 +2388,7 @@ body {
 }
 
 .app .character-count.over-limit {
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .club-message-list {
@@ -2440,7 +2415,7 @@ body {
 
 .app .message-list::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: #c9d4d8;
+  background: var(--vrena-neutral-300);
 }
 
 .app .message-list::-webkit-scrollbar-track {
@@ -2453,26 +2428,26 @@ body {
   align-items: start;
   gap: 7px;
   padding: 7px;
-  border: 1px solid #e4ecef;
+  border: 1px solid var(--vrena-neutral-200);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .session-message.announcement {
-  border-color: #c7d5ff;
-  background: #f3f6ff;
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
 }
 
 .app .session-message.own-message {
   grid-template-columns: minmax(0, 1fr) auto;
   margin-left: clamp(18px, 8vw, 72px);
-  border-color: #cfe2ea;
-  background: #f7fbff;
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-neutral-50);
 }
 
 .app .session-message.announcement.own-message {
-  border-color: #c7d5ff;
-  background: #eef4ff;
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
 }
 
 .app .session-message.own-message .message-avatar {
@@ -2490,7 +2465,7 @@ body {
 
 .app .session-message p {
   margin: 2px 0 0;
-  color: #4a5a60;
+  color: var(--vrena-neutral-700);
 }
 
 .app .message-translation-row {
@@ -2499,7 +2474,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
-  color: #66777d;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 850;
   line-height: 1.2;
@@ -2535,7 +2510,7 @@ body {
 
 .app .message-translation-toggle:hover,
 .app .message-translation-toggle:focus-visible {
-  color: #1239c8;
+  color: var(--vrena-purple-700);
   text-decoration: underline;
 }
 
@@ -2569,13 +2544,13 @@ body {
 }
 
 .app .moderation-badge.pending {
-  background: #fff5d6;
-  color: #805700;
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-800);
 }
 
 .app .moderation-badge.rejected {
-  background: #ffe8e3;
-  color: #a33323;
+  background: var(--vrena-red-100);
+  color: var(--vrena-orange-800);
 }
 
 .app .moderation-actions {
@@ -2596,7 +2571,7 @@ body {
   display: grid;
   place-items: end center;
   padding: 20px;
-  background: rgba(7, 17, 18, 0.34);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 34%, transparent);
 }
 
 .app .club-drawer {
@@ -2605,11 +2580,11 @@ body {
   overflow-y: auto;
   display: grid;
   gap: 14px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 14px 14px 8px 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 16px;
-  box-shadow: 0 28px 80px rgba(11, 21, 24, 0.22);
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--vrena-neutral-900) 22%, transparent);
   animation: drawerUp 180ms ease-out;
 }
 
@@ -2622,11 +2597,11 @@ body {
   position: relative;
   min-height: 156px;
   overflow: hidden;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), rgba(0, 181, 184, 0.08)),
-    #f4f7f8;
+    linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent)),
+    var(--vrena-neutral-100);
 }
 
 .app .club-hero img {
@@ -2641,7 +2616,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(7, 17, 18, 0.76), rgba(7, 17, 18, 0.2));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--vrena-neutral-950) 76%, transparent), color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent));
 }
 
 .app .club-hero-content {
@@ -2658,7 +2633,7 @@ body {
 .app .club-hero.has-banner .club-hero-content,
 .app .club-hero.has-banner .club-hero-content .row-meta span,
 .app .club-hero.has-banner .club-motto {
-  color: #ffffff;
+  color: var(--vrena-white);
 }
 
 .app .club-banner-empty {
@@ -2669,11 +2644,11 @@ body {
   gap: 5px;
   padding: 16px;
   text-align: center;
-  color: #637075;
+  color: var(--vrena-neutral-600);
 }
 
 .app .club-banner-empty strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 18px;
 }
 
@@ -2694,9 +2669,9 @@ body {
 
 .app .club-invite-box,
 .app .club-member-row {
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: var(--club-theme-faint, rgba(0, 109, 119, 0.07));
+  background: var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent));
 }
 
 .app .club-invite-box {
@@ -2708,7 +2683,7 @@ body {
 }
 
 .app .club-invite-box span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 800;
 }
 
@@ -2781,10 +2756,10 @@ body {
   place-items: center;
   min-height: 140px;
   overflow: hidden;
-  border: 1px dashed rgba(0, 109, 119, 0.34);
+  border: 1px dashed color-mix(in srgb, var(--vrena-cyan-700) 34%, transparent);
   border-radius: 10px;
-  background: var(--club-theme-faint, rgba(0, 109, 119, 0.07));
-  color: #637075;
+  background: var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent));
+  color: var(--vrena-neutral-600);
   font-weight: 900;
   text-align: center;
 }
@@ -2811,13 +2786,13 @@ body {
   width: 46px;
   height: 5px;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.18);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
 }
 
 .app .drawer-block {
   display: grid;
   gap: 10px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding-top: 12px;
 }
 
@@ -2835,9 +2810,9 @@ body {
 }
 
 .app .club-action-row .club-leave-button {
-  background: rgba(180, 35, 24, 0.08);
-  color: #b42318;
-  border-color: rgba(180, 35, 24, 0.24);
+  background: color-mix(in srgb, var(--vrena-red-700) 8%, transparent);
+  color: var(--vrena-red-700);
+  border-color: color-mix(in srgb, var(--vrena-red-700) 24%, transparent);
 }
 
 .app .drawer-days {
@@ -2849,16 +2824,16 @@ body {
 }
 
 .app .club-session-preview {
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 8px;
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .app .club-session-preview:hover {
-  border-color: rgba(0, 109, 119, 0.22);
-  box-shadow: 0 10px 24px rgba(11, 21, 24, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-900) 8%, transparent);
   transform: translateY(-1px);
 }
 
@@ -2893,20 +2868,20 @@ body {
   place-content: center;
   border: 0;
   border-radius: 50%;
-  background: rgba(7, 17, 18, 0.04);
-  color: #637075;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
+  color: var(--vrena-neutral-600);
   cursor: pointer;
   font-size: 24px;
   line-height: 1;
 }
 
 .app .modal-close:hover {
-  background: rgba(7, 17, 18, 0.08);
-  color: #071112;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  color: var(--vrena-neutral-950);
 }
 
 .app .modal-close:focus-visible {
-  outline: 3px solid rgba(0, 109, 119, 0.34);
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 34%, transparent);
   outline-offset: 2px;
 }
 
@@ -2925,10 +2900,10 @@ body {
 .app .session {
   display: grid;
   gap: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 10px;
-  background: #ffffff;
+  background: var(--vrena-white);
   transform-origin: top center;
   transition:
     border-color 180ms ease,
@@ -2964,11 +2939,11 @@ body {
 }
 
 .app .session:last-child {
-  border-bottom: 1px solid rgba(7, 17, 18, 0.12);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .expanded-session {
-  box-shadow: 0 14px 34px rgba(11, 21, 24, 0.08);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--vrena-neutral-900) 8%, transparent);
   animation: sessionShellBloom 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
 }
 
@@ -2977,9 +2952,9 @@ body {
   width: fit-content;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .sub-tabs button {
@@ -2988,14 +2963,14 @@ body {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-weight: 800;
 }
 
 .app .sub-tabs button.active {
-  background: #071112;
-  color: #ffffff;
-  box-shadow: 0 8px 20px rgba(11, 21, 24, 0.14);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-900) 14%, transparent);
 }
 
 .app .sub-tabs.club-page-tabs {
@@ -3011,7 +2986,7 @@ body {
   align-items: center;
   min-height: 40px;
   margin: 10px 0 12px;
-  border: 1px solid rgba(0, 109, 119, 0.22);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
   border-radius: 8px;
   background: var(--vrena-bg-soft);
   color: var(--vrena-brand-deep);
@@ -3044,7 +3019,7 @@ body {
 .app .tariff-payment-section {
   display: grid;
   gap: 6px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 8px;
   background: var(--vrena-bg-soft);
   padding: 12px;
@@ -3053,13 +3028,13 @@ body {
 .app .tariff-payment-section p,
 .app .tariff-payment-disclaimer p {
   margin: 0;
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   line-height: 1.45;
 }
 
 .app .tariff-payment-section h4 {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   line-height: 1.25;
 }
@@ -3070,7 +3045,7 @@ body {
 }
 
 .app .tariff-payment-disclaimer {
-  border-top: 1px solid rgba(7, 17, 18, 0.1);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   padding-top: 12px;
 }
 
@@ -3109,19 +3084,19 @@ body {
 
 .app .compact-session-card-expanded {
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .compact-session-card:focus-visible {
-  outline: 3px solid rgba(0, 109, 119, 0.35);
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 35%, transparent);
   outline-offset: 4px;
 }
 
 .app .session-highlighted .compact-session-card {
-  border-color: rgba(0, 109, 119, 0.62);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 62%, transparent);
   box-shadow:
-    0 0 0 3px rgba(0, 109, 119, 0.18),
-    0 18px 42px rgba(0, 109, 119, 0.2);
+    0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent),
+    0 18px 42px color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
   animation: sessionTargetPulse 1400ms ease-in-out 2;
 }
 
@@ -3155,7 +3130,7 @@ body {
   height: 58px;
   border-radius: 7px;
   object-fit: cover;
-  background: #071112;
+  background: var(--vrena-neutral-950);
 }
 
 .app .compact-session-main {
@@ -3186,18 +3161,18 @@ body {
 }
 
 .app .soft-opening-pill {
-  background: #fff4ba;
-  color: #6a5200;
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-900);
 }
 
 .app .ticket-pill, .app .ticket-session-label {
-  background: #e6fbff;
-  color: #075d68;
+  background: var(--vrena-cyan-50);
+  color: var(--vrena-cyan-800);
 }
 
 .app .challenge-pill, .app .challenge-session-label {
-  background: #fff4ba;
-  color: #6a5200;
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-900);
 }
 
 .app .ticket-session-label, .app .challenge-session-label {
@@ -3206,7 +3181,7 @@ body {
   justify-content: center;
   min-height: 34px;
   padding: 6px 10px;
-  border: 1px solid rgba(7, 93, 104, 0.16);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-800) 16%, transparent);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 800;
@@ -3243,20 +3218,20 @@ body {
   align-items: center;
   gap: 8px 12px;
   padding: 10px 12px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 12px;
-  background: rgba(246, 248, 250, 0.78);
+  background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
 }
 
 .app .ticket-explainer strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   line-height: 1.2;
 }
 
 .app .ticket-explainer span {
   flex: 1 1 360px;
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   line-height: 1.32;
 }
@@ -3273,9 +3248,9 @@ body {
   margin: 0;
   justify-content: flex-start;
   padding: 8px 11px;
-  border-color: rgba(7, 17, 18, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 12px;
-  background: rgba(246, 248, 250, 0.78);
+  background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 14px;
   box-shadow: none;
@@ -3361,15 +3336,15 @@ body {
 }
 
 .app .notice.ticket-status-error {
-  border-left-color: #d72638;
-  background: rgba(215, 38, 56, 0.1);
-  color: #b51d2e;
+  border-left-color: var(--vrena-red-600);
+  background: color-mix(in srgb, var(--vrena-red-600) 10%, transparent);
+  color: var(--vrena-red-700);
 }
 
 .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box {
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .ticket-login-panel {
@@ -3390,7 +3365,7 @@ body {
   align-items: end;
   padding-bottom: 14px;
   margin-bottom: 14px;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .guest-ticket-copy {
@@ -3401,13 +3376,13 @@ body {
 }
 
 .app .guest-ticket-copy strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
 }
 
 .app .guest-ticket-copy span,
 .app .guest-ticket-contact p {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -3418,13 +3393,13 @@ body {
 }
 
 .app .guest-ticket-contact label span {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 12px;
   font-weight: 800;
 }
 
 .app .guest-ticket-contact label small {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-weight: 700;
 }
 
@@ -3442,7 +3417,7 @@ body {
 }
 
 .app .guest-ticket-phone-required .required {
-  color: #d72638;
+  color: var(--vrena-red-600);
 }
 
 .app .guest-ticket-phone-control {
@@ -3474,11 +3449,11 @@ body {
   display: grid;
   gap: 6px;
   padding-top: 10px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .guest-ticket-next-steps span {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -3505,9 +3480,9 @@ body {
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(112, 223, 255, 0.12), rgba(0, 109, 119, 0.08)), rgba(255, 255, 255, 0.82);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-300) 12%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent)), color-mix(in srgb, var(--vrena-white) 82%, transparent);
 }
 
 .app .ticket-fast-path-summary div {
@@ -3518,20 +3493,20 @@ body {
 
 .app .ticket-fast-path-summary span,
 .app .ticket-event-options-copy {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
 
 .app .ticket-fast-path-summary strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 18px;
   line-height: 1.14;
 }
 
 .app .ticket-fast-path-summary small,
 .app .ticket-event-options-copy {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   line-height: 1.35;
 }
 
@@ -3556,28 +3531,28 @@ body {
   min-height: 0;
   padding: 11px 12px;
   text-align: left;
-  color: #071112;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  color: var(--vrena-neutral-950);
+  background: color-mix(in srgb, var(--vrena-white) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
   cursor: pointer;
 }
 
 .app .ticket-service-card strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   line-height: 1.18;
 }
 
 .app .ticket-service-card span, .app .ticket-service-card small {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.25;
 }
 
 .app .ticket-service-card.active {
-  background: rgba(246, 249, 255, 0.96);
-  border-color: rgba(0, 109, 119, 0.28);
+  background: color-mix(in srgb, var(--vrena-neutral-50) 96%, transparent);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
 }
 
 .app .ticket-form-panel {
@@ -3620,10 +3595,14 @@ body {
 .app .ticket-control select {
   appearance: none;
   padding-right: 34px;
-  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 10l4 4 4-4' stroke='%23071112' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-repeat: no-repeat;
-  background-position: right 11px center;
-  background-size: 18px 18px;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
 }
 
 .app .ticket-control .date-input-native {
@@ -3631,14 +3610,14 @@ body {
 }
 
 .app .ticket-control .date-input-display {
-  color: #071112;
-  -webkit-text-fill-color: #071112;
+  color: var(--vrena-neutral-950);
+  -webkit-text-fill-color: var(--vrena-neutral-950);
   font-size: 15px;
 }
 
 .app .ticket-control select:not(:disabled) {
-  color: #071112;
-  -webkit-text-fill-color: #071112;
+  color: var(--vrena-neutral-950);
+  -webkit-text-fill-color: var(--vrena-neutral-950);
 }
 
 .app .ticket-control select:disabled,
@@ -3660,7 +3639,7 @@ body {
 
 .app .ticket-discount-code-field span,
 .app .ticket-special-note-field span {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.15;
@@ -3676,7 +3655,7 @@ body {
 
 .app .ticket-discount-code-field small,
 .app .ticket-special-note-field small {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.3;
@@ -3705,23 +3684,23 @@ body {
   min-width: 0;
   min-height: 0;
   padding: 9px 10px;
-  background: rgba(246, 248, 250, 0.82);
+  background: color-mix(in srgb, var(--vrena-neutral-100) 82%, transparent);
   border-radius: 12px;
 }
 
 .app .ticket-price-summary span, .app .ticket-confirmation span, .app .ticket-admin-head span {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
 .app .ticket-price-summary small {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
 
 .app .ticket-discount-line strong {
-  color: #0f766e;
+  color: var(--vrena-green-800);
 }
 
 .app .ticket-discount-line {
@@ -3740,7 +3719,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-weight: 800;
 }
 
@@ -3748,7 +3727,7 @@ body {
   width: 18px;
   height: 18px;
   min-height: 18px;
-  accent-color: #071112;
+  accent-color: var(--vrena-neutral-950);
 }
 
 .app .ticket-loyalty-input {
@@ -3765,7 +3744,7 @@ body {
 .app .ticket-loyalty-zero {
   grid-column: 1 / -1;
   margin: 0;
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.35;
@@ -3780,9 +3759,9 @@ body {
   width: 100%;
   margin: 0;
   padding: 10px 12px;
-  color: #075985;
-  background: rgba(0, 174, 179, 0.08);
-  border: 1px solid rgba(0, 174, 179, 0.18);
+  color: var(--vrena-blue-900);
+  background: color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent);
   border-radius: 10px;
   cursor: pointer;
   font-size: 13px;
@@ -3794,8 +3773,8 @@ body {
 
 .app .ticket-account-value-note:hover,
 .app .ticket-account-value-note:focus-visible {
-  background: rgba(0, 174, 179, 0.14);
-  border-color: rgba(0, 174, 179, 0.34);
+  background: color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent);
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 34%, transparent);
 }
 
 .app .ticket-account-value-note:active {
@@ -3814,7 +3793,7 @@ body {
 }
 
 .app .ticket-total-reduction {
-  color: #0f766e;
+  color: var(--vrena-green-800);
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
@@ -3828,7 +3807,7 @@ body {
 }
 
 .app .ticket-total-original {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -3853,7 +3832,7 @@ body {
   background: var(--vrena-surface-warm);
   border-radius: 8px;
   font-weight: 800;
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .ticket-session-summary {
@@ -3866,7 +3845,7 @@ body {
   padding: 7px 9px;
   background: var(--vrena-surface-warm);
   border-radius: 8px;
-  color: #65727a;
+  color: var(--vrena-neutral-600);
 }
 
 .app .ticket-admin-box {
@@ -3952,13 +3931,13 @@ body {
   gap: 8px;
   align-items: center;
   padding: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
 }
 
 .app .confirm-game-panel label {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 900;
 }
@@ -3977,7 +3956,7 @@ body {
 }
 
 .app .host-pill {
-  background: rgba(0, 109, 119, 0.1);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
   color: var(--vrena-brand-deep);
 }
 
@@ -4011,9 +3990,9 @@ body {
 .app .edit-panel {
   display: grid;
   gap: 12px;
-  border: 1px solid rgba(0, 109, 119, 0.2);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
   border-radius: 8px;
-  background: #f8fbff;
+  background: var(--vrena-blue-50);
   padding: 12px;
 }
 
@@ -4025,13 +4004,13 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   margin-top: 6px;
 }
 
 .app .notes {
-  color: #465358;
+  color: var(--vrena-neutral-700);
   font-size: 13px;
   white-space: pre-wrap;
 }
@@ -4071,24 +4050,24 @@ body {
   width: 30px;
   height: 28px;
   min-height: 28px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 7px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 0;
   font-size: 12px;
   font-weight: 900;
-  box-shadow: 0 1px 0 rgba(7, 17, 18, 0.08);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .format-toolbar button:hover, .app .format-toolbar button:focus-visible {
   transform: translateY(-1px) scale(1.03);
-  border-color: rgba(0, 109, 119, 0.42);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 42%, transparent);
 }
 
 .app .format-toolbar button:active {
   background: var(--vrena-brand-gradient);
-  color: #ffffff;
+  color: var(--vrena-white);
   border-color: transparent;
   transform: translateY(0) scale(0.98);
 }
@@ -4106,12 +4085,12 @@ body {
   outline: none;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-  box-shadow: inset 0 0 0 1px rgba(7, 17, 18, 0.08);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .rich-note-editor:focus {
   border-color: var(--vrena-brand-deep);
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.14), inset 0 0 0 1px rgba(0, 109, 119, 0.16);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
 }
 
 .app .rich-note-editor:empty::before {
@@ -4124,25 +4103,25 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  border: 1px solid rgba(0, 109, 119, 0.18);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: 8px;
-  background: #f5f8ff;
+  background: var(--vrena-purple-50);
   padding: 9px 10px;
-  color: #465358;
+  color: var(--vrena-neutral-700);
   font-size: 13px;
 }
 
 .app .invite-code strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   letter-spacing: 0.08em;
 }
 
 .app .invite-code button {
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 7px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 5px 9px;
   font: inherit;
   font-size: 12px;
@@ -4152,7 +4131,7 @@ body {
 
 .app .invite-code button.copied {
   border-color: color-mix(in srgb, var(--vrena-brand-deep) 30%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
   color: var(--vrena-brand-deep);
 }
 
@@ -4170,7 +4149,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   background: var(--vrena-surface-warm);
-  color: #637075;
+  color: var(--vrena-neutral-600);
   white-space: nowrap;
 }
 
@@ -4179,7 +4158,7 @@ body {
 }
 
 .app .pill.private {
-  color: #b04200;
+  color: var(--vrena-orange-800);
 }
 
 .app .players {
@@ -4276,7 +4255,7 @@ body {
   border-radius: 999px;
   border: 0;
   background: var(--vrena-brand-gradient);
-  color: #ffffff;
+  color: var(--vrena-white);
   font-weight: 900;
   padding: 0;
   overflow: visible;
@@ -4294,8 +4273,8 @@ body {
   object-position: center center !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, #000 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
   z-index: 0;
 }
 
@@ -4331,15 +4310,15 @@ body {
 }
 
 .app .place-1 {
-  box-shadow: 0 0 0 3px #f5c542;
+  box-shadow: 0 0 0 3px var(--vrena-yellow-500);
 }
 
 .app .place-2 {
-  box-shadow: 0 0 0 3px #b7c0ca;
+  box-shadow: 0 0 0 3px var(--vrena-neutral-400);
 }
 
 .app .place-3 {
-  box-shadow: 0 0 0 3px #c98742;
+  box-shadow: 0 0 0 3px var(--vrena-orange-400);
 }
 
 .app .check-badge, .app .cup-badge {
@@ -4347,7 +4326,7 @@ body {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--vrena-white);
   font-size: 10px;
   line-height: 1;
   z-index: 3;
@@ -4359,7 +4338,7 @@ body {
   width: 15px;
   height: 15px;
   background: var(--vrena-brand-deep);
-  color: #ffffff;
+  color: var(--vrena-white);
 }
 
 .app .cup-badge {
@@ -4367,7 +4346,7 @@ body {
   bottom: -6px;
   width: 17px;
   height: 17px;
-  background: #fff6c7;
+  background: var(--vrena-yellow-100);
 }
 
 .app .score-controls {
@@ -4462,7 +4441,7 @@ body {
   gap: 10px;
   border: 0;
   border-radius: 10px;
-  background: rgba(240, 244, 246, 0.72);
+  background: color-mix(in srgb, var(--vrena-neutral-100) 72%, transparent);
   padding: 10px;
 }
 
@@ -4474,7 +4453,7 @@ body {
 
 .app .match-card.completed {
   border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 8%, #ffffff);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 8%, var(--vrena-white));
 }
 
 .app .match-head, .app .match-versus, .app .score-row {
@@ -4485,7 +4464,7 @@ body {
 
 .app .match-head {
   justify-content: space-between;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   text-transform: capitalize;
 }
@@ -4500,7 +4479,7 @@ body {
   gap: 4px;
   min-width: 74px;
   background: transparent;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   border: 1px solid transparent;
   padding: 6px;
   text-align: center;
@@ -4515,9 +4494,9 @@ body {
 }
 
 .app .match-player.winner {
-  border-color: rgba(245, 197, 66, 0.8);
-  background: #fff8dc;
-  box-shadow: 0 0 0 2px rgba(245, 197, 66, 0.2);
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 80%, transparent);
+  background: var(--vrena-yellow-50);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-yellow-500) 20%, transparent);
 }
 
 .app .editor-results {
@@ -4533,9 +4512,9 @@ body {
   gap: 6px;
   min-height: 36px;
   padding: 5px 8px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .tournament-entry {
@@ -4543,25 +4522,25 @@ body {
 }
 
 .app .tournament-entry small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
 
 .app .tournament-create-box, .app .public-leaderboard, .app .queue-board, .app .audit-log {
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 10px;
 }
 
 .app .tournament-settings-box {
   display: grid;
   gap: 10px;
-  border-color: rgba(0, 109, 119, 0.2);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
   background:
-    linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.08)),
-    #ffffff;
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent)),
+    var(--vrena-white);
 }
 
 .app .tournament-settings-head {
@@ -4578,14 +4557,14 @@ body {
 }
 
 .app .tournament-settings-head span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
 }
 
 .app .session-type-toggle button.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  box-shadow: 0 0 0 2px rgba(0, 109, 119, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
 }
 
 .app .public-leaderboard {
@@ -4593,9 +4572,9 @@ body {
   gap: 10px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.16), transparent 34%),
-    radial-gradient(circle at 100% 100%, rgba(0, 109, 119, 0.14), transparent 38%),
-    #ffffff;
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent), transparent 34%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent), transparent 38%),
+    var(--vrena-white);
 }
 
 .app .public-leaderboard .section-head {
@@ -4634,29 +4613,29 @@ body {
   gap: 6px;
   min-height: 98px;
   padding: 8px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #071112;
+  background: color-mix(in srgb, var(--vrena-white) 78%, transparent);
+  color: var(--vrena-neutral-950);
   text-align: center;
-  box-shadow: 0 10px 24px rgba(11, 21, 24, 0.06);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-900) 6%, transparent);
 }
 
 .app .public-leaderboard .podium-player.place-1 {
   min-height: 132px;
   transform: translateY(-5px);
-  border-color: rgba(245, 197, 66, 0.7);
-  background: linear-gradient(135deg, rgba(255, 248, 220, 0.95), rgba(255, 255, 255, 0.82));
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 70%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-yellow-50) 95%, transparent), color-mix(in srgb, var(--vrena-white) 82%, transparent));
 }
 
 .app .public-leaderboard .podium-player.place-2 {
   min-height: 112px;
-  border-color: rgba(183, 192, 202, 0.75);
+  border-color: color-mix(in srgb, var(--vrena-neutral-400) 75%, transparent);
 }
 
 .app .public-leaderboard .podium-player.place-3 {
   min-height: 94px;
-  border-color: rgba(201, 135, 66, 0.75);
+  border-color: color-mix(in srgb, var(--vrena-orange-400) 75%, transparent);
 }
 
 .app .public-leaderboard .podium-player .player-avatar {
@@ -4689,7 +4668,7 @@ body {
 }
 
 .app .public-leaderboard .podium-player small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
 }
@@ -4732,7 +4711,7 @@ body {
 .app .queue-match {
   display: grid;
   gap: 3px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
   padding: 8px;
   background: var(--vrena-bg);
@@ -4746,17 +4725,17 @@ body {
 }
 
 .app .queue-match.live {
-  border-color: rgba(180, 35, 24, 0.35);
-  background: #fff3f0;
+  border-color: color-mix(in srgb, var(--vrena-red-700) 35%, transparent);
+  background: var(--vrena-red-50);
 }
 
 .app .queue-match.live span {
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .queue-match.next {
   border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
 }
 
 .app .queue-controls {
@@ -4774,10 +4753,10 @@ body {
 .app .standings-table {
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 8px;
   padding: 6px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
 }
 
 .app .standing-row {
@@ -4789,12 +4768,12 @@ body {
 }
 
 .app .standing-row span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 900;
 }
 
 .app .standing-row small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 800;
 }
 
@@ -4807,9 +4786,9 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   padding: 7px 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
@@ -4827,7 +4806,7 @@ body {
 }
 
 .app .versus {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
 }
@@ -4845,7 +4824,7 @@ body {
 
 .app .checkin-mini {
   border: 1px solid color-mix(in srgb, var(--vrena-brand-deep) 22%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, #ffffff);
+  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
   color: var(--vrena-brand-deep);
   padding: 3px 5px;
   font-size: 10px;
@@ -4853,9 +4832,9 @@ body {
 }
 
 .app .remove-player {
-  background: #fff3f0;
-  color: #b42318;
-  border: 1px solid rgba(180, 35, 24, 0.22);
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-700);
+  border: 1px solid color-mix(in srgb, var(--vrena-red-700) 22%, transparent);
   padding: 4px 7px;
   font-size: 11px;
 }
@@ -4925,9 +4904,9 @@ body {
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   overflow: hidden;
 }
 
@@ -4949,7 +4928,7 @@ body {
 }
 
 .app .calendar-toolbar span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 800;
 }
@@ -4980,9 +4959,9 @@ body {
   display: flex;
   max-height: min(72vh, 760px);
   overflow: auto;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--vrena-white);
   overscroll-behavior: contain;
 }
 
@@ -4991,8 +4970,8 @@ body {
   left: 0;
   z-index: 7;
   flex: 0 0 64px;
-  background: #ffffff;
-  border-right: 1px solid rgba(7, 17, 18, 0.12);
+  background: var(--vrena-white);
+  border-right: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .calendar-days {
@@ -5004,7 +4983,7 @@ body {
 
 .app .calendar-day-column {
   min-width: 0;
-  border-right: 1px solid rgba(7, 17, 18, 0.08);
+  border-right: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .calendar-day-column:last-child {
@@ -5020,13 +4999,13 @@ body {
   align-content: center;
   min-height: 54px;
   padding: 8px;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.12);
-  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
   backdrop-filter: blur(12px);
 }
 
 .app .calendar-day-header span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -5037,7 +5016,7 @@ body {
 }
 
 .app .calendar-time-header {
-  border-bottom-color: rgba(7, 17, 18, 0.12);
+  border-bottom-color: color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .calendar-day-slots {
@@ -5052,14 +5031,14 @@ body {
   min-height: 28px;
   box-sizing: border-box;
   border: 0;
-  border-bottom: 1px solid rgba(7, 17, 18, 0.06);
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
   border-radius: 0;
   background: transparent;
 }
 
 .app .calendar-time-label {
   padding: 2px 8px 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 900;
   text-align: right;
@@ -5067,7 +5046,7 @@ body {
 
 .app .calendar-time-label.hour,
 .app .calendar-slot:has(span) {
-  border-bottom-color: rgba(7, 17, 18, 0.14);
+  border-bottom-color: color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
 }
 
 .app .calendar-slot {
@@ -5078,24 +5057,24 @@ body {
 .app .calendar-slot span {
   display: block;
   padding: 2px 6px;
-  color: rgba(99, 112, 117, 0.6);
+  color: color-mix(in srgb, var(--vrena-neutral-600) 60%, transparent);
   font-size: 10px;
   font-weight: 800;
   text-align: left;
 }
 
 .app .calendar-slot:not(:disabled):hover {
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
 .app .calendar-slot.unavailable {
   cursor: not-allowed;
   background: repeating-linear-gradient(
     -45deg,
-    rgba(99, 112, 117, 0.08),
-    rgba(99, 112, 117, 0.08) 6px,
-    rgba(99, 112, 117, 0.03) 6px,
-    rgba(99, 112, 117, 0.03) 12px
+    color-mix(in srgb, var(--vrena-neutral-600) 8%, transparent),
+    color-mix(in srgb, var(--vrena-neutral-600) 8%, transparent) 6px,
+    color-mix(in srgb, var(--vrena-neutral-600) 3%, transparent) 6px,
+    color-mix(in srgb, var(--vrena-neutral-600) 3%, transparent) 12px
   );
 }
 
@@ -5111,18 +5090,18 @@ body {
   min-height: 36px;
   padding: 6px 7px;
   overflow: visible;
-  border: 1px solid rgba(0, 109, 119, 0.28);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(19, 201, 201, 0.18), rgba(0, 109, 119, 0.16)), #f7fbff;
-  color: #071112;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 18%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent)), var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
   text-align: left;
-  box-shadow: 0 8px 20px rgba(7, 17, 18, 0.12);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   isolation: isolate;
 }
 
 .app .calendar-session-block.ticket {
-  border-color: rgba(245, 158, 11, 0.32);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(0, 109, 119, 0.12)), #fffaf2;
+  border-color: color-mix(in srgb, var(--vrena-yellow-600) 32%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-yellow-600) 16%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent)), var(--vrena-orange-50);
 }
 
 .app .calendar-session-compact {
@@ -5149,13 +5128,13 @@ body {
 }
 
 .app .calendar-session-compact span {
-  color: #1a5960;
+  color: var(--vrena-cyan-900);
   font-size: 11px;
   font-weight: 900;
 }
 
 .app .calendar-session-compact small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 10px;
   font-weight: 800;
 }
@@ -5169,11 +5148,11 @@ body {
   gap: 3px;
   width: min(260px, 72vw);
   padding: 10px 11px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
-  background: #ffffff;
-  color: #071112;
-  box-shadow: 0 18px 40px rgba(7, 17, 18, 0.18);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
   opacity: 0;
   pointer-events: none;
   transform: translateY(-4px);
@@ -5197,14 +5176,14 @@ body {
 }
 
 .app .calendar-session-popover strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   line-height: 1.2;
   white-space: normal;
 }
 
 .app .calendar-session-popover span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
   white-space: normal;
@@ -5215,16 +5194,16 @@ body {
   align-content: center;
   width: min(100%, 560px);
   margin: 0 auto;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
+  background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
   padding: 30px;
-  box-shadow: 0 22px 58px rgba(7, 17, 18, 0.13);
+  box-shadow: 0 22px 58px color-mix(in srgb, var(--vrena-neutral-950) 13%, transparent);
 }
 
 .app .profile-auth-section h2 {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 29px;
   font-weight: 900;
   letter-spacing: 0;
@@ -5235,7 +5214,7 @@ body {
 .app .profile-auth-section > .muted {
   max-width: 340px;
   margin: 8px auto 0;
-  color: #667176;
+  color: var(--vrena-neutral-600);
   font-size: 14px;
   line-height: 1.45;
   text-align: center;
@@ -5251,13 +5230,13 @@ body {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid rgba(0, 174, 179, 0.2);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-500) 20%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.08));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent));
 }
 
 .app .profile-auth-section .auth-benefit-strip strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 14px;
   line-height: 1.25;
 }
@@ -5273,10 +5252,10 @@ body {
   align-items: center;
   min-height: 24px;
   padding: 0 9px;
-  border: 1px solid rgba(0, 109, 119, 0.16);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
   border-radius: 999px;
-  color: #526168;
-  background: rgba(255, 255, 255, 0.62);
+  color: var(--vrena-neutral-600);
+  background: color-mix(in srgb, var(--vrena-white) 62%, transparent);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.2;
@@ -5287,9 +5266,9 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
   margin: 0;
-  border: 1px solid rgba(7, 17, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--vrena-white);
   padding: 3px;
 }
 
@@ -5300,7 +5279,7 @@ body {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #667176;
+  color: var(--vrena-neutral-600);
   box-shadow: none;
   font-size: 14px;
   font-weight: 850;
@@ -5308,9 +5287,9 @@ body {
 }
 
 .app .profile-auth-section .auth-toggle button.active {
-  background: #071112;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(7, 17, 18, 0.16);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
 }
 
 .app .profile-auth-section .auth-method-stack {
@@ -5328,7 +5307,7 @@ body {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  color: #7a858a;
+  color: var(--vrena-neutral-500);
   font-size: 13px;
   font-weight: 650;
   margin: 2px 0 4px;
@@ -5338,7 +5317,7 @@ body {
 .app .profile-auth-section .auth-divider::after {
   content: "";
   height: 1px;
-  background: rgba(7, 17, 18, 0.12);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .profile-form {
@@ -5358,24 +5337,24 @@ body {
 }
 
 .app .profile-auth-section label {
-  color: #4f5b60;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 850;
 }
 
 .app .profile-auth-section input {
   min-height: 48px;
-  border-color: rgba(7, 17, 18, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 12px 13px;
   font-size: 15px;
 }
 
 .app .profile-auth-section input:focus {
-  border-color: rgba(0, 109, 119, 0.42);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(0, 109, 119, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 42%, transparent);
+  background: var(--vrena-white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
 }
 
 .app .profile-auth-section .password-control {
@@ -5411,7 +5390,7 @@ body {
 
 .app .profile-auth-section .field-help {
   margin-top: 6px;
-  color: #7a858a;
+  color: var(--vrena-neutral-500);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -5422,11 +5401,11 @@ body {
   justify-content: space-between;
   gap: 12px;
   min-height: 46px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 10px 12px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 14px;
   font-weight: 800;
 }
@@ -5460,13 +5439,13 @@ body {
   grid-column: 1;
   max-width: none;
   border-radius: 12px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 10px 11px;
 }
 
 .app .profile-auth-section .captcha-field {
   border-radius: 12px;
-  background: #f8fafb;
+  background: var(--vrena-neutral-50);
   padding: 10px 11px;
 }
 
@@ -5483,7 +5462,7 @@ body {
   align-items: center;
   gap: 9px;
   margin: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   font-weight: 700;
 }
@@ -5514,9 +5493,9 @@ body {
 }
 
 .app .profile-auth-section .action-row .secondary.create-button {
-  border: 1px solid rgba(7, 17, 18, 0.1);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   box-shadow: none;
 }
 
@@ -5536,9 +5515,9 @@ body {
 }
 
 .app .profile-auth-section .auth-method-stack .secondary.create-button {
-  border: 1px solid rgba(7, 17, 18, 0.1);
-  background: #ffffff;
-  color: #071112;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   box-shadow: none;
 }
 
@@ -5563,7 +5542,7 @@ body {
   place-items: center;
   width: 19px;
   height: 19px;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   flex: 0 0 auto;
   position: relative;
   z-index: 1;
@@ -5666,7 +5645,7 @@ body {
   align-items: start;
   max-width: 720px;
   margin: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
@@ -5685,7 +5664,7 @@ body {
 }
 
 .app .minor-policy-note {
-  color: #b00020;
+  color: var(--vrena-red-700);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.35;
@@ -5738,11 +5717,11 @@ body {
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 8px;
   align-items: start;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 8px;
   padding: 9px 10px;
   background: var(--vrena-bg-soft);
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -5762,14 +5741,14 @@ body {
 
 .app .profile-toggle-field strong,
 .app .marketing-consent-field strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   line-height: 1.2;
 }
 
 .app .profile-toggle-field small,
 .app .marketing-consent-field small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -5780,8 +5759,8 @@ body {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #11181b;
-  color: #ffffff;
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
   font-size: 34px;
 }
 
@@ -5805,14 +5784,14 @@ body {
 
 .app label {
   display: block;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 6px;
 }
 
 .app .required {
-  color: #d72638;
+  color: var(--vrena-red-600);
   font-weight: 900;
 }
 
@@ -5833,7 +5812,7 @@ body {
     width: min(100%, 480px);
     border-radius: 18px;
     padding: 22px;
-    box-shadow: 0 18px 48px rgba(7, 17, 18, 0.12);
+    box-shadow: 0 18px 48px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   }
 
   .app .profile-auth-section h2 {
@@ -5879,7 +5858,7 @@ body {
   border-radius: 8px;
   padding: 8px;
   background: var(--player-field-panel);
-  box-shadow: 0 14px 30px rgba(7, 17, 18, 0.16);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
 }
 
 .app .country-list {
@@ -5944,11 +5923,11 @@ body {
 }
 
 .app .password-control button {
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-left: 0;
   border-radius: 0 8px 8px 0;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   padding: 0;
   font-size: 18px;
   line-height: 1;
@@ -5966,8 +5945,8 @@ body {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  background: #071112;
-  color: #ffffff;
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
   transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease;
   transform: translateY(0) scale(1);
   will-change: transform;
@@ -5979,7 +5958,7 @@ body {
 }
 
 .app button:focus-visible {
-  outline: 3px solid rgba(0, 109, 119, 0.28);
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
   outline-offset: 2px;
 }
 
@@ -5990,7 +5969,7 @@ body {
 
 .app .share-button:focus-visible .share-symbol-icon,
 .app .share-icon-button:focus-visible .share-symbol-icon {
-  filter: drop-shadow(0 0 0 rgba(0, 109, 119, 0.6)) drop-shadow(0 0 4px rgba(0, 109, 119, 0.45));
+  filter: drop-shadow(0 0 0 color-mix(in srgb, var(--vrena-cyan-700) 60%, transparent)) drop-shadow(0 0 4px color-mix(in srgb, var(--vrena-cyan-700) 45%, transparent));
 }
 
 .app button:disabled {
@@ -6010,8 +5989,8 @@ body {
 
 .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log {
   border-radius: 10px;
-  border-color: rgba(7, 17, 18, 0.1);
-  box-shadow: 0 8px 22px rgba(7, 17, 18, 0.045);
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
 }
 
 .app .section {
@@ -6053,7 +6032,7 @@ body {
 }
 
 .app .expanded-session {
-  box-shadow: 0 12px 30px rgba(11, 21, 24, 0.075);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--vrena-neutral-900) 7.5%, transparent);
 }
 
 .app .compact-session-card {
@@ -6149,7 +6128,7 @@ body {
   margin: 0;
   font-size: 12px;
   font-weight: 800;
-  color: #657278;
+  color: var(--vrena-neutral-600);
 }
 
 .app .leaderboard-controls select {
@@ -6167,7 +6146,7 @@ body {
   gap: 8px;
   align-items: end;
   padding: 10px;
-  border: 1px solid rgba(0, 109, 119, 0.18);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: 10px;
   background: var(--vrena-bg-soft);
 }
@@ -6185,7 +6164,7 @@ body {
 
 .app .leaderboard-club-pin-copy small,
 .app .leaderboard-club-pin-error {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -6194,7 +6173,7 @@ body {
   display: grid;
   gap: 5px;
   margin: 0;
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -6207,7 +6186,7 @@ body {
 
 .app .leaderboard-club-pin-error {
   grid-column: 1 / -1;
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .current-rank-card {
@@ -6216,13 +6195,13 @@ body {
   gap: 8px;
   align-items: center;
   padding: 10px 12px;
-  border: 1px solid rgba(0, 109, 119, 0.18);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(0, 109, 119, 0.1)), #ffffff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent)), var(--vrena-white);
 }
 
 .app .current-rank-card > span {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-weight: 800;
 }
 
@@ -6232,7 +6211,7 @@ body {
 }
 
 .app .current-rank-card small {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-weight: 700;
   min-width: 0;
 }
@@ -6260,7 +6239,7 @@ body {
   min-height: 24px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.06);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
 }
 
 .app .leaderboard-list {
@@ -6282,15 +6261,15 @@ body {
   gap: 12px;
   align-items: center;
   padding: 16px 12px 12px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 8px 22px rgba(7, 17, 18, 0.045);
+  background: var(--vrena-white);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
 }
 
 .app .leaderboard-row.current-user {
-  border-color: rgba(0, 109, 119, 0.34);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.08), rgba(0, 109, 119, 0.1)), #ffffff;
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 34%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent)), var(--vrena-white);
 }
 
 .app .leaderboard-avatar-button {
@@ -6312,7 +6291,7 @@ body {
   background: transparent;
   font-size: 28px;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(11, 21, 24, 0.24));
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--vrena-neutral-900) 24%, transparent));
   pointer-events: none;
 }
 
@@ -6326,7 +6305,7 @@ body {
 }
 
 .app .leaderboard-rank {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 18px;
   font-weight: 900;
   text-align: center;
@@ -6361,7 +6340,7 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -6370,7 +6349,7 @@ body {
   height: 7px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.08);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .rank-progress-track span {
@@ -6381,7 +6360,7 @@ body {
 }
 
 .app .rank-progress small {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 700;
 }
@@ -6390,8 +6369,8 @@ body {
   display: grid;
   gap: 10px;
   padding: 13px;
-  background: linear-gradient(135deg, rgba(0, 109, 119, 0.1), rgba(0, 174, 179, 0.08));
-  border: 1px solid rgba(0, 109, 119, 0.14);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent), color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent));
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
   border-radius: 12px;
 }
 
@@ -6408,14 +6387,14 @@ body {
 }
 
 .app .profile-completion-head strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   line-height: 1.2;
 }
 
 .app .profile-completion-head span,
 .app .profile-completion-footer {
-  color: #65727a;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.35;
@@ -6442,7 +6421,7 @@ body {
 }
 
 .app .leaderboard-metric span {
-  color: #657278;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   text-align: right;
@@ -6559,7 +6538,7 @@ body {
 
   .app button:hover:not(:disabled), .app .profile-chip:hover, .app .session.clickable:hover, .app .compact-session-card:hover, .app .club-card.clickable:hover, .app .mini-session.clickable:hover, .app .game-card:hover, .app .day-chip:hover, .app .country-list button:hover, .app .shop-contact a:hover {
     transform: translateY(-1px) scale(1.015);
-    box-shadow: 0 12px 28px rgba(11, 21, 24, 0.14);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-neutral-900) 14%, transparent);
     filter: brightness(1.03);
   }
 }
@@ -6572,14 +6551,14 @@ body {
 
 .app button.secondary {
   background: var(--vrena-surface-warm);
-  color: #071112;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  color: var(--vrena-neutral-950);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app button.danger {
-  background: #fff3f0;
-  color: #b42318;
-  border: 1px solid rgba(180, 35, 24, 0.24);
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-700);
+  border: 1px solid color-mix(in srgb, var(--vrena-red-700) 24%, transparent);
 }
 
 .app .small-button {
@@ -6607,7 +6586,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--vrena-white) 28%, transparent), transparent);
   animation: loadingSweep 1s infinite;
 }
 
@@ -6621,7 +6600,7 @@ body {
   background: var(--vrena-surface-warm);
   padding: 10px 12px;
   border-radius: 6px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
   margin-top: 12px;
 }
@@ -6633,9 +6612,9 @@ body {
 .app .crown-session-notice {
   width: fit-content;
   max-width: 100%;
-  border-left-color: #f5c542;
-  background: rgba(245, 197, 66, 0.14);
-  color: #4b3a05;
+  border-left-color: var(--vrena-yellow-500);
+  background: color-mix(in srgb, var(--vrena-yellow-500) 14%, transparent);
+  color: var(--vrena-yellow-950);
   font-weight: 800;
   margin-top: 0;
 }
@@ -6695,16 +6674,16 @@ body {
   display: grid;
   gap: 7px;
   text-align: left;
-  background: #ffffff;
-  color: #071112;
-  border: 2px solid rgba(7, 17, 18, 0.12);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  border: 2px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   padding: 8px;
   width: 100%;
 }
 
 .app .game-card.selected {
   border-color: var(--vrena-brand-cyan);
-  box-shadow: 0 0 0 3px rgba(0, 174, 179, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-500) 15%, transparent);
 }
 
 .app .game-card img {
@@ -6712,7 +6691,7 @@ body {
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 6px;
-  background: #071112;
+  background: var(--vrena-neutral-950);
 }
 
 .app .game-strip .game-card img {
@@ -6725,7 +6704,7 @@ body {
 }
 
 .app .game-card strong {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
 }
 
@@ -6735,7 +6714,7 @@ body {
   justify-content: center;
   width: fit-content;
   min-height: 30px;
-  border: 1px solid rgba(0, 109, 119, 0.22);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
   border-radius: 999px;
   background: var(--vrena-bg-soft);
   color: var(--vrena-brand-deep);
@@ -6753,8 +6732,8 @@ body {
 .app .compact-game-guide-link {
   min-height: 26px;
   padding: 3px 8px;
-  border-color: rgba(0, 174, 179, 0.24);
-  color: #087b80;
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 24%, transparent);
+  color: var(--vrena-cyan-700);
 }
 
 .app .confirm-game-guide-link {
@@ -6789,7 +6768,7 @@ body {
 }
 
 .app .stats div, .app .stats > span {
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 8px;
   padding: 12px;
 }
@@ -6849,7 +6828,7 @@ body {
 }
 
 .app .stats span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 13px;
 }
 
@@ -6859,14 +6838,14 @@ body {
 }
 
 .app .stat-label {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
   line-height: 1.15;
 }
 
 .app .stat-card strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 20px;
   line-height: 1.05;
 }
@@ -6904,14 +6883,14 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  border-top: 1px solid #dce5e8;
+  border-top: 1px solid var(--vrena-neutral-300);
   margin-top: 2px;
   padding-top: 5px;
 }
 
 .app .stat-subline span {
   min-width: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-weight: 900;
 }
 
@@ -6933,7 +6912,7 @@ body {
 .app .escape-chapter-times {
   display: grid;
   gap: 7px;
-  border-top: 1px solid #dce5e8;
+  border-top: 1px solid var(--vrena-neutral-300);
   margin-top: 2px;
   padding-top: 6px;
 }
@@ -6948,7 +6927,7 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
@@ -6980,12 +6959,12 @@ body {
 .app .achievement-progress-card,
 .app .achievement-collection-card,
 .app .achievement-detail-sheet {
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 12% 0%, rgba(0, 109, 119, 0.12), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
-  box-shadow: 0 18px 42px rgba(11, 21, 24, 0.1);
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--vrena-white) 0%, var(--vrena-bg-soft) 100%);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-900) 10%, transparent);
 }
 
 .app .achievement-rank-card {
@@ -7013,8 +6992,8 @@ body {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--vrena-brand-deep) var(--rank-progress), rgba(0, 174, 179, 0.18) 0);
-  box-shadow: 0 0 0 5px rgba(0, 109, 119, 0.08);
+  background: conic-gradient(var(--vrena-brand-deep) var(--rank-progress), color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent) 0);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
 .app .achievement-rank-ring::after {
@@ -7022,7 +7001,7 @@ body {
   position: absolute;
   inset: 7px;
   border-radius: inherit;
-  background: #ffffff;
+  background: var(--vrena-white);
 }
 
 .app .achievement-rank-avatar {
@@ -7053,7 +7032,7 @@ body {
 .app .achievement-rank-copy > span,
 .app .achievement-rank-copy small,
 .app .achievement-section-head .muted {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
 }
@@ -7061,7 +7040,7 @@ body {
 .app .achievement-rank-copy strong {
   max-width: 100%;
   overflow-wrap: anywhere;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: clamp(22px, 7vw, 34px);
   line-height: 1;
 }
@@ -7075,9 +7054,9 @@ body {
   min-height: 28px;
   margin-top: 2px;
   padding: 5px 9px;
-  border: 1px solid rgba(0, 109, 119, 0.18);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: 999px;
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 12px;
   font-weight: 950;
@@ -7085,9 +7064,9 @@ body {
 }
 
 .app .achievement-share-button {
-  color: #8a6600;
-  background: rgba(245, 197, 66, 0.16);
-  border-color: rgba(245, 197, 66, 0.28);
+  color: var(--vrena-yellow-800);
+  background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 28%, transparent);
 }
 
 .app .achievement-rank-list {
@@ -7102,21 +7081,21 @@ body {
   gap: 8px;
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: rgba(7, 17, 18, 0.04);
-  color: #637075;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
+  color: var(--vrena-neutral-600);
 }
 
 .app .achievement-rank-list span.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  background: rgba(0, 109, 119, 0.1);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
   color: var(--vrena-brand-deep);
 }
 
 .app .achievement-rank-list strong {
   overflow: hidden;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   font-weight: 950;
   text-overflow: ellipsis;
@@ -7134,7 +7113,7 @@ body {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.08);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .achievement-xp-track span,
@@ -7150,10 +7129,10 @@ body {
   height: 64px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(0, 109, 119, 0.2);
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
   border-radius: 16px;
   color: var(--vrena-brand-deep);
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
 .app .achievement-rank-badge span {
@@ -7172,20 +7151,20 @@ body {
   gap: 4px;
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--vrena-white);
   color: var(--vrena-brand-deep);
 }
 
 .app .achievement-summary-card strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 22px;
   line-height: 1;
 }
 
 .app .achievement-summary-card span {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.15;
@@ -7193,8 +7172,8 @@ body {
 
 .app .achievement-summary-progress-card {
   background:
-    radial-gradient(circle at 100% 0%, rgba(0, 109, 119, 0.1), transparent 42%),
-    #ffffff;
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent), transparent 42%),
+    var(--vrena-white);
 }
 
 .app .achievement-summary-card .achievement-mini-progress {
@@ -7213,10 +7192,10 @@ body {
 .app .achievement-reward-card,
 .app .achievement-recent-item {
   min-width: 0;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
 }
 
 .app .achievement-insight-card,
@@ -7228,14 +7207,14 @@ body {
 
 .app .achievement-spotlight-card {
   background:
-    radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.16), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent), transparent 42%),
+    linear-gradient(180deg, var(--vrena-white) 0%, var(--vrena-bg-soft) 100%);
 }
 
 .app .achievement-streak-card {
   background:
-    radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.14), transparent 42%),
-    #ffffff;
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent), transparent 42%),
+    var(--vrena-white);
 }
 
 .app .achievement-insight-label {
@@ -7247,7 +7226,7 @@ body {
   min-height: 24px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 11px;
   font-weight: 950;
@@ -7257,7 +7236,7 @@ body {
 .app .achievement-reward-card strong,
 .app .achievement-recent-item strong {
   min-width: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
   font-weight: 950;
   line-height: 1.1;
@@ -7266,7 +7245,7 @@ body {
 .app .achievement-insight-card small,
 .app .achievement-reward-card small,
 .app .achievement-recent-item small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
   line-height: 1.25;
@@ -7293,11 +7272,11 @@ body {
 }
 
 .app .achievement-reward-card.reward-unlocked {
-  border-color: rgba(245, 197, 66, 0.36);
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 36%, transparent);
   background:
-    radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 45%),
-    #ffffff;
-  color: #8a6600;
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 45%),
+    var(--vrena-white);
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-filter-bar {
@@ -7316,19 +7295,19 @@ body {
   flex: 0 0 auto;
   min-height: 34px;
   padding: 7px 11px;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 999px;
-  background: #ffffff;
-  color: #637075;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .app .achievement-filter-bar button.active {
-  border-color: rgba(0, 109, 119, 0.28);
-  background: #071112;
-  color: #ffffff;
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
 }
 
 .app .achievement-progress-card,
@@ -7347,7 +7326,7 @@ body {
 
 .app .achievement-section-head h3 {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 18px;
   line-height: 1.15;
 }
@@ -7367,11 +7346,11 @@ body {
   height: auto;
   min-height: 112px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(0, 109, 119, 0.07), rgba(0, 174, 179, 0.04));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent), color-mix(in srgb, var(--vrena-cyan-500) 4%, transparent));
 }
 
 .app .achievement-chart-area {
-  fill: rgba(0, 109, 119, 0.13);
+  fill: color-mix(in srgb, var(--vrena-cyan-700) 13%, transparent);
 }
 
 .app .achievement-chart-line {
@@ -7386,7 +7365,7 @@ body {
 }
 
 .app .achievement-chart-dot {
-  fill: #ffffff;
+  fill: var(--vrena-white);
   stroke: var(--vrena-brand-deep);
   stroke-width: 3;
 }
@@ -7399,7 +7378,7 @@ body {
 
 .app .achievement-chart-labels span {
   min-width: 0;
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 10px;
   font-weight: 800;
   text-align: center;
@@ -7407,7 +7386,7 @@ body {
 
 .app .achievement-chart-labels strong {
   display: block;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
 }
 
@@ -7425,7 +7404,7 @@ body {
   min-height: 28px;
   padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 12px;
   font-weight: 900;
@@ -7445,10 +7424,10 @@ body {
   padding: 8px;
   overflow: hidden;
   text-align: left;
-  border: 1px solid rgba(7, 17, 18, 0.12);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
   border-radius: 12px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   isolation: isolate;
 }
 
@@ -7458,7 +7437,7 @@ body {
   inset: 0;
   z-index: -1;
   opacity: 0;
-  background: linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.62) 36%, transparent 54%);
+  background: linear-gradient(115deg, transparent 18%, color-mix(in srgb, var(--vrena-white) 62%, transparent) 36%, transparent 54%);
   transform: translateX(-120%);
 }
 
@@ -7473,7 +7452,7 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 12px;
-  background: #071112;
+  background: var(--vrena-neutral-950);
 }
 
 .app .achievement-image-wrap {
@@ -7491,22 +7470,22 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.12) 0 18%, transparent 42%),
-    linear-gradient(180deg, rgba(7, 17, 18, 0.02) 0%, rgba(7, 17, 18, 0.16) 45%, rgba(7, 17, 18, 0.72) 100%);
+    radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--vrena-white) 12%, transparent) 0 18%, transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--vrena-neutral-950) 2%, transparent) 0%, color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent) 45%, color-mix(in srgb, var(--vrena-neutral-950) 72%, transparent) 100%);
 }
 
 .app .achievement-detail-badge::after {
   content: '';
   position: absolute;
   inset: 29%;
-  border: 2px solid rgba(255, 255, 255, 0.72);
+  border: 2px solid color-mix(in srgb, var(--vrena-white) 72%, transparent);
   background:
-    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.2), transparent 52%),
-    rgba(7, 17, 18, 0.08);
+    radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--vrena-white) 20%, transparent), transparent 52%),
+    color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
   clip-path: polygon(50% 0, 82% 14%, 100% 50%, 82% 86%, 50% 100%, 18% 86%, 0 50%, 18% 14%);
   box-shadow:
-    inset 0 0 18px rgba(255, 255, 255, 0.12),
-    0 0 20px rgba(0, 109, 119, 0.3);
+    inset 0 0 18px color-mix(in srgb, var(--vrena-white) 12%, transparent),
+    0 0 20px color-mix(in srgb, var(--vrena-cyan-700) 30%, transparent);
 }
 
 .app .achievement-card-body {
@@ -7517,7 +7496,7 @@ body {
 
 .app .achievement-card-body strong {
   overflow: hidden;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 14px;
   font-weight: 950;
   line-height: 1.1;
@@ -7526,7 +7505,7 @@ body {
 }
 
 .app .achievement-card-body small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
   line-height: 1.2;
@@ -7541,7 +7520,7 @@ body {
   min-height: 24px;
   padding: 4px 7px;
   border-radius: 999px;
-  background: rgba(0, 109, 119, 0.08);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
   color: var(--vrena-brand-deep);
   font-size: 11px;
   font-weight: 950;
@@ -7549,19 +7528,19 @@ body {
 }
 
 .app .achievement-tier-bronze .achievement-tier-pill {
-  background: rgba(180, 107, 54, 0.14);
-  color: #9a5a24;
+  background: color-mix(in srgb, var(--vrena-yellow-700) 14%, transparent);
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-tier-silver .achievement-tier-pill {
-  background: rgba(99, 112, 117, 0.14);
-  color: #4f5c61;
+  background: color-mix(in srgb, var(--vrena-neutral-600) 14%, transparent);
+  color: var(--vrena-neutral-600);
 }
 
 .app .achievement-tier-gold .achievement-tier-pill,
 .app .achievement-tier-mastered .achievement-tier-pill {
-  background: rgba(245, 197, 66, 0.2);
-  color: #8a6600;
+  background: color-mix(in srgb, var(--vrena-yellow-500) 20%, transparent);
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-rarity-pill {
@@ -7571,30 +7550,30 @@ body {
   min-height: 20px;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(99, 112, 117, 0.12);
-  color: #637075;
+  background: color-mix(in srgb, var(--vrena-neutral-600) 12%, transparent);
+  color: var(--vrena-neutral-600);
   font-size: 10px;
   font-weight: 950;
   line-height: 1.2;
 }
 
 .app .achievement-rarity-pill.rarity-rare {
-  background: rgba(0, 109, 119, 0.1);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
   color: var(--vrena-brand-deep);
 }
 
 .app .achievement-rarity-pill.rarity-epic {
-  background: rgba(123, 58, 237, 0.12);
-  color: #6d36d8;
+  background: color-mix(in srgb, var(--vrena-purple-500) 12%, transparent);
+  color: var(--vrena-purple-600);
 }
 
 .app .achievement-rarity-pill.rarity-legendary {
-  background: rgba(245, 197, 66, 0.2);
-  color: #8a6600;
+  background: color-mix(in srgb, var(--vrena-yellow-500) 20%, transparent);
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-locked {
-  background: #f3f6f7;
+  background: var(--vrena-neutral-100);
 }
 
 .app .achievement-locked .achievement-image-wrap img {
@@ -7606,20 +7585,20 @@ body {
   top: 8px;
   right: 8px;
   z-index: 1;
-  color: #ffffff;
-  filter: drop-shadow(0 2px 8px rgba(7, 17, 18, 0.44));
+  color: var(--vrena-white);
+  filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--vrena-neutral-950) 44%, transparent));
 }
 
 .app .achievement-unlocked,
 .app .achievement-card.achievement-tier-silver,
 .app .achievement-card.achievement-tier-gold {
-  box-shadow: 0 12px 28px rgba(0, 109, 119, 0.1);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
 }
 
 .app .achievement-mastered,
 .app .achievement-card.achievement-tier-mastered {
-  border-color: rgba(245, 197, 66, 0.55);
-  box-shadow: 0 16px 36px rgba(245, 197, 66, 0.18), 0 0 0 3px rgba(245, 197, 66, 0.12);
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 55%, transparent);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), 0 0 0 3px color-mix(in srgb, var(--vrena-yellow-500) 12%, transparent);
 }
 
 .app .achievement-sparked {
@@ -7629,8 +7608,8 @@ body {
 .app .achievement-secret {
   min-height: 100%;
   background:
-    repeating-linear-gradient(90deg, rgba(0, 109, 119, 0.08) 0 8px, transparent 8px 16px),
-    linear-gradient(180deg, #ffffff, var(--vrena-bg-soft));
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, var(--vrena-white), var(--vrena-bg-soft));
 }
 
 .app .achievement-secret-mark {
@@ -7638,8 +7617,8 @@ body {
   place-items: center;
   aspect-ratio: 1.08;
   border-radius: 10px;
-  background: rgba(7, 17, 18, 0.9);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
+  color: var(--vrena-white);
   text-align: center;
   animation: achievementGlitch 2.3s steps(2, end) infinite;
 }
@@ -7651,8 +7630,8 @@ body {
 
 .app .retention-achievements-card {
   background:
-    radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.12), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, var(--vrena-bg-soft) 100%);
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--vrena-white) 0%, var(--vrena-bg-soft) 100%);
 }
 
 .app .retention-achievement-grid {
@@ -7668,10 +7647,10 @@ body {
   align-items: center;
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 12px;
-  background: #ffffff;
-  color: #071112;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   text-align: left;
   overflow: hidden;
 }
@@ -7680,9 +7659,9 @@ body {
 .app .retention-detail-badge {
   display: grid;
   place-items: center;
-  color: #ffffff;
-  background: #8a969b;
-  box-shadow: 0 10px 24px rgba(7, 17, 18, 0.12);
+  color: var(--vrena-white);
+  background: var(--vrena-neutral-500);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .retention-achievement-icon {
@@ -7732,7 +7711,7 @@ body {
 
 .app .retention-achievement-copy strong {
   overflow: hidden;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 14px;
   font-weight: 950;
   line-height: 1.1;
@@ -7741,29 +7720,29 @@ body {
 }
 
 .app .retention-achievement-copy small {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .app .retention-locked {
-  background: #f3f6f7;
+  background: var(--vrena-neutral-100);
 }
 
 .app .retention-locked .retention-achievement-icon {
-  background: #8a969b;
+  background: var(--vrena-neutral-500);
   opacity: 0.82;
 }
 
 .app .retention-unlocked {
-  box-shadow: 0 12px 28px rgba(0, 174, 179, 0.08);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent);
 }
 
 .app .retention-unlocked .retention-achievement-icon,
 .app .retention-unlocked.retention-detail-badge {
-  background: linear-gradient(135deg, #d79810, #f5c542);
-  box-shadow: 0 12px 28px rgba(215, 152, 16, 0.22);
+  background: linear-gradient(135deg, var(--vrena-yellow-600), var(--vrena-yellow-500));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-yellow-600) 22%, transparent);
 }
 
 .app .retention-detail-badge {
@@ -7801,7 +7780,7 @@ body {
 
 .app .achievement-detail-copy h3 {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 26px;
   line-height: 1.05;
 }
@@ -7823,16 +7802,16 @@ body {
   gap: 3px;
   min-width: 0;
   padding: 8px 5px;
-  border: 1px solid rgba(7, 17, 18, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
   border-radius: 10px;
-  background: rgba(7, 17, 18, 0.04);
-  color: #637075;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
+  color: var(--vrena-neutral-600);
 }
 
 .app .achievement-path span.active {
-  border-color: rgba(245, 197, 66, 0.35);
-  background: rgba(245, 197, 66, 0.16);
-  color: #8a6600;
+  border-color: color-mix(in srgb, var(--vrena-yellow-500) 35%, transparent);
+  background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-path small {
@@ -7863,18 +7842,18 @@ body {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
   gap: 10px;
   padding: 8px 0;
-  border-top: 1px solid rgba(7, 17, 18, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .achievement-detail-list dt {
-  color: #637075;
+  color: var(--vrena-neutral-600);
   font-size: 12px;
   font-weight: 900;
 }
 
 .app .achievement-detail-list dd {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 13px;
   font-weight: 850;
 }
@@ -7908,8 +7887,8 @@ body {
   z-index: -1;
   border-radius: 999px;
   background:
-    radial-gradient(circle, rgba(245, 197, 66, 0.42), transparent 58%),
-    radial-gradient(circle at 72% 28%, rgba(0, 109, 119, 0.26), transparent 38%);
+    radial-gradient(circle, color-mix(in srgb, var(--vrena-yellow-500) 42%, transparent), transparent 58%),
+    radial-gradient(circle at 72% 28%, color-mix(in srgb, var(--vrena-cyan-700) 26%, transparent), transparent 38%);
   animation: achievementGlowPop 900ms ease both;
 }
 
@@ -7920,11 +7899,11 @@ body {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 3px solid rgba(245, 197, 66, 0.68);
+  border: 3px solid color-mix(in srgb, var(--vrena-yellow-500) 68%, transparent);
   border-radius: 28px;
-  color: #ffffff;
+  color: var(--vrena-white);
   background: var(--vrena-brand-gradient-reverse);
-  box-shadow: 0 22px 48px rgba(0, 109, 119, 0.22), 0 0 0 8px rgba(245, 197, 66, 0.14);
+  box-shadow: 0 22px 48px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent), 0 0 0 8px color-mix(in srgb, var(--vrena-yellow-500) 14%, transparent);
   animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
 }
 
@@ -7933,7 +7912,7 @@ body {
 }
 
 .app .achievement-unlock-copy h3 {
-  color: #8a6600;
+  color: var(--vrena-yellow-800);
 }
 
 .app .achievement-dismiss-button {
@@ -7945,7 +7924,7 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 999px;
-  background: #f5c542;
+  background: var(--vrena-yellow-500);
   animation: achievementConfettiFloat 1.3s ease-in-out infinite alternate;
 }
 
@@ -7984,7 +7963,7 @@ body {
 
 @keyframes achievementPulse {
   0%, 100% { transform: scale(1); }
-  45% { transform: scale(1.025); box-shadow: 0 18px 44px rgba(0, 109, 119, 0.22); }
+  45% { transform: scale(1.025); box-shadow: 0 18px 44px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent); }
 }
 
 @keyframes achievementGlitch {
@@ -8070,16 +8049,16 @@ body {
   .app .achievement-progress-card,
   .app .achievement-collection-card,
   .app .achievement-detail-sheet {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     background:
-      radial-gradient(circle at 12% 0%, rgba(0, 109, 119, 0.18), transparent 34%),
-      linear-gradient(180deg, #10191b 0%, #0c1517 100%);
+      radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent), transparent 34%),
+      linear-gradient(180deg, var(--vrena-neutral-900) 0%, var(--vrena-neutral-900) 100%);
     color: var(--vrena-bg);
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
   }
 
   .app .achievement-rank-ring::after {
-    background: #10191b;
+    background: var(--vrena-neutral-900);
   }
 
   .app .achievement-rank-copy strong,
@@ -8106,7 +8085,7 @@ body {
   .app .achievement-chart-labels span,
   .app .achievement-card-body small,
   .app .achievement-detail-list dt {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .achievement-summary-card,
@@ -8117,94 +8096,94 @@ body {
   .app .achievement-card,
   .app .achievement-filter-bar button,
   .app .retention-achievement-card {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: #182225;
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
   }
 
   .app .achievement-summary-progress-card {
     background:
-      radial-gradient(circle at 100% 0%, rgba(0, 109, 119, 0.16), transparent 42%),
-      #182225;
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
   }
 
   .app .achievement-spotlight-card {
     background:
-      radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 42%),
-      #182225;
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
   }
 
   .app .achievement-streak-card {
     background:
-      radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.18), transparent 42%),
-      #182225;
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
   }
 
   .app .achievement-reward-card.reward-unlocked {
-    border-color: rgba(245, 197, 66, 0.34);
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 34%, transparent);
     background:
-      radial-gradient(circle at 100% 0%, rgba(245, 197, 66, 0.18), transparent 45%),
-      #182225;
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 45%),
+      var(--vrena-neutral-800);
   }
 
   .app .achievement-filter-bar button.active {
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
     background: var(--vrena-bg);
-    color: #071112;
+    color: var(--vrena-neutral-950);
   }
 
   .app .achievement-rank-list-button {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(0, 109, 119, 0.18);
-    color: #dfe5ff;
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    color: var(--vrena-purple-100);
   }
 
   .app .achievement-share-button {
-    border-color: rgba(245, 197, 66, 0.28);
-    background: rgba(245, 197, 66, 0.16);
-    color: #f7d96a;
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 28%, transparent);
+    background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+    color: var(--vrena-orange-300);
   }
 
   .app .achievement-rank-list span.active {
-    border-color: rgba(0, 109, 119, 0.36);
-    background: rgba(0, 109, 119, 0.18);
-    color: #dfe5ff;
+    border-color: color-mix(in srgb, var(--vrena-cyan-700) 36%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    color: var(--vrena-purple-100);
   }
 
   .app .achievement-locked,
   .app .retention-locked {
-    background: #121b1e;
+    background: var(--vrena-neutral-900);
   }
 
   .app .achievement-xp-track,
   .app .achievement-mini-progress {
-    background: rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .achievement-chart svg {
-    background: linear-gradient(180deg, rgba(0, 109, 119, 0.16), rgba(0, 174, 179, 0.08));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent), color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent));
   }
 
   .app .achievement-detail-list div {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .achievement-path span {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.06);
-    color: #aeb9bd;
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 6%, transparent);
+    color: var(--vrena-neutral-400);
   }
 
   .app .achievement-secret {
     background:
-      repeating-linear-gradient(90deg, rgba(0, 109, 119, 0.12) 0 8px, transparent 8px 16px),
-      linear-gradient(180deg, #182225, #10191b);
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent) 0 8px, transparent 8px 16px),
+      linear-gradient(180deg, var(--vrena-neutral-800), var(--vrena-neutral-900));
   }
 
   .app .retention-achievements-card {
     background:
-      radial-gradient(circle at 100% 0%, rgba(0, 174, 179, 0.16), transparent 30%),
-      linear-gradient(180deg, #10191b 0%, #0c1517 100%);
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent), transparent 30%),
+      linear-gradient(180deg, var(--vrena-neutral-900) 0%, var(--vrena-neutral-900) 100%);
   }
 
   .app .retention-achievement-copy strong {
@@ -8212,11 +8191,11 @@ body {
   }
 
   .app .retention-achievement-copy small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .achievement-unlock-copy h3 {
-    color: #f7d96a;
+    color: var(--vrena-orange-300);
   }
 }
 
@@ -8238,7 +8217,7 @@ body {
     top: 0;
     z-index: 30;
     border-right: 0;
-    border-bottom: 1px solid rgba(7, 17, 18, 0.12);
+    border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
     height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
     min-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
     max-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
@@ -8426,7 +8405,7 @@ body {
   .app .profile-mobile-contact {
     display: grid;
     gap: 7px;
-    border-top: 1px solid rgba(7, 17, 18, 0.12);
+    border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
     margin-top: 16px;
     padding-top: 14px;
     font-size: 13px;
@@ -8627,17 +8606,17 @@ body {
     place-items: center;
     width: 46px;
     height: 46px;
-    border: 1px solid rgba(0, 109, 119, 0.2);
+    border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
     border-radius: 999px;
-    background: #ffffff;
-    box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
-    color: #071112;
+    background: var(--vrena-white);
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
+    color: var(--vrena-neutral-950);
     font-size: 20px;
     pointer-events: auto;
   }
 
   .app .search-shell.open .mobile-search-toggle {
-    color: #071112;
+    color: var(--vrena-neutral-950);
   }
 
   .app .mobile-search-toggle svg {
@@ -8650,7 +8629,7 @@ body {
     display: none;
     width: min(100vw - 76px, 440px);
     max-width: none;
-    box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
     pointer-events: auto;
   }
 
@@ -8664,7 +8643,7 @@ body {
 
   .app .search-close {
     display: none;
-    box-shadow: 0 12px 34px rgba(11, 21, 24, 0.16);
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
     pointer-events: auto;
   }
 
@@ -8684,8 +8663,8 @@ body {
     padding: 8px 12px 10px;
     border-width: 1px 0;
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 10px 26px rgba(11, 21, 24, 0.12);
+    background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-900) 12%, transparent);
   }
 
   .app .sessions-section:has(.day-strip) .sub-tabs {
@@ -9273,26 +9252,26 @@ body {
 
 /* Staff Console visual refinement: compact, calmer, operations-focused. */
 .app .staff-console {
-  --staff-modern-surface: rgba(255, 255, 255, 0.92);
-  --staff-modern-soft: #f6f8f9;
-  --staff-modern-border: rgba(7, 17, 18, 0.1);
-  --staff-modern-border-strong: rgba(7, 17, 18, 0.16);
-  --staff-modern-muted: #647174;
-  --staff-modern-shadow: 0 14px 36px rgba(7, 17, 18, 0.06);
+  --staff-modern-surface: color-mix(in srgb, var(--vrena-white) 92%, transparent);
+  --staff-modern-soft: var(--vrena-neutral-100);
+  --staff-modern-border: color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  --staff-modern-border-strong: color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  --staff-modern-muted: var(--vrena-neutral-600);
+  --staff-modern-shadow: 0 14px 36px color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
   gap: 12px;
 }
 
 @media (prefers-color-scheme: dark) {
   .app {
-    background: #071112;
+    background: var(--vrena-neutral-950);
     color: var(--vrena-bg);
   }
 
   .app aside, .app .section, .app .session, .app .club-card, .app .mini-session, .app .profile-chip, .app .profile-photo-panel, .app .login-modal, .app .club-drawer, .app .player-profile-panel, .app .tournament-panel, .app .match-card, .app .tournament-create-box, .app .club-session-preview, .app .public-leaderboard, .app .queue-board, .app .audit-log, .app .ticket-login-panel, .app .ticket-form-panel, .app .ticket-confirmation, .app .ticket-admin-box, .app .club-member-row, .app .club-invite-box, .app .staff-card, .app .staff-tabs button, .app .staff-tab-categories button, .app .staff-commerce-switcher button, .app .staff-mode-panel {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
   }
 
   .app .profile-account-section-unframed {
@@ -9302,9 +9281,9 @@ body {
   }
 
   .app .profile-toggle-field {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.14);
-    color: #aeb9bd;
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
+    color: var(--vrena-neutral-400);
   }
 
   .app .profile-toggle-field strong,
@@ -9314,16 +9293,16 @@ body {
 
   .app .profile-toggle-field small,
   .app .marketing-consent-field small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .club-hero,
   .app .club-banner-upload {
     background:
-      linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.2)), rgba(7, 17, 18, 0.4)),
-      #10191b;
-    border-color: rgba(255, 255, 255, 0.14);
-    color: #d7e1e4;
+      linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent)), color-mix(in srgb, var(--vrena-neutral-950) 40%, transparent)),
+      var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
+    color: var(--vrena-neutral-300);
   }
 
   .app .club-banner-empty strong,
@@ -9334,16 +9313,16 @@ body {
   .app .club-invite-box span,
   .app .club-banner-empty,
   .app .club-card-motto {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .profile-session-group + .profile-session-group {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .invite-session {
-    background: #182225;
-    border-color: rgba(88, 123, 255, 0.34);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-purple-500) 34%, transparent);
   }
 
   .app .tournament-desk {
@@ -9358,99 +9337,99 @@ body {
   }
 
   .app .sessions-section .session {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .expanded-session {
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
   }
 
   .app .sub-tabs {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.14);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
   .app .sub-tabs button {
-    color: #d7e1e4;
+    color: var(--vrena-neutral-300);
   }
 
   .app .sub-tabs button.active {
     background: var(--vrena-bg);
-    color: #071112;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
+    color: var(--vrena-neutral-950);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 32%, transparent);
   }
 
   .app .calendar-panel,
   .app .calendar-scroll,
   .app .calendar-time-column,
   .app .calendar-day-header {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .calendar-day-column {
-    border-right-color: rgba(255, 255, 255, 0.08);
+    border-right-color: color-mix(in srgb, var(--vrena-white) 8%, transparent);
   }
 
   .app .calendar-toolbar span,
   .app .calendar-day-header span,
   .app .calendar-time-label,
   .app .calendar-session-compact small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .calendar-time-label,
   .app .calendar-slot {
-    border-bottom-color: rgba(255, 255, 255, 0.07);
+    border-bottom-color: color-mix(in srgb, var(--vrena-white) 7%, transparent);
   }
 
   .app .calendar-time-label.hour,
   .app .calendar-slot:has(span) {
-    border-bottom-color: rgba(255, 255, 255, 0.14);
+    border-bottom-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
   .app .calendar-slot span {
-    color: rgba(174, 185, 189, 0.62);
+    color: color-mix(in srgb, var(--vrena-neutral-400) 62%, transparent);
   }
 
   .app .calendar-slot:not(:disabled):hover {
-    background: rgba(98, 211, 255, 0.1);
+    background: color-mix(in srgb, var(--vrena-blue-400) 10%, transparent);
   }
 
   .app .calendar-slot.unavailable {
     background: repeating-linear-gradient(
       -45deg,
-      rgba(255, 255, 255, 0.07),
-      rgba(255, 255, 255, 0.07) 6px,
-      rgba(255, 255, 255, 0.025) 6px,
-      rgba(255, 255, 255, 0.025) 12px
+      color-mix(in srgb, var(--vrena-white) 7%, transparent),
+      color-mix(in srgb, var(--vrena-white) 7%, transparent) 6px,
+      color-mix(in srgb, var(--vrena-white) 2.5%, transparent) 6px,
+      color-mix(in srgb, var(--vrena-white) 2.5%, transparent) 12px
     );
   }
 
   .app .calendar-session-block {
-    background: linear-gradient(135deg, rgba(19, 201, 201, 0.24), rgba(0, 109, 119, 0.24)), #172224;
-    border-color: rgba(98, 211, 255, 0.28);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 24%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent)), var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
     color: var(--vrena-bg);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-950) 32%, transparent);
   }
 
   .app .calendar-session-block.ticket {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(0, 109, 119, 0.2)), #172224;
-    border-color: rgba(245, 158, 11, 0.32);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-yellow-600) 22%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent)), var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-yellow-600) 32%, transparent);
   }
 
   .app .calendar-session-compact span {
-    color: #8ce8ee;
+    color: var(--vrena-cyan-200);
   }
 
   .app .calendar-session-popover {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.14);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
     color: var(--vrena-bg);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 18px 44px color-mix(in srgb, var(--vrena-neutral-950) 42%, transparent);
   }
 
   .app .calendar-session-popover strong {
@@ -9458,7 +9437,7 @@ body {
   }
 
   .app .calendar-session-popover span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .leaderboard-controls label,
@@ -9468,119 +9447,119 @@ body {
   .app .rank-progress-label,
   .app .rank-progress small,
   .app .leaderboard-metric span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .current-rank-card,
   .app .leaderboard-row {
-    background: #10191b;
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
   }
 
   .app .current-rank-card,
   .app .leaderboard-row.current-user {
-    background: linear-gradient(135deg, rgba(0, 174, 179, 0.14), rgba(0, 109, 119, 0.14)), #10191b;
-    border-color: rgba(98, 211, 255, 0.28);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
   }
 
   .app .leaderboard-club-pin {
-    background: #10191b;
-    border-color: rgba(98, 211, 255, 0.28);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
   }
 
   .app .leaderboard-club-pin label,
   .app .leaderboard-club-pin-copy small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .leaderboard-club-pin-error {
-    color: #ffb4a8;
+    color: var(--vrena-red-300);
   }
 
   .app .leaderboard-tier-badge {
     background: transparent;
     box-shadow: none;
-    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.44));
+    filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--vrena-neutral-950) 44%, transparent));
   }
 
   .app .rank-mini span,
   .app .rank-progress-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .session-expanded {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .confirm-game-panel {
-    background: #122124;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .confirm-game-panel label {
-    color: #b7c3c7;
+    color: var(--vrena-neutral-400);
   }
 
   .app .tournament-panel, .app .match-card {
-    background: rgba(24, 34, 37, 0.72);
+    background: color-mix(in srgb, var(--vrena-neutral-800) 72%, transparent);
   }
 
   .app .muted, .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo), .app .row-meta, .app label, .app .notes, .app .login-modal p, .app .field-help, .app .consent-field, .app .game-card strong, .app .stats span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .standings-table, .app .queue-match, .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message, .app .session-message.announcement, .app .club-message-channel {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .session-message.own-message {
-    background: #1c2a30;
-    border-color: rgba(125, 211, 252, 0.22);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 22%, transparent);
   }
 
   .app .session-message.announcement.own-message {
-    background: #1e2838;
-    border-color: rgba(147, 197, 253, 0.28);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-purple-300) 28%, transparent);
   }
 
   .app .soft-opening-pill {
-    background: rgba(255, 218, 90, 0.18);
-    color: #ffe083;
+    background: color-mix(in srgb, var(--vrena-yellow-300) 18%, transparent);
+    color: var(--vrena-yellow-200);
   }
 
   .app .ticket-pill, .app .ticket-session-label {
-    background: rgba(94, 234, 255, 0.16);
-    color: #9eefff;
-    border-color: rgba(94, 234, 255, 0.22);
+    background: color-mix(in srgb, var(--vrena-cyan-300) 16%, transparent);
+    color: var(--vrena-cyan-200);
+    border-color: color-mix(in srgb, var(--vrena-cyan-300) 22%, transparent);
   }
 
   .app .challenge-pill, .app .challenge-session-label {
-    background: rgba(255, 218, 90, 0.18);
-    color: #ffe083;
-    border-color: rgba(255, 218, 90, 0.24);
+    background: color-mix(in srgb, var(--vrena-yellow-300) 18%, transparent);
+    color: var(--vrena-yellow-200);
+    border-color: color-mix(in srgb, var(--vrena-yellow-300) 24%, transparent);
   }
 
   .app .challenge-card {
-    background: #111d20;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .challenge-card-head span,
   .app .challenge-summary,
   .app .challenge-form-grid label > span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .challenge-sent-pill {
-    background: rgba(54, 211, 153, 0.14);
-    color: #8cf2c4;
+    background: color-mix(in srgb, var(--vrena-green-500) 14%, transparent);
+    color: var(--vrena-green-400);
   }
 
   .app .ticket-explainer {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(0, 109, 119, 0.16)), #182225;
-    border-color: rgba(98, 211, 255, 0.22);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent)), var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 22%, transparent);
   }
 
   .app .ticket-explainer strong {
@@ -9588,23 +9567,23 @@ body {
   }
 
   .app .ticket-explainer span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .session-tariff-link {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #9eefff;
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    color: var(--vrena-cyan-200);
   }
 
   .app .tariff-payment-section {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .tariff-payment-section p,
   .app .tariff-payment-disclaimer p {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .tariff-payment-section h4 {
@@ -9612,11 +9591,11 @@ body {
   }
 
   .app .tariff-payment-section a {
-    color: #9eefff;
+    color: var(--vrena-cyan-200);
   }
 
   .app .tariff-payment-disclaimer {
-    border-top-color: rgba(255, 255, 255, 0.12);
+    border-top-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .ticket-form-panel {
@@ -9625,8 +9604,8 @@ body {
   }
 
   .app .ticket-fast-path-summary {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(0, 109, 119, 0.16)), #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent)), var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .ticket-fast-path-summary strong {
@@ -9639,7 +9618,7 @@ body {
   .app .guest-ticket-contact p,
   .app .guest-ticket-contact label small,
   .app .ticket-event-options-copy {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .guest-ticket-copy strong,
@@ -9648,16 +9627,16 @@ body {
   }
 
   .app .ticket-service-card, .app .ticket-price-summary > div, .app .ticket-confirmation-grid span, .app .ticket-session-summary span {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .guest-ticket-country-button,
   .app .guest-ticket-country-menu,
   .app .guest-ticket-country-menu input {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
     color: var(--vrena-bg);
   }
 
@@ -9667,11 +9646,11 @@ body {
 
   .app .guest-ticket-country-list button:hover,
   .app .guest-ticket-country-list button:focus-visible {
-    background: rgba(98, 133, 255, 0.16);
+    background: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
   }
 
   .app .guest-ticket-country-list span {
-    color: #9eefff;
+    color: var(--vrena-cyan-200);
   }
 
   .app .ticket-service-card strong {
@@ -9679,24 +9658,24 @@ body {
   }
 
   .app .ticket-service-card.active {
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.18), rgba(0, 109, 119, 0.18)), #10191b;
-    border-color: rgba(98, 211, 255, 0.28);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent)), var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
   }
 
   .app .ticket-service-card span, .app .ticket-service-card small, .app .ticket-price-summary span, .app .ticket-price-summary small, .app .ticket-discount-code-field span, .app .ticket-discount-code-field small, .app .ticket-confirmation span, .app .ticket-admin-head span, .app .ticket-session-summary span, .app .ticket-loyalty-zero {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .ticket-total-original {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .ticket-discount-line strong {
-    color: #5eead4;
+    color: var(--vrena-cyan-300);
   }
 
   .app .ticket-total-reduction {
-    color: #5eead4;
+    color: var(--vrena-cyan-300);
   }
 
   .app .ticket-loyalty-toggle {
@@ -9704,7 +9683,7 @@ body {
   }
 
   .app .ticket-loyalty-toggle input {
-    accent-color: #5eead4;
+    accent-color: var(--vrena-cyan-300);
   }
 
   .app .session-score-summary, .app .reminder-strip, .app .waitlist-panel, .app .network-panel, .app .session-comms, .app .reminder-strip > button, .app .invite-chip, .app .session-message {
@@ -9712,66 +9691,70 @@ body {
   }
 
   .app .reminder-strip small, .app .session-message p, .app .message-channel-head small, .app .character-count, .app .message-translation-row {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .message-translation-status svg,
   .app .message-translation-toggle {
-    color: #9eefff;
+    color: var(--vrena-cyan-200);
   }
 
   .app .message-translation-toggle:hover,
   .app .message-translation-toggle:focus-visible {
-    color: #ffffff;
+    color: var(--vrena-white);
   }
 
   .app .message-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.24);
+    background: color-mix(in srgb, var(--vrena-white) 24%, transparent);
   }
 
   .app .moderation-badge.pending {
-    background: rgba(255, 214, 102, 0.18);
-    color: #ffd666;
+    background: color-mix(in srgb, var(--vrena-orange-300) 18%, transparent);
+    color: var(--vrena-orange-300);
   }
 
   .app .moderation-badge.rejected {
-    background: rgba(255, 126, 103, 0.18);
-    color: #ff9b87;
+    background: color-mix(in srgb, var(--vrena-red-400) 18%, transparent);
+    color: var(--vrena-red-300);
   }
 
   .app .best-performer-label {
-    background: rgba(255, 224, 93, 0.18);
-    color: #ffe882;
+    background: color-mix(in srgb, var(--vrena-yellow-300) 18%, transparent);
+    color: var(--vrena-yellow-200);
   }
 
   .app .tab, .app .segmented button, .app button.secondary, .app .language-picker > button, .app .language-menu, .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .format-toolbar button, .app .country-button, .app .search-close, .app .mobile-search-toggle, .app .day-chip, .app .game-card, .app .editor-results button, .app .emoji-row button, .app .color-row button, .app .custom-color-row input, .app .invite-code button {
-    background: #182225;
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
-    border-color: rgba(255, 255, 255, 0.14);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
   .app .language-menu button {
     background: transparent;
-    color: #d7e1e4;
-    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--vrena-neutral-300);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
   .app .language-menu button.active {
     background: var(--vrena-bg);
     border-color: var(--vrena-bg);
-    color: #071112;
+    color: var(--vrena-neutral-950);
   }
 
   .app input, .app select, .app textarea, .app .date-input-shell, .app .date-input-native, .app .rich-note-editor, .app .country-button {
-    border-color: rgba(255, 255, 255, 0.26);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    border-color: color-mix(in srgb, var(--vrena-white) 26%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 4%, transparent);
   }
 
   .app .ticket-control select {
-    background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 10l4 4 4-4' stroke='%23f6f7f9' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-repeat: no-repeat;
-    background-position: right 11px center;
-    background-size: 18px 18px;
+    background-position:
+      calc(100% - 18px) 50%,
+      calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
   }
 
   .app .date-input-shell {
@@ -9780,7 +9763,7 @@ body {
 
   .app .stat-label,
   .app .stat-subline span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .stat-card strong,
@@ -9789,13 +9772,13 @@ body {
   }
 
   .app .stat-subline {
-    border-top-color: rgba(255, 255, 255, 0.14);
+    border-top-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
   }
 
   .app .score-value.editable,
   .app .inline-score-input {
-    background: #182225;
-    border-color: rgba(255, 255, 255, 0.26);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-white) 26%, transparent);
     color: var(--vrena-bg);
   }
 
@@ -9809,7 +9792,7 @@ body {
   }
 
   .app .date-input-display.placeholder {
-    color: #8f9ca1;
+    color: var(--vrena-neutral-500);
   }
 
   .app .date-input-native::-webkit-calendar-picker-indicator {
@@ -9818,41 +9801,41 @@ body {
   }
 
   .app .rich-note-editor {
-    border-color: rgba(246, 247, 249, 0.5);
-    box-shadow: inset 0 0 0 1px rgba(246, 247, 249, 0.16);
+    border-color: color-mix(in srgb, var(--vrena-neutral-100) 50%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-neutral-100) 16%, transparent);
   }
 
   .app .rich-note-editor:focus {
-    border-color: #62d3ff;
-    box-shadow: 0 0 0 3px rgba(98, 211, 255, 0.16), inset 0 0 0 1px rgba(246, 247, 249, 0.2);
+    border-color: var(--vrena-blue-400);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-blue-400) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--vrena-neutral-100) 20%, transparent);
   }
 
   .app .selected-date-preview {
-    color: #a8b6bc;
+    color: var(--vrena-neutral-400);
   }
 
   .app .rich-note-editor:empty::before {
-    color: #8f9ca1;
+    color: var(--vrena-neutral-500);
   }
 
   .app .format-toolbar button {
-    border-color: rgba(255, 255, 255, 0.24);
+    border-color: color-mix(in srgb, var(--vrena-white) 24%, transparent);
   }
 
   .app .custom-color-row label, .app .player-motto {
-    color: #b9c4c8;
+    color: var(--vrena-neutral-400);
   }
 
   .app .champion-badge {
     background: transparent;
     box-shadow: none;
-    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.44));
+    filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--vrena-neutral-950) 44%, transparent));
   }
 
   .app .profile-chip:hover {
-    background: #182225;
+    background: var(--vrena-neutral-800);
     color: var(--vrena-bg);
-    border-color: rgba(255, 255, 255, 0.24);
+    border-color: color-mix(in srgb, var(--vrena-white) 24%, transparent);
   }
 
   .app .profile-chip:hover span, .app .profile-chip:hover strong {
@@ -9860,40 +9843,40 @@ body {
   }
 
   .app .tab.active, .app .segmented button.active, .app .notice, .app .row-meta span, .app .pill, .app .pending-member, .app .stats span, .app .match-card.completed {
-    background: #1d2a2e;
+    background: var(--vrena-neutral-800);
   }
 
   .app .row-meta span, .app .pill, .app .status-pill {
-    color: #d7e1e4;
-    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--vrena-neutral-300);
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .compact-session-card-expanded {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
   }
 
   .app .game-card, .app .confirm-game-panel, .app .profile-photo-panel, .app .club-card, .app .mini-session, .app .tournament-create-box, .app .queue-board, .app .audit-log {
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent);
   }
 
   .app .game-guide-link {
-    background: #111f31;
-    border-color: rgba(98, 211, 255, 0.26);
-    color: #8ee7ff;
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 26%, transparent);
+    color: var(--vrena-cyan-200);
   }
 
   .app .host-pill {
-    background: rgba(98, 211, 255, 0.16);
-    color: #8ee7ff;
+    background: color-mix(in srgb, var(--vrena-blue-400) 16%, transparent);
+    color: var(--vrena-cyan-200);
   }
 
   .app .player-name-line small {
-    color: #8ee7ff;
+    color: var(--vrena-cyan-200);
   }
 
   .app .crown-session-notice {
-    background: rgba(245, 197, 66, 0.16);
-    color: #ffe28a;
+    background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+    color: var(--vrena-yellow-200);
   }
 
   .app .match-player {
@@ -9901,81 +9884,81 @@ body {
   }
 
   .app .match-player.winner {
-    background: rgba(245, 197, 66, 0.16);
-    border-color: rgba(245, 197, 66, 0.7);
+    background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 70%, transparent);
   }
 
   .app .public-leaderboard {
     background:
-      radial-gradient(circle at 0% 0%, rgba(245, 197, 66, 0.18), transparent 34%),
-      radial-gradient(circle at 100% 100%, rgba(0, 109, 119, 0.18), transparent 38%),
-      #10191b;
+      radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 34%),
+      radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent), transparent 38%),
+      var(--vrena-neutral-900);
   }
 
   .app .public-leaderboard .podium-player {
-    background: rgba(24, 34, 37, 0.92);
+    background: color-mix(in srgb, var(--vrena-neutral-800) 92%, transparent);
     color: var(--vrena-bg);
-    border-color: rgba(255, 255, 255, 0.14);
+    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
     box-shadow: none;
   }
 
   .app .public-leaderboard .podium-player.place-1 {
-    background: linear-gradient(135deg, rgba(245, 197, 66, 0.22), rgba(24, 34, 37, 0.94));
-    border-color: rgba(245, 197, 66, 0.62);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-yellow-500) 22%, transparent), color-mix(in srgb, var(--vrena-neutral-800) 94%, transparent));
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 62%, transparent);
   }
 
   .app .public-leaderboard .podium-player.place-2 {
-    border-color: rgba(183, 192, 202, 0.46);
+    border-color: color-mix(in srgb, var(--vrena-neutral-400) 46%, transparent);
   }
 
   .app .public-leaderboard .podium-player.place-3 {
-    border-color: rgba(201, 135, 66, 0.56);
+    border-color: color-mix(in srgb, var(--vrena-orange-400) 56%, transparent);
   }
 
   .app .public-leaderboard .podium-player small {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .tournament-settings-box {
     background:
-      linear-gradient(135deg, rgba(0, 174, 179, 0.12), rgba(0, 109, 119, 0.12)),
-      #10191b;
-    border-color: rgba(75, 132, 255, 0.24);
+      linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent)),
+      var(--vrena-neutral-900);
+    border-color: color-mix(in srgb, var(--vrena-blue-500) 24%, transparent);
   }
 
   .app .tournament-settings-head span {
-    color: #aeb9bd;
+    color: var(--vrena-neutral-400);
   }
 
   .app .modal-backdrop {
-    background: rgba(0, 0, 0, 0.55);
+    background: color-mix(in srgb, var(--vrena-neutral-950) 55%, transparent);
   }
 
   .app .modal-close {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--vrena-white) 8%, transparent);
     color: var(--vrena-bg);
   }
 
   .app .modal-close:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--vrena-white) 14%, transparent);
+    color: var(--vrena-white);
   }
 
   .app .modal-close:focus-visible {
-    outline-color: rgba(98, 211, 255, 0.45);
+    outline-color: color-mix(in srgb, var(--vrena-blue-400) 45%, transparent);
   }
 
   .app .club-drawer-backdrop {
-    background: rgba(0, 0, 0, 0.58);
+    background: color-mix(in srgb, var(--vrena-neutral-950) 58%, transparent);
   }
 
   .app .drawer-handle {
-    background: rgba(255, 255, 255, 0.24);
+    background: color-mix(in srgb, var(--vrena-white) 24%, transparent);
   }
 
   .app .invite-code, .app .day-strip, .app .share-button {
-    background: #111f31;
-    border-color: rgba(75, 132, 255, 0.25);
+    background: var(--vrena-neutral-800);
+    border-color: color-mix(in srgb, var(--vrena-blue-500) 25%, transparent);
   }
 
   .app .share-button.app-share {
@@ -9984,19 +9967,19 @@ body {
     min-height: 40px;
     border: 0;
     border-radius: 12px;
-    background: rgba(246, 247, 249, 0.11);
+    background: color-mix(in srgb, var(--vrena-neutral-100) 11%, transparent);
     color: var(--vrena-bg);
-    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
   }
 
   .app .share-button.app-share:hover {
-    background: rgba(246, 247, 249, 0.16);
-    color: #ffffff;
+    background: color-mix(in srgb, var(--vrena-neutral-100) 16%, transparent);
+    color: var(--vrena-white);
   }
 
   .app .share-button.app-share.copied {
-    background: rgba(54, 211, 153, 0.18);
-    color: #8cf2c4;
+    background: color-mix(in srgb, var(--vrena-green-500) 18%, transparent);
+    color: var(--vrena-green-400);
   }
 
   .app .invite-code strong, .app h1, .app h2, .app h3, .app .profile-chip, .app .club-card, .app .game-card, .app .country-list button, .app .profile-photo-panel strong, .app .player-profile-panel h3, .app .modal-close {
@@ -10005,29 +9988,6 @@ body {
 }
 
 /* Player-side refinement: quieter Apple-like surfaces without touching Staff Console. */
-.app {
-  --player-bg: var(--vrena-bg);
-  --player-text: #071112;
-  --player-surface: rgba(255, 255, 255, 0.94);
-  --player-surface-soft: rgba(246, 248, 250, 0.88);
-  --player-surface-raised: #ffffff;
-  --player-border: rgba(7, 17, 18, 0.09);
-  --player-border-strong: rgba(0, 109, 119, 0.22);
-  --player-text-muted: #637075;
-  --player-field-bg: var(--vrena-surface-warm);
-  --player-field-bg-soft: #f8fafb;
-  --player-field-panel: #ffffff;
-  --player-field-border: rgba(7, 17, 18, 0.12);
-  --player-field-border-strong: rgba(7, 17, 18, 0.16);
-  --player-field-text: #071112;
-  --player-field-placeholder: #8a9498;
-  --player-control-hover: var(--vrena-surface-warm);
-  --player-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  --player-shadow: 0 10px 30px rgba(7, 17, 18, 0.06);
-  --player-shadow-soft: 0 5px 16px rgba(7, 17, 18, 0.045);
-  --player-radius: 14px;
-  --player-radius-sm: 11px;
-}
 
 .app .section:not(.staff-console),
 .app .session,
@@ -10101,9 +10061,9 @@ body {
 .app .tab.active,
 .app .sub-tabs button.active,
 .app .segmented button.active {
-  background: #071112;
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 8%, transparent);
 }
 
 .app .section:not(.staff-console) input,
@@ -10135,10 +10095,14 @@ body {
 }
 
 .app .section:not(.staff-console) .ticket-control select {
-  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 10l4 4 4-4' stroke='%23071112' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-repeat: no-repeat;
-  background-position: right 11px center;
-  background-size: 18px 18px;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
 }
 
 .app .sessions-section {
@@ -10154,13 +10118,13 @@ body {
 }
 
 .app .compact-session-card-expanded {
-  border-color: rgba(0, 109, 119, 0.18);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   box-shadow: var(--player-shadow);
 }
 
 .app .session-highlighted .compact-session-card {
-  border-color: rgba(0, 109, 119, 0.48);
-  box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12), var(--player-shadow);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 48%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent), var(--player-shadow);
 }
 
 .app .compact-session-image {
@@ -10180,8 +10144,8 @@ body {
 .app .host-pill {
   min-height: 22px;
   padding: 3px 8px;
-  border: 1px solid rgba(7, 17, 18, 0.045);
-  background: rgba(7, 17, 18, 0.045);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
   color: var(--player-text-muted);
   font-size: 12px;
   line-height: 1.05;
@@ -10208,9 +10172,9 @@ body {
 }
 
 .app .ticket-service-card.active {
-  border-color: rgba(0, 109, 119, 0.36);
-  background: rgba(246, 249, 255, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(0, 109, 119, 0.08);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 36%, transparent);
+  background: color-mix(in srgb, var(--vrena-neutral-50) 96%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
 .app .ticket-service-card strong {
@@ -10224,7 +10188,7 @@ body {
 .app .ticket-price-summary > div,
 .app .ticket-confirmation-grid span,
 .app .ticket-session-summary span {
-  border: 1px solid rgba(7, 17, 18, 0.045);
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
   border-radius: var(--player-radius-sm);
   background: var(--player-surface-soft);
 }
@@ -10247,14 +10211,14 @@ body {
 }
 
 .app .current-rank-card {
-  border-color: rgba(0, 109, 119, 0.18);
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
   border-radius: var(--player-radius);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.07), rgba(0, 109, 119, 0.09)), #ffffff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 7%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent)), var(--vrena-white);
   box-shadow: var(--player-shadow-soft);
 }
 
 .app .rank-mini span {
-  background: rgba(7, 17, 18, 0.055);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 5.5%, transparent);
 }
 
 .app .leaderboard-row {
@@ -10267,8 +10231,8 @@ body {
 }
 
 .app .leaderboard-row.current-user {
-  border-color: rgba(0, 109, 119, 0.32);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.075), rgba(0, 109, 119, 0.11)), #ffffff;
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 32%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 7.5%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 11%, transparent)), var(--vrena-white);
 }
 
 .app .leaderboard-rank {
@@ -10283,7 +10247,7 @@ body {
 .app .leaderboard-progress {
   height: 7px;
   border-radius: 999px;
-  background: rgba(7, 17, 18, 0.07);
+  background: color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
 }
 
 .app .leaderboard-progress span {
@@ -10319,8 +10283,8 @@ body {
 }
 
 .app .game-card.selected {
-  border-color: rgba(0, 174, 179, 0.44);
-  box-shadow: 0 0 0 3px rgba(0, 174, 179, 0.12);
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 44%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
 }
 
 .app .game-card img {
@@ -10328,14 +10292,14 @@ body {
 }
 
 .app .game-guide-link {
-  background: rgba(0, 109, 119, 0.06);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 6%, transparent);
 }
 
 .app .player-profile-panel {
   padding: 18px;
   border-color: var(--player-border);
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 24px 60px rgba(7, 17, 18, 0.16);
+  background: color-mix(in srgb, var(--vrena-white) 97%, transparent);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
 }
 
 .app .player-profile-panel h3 {
@@ -10364,9 +10328,9 @@ body {
 }
 
 .app .score-context-card {
-  border-color: rgba(0, 174, 179, 0.16);
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent);
   border-radius: var(--player-radius);
-  background: linear-gradient(135deg, rgba(0, 174, 179, 0.05), rgba(0, 109, 119, 0.06)), #ffffff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 5%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 6%, transparent)), var(--vrena-white);
 }
 
 @media (max-width: 760px) {
@@ -10435,37 +10399,6 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  .app {
-    --vrena-brand-cyan: #ffb84d;
-    --vrena-brand-deep: #ff6a2a;
-    --vrena-brand-gradient: linear-gradient(135deg, #ffb84d 0%, #ff6a2a 100%);
-    --vrena-brand-gradient-reverse: linear-gradient(135deg, #ff6a2a 0%, #ffb84d 100%);
-    --vrena-brand-soft: linear-gradient(135deg, rgba(255, 184, 77, 0.12), rgba(255, 106, 42, 0.14));
-    --vrena-cta: var(--vrena-brand-gradient);
-    --vrena-cta-ink: #24120b;
-    --vrena-cta-shadow: rgba(255, 106, 42, 0.32);
-    --vrena-cta-soft: rgba(255, 139, 61, 0.16);
-    --player-bg: #071112;
-    --player-text: var(--vrena-bg);
-    --player-surface: rgba(14, 23, 25, 0.94);
-    --player-surface-soft: rgba(22, 34, 37, 0.9);
-    --player-surface-raised: #10191b;
-    --player-border: rgba(255, 255, 255, 0.1);
-    --player-border-strong: rgba(98, 133, 255, 0.32);
-    --player-text-muted: #aeb9bd;
-    --player-field-bg: rgba(22, 34, 37, 0.9);
-    --player-field-bg-soft: rgba(22, 34, 37, 0.9);
-    --player-field-panel: #10191b;
-    --player-field-border: rgba(255, 255, 255, 0.1);
-    --player-field-border-strong: rgba(255, 255, 255, 0.26);
-    --player-field-text: var(--vrena-bg);
-    --player-field-placeholder: #88969b;
-    --player-control-hover: rgba(98, 133, 255, 0.16);
-    --player-control-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    --player-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
-    --player-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.18);
-  }
-
   .app .section:not(.staff-console),
   .app .compact-session-card,
   .app .ticket-service-card,
@@ -10489,11 +10422,11 @@ body {
   }
 
   .app .contact-channel.whatsapp {
-    border-color: rgba(37, 211, 102, 0.42);
+    border-color: color-mix(in srgb, var(--vrena-green-600) 42%, transparent);
   }
 
   .app .contact-channel.zalo {
-    border-color: rgba(0, 104, 255, 0.42);
+    border-color: color-mix(in srgb, var(--vrena-blue-600) 42%, transparent);
   }
 
   .app .compact-session-card-expanded,
@@ -10501,7 +10434,7 @@ body {
   .app .current-rank-card,
   .app .score-context-card,
   .app .ticket-service-card.active {
-    background: linear-gradient(135deg, rgba(0, 174, 179, 0.11), rgba(0, 109, 119, 0.12)), #10191b;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 11%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent)), var(--vrena-neutral-900);
   }
 
   .app .section:not(.staff-console) input,
@@ -10535,15 +10468,19 @@ body {
 
   .app .ticket-control select:not(:disabled),
   .app .ticket-control .date-input-display:not(.placeholder) {
-    color: #ffffff;
-    -webkit-text-fill-color: #ffffff;
+    color: var(--vrena-white);
+    -webkit-text-fill-color: var(--vrena-white);
   }
 
   .app .section:not(.staff-console) .ticket-control select {
-    background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 10l4 4 4-4' stroke='%23f6f7f9' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-repeat: no-repeat;
-    background-position: right 11px center;
-    background-size: 18px 18px;
+    background-position:
+      calc(100% - 18px) 50%,
+      calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
   }
 
   .app .ticket-control select:disabled,
@@ -10570,9 +10507,9 @@ body {
   }
 
   .app .club-action-row .club-leave-button {
-    background: rgba(248, 113, 113, 0.12);
-    color: #ffb4ad;
-    border-color: rgba(248, 113, 113, 0.28);
+    background: color-mix(in srgb, var(--vrena-red-400) 12%, transparent);
+    color: var(--vrena-red-300);
+    border-color: color-mix(in srgb, var(--vrena-red-400) 28%, transparent);
   }
 
   .app .row-meta span,
@@ -10581,8 +10518,8 @@ body {
   .app .status-pill,
   .app .host-pill,
   .app .rank-mini span {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.08);
+    border-color: color-mix(in srgb, var(--vrena-white) 8%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 8%, transparent);
     color: var(--player-text-muted);
   }
 
@@ -10601,7 +10538,7 @@ body {
   }
 
   .app .leaderboard-progress {
-    background: rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .profile-account-form .profile-account-hero,
@@ -10631,7 +10568,7 @@ body {
 
   .app .profile-account-form .profile-account-hero {
     background:
-      linear-gradient(135deg, rgba(0, 174, 179, 0.1), rgba(0, 109, 119, 0.12)),
+      linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent)),
       var(--player-surface-raised);
   }
 
@@ -10664,7 +10601,7 @@ body {
   }
 
   .app .profile-legal-panel .legal-links .link-button {
-    color: #9eefff;
+    color: var(--vrena-cyan-200);
   }
 
   .app .profile-account-form .avatar-options {
@@ -10672,8 +10609,8 @@ body {
   }
 
   .app .profile-auth-section .auth-benefit-strip span {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--vrena-white) 8%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
     color: var(--player-text-muted);
   }
 
@@ -10692,12 +10629,12 @@ body {
 
   .app .profile-security-panel .link-button:hover,
   .app .profile-security-panel .link-button:focus-visible {
-    background: rgba(0, 109, 119, 0.18);
-    border-color: rgba(98, 133, 255, 0.36);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-purple-400) 36%, transparent);
   }
 
   .app .profile-security-panel .danger-link {
-    color: #ffb4a8;
+    color: var(--vrena-red-300);
   }
 }
 
@@ -10776,31 +10713,31 @@ body {
 }
 
 .app .sessions-section .session-retention-card-tickets {
-  --session-retention-accent: #13a8d8;
+  --session-retention-accent: var(--vrena-blue-600);
 }
 
 .app .sessions-section .session-retention-card-create {
-  --session-retention-accent: #2f6df6;
+  --session-retention-accent: var(--vrena-purple-500);
 }
 
 .app .sessions-section .session-retention-card-share {
-  --session-retention-accent: #14956f;
+  --session-retention-accent: var(--vrena-green-800);
 }
 
 .app .sessions-section .session-retention-card-guide {
-  --session-retention-accent: #7c5cff;
+  --session-retention-accent: var(--vrena-purple-500);
 }
 
 .app .sessions-section .session-retention-card-today {
-  --session-retention-accent: #d6801f;
+  --session-retention-accent: var(--vrena-yellow-600);
 }
 
 .app .sessions-section .session-retention-card-clubs {
-  --session-retention-accent: #c2457a;
+  --session-retention-accent: var(--vrena-red-500);
 }
 
 .app .sessions-section .session-retention-card-leaderboard {
-  --session-retention-accent: #0f9f9c;
+  --session-retention-accent: var(--vrena-cyan-700);
 }
 
 .app .sessions-section .session-retention-card-icon {
@@ -10868,7 +10805,7 @@ body {
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, #13a8d8 8%, transparent),
+      color-mix(in srgb, var(--vrena-blue-600) 8%, transparent),
       transparent 34%
     ) !important;
   border-radius: 8px !important;
@@ -10893,12 +10830,12 @@ body {
   place-items: center;
   width: 56px;
   height: 56px;
-  border: 1px dashed color-mix(in srgb, #13a8d8 44%, var(--player-border));
+  border: 1px dashed color-mix(in srgb, var(--vrena-blue-600) 44%, var(--player-border));
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, #13a8d8 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-brand-deep) 10%, var(--player-surface)));
-  color: #168db6;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 48%, transparent);
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-blue-600) 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-brand-deep) 10%, var(--player-surface)));
+  color: var(--vrena-blue-700);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 48%, transparent);
 }
 
 .app .sessions-section .ticket-session-visual::before,
@@ -10962,24 +10899,24 @@ body {
 }
 
 .app .sessions-section .pill.private {
-  color: color-mix(in srgb, #b45a1c 78%, var(--player-text-muted));
+  color: color-mix(in srgb, var(--vrena-yellow-700) 78%, var(--player-text-muted));
 }
 
 .app .sessions-section .pill.session-visibility-open {
-  color: #138060;
+  color: var(--vrena-green-900);
 }
 
 .app .sessions-section .pill.session-visibility-private {
-  color: #c4322d;
+  color: var(--vrena-red-700);
 }
 
 @media (prefers-color-scheme: dark) {
   .app .sessions-section .pill.session-visibility-open {
-    color: #54d69c;
+    color: var(--vrena-green-500);
   }
 
   .app .sessions-section .pill.session-visibility-private {
-    color: #ff7b72;
+    color: var(--vrena-red-400);
   }
 }
 
@@ -11034,7 +10971,7 @@ body {
 
 .app .sessions-section .sub-tabs button.active {
   border-bottom-color: var(--vrena-brand-deep) !important;
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 @media (min-width: 961px) {
@@ -11240,7 +11177,7 @@ body {
 
   .app .tab.active {
     background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent) !important;
-    color: #071112;
+    color: var(--vrena-neutral-950);
   }
 }
 
@@ -11496,7 +11433,7 @@ body {
 .app .clubs-section .form-segmented button.active,
 .app .create-session-section .create-session-mode-toggle button.active {
   border-bottom-color: var(--vrena-brand-deep) !important;
-  color: #071112;
+  color: var(--vrena-neutral-950);
 }
 
 .app .profile-account-form {
@@ -11596,7 +11533,7 @@ body {
   min-height: 36px;
   margin: 0;
   padding: 7px 12px;
-  border: 1px solid rgba(47, 69, 255, 0.22) !important;
+  border: 1px solid color-mix(in srgb, var(--vrena-purple-500) 22%, transparent) !important;
   border-radius: 12px !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -11668,7 +11605,7 @@ body {
   padding: 14px;
   border-bottom: 1px solid var(--player-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--player-surface) 86%, var(--club-theme-faint, rgba(0, 109, 119, 0.07)));
+  background: color-mix(in srgb, var(--player-surface) 86%, var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent)));
 }
 
 .app .clubs-section .club-create-copy {
@@ -11677,7 +11614,7 @@ body {
 }
 
 .app .clubs-section .club-create-copy strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 15px;
 }
 
@@ -11722,7 +11659,7 @@ body {
 
 .app .clubs-section .club-list-group-head h3 {
   margin: 0;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 16px;
 }
 
@@ -11759,7 +11696,7 @@ body {
 }
 
 .app .clubs-section .club-empty-state strong {
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 16px;
 }
 
@@ -11779,8 +11716,8 @@ body {
   border: 1px solid var(--player-border) !important;
   border-left: 4px solid var(--club-theme, var(--vrena-brand-deep)) !important;
   border-radius: 8px !important;
-  background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, rgba(0, 109, 119, 0.07))) !important;
-  box-shadow: 0 8px 24px rgba(7, 17, 18, 0.055) !important;
+  background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent))) !important;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--vrena-neutral-950) 5.5%, transparent) !important;
 }
 
 .app .clubs-section .club-card-cover {
@@ -11792,8 +11729,8 @@ body {
   justify-content: flex-end;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, var(--club-theme-soft, rgba(0, 109, 119, 0.14)), rgba(112, 223, 255, 0.18)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.65), transparent);
+    linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), color-mix(in srgb, var(--vrena-cyan-300) 18%, transparent)),
+    linear-gradient(90deg, color-mix(in srgb, var(--vrena-white) 65%, transparent), transparent);
 }
 
 .app .clubs-section .club-card-cover::before {
@@ -11810,7 +11747,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(7, 17, 18, 0.56), rgba(7, 17, 18, 0.08));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--vrena-neutral-950) 56%, transparent), color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent));
 }
 
 .app .clubs-section .club-card-cover img {
@@ -11866,8 +11803,8 @@ body {
   padding: 9px 10px;
   border: 1px solid var(--player-border) !important;
   border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.64) !important;
-  color: #071112;
+  background: color-mix(in srgb, var(--vrena-white) 64%, transparent) !important;
+  color: var(--vrena-neutral-950);
   text-align: left;
   box-shadow: none !important;
 }
@@ -11888,7 +11825,7 @@ body {
 
 .app .clubs-section .club-card-signal strong {
   overflow: hidden;
-  color: #071112;
+  color: var(--vrena-neutral-950);
   font-size: 11px;
   font-weight: 900;
   text-overflow: ellipsis;
@@ -11897,12 +11834,12 @@ body {
 }
 
 .app .clubs-section .club-card-signal.attention {
-  border-color: rgba(180, 35, 24, 0.2) !important;
-  background: rgba(180, 35, 24, 0.07) !important;
+  border-color: color-mix(in srgb, var(--vrena-red-700) 20%, transparent) !important;
+  background: color-mix(in srgb, var(--vrena-red-700) 7%, transparent) !important;
 }
 
 .app .clubs-section .club-card-signal.attention svg {
-  color: #b42318;
+  color: var(--vrena-red-700);
 }
 
 .app .clubs-section .club-card-footer {
@@ -11944,7 +11881,7 @@ body {
 .app .clubs-section .club-card .player-avatar {
   width: 42px;
   height: 42px;
-  box-shadow: 0 8px 18px rgba(7, 17, 18, 0.08);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .clubs-section .club-card .player > span,
@@ -12169,7 +12106,7 @@ body {
 
   .app .clubs-section .club-create-panel,
   .app .clubs-section .club-card {
-    background: color-mix(in srgb, #0d171a 88%, var(--club-theme-faint, rgba(98, 133, 255, 0.12))) !important;
+    background: color-mix(in srgb, var(--vrena-neutral-900) 88%, var(--club-theme-faint, color-mix(in srgb, var(--vrena-purple-400) 12%, transparent))) !important;
   }
 
   .app .clubs-section .club-create-copy strong,
@@ -12182,13 +12119,13 @@ body {
   }
 
   .app .clubs-section .club-card-signal {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: color-mix(in srgb, var(--vrena-white) 5%, transparent) !important;
   }
 
   .app .clubs-section .club-card-cover {
     background:
-      linear-gradient(135deg, var(--club-theme-soft, rgba(98, 133, 255, 0.18)), rgba(112, 223, 255, 0.08)),
-      #101d21;
+      linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-purple-400) 18%, transparent)), color-mix(in srgb, var(--vrena-cyan-300) 8%, transparent)),
+      var(--vrena-neutral-900);
   }
 }
 
@@ -12199,20 +12136,20 @@ body {
   }
 
   .app .profile-completion-card {
-    border-color: rgba(98, 211, 255, 0.22) !important;
-    background: linear-gradient(135deg, rgba(0, 181, 184, 0.16), rgba(0, 109, 119, 0.16)) !important;
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 22%, transparent) !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent)) !important;
   }
 
   .app .ticket-account-value-note {
-    color: #9eefff;
-    background: rgba(0, 181, 184, 0.1);
-    border-color: rgba(98, 211, 255, 0.22);
+    color: var(--vrena-cyan-200);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 22%, transparent);
   }
 
   .app .ticket-account-value-note:hover,
   .app .ticket-account-value-note:focus-visible {
-    background: rgba(0, 181, 184, 0.16);
-    border-color: rgba(98, 211, 255, 0.34);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-blue-400) 34%, transparent);
   }
 
   .app .profile-completion-head strong {
@@ -12220,7 +12157,7 @@ body {
   }
 
   .app .profile-completion-head b {
-    color: #9eefff;
+    color: var(--vrena-cyan-200);
   }
 }
 
@@ -12234,29 +12171,29 @@ body {
 /* Final booking-app dark-mode guard after the late player-surface refinements. */
 @media (prefers-color-scheme: dark) {
   body:has(.app) {
-    background-color: #071112;
+    background-color: var(--vrena-neutral-950);
   }
 
   .app {
-    --player-bg: #071112;
+    --player-bg: var(--vrena-neutral-950);
     --player-text: var(--vrena-bg);
-    --player-surface: rgba(14, 23, 25, 0.94);
-    --player-surface-soft: rgba(22, 34, 37, 0.9);
-    --player-surface-raised: #10191b;
-    --player-border: rgba(255, 255, 255, 0.1);
-    --player-border-strong: rgba(98, 133, 255, 0.32);
-    --player-text-muted: #aeb9bd;
-    --player-field-bg: rgba(22, 34, 37, 0.9);
-    --player-field-bg-soft: rgba(22, 34, 37, 0.9);
-    --player-field-panel: #10191b;
-    --player-field-border: rgba(255, 255, 255, 0.1);
-    --player-field-border-strong: rgba(255, 255, 255, 0.26);
+    --player-surface: color-mix(in srgb, var(--vrena-neutral-900) 94%, transparent);
+    --player-surface-soft: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-surface-raised: var(--vrena-neutral-900);
+    --player-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    --player-border-strong: color-mix(in srgb, var(--vrena-purple-400) 32%, transparent);
+    --player-text-muted: var(--vrena-neutral-400);
+    --player-field-bg: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-field-bg-soft: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-field-panel: var(--vrena-neutral-900);
+    --player-field-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    --player-field-border-strong: color-mix(in srgb, var(--vrena-white) 26%, transparent);
     --player-field-text: var(--vrena-bg);
-    --player-field-placeholder: #88969b;
-    --player-control-hover: rgba(98, 133, 255, 0.16);
-    --player-control-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    --player-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
-    --player-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.18);
+    --player-field-placeholder: var(--vrena-neutral-500);
+    --player-control-hover: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
+    --player-control-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 4%, transparent);
+    --player-shadow: 0 14px 34px color-mix(in srgb, var(--vrena-neutral-950) 25%, transparent);
+    --player-shadow-soft: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
     background: var(--player-bg) !important;
     background-color: var(--player-bg) !important;
     color: var(--player-text);
@@ -12337,7 +12274,7 @@ body {
   .app .message-translation-status svg,
   .app .guest-ticket-country-list span,
   .app .player-name-line small {
-    color: #ffcf82 !important;
+    color: var(--vrena-orange-300) !important;
   }
 
   .app .game-guide-link,
@@ -12345,16 +12282,16 @@ body {
   .app .ticket-account-value-note,
   .app .ticket-quick-actions .game-guide-link,
   .app .ticket-quick-actions .session-tariff-link {
-    background: rgba(255, 139, 61, 0.12) !important;
-    border-color: rgba(255, 184, 77, 0.28) !important;
+    background: color-mix(in srgb, var(--vrena-orange-400) 12%, transparent) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 28%, transparent) !important;
   }
 
   .app .ticket-pill,
   .app .ticket-session-label,
   .app .host-pill {
-    background: rgba(255, 139, 61, 0.14) !important;
-    border-color: rgba(255, 184, 77, 0.24) !important;
-    color: #ffcf82 !important;
+    background: color-mix(in srgb, var(--vrena-orange-400) 14%, transparent) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 24%, transparent) !important;
+    color: var(--vrena-orange-300) !important;
   }
 
   .app .compact-session-card-expanded,
@@ -12366,9 +12303,9 @@ body {
   .app .ticket-fast-path-summary,
   .app .profile-account-form .profile-account-hero {
     background:
-      linear-gradient(135deg, rgba(255, 184, 77, 0.1), rgba(255, 106, 42, 0.1)),
+      linear-gradient(135deg, color-mix(in srgb, var(--vrena-orange-300) 10%, transparent), color-mix(in srgb, var(--vrena-orange-600) 10%, transparent)),
       var(--player-surface-raised) !important;
-    border-color: rgba(255, 184, 77, 0.24) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 24%, transparent) !important;
   }
 
   .app input:focus,
@@ -12376,7 +12313,7 @@ body {
   .app textarea:focus,
   .app .date-input-shell:focus-within,
   .app .rich-note-editor:focus {
-    border-color: rgba(255, 184, 77, 0.5) !important;
-    box-shadow: 0 0 0 3px rgba(255, 139, 61, 0.14) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 50%, transparent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-orange-400) 14%, transparent) !important;
   }
 }

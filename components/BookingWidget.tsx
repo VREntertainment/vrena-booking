@@ -15,6 +15,7 @@ import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCri
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
@@ -9863,7 +9864,7 @@ function handleSessionDateChange(value: string) {
                             value={clubEditThemeColorDraft}
                             onBlur={() => setClubEditThemeColorDraft(clubEditThemeColor)}
                             onChange={(event) => updateClubThemeColorDraft(event.target.value)}
-                            placeholder="#3059ff"
+                            placeholder={vrenaPalette.purple[500]}
                           />
                         </label>
                       </div>

@@ -33,6 +33,7 @@ import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnly
 import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import { supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import StaffAchievementAwardPanel, { type StaffAchievementAward } from './StaffAchievementAwardPanel'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
@@ -3179,8 +3180,8 @@ function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: Staff
   const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
   const initials = profile.anonymous_mode || profile.avatar_initials?.trim() === '?' ? '' : profile.avatar_initials?.trim()
   const style = {
-    background: profile.anonymous_mode ? '#11181b' : profile.avatar_color || '#3059ff',
-    color: profile.anonymous_mode ? '#ffffff' : profile.avatar_text_color || '#ffffff',
+    background: profile.anonymous_mode ? vrenaPalette.neutral[950] : profile.avatar_color || vrenaPalette.purple[500],
+    color: profile.anonymous_mode ? vrenaPalette.white : profile.avatar_text_color || vrenaPalette.white,
   }
 
   return (
@@ -3377,8 +3378,8 @@ function buildLineChartPath(series: Array<{ sales: number }>, max: number) {
 
 function conicStops(items: Array<{ value: number }>) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
-  if (total <= 0) return '#dfe7eb 0deg 360deg'
-  const colors = ['#00aeb3', '#3059ff', '#b8c3c8']
+  if (total <= 0) return `${vrenaPalette.neutral[300]} 0deg 360deg`
+  const colors = [vrenaPalette.cyan[500], vrenaPalette.purple[500], vrenaPalette.neutral[400]]
   let cursor = 0
   return items.map((item, index) => {
     const start = cursor
@@ -8180,12 +8181,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <svg className="staff-hourly-chart" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden="true">
                     <defs>
                       <linearGradient id="staffHourlyCurrentArea" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#0b6fb8" stopOpacity="0.38" />
-                        <stop offset="100%" stopColor="#0b6fb8" stopOpacity="0.08" />
+                        <stop offset="0%" stopColor={vrenaPalette.blue[600]} stopOpacity="0.38" />
+                        <stop offset="100%" stopColor={vrenaPalette.blue[600]} stopOpacity="0.08" />
                       </linearGradient>
                       <linearGradient id="staffHourlyCompareArea" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#ff9824" stopOpacity="0.32" />
-                        <stop offset="100%" stopColor="#ff9824" stopOpacity="0.07" />
+                        <stop offset="0%" stopColor={vrenaPalette.orange[500]} stopOpacity="0.32" />
+                        <stop offset="100%" stopColor={vrenaPalette.orange[500]} stopOpacity="0.07" />
                       </linearGradient>
                     </defs>
                     {[0.25, 0.5, 0.75, 1].map((ratio) => {
@@ -8272,8 +8273,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                   <svg className="staff-report-curve" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden="true">
                     <defs>
                       <linearGradient id="staffReportCurveGradient" x1="0" x2="1" y1="0" y2="0">
-                        <stop offset="0%" stopColor="#00aeb3" />
-                        <stop offset="100%" stopColor="#3059ff" />
+                        <stop offset="0%" stopColor={vrenaPalette.cyan[500]} />
+                        <stop offset="100%" stopColor={vrenaPalette.purple[500]} />
                       </linearGradient>
                     </defs>
                     <path className="staff-report-curve-fill" d={`${reportLinePath} L 94 96 L 6 96 Z`} />

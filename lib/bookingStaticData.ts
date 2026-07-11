@@ -1,4 +1,5 @@
 import type { LanguageCode } from './i18n/languages'
+import { vrenaAvatarColors, vrenaAvatarTextColors } from './theme/vrenaPalette'
 
 export const SESSION_PARTICIPANT_CHAPTER_TIME_SELECT = 'id, session_id, participant_id, profile_id, game_slug, chapter_number, duration_seconds, created_at, updated_at'
 export const SESSION_PARTICIPANT_SELECT = `id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at, chapter_times:session_participant_chapter_times(${SESSION_PARTICIPANT_CHAPTER_TIME_SELECT})`
@@ -460,10 +461,10 @@ export const countries = [
   { code: '+263', name: 'Zimbabwe' },
 ]
 
-export const avatarColors = ['#3059ff', '#00b5b8', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e', '#111827']
-export const avatarTextColors = ['#ffffff', '#071112', '#fef3c7', '#cffafe', '#fce7f3', '#dcfce7']
+export const avatarColors: string[] = [...vrenaAvatarColors]
+export const avatarTextColors: string[] = [...vrenaAvatarTextColors]
 export const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '🚀', '🌀', '🎯', '🕹️', '👾', '🤖', '🧠', '💥', '🛡️', '🧩', '🏆', '✨']
-export const clubThemeColors = ['#3059ff', '#00b5b8', '#0f766e', '#f59e0b', '#ef4444', '#7c3aed', '#111827']
+export const clubThemeColors: string[] = [...vrenaAvatarColors]
 
 export const dateLocales: Record<LanguageCode, string> = {
   en: 'en-US',

@@ -7,6 +7,7 @@
     "build": "next build",
     "measure:build": "node scripts/measure-build-output.mjs",
     "verify:theme": "node scripts/verify-theme-surfaces.mjs",
+    "verify:palette": "node scripts/verify-palette-usage.mjs",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",

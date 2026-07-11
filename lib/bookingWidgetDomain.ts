@@ -12,6 +12,7 @@ import {
   type TicketType,
 } from './bookingStaticData'
 import type { LanguageCode } from './i18n/languages'
+import { vrenaPalette } from './theme/vrenaPalette'
 import type { LeaderboardCriterion, LeaderboardPlayer } from '../components/LeaderboardPanel'
 import type { StaffProfile } from '../components/StaffConsole'
 
@@ -149,8 +150,8 @@ export type TicketDiscountQuote = {
 }
 
 export const ANONYMOUS_MASK_EMOJI = '🎭'
-export const ANONYMOUS_MASK_COLOR = '#11181b'
-export const ANONYMOUS_MASK_TEXT_COLOR = '#ffffff'
+export const ANONYMOUS_MASK_COLOR = vrenaPalette.neutral[950]
+export const ANONYMOUS_MASK_TEXT_COLOR = vrenaPalette.white
 export const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
 export const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
 export type ProfileGender = typeof PROFILE_GENDER_VALUES[number]

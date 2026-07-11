@@ -1,5 +1,6 @@
 import { DEFAULT_APP_URL, compactDisplayName, compactInitials, formatShortDate, loadCanvasImage, rankEmoji } from './bookingWidgetDomain'
 import type { LanguageCode } from './i18n/languages'
+import { vrenaPalette, vrenaRgba } from './theme/vrenaPalette'
 
 type TournamentResultsShareInput = {
   session: TournamentShareSession
@@ -101,11 +102,11 @@ export async function shareTournamentResultsImage({ session, text, language, onS
 
       if (!drewPhoto) {
         const avatarGradient = ctx.createLinearGradient(x, y, x + size, y + size)
-        avatarGradient.addColorStop(0, participant.avatar_color || '#00b6c6')
-        avatarGradient.addColorStop(1, '#3059ff')
+        avatarGradient.addColorStop(0, participant.avatar_color || vrenaPalette.cyan[500])
+        avatarGradient.addColorStop(1, vrenaPalette.purple[500])
         ctx.fillStyle = avatarGradient
         ctx.fillRect(x, y, size, size)
-        ctx.fillStyle = '#ffffff'
+        ctx.fillStyle = vrenaPalette.white
         ctx.font = `800 ${participant.avatar_emoji ? size * 0.48 : size * 0.34}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
@@ -134,15 +135,15 @@ export async function shareTournamentResultsImage({ session, text, language, onS
       if (templateImage) {
         ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height)
       } else {
-        ctx.fillStyle = '#ffffff'
+        ctx.fillStyle = vrenaPalette.white
         ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
 
-      ctx.fillStyle = '#071112'
+      ctx.fillStyle = vrenaPalette.neutral[950]
       ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
 
-      const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color = '#071112', weight = 900) => {
+      const fitText = (value: string, x: number, y: number, maxWidth: number, size: number, color: string = vrenaPalette.neutral[950], weight = 900) => {
         let fontSize = size
         ctx.font = `${weight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
         while (ctx.measureText(value).width > maxWidth && fontSize > 22) {
@@ -153,9 +154,9 @@ export async function shareTournamentResultsImage({ session, text, language, onS
         ctx.fillText(value, x, y)
       }
 
-      fitText(session.name, canvas.width / 2, 300, 820, 46, '#071112', 900)
+      fitText(session.name, canvas.width / 2, 300, 820, 46, vrenaPalette.neutral[950], 900)
 
-      ctx.fillStyle = '#4a5a60'
+      ctx.fillStyle = vrenaPalette.neutral[700]
       ctx.font = '800 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.fillText(`${formatShortDate(session.date, language)} · ${session.start_time.slice(0, 5)}`, canvas.width / 2, 338)
 
@@ -163,9 +164,9 @@ export async function shareTournamentResultsImage({ session, text, language, onS
         .map((placement) => podium.find((participant) => participant.placement === placement))
         .filter(Boolean) as TournamentShareParticipant[]
       const slots = [
-        { placement: 2, x: 125, y: 790, w: 285, h: 172, avatar: 178, avatarY: 580, accent: '#b7c0ca', fill: '#f4f6f8', emoji: '🥈' },
-        { placement: 1, x: 388, y: 672, w: 304, h: 290, avatar: 232, avatarY: 405, accent: '#ffc928', fill: '#fff6cf', emoji: '🏆' },
-        { placement: 3, x: 670, y: 820, w: 285, h: 142, avatar: 178, avatarY: 610, accent: '#c98742', fill: '#fff0df', emoji: '🥉' },
+        { placement: 2, x: 125, y: 790, w: 285, h: 172, avatar: 178, avatarY: 580, accent: vrenaPalette.neutral[400], fill: vrenaPalette.neutral[100], emoji: '🥈' },
+        { placement: 1, x: 388, y: 672, w: 304, h: 290, avatar: 232, avatarY: 405, accent: vrenaPalette.yellow[500], fill: vrenaPalette.yellow[100], emoji: '🏆' },
+        { placement: 3, x: 670, y: 820, w: 285, h: 142, avatar: 178, avatarY: 610, accent: vrenaPalette.orange[700], fill: vrenaPalette.orange[50], emoji: '🥉' },
       ]
 
       for (const participant of orderedPodium) {
@@ -173,7 +174,7 @@ export async function shareTournamentResultsImage({ session, text, language, onS
         if (!slot) continue
 
         ctx.save()
-        ctx.shadowColor = 'rgba(7, 17, 18, 0.12)'
+        ctx.shadowColor = vrenaRgba(vrenaPalette.neutral[950], 0.12)
         ctx.shadowBlur = 22
         ctx.shadowOffsetY = 12
         ctx.fillStyle = slot.accent
@@ -201,7 +202,7 @@ export async function shareTournamentResultsImage({ session, text, language, onS
         ctx.textBaseline = 'alphabetic'
         fitText(compactDisplayName(participant.display_name, text.player), slot.x + slot.w / 2, slot.y + slot.h - 78, slot.w - 34, slot.placement === 1 ? 38 : 32)
 
-        ctx.fillStyle = '#39464b'
+        ctx.fillStyle = vrenaPalette.neutral[700]
         ctx.font = `800 ${slot.placement === 1 ? 26 : 23}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
         ctx.fillText(`${participant.score ?? 0} pts · ${participant.accuracy_percent ?? '-'}%`, slot.x + slot.w / 2, slot.y + slot.h - 38)
       }
