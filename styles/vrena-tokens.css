@@ -165,14 +165,14 @@
 
   --vrena-brand-cyan: var(--vrena-primary);
   --vrena-brand-deep: var(--vrena-secondary);
-  --vrena-brand-gradient: var(--vrena-logo-gradient-cool);
-  --vrena-brand-gradient-reverse: linear-gradient(227.966deg, #00ffe5 0%, #525bfd 100%);
+  --vrena-brand-gradient: linear-gradient(90deg, #109fff 0%, #00ffea 100%);
+  --vrena-brand-gradient-reverse: linear-gradient(90deg, #00ffea 0%, #109fff 100%);
   --vrena-brand-soft: linear-gradient(135deg, rgb(var(--vrena-purple-500-rgb) / 0.08), rgb(var(--vrena-cyan-500-rgb) / 0.1));
 
   --vrena-cta: var(--vrena-brand-gradient);
-  --vrena-cta-ink: var(--vrena-white);
-  --vrena-cta-shadow: rgb(var(--vrena-purple-500-rgb) / 0.22);
-  --vrena-cta-soft: rgb(var(--vrena-purple-500-rgb) / 0.12);
+  --vrena-cta-ink: var(--vrena-neutral-950);
+  --vrena-cta-shadow: rgb(var(--vrena-blue-600-rgb) / 0.22);
+  --vrena-cta-soft: rgb(var(--vrena-blue-600-rgb) / 0.12);
 
   --player-bg: var(--vrena-bg);
   --player-text: var(--vrena-neutral-950);
