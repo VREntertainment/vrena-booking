@@ -1642,6 +1642,13 @@ body {
   border-color: color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
+.app .sidebar-gallery-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+}
+
 .app .segmented {
   display: inline-flex;
   gap: 4px;
@@ -6188,6 +6195,94 @@ body {
   max-width: 100%;
 }
 
+.app .hall-gallery-card {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.78fr) minmax(0, 1.35fr);
+  gap: 12px;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--player-border);
+  border-radius: var(--player-radius);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 7%, transparent), color-mix(in srgb, var(--vrena-orange-400) 8%, transparent)),
+    var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
+  color: var(--player-text);
+}
+
+.app .hall-gallery-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .hall-gallery-kicker,
+.app .hall-gallery-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+
+.app .hall-gallery-kicker {
+  min-height: 24px;
+  color: var(--vrena-accent-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .hall-gallery-copy h3 {
+  margin: 0;
+  color: var(--player-text);
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.app .hall-gallery-copy p {
+  margin: 4px 0 0;
+  color: var(--player-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.app .hall-gallery-link {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-white) 72%, transparent);
+  color: var(--vrena-accent-text);
+  padding: 7px 11px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .hall-gallery-link:hover {
+  text-decoration: underline;
+}
+
+.app .hall-gallery-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.app .hall-gallery-strip img {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--player-surface-soft);
+}
+
 .app .leaderboard-club-pin {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) auto;
@@ -8447,6 +8542,10 @@ body {
     display: none !important;
   }
 
+  .app .sidebar-gallery-tab {
+    display: none !important;
+  }
+
   .app .mobile-staff-profile-action {
     display: inline-flex;
     align-items: center;
@@ -8835,6 +8934,30 @@ body {
   .app .leaderboard-search {
     display: block;
     width: 100%;
+  }
+
+  .app .hall-gallery-card {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .app .hall-gallery-copy {
+    gap: 8px;
+  }
+
+  .app .hall-gallery-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app .hall-gallery-strip img {
+    flex: 0 0 clamp(176px, 68vw, 286px);
+    scroll-snap-align: start;
   }
 
   .app .leaderboard-club-pin {
@@ -9272,6 +9395,18 @@ body {
     font-size: 14px;
   }
 
+  .app .hall-gallery-card {
+    padding: 9px;
+  }
+
+  .app .hall-gallery-copy h3 {
+    font-size: 17px;
+  }
+
+  .app .hall-gallery-copy p {
+    font-size: 12px;
+  }
+
   .app .leaderboard-row {
     grid-template-columns: 34px calc(var(--avatar-sm) + 6px) minmax(0, 1fr);
     gap: 8px;
@@ -9549,6 +9684,7 @@ body {
   .app .leaderboard-controls label,
   .app .current-rank-card > span,
   .app .current-rank-card small,
+  .app .hall-gallery-copy p,
   .app .leaderboard-rank,
   .app .rank-progress-label,
   .app .rank-progress small,
@@ -9557,6 +9693,7 @@ body {
   }
 
   .app .current-rank-card,
+  .app .hall-gallery-card,
   .app .leaderboard-row {
     background: var(--vrena-neutral-900);
     border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
@@ -9567,6 +9704,26 @@ body {
   .app .leaderboard-row.current-user {
     background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), var(--vrena-neutral-900);
     border-color: color-mix(in srgb, var(--vrena-blue-400) 28%, transparent);
+  }
+
+  .app .hall-gallery-card {
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-400) 11%, transparent), color-mix(in srgb, var(--vrena-orange-300) 12%, transparent)),
+      var(--vrena-neutral-900);
+  }
+
+  .app .hall-gallery-kicker,
+  .app .hall-gallery-link {
+    color: var(--vrena-orange-300);
+  }
+
+  .app .hall-gallery-link {
+    background: color-mix(in srgb, var(--vrena-orange-400) 12%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 28%, transparent);
+  }
+
+  .app .hall-gallery-strip img {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
   }
 
   .app .leaderboard-club-pin {
@@ -12335,6 +12492,7 @@ body {
   .app .compact-session-card,
   .app .ticket-service-card,
   .app .current-rank-card,
+  .app .hall-gallery-card,
   .app .leaderboard-row,
   .app .profile-photo-panel,
   .app .game-card,
@@ -12406,11 +12564,16 @@ body {
   }
 
   .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo),
+  .app .hall-gallery-copy p,
   .app .sessions-section .session-retention-card-copy span {
     color: var(--player-text-muted) !important;
   }
 
   .app .tab {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .sidebar-gallery-tab {
     color: var(--player-text-muted) !important;
   }
 
@@ -12425,6 +12588,7 @@ body {
   }
 
   .app .link-button,
+  .app .hall-gallery-link,
   .app .session-tariff-link,
   .app .tariff-payment-section a,
   .app .ticket-account-value-note,
@@ -12440,6 +12604,7 @@ body {
   }
 
   .app .game-guide-link,
+  .app .hall-gallery-link,
   .app .session-tariff-link,
   .app .ticket-account-value-note,
   .app .ticket-quick-actions .game-guide-link,
@@ -12459,6 +12624,7 @@ body {
   .app .compact-session-card-expanded,
   .app .leaderboard-row.current-user,
   .app .current-rank-card,
+  .app .hall-gallery-card,
   .app .score-context-card,
   .app .ticket-service-card.active,
   .app .ticket-explainer,

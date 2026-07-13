@@ -1,8 +1,9 @@
 'use client'
 
-import { Share } from 'lucide-react'
+import { ExternalLink, Images, Share } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/base'
+import { vrenaGalleryUrl } from '../lib/siteMetadata'
 
 export type LeaderboardPlayer = {
   profileId: string
@@ -105,6 +106,12 @@ type RankInfo = {
 }
 
 const noneRankTier = rankTiers[rankTiers.length - 1]
+const galleryPreviewImages = [
+  { src: '/gallery/vrena-gallery-players-01.jpg', altKey: 'galleryImageAlt1' },
+  { src: '/gallery/vrena-gallery-players-02.jpg', altKey: 'galleryImageAlt2' },
+  { src: '/gallery/vrena-gallery-players-03.jpg', altKey: 'galleryImageAlt3' },
+  { src: '/gallery/vrena-gallery-players-04.jpg', altKey: 'galleryImageAlt4' },
+] as const
 
 function normalizeSearchValue(value: string) {
   return value
@@ -532,6 +539,38 @@ export default function LeaderboardPanel({
             </button>
           )}
         </div>
+      )}
+
+      {!fixedClubId && (
+        <section className="hall-gallery-card" aria-labelledby="hall-gallery-title">
+          <div className="hall-gallery-copy">
+            <span className="hall-gallery-kicker">
+              <Images aria-hidden="true" size={16} />
+              <span>{text.galleryLink}</span>
+            </span>
+            <div>
+              <h3 id="hall-gallery-title">{text.galleryTitle}</h3>
+              <p>{text.galleryBody}</p>
+            </div>
+            <a className="hall-gallery-link" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+              <span>{text.galleryOpenFull}</span>
+              <ExternalLink aria-hidden="true" size={15} />
+            </a>
+          </div>
+          <div className="hall-gallery-strip" aria-label={text.galleryTitle}>
+            {galleryPreviewImages.map((image) => (
+              <img
+                alt={text[image.altKey]}
+                decoding="async"
+                height="1080"
+                key={image.src}
+                loading="lazy"
+                src={image.src}
+                width="1920"
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <div className="leaderboard-list" aria-label={text.leaderboard}>
