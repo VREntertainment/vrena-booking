@@ -12898,6 +12898,16 @@ body {
   }
 }
 
+@media (prefers-color-scheme: dark) and (min-width: 961px) {
+  .app .tickets-section::after {
+    opacity: 0.4;
+    filter: saturate(0.9) contrast(0.9) brightness(0.68);
+    mix-blend-mode: normal;
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.56) 34%, rgba(0, 0, 0, 0.2) 62%, transparent 84%);
+    mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.56) 34%, rgba(0, 0, 0, 0.2) 62%, transparent 84%);
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .app .action-toast,
   .action-toast {
