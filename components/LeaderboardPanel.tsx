@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, Images, Share } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Images, Share, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/base'
 import { vrenaGalleryUrl } from '../lib/siteMetadata'
@@ -249,6 +249,8 @@ export default function LeaderboardPanel({
   const [leaderboardClubPinDrafts, setLeaderboardClubPinDrafts] = useState<Record<string, string>>({})
   const [leaderboardClubPinStatus, setLeaderboardClubPinStatus] = useState('')
   const [unlockedLeaderboardClubIds, setUnlockedLeaderboardClubIds] = useState<Record<string, boolean>>({})
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null)
+  const galleryCloseButtonRef = useRef<HTMLButtonElement | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const leaderboardCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
@@ -392,6 +394,7 @@ export default function LeaderboardPanel({
   }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
   const showCurrentUserShareButton = Boolean(onShareCurrentUserStats)
+  const activeGalleryImage = activeGalleryIndex === null ? null : galleryPreviewImages[activeGalleryIndex] ?? null
 
   useEffect(() => {
     if (!onLoadMorePlayers || !hasMorePlayers || isLoadingMorePlayers || !loadMoreRef.current) return
@@ -404,6 +407,41 @@ export default function LeaderboardPanel({
 
     return () => observer.disconnect()
   }, [hasMorePlayers, isLoadingMorePlayers, onLoadMorePlayers])
+
+  useEffect(() => {
+    if (activeGalleryIndex === null) return
+    galleryCloseButtonRef.current?.focus()
+  }, [activeGalleryIndex])
+
+  useEffect(() => {
+    if (activeGalleryIndex === null || typeof window === 'undefined') return
+
+    function handleGalleryKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setActiveGalleryIndex(null)
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setActiveGalleryIndex((current) => current === null ? current : (current + galleryPreviewImages.length - 1) % galleryPreviewImages.length)
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        setActiveGalleryIndex((current) => current === null ? current : (current + 1) % galleryPreviewImages.length)
+      }
+    }
+
+    window.addEventListener('keydown', handleGalleryKeyDown)
+    return () => window.removeEventListener('keydown', handleGalleryKeyDown)
+  }, [activeGalleryIndex])
+
+  function showPreviousGalleryPhoto() {
+    setActiveGalleryIndex((current) => current === null ? current : (current + galleryPreviewImages.length - 1) % galleryPreviewImages.length)
+  }
+
+  function showNextGalleryPhoto() {
+    setActiveGalleryIndex((current) => current === null ? current : (current + 1) % galleryPreviewImages.length)
+  }
 
   function unlockLeaderboardClub(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -558,19 +596,55 @@ export default function LeaderboardPanel({
             </a>
           </div>
           <div className="hall-gallery-strip" aria-label={text.galleryTitle}>
-            {galleryPreviewImages.map((image) => (
-              <img
-                alt={text[image.altKey]}
-                decoding="async"
-                height="1080"
+            {galleryPreviewImages.map((image, index) => (
+              <button
+                aria-label={`${text.galleryOpenPhoto}: ${text[image.altKey]}`}
+                className="hall-gallery-photo-button"
                 key={image.src}
-                loading="lazy"
-                src={image.src}
-                width="1920"
-              />
+                onClick={() => setActiveGalleryIndex(index)}
+                type="button"
+              >
+                <img
+                  alt={text[image.altKey]}
+                  decoding="async"
+                  height="1080"
+                  loading="lazy"
+                  src={image.src}
+                  width="1920"
+                />
+              </button>
             ))}
           </div>
         </section>
+      )}
+
+      {activeGalleryImage && (
+        <div className="hall-gallery-viewer-backdrop" role="dialog" aria-modal="true" aria-label={text.galleryTitle} onClick={() => setActiveGalleryIndex(null)}>
+          <div className="hall-gallery-viewer" onClick={(event) => event.stopPropagation()}>
+            <button ref={galleryCloseButtonRef} aria-label={text.close} className="hall-gallery-viewer-close" type="button" onClick={() => setActiveGalleryIndex(null)}>
+              <X aria-hidden="true" size={24} />
+            </button>
+            <button aria-label={text.galleryPrevious} className="hall-gallery-viewer-nav previous" type="button" onClick={showPreviousGalleryPhoto}>
+              <ChevronLeft aria-hidden="true" size={30} />
+            </button>
+            <figure>
+              <img
+                alt={text[activeGalleryImage.altKey]}
+                decoding="async"
+                height="1080"
+                src={activeGalleryImage.src}
+                width="1920"
+              />
+            </figure>
+            <a className="hall-gallery-viewer-full-link" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+              <span>{text.galleryOpenFull}</span>
+              <ExternalLink aria-hidden="true" size={14} />
+            </a>
+            <button aria-label={text.galleryNext} className="hall-gallery-viewer-nav next" type="button" onClick={showNextGalleryPhoto}>
+              <ChevronRight aria-hidden="true" size={30} />
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="leaderboard-list" aria-label={text.leaderboard}>
