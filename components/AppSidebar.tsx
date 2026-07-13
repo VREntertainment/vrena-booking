@@ -1,10 +1,11 @@
-import { Share } from 'lucide-react'
+import { Images, Share } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { publicAppRoutes } from '../lib/appRoutes'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { storeLanguage } from '../lib/i18n/detectLanguage'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import { vrenaGalleryUrl } from '../lib/siteMetadata'
 import ContactChannels from './ContactChannels'
 
 export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
@@ -125,6 +126,10 @@ export default function AppSidebar({
         <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} onClick={() => onViewChange('clubs')}>
           {text.clubs}
         </Link>
+        <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+          <Images aria-hidden="true" size={15} />
+          <span>{text.galleryLink}</span>
+        </a>
         {canAccessStaffConsole && (
           <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
             {language === 'vi' ? 'Nhân viên' : 'Staff'}
