@@ -1630,6 +1630,10 @@ body {
   gap: 8px;
 }
 
+.app .sidebar-tab-icon {
+  display: none;
+}
+
 .app .tab, .app .segmented button {
   text-align: left;
   background: transparent;
@@ -11646,10 +11650,24 @@ body {
   }
 
   .app .tab {
+    justify-content: flex-start;
+    gap: 10px;
     border: 0 !important;
     background: transparent !important;
     color: var(--player-text-muted);
     padding: 9px 10px;
+    text-align: left;
+  }
+
+  .app .sidebar-tab-icon {
+    display: inline-flex;
+    flex: 0 0 20px;
+    width: 20px;
+    color: currentColor;
+  }
+
+  .app .sidebar-tab-label {
+    min-width: 0;
   }
 
   .app .tab.active {
