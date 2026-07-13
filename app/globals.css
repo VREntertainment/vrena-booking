@@ -12082,27 +12082,20 @@ body {
 
   .app .tickets-section::after {
     position: absolute;
-    right: clamp(24px, 4.5vw, 92px);
-    bottom: clamp(24px, 4vw, 68px);
+    right: clamp(-180px, -7vw, -72px);
+    bottom: clamp(-120px, -5vw, -52px);
     z-index: 0;
     display: block;
-    width: min(56vw, 900px);
-    height: clamp(300px, 30vw, 460px);
+    width: min(72vw, 1160px);
+    height: clamp(450px, 48vw, 720px);
     pointer-events: none;
     background-image: url('/gallery/vrena-gallery-players-03.jpg');
-    background-position: center 46%;
+    background-position: center 48%;
     background-size: cover;
-    border-radius: 12px;
-    opacity: 0.68;
-    filter: saturate(0.92) contrast(0.96);
-    -webkit-mask-image:
-      linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.08) 15%, rgba(0, 0, 0, 0.68) 34%, #000 52%),
-      linear-gradient(to bottom, #000 0%, #000 72%, rgba(0, 0, 0, 0.82) 84%, transparent 100%);
-    -webkit-mask-composite: source-in;
-    mask-image:
-      linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.08) 15%, rgba(0, 0, 0, 0.68) 34%, #000 52%),
-      linear-gradient(to bottom, #000 0%, #000 72%, rgba(0, 0, 0, 0.82) 84%, transparent 100%);
-    mask-composite: intersect;
+    opacity: 0.44;
+    filter: saturate(0.86) contrast(0.9) brightness(1.06);
+    -webkit-mask-image: radial-gradient(ellipse at 72% 54%, #000 0%, rgba(0, 0, 0, 0.78) 32%, rgba(0, 0, 0, 0.34) 54%, transparent 78%);
+    mask-image: radial-gradient(ellipse at 72% 54%, #000 0%, rgba(0, 0, 0, 0.78) 32%, rgba(0, 0, 0, 0.34) 54%, transparent 78%);
   }
 }
 
