@@ -1600,6 +1600,11 @@ body {
   display: none;
 }
 
+.app .tickets-section::after {
+  content: '';
+  display: none;
+}
+
 .app .mobile-staff-profile-action,
 .app .staff-mode-backdrop {
   display: none;
@@ -12036,6 +12041,19 @@ body {
   padding-top: 4px;
 }
 
+.app .tickets-section {
+  align-content: start;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.app .ticket-quick-actions,
+.app .ticket-flow-grid,
+.app .ticket-mobile-contact {
+  position: relative;
+  z-index: 1;
+}
+
 .app .ticket-fast-path-summary {
   padding: 6px 0 4px;
   border: 0 !important;
@@ -12055,6 +12073,31 @@ body {
 
 .app .ticket-event-options-copy {
   padding-bottom: 7px;
+}
+
+@media (min-width: 961px) {
+  .app .tickets-section {
+    min-height: calc(100svh - 40px);
+  }
+
+  .app .tickets-section::after {
+    position: absolute;
+    right: clamp(-420px, -18vw, -220px);
+    bottom: clamp(-300px, -16vw, -180px);
+    z-index: 0;
+    display: block;
+    width: min(92vw, 1500px);
+    height: clamp(620px, 64vw, 960px);
+    pointer-events: none;
+    background-image: url('/gallery/vrena-gallery-players-03.jpg');
+    background-position: center 48%;
+    background-size: cover;
+    opacity: 0.22;
+    filter: saturate(0.72) contrast(0.76) brightness(1.18);
+    mix-blend-mode: multiply;
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 32%, rgba(0, 0, 0, 0.14) 58%, transparent 82%);
+    mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 32%, rgba(0, 0, 0, 0.14) 58%, transparent 82%);
+  }
 }
 
 .app .clubs-section .club-discovery-toolbar {
