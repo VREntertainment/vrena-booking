@@ -199,7 +199,7 @@ export const en = {
   galleryLink: 'Gallery',
   galleryTitle: 'VRena moments',
   galleryBody: 'Real arena shots from players who have already stepped into the game.',
-  galleryOpenFull: 'Open full gallery',
+  galleryOpenFull: 'Open the full gallery',
   galleryOpenPhoto: 'Open photo',
   galleryPrevious: 'Previous photo',
   galleryNext: 'Next photo',

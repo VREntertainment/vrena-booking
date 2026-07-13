@@ -395,7 +395,6 @@ export default function LeaderboardPanel({
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
   const showCurrentUserShareButton = Boolean(onShareCurrentUserStats)
   const activeGalleryImage = activeGalleryIndex === null ? null : galleryPreviewImages[activeGalleryIndex] ?? null
-  const activeGalleryDisplayIndex = activeGalleryIndex === null ? 0 : activeGalleryIndex + 1
 
   useEffect(() => {
     if (!onLoadMorePlayers || !hasMorePlayers || isLoadingMorePlayers || !loadMoreRef.current) return
@@ -620,7 +619,7 @@ export default function LeaderboardPanel({
       )}
 
       {activeGalleryImage && (
-        <div className="hall-gallery-viewer-backdrop" role="dialog" aria-modal="true" aria-labelledby="hall-gallery-viewer-title" onClick={() => setActiveGalleryIndex(null)}>
+        <div className="hall-gallery-viewer-backdrop" role="dialog" aria-modal="true" aria-label={text.galleryTitle} onClick={() => setActiveGalleryIndex(null)}>
           <div className="hall-gallery-viewer" onClick={(event) => event.stopPropagation()}>
             <button ref={galleryCloseButtonRef} aria-label={text.close} className="hall-gallery-viewer-close" type="button" onClick={() => setActiveGalleryIndex(null)}>
               <X aria-hidden="true" size={24} />
@@ -636,11 +635,11 @@ export default function LeaderboardPanel({
                 src={activeGalleryImage.src}
                 width="1920"
               />
-              <figcaption>
-                <span>{activeGalleryDisplayIndex} / {galleryPreviewImages.length}</span>
-                <strong id="hall-gallery-viewer-title">{text[activeGalleryImage.altKey]}</strong>
-              </figcaption>
             </figure>
+            <a className="hall-gallery-viewer-full-link" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+              <span>{text.galleryOpenFull}</span>
+              <ExternalLink aria-hidden="true" size={14} />
+            </a>
             <button aria-label={text.galleryNext} className="hall-gallery-viewer-nav next" type="button" onClick={showNextGalleryPhoto}>
               <ChevronRight aria-hidden="true" size={30} />
             </button>
