@@ -1,4 +1,4 @@
-import { Images, Share } from 'lucide-react'
+import { CalendarDays, Images, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { publicAppRoutes } from '../lib/appRoutes'
@@ -115,24 +115,29 @@ export default function AppSidebar({
 
       <div className="tabs">
         <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} onClick={() => onViewChange('sessions')}>
-          {text.sessions}
+          <CalendarDays aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+          <span className="sidebar-tab-label">{text.sessions}</span>
         </Link>
         <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} href={publicAppRoutes.tickets} onClick={() => onViewChange('tickets')}>
-          {text.tickets}
+          <Ticket aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+          <span className="sidebar-tab-label">{text.tickets}</span>
         </Link>
         <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} onClick={() => onViewChange('leaderboard')}>
-          {text.hallOfFame}
+          <Trophy aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+          <span className="sidebar-tab-label">{text.hallOfFame}</span>
         </Link>
         <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} onClick={() => onViewChange('clubs')}>
-          {text.clubs}
+          <UsersRound aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+          <span className="sidebar-tab-label">{text.clubs}</span>
         </Link>
         <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
-          <Images aria-hidden="true" size={15} />
-          <span>{text.galleryLink}</span>
+          <Images aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+          <span className="sidebar-tab-label">{text.galleryLink}</span>
         </a>
         {canAccessStaffConsole && (
           <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
-            {language === 'vi' ? 'Nhân viên' : 'Staff'}
+            <ShieldCheck aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+            <span className="sidebar-tab-label">{language === 'vi' ? 'Nhân viên' : 'Staff'}</span>
           </Link>
         )}
       </div>
