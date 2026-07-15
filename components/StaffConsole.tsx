@@ -686,6 +686,7 @@ type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
   language?: string
+  mode?: 'staff' | 'hr'
   onOpenPlayerProfile?: (profile: StaffProfile) => void
   onOpenSessionCalendar?: (dateValue: string) => void
 }
@@ -4413,10 +4414,12 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail, language, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, mode = 'staff', onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
   const resolvedLanguage = resolveStaffConsoleLanguage(language)
   const text = staffConsoleText[resolvedLanguage]
   const sharedText = uiText[resolvedLanguage]
+  const isHrConsole = mode === 'hr'
+  const consoleTitle = isHrConsole ? (resolvedLanguage === 'vi' ? 'HR' : 'HR Console') : text.title
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
   const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
@@ -4436,7 +4439,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const canViewAttendanceSettings = !isStaffOnly
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
   const currentProfileId = profile?.id || ''
-  const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
+  const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [attendanceTab, setAttendanceTab] = useState<StaffAttendanceTab>('schedule')
   const [hrTab, setHrTab] = useState<StaffHrTab>('employees')
@@ -4531,14 +4534,15 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
+    if (isHrConsole) {
+      return rank >= 20 ? ['hr'] : ['report']
+    }
     const staffTabs: StaffTab[] = [
       'new',
       ...(canCreateCustomerAccounts || canAwardAchievements ? (['clientProfile'] satisfies StaffTab[]) : []),
       'today',
       'orders',
       'report',
-      'attendance',
-      'hr',
       'roles',
       'games',
       'prices',
@@ -4547,7 +4551,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     if (rank >= 120) return [...staffTabs, 'restore']
     if (rank >= 20) return staffTabs
     return ['report']
-  }, [canAwardAchievements, canCreateCustomerAccounts, rank])
+  }, [canAwardAchievements, canCreateCustomerAccounts, isHrConsole, rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
   const visibleTabGroups = useMemo(() => staffTabGroups.map((group) => ({
     ...group,
@@ -7457,7 +7461,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   if (rank < 20) {
     return (
       <section className="section staff-console" data-testid="staff-console">
-        <h2>{text.title}</h2>
+        <h2>{consoleTitle}</h2>
         <p className="notice">{text.accessRequired}</p>
       </section>
     )
@@ -7467,39 +7471,41 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     <section className="section staff-console" data-testid="staff-console">
       <div className="section-head">
         <div>
-          <h2>{text.title}</h2>
+          <h2>{consoleTitle}</h2>
         </div>
         <span className="staff-role-pill">{staffRoleName(role, text)}</span>
       </div>
 
-      <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
-        <div className="staff-tab-categories" role="tablist" aria-label={text.aria.staffConsole}>
-          {visibleTabGroups.map((group) => (
-            <button
-              aria-selected={currentTabGroup === group.id}
-              className={currentTabGroup === group.id ? 'active' : ''}
-              key={group.id}
-              role="tab"
-              type="button"
-              onClick={() => openTabGroup(group.id)}
-            >
-              {text.tabGroups[group.id]}
-            </button>
-          ))}
-        </div>
-        <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
-          {visibleTabGroups.map((group) => (
-            <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id}>
-              <span className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
-              <div className="staff-tab-group-buttons">
-                {group.tabs.map((tab) => (
-                  <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
-                ))}
+      {!isHrConsole && (
+        <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
+          <div className="staff-tab-categories" role="tablist" aria-label={text.aria.staffConsole}>
+            {visibleTabGroups.map((group) => (
+              <button
+                aria-selected={currentTabGroup === group.id}
+                className={currentTabGroup === group.id ? 'active' : ''}
+                key={group.id}
+                role="tab"
+                type="button"
+                onClick={() => openTabGroup(group.id)}
+              >
+                {text.tabGroups[group.id]}
+              </button>
+            ))}
+          </div>
+          <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
+            {visibleTabGroups.map((group) => (
+              <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id}>
+                <span className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
+                <div className="staff-tab-group-buttons">
+                  {group.tabs.map((tab) => (
+                    <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
       {currentTabLoading && <AppLoadingState compact label={text.loading} />}

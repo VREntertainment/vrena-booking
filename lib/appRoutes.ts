@@ -7,6 +7,7 @@ export const publicAppRoutes = {
   leaderboard: '/hall-of-fame',
   clubs: '/clubs',
   profile: '/profile',
+  hr: '/hr',
   staff: '/staff',
 } satisfies Record<AppView, string>
 

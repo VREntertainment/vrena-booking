@@ -1,4 +1,4 @@
-import { CalendarDays, Images, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
+import { BriefcaseBusiness, CalendarDays, Images, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { publicAppRoutes } from '../lib/appRoutes'
@@ -8,7 +8,7 @@ import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import { vrenaGalleryUrl } from '../lib/siteMetadata'
 import ContactChannels from './ContactChannels'
 
-export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'staff'
+export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs' | 'profile' | 'hr' | 'staff'
 
 type AppSidebarProps = {
   activeView: AppView
@@ -135,10 +135,16 @@ export default function AppSidebar({
           <span className="sidebar-tab-label">{text.galleryLink}</span>
         </a>
         {canAccessStaffConsole && (
-          <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
-            <ShieldCheck aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
-            <span className="sidebar-tab-label">{language === 'vi' ? 'Nhân viên' : 'Staff'}</span>
-          </Link>
+          <>
+            <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
+              <ShieldCheck aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+              <span className="sidebar-tab-label">{language === 'vi' ? 'Nhân viên' : 'Staff'}</span>
+            </Link>
+            <Link className={activeView === 'hr' ? 'tab sidebar-staff-tab sidebar-hr-tab active' : 'tab sidebar-staff-tab sidebar-hr-tab'} href={publicAppRoutes.hr} onClick={() => onViewChange('hr')}>
+              <BriefcaseBusiness aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
+              <span className="sidebar-tab-label">HR</span>
+            </Link>
+          </>
         )}
       </div>
 
