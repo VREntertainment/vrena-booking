@@ -2523,6 +2523,32 @@
   flex-wrap: wrap;
 }
 
+.app .staff-planning-scope {
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  padding: 3px;
+}
+
+.app .staff-planning-scope button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--vrena-neutral-700);
+  padding: 5px 9px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.app .staff-planning-scope button.active {
+  background: var(--vrena-brand-gradient);
+  color: var(--vrena-white);
+}
+
 .app .staff-planning-actions button {
   min-height: 34px;
   border-radius: 7px;
@@ -2819,26 +2845,231 @@
 
 .app .staff-hr-card {
   --staff-hr-accent: var(--vrena-cyan-700);
+  gap: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent), transparent 190px),
+    var(--vrena-white);
+}
+
+.app .staff-hr-command {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.app .staff-hr-command h3,
+.app .staff-hr-command p,
+.app .staff-hr-panel-head h4,
+.app .staff-hr-panel-head h5,
+.app .staff-hr-panel-head p,
+.app .staff-hr-form-section h5 {
+  margin: 0;
+}
+
+.app .staff-hr-command h3 {
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: 0;
+}
+
+.app .staff-hr-command p,
+.app .staff-hr-panel-head p {
+  margin-top: 3px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.app .staff-hr-command-panel {
+  display: grid;
+  gap: 3px;
+  min-width: 220px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-white) 88%, var(--vrena-cyan-50));
+  padding: 10px 12px;
+  text-align: right;
+}
+
+.app .staff-hr-command-panel span,
+.app .staff-hr-command-panel strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-hr-command-panel span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-command-panel strong {
+  color: var(--vrena-brand-deep);
+  font-size: 15px;
 }
 
 .app .staff-hr-summary {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.app .staff-hr-tabs {
-  overflow-x: auto;
-  padding-bottom: 2px;
+.app .staff-hr-metrics > div {
+  min-height: 76px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
+  background: color-mix(in srgb, var(--vrena-white) 78%, var(--vrena-neutral-50));
+}
+
+.app .staff-hr-metrics small {
+  overflow: hidden;
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-hr-main {
+  display: grid;
+  grid-template-columns: minmax(196px, 0.2fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+
+.app .staff-hr-module-rail {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-white) 88%, var(--vrena-neutral-50));
+  padding: 8px;
+}
+
+.app .staff-hr-module-rail button {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-800);
+  padding: 7px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .staff-hr-module-rail button.active {
+  border-color: color-mix(in srgb, var(--staff-hr-accent) 42%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 16%, var(--vrena-white)), color-mix(in srgb, var(--vrena-teal-400) 12%, var(--vrena-white)));
+  color: var(--vrena-brand-deep);
+  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
+  color: var(--vrena-brand-deep);
+}
+
+.app .staff-hr-module-rail button.active .staff-hr-module-icon {
+  background: var(--vrena-white);
+  color: var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-rail button > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .staff-hr-module-rail strong,
+.app .staff-hr-module-rail small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-hr-module-rail strong {
+  font-size: 13px;
+}
+
+.app .staff-hr-module-rail small {
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.app .staff-hr-content {
+  min-width: 0;
 }
 
 .app .staff-hr-employee-layout,
 .app .staff-hr-payroll-layout,
 .app .staff-hr-settings-layout {
-  grid-template-columns: minmax(260px, 0.72fr) minmax(420px, 1.28fr);
+  grid-template-columns: minmax(280px, 0.6fr) minmax(520px, 1.4fr);
+  gap: 10px;
+}
+
+.app .staff-hr-roster-panel,
+.app .staff-hr-workspace,
+.app .staff-hr-table-panel,
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel) {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 10px;
+}
+
+.app .staff-hr-panel-head,
+.app .staff-hr-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .staff-hr-panel-head.compact {
+  align-items: center;
+}
+
+.app .staff-hr-panel-head h4 {
+  font-size: 16px;
+}
+
+.app .staff-hr-panel-head h5,
+.app .staff-hr-form-section h5 {
+  color: var(--vrena-brand-deep);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.app .staff-hr-panel-head > strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--staff-hr-accent) 10%, transparent);
+  color: var(--vrena-brand-deep);
+  font-size: 14px;
 }
 
 .app .staff-hr-filter-grid {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -2854,6 +3085,72 @@
 
 .app .staff-hr-pay-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.app .staff-hr-workspace {
+  gap: 10px;
+}
+
+.app .staff-hr-workspace-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  background: color-mix(in srgb, var(--vrena-white) 94%, transparent);
+  padding-bottom: 8px;
+}
+
+.app .staff-hr-workspace-head h4 {
+  margin: 0;
+}
+
+.app .staff-hr-workspace-head span {
+  display: block;
+  margin-top: 2px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.app .staff-hr-profile-form,
+.app .staff-hr-document-section {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-hr-form-section {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-neutral-50) 58%, var(--vrena-white));
+  padding: 10px;
+}
+
+.app .staff-hr-form-section .compact-form-grid {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.app .staff-hr-row-status {
+  flex: 0 0 auto;
+  max-width: 112px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 999px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-700);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  overflow: hidden;
+  padding: 6px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-employee-row.active .staff-hr-row-status {
+  border-color: color-mix(in srgb, var(--staff-hr-accent) 36%, transparent);
+  color: var(--vrena-brand-deep);
 }
 
 .app .staff-hr-document-actions {
@@ -2904,6 +3201,37 @@
   border-radius: 999px;
   background: var(--vrena-neutral-50);
   padding: 5px 8px;
+}
+
+.app .staff-hr-table-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-hr-schedule-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-hr-week-controls {
+  justify-content: flex-start;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 8px;
+}
+
+.app .staff-hr-schedule-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr);
+}
+
+.app .staff-hr-planning-panel {
+  margin-bottom: 0;
+}
+
+.app .staff-hr-table-panel .staff-table-wrap {
+  border-radius: 8px;
+  background: var(--vrena-white);
 }
 
 .app .staff-hr-payslip {
@@ -2961,6 +3289,65 @@
 .app .staff-hr-setup-row p {
   grid-column: 1 / -1;
   margin: 0;
+}
+
+@media (max-width: 1240px) {
+  .app .staff-hr-main,
+  .app .staff-hr-employee-layout,
+  .app .staff-hr-payroll-layout,
+  .app .staff-hr-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-module-rail {
+    position: static;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    overflow-x: auto;
+  }
+
+  .app .staff-hr-form-section .compact-form-grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .app .staff-hr-command,
+  .app .staff-hr-workspace-head,
+  .app .staff-hr-panel-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-hr-command-panel {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .app .staff-hr-summary,
+  .app .staff-hr-pay-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-module-rail {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .app .staff-hr-form-section .compact-form-grid,
+  .app .staff-hr-document-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-document-list {
+    grid-column: auto;
+  }
+
+  .app .staff-employee-row {
+    align-items: flex-start;
+  }
+
+  .app .staff-hr-row-status {
+    max-width: 92px;
+  }
 }
 
 .app .staff-checkbox-row {
@@ -3706,6 +4093,7 @@
 
   .app .staff-planning-toolbar label,
   .app .staff-planning-actions,
+  .app .staff-planning-scope,
   .app .staff-planning-actions button {
     flex: 1 1 100%;
   }
@@ -4296,6 +4684,7 @@
   .app .staff-accountant-export-panel button,
   .app .staff-compare-toggle,
   .app .staff-planning-panel,
+  .app .staff-planning-scope,
   .app .staff-planning-corner,
   .app .staff-planning-day,
   .app .staff-planning-staff,
@@ -4393,6 +4782,7 @@
   .app .staff-comparison-list small,
   .app .staff-planning-title span,
   .app .staff-planning-toolbar label,
+  .app .staff-planning-scope button,
   .app .staff-planning-day span,
   .app .staff-planning-staff small,
   .app .staff-employee-list > .staff-helper-text,
@@ -4753,8 +5143,84 @@
     color: var(--vrena-bg);
   }
 
+  .app .staff-hr-command-panel,
+  .app .staff-hr-module-rail,
+  .app .staff-hr-roster-panel,
+  .app .staff-hr-workspace,
+  .app .staff-hr-table-panel,
+  .app .staff-hr-week-controls,
+  .app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
+  .app .staff-hr-payslip {
+    border-color: var(--staff-modern-border);
+    background: var(--staff-modern-surface);
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-form-section,
+  .app .staff-hr-setup-row,
+  .app .staff-file-action,
+  .app .staff-hr-row-status,
+  .app .staff-hr-document-list span,
+  .app .staff-hr-table-panel .staff-table-wrap {
+    border-color: var(--staff-modern-border);
+    background: var(--staff-modern-soft);
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-command p,
+  .app .staff-hr-panel-head p,
+  .app .staff-hr-command-panel span,
+  .app .staff-hr-module-rail small,
+  .app .staff-hr-metrics small,
+  .app .staff-hr-workspace-head span,
+  .app .staff-file-action small,
+  .app .staff-hr-document-list span,
+  .app .staff-hr-payslip > span,
+  .app .staff-hr-payslip dt,
+  .app .staff-hr-setup-row p {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .staff-hr-command-panel strong,
+  .app .staff-hr-panel-head h4,
+  .app .staff-hr-panel-head h5,
+  .app .staff-hr-form-section h5,
+  .app .staff-hr-module-rail button,
+  .app .staff-hr-module-rail strong,
+  .app .staff-file-action span,
+  .app .staff-hr-payslip dd {
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-module-icon {
+    background: var(--staff-modern-soft);
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-module-rail button.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 40%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, var(--vrena-neutral-900));
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-module-rail button.active .staff-hr-module-icon,
+  .app .staff-hr-panel-head > strong {
+    background: color-mix(in srgb, var(--vrena-cyan-400) 16%, transparent);
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-workspace-head {
+    border-color: var(--staff-modern-border);
+    background: color-mix(in srgb, var(--staff-modern-surface) 94%, transparent);
+  }
+
   .app .staff-planning-cell-button {
     background: color-mix(in srgb, var(--vrena-purple-400) 12%, transparent);
+  }
+
+  .app .staff-planning-scope button.active {
+    background: var(--vrena-brand-gradient);
+    color: var(--vrena-white);
   }
 }
 
@@ -4798,5 +5264,858 @@
     border: 0;
     background: transparent;
     box-shadow: none;
+  }
+}
+
+/* Flat staff workspaces: page hierarchy comes from spacing and dividers, not nested cards. */
+.app .section.staff-console {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app .staff-console > .section-head {
+  align-items: center;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-route > .section-head {
+  display: none;
+}
+
+.app .staff-console-nav {
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-tab-group {
+  gap: 5px;
+  padding: 0 10px 0 0;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.app .staff-tab-group:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.app .staff-tabs button,
+.app .staff-tab-categories button {
+  min-height: 36px;
+  border-color: transparent;
+  border-radius: 7px;
+  background: transparent;
+  padding: 7px 11px;
+}
+
+.app .staff-tabs button.active,
+.app .staff-tab-categories button.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-600) 11%, var(--vrena-white));
+  box-shadow: inset 0 -2px 0 var(--vrena-cyan-700);
+  color: var(--vrena-brand-deep);
+}
+
+.app .staff-hr-console {
+  --staff-hr-accent: var(--vrena-cyan-700);
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  background: transparent;
+}
+
+.app .staff-hr-command {
+  align-items: center;
+  padding: 18px 2px 16px;
+}
+
+.app .staff-hr-command h3 {
+  font-size: clamp(25px, 3vw, 32px);
+}
+
+.app .staff-hr-command-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  text-align: right;
+}
+
+.app .staff-hr-command-panel span {
+  padding-right: 12px;
+  border-right: 1px solid var(--staff-modern-border);
+  text-transform: none;
+}
+
+.app .staff-hr-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  border-block: 1px solid var(--staff-modern-border);
+  background: color-mix(in srgb, var(--vrena-neutral-50) 64%, transparent);
+}
+
+.app .staff-hr-metrics > div {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 72px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 14px;
+}
+
+.app .staff-hr-metrics > div:last-child {
+  border-right: 0;
+}
+
+.app .staff-hr-metrics span {
+  color: var(--staff-modern-muted);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.app .staff-hr-metrics strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.app .staff-hr-main {
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: 620px;
+}
+
+.app .staff-hr-module-rail {
+  position: relative;
+  top: auto;
+  align-content: start;
+  gap: 2px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 14px 18px 0;
+}
+
+.app .staff-hr-module-rail button {
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 9px;
+}
+
+.app .staff-hr-module-rail button:hover {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 6%, transparent);
+}
+
+.app .staff-hr-module-rail button.active {
+  border: 0;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 12%, var(--vrena-white));
+  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-icon,
+.app .staff-hr-module-rail button.active .staff-hr-module-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-rail small {
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.app .staff-hr-content {
+  min-width: 0;
+  padding: 18px 0 24px 20px;
+}
+
+.app .staff-hr-employee-layout,
+.app .staff-hr-payroll-layout,
+.app .staff-hr-settings-layout {
+  grid-template-columns: minmax(250px, 0.44fr) minmax(520px, 1.56fr);
+  gap: 0;
+}
+
+.app .staff-hr-roster-panel,
+.app .staff-hr-workspace,
+.app .staff-hr-table-panel,
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-form,
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-settings,
+.app .staff-hr-week-controls,
+.app .staff-hr-planning-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app .staff-hr-roster-panel {
+  padding: 0 16px 0 0;
+  border-right: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-workspace,
+.app .staff-hr-content .staff-hr-employee-layout > .staff-hr-workspace {
+  padding: 0 0 0 20px;
+}
+
+.app .staff-hr-payroll-layout > :first-child,
+.app .staff-hr-settings-layout > :first-child,
+.app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :first-child {
+  padding: 0 20px 0 0;
+  border-right: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-payroll-layout > :last-child,
+.app .staff-hr-settings-layout > :last-child,
+.app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :last-child {
+  padding: 0 0 0 20px;
+}
+
+.app .staff-hr-panel-head,
+.app .staff-hr-workspace-head {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-panel-head > strong {
+  min-width: auto;
+  min-height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: var(--staff-modern-muted);
+}
+
+.app .staff-hr-workspace-head {
+  top: -18px;
+  padding-top: 18px;
+  background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
+}
+
+.app .staff-hr-filter-grid {
+  gap: 9px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-employee-row {
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 10px 6px;
+}
+
+.app .staff-employee-row:hover {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+}
+
+.app .staff-employee-row.active {
+  border-color: var(--staff-modern-border);
+  background: color-mix(in srgb, var(--vrena-cyan-600) 10%, var(--vrena-white));
+  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+}
+
+.app .staff-hr-row-status {
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 5%, transparent);
+  padding: 5px 6px;
+}
+
+.app .staff-employee-selected {
+  margin-top: 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.app .staff-hr-pay-summary {
+  gap: 0;
+  margin-top: 14px;
+  border-block: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-pay-summary > div {
+  min-height: 64px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px;
+}
+
+.app .staff-hr-pay-summary > div:last-child {
+  border-right: 0;
+}
+
+.app .staff-hr-profile-form,
+.app .staff-hr-document-section {
+  gap: 0;
+}
+
+.app .staff-hr-form-section,
+.app .staff-hr-document-section {
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 0;
+}
+
+.app .staff-hr-form-section h5 {
+  font-size: 14px;
+}
+
+.app .staff-hr-document-section .staff-hr-panel-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.app .staff-file-action {
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+}
+
+.app .staff-hr-table-panel {
+  padding: 0;
+}
+
+.app .staff-hr-table-panel .staff-table-wrap {
+  border-radius: 0;
+  background: transparent;
+}
+
+.app .staff-hr-table-panel .staff-table th {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 8%, var(--vrena-white));
+}
+
+.app .staff-hr-week-controls {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-schedule-stack,
+.app .staff-hr-table-panel {
+  gap: 14px;
+}
+
+.app .staff-hr-planning-panel {
+  padding: 0;
+}
+
+.app .staff-hr-payslip {
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.app .staff-hr-setup-row {
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0;
+}
+
+@media (max-width: 1240px) {
+  .app .staff-hr-main {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .app .staff-hr-module-rail {
+    grid-template-columns: repeat(7, minmax(132px, 1fr));
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--staff-modern-border);
+    padding: 10px 0;
+  }
+
+  .app .staff-hr-content {
+    padding: 18px 0 24px;
+  }
+
+  .app .staff-hr-employee-layout,
+  .app .staff-hr-payroll-layout,
+  .app .staff-hr-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-roster-panel,
+  .app .staff-hr-payroll-layout > :first-child,
+  .app .staff-hr-settings-layout > :first-child,
+  .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :first-child {
+    padding: 0 0 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+
+  .app .staff-hr-workspace,
+  .app .staff-hr-content .staff-hr-employee-layout > .staff-hr-workspace,
+  .app .staff-hr-payroll-layout > :last-child,
+  .app .staff-hr-settings-layout > :last-child,
+  .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :last-child {
+    padding: 18px 0 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .app .staff-hr-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-metrics > div:nth-child(3) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-metrics > div:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+}
+
+@media (max-width: 760px) {
+  .app .section.staff-console {
+    margin-inline: -2px;
+  }
+
+  .app .staff-console > .section-head {
+    padding-inline: 2px;
+  }
+
+  .app .staff-tab-group.active {
+    border: 0;
+    background: transparent;
+  }
+
+  .app .staff-hr-command {
+    padding-top: 12px;
+  }
+
+  .app .staff-hr-command-panel {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  .app .staff-hr-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-metrics > div,
+  .app .staff-hr-metrics > div:nth-child(3) {
+    border-right: 1px solid var(--staff-modern-border);
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+
+  .app .staff-hr-metrics > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-metrics > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .app .staff-hr-module-rail {
+    grid-template-columns: repeat(7, minmax(148px, 1fr));
+  }
+
+  .app .staff-hr-module-rail button {
+    min-height: 44px;
+  }
+
+  .app .staff-hr-pay-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-pay-summary > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-panel-head {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .app .staff-hr-metrics small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-tabs button.active,
+  .app .staff-tab-categories button.active,
+  .app .staff-hr-module-rail button.active,
+  .app .staff-employee-row.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 20%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 16%, var(--vrena-neutral-900));
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-command-panel,
+  .app .staff-hr-module-rail,
+  .app .staff-hr-roster-panel,
+  .app .staff-hr-workspace,
+  .app .staff-hr-table-panel,
+  .app .staff-hr-week-controls,
+  .app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
+  .app .staff-hr-payslip {
+    background: transparent;
+  }
+
+  .app .staff-hr-summary {
+    background: color-mix(in srgb, var(--vrena-neutral-800) 58%, transparent);
+  }
+
+  .app .staff-hr-workspace-head {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 96%, transparent);
+  }
+
+  .app .staff-hr-form-section,
+  .app .staff-hr-setup-row,
+  .app .staff-hr-row-status,
+  .app .staff-hr-table-panel .staff-table-wrap {
+    background: transparent;
+  }
+
+  .app .staff-hr-table-panel .staff-table th {
+    background: color-mix(in srgb, var(--vrena-cyan-700) 13%, var(--vrena-neutral-900));
+  }
+
+  .app .staff-hr-module-rail button:hover,
+  .app .staff-employee-row:hover {
+    background: color-mix(in srgb, var(--vrena-cyan-400) 8%, transparent);
+  }
+}
+
+/* Official VRena CTA hierarchy: docs/brand/vrena-ui-color-palette-official.svg. */
+.app .staff-console button.primary {
+  min-height: 44px;
+  border: 0;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 12px 26px var(--vrena-cta-shadow);
+  filter: none;
+}
+
+.app .staff-console button.secondary,
+.app .staff-console .staff-calendar-shortcut,
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-attendance-row-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-report-date-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-compare-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-export-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-export-actions > .staff-accountant-export > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-accountant-export-panel button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-payslip > button:not(.primary):not(.danger),
+.app .staff-console .staff-role-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-list-head button:not(.primary):not(.danger) {
+  min-height: 44px;
+  border: 1px solid var(--vrena-cta-secondary-border);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console .staff-link-button,
+.app .staff-console button.modal-close {
+  min-width: 44px;
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-cta-tertiary-ink);
+  box-shadow: none;
+}
+
+.app .staff-console :is(
+  .staff-tabs button,
+  .staff-tab-categories button,
+  .staff-commerce-switcher button,
+  .staff-attendance-tabs button,
+  .staff-planning-scope button,
+  .staff-chart-mode button,
+  .staff-report-date-mode button,
+  .staff-report-date-presets button,
+  .staff-accountant-report-list button,
+  .staff-hr-module-rail button
+) {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-neutral-800);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console :is(
+  .staff-tabs button.active,
+  .staff-tab-categories button.active,
+  .staff-commerce-switcher button.active,
+  .staff-attendance-tabs button.active,
+  .staff-planning-scope button.active,
+  .staff-chart-mode button.active,
+  .staff-report-date-mode button.active,
+  .staff-report-date-presets button.active,
+  .staff-accountant-report-list button.active,
+  .staff-hr-module-rail button.active
+) {
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
+  color: var(--vrena-purple-700);
+  box-shadow: inset 0 -2px 0 var(--vrena-purple-500);
+}
+
+.app .staff-console .staff-hr-console {
+  --staff-hr-accent: var(--vrena-purple-500);
+}
+
+.app .staff-console button.danger {
+  min-height: 44px;
+  border: 1px solid var(--vrena-red-200);
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-700);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console button:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 2px var(--vrena-focus-inner),
+    0 0 0 8px color-mix(in srgb, var(--vrena-focus-halo) 72%, transparent);
+}
+
+.app .staff-console button.primary:disabled {
+  border-color: transparent;
+  background: var(--vrena-cta-primary-disabled-bg);
+  color: var(--vrena-cta-primary-disabled-ink);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.app .staff-console button.secondary:disabled,
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger):disabled {
+  border-color: var(--vrena-cta-secondary-disabled-border);
+  background: transparent;
+  color: var(--vrena-cta-secondary-disabled-ink);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.app .staff-console button.danger:disabled {
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-neutral-200);
+  color: var(--vrena-neutral-500);
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app .staff-console button.primary:hover:not(:disabled) {
+    background: var(--vrena-cta-primary-hover);
+    filter: none;
+  }
+
+  .app .staff-console button.secondary:hover:not(:disabled),
+  .app .staff-console .staff-calendar-shortcut:hover:not(:disabled),
+  .app .staff-console .staff-operations-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-planning-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-row-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-operation-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-date-actions > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-compare-actions > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-export-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-payslip > button:not(.primary):not(.danger):hover:not(:disabled) {
+    border-color: var(--vrena-cta-secondary-hover-border);
+    background: var(--vrena-cta-secondary-hover-bg);
+    color: var(--vrena-cta-secondary-hover-ink);
+    filter: none;
+  }
+
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ):not(.active):hover {
+    border-color: transparent;
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--vrena-neutral-950);
+    box-shadow: none;
+  }
+
+  .app .staff-console .staff-link-button:hover:not(:disabled),
+  .app .staff-console button.modal-close:hover:not(:disabled) {
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--vrena-cta-tertiary-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .app .staff-console button.danger:hover:not(:disabled) {
+    border-color: var(--vrena-red-300);
+    background: var(--vrena-red-100);
+    color: var(--vrena-red-800);
+    filter: none;
+  }
+}
+
+.app .staff-console button.primary:active:not(:disabled) {
+  background: var(--vrena-cta-primary-pressed);
+  filter: none;
+}
+
+.app .staff-console button.secondary:active:not(:disabled),
+.app .staff-console .staff-calendar-shortcut:active:not(:disabled),
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger):active:not(:disabled) {
+  border-color: var(--vrena-cta-secondary-pressed-border);
+  background: var(--vrena-cta-secondary-pressed-bg);
+  color: var(--vrena-cta-secondary-pressed-ink);
+  filter: none;
+}
+
+.app .staff-console .staff-link-button:active:not(:disabled),
+.app .staff-console button.modal-close:active:not(:disabled) {
+  background: var(--vrena-cta-tertiary-pressed-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ) {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .staff-console :is(
+    .staff-tabs button.active,
+    .staff-tab-categories button.active,
+    .staff-commerce-switcher button.active,
+    .staff-attendance-tabs button.active,
+    .staff-planning-scope button.active,
+    .staff-chart-mode button.active,
+    .staff-report-date-mode button.active,
+    .staff-report-date-presets button.active,
+    .staff-accountant-report-list button.active,
+    .staff-hr-module-rail button.active
+  ) {
+    border-color: var(--vrena-orange-400);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-orange-300);
+    box-shadow: inset 0 -2px 0 var(--vrena-orange-400);
+  }
+
+  .app .staff-console .staff-hr-console {
+    --staff-hr-accent: var(--vrena-orange-400);
+  }
+
+  .app .staff-console button.danger {
+    border-color: var(--vrena-red-700);
+    background: var(--vrena-red-950);
+    color: var(--vrena-red-200);
+  }
+
+  .app .staff-console button.danger:disabled {
+    border-color: var(--vrena-neutral-700);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-600);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (hover: hover) and (pointer: fine) {
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ):not(.active):hover {
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-200);
+  }
+
+  .app .staff-console button.danger:hover:not(:disabled) {
+    border-color: var(--vrena-red-600);
+    background: color-mix(in srgb, var(--vrena-red-950) 78%, var(--vrena-neutral-900));
+    color: var(--vrena-red-100);
+  }
+}
+
+@media (max-width: 720px) {
+  .app .staff-console button.primary {
+    width: 100%;
+    min-height: 56px;
+    padding-inline: 24px;
+    font-size: 16px;
   }
 }

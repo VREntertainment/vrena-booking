@@ -73,6 +73,7 @@ type ActionToast = {
 }
 
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
+const CONSOLE_SIDEBAR_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
 
 function isBookingAppView(value: unknown): value is AppView {
@@ -101,6 +102,18 @@ export default function WidgetPage({
   restoreStoredView = true,
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<AppView>(initialView)
+  const [consoleSidebarCollapsed, setConsoleSidebarCollapsed] = useState(false)
+  useEffect(() => {
+    const restoreFrame = window.requestAnimationFrame(() => {
+      try {
+        setConsoleSidebarCollapsed(window.localStorage.getItem(CONSOLE_SIDEBAR_STORAGE_KEY) === '1')
+      } catch {
+        // The default expanded layout remains available when storage is blocked.
+      }
+    })
+
+    return () => window.cancelAnimationFrame(restoreFrame)
+  }, [])
   const hasMountedInitialViewSyncRef = useRef(false)
   const [sessions, setSessions] = useState<Session[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
@@ -8330,16 +8343,23 @@ function handleSessionDateChange(value: string) {
   function voteCount(session: Session, gameId: GameId) {
     return Object.values(session.game_votes || {}).filter((vote) => vote === gameId).length
   }
-
-
-
+  const isConsoleWorkspace = activeView === 'staff' || activeView === 'hr'
   const appAside = (
     <AppSidebar
       activeView={activeView}
       canAccessStaffConsole={canAccessStaffConsole}
+      consoleNavigationCollapsed={consoleSidebarCollapsed}
       isChampion={crownedTopPlayer?.profileId === userId}
       language={language}
       onLanguageChange={setLanguage}
+      onConsoleNavigationCollapsedChange={(collapsed) => {
+        setConsoleSidebarCollapsed(collapsed)
+        try {
+          window.localStorage.setItem(CONSOLE_SIDEBAR_STORAGE_KEY, collapsed ? '1' : '0')
+        } catch {
+          // The layout still works when storage is blocked; only persistence is skipped.
+        }
+      }}
       onShareApp={() => shareLink('app', 'VRena Sessions')}
       onViewChange={setActiveView}
       profileAvatar={avatarNode(profile ? {
@@ -10041,7 +10061,7 @@ function handleSessionDateChange(value: string) {
   }
 
   return (
-    <div className="app" data-tour="app-shell">
+    <div className={`app ${isConsoleWorkspace ? 'console-workspace' : ''} ${isConsoleWorkspace && consoleSidebarCollapsed ? 'console-workspace-collapsed' : ''}`.trim()} data-tour="app-shell">
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}

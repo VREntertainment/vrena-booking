@@ -51,6 +51,7 @@ type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'settings'
 type StaffHrTab = 'employees' | 'schedule' | 'timesheet' | 'payroll' | 'adjustments' | 'advances' | 'settings'
+type StaffScheduleScope = 'all' | 'department' | 'mine'
 type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
@@ -880,6 +881,11 @@ const staffConsoleText = {
       full_day: 'Full day',
       opening: 'Opening',
     } satisfies Record<StaffShiftTemplateId, string>,
+    scheduleScopes: {
+      all: 'All departments',
+      department: 'My department',
+      mine: 'My shifts',
+    } satisfies Record<StaffScheduleScope, string>,
     attendanceStatuses: {
       absent: 'absent',
       holiday: 'holiday',
@@ -1105,6 +1111,7 @@ const staffConsoleText = {
       hours: 'Hours',
       hourlyRate: 'Gross hourly rate (đ)',
       monthlyGross: 'Monthly gross (đ)',
+      missingDocuments: 'Missing documents',
       filterByRole: 'Filter by role',
       game: 'Game',
       guideGameplay: 'GamePlay',
@@ -1218,6 +1225,7 @@ const staffConsoleText = {
       shiftDate: 'Shift date',
       shiftList: 'Shift list',
       shiftRole: 'Shift role',
+      scheduleScope: 'Schedule view',
       shiftTemplate: 'Shift template',
       sortBy: 'Sort by',
       slug: 'Slug',
@@ -1651,6 +1659,11 @@ const staffConsoleText = {
       full_day: 'Cả ngày',
       opening: 'Ca mở cửa',
     } satisfies Record<StaffShiftTemplateId, string>,
+    scheduleScopes: {
+      all: 'Tất cả bộ phận',
+      department: 'Bộ phận của tôi',
+      mine: 'Ca của tôi',
+    } satisfies Record<StaffScheduleScope, string>,
     attendanceStatuses: {
       absent: 'vắng',
       holiday: 'ngày lễ',
@@ -1876,6 +1889,7 @@ const staffConsoleText = {
       hours: 'Giờ',
       hourlyRate: 'Lương gross theo giờ (đ)',
       monthlyGross: 'Lương gross tháng (đ)',
+      missingDocuments: 'Thiếu chứng từ',
       filterByRole: 'Lọc theo vai trò',
       game: 'Trò chơi',
       guideGameplay: 'GamePlay',
@@ -1989,6 +2003,7 @@ const staffConsoleText = {
       shiftDate: 'Ngày ca',
       shiftList: 'Danh sách ca',
       shiftRole: 'Vị trí ca',
+      scheduleScope: 'Chế độ xem lịch',
       shiftTemplate: 'Mẫu ca',
       sortBy: 'Sắp xếp theo',
       slug: 'Slug',
@@ -4459,6 +4474,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [payrollItems, setPayrollItems] = useState<StaffPayrollItem[]>([])
   const [hrDocuments, setHrDocuments] = useState<StaffHrDocument[]>([])
   const [selectedShiftTemplate, setSelectedShiftTemplate] = useState<StaffShiftTemplateId>('opening')
+  const [attendanceScheduleScope, setAttendanceScheduleScope] = useState<StaffScheduleScope>(() => canViewAllEmployeeProfiles ? 'all' : 'department')
   const [draggingShiftId, setDraggingShiftId] = useState('')
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
@@ -4708,6 +4724,31 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       ? attendanceShifts
       : attendanceShifts.filter((shift) => shift.staff_profile_id === currentProfileId)
   ), [attendanceShifts, canViewAllEmployeeProfiles, currentProfileId])
+  const currentEmployeeDepartment = (employeeProfileById.get(currentProfileId)?.department || '').trim()
+  const effectiveAttendanceScheduleScope = attendanceScheduleScope === 'all' && !canViewAllEmployeeProfiles
+    ? 'department'
+    : attendanceScheduleScope
+  const attendanceScheduleScopeOptions = useMemo<StaffScheduleScope[]>(() => (
+    canViewAllEmployeeProfiles ? ['all', 'department', 'mine'] : ['department', 'mine']
+  ), [canViewAllEmployeeProfiles])
+  const visibleScheduleStaffProfileOptions = useMemo(() => {
+    if (effectiveAttendanceScheduleScope === 'mine') {
+      return staffProfileOptions.filter((item) => item.id === currentProfileId)
+    }
+    if (effectiveAttendanceScheduleScope === 'department') {
+      if (!currentEmployeeDepartment) {
+        return staffProfileOptions.filter((item) => item.id === currentProfileId)
+      }
+      return staffProfileOptions.filter((item) => (
+        (employeeProfileById.get(item.id)?.department || '').trim() === currentEmployeeDepartment
+      ))
+    }
+    return staffProfileOptions
+  }, [currentEmployeeDepartment, currentProfileId, effectiveAttendanceScheduleScope, employeeProfileById, staffProfileOptions])
+  const visibleScheduleStaffIds = useMemo(() => new Set(visibleScheduleStaffProfileOptions.map((item) => item.id)), [visibleScheduleStaffProfileOptions])
+  const visibleScheduleAttendanceShifts = useMemo(() => (
+    attendanceShifts.filter((shift) => visibleScheduleStaffIds.has(shift.staff_profile_id))
+  ), [attendanceShifts, visibleScheduleStaffIds])
   const visibleAttendanceLogs = useMemo(() => (
     canViewAllEmployeeProfiles
       ? attendanceLogs
@@ -4719,6 +4760,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       : leaveRequests.filter((leave) => leave.staff_profile_id === currentProfileId)
   ), [canViewAllEmployeeProfiles, currentProfileId, leaveRequests])
   const firstStaffProfileId = visibleStaffProfileOptions[0]?.id || ''
+  const firstScheduleStaffProfileId = visibleScheduleStaffProfileOptions[0]?.id || firstStaffProfileId
   const firstEmployeeStaffProfileId = visibleAllStaffProfileOptions[0]?.id || ''
   const selectedEmployeeStaffId = employeeForm.profile_id || firstEmployeeStaffProfileId
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
@@ -4831,7 +4873,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }), [attendanceWeekDates.length])
   const attendanceShiftsByCell = useMemo(() => {
     const map = new Map<string, StaffScheduleShift[]>()
-    visibleAttendanceShifts.forEach((shift) => {
+    visibleScheduleAttendanceShifts.forEach((shift) => {
       const key = `${shift.staff_profile_id}:${shift.shift_date}`
       const shifts = map.get(key) || []
       shifts.push(shift)
@@ -4841,7 +4883,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       shifts.sort((left, right) => left.start_time.localeCompare(right.start_time) || left.end_time.localeCompare(right.end_time))
     })
     return map
-  }, [visibleAttendanceShifts])
+  }, [visibleScheduleAttendanceShifts])
   const shiftWarningsById = useMemo(() => {
     const map = new Map<string, string[]>()
     attendanceShifts.forEach((shift) => {
@@ -7468,7 +7510,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }
 
   return (
-    <section className="section staff-console" data-testid="staff-console">
+    <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
       <div className="section-head">
         <div>
           <h2>{consoleTitle}</h2>
@@ -8513,12 +8555,25 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             StaffPickerField,
             StaffRoleAvatar,
             approvePayrollRun,
+            applyShiftTemplate,
+            attendanceGridStyle,
+            attendanceScheduleScopeOptions,
+            attendanceShiftsByCell,
+            attendanceWeekEnd,
+            attendanceWeekDates,
+            attendanceWeekStart,
             canEditEmployeeProfiles,
             canManageAttendance,
             customerName,
+            dateFromInput,
             dongDigits,
             downloadEmployeePayslip,
+            draggingShiftId,
+            draftShiftCount,
+            effectiveAttendanceScheduleScope,
+            effectiveShiftTemplates,
             editEmployeeProfile,
+            editShift,
             employeeForm,
             employeeFormForProfile,
             employeePayrollSummary,
@@ -8527,6 +8582,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             emptyStaffPayrollCalculation,
             filteredHrStaffProfiles,
             firstEmployeeStaffProfileId,
+            firstScheduleStaffProfileId,
             formatDongInput,
             formatVnd,
             formatVndCompact,
@@ -8568,12 +8624,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             saveHrAdjustment,
             saveHrSettings,
             saveHrSetupOption,
+            saveShift,
             saving,
             selectedEmployeeDocuments,
             selectedEmployeeOutstandingDebt,
             selectedEmployeeStaffId,
             selectedEmployeeStaffProfile,
+            selectedShiftTemplate,
             setEmployeeForm,
+            setAttendanceScheduleScope,
+            setAttendanceRange,
+            setDraggingShiftId,
             setHrAdjustmentForm,
             setHrDepartmentFilter,
             setHrSearch,
@@ -8582,7 +8643,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             setHrStatusFilter,
             setHrTab,
             setPayrollRunForm,
+            setShiftForm,
             sharedText,
+            shiftForm,
+            shiftAttendanceRange,
+            shortDateLabel,
             shiftWarningsById,
             staffContractStatuses,
             staffCvTypes,
@@ -8596,12 +8661,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             staffPayrollCalculations,
             staffPayrollPayCycles,
             staffProfilePhotoTypes,
+            staffShiftStatuses,
             staffRoleName,
+            startShiftForCell,
             text,
+            resetAttendanceRangeToThisWeek,
             updateHrAdjustmentStatus,
+            updateShiftStatus,
             visibleAllStaffProfileOptions,
             visibleAttendanceShifts,
+            visibleScheduleAttendanceShifts,
+            visibleScheduleStaffProfileOptions,
             visibleStaffProfileOptions,
+            copyPreviousAttendanceWeek,
+            moveShiftToCell,
+            publishAttendanceWeek,
           }}
         />
       )}

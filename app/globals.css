@@ -185,6 +185,14 @@ body {
   display: block;
 }
 
+.app .brand-logo-mark {
+  display: none;
+}
+
+.app .console-sidebar-toggle {
+  display: none;
+}
+
 .app .brand-logo img {
   display: block;
   width: 100%;
@@ -11645,6 +11653,104 @@ body {
 }
 
 @media (min-width: 961px) {
+  .app.console-workspace {
+    transition: grid-template-columns 180ms ease;
+  }
+
+  .app.console-workspace-collapsed {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
+  .app .console-sidebar {
+    position: relative;
+  }
+
+  .app .console-sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -15px;
+    z-index: 45;
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+    border-radius: 999px;
+    background: var(--vrena-white);
+    color: var(--vrena-neutral-700);
+    padding: 0;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+    transform: translateY(-50%);
+  }
+
+  .app .console-sidebar-toggle:hover {
+    border-color: color-mix(in srgb, var(--vrena-cyan-700) 36%, transparent);
+    color: var(--vrena-cyan-700);
+  }
+
+  .app .console-sidebar-collapsed {
+    align-items: center;
+    gap: 14px;
+    padding: 18px 12px;
+    overflow: visible;
+  }
+
+  .app .console-sidebar-collapsed > div:first-of-type,
+  .app .console-sidebar-collapsed .app-title-row {
+    width: 100%;
+  }
+
+  .app .console-sidebar-collapsed .app-title-row {
+    justify-content: center;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo {
+    width: 38px;
+    max-width: 38px;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo-full,
+  .app .console-sidebar-collapsed .language-picker,
+  .app .console-sidebar-collapsed .app-share,
+  .app .console-sidebar-collapsed > div:first-of-type > .muted,
+  .app .console-sidebar-collapsed .profile-chip > div:not(.avatar),
+  .app .console-sidebar-collapsed .sidebar-tab-label,
+  .app .console-sidebar-collapsed .shop-contact {
+    display: none;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo-mark {
+    display: block;
+  }
+
+  .app .console-sidebar-collapsed .profile-chip {
+    grid-template-columns: 44px;
+    justify-content: center;
+    width: 48px;
+    padding: 2px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app .console-sidebar-collapsed .tabs {
+    width: 100%;
+  }
+
+  .app .console-sidebar-collapsed .tab {
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 9px;
+  }
+
+  .app .console-sidebar-collapsed .sidebar-tab-icon {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
   .app .tabs {
     gap: 3px;
   }
@@ -11881,8 +11987,21 @@ body {
 }
 
 @media (prefers-color-scheme: dark) and (min-width: 961px) {
+  .app .console-sidebar-toggle {
+    border-color: color-mix(in srgb, var(--vrena-white) 16%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-200);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 38%, transparent);
+  }
+
   .app .tab.active {
     color: var(--player-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app.console-workspace {
+    transition: none;
   }
 }
 
