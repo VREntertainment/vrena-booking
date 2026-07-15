@@ -8603,6 +8603,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             hrSetupForm,
             hrStatusFilter,
             hrTab,
+            isOwnerOrAdmin,
             normalizeHrAdjustmentStatus,
             normalizeHrAdjustmentType,
             normalizePayrollPayCycle,
