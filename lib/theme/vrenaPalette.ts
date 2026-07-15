@@ -190,6 +190,39 @@ export const vrenaCtaHierarchy = {
   },
 } as const
 
+export const vrenaUiSemantics = {
+  day: {
+    accent: vrenaPalette.purple[500],
+    accentInk: vrenaPalette.purple[700],
+    accentSoft: vrenaPalette.purple[50],
+    accentBorder: vrenaPalette.purple[200],
+    selection: {
+      background: vrenaPalette.purple[50],
+      border: vrenaPalette.purple[200],
+      ink: vrenaPalette.purple[700],
+      indicator: vrenaPalette.purple[500],
+    },
+  },
+  dark: {
+    accent: vrenaPalette.orange[400],
+    accentInk: vrenaPalette.orange[300],
+    accentSoft: vrenaPalette.neutral[800],
+    accentBorder: vrenaPalette.orange[400],
+    selection: {
+      background: vrenaPalette.neutral[800],
+      border: vrenaPalette.orange[400],
+      ink: vrenaPalette.orange[300],
+      indicator: vrenaPalette.orange[400],
+    },
+  },
+  status: {
+    success: vrenaPalette.green,
+    info: vrenaPalette.blue,
+    warning: vrenaPalette.yellow,
+    danger: vrenaPalette.red,
+  },
+} as const
+
 export const vrenaAvatarColors = [
   vrenaPalette.purple[500],
   vrenaPalette.cyan[500],

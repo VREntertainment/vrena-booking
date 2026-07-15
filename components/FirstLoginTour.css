@@ -3,21 +3,21 @@
   z-index: 1000001;
   width: min(340px, calc(100vw - 28px));
   max-width: calc(100vw - 28px);
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-900) 12%, transparent);
+  border: 1px solid var(--player-border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--vrena-white) 98%, transparent);
-  box-shadow: 0 20px 56px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
-  color: var(--vrena-neutral-950);
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow);
+  color: var(--player-text);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-title {
-  color: var(--vrena-neutral-950);
+  color: var(--player-text);
   font-size: 1rem;
   line-height: 1.25;
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-description {
-  color: var(--vrena-neutral-600);
+  color: var(--player-text-muted);
   font-size: 0.92rem;
   line-height: 1.45;
 }
@@ -27,7 +27,7 @@
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-progress-text {
-  color: var(--vrena-neutral-600);
+  color: var(--player-text-muted);
   font-size: 0.78rem;
 }
 
@@ -38,25 +38,33 @@
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-footer-btn {
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
-  background: var(--vrena-neutral-100);
-  color: var(--vrena-neutral-950);
+  border: 1px solid var(--vrena-cta-secondary-border);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-next-btn,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn {
-  border-color: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
-  background: var(--vrena-neutral-950);
-  color: var(--vrena-white);
+  border-color: transparent;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 10px 22px var(--vrena-cta-shadow);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-next-btn:hover,
 .driver-popover.vrena-tour-popover .driver-popover-next-btn:focus,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn:hover,
 .driver-popover.vrena-tour-popover .driver-popover-done-btn:focus {
-  border-color: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
-  background: var(--vrena-neutral-950);
-  color: var(--vrena-white);
+  border-color: transparent;
+  background: var(--vrena-cta-primary-hover);
+  color: var(--vrena-cta-primary-ink);
+}
+
+.driver-popover.vrena-tour-popover :is(.driver-popover-footer-btn, .driver-popover-close-btn):focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 2px var(--vrena-focus-inner),
+    0 0 0 8px color-mix(in srgb, var(--vrena-focus-halo) 72%, transparent);
 }
 
 .driver-popover.vrena-tour-popover .driver-popover-btn-disabled {

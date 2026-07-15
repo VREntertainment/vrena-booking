@@ -12,9 +12,9 @@
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
   gap: 14px;
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: var(--vrena-bg-soft);
+  background: var(--player-surface-soft);
   padding: 12px;
 }
 
@@ -41,13 +41,14 @@
 
 .app .game-guide-card-head h2 {
   margin: 0;
+  color: var(--player-text);
   font-size: 20px;
 }
 
 .app .game-guide-card-head span,
 .app .game-guide-card-body p,
 .app .game-guide-panel li {
-  color: var(--vrena-neutral-600);
+  color: var(--player-text-muted);
   line-height: 1.38;
 }
 
@@ -63,7 +64,7 @@
 }
 
 .app .game-guide-facts strong {
-  color: var(--vrena-neutral-950);
+  color: var(--player-text);
 }
 
 .app .game-guide-audience {
@@ -74,17 +75,17 @@
 
 .app .game-guide-audience span {
   border-radius: 999px;
-  background: var(--vrena-surface-warm);
-  color: var(--vrena-cyan-700);
+  background: var(--vrena-mode-accent-soft);
+  color: var(--vrena-mode-accent-ink);
   padding: 4px 8px;
   font-size: 12px;
   font-weight: 900;
 }
 
 .app .game-guide-panel {
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border: 1px solid var(--player-border);
   border-radius: 8px;
-  background: var(--vrena-white);
+  background: var(--player-surface-raised);
   overflow: hidden;
 }
 
@@ -97,7 +98,7 @@
   cursor: pointer;
   list-style: none;
   padding: 8px 10px;
-  color: var(--vrena-neutral-950);
+  color: var(--player-text);
   font-weight: 900;
 }
 
@@ -107,13 +108,13 @@
 
 .app .game-guide-panel summary::after {
   content: '+';
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 18px;
   line-height: 1;
 }
 
 .app .game-guide-panel[open] summary {
-  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-bottom: 1px solid var(--player-border);
 }
 
 .app .game-guide-panel[open] summary::after {
@@ -157,10 +158,10 @@
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 16px;
   align-items: center;
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border: 1px solid var(--player-border);
   border-radius: 10px;
-  background: var(--vrena-white);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 4.5%, transparent);
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
   padding: 16px;
 }
 
@@ -176,7 +177,7 @@
 }
 
 .app .public-game-guide-title p {
-  color: var(--vrena-neutral-600);
+  color: var(--player-text-muted);
   line-height: 1.4;
 }
 
@@ -193,19 +194,27 @@
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border: 1px solid var(--vrena-cta-secondary-border);
   border-radius: 999px;
-  color: var(--vrena-neutral-950);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
   font-weight: 900;
   padding: 7px 11px;
   text-decoration: none;
 }
 
-.app .public-game-guide-languages a[aria-current="page"],
+.app .public-game-guide-languages a[aria-current="page"] {
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
+}
+
 .app .public-game-guide-app-link {
-  background: var(--vrena-brand-gradient);
   border-color: transparent;
-  color: var(--vrena-white);
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 12px 26px var(--vrena-cta-shadow);
 }
 
 .app .public-game-guide-list {
@@ -285,65 +294,5 @@
 
   .app .public-game-guide-card .game-guide-card-head h2 {
     font-size: 18px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .app .public-game-guide-hero {
-    background: var(--vrena-neutral-900);
-    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent);
-  }
-
-  .app .public-game-guide-title p {
-    color: var(--vrena-neutral-400);
-  }
-
-  .app .game-guide-card-head h2,
-  .app .game-guide-card-head span,
-  .app .game-guide-card-body p,
-  .app .game-guide-panel li {
-    color: var(--vrena-neutral-400);
-  }
-
-  .app .game-guide-card {
-    background: var(--vrena-neutral-900);
-    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-  }
-
-  .app .game-guide-panel {
-    background: var(--vrena-neutral-900);
-    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
-  }
-
-  .app .game-guide-panel summary {
-    color: var(--vrena-bg);
-  }
-
-  .app .game-guide-panel[open] summary {
-    border-bottom-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
-  }
-
-  .app .game-guide-facts strong,
-  .app .game-guide-panel summary {
-    color: var(--vrena-bg);
-  }
-
-  .app .game-guide-audience span {
-    background: color-mix(in srgb, var(--vrena-blue-400) 12%, transparent);
-    color: var(--vrena-cyan-200);
-  }
-
-  .app .public-game-guide-languages a {
-    background: var(--vrena-neutral-800);
-    border-color: color-mix(in srgb, var(--vrena-white) 14%, transparent);
-    color: var(--vrena-bg);
-  }
-
-  .app .public-game-guide-languages a[aria-current="page"],
-  .app .public-game-guide-app-link {
-    background: var(--vrena-brand-gradient);
-    border-color: transparent;
-    color: var(--vrena-white);
   }
 }

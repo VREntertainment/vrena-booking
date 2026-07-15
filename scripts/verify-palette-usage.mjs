@@ -10,9 +10,22 @@ const officialPaletteChecksum = 'ee18f5f6a58d239faf2156a9dae0988ca26b9b8b268ad80
 const requiredOfficialTokens = [
   '--vrena-cta-gradient-cool: linear-gradient(90deg, #00ffea 0%, #109fff 100%)',
   '--vrena-cta-gradient-warm: linear-gradient(90deg, #ffb800 0%, #fd5901 100%)',
+  '--vrena-mode-accent: var(--vrena-purple-500)',
+  '--vrena-selection-bg: var(--vrena-purple-50)',
+  '--vrena-selection-indicator: var(--vrena-purple-500)',
+  '--vrena-decorative-gradient: var(--vrena-logo-gradient-cool)',
+  '--vrena-status-warning-bg: var(--vrena-yellow-50)',
   '--vrena-cta-secondary-ink: var(--vrena-purple-600)',
   '--vrena-cta-tertiary-ink: var(--vrena-purple-600)',
   '--vrena-focus-halo: var(--vrena-cyan-700)',
+]
+
+const retiredTokenPatterns = [
+  /--vrena-brand-cyan\b/,
+  /--vrena-brand-deep\b/,
+  /--vrena-brand-gradient(?:-reverse)?\b/,
+  /var\(--vrena-cta\)/,
+  /var\(--vrena-cta-ink\)/,
 ]
 
 const officialPaletteSource = await readFile(path.join(root, officialPaletteFile))
@@ -28,6 +41,13 @@ const missingOfficialTokens = requiredOfficialTokens.filter((token) => !tokenSou
 if (missingOfficialTokens.length > 0) {
   console.error('Official VRena CTA tokens are missing or have drifted.')
   console.error(missingOfficialTokens.join('\n'))
+  process.exit(1)
+}
+
+const retiredTokens = retiredTokenPatterns.filter((pattern) => pattern.test(tokenSource))
+if (retiredTokens.length > 0) {
+  console.error('Retired VRena palette aliases must not be restored.')
+  console.error(retiredTokens.map((pattern) => pattern.source).join('\n'))
   process.exit(1)
 }
 
@@ -55,7 +75,12 @@ const vendorHexByFile = new Map([
   ['components/BookingProfileView.tsx', new Set(['#4285f4', '#34a853', '#fbbc05', '#ea4335'])],
 ])
 
+const functionalColorFixtureFiles = new Set([
+  'scripts/verify-theme-surfaces.mjs',
+])
+
 const hexPattern = /(?:#|%23)[0-9a-fA-F]{3,8}(?![0-9a-fA-F])/g
+const rawFunctionalColorPattern = /rgba?\(\s*\d/gi
 
 const files = [
   ...new Set(scanGlobs.flatMap((pattern) => globSync(pattern, { cwd: root, nodir: true }))),
@@ -68,6 +93,20 @@ for (const file of files) {
 
   const text = await readFile(path.join(root, file), 'utf8')
   const vendorHexes = vendorHexByFile.get(file) ?? new Set()
+
+  for (const pattern of retiredTokenPatterns) {
+    const match = pattern.exec(text)
+    if (!match) continue
+    const line = text.slice(0, match.index).split('\n').length
+    violations.push(`${file}:${line} ${match[0]}`)
+  }
+
+  if (!functionalColorFixtureFiles.has(file)) {
+    for (const match of text.matchAll(rawFunctionalColorPattern)) {
+      const line = text.slice(0, match.index).split('\n').length
+      violations.push(`${file}:${line} ${match[0]}`)
+    }
+  }
 
   for (const match of text.matchAll(hexPattern)) {
     const rawHex = match[0]
@@ -87,4 +126,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`Official palette checksum and CTA tokens verified; raw palette usage passed across ${files.length} files.`)
+console.log(`Official palette checksum, semantic tokens, and raw palette usage passed across ${files.length} files.`)
