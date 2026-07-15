@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarDays, Check, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Pencil, Plus, ReceiptText, Save, Send, Settings2, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Pencil, Plus, ReceiptText, Save, Send, Settings2, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
 
@@ -30,7 +30,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     attendanceGridStyle,
     attendanceScheduleScopeOptions,
     attendanceShiftsByCell,
+    attendanceWeekEnd,
     attendanceWeekDates,
+    attendanceWeekStart,
     canEditEmployeeProfiles,
     canManageAttendance,
     customerName,
@@ -102,6 +104,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     selectedShiftTemplate,
     setAttendanceScheduleScope,
     setDraggingShiftId,
+    setAttendanceRange,
     setEmployeeForm,
     setHrAdjustmentForm,
     setHrDepartmentFilter,
@@ -115,6 +118,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     sharedText,
     shiftForm,
     shortDateLabel,
+    shiftAttendanceRange,
     shiftWarningsById,
     staffContractStatuses,
     staffCvTypes,
@@ -132,6 +136,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     staffRoleName,
     startShiftForCell,
     text,
+    resetAttendanceRangeToThisWeek,
     updateHrAdjustmentStatus,
     updateShiftStatus,
     visibleAllStaffProfileOptions,
@@ -417,6 +422,37 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
               {hrTab === 'schedule' && (
                 <div className="staff-hr-schedule-stack">
+                  <div className="staff-operations-actions staff-attendance-actions staff-hr-week-controls">
+                    <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>
+                      <ButtonIconText icon={<ChevronLeft aria-hidden="true" size={14} />}>{text.actions.previousWeek}</ButtonIconText>
+                    </button>
+                    <label>
+                      <span className="staff-field-label">{text.labels.startDate}</span>
+                      <StaffPickerField
+                        ariaLabel={text.labels.startDate}
+                        placeholder={text.chooseDate}
+                        type="date"
+                        value={attendanceWeekStart}
+                        onChange={(value: string) => setAttendanceRange(value, attendanceWeekEnd)}
+                      />
+                    </label>
+                    <label>
+                      <span className="staff-field-label">{text.labels.endDate}</span>
+                      <StaffPickerField
+                        ariaLabel={text.labels.endDate}
+                        placeholder={text.chooseDate}
+                        type="date"
+                        value={attendanceWeekEnd}
+                        onChange={(value: string) => setAttendanceRange(attendanceWeekStart, value)}
+                      />
+                    </label>
+                    <button type="button" onClick={resetAttendanceRangeToThisWeek}>
+                      <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+                    </button>
+                    <button type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>
+                      <ButtonIconText icon={<ChevronRight aria-hidden="true" size={14} />}>{text.actions.nextWeek}</ButtonIconText>
+                    </button>
+                  </div>
                   <section className="staff-planning-panel staff-hr-planning-panel" aria-label={text.labels.weeklySchedule}>
                     <div className="staff-planning-toolbar">
                       <div className="staff-planning-title">

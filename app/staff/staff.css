@@ -3213,6 +3213,14 @@
   gap: 10px;
 }
 
+.app .staff-hr-week-controls {
+  justify-content: flex-start;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 8px;
+}
+
 .app .staff-hr-schedule-layout {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr);
 }
@@ -5140,6 +5148,7 @@
   .app .staff-hr-roster-panel,
   .app .staff-hr-workspace,
   .app .staff-hr-table-panel,
+  .app .staff-hr-week-controls,
   .app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
   .app .staff-hr-payslip {
     border-color: var(--staff-modern-border);
