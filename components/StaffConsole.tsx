@@ -7510,7 +7510,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }
 
   return (
-    <section className="section staff-console" data-testid="staff-console">
+    <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
       <div className="section-head">
         <div>
           <h2>{consoleTitle}</h2>

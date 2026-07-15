@@ -170,7 +170,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }
 
   return (
-        <div className="staff-card staff-card-wide staff-hr-card staff-hr-console">
+        <div className="staff-hr-console">
           {visibleAllStaffProfileOptions.length === 0 ? (
             <p className="notice">{text.messages.noStaffProfiles}</p>
           ) : (
@@ -185,7 +185,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                   <strong>{selectedEmployeeLabel}</strong>
                 </div>
               </div>
-              <div className="staff-summary-grid staff-attendance-summary staff-hr-summary staff-hr-metrics">
+              <div className="staff-hr-summary staff-hr-metrics">
                 <div><span>{text.hrTabs.employees}</span><strong>{visibleAllStaffProfileOptions.length}</strong><small>{activeEmployeeCount} {text.labels.activeEmployee} · {missingEmployeeDocumentCount} {text.labels.missingDocuments}</small></div>
                 <div><span>{text.labels.totalGross}</span><strong>{formatVndCompact(hrPayrollTotals.gross)}</strong></div>
                 <div><span>{text.labels.totalNet}</span><strong>{formatVndCompact(hrPayrollTotals.net)}</strong></div>
@@ -196,7 +196,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
               <div className="staff-hr-main">
                 <aside className="staff-hr-module-rail" aria-label={text.tabs.hr}>
                   {staffHrTabs.map((tab: any) => (
-                    <button className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
+                    <button aria-current={hrTab === tab ? 'page' : undefined} className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
                       <span className="staff-hr-module-icon">{hrModuleIcon(tab)}</span>
                       <span>
                         <strong>{text.hrTabs[tab]}</strong>

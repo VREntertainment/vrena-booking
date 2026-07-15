@@ -5266,3 +5266,553 @@
     box-shadow: none;
   }
 }
+
+/* Flat staff workspaces: page hierarchy comes from spacing and dividers, not nested cards. */
+.app .section.staff-console {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app .staff-console > .section-head {
+  align-items: center;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-route > .section-head {
+  display: none;
+}
+
+.app .staff-console-nav {
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-tab-group {
+  gap: 5px;
+  padding: 0 10px 0 0;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.app .staff-tab-group:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.app .staff-tabs button,
+.app .staff-tab-categories button {
+  min-height: 36px;
+  border-color: transparent;
+  border-radius: 7px;
+  background: transparent;
+  padding: 7px 11px;
+}
+
+.app .staff-tabs button.active,
+.app .staff-tab-categories button.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-600) 11%, var(--vrena-white));
+  box-shadow: inset 0 -2px 0 var(--vrena-cyan-700);
+  color: var(--vrena-brand-deep);
+}
+
+.app .staff-hr-console {
+  --staff-hr-accent: var(--vrena-cyan-700);
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  background: transparent;
+}
+
+.app .staff-hr-command {
+  align-items: center;
+  padding: 18px 2px 16px;
+}
+
+.app .staff-hr-command h3 {
+  font-size: clamp(25px, 3vw, 32px);
+}
+
+.app .staff-hr-command-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  text-align: right;
+}
+
+.app .staff-hr-command-panel span {
+  padding-right: 12px;
+  border-right: 1px solid var(--staff-modern-border);
+  text-transform: none;
+}
+
+.app .staff-hr-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  border-block: 1px solid var(--staff-modern-border);
+  background: color-mix(in srgb, var(--vrena-neutral-50) 64%, transparent);
+}
+
+.app .staff-hr-metrics > div {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 72px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 14px;
+}
+
+.app .staff-hr-metrics > div:last-child {
+  border-right: 0;
+}
+
+.app .staff-hr-metrics span {
+  color: var(--staff-modern-muted);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.app .staff-hr-metrics strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.app .staff-hr-main {
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: 620px;
+}
+
+.app .staff-hr-module-rail {
+  position: relative;
+  top: auto;
+  align-content: start;
+  gap: 2px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 14px 18px 0;
+}
+
+.app .staff-hr-module-rail button {
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 9px;
+}
+
+.app .staff-hr-module-rail button:hover {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 6%, transparent);
+}
+
+.app .staff-hr-module-rail button.active {
+  border: 0;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 12%, var(--vrena-white));
+  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-icon,
+.app .staff-hr-module-rail button.active .staff-hr-module-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--staff-hr-accent);
+}
+
+.app .staff-hr-module-rail small {
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.app .staff-hr-content {
+  min-width: 0;
+  padding: 18px 0 24px 20px;
+}
+
+.app .staff-hr-employee-layout,
+.app .staff-hr-payroll-layout,
+.app .staff-hr-settings-layout {
+  grid-template-columns: minmax(250px, 0.44fr) minmax(520px, 1.56fr);
+  gap: 0;
+}
+
+.app .staff-hr-roster-panel,
+.app .staff-hr-workspace,
+.app .staff-hr-table-panel,
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-form,
+.app .staff-hr-content .staff-attendance-layout > .staff-attendance-settings,
+.app .staff-hr-week-controls,
+.app .staff-hr-planning-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app .staff-hr-roster-panel {
+  padding: 0 16px 0 0;
+  border-right: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-workspace,
+.app .staff-hr-content .staff-hr-employee-layout > .staff-hr-workspace {
+  padding: 0 0 0 20px;
+}
+
+.app .staff-hr-payroll-layout > :first-child,
+.app .staff-hr-settings-layout > :first-child,
+.app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :first-child {
+  padding: 0 20px 0 0;
+  border-right: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-payroll-layout > :last-child,
+.app .staff-hr-settings-layout > :last-child,
+.app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :last-child {
+  padding: 0 0 0 20px;
+}
+
+.app .staff-hr-panel-head,
+.app .staff-hr-workspace-head {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-panel-head > strong {
+  min-width: auto;
+  min-height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: var(--staff-modern-muted);
+}
+
+.app .staff-hr-workspace-head {
+  top: -18px;
+  padding-top: 18px;
+  background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
+}
+
+.app .staff-hr-filter-grid {
+  gap: 9px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-employee-row {
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 10px 6px;
+}
+
+.app .staff-employee-row:hover {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+}
+
+.app .staff-employee-row.active {
+  border-color: var(--staff-modern-border);
+  background: color-mix(in srgb, var(--vrena-cyan-600) 10%, var(--vrena-white));
+  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+}
+
+.app .staff-hr-row-status {
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 5%, transparent);
+  padding: 5px 6px;
+}
+
+.app .staff-employee-selected {
+  margin-top: 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.app .staff-hr-pay-summary {
+  gap: 0;
+  margin-top: 14px;
+  border-block: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-pay-summary > div {
+  min-height: 64px;
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px;
+}
+
+.app .staff-hr-pay-summary > div:last-child {
+  border-right: 0;
+}
+
+.app .staff-hr-profile-form,
+.app .staff-hr-document-section {
+  gap: 0;
+}
+
+.app .staff-hr-form-section,
+.app .staff-hr-document-section {
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 0;
+}
+
+.app .staff-hr-form-section h5 {
+  font-size: 14px;
+}
+
+.app .staff-hr-document-section .staff-hr-panel-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.app .staff-file-action {
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+}
+
+.app .staff-hr-table-panel {
+  padding: 0;
+}
+
+.app .staff-hr-table-panel .staff-table-wrap {
+  border-radius: 0;
+  background: transparent;
+}
+
+.app .staff-hr-table-panel .staff-table th {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 8%, var(--vrena-white));
+}
+
+.app .staff-hr-week-controls {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-schedule-stack,
+.app .staff-hr-table-panel {
+  gap: 14px;
+}
+
+.app .staff-hr-planning-panel {
+  padding: 0;
+}
+
+.app .staff-hr-payslip {
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.app .staff-hr-setup-row {
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0;
+}
+
+@media (max-width: 1240px) {
+  .app .staff-hr-main {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .app .staff-hr-module-rail {
+    grid-template-columns: repeat(7, minmax(132px, 1fr));
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--staff-modern-border);
+    padding: 10px 0;
+  }
+
+  .app .staff-hr-content {
+    padding: 18px 0 24px;
+  }
+
+  .app .staff-hr-employee-layout,
+  .app .staff-hr-payroll-layout,
+  .app .staff-hr-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-roster-panel,
+  .app .staff-hr-payroll-layout > :first-child,
+  .app .staff-hr-settings-layout > :first-child,
+  .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :first-child {
+    padding: 0 0 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+
+  .app .staff-hr-workspace,
+  .app .staff-hr-content .staff-hr-employee-layout > .staff-hr-workspace,
+  .app .staff-hr-payroll-layout > :last-child,
+  .app .staff-hr-settings-layout > :last-child,
+  .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :last-child {
+    padding: 18px 0 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .app .staff-hr-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-metrics > div:nth-child(3) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-metrics > div:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+}
+
+@media (max-width: 760px) {
+  .app .section.staff-console {
+    margin-inline: -2px;
+  }
+
+  .app .staff-console > .section-head {
+    padding-inline: 2px;
+  }
+
+  .app .staff-tab-group.active {
+    border: 0;
+    background: transparent;
+  }
+
+  .app .staff-hr-command {
+    padding-top: 12px;
+  }
+
+  .app .staff-hr-command-panel {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  .app .staff-hr-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-metrics > div,
+  .app .staff-hr-metrics > div:nth-child(3) {
+    border-right: 1px solid var(--staff-modern-border);
+    border-bottom: 1px solid var(--staff-modern-border);
+  }
+
+  .app .staff-hr-metrics > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-metrics > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .app .staff-hr-module-rail {
+    grid-template-columns: repeat(7, minmax(148px, 1fr));
+  }
+
+  .app .staff-hr-module-rail button {
+    min-height: 44px;
+  }
+
+  .app .staff-hr-pay-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-pay-summary > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-panel-head {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .app .staff-hr-metrics small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-tabs button.active,
+  .app .staff-tab-categories button.active,
+  .app .staff-hr-module-rail button.active,
+  .app .staff-employee-row.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 20%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 16%, var(--vrena-neutral-900));
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-hr-command-panel,
+  .app .staff-hr-module-rail,
+  .app .staff-hr-roster-panel,
+  .app .staff-hr-workspace,
+  .app .staff-hr-table-panel,
+  .app .staff-hr-week-controls,
+  .app .staff-hr-content .staff-attendance-layout > .staff-attendance-list:not(.staff-hr-roster-panel),
+  .app .staff-hr-payslip {
+    background: transparent;
+  }
+
+  .app .staff-hr-summary {
+    background: color-mix(in srgb, var(--vrena-neutral-800) 58%, transparent);
+  }
+
+  .app .staff-hr-workspace-head {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 96%, transparent);
+  }
+
+  .app .staff-hr-form-section,
+  .app .staff-hr-setup-row,
+  .app .staff-hr-row-status,
+  .app .staff-hr-table-panel .staff-table-wrap {
+    background: transparent;
+  }
+
+  .app .staff-hr-table-panel .staff-table th {
+    background: color-mix(in srgb, var(--vrena-cyan-700) 13%, var(--vrena-neutral-900));
+  }
+
+  .app .staff-hr-module-rail button:hover,
+  .app .staff-employee-row:hover {
+    background: color-mix(in srgb, var(--vrena-cyan-400) 8%, transparent);
+  }
+}
