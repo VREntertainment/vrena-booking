@@ -97,9 +97,9 @@
 
 .app .staff-tabs button.active,
 .app .staff-tab-categories button.active {
-  background: var(--vrena-brand-gradient);
-  border-color: transparent;
-  color: var(--vrena-white);
+  background: var(--vrena-selection-bg);
+  border-color: var(--vrena-selection-border);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-commerce-switcher {
@@ -120,9 +120,9 @@
 }
 
 .app .staff-commerce-switcher button.active {
-  background: var(--vrena-brand-gradient);
-  border-color: transparent;
-  color: var(--vrena-white);
+  background: var(--vrena-selection-bg);
+  border-color: var(--vrena-selection-border);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-card-heading {
@@ -142,8 +142,8 @@
   min-height: 38px;
   border: 0;
   border-radius: 8px;
-  background: var(--vrena-brand-gradient);
-  color: var(--vrena-white);
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
   font-size: 13px;
   font-weight: 900;
   padding: 8px 12px;
@@ -154,7 +154,7 @@
   min-height: auto;
   border: 0;
   background: transparent;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 13px;
   font-weight: 900;
   padding: 4px 0;
@@ -164,7 +164,7 @@
 }
 
 .app .staff-link-button:hover {
-  color: var(--vrena-brand-cyan);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-readonly-note {
@@ -464,7 +464,7 @@
 .app .staff-time-option:hover, .app .staff-time-option.active {
   border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
   background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-label-line {
@@ -516,7 +516,7 @@
 }
 
 .app .staff-price-lines strong:last-child {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 18px;
 }
 
@@ -992,7 +992,7 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
 }
 
@@ -1322,7 +1322,7 @@
 
 .app .staff-role-feedback.saving {
   background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-role-feedback.success {
@@ -1379,9 +1379,9 @@
 .app .staff-chart-mode button.active,
 .app .staff-report-export-actions > .staff-accountant-export > button,
 .app .staff-accountant-download.primary {
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-cta-primary);
   border-color: transparent;
-  color: var(--vrena-white);
+  color: var(--vrena-cta-primary-ink);
 }
 
 .app .staff-chart-mode button.active {
@@ -1895,7 +1895,7 @@
 
 .app .staff-report-date-presets button.active {
   background: var(--vrena-blue-50);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-report-date-main {
@@ -1944,7 +1944,7 @@
 }
 
 .app .staff-report-calendar-legend i.compare {
-  border: 2px solid var(--vrena-brand-cyan);
+  border: 2px solid var(--vrena-mode-accent);
   background: var(--vrena-white);
 }
 
@@ -2052,7 +2052,7 @@
 }
 
 .app .staff-report-calendar-day.compare-edge {
-  box-shadow: inset 0 0 0 2px var(--vrena-brand-cyan);
+  box-shadow: inset 0 0 0 2px var(--vrena-mode-accent);
 }
 
 .app .staff-report-date-compare {
@@ -2545,8 +2545,8 @@
 }
 
 .app .staff-planning-scope button.active {
-  background: var(--vrena-brand-gradient);
-  color: var(--vrena-white);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-planning-actions button {
@@ -2646,7 +2646,7 @@
   border-color: color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent);
   border-radius: 6px;
   background: color-mix(in srgb, var(--vrena-cyan-700) 5%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 16px;
   line-height: 1;
 }
@@ -2908,7 +2908,7 @@
 }
 
 .app .staff-hr-command-panel strong {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 15px;
 }
 
@@ -2967,10 +2967,10 @@
 }
 
 .app .staff-hr-module-rail button.active {
-  border-color: color-mix(in srgb, var(--staff-hr-accent) 42%, transparent);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 16%, var(--vrena-white)), color-mix(in srgb, var(--vrena-teal-400) 12%, var(--vrena-white)));
-  color: var(--vrena-brand-deep);
-  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 3px 0 0 var(--vrena-selection-indicator);
 }
 
 .app .staff-hr-module-icon {
@@ -2980,12 +2980,12 @@
   height: 34px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-hr-module-rail button.active .staff-hr-module-icon {
-  background: var(--vrena-white);
-  color: var(--staff-hr-accent);
+  background: var(--vrena-surface);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-hr-module-rail button > span:last-child {
@@ -3051,7 +3051,7 @@
 
 .app .staff-hr-panel-head h5,
 .app .staff-hr-form-section h5 {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 13px;
   font-weight: 950;
 }
@@ -3063,7 +3063,7 @@
   min-height: 30px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--staff-hr-accent) 10%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 14px;
 }
 
@@ -3150,7 +3150,7 @@
 
 .app .staff-employee-row.active .staff-hr-row-status {
   border-color: color-mix(in srgb, var(--staff-hr-accent) 36%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-hr-document-actions {
@@ -3165,12 +3165,12 @@
   border: 1px dashed color-mix(in srgb, var(--staff-hr-accent) 36%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--staff-hr-accent) 6%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   padding: 10px;
 }
 
 .app .staff-file-action span {
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
   font-size: 13px;
 }
 
@@ -3549,7 +3549,7 @@
 }
 
 .app .staff-report-bar.current {
-  background: linear-gradient(180deg, var(--vrena-brand-deep), var(--vrena-brand-cyan));
+  background: var(--vrena-progress-gradient);
 }
 
 .app .staff-report-bar.compare {
@@ -3660,7 +3660,7 @@
   height: 100%;
   min-width: 2px;
   border-radius: inherit;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-progress-gradient);
   transition: width 180ms ease;
 }
 
@@ -3721,7 +3721,7 @@
 }
 
 .app .staff-report-curve-legend i.current {
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-progress-gradient);
 }
 
 .app .staff-report-curve-legend i.compare {
@@ -3867,7 +3867,7 @@
 
 .app .staff-player-card-editor-head svg {
   flex: 0 0 auto;
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-player-card-editor-grid {
@@ -4264,10 +4264,10 @@
 .app .staff-tab-categories button.active,
 .app .staff-commerce-switcher button.active,
 .app .staff-attendance-tabs button.active {
-  border-color: transparent;
-  background: var(--vrena-brand-gradient);
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
-  color: var(--vrena-white);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-grid {
@@ -4344,7 +4344,7 @@
 .app .staff-duration-presets button.active {
   border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
-  color: var(--vrena-brand-deep);
+  color: var(--vrena-mode-accent);
 }
 
 .app .staff-card label,
@@ -4647,15 +4647,15 @@
 
   .app .staff-tabs button.active,
   .app .staff-tab-categories button.active {
-    background: var(--vrena-brand-gradient);
-    border-color: transparent;
-    color: var(--vrena-white);
+    background: var(--vrena-selection-bg);
+    border-color: var(--vrena-selection-border);
+    color: var(--vrena-selection-ink);
   }
 
   .app .staff-commerce-switcher button.active {
-    background: var(--vrena-brand-gradient);
-    border-color: transparent;
-    color: var(--vrena-white);
+    background: var(--vrena-selection-bg);
+    border-color: var(--vrena-selection-border);
+    color: var(--vrena-selection-ink);
   }
 
   .app .staff-role-pill {
@@ -4860,8 +4860,8 @@
   .app .staff-report-export-actions > .staff-accountant-export > button,
   .app .staff-accountant-download.primary,
   .app .staff-chart-mode button.active {
-    background: var(--vrena-brand-gradient);
-    color: var(--vrena-white);
+    background: var(--vrena-cta-primary);
+    color: var(--vrena-cta-primary-ink);
   }
 
   .app .staff-report-date-actions > button,
@@ -4973,7 +4973,7 @@
   }
 
   .app .staff-report-calendar-day.range-edge {
-    background: var(--vrena-brand-deep);
+    background: var(--vrena-mode-accent);
     color: var(--vrena-white);
   }
 
@@ -5219,8 +5219,8 @@
   }
 
   .app .staff-planning-scope button.active {
-    background: var(--vrena-brand-gradient);
-    color: var(--vrena-white);
+    background: var(--vrena-selection-bg);
+    color: var(--vrena-selection-ink);
   }
 }
 
@@ -5317,14 +5317,14 @@
 
 .app .staff-tabs button.active,
 .app .staff-tab-categories button.active {
-  border-color: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
-  background: color-mix(in srgb, var(--vrena-cyan-600) 11%, var(--vrena-white));
-  box-shadow: inset 0 -2px 0 var(--vrena-cyan-700);
-  color: var(--vrena-brand-deep);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
+  color: var(--vrena-selection-ink);
 }
 
 .app .staff-hr-console {
-  --staff-hr-accent: var(--vrena-cyan-700);
+  --staff-hr-accent: var(--vrena-selection-indicator);
   display: grid;
   gap: 0;
   min-width: 0;
@@ -5428,8 +5428,9 @@
 
 .app .staff-hr-module-rail button.active {
   border: 0;
-  background: color-mix(in srgb, var(--vrena-cyan-600) 12%, var(--vrena-white));
-  box-shadow: inset 3px 0 0 var(--staff-hr-accent);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 3px 0 0 var(--vrena-selection-indicator);
 }
 
 .app .staff-hr-module-icon,
@@ -5896,21 +5897,21 @@
   .staff-accountant-report-list button.active,
   .staff-hr-module-rail button.active
 ) {
-  border-color: var(--vrena-purple-200);
-  background: var(--vrena-purple-50);
-  color: var(--vrena-purple-700);
-  box-shadow: inset 0 -2px 0 var(--vrena-purple-500);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
 }
 
 .app .staff-console .staff-hr-console {
-  --staff-hr-accent: var(--vrena-purple-500);
+  --staff-hr-accent: var(--vrena-selection-indicator);
 }
 
 .app .staff-console button.danger {
   min-height: 44px;
-  border: 1px solid var(--vrena-red-200);
-  background: var(--vrena-red-50);
-  color: var(--vrena-red-700);
+  border: 1px solid var(--vrena-status-danger-border);
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
   box-shadow: none;
   filter: none;
 }
@@ -6006,9 +6007,9 @@
   }
 
   .app .staff-console button.danger:hover:not(:disabled) {
-    border-color: var(--vrena-red-300);
-    background: var(--vrena-red-100);
-    color: var(--vrena-red-800);
+    border-color: var(--vrena-status-danger-hover-border);
+    background: var(--vrena-status-danger-hover-bg);
+    color: var(--vrena-status-danger-hover-ink);
     filter: none;
   }
 }
@@ -6064,20 +6065,20 @@
     .staff-accountant-report-list button.active,
     .staff-hr-module-rail button.active
   ) {
-    border-color: var(--vrena-orange-400);
-    background: var(--vrena-neutral-800);
-    color: var(--vrena-orange-300);
-    box-shadow: inset 0 -2px 0 var(--vrena-orange-400);
+    border-color: var(--vrena-selection-border);
+    background: var(--vrena-selection-bg);
+    color: var(--vrena-selection-ink);
+    box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
   }
 
   .app .staff-console .staff-hr-console {
-    --staff-hr-accent: var(--vrena-orange-400);
+    --staff-hr-accent: var(--vrena-selection-indicator);
   }
 
   .app .staff-console button.danger {
-    border-color: var(--vrena-red-700);
-    background: var(--vrena-red-950);
-    color: var(--vrena-red-200);
+    border-color: var(--vrena-status-danger-border);
+    background: var(--vrena-status-danger-bg);
+    color: var(--vrena-status-danger-ink);
   }
 
   .app .staff-console button.danger:disabled {
@@ -6105,9 +6106,9 @@
   }
 
   .app .staff-console button.danger:hover:not(:disabled) {
-    border-color: var(--vrena-red-600);
-    background: color-mix(in srgb, var(--vrena-red-950) 78%, var(--vrena-neutral-900));
-    color: var(--vrena-red-100);
+    border-color: var(--vrena-status-danger-hover-border);
+    background: var(--vrena-status-danger-hover-bg);
+    color: var(--vrena-status-danger-hover-ink);
   }
 }
 

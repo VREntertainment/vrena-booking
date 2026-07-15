@@ -311,13 +311,14 @@ body {
 }
 
 .app .day-chip.active {
-  color: var(--vrena-white);
-  border-color: transparent;
-  background: var(--vrena-brand-gradient);
+  color: var(--vrena-selection-ink);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
 }
 
 .app .day-chip.active span {
-  color: color-mix(in srgb, var(--vrena-white) 82%, transparent);
+  color: var(--vrena-selection-ink);
 }
 
 .app .mobile-search-toggle {
@@ -1232,7 +1233,7 @@ body {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-decorative-gradient);
   font-size: 30px;
   font-weight: 900;
   cursor: pointer;
@@ -1376,7 +1377,7 @@ body {
   display: grid;
   place-items: center;
   overflow: visible;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-decorative-gradient);
   color: var(--vrena-white);
   font-weight: 800;
   line-height: 1;
@@ -1441,8 +1442,8 @@ body {
   overflow: hidden !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
 }
 
 .app .avatar-photo img {
@@ -1459,8 +1460,8 @@ body {
   border: 0;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
 }
 
 .app .champion-badge {
@@ -1498,8 +1499,8 @@ body {
   object-position: center center !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
   z-index: 0;
 }
 
@@ -1655,8 +1656,9 @@ body {
 }
 
 .app .tab.active, .app .segmented button.active {
-  background: var(--vrena-surface-warm);
-  border-color: color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-selection-bg);
+  border-color: var(--vrena-selection-border);
+  color: var(--vrena-selection-ink);
 }
 
 .app .sidebar-gallery-tab {
@@ -1707,7 +1709,7 @@ body {
   display: grid;
   gap: 12px;
   border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
-  border-left: 4px solid var(--club-theme, var(--vrena-brand-deep));
+  border-left: 4px solid var(--club-theme, var(--vrena-mode-accent));
   border-radius: 8px;
   padding: 14px;
   background: var(--vrena-white);
@@ -1728,7 +1730,7 @@ body {
 }
 
 .app .club-card-motto {
-  color: var(--club-theme, var(--vrena-brand-deep));
+  color: var(--club-theme, var(--vrena-mode-accent));
   font-size: 13px;
   font-weight: 900;
   margin-top: 3px;
@@ -2719,12 +2721,12 @@ body {
 }
 
 .app .club-motto {
-  color: var(--club-theme, var(--vrena-brand-deep));
+  color: var(--club-theme, var(--vrena-mode-accent));
   font-weight: 900;
 }
 
 .app .club-description {
-  border-left: 3px solid var(--club-theme, var(--vrena-brand-deep));
+  border-left: 3px solid var(--club-theme, var(--vrena-mode-accent));
   padding-left: 10px;
 }
 
@@ -4138,9 +4140,9 @@ body {
 }
 
 .app .format-toolbar button:active {
-  background: var(--vrena-brand-gradient);
-  color: var(--vrena-white);
-  border-color: transparent;
+  background: var(--vrena-cta-tertiary-pressed-bg);
+  color: var(--vrena-cta-tertiary-ink);
+  border-color: var(--vrena-selection-border);
   transform: translateY(0) scale(0.98);
 }
 
@@ -4202,8 +4204,8 @@ body {
 }
 
 .app .invite-code button.copied {
-  border-color: color-mix(in srgb, var(--vrena-brand-deep) 30%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
+  border-color: color-mix(in srgb, var(--vrena-mode-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 10%, var(--vrena-white));
   color: var(--vrena-accent-text);
 }
 
@@ -4326,7 +4328,7 @@ body {
   aspect-ratio: 1;
   border-radius: 999px;
   border: 0;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-decorative-gradient);
   color: var(--vrena-white);
   font-weight: 900;
   padding: 0;
@@ -4345,8 +4347,8 @@ body {
   object-position: center center !important;
   border-radius: 999px !important;
   clip-path: circle(50% at 50% 50%);
-  -webkit-mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
-  mask-image: radial-gradient(circle at center, black 99%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
+  mask-image: radial-gradient(circle at center, var(--vrena-neutral-950) 99%, transparent 100%);
   z-index: 0;
 }
 
@@ -4409,7 +4411,7 @@ body {
   bottom: -4px;
   width: 15px;
   height: 15px;
-  background: var(--vrena-brand-deep);
+  background: var(--vrena-mode-accent);
   color: var(--vrena-white);
 }
 
@@ -4524,8 +4526,8 @@ body {
 }
 
 .app .match-card.completed {
-  border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 8%, var(--vrena-white));
+  border-color: color-mix(in srgb, var(--vrena-mode-accent) 24%, transparent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 8%, var(--vrena-white));
 }
 
 .app .match-head, .app .match-versus, .app .score-row {
@@ -4806,8 +4808,8 @@ body {
 }
 
 .app .queue-match.next {
-  border-color: color-mix(in srgb, var(--vrena-brand-deep) 24%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
+  border-color: color-mix(in srgb, var(--vrena-mode-accent) 24%, transparent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 10%, var(--vrena-white));
 }
 
 .app .queue-controls {
@@ -4895,8 +4897,8 @@ body {
 }
 
 .app .checkin-mini {
-  border: 1px solid color-mix(in srgb, var(--vrena-brand-deep) 22%, transparent);
-  background: color-mix(in srgb, var(--vrena-brand-cyan) 10%, var(--vrena-white));
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 22%, transparent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 10%, var(--vrena-white));
   color: var(--vrena-accent-text);
   padding: 3px 5px;
   font-size: 10px;
@@ -6011,14 +6013,14 @@ body {
 }
 
 .app button {
-  border: 0;
+  border: 1px solid var(--vrena-cta-secondary-border);
   border-radius: 8px;
   padding: 10px 13px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  background: var(--vrena-neutral-950);
-  color: var(--vrena-white);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
   transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease;
   transform: translateY(0) scale(1);
   will-change: transform;
@@ -6026,12 +6028,14 @@ body {
 
 .app button:active:not(:disabled) {
   transform: translateY(1px) scale(0.97);
-  filter: brightness(0.97);
+  filter: none;
 }
 
 .app button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
-  outline-offset: 2px;
+  outline: 0;
+  box-shadow:
+    0 0 0 2px var(--vrena-focus-inner),
+    0 0 0 8px color-mix(in srgb, var(--vrena-focus-halo) 72%, transparent);
 }
 
 .app .share-button:focus,
@@ -6046,7 +6050,10 @@ body {
 
 .app button:disabled {
   cursor: not-allowed;
-  opacity: 0.68;
+  border-color: var(--vrena-cta-secondary-disabled-border);
+  background: transparent;
+  color: var(--vrena-cta-secondary-disabled-ink);
+  opacity: 1;
 }
 
 /* Polish layer: tighter rhythm, consistent control sizing, cleaner cards. */
@@ -6661,7 +6668,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-progress-gradient);
 }
 
 .app .rank-progress small {
@@ -6849,21 +6856,22 @@ body {
 }
 
 .app button.primary {
-  background: var(--vrena-cta);
-  color: var(--vrena-cta-ink);
+  border-color: transparent;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
   box-shadow: 0 12px 26px var(--vrena-cta-shadow);
 }
 
 .app button.secondary {
-  background: var(--vrena-surface-warm);
-  color: var(--vrena-neutral-950);
-  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-color: var(--vrena-cta-secondary-border);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
 }
 
 .app button.danger {
-  background: var(--vrena-red-50);
-  color: var(--vrena-red-700);
-  border: 1px solid color-mix(in srgb, var(--vrena-red-700) 24%, transparent);
+  border-color: var(--vrena-status-danger-border);
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
 }
 
 .app .small-button {
@@ -6901,7 +6909,7 @@ body {
 }
 
 .app .notice {
-  border-left: 4px solid var(--vrena-brand-cyan);
+  border-left: 4px solid var(--vrena-mode-accent);
   background: var(--vrena-surface-warm);
   padding: 10px 12px;
   border-radius: 6px;
@@ -6987,7 +6995,7 @@ body {
 }
 
 .app .game-card.selected {
-  border-color: var(--vrena-brand-cyan);
+  border-color: var(--vrena-mode-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-500) 15%, transparent);
 }
 
@@ -7297,7 +7305,7 @@ body {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--vrena-brand-deep) var(--rank-progress), color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent) 0);
+  background: conic-gradient(var(--vrena-mode-accent) var(--rank-progress), color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent) 0);
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
@@ -7426,7 +7434,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--vrena-brand-gradient);
+  background: var(--vrena-progress-gradient);
 }
 
 .app .achievement-rank-badge {
@@ -7671,7 +7679,7 @@ body {
 
 .app .achievement-chart-dot {
   fill: var(--vrena-white);
-  stroke: var(--vrena-brand-deep);
+  stroke: var(--vrena-mode-accent);
   stroke-width: 3;
 }
 
@@ -8207,7 +8215,7 @@ body {
   border: 3px solid color-mix(in srgb, var(--vrena-yellow-500) 68%, transparent);
   border-radius: 28px;
   color: var(--vrena-white);
-  background: var(--vrena-brand-gradient-reverse);
+  background: var(--vrena-decorative-gradient);
   box-shadow: 0 22px 48px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent), 0 0 0 8px color-mix(in srgb, var(--vrena-yellow-500) 14%, transparent);
   animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
 }
@@ -8243,7 +8251,7 @@ body {
   top: 18%;
   width: 12px;
   height: 12px;
-  background: var(--vrena-brand-deep);
+  background: var(--vrena-mode-accent);
   animation-delay: 160ms;
 }
 
@@ -8252,7 +8260,7 @@ body {
   bottom: 18%;
   width: 20px;
   height: 20px;
-  background: var(--vrena-brand-cyan);
+  background: var(--vrena-mode-accent);
   animation-delay: 320ms;
 }
 
@@ -10550,9 +10558,10 @@ body {
 .app .tab.active,
 .app .sub-tabs button.active,
 .app .segmented button.active {
-  background: var(--vrena-neutral-950);
-  color: var(--vrena-white);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 8%, transparent);
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
 }
 
 .app .section:not(.staff-console) input,
@@ -11181,7 +11190,7 @@ body {
 }
 
 .app .sessions-section .session-retention-card {
-  --session-retention-accent: var(--vrena-brand-deep);
+  --session-retention-accent: var(--vrena-mode-accent);
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
@@ -11310,7 +11319,7 @@ body {
   inset: 12px auto 12px -10px;
   width: 2px;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--vrena-brand-cyan), var(--vrena-brand-deep));
+  background: var(--vrena-progress-gradient);
 }
 
 .app .sessions-section .ticket-session-visual {
@@ -11322,7 +11331,7 @@ body {
   border: 1px dashed color-mix(in srgb, var(--vrena-blue-600) 44%, var(--player-border));
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--vrena-blue-600) 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-brand-deep) 10%, var(--player-surface)));
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-blue-600) 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-mode-accent) 10%, var(--player-surface)));
   color: var(--vrena-blue-700);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 48%, transparent);
 }
@@ -11489,8 +11498,8 @@ body {
 }
 
 .app .sessions-section .compact-join.primary {
-  background: var(--vrena-cta);
-  color: var(--vrena-cta-ink);
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
   box-shadow: 0 10px 22px var(--vrena-cta-shadow);
 }
 
@@ -11532,7 +11541,7 @@ body {
   border: 0 !important;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--vrena-brand-deep) 9%, transparent), transparent 58%),
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-mode-accent) 9%, transparent), transparent 58%),
     color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
   box-shadow: none !important;
   overflow: hidden;
@@ -12232,8 +12241,8 @@ body {
     opacity: 0.22;
     filter: saturate(0.72) contrast(0.76) brightness(1.18);
     mix-blend-mode: multiply;
-    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 32%, rgba(0, 0, 0, 0.14) 58%, transparent 82%);
-    mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 32%, rgba(0, 0, 0, 0.14) 58%, transparent 82%);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.72) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.42) 32%, rgb(var(--vrena-neutral-950-rgb) / 0.14) 58%, transparent 82%);
+    mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.72) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.42) 32%, rgb(var(--vrena-neutral-950-rgb) / 0.14) 58%, transparent 82%);
   }
 }
 
@@ -12386,7 +12395,7 @@ body {
   gap: 13px;
   padding: 12px;
   border: 1px solid var(--player-border) !important;
-  border-left: 4px solid var(--club-theme, var(--vrena-brand-deep)) !important;
+  border-left: 4px solid var(--club-theme, var(--vrena-mode-accent)) !important;
   border-radius: 8px !important;
   background: color-mix(in srgb, var(--player-surface) 92%, var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent))) !important;
   box-shadow: 0 8px 24px color-mix(in srgb, var(--vrena-neutral-950) 5.5%, transparent) !important;
@@ -12411,7 +12420,7 @@ body {
   inset: auto 12px 12px 12px;
   height: 3px;
   border-radius: 999px;
-  background: var(--club-theme, var(--vrena-brand-deep));
+  background: var(--club-theme, var(--vrena-mode-accent));
   opacity: 0.7;
 }
 
@@ -12482,7 +12491,7 @@ body {
 }
 
 .app .clubs-section .club-card-signal svg {
-  color: var(--club-theme, var(--vrena-brand-deep));
+  color: var(--club-theme, var(--vrena-mode-accent));
 }
 
 .app .clubs-section .club-card-signal span {
@@ -12627,7 +12636,7 @@ body {
 .app .create-session-section .tournament-create-box {
   padding: 14px 0 14px 14px;
   border: 0 !important;
-  border-left: 3px solid var(--vrena-brand-deep) !important;
+  border-left: 3px solid var(--vrena-mode-accent) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -13040,8 +13049,8 @@ body {
     opacity: 0.4;
     filter: saturate(0.9) contrast(0.9) brightness(0.68);
     mix-blend-mode: normal;
-    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.56) 34%, rgba(0, 0, 0, 0.2) 62%, transparent 84%);
-    mask-image: radial-gradient(ellipse at 70% 50%, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.56) 34%, rgba(0, 0, 0, 0.2) 62%, transparent 84%);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.82) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.56) 34%, rgb(var(--vrena-neutral-950-rgb) / 0.2) 62%, transparent 84%);
+    mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.82) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.56) 34%, rgb(var(--vrena-neutral-950-rgb) / 0.2) 62%, transparent 84%);
   }
 }
 
@@ -13117,5 +13126,145 @@ body {
   .app .tabs .tab:hover,
   .app .tabs .tab:focus-visible {
     transform: none;
+  }
+}
+
+/* Official VRena action and selection hierarchy for every app surface. */
+.app :is(button.primary, button.create-button:not(.secondary):not(.danger)),
+.app :is(.public-game-guide-app-link, .session-retention-card-cta) {
+  border-color: transparent;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 12px 26px var(--vrena-cta-shadow);
+  filter: none;
+}
+
+.app :is(button.secondary, button.create-button.secondary) {
+  border-color: var(--vrena-cta-secondary-border);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
+  box-shadow: none;
+  filter: none;
+}
+
+.app :is(.link-button, .message-translation-toggle) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-cta-tertiary-ink) !important;
+  box-shadow: none;
+}
+
+.app button.danger {
+  border-color: var(--vrena-status-danger-border);
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
+  box-shadow: none;
+  filter: none;
+}
+
+.app :is(
+  .tab.active,
+  .day-chip.active,
+  .language-menu button.active,
+  .sub-tabs button.active,
+  .segmented button.active,
+  .profile-sub-tabs button.active,
+  .form-segmented button.active,
+  .create-session-mode-toggle button.active,
+  .public-game-guide-languages a[aria-current="page"]
+) {
+  border-color: var(--vrena-selection-border) !important;
+  background: var(--vrena-selection-bg) !important;
+  color: var(--vrena-selection-ink) !important;
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator) !important;
+  filter: none;
+}
+
+.app .day-chip.active span {
+  color: var(--vrena-selection-ink);
+}
+
+.app :is(button.primary, button.create-button:not(.secondary):not(.danger)):disabled {
+  border-color: transparent;
+  background: var(--vrena-cta-primary-disabled-bg);
+  color: var(--vrena-cta-primary-disabled-ink);
+  box-shadow: none;
+}
+
+.app :is(button.secondary, button.create-button.secondary):disabled {
+  border-color: var(--vrena-cta-secondary-disabled-border);
+  background: transparent;
+  color: var(--vrena-cta-secondary-disabled-ink);
+  box-shadow: none;
+}
+
+.app :is(.public-game-guide-app-link, .session-retention-card-cta):focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 2px var(--vrena-focus-inner),
+    0 0 0 8px color-mix(in srgb, var(--vrena-focus-halo) 72%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app :is(button.primary, button.create-button:not(.secondary):not(.danger)):hover:not(:disabled),
+  .app :is(.public-game-guide-app-link, .session-retention-card-cta):hover {
+    background: var(--vrena-cta-primary-hover);
+    color: var(--vrena-cta-primary-ink);
+    filter: none;
+  }
+
+  .app :is(button.secondary, button.create-button.secondary):hover:not(:disabled) {
+    border-color: var(--vrena-cta-secondary-hover-border);
+    background: var(--vrena-cta-secondary-hover-bg);
+    color: var(--vrena-cta-secondary-hover-ink);
+    filter: none;
+  }
+
+  .app :is(.link-button, .message-translation-toggle):hover:not(:disabled) {
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--vrena-cta-tertiary-ink) !important;
+    filter: none;
+  }
+
+  .app button.danger:hover:not(:disabled) {
+    border-color: var(--vrena-status-danger-hover-border);
+    background: var(--vrena-status-danger-hover-bg);
+    color: var(--vrena-status-danger-hover-ink);
+    filter: none;
+  }
+}
+
+.app :is(button.primary, button.create-button:not(.secondary):not(.danger)):active:not(:disabled),
+.app :is(.public-game-guide-app-link, .session-retention-card-cta):active {
+  background: var(--vrena-cta-primary-pressed);
+  color: var(--vrena-cta-primary-ink);
+  filter: none;
+}
+
+.app :is(button.secondary, button.create-button.secondary):active:not(:disabled) {
+  border-color: var(--vrena-cta-secondary-pressed-border);
+  background: var(--vrena-cta-secondary-pressed-bg);
+  color: var(--vrena-cta-secondary-pressed-ink);
+  filter: none;
+}
+
+.app :is(.link-button, .message-translation-toggle):active:not(:disabled) {
+  background: var(--vrena-cta-tertiary-pressed-bg);
+}
+
+@media (max-width: 960px) {
+  @supports selector(.app .tabs:has(.tab.active)) {
+    .app .tabs::before {
+      border-color: var(--vrena-selection-border);
+      background: var(--vrena-selection-bg);
+      box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator), var(--player-shadow-soft);
+    }
+
+    .app .tabs .tab.active {
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: var(--vrena-selection-ink) !important;
+    }
   }
 }

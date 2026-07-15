@@ -9,9 +9,27 @@ Source asset SHA-256:
 
 ## Implementation Sources
 
-- CSS scales and semantic UI tokens: `styles/vrena-tokens.css`
+- CSS scales and semantic UI tokens: `styles/vrena-tokens.css`. It is imported
+  once by `app/globals.css` and is the runtime source for Player, Staff, and HR.
 - TypeScript palette and exported semantic values: `lib/theme/vrenaPalette.ts`
 - Palette drift check: `npm run verify:palette`
+
+No component should define a local brand color scale. Components consume the
+shared semantic tokens so palette updates remain a single-file change and add
+no client-side JavaScript or network request.
+
+## Semantic Layers
+
+- `--vrena-mode-accent-*`: mode-aware brand emphasis for headings and icons
+- `--vrena-selection-*`: active tabs, filters, segmented controls, and dates
+- `--vrena-cta-*`: primary, secondary, tertiary, disabled, pressed, and focus states
+- `--vrena-status-*`: success, information, warning, and destructive feedback
+- `--player-*`: mode-aware surfaces, borders, fields, text, shadows, and radii
+- `--vrena-decorative-gradient`: avatars and decorative brand moments only
+- `--vrena-progress-gradient`: progress visualization only
+
+Retired aliases such as `--vrena-brand-cyan`, `--vrena-brand-deep`, and
+`--vrena-cta` are rejected by `npm run verify:palette`.
 
 ## CTA Contract
 

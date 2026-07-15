@@ -497,7 +497,7 @@
 .glitchTile[data-caught="true"] {
   border-color: rgb(var(--vrena-green-600-rgb) / 0.44);
   background:
-    linear-gradient(180deg, rgb(var(--vrena-green-50-rgb, 244 254 246) / 0.96), rgb(var(--vrena-white-rgb) / 0.86)),
+    linear-gradient(180deg, rgb(var(--vrena-green-50-rgb) / 0.96), rgb(var(--vrena-white-rgb) / 0.86)),
     radial-gradient(circle at 50% 0, rgb(var(--vrena-green-500-rgb) / 0.2), transparent 60%);
   color: var(--vrena-green-800);
   cursor: default;
@@ -954,10 +954,10 @@
 
   .glitchTile {
     background:
-      linear-gradient(180deg, rgb(var(--vrena-neutral-900-rgb, 11 23 23) / 0.94), rgb(var(--vrena-neutral-950-rgb) / 0.74)),
+      linear-gradient(180deg, rgb(var(--vrena-neutral-900-rgb) / 0.94), rgb(var(--vrena-neutral-950-rgb) / 0.74)),
       radial-gradient(circle at 50% 0, color-mix(in srgb, var(--tile-accent) 24%, transparent), transparent 64%);
     box-shadow:
-      0 16px 36px rgb(0 0 0 / 0.24),
+      0 16px 36px rgb(var(--vrena-neutral-950-rgb) / 0.24),
       inset 0 1px 0 rgb(var(--vrena-neutral-50-rgb) / 0.08);
     color: var(--vrena-neutral-50);
   }
@@ -976,7 +976,7 @@
 
   .glitchTile[data-caught="true"] {
     background:
-      linear-gradient(180deg, rgb(var(--vrena-green-950-rgb, 13 79 52) / 0.64), rgb(var(--vrena-neutral-950-rgb) / 0.82)),
+      linear-gradient(180deg, rgb(var(--vrena-green-950-rgb) / 0.64), rgb(var(--vrena-neutral-950-rgb) / 0.82)),
       radial-gradient(circle at 50% 0, rgb(var(--vrena-green-500-rgb) / 0.18), transparent 60%);
     color: var(--vrena-green-300);
   }

@@ -85,6 +85,8 @@
   --vrena-green-500-rgb: 73 245 159;
   --vrena-green-600-rgb: 22 208 123;
   --vrena-green-700-rgb: 18 180 105;
+  --vrena-green-50-rgb: 244 254 246;
+  --vrena-green-950-rgb: 13 79 52;
 
   --vrena-blue-50: #f0f8fe;
   --vrena-blue-100: #e2f1fd;
@@ -170,12 +172,33 @@
   --vrena-warning: var(--vrena-yellow-500);
   --vrena-danger: var(--vrena-red-500);
 
-  --vrena-brand-cyan: var(--vrena-primary);
-  --vrena-brand-deep: var(--vrena-secondary);
-  /* Legacy shared aliases stay stable for player-facing surfaces. */
-  --vrena-brand-gradient: linear-gradient(90deg, #109fff 0%, #00ffea 100%);
-  --vrena-brand-gradient-reverse: linear-gradient(90deg, #00ffea 0%, #109fff 100%);
+  --vrena-mode-accent: var(--vrena-purple-500);
+  --vrena-mode-accent-ink: var(--vrena-purple-700);
+  --vrena-mode-accent-soft: var(--vrena-purple-50);
+  --vrena-mode-accent-border: var(--vrena-purple-200);
+  --vrena-selection-bg: var(--vrena-purple-50);
+  --vrena-selection-border: var(--vrena-purple-200);
+  --vrena-selection-ink: var(--vrena-purple-700);
+  --vrena-selection-indicator: var(--vrena-purple-500);
+  --vrena-decorative-gradient: var(--vrena-logo-gradient-cool);
+  --vrena-progress-gradient: var(--vrena-logo-gradient-cool);
   --vrena-brand-soft: linear-gradient(135deg, rgb(var(--vrena-purple-500-rgb) / 0.08), rgb(var(--vrena-cyan-500-rgb) / 0.1));
+
+  --vrena-status-success-bg: var(--vrena-green-50);
+  --vrena-status-success-border: var(--vrena-green-200);
+  --vrena-status-success-ink: var(--vrena-green-800);
+  --vrena-status-info-bg: var(--vrena-blue-50);
+  --vrena-status-info-border: var(--vrena-blue-200);
+  --vrena-status-info-ink: var(--vrena-blue-800);
+  --vrena-status-warning-bg: var(--vrena-yellow-50);
+  --vrena-status-warning-border: var(--vrena-yellow-200);
+  --vrena-status-warning-ink: var(--vrena-yellow-900);
+  --vrena-status-danger-bg: var(--vrena-red-50);
+  --vrena-status-danger-border: var(--vrena-red-200);
+  --vrena-status-danger-ink: var(--vrena-red-700);
+  --vrena-status-danger-hover-bg: var(--vrena-red-100);
+  --vrena-status-danger-hover-border: var(--vrena-red-300);
+  --vrena-status-danger-hover-ink: var(--vrena-red-800);
 
   --vrena-cta-primary: var(--vrena-cta-gradient-cool);
   --vrena-cta-primary-hover: linear-gradient(90deg, color-mix(in srgb, #00ffea 92%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #109fff 92%, var(--vrena-neutral-950)) 100%);
@@ -201,9 +224,6 @@
   --vrena-focus-inner: var(--vrena-neutral-50);
   --vrena-focus-halo: var(--vrena-cyan-700);
 
-  /* Backward-compatible aliases for existing app surfaces. */
-  --vrena-cta: var(--vrena-cta-primary);
-  --vrena-cta-ink: var(--vrena-cta-primary-ink);
   --vrena-cta-shadow: rgb(var(--vrena-blue-600-rgb) / 0.22);
   --vrena-cta-soft: rgb(var(--vrena-blue-600-rgb) / 0.12);
 
@@ -249,11 +269,33 @@
     --vrena-accent-text: var(--vrena-orange-300);
     --vrena-accent-text-strong: var(--vrena-orange-300);
 
-    --vrena-brand-cyan: var(--vrena-orange-500);
-    --vrena-brand-deep: var(--vrena-orange-600);
-    --vrena-brand-gradient: var(--vrena-logo-gradient-warm);
-    --vrena-brand-gradient-reverse: linear-gradient(226.29deg, #ffb800 0%, #ff3c00 100%);
+    --vrena-mode-accent: var(--vrena-orange-400);
+    --vrena-mode-accent-ink: var(--vrena-orange-300);
+    --vrena-mode-accent-soft: var(--vrena-neutral-800);
+    --vrena-mode-accent-border: var(--vrena-orange-400);
+    --vrena-selection-bg: var(--vrena-neutral-800);
+    --vrena-selection-border: var(--vrena-orange-400);
+    --vrena-selection-ink: var(--vrena-orange-300);
+    --vrena-selection-indicator: var(--vrena-orange-400);
+    --vrena-decorative-gradient: var(--vrena-logo-gradient-warm);
+    --vrena-progress-gradient: var(--vrena-logo-gradient-warm);
     --vrena-brand-soft: linear-gradient(135deg, rgb(var(--vrena-orange-300-rgb) / 0.12), rgb(var(--vrena-orange-600-rgb) / 0.14));
+
+    --vrena-status-success-bg: color-mix(in srgb, var(--vrena-green-950) 78%, var(--vrena-neutral-900));
+    --vrena-status-success-border: var(--vrena-green-700);
+    --vrena-status-success-ink: var(--vrena-green-300);
+    --vrena-status-info-bg: color-mix(in srgb, var(--vrena-blue-950) 76%, var(--vrena-neutral-900));
+    --vrena-status-info-border: var(--vrena-blue-600);
+    --vrena-status-info-ink: var(--vrena-blue-300);
+    --vrena-status-warning-bg: color-mix(in srgb, var(--vrena-yellow-950) 76%, var(--vrena-neutral-900));
+    --vrena-status-warning-border: var(--vrena-yellow-700);
+    --vrena-status-warning-ink: var(--vrena-yellow-300);
+    --vrena-status-danger-bg: color-mix(in srgb, var(--vrena-red-950) 78%, var(--vrena-neutral-900));
+    --vrena-status-danger-border: var(--vrena-red-700);
+    --vrena-status-danger-ink: var(--vrena-red-200);
+    --vrena-status-danger-hover-bg: color-mix(in srgb, var(--vrena-red-950) 68%, var(--vrena-neutral-800));
+    --vrena-status-danger-hover-border: var(--vrena-red-600);
+    --vrena-status-danger-hover-ink: var(--vrena-red-100);
 
     --vrena-cta-primary: var(--vrena-cta-gradient-warm);
     --vrena-cta-primary-hover: linear-gradient(90deg, color-mix(in srgb, #ffb800 92%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #fd5901 92%, var(--vrena-neutral-950)) 100%);
@@ -279,8 +321,6 @@
     --vrena-focus-inner: var(--vrena-neutral-950);
     --vrena-focus-halo: var(--vrena-cyan-300);
 
-    --vrena-cta: var(--vrena-cta-primary);
-    --vrena-cta-ink: var(--vrena-cta-primary-ink);
     --vrena-cta-shadow: rgb(var(--vrena-orange-600-rgb) / 0.32);
     --vrena-cta-soft: rgb(var(--vrena-orange-500-rgb) / 0.16);
 
@@ -301,7 +341,7 @@
     --player-field-placeholder: var(--vrena-neutral-500);
     --player-control-hover: rgb(var(--vrena-orange-600-rgb) / 0.16);
     --player-control-shadow: inset 0 0 0 1px rgb(var(--vrena-white-rgb) / 0.04);
-    --player-shadow: 0 14px 34px rgb(0 0 0 / 0.25);
-    --player-shadow-soft: 0 8px 22px rgb(0 0 0 / 0.18);
+    --player-shadow: 0 14px 34px rgb(var(--vrena-neutral-950-rgb) / 0.25);
+    --player-shadow-soft: 0 8px 22px rgb(var(--vrena-neutral-950-rgb) / 0.18);
   }
 }
