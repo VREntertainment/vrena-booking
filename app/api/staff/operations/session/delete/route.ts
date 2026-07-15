@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { hasVerifiedAal2Session } from '@/lib/security/staffMfa'
 
 export const runtime = 'nodejs'
 
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
 
   const { data: userData, error: userError } = await authClient.auth.getUser(accessToken)
   if (userError || !userData.user) return jsonError(userError?.message || 'Staff session required.', 401)
+  if (!await hasVerifiedAal2Session(authClient, accessToken)) {
+    return jsonError('Staff two-step verification required.', 403)
+  }
 
   let body: Record<string, unknown>
   try {

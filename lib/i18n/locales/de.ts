@@ -630,6 +630,8 @@ export const de = {
   mfaEnabled: 'Authenticator-App aktiviert.',
   mfaDisabled: 'Authenticator-App deaktiviert.',
   mfaRequired: 'Gib deinen Authenticator-Code ein, um den Login abzuschließen.',
+  staffMfaRequiredTitle: 'Mitarbeiterbestätigung erforderlich',
+  staffMfaRequiredHint: 'Richte eine Authenticator-App ein, um Mitarbeiter-, Admin- und HR-Werkzeuge freizuschalten. Jede Mitarbeitersitzung muss die Zwei-Schritt-Verifizierung abschließen.',
   mfaChallengeTitle: 'Authenticator-Code',
   mfaChallengeHint: 'Öffne deine Authenticator-App und gib den aktuellen Code für VRena ein.',
   mfaVerified: 'Authenticator verifiziert.',

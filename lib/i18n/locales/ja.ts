@@ -630,6 +630,8 @@ export const ja = {
   mfaEnabled: '認証アプリを有効にしました。',
   mfaDisabled: '認証アプリを無効にしました。',
   mfaRequired: 'ログインを完了するには認証コードを入力してください。',
+  staffMfaRequiredTitle: 'スタッフ認証が必要です',
+  staffMfaRequiredHint: 'スタッフ、管理者、HRツールを利用するには認証アプリを設定してください。各スタッフセッションで2段階認証が必要です。',
   mfaChallengeTitle: '認証コード',
   mfaChallengeHint: '認証アプリを開き、VRenaの現在のコードを入力してください。',
   mfaVerified: '認証が完了しました。',

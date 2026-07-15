@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendBookingUpdateEmail } from '@/lib/bookingUpdateEmail'
 import type { BookingUpdateEmailPayload } from '@/lib/bookingUpdateEmailTypes'
 import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
+import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from '@/lib/security/staffMfa'
 import { ageBandFromBirthday } from '@/lib/agePolicy'
 
 export const runtime = 'nodejs'
@@ -124,6 +125,13 @@ export async function POST(request: NextRequest) {
     staffRank(actorProfile?.role, actorProfile?.email),
     staffRank(userData.user.app_metadata?.role as string | undefined, userData.user.email),
   )
+  if (actorRank >= 20) {
+    const [hasAal2, hasMfaFactor] = await Promise.all([
+      hasVerifiedAal2Session(authClient, accessToken),
+      hasVerifiedMfaFactor(adminClient, userData.user.id),
+    ])
+    if (!hasAal2 || !hasMfaFactor) return jsonError('Staff two-step verification required.', 403)
+  }
 
   let session: Record<string, unknown> | null = null
   if (payload.sessionId) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
+import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from '@/lib/security/staffMfa'
 
 export const runtime = 'nodejs'
 
@@ -71,6 +72,11 @@ export async function PATCH(request: NextRequest) {
     staffRank(userData.user.app_metadata?.role as string | undefined, userData.user.email),
   )
   if (actorRank < 50) return jsonError('Staff access required.', 403)
+  const [hasAal2, hasMfaFactor] = await Promise.all([
+    hasVerifiedAal2Session(authClient, accessToken),
+    hasVerifiedMfaFactor(adminClient, userData.user.id),
+  ])
+  if (!hasAal2 || !hasMfaFactor) return jsonError('Staff two-step verification required.', 403)
 
   let body: Record<string, unknown>
   try {

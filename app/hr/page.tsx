@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
 import HomeAppShell from '../../components/HomeAppShell'
 import { publicAppRoutes } from '../../lib/appRoutes'
 import '../staff/staff.css'
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
   },
 }
 
-export default function HrPage() {
+export default async function HrPage() {
+  await connection()
   return <HomeAppShell initialView="hr" />
 }
