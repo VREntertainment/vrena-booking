@@ -630,6 +630,8 @@ export const it = {
   mfaEnabled: 'App authenticator attivata.',
   mfaDisabled: 'App authenticator disattivata.',
   mfaRequired: 'Inserisci il codice per completare il login.',
+  staffMfaRequiredTitle: 'Verifica dello staff richiesta',
+  staffMfaRequiredHint: 'Configura un’app authenticator per sbloccare gli strumenti staff, admin e HR. Ogni sessione dello staff deve completare la verifica in due passaggi.',
   mfaChallengeTitle: 'Codice authenticator',
   mfaChallengeHint: 'Apri l’app authenticator e inserisci il codice attuale per VRena.',
   mfaVerified: 'Authenticator verificato.',

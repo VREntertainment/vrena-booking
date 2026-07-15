@@ -204,6 +204,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     showProfileFields,
     signInWithGoogle,
     signInWithPasskey,
+    staffMfaEnrollmentRequired,
     termsConditionsUrl,
     text,
     updateAnonymousMode,
@@ -217,6 +218,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     userId,
     verifyMfaChallenge
   } = context
+
   const profileTabs = profileTabCopy[language as keyof typeof profileTabCopy] ?? profileTabCopy.en
   const profileCompletionSteps = [
     { done: Boolean(profile), label: text.profileStepAccount },
@@ -416,6 +418,21 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <div className="auth-divider">
                   <span>{text.authOr}</span>
                 </div>
+              </div>
+            )}
+
+            {profile && staffMfaEnrollmentRequired && (
+              <div className="mfa-challenge-panel" role="status">
+                <div className="mfa-panel-icon">
+                  <ShieldCheck aria-hidden="true" size={22} />
+                </div>
+                <div className="mfa-panel-copy">
+                  <strong>{text.staffMfaRequiredTitle}</strong>
+                  <span>{text.staffMfaRequiredHint}</span>
+                </div>
+                <button className="secondary small-button" onClick={() => setProfileSubTab('settings')} type="button">
+                  {text.mfaSetupTitle}
+                </button>
               </div>
             )}
 

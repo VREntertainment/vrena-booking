@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
 import BookingWidget from '../../components/BookingWidget'
 import '../staff/staff.css'
 
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
   },
 }
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await connection()
   return <BookingWidget initialView="staff" />
 }

@@ -630,6 +630,8 @@ export const fr = {
   mfaEnabled: 'Application d’authentification activée.',
   mfaDisabled: 'Application d’authentification désactivée.',
   mfaRequired: 'Saisis ton code pour terminer la connexion.',
+  staffMfaRequiredTitle: 'Vérification du personnel requise',
+  staffMfaRequiredHint: 'Configure une application d’authentification pour accéder aux outils du personnel, de l’administration et des RH. Chaque session doit valider la double authentification.',
   mfaChallengeTitle: 'Code d’authentification',
   mfaChallengeHint: 'Ouvre ton app d’authentification et saisis le code VRena actuel.',
   mfaVerified: 'Authentification vérifiée.',

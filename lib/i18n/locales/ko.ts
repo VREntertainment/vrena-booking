@@ -630,6 +630,8 @@ export const ko = {
   mfaEnabled: '인증 앱이 켜졌습니다.',
   mfaDisabled: '인증 앱이 꺼졌습니다.',
   mfaRequired: '로그인을 완료하려면 인증 코드를 입력하세요.',
+  staffMfaRequiredTitle: '직원 인증 필요',
+  staffMfaRequiredHint: '직원, 관리자 및 HR 도구를 사용하려면 인증 앱을 설정하세요. 각 직원 세션은 2단계 인증을 완료해야 합니다.',
   mfaChallengeTitle: '인증 코드',
   mfaChallengeHint: '인증 앱을 열고 VRena의 현재 코드를 입력하세요.',
   mfaVerified: '인증이 완료되었습니다.',

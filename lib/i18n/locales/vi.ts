@@ -630,6 +630,8 @@ export const vi = {
   mfaEnabled: 'Đã bật ứng dụng xác thực.',
   mfaDisabled: 'Đã tắt ứng dụng xác thực.',
   mfaRequired: 'Nhập mã xác thực để hoàn tất đăng nhập.',
+  staffMfaRequiredTitle: 'Nhân viên cần xác minh',
+  staffMfaRequiredHint: 'Thiết lập ứng dụng xác thực để mở khóa công cụ nhân viên, quản trị và nhân sự. Mỗi phiên làm việc phải hoàn tất xác minh hai bước.',
   mfaChallengeTitle: 'Mã xác thực',
   mfaChallengeHint: 'Mở ứng dụng xác thực và nhập mã hiện tại cho VRena.',
   mfaVerified: 'Đã xác minh.',
