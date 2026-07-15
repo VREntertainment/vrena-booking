@@ -1141,6 +1141,7 @@ export function bestOfLabel(value?: number | null) {
 }
 
 export function authDebug(label: string, payload?: unknown) {
+  if (process.env.NODE_ENV === 'production') return
   if (typeof console === 'undefined') return
   console.groupCollapsed(`[VRena auth] ${label}`)
   if (payload !== undefined) console.log(payload)
