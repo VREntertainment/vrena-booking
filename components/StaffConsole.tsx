@@ -42,10 +42,15 @@ const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeMo
   ssr: false,
 })
 
-type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
+const StaffHrHub = dynamic(() => import('./StaffHrHub'), {
+  ssr: false,
+})
+
+type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'hr' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
-type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'employee' | 'settings'
+type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'settings'
+type StaffHrTab = 'employees' | 'schedule' | 'timesheet' | 'payroll' | 'adjustments' | 'advances' | 'settings'
 type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
@@ -205,6 +210,14 @@ type StaffShiftStatus = 'draft' | 'published' | 'completed' | 'cancelled'
 type StaffAttendanceStatus = 'present' | 'late' | 'absent' | 'no_show' | 'leave' | 'holiday'
 type StaffLeaveType = 'annual' | 'sick' | 'unpaid' | 'personal' | 'public_holiday'
 type StaffLeaveStatus = 'requested' | 'approved' | 'rejected' | 'cancelled'
+type StaffGender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'other'
+type StaffContractStatus = 'active' | 'probation' | 'suspended' | 'ended' | 'draft'
+type StaffHrSetupOptionType = 'department' | 'job_title' | 'location' | 'contract_status' | 'contract_type' | 'employment_type'
+type StaffHrAdjustmentType = 'bonus' | 'commission' | 'allowance' | 'lunch_allowance' | 'deduction' | 'advance' | 'debt' | 'debt_repayment'
+type StaffHrAdjustmentStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled'
+type StaffPayrollStatus = 'draft' | 'pending' | 'approved' | 'paid' | 'cancelled'
+type StaffPayrollPayCycle = 'monthly' | 'semi_monthly' | 'weekly' | 'custom'
+type StaffHrDocumentType = 'profile_photo' | 'cv' | 'contract' | 'national_id' | 'payslip' | 'other'
 
 type StaffScheduleShift = {
   id: string
@@ -260,21 +273,44 @@ type StaffLeaveRequest = {
 type StaffEmployeeProfile = {
   profile_id: string
   employee_code: string | null
+  attendance_number: string | null
   legal_name: string | null
   personal_phone: string | null
   personal_email: string | null
+  national_id: string | null
+  date_of_birth: string | null
+  gender: StaffGender | null
+  address: string | null
+  department: string | null
   job_title: string | null
   employment_type: StaffEmploymentType
+  main_work_location: string | null
+  payroll_location: string | null
+  contract_status: StaffContractStatus
+  contract_type: string | null
+  contract_start_date: string | null
+  contract_end_date: string | null
   start_date: string | null
   end_date: string | null
   base_salary_vnd: number
   hourly_rate_vnd: number
+  lunch_allowance_vnd: number
+  rest_period_minutes: number | null
+  overtime_rate_multiplier: number | null
+  night_rate_multiplier: number | null
+  holiday_rate_multiplier: number | null
+  employee_contribution_rate: number | null
+  employer_contribution_rate: number | null
+  pit_withholding_rate: number | null
+  dependents_count: number
   bank_name: string | null
   bank_account_number: string | null
   tax_code: string | null
   social_insurance_number: string | null
   emergency_contact: string | null
   payroll_note: string | null
+  profile_photo_path: string | null
+  cv_document_path: string | null
   active: boolean
   created_by: string | null
   created_at: string
@@ -297,10 +333,148 @@ type StaffAttendanceSettings = {
   updated_at: string | null
 }
 
+type StaffHrSettings = {
+  id: string
+  currency: string
+  standard_monthly_days: number
+  standard_monthly_hours: number
+  rest_period_minutes: number
+  normal_overtime_multiplier: number
+  night_overtime_multiplier: number
+  holiday_overtime_multiplier: number
+  lunch_allowance_vnd: number
+  annual_leave_days: number
+  employee_contribution_rate: number
+  employer_contribution_rate: number
+  pit_withholding_rate: number
+  payslip_note: string | null
+  updated_by: string | null
+  updated_at: string | null
+}
+
+type StaffHrSetupOption = {
+  id: string
+  option_type: StaffHrSetupOptionType
+  name: string
+  active: boolean
+  sort_order: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+type StaffHrAdjustment = {
+  id: string
+  profile_id: string
+  payroll_run_id: string | null
+  adjustment_type: StaffHrAdjustmentType
+  title: string
+  amount_vnd: number
+  effective_date: string
+  period_start: string | null
+  period_end: string | null
+  status: StaffHrAdjustmentStatus
+  requires_validation: boolean
+  validated_by: string | null
+  validated_at: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+type StaffPayrollRun = {
+  id: string
+  code: string
+  name: string
+  pay_cycle: StaffPayrollPayCycle
+  period_start: string
+  period_end: string
+  status: StaffPayrollStatus
+  total_gross_vnd: number
+  total_net_vnd: number
+  total_company_cost_vnd: number
+  generated_by: string | null
+  approved_by: string | null
+  approved_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+type StaffPayrollItem = {
+  id: string
+  payroll_run_id: string
+  profile_id: string
+  payslip_number: string | null
+  worked_minutes: number
+  regular_minutes: number
+  overtime_minutes: number
+  night_minutes: number
+  holiday_minutes: number
+  paid_leave_hours: number
+  rest_warning_count: number
+  base_salary_vnd: number
+  overtime_pay_vnd: number
+  allowances_vnd: number
+  bonuses_vnd: number
+  advances_vnd: number
+  deductions_vnd: number
+  employee_contributions_vnd: number
+  employer_contributions_vnd: number
+  pit_withholding_vnd: number
+  gross_income_vnd: number
+  net_income_vnd: number
+  company_cost_vnd: number
+  status: StaffPayrollStatus
+  payslip_snapshot: Record<string, unknown>
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+type StaffHrDocument = {
+  id: string
+  profile_id: string
+  document_type: StaffHrDocumentType
+  file_name: string
+  storage_bucket: string
+  storage_path: string
+  mime_type: string | null
+  size_bytes: number
+  uploaded_by: string | null
+  created_at: string
+}
+
+type StaffPayrollCalculation = {
+  profileId: string
+  scheduledMinutes: number
+  workedMinutes: number
+  regularMinutes: number
+  overtimeMinutes: number
+  nightMinutes: number
+  holidayMinutes: number
+  paidLeaveHours: number
+  leaveBalanceDays: number
+  restWarningCount: number
+  basePay: number
+  overtimePay: number
+  allowances: number
+  bonuses: number
+  advances: number
+  deductions: number
+  employeeContributions: number
+  employerContributions: number
+  pitWithheld: number
+  grossIncome: number
+  netIncome: number
+  companyCost: number
+}
+
 const staffTabGroups: Array<{ id: StaffTabGroupId; tabs: StaffTab[] }> = [
   { id: 'operate', tabs: ['new', 'clientProfile', 'today', 'orders'] },
   { id: 'reports', tabs: ['report'] },
-  { id: 'team', tabs: ['attendance', 'roles'] },
+  { id: 'team', tabs: ['attendance', 'hr', 'roles'] },
   { id: 'setup', tabs: ['games', 'prices', 'discounts'] },
   { id: 'admin', tabs: ['restore'] },
 ]
@@ -429,7 +603,7 @@ type SoftDeletedRecord = {
   delete_reason: string | null
 }
 
-type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report'
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'hr' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report'
 
 type StaffReportSummary = {
   totalSales: number
@@ -600,20 +774,29 @@ const staffConsoleText = {
       deleteSession: 'Delete',
       confirmDeleteSession: 'Delete',
       download: 'Download',
+      approvePayroll: 'Approve payroll',
+      createEmployee: 'Create employee',
+      generatePayroll: 'Generate payroll',
       saveAttendance: 'Save attendance',
+      saveAdjustment: 'Save adjustment',
       saveDiscount: 'Save discount',
       saveEmployeeProfile: 'Save employee profile',
       saveGame: 'Save game',
+      saveHrSettings: 'Save HR settings',
       saveLoyaltyRule: 'Save loyalty rule',
       savePrice: 'Save price',
       saveRole: 'Save role',
       saveRules: 'Save rules',
       saveShift: 'Save shift',
+      saveSetupOption: 'Save option',
       saveVoucher: 'Save voucher',
       sendPasswordRequest: 'Send setup link',
       sessionCalendar: 'Session Calendar',
       submitLeave: 'Submit leave',
       today: 'Today',
+      uploadCv: 'Upload CV',
+      uploadPhoto: 'Upload photo',
+      viewPayslip: 'View payslip',
       yesterday: 'Yesterday',
       previousPeriod: 'Previous period',
     },
@@ -673,9 +856,17 @@ const staffConsoleText = {
       clock: 'Clock-in log',
       timesheet: 'Timesheet',
       leave: 'Leave',
-      employee: 'Employee profile',
       settings: 'Rules',
     } satisfies Record<StaffAttendanceTab, string>,
+    hrTabs: {
+      employees: 'Employee profile',
+      schedule: 'Calendar',
+      timesheet: 'Timesheet',
+      payroll: 'Payroll',
+      adjustments: 'Bonuses',
+      advances: 'Debts & advances',
+      settings: 'HR settings',
+    } satisfies Record<StaffHrTab, string>,
     shiftStatuses: {
       cancelled: 'cancelled',
       completed: 'completed',
@@ -718,6 +909,59 @@ const staffConsoleText = {
       probation_full_time: 'Probation full-time',
       probation_part_time: 'Probation part-time',
     } satisfies Record<StaffEmploymentType, string>,
+    genderOptions: {
+      female: 'Female',
+      male: 'Male',
+      non_binary: 'Non-binary',
+      prefer_not_to_say: 'Prefer not to say',
+      other: 'Other',
+    } satisfies Record<StaffGender, string>,
+    contractStatuses: {
+      active: 'Active',
+      probation: 'Probation',
+      suspended: 'Suspended',
+      ended: 'Ended',
+      draft: 'Draft',
+    } satisfies Record<StaffContractStatus, string>,
+    adjustmentTypes: {
+      bonus: 'Bonus',
+      commission: 'Commission',
+      allowance: 'Allowance',
+      lunch_allowance: 'Lunch allowance',
+      deduction: 'Deduction',
+      advance: 'Advance',
+      debt: 'Debt',
+      debt_repayment: 'Debt repayment',
+    } satisfies Record<StaffHrAdjustmentType, string>,
+    adjustmentStatuses: {
+      draft: 'draft',
+      pending: 'pending validation',
+      approved: 'approved',
+      rejected: 'rejected',
+      paid: 'paid',
+      cancelled: 'cancelled',
+    } satisfies Record<StaffHrAdjustmentStatus, string>,
+    payrollStatuses: {
+      draft: 'draft',
+      pending: 'pending',
+      approved: 'approved',
+      paid: 'paid',
+      cancelled: 'cancelled',
+    } satisfies Record<StaffPayrollStatus, string>,
+    payrollPayCycles: {
+      monthly: 'Monthly',
+      semi_monthly: 'Semi-monthly',
+      weekly: 'Weekly',
+      custom: 'Custom',
+    } satisfies Record<StaffPayrollPayCycle, string>,
+    hrSetupOptionTypes: {
+      department: 'Department',
+      job_title: 'Job title',
+      location: 'Location',
+      contract_status: 'Contract status',
+      contract_type: 'Contract type',
+      employment_type: 'Employment type',
+    } satisfies Record<StaffHrSetupOptionType, string>,
     dayTypes: {
       custom: 'custom',
       holiday: 'holiday',
@@ -841,9 +1085,14 @@ const staffConsoleText = {
       escapeChapters: 'Escape chapters',
       email: 'E-mail',
       employeeCode: 'Employee code',
+      attendanceNumber: 'Attendance number',
       employmentType: 'Employment type',
       end: 'End',
       endDate: 'End date',
+      contractStatus: 'Contract status',
+      contractType: 'Contract type',
+      contractStartDate: 'Contract start date',
+      contractEndDate: 'Contract end date',
       editingRange: 'Editing',
       emergencyContact: 'Emergency contact',
       estimatedPayroll: 'Estimated payroll',
@@ -867,11 +1116,15 @@ const staffConsoleText = {
       includeAttachments: 'Include attachments list',
       internalNote: 'Internal note',
       jobTitle: 'Job title',
+      department: 'Department',
       lateNoShow: 'Late / no-show',
       legalName: 'Legal name',
       leaveHours: 'Leave hours',
+      leaveBalance: 'Available leave',
       leaveType: 'Leave type',
       location: 'Location',
+      mainWorkLocation: 'Main workplace',
+      payrollLocation: 'Payroll outlet',
       managerNote: 'Manager note',
       maxPlayersArena: 'Max players / arena',
       maxPlayers: 'Max players',
@@ -902,11 +1155,21 @@ const staffConsoleText = {
       paymentMix: 'Payment mix',
       payrollLink: 'Attendance / payroll link',
       payrollNote: 'Payroll note',
+      payrollRun: 'Payroll run',
+      payrollCode: 'Payroll code',
+      payrollName: 'Payroll name',
+      payCycle: 'Pay cycle',
+      payslipPreview: 'Vietnam payslip preview',
+      periodStart: 'Period start',
+      periodEnd: 'Period end',
       perCustomerLimit: 'Per customer limit',
       perVndSpent: 'Per VND spent',
       phone: 'Phone',
       personalEmail: 'Personal e-mail',
       personalPhone: 'Personal phone',
+      profilePhoto: 'Profile photo',
+      cvDocument: 'CV document',
+      profileCompletion: 'Profile completion',
       players: 'Players',
       addPlayer: 'Add player',
       sessionFields: 'Session fields',
@@ -928,6 +1191,10 @@ const staffConsoleText = {
       priceRule: 'Price rule',
       priceRules: 'Price rules',
       privateEmployeeProfile: 'Private employee profile',
+      address: 'Address',
+      dateOfBirth: 'Date of birth',
+      gender: 'Gender',
+      nationalId: 'National ID',
       regularHours: 'Regular hours',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
@@ -964,6 +1231,8 @@ const staffConsoleText = {
       status: 'Status',
       staffMember: 'Staff member',
       socialInsurance: 'Social insurance number',
+      standardMonthlyDays: 'Standard monthly days',
+      standardMonthlyHours: 'Standard monthly hours',
       subtotal: 'Subtotal',
       summary: 'Summary',
       taxCodeEmployee: 'Tax code',
@@ -971,6 +1240,9 @@ const staffConsoleText = {
       ticketBookings: 'Ticket bookings',
       ticketType: 'Ticket type',
       total: 'Total',
+      totalCompanyCost: 'Total company cost',
+      totalGross: 'Total gross',
+      totalNet: 'Total net',
       totalPaid: 'Total paid',
       totalSales: 'Total sales',
       type: 'Type',
@@ -987,8 +1259,30 @@ const staffConsoleText = {
       allDays: 'All days',
       allTicketTypes: 'All ticket types',
       overtimeHours: 'Overtime hours',
+      overtimePay: 'Overtime pay',
       overtimeMonthlyCap: 'Monthly overtime cap',
       overtimeYearlyCap: 'Yearly overtime cap',
+      normalOvertimeMultiplier: 'Normal OT multiplier',
+      nightOvertimeMultiplier: 'Night OT multiplier',
+      holidayOvertimeMultiplier: 'Holiday OT multiplier',
+      lunchAllowance: 'Lunch allowance / day',
+      restPeriodHours: 'Minimum rest (hours)',
+      restWarnings: 'Rest alerts',
+      employeeContributionRate: 'Employee contribution %',
+      employerContributionRate: 'Employer contribution %',
+      pitWithholdingRate: 'PIT withholding %',
+      dependentsCount: 'Dependents',
+      grossIncome: 'Gross income',
+      netIncome: 'Net income',
+      companyCost: 'Company cost',
+      allowances: 'Allowances',
+      bonuses: 'Bonuses',
+      advances: 'Advances',
+      deductions: 'Deductions',
+      employeeContributions: 'Employee contributions',
+      employerContributions: 'Employer contributions',
+      pitWithheld: 'PIT withheld',
+      outstandingDebt: 'Outstanding debt',
       workedHours: 'Worked hours',
       yes: 'Yes',
     },
@@ -1023,8 +1317,26 @@ const staffConsoleText = {
       discountSaved: 'Discount saved.',
       draftShiftCreated: 'Draft shift created.',
       draftShiftExists: 'That draft already exists for this staff member and day.',
-      employeeProfileIntro: 'Private HR details linked to attendance and payroll. Visible to managers, admins, and owners only.',
+      employeeProfileIntro: 'Private HR details linked to attendance and payroll. Visible to staff HR roles only.',
       employeeProfileSaved: 'Employee profile saved.',
+      hrIntro: 'Company HR hub for employee records, schedule health, payroll, payslips, bonuses, advances, and setup.',
+      hrSetupUnavailable: 'Apply the HR migration to enable saved HR settings, bonuses, payroll runs, and document uploads.',
+      hrSettingsSaved: 'HR settings saved.',
+      hrSetupOptionSaved: 'HR option saved.',
+      adjustmentSaved: 'HR adjustment saved.',
+      adjustmentApproved: 'Adjustment approved.',
+      payrollGenerated: 'Payroll draft generated.',
+      payrollApproved: 'Payroll approved.',
+      profilePhotoHelp: 'JPG, PNG, or WEBP · max 2 MB.',
+      cvHelp: 'PDF, DOC, or DOCX · max 10 MB.',
+      profilePhotoTooLarge: 'Profile photo must be 2 MB or smaller.',
+      cvTooLarge: 'CV must be 10 MB or smaller.',
+      documentUploaded: 'Document uploaded.',
+      documentUploadFailed: 'Document upload failed.',
+      noAdjustments: 'No HR adjustments for this period.',
+      noPayrollRuns: 'No payroll runs yet.',
+      noHrDocuments: 'No HR documents uploaded yet.',
+      noScheduleShifts: 'No scheduled shifts for this period.',
       inactiveEmployeePlanningBlocked: 'Inactive employee: reactivate this employee profile before planning new shifts.',
       gamePhotoSmall: 'Game photo must be 2 MB or smaller.',
       gamePhotoType: 'Game photo must be JPG, PNG, or WEBP.',
@@ -1133,7 +1445,7 @@ const staffConsoleText = {
       { title: 'Owner', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
       { title: 'Admin', body: 'Full daily operations access and role management below Owner. Restore stays Owner only.' },
       { title: 'Manager', body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.' },
-      { title: 'Staff', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports. In Attendance, Staff only sees their own employee profile.' },
+      { title: 'Staff', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports. In HR, Staff only sees their own employee profile.' },
       { title: 'Office Staff', body: 'Viewer access plus editable reports and full Attendance edit access.' },
       { title: 'Viewer', body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.' },
       { title: 'Player', body: 'Client app only. No Staff Console access.' },
@@ -1143,6 +1455,7 @@ const staffConsoleText = {
       discounts: 'Offers',
       attendance: 'Attendance',
       games: 'Games',
+      hr: 'HR',
       new: 'New Booking',
       orders: 'Orders',
       prices: 'Prices',
@@ -1232,20 +1545,29 @@ const staffConsoleText = {
       deleteSession: 'Xóa',
       confirmDeleteSession: 'Xóa',
       download: 'Tải xuống',
+      approvePayroll: 'Duyệt bảng lương',
+      createEmployee: 'Tạo nhân viên',
+      generatePayroll: 'Tạo bảng lương',
       saveAttendance: 'Lưu chấm công',
+      saveAdjustment: 'Lưu khoản điều chỉnh',
       saveDiscount: 'Lưu ưu đãi',
       saveEmployeeProfile: 'Lưu hồ sơ nhân viên',
       saveGame: 'Lưu trò chơi',
+      saveHrSettings: 'Lưu thiết lập HR',
       saveLoyaltyRule: 'Lưu quy tắc điểm',
       savePrice: 'Lưu giá',
       saveRole: 'Lưu vai trò',
       saveRules: 'Lưu quy định',
       saveShift: 'Lưu ca',
+      saveSetupOption: 'Lưu tùy chọn',
       saveVoucher: 'Lưu voucher',
       sendPasswordRequest: 'Gửi link tạo mật khẩu',
       sessionCalendar: 'Lịch phiên',
       submitLeave: 'Gửi nghỉ phép',
       today: 'Hôm nay',
+      uploadCv: 'Tải CV',
+      uploadPhoto: 'Tải ảnh',
+      viewPayslip: 'Xem phiếu lương',
       yesterday: 'Hôm qua',
       previousPeriod: 'Kỳ trước',
     },
@@ -1305,9 +1627,17 @@ const staffConsoleText = {
       clock: 'Chấm công',
       timesheet: 'Bảng công',
       leave: 'Nghỉ phép',
-      employee: 'Hồ sơ nhân viên',
       settings: 'Quy định',
     } satisfies Record<StaffAttendanceTab, string>,
+    hrTabs: {
+      employees: 'Hồ sơ nhân viên',
+      schedule: 'Lịch',
+      timesheet: 'Bảng công',
+      payroll: 'Bảng lương',
+      adjustments: 'Thưởng',
+      advances: 'Nợ & tạm ứng',
+      settings: 'Thiết lập HR',
+    } satisfies Record<StaffHrTab, string>,
     shiftStatuses: {
       cancelled: 'đã hủy',
       completed: 'hoàn tất',
@@ -1350,6 +1680,59 @@ const staffConsoleText = {
       probation_full_time: 'Thử việc toàn thời gian',
       probation_part_time: 'Thử việc bán thời gian',
     } satisfies Record<StaffEmploymentType, string>,
+    genderOptions: {
+      female: 'Nữ',
+      male: 'Nam',
+      non_binary: 'Phi nhị nguyên',
+      prefer_not_to_say: 'Không muốn trả lời',
+      other: 'Khác',
+    } satisfies Record<StaffGender, string>,
+    contractStatuses: {
+      active: 'Đang hiệu lực',
+      probation: 'Thử việc',
+      suspended: 'Tạm ngưng',
+      ended: 'Đã kết thúc',
+      draft: 'Nháp',
+    } satisfies Record<StaffContractStatus, string>,
+    adjustmentTypes: {
+      bonus: 'Thưởng',
+      commission: 'Hoa hồng',
+      allowance: 'Phụ cấp',
+      lunch_allowance: 'Phụ cấp ăn trưa',
+      deduction: 'Khấu trừ',
+      advance: 'Tạm ứng',
+      debt: 'Nợ',
+      debt_repayment: 'Trả nợ',
+    } satisfies Record<StaffHrAdjustmentType, string>,
+    adjustmentStatuses: {
+      draft: 'nháp',
+      pending: 'chờ duyệt',
+      approved: 'đã duyệt',
+      rejected: 'từ chối',
+      paid: 'đã trả',
+      cancelled: 'đã hủy',
+    } satisfies Record<StaffHrAdjustmentStatus, string>,
+    payrollStatuses: {
+      draft: 'nháp',
+      pending: 'đang chờ',
+      approved: 'đã duyệt',
+      paid: 'đã trả',
+      cancelled: 'đã hủy',
+    } satisfies Record<StaffPayrollStatus, string>,
+    payrollPayCycles: {
+      monthly: 'Hàng tháng',
+      semi_monthly: 'Nửa tháng',
+      weekly: 'Hàng tuần',
+      custom: 'Tùy chỉnh',
+    } satisfies Record<StaffPayrollPayCycle, string>,
+    hrSetupOptionTypes: {
+      department: 'Bộ phận',
+      job_title: 'Chức danh',
+      location: 'Cơ sở',
+      contract_status: 'Trạng thái hợp đồng',
+      contract_type: 'Loại hợp đồng',
+      employment_type: 'Loại việc làm',
+    } satisfies Record<StaffHrSetupOptionType, string>,
     dayTypes: {
       custom: 'tùy chỉnh',
       holiday: 'ngày lễ',
@@ -1473,9 +1856,14 @@ const staffConsoleText = {
       escapeChapters: 'Số chapter Escape',
       email: 'E-mail',
       employeeCode: 'Mã nhân viên',
+      attendanceNumber: 'Mã chấm công',
       employmentType: 'Loại hợp đồng',
       end: 'Kết thúc',
       endDate: 'Ngày kết thúc',
+      contractStatus: 'Trạng thái hợp đồng',
+      contractType: 'Loại hợp đồng',
+      contractStartDate: 'Ngày bắt đầu HĐ',
+      contractEndDate: 'Ngày kết thúc HĐ',
       editingRange: 'Đang chỉnh',
       emergencyContact: 'Liên hệ khẩn cấp',
       estimatedPayroll: 'Lương tạm tính',
@@ -1499,11 +1887,15 @@ const staffConsoleText = {
       includeAttachments: 'Kèm danh sách chứng từ',
       internalNote: 'Ghi chú nội bộ',
       jobTitle: 'Chức danh',
+      department: 'Bộ phận',
       lateNoShow: 'Đi trễ / không đến',
       legalName: 'Tên pháp lý',
       leaveHours: 'Giờ nghỉ',
+      leaveBalance: 'Phép còn lại',
       leaveType: 'Loại nghỉ',
       location: 'Cơ sở',
+      mainWorkLocation: 'Cơ sở làm việc chính',
+      payrollLocation: 'Cơ sở tính lương',
       managerNote: 'Ghi chú quản lý',
       maxPlayersArena: 'Số người tối đa / arena',
       maxPlayers: 'Số người tối đa',
@@ -1534,11 +1926,21 @@ const staffConsoleText = {
       paymentMix: 'Cơ cấu thanh toán',
       payrollLink: 'Liên kết chấm công / lương',
       payrollNote: 'Ghi chú lương',
+      payrollRun: 'Bảng lương',
+      payrollCode: 'Mã bảng lương',
+      payrollName: 'Tên bảng lương',
+      payCycle: 'Chu kỳ lương',
+      payslipPreview: 'Phiếu lương Việt Nam',
+      periodStart: 'Bắt đầu kỳ',
+      periodEnd: 'Kết thúc kỳ',
       perCustomerLimit: 'Giới hạn / khách',
       perVndSpent: 'Theo VND chi tiêu',
       phone: 'Điện thoại',
       personalEmail: 'Email cá nhân',
       personalPhone: 'SĐT cá nhân',
+      profilePhoto: 'Ảnh hồ sơ',
+      cvDocument: 'CV',
+      profileCompletion: 'Độ hoàn thiện hồ sơ',
       players: 'Người chơi',
       addPlayer: 'Thêm người chơi',
       sessionFields: 'Thông tin phiên',
@@ -1560,6 +1962,10 @@ const staffConsoleText = {
       priceRule: 'Quy tắc giá',
       priceRules: 'Quy tắc giá',
       privateEmployeeProfile: 'Hồ sơ nhân viên riêng tư',
+      address: 'Địa chỉ',
+      dateOfBirth: 'Ngày sinh',
+      gender: 'Giới tính',
+      nationalId: 'CCCD/CMND',
       regularHours: 'Giờ thường',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
@@ -1596,6 +2002,8 @@ const staffConsoleText = {
       status: 'Trạng thái',
       staffMember: 'Nhân viên',
       socialInsurance: 'Mã BHXH',
+      standardMonthlyDays: 'Ngày công chuẩn / tháng',
+      standardMonthlyHours: 'Giờ công chuẩn / tháng',
       subtotal: 'Tạm tính',
       summary: 'Tóm tắt',
       taxCodeEmployee: 'Mã số thuế',
@@ -1603,6 +2011,9 @@ const staffConsoleText = {
       ticketBookings: 'Đặt vé',
       ticketType: 'Loại vé',
       total: 'Tổng',
+      totalCompanyCost: 'Tổng chi phí công ty',
+      totalGross: 'Tổng gross',
+      totalNet: 'Tổng net',
       totalPaid: 'Đã thanh toán',
       totalSales: 'Tổng doanh thu',
       type: 'Loại',
@@ -1619,8 +2030,30 @@ const staffConsoleText = {
       allDays: 'Tất cả ngày',
       allTicketTypes: 'Tất cả loại vé',
       overtimeHours: 'Giờ tăng ca',
+      overtimePay: 'Tiền tăng ca',
       overtimeMonthlyCap: 'Giới hạn tăng ca / tháng',
       overtimeYearlyCap: 'Giới hạn tăng ca / năm',
+      normalOvertimeMultiplier: 'Hệ số tăng ca thường',
+      nightOvertimeMultiplier: 'Hệ số tăng ca đêm',
+      holidayOvertimeMultiplier: 'Hệ số ngày lễ',
+      lunchAllowance: 'Phụ cấp ăn trưa / ngày',
+      restPeriodHours: 'Nghỉ tối thiểu (giờ)',
+      restWarnings: 'Cảnh báo nghỉ',
+      employeeContributionRate: 'Tỷ lệ NLĐ đóng %',
+      employerContributionRate: 'Tỷ lệ công ty đóng %',
+      pitWithholdingRate: 'Tạm khấu trừ TNCN %',
+      dependentsCount: 'Người phụ thuộc',
+      grossIncome: 'Thu nhập gross',
+      netIncome: 'Thu nhập net',
+      companyCost: 'Chi phí công ty',
+      allowances: 'Phụ cấp',
+      bonuses: 'Thưởng',
+      advances: 'Tạm ứng',
+      deductions: 'Khấu trừ',
+      employeeContributions: 'NLĐ đóng',
+      employerContributions: 'Công ty đóng',
+      pitWithheld: 'TNCN tạm khấu trừ',
+      outstandingDebt: 'Nợ còn lại',
       workedHours: 'Giờ làm',
       yes: 'Có',
     },
@@ -1655,8 +2088,26 @@ const staffConsoleText = {
       discountSaved: 'Đã lưu ưu đãi.',
       draftShiftCreated: 'Đã tạo ca nháp.',
       draftShiftExists: 'Ca nháp này đã tồn tại cho nhân viên và ngày này.',
-      employeeProfileIntro: 'Thông tin nhân sự riêng tư được liên kết với chấm công và tính lương. Chỉ quản lý, admin và owner xem được.',
+      employeeProfileIntro: 'Thông tin nhân sự riêng tư được liên kết với chấm công và tính lương. Chỉ vai trò HR nội bộ xem được.',
       employeeProfileSaved: 'Đã lưu hồ sơ nhân viên.',
+      hrIntro: 'Trung tâm HR của công ty cho hồ sơ nhân viên, lịch làm, bảng công, lương, phiếu lương, thưởng, tạm ứng và thiết lập.',
+      hrSetupUnavailable: 'Áp dụng migration HR để lưu thiết lập HR, thưởng, bảng lương và tài liệu.',
+      hrSettingsSaved: 'Đã lưu thiết lập HR.',
+      hrSetupOptionSaved: 'Đã lưu tùy chọn HR.',
+      adjustmentSaved: 'Đã lưu khoản điều chỉnh HR.',
+      adjustmentApproved: 'Đã duyệt khoản điều chỉnh.',
+      payrollGenerated: 'Đã tạo bảng lương nháp.',
+      payrollApproved: 'Đã duyệt bảng lương.',
+      profilePhotoHelp: 'JPG, PNG hoặc WEBP · tối đa 2 MB.',
+      cvHelp: 'PDF, DOC hoặc DOCX · tối đa 10 MB.',
+      profilePhotoTooLarge: 'Ảnh hồ sơ phải từ 2 MB trở xuống.',
+      cvTooLarge: 'CV phải từ 10 MB trở xuống.',
+      documentUploaded: 'Đã tải tài liệu.',
+      documentUploadFailed: 'Tải tài liệu thất bại.',
+      noAdjustments: 'Chưa có khoản điều chỉnh HR trong kỳ này.',
+      noPayrollRuns: 'Chưa có bảng lương.',
+      noHrDocuments: 'Chưa tải tài liệu HR.',
+      noScheduleShifts: 'Chưa có ca làm trong kỳ này.',
       inactiveEmployeePlanningBlocked: 'Nhân viên ngưng làm: bật lại hồ sơ nhân viên trước khi xếp ca mới.',
       gamePhotoSmall: 'Ảnh trò chơi phải từ 2 MB trở xuống.',
       gamePhotoType: 'Ảnh trò chơi phải là JPG, PNG hoặc WEBP.',
@@ -1765,7 +2216,7 @@ const staffConsoleText = {
       { title: 'Owner', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
       { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner. Khôi phục chỉ dành cho Owner.' },
       { title: 'Manager', body: 'Quản lý trò chơi, giá, ưu đãi, voucher, điểm thưởng, đặt chỗ, đơn hàng và báo cáo.' },
-      { title: 'Staff', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo. Trong chấm công, Staff chỉ thấy hồ sơ nhân viên của chính mình.' },
+      { title: 'Staff', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo. Trong HR, Staff chỉ thấy hồ sơ nhân viên của chính mình.' },
       { title: 'Office Staff', body: 'Quyền xem như Viewer, được chỉnh báo cáo và toàn quyền chỉnh Chấm công.' },
       { title: 'Viewer', body: 'Dùng app như người chơi, xem toàn bộ Staff Console, chỉnh hoặc tải báo cáo. Dữ liệu staff còn lại chỉ xem.' },
       { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
@@ -1775,6 +2226,7 @@ const staffConsoleText = {
       discounts: 'Ưu đãi',
       attendance: 'Chấm công',
       games: 'Trò chơi',
+      hr: 'HR',
       new: 'Đặt chỗ mới',
       orders: 'Đơn hàng',
       prices: 'Giá',
@@ -2129,6 +2581,211 @@ function shiftConflictWarnings(
   return Array.from(new Set(warnings))
 }
 
+function normalizeStaffGender(value: string | null | undefined): StaffGender | '' {
+  return staffGenderOptions.includes(value as StaffGender) ? (value as StaffGender) : ''
+}
+
+function normalizeStaffContractStatus(value: string | null | undefined): StaffContractStatus {
+  return staffContractStatuses.includes(value as StaffContractStatus) ? (value as StaffContractStatus) : 'active'
+}
+
+function normalizeHrAdjustmentType(value: string | null | undefined): StaffHrAdjustmentType {
+  return staffHrAdjustmentTypes.includes(value as StaffHrAdjustmentType) ? (value as StaffHrAdjustmentType) : 'bonus'
+}
+
+function normalizeHrAdjustmentStatus(value: string | null | undefined): StaffHrAdjustmentStatus {
+  return staffHrAdjustmentStatuses.includes(value as StaffHrAdjustmentStatus) ? (value as StaffHrAdjustmentStatus) : 'pending'
+}
+
+function normalizePayrollStatus(value: string | null | undefined): StaffPayrollStatus {
+  return staffPayrollStatuses.includes(value as StaffPayrollStatus) ? (value as StaffPayrollStatus) : 'draft'
+}
+
+function normalizePayrollPayCycle(value: string | null | undefined): StaffPayrollPayCycle {
+  return staffPayrollPayCycles.includes(value as StaffPayrollPayCycle) ? (value as StaffPayrollPayCycle) : 'monthly'
+}
+
+function decimalInput(value: string | number | null | undefined) {
+  const amount = Number(String(value ?? '').replace(/[^\d.]/g, ''))
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0
+}
+
+function isStaffHrSchemaUnavailable(error?: { code?: string; message?: string } | null) {
+  if (!error) return false
+  const message = (error.message || '').toLowerCase()
+  return (
+    error.code === '42P01' ||
+    error.code === '42703' ||
+    error.code === '42501' ||
+    message.includes('permission denied') ||
+    message.includes('schema cache') ||
+    message.includes('staff_hr_') ||
+    message.includes('staff_payroll_')
+  )
+}
+
+function dateWithinRange(value: string | null | undefined, start: string, end: string) {
+  return Boolean(value && value >= start && value <= end)
+}
+
+function adjustmentAppliesToPeriod(adjustment: StaffHrAdjustment, start: string, end: string) {
+  if (adjustment.period_start && adjustment.period_end) {
+    return adjustment.period_start <= end && adjustment.period_end >= start
+  }
+  return dateWithinRange(adjustment.effective_date, start, end)
+}
+
+function employeeRate(value: number | null | undefined, fallback: number) {
+  const rate = Number(value)
+  return Number.isFinite(rate) && rate > 0 ? rate : fallback
+}
+
+function employeeRestPeriodMinutes(employee: StaffEmployeeProfile | undefined, settings: StaffHrSettings) {
+  return Math.max(0, Number(employee?.rest_period_minutes ?? settings.rest_period_minutes) || 0)
+}
+
+function shiftStartDateTime(shift: StaffScheduleShift) {
+  return new Date(`${shift.shift_date}T${normalizeTime(shift.start_time) || '00:00'}:00`).getTime()
+}
+
+function shiftEndDateTime(shift: StaffScheduleShift) {
+  const start = shiftStartDateTime(shift)
+  const minutes = minutesBetweenTimes(shift.start_time, shift.end_time, 0)
+  return start + minutes * 60000
+}
+
+function countRestPeriodWarnings(shifts: StaffScheduleShift[], restPeriodMinutes: number) {
+  if (restPeriodMinutes <= 0) return 0
+  const activeShifts = shifts.filter(activeShift).sort((left, right) => shiftStartDateTime(left) - shiftStartDateTime(right))
+  return activeShifts.reduce((count, shift, index) => {
+    const previous = activeShifts[index - 1]
+    if (!previous) return count
+    const gapMinutes = Math.round((shiftStartDateTime(shift) - shiftEndDateTime(previous)) / 60000)
+    return gapMinutes >= 0 && gapMinutes < restPeriodMinutes ? count + 1 : count
+  }, 0)
+}
+
+function calculateStaffPayroll(
+  staffProfileId: string,
+  employee: StaffEmployeeProfile | undefined,
+  shifts: StaffScheduleShift[],
+  logs: StaffAttendanceLog[],
+  leaves: StaffLeaveRequest[],
+  adjustments: StaffHrAdjustment[],
+  settings: StaffHrSettings,
+  periodStart: string,
+  periodEnd: string,
+): StaffPayrollCalculation {
+  const employeeShifts = shifts.filter((shift) => shift.staff_profile_id === staffProfileId && shift.shift_date >= periodStart && shift.shift_date <= periodEnd && activeShift(shift))
+  const employeeLogs = logs.filter((log) => log.staff_profile_id === staffProfileId && log.work_date >= periodStart && log.work_date <= periodEnd)
+  const employeeLeaves = leaves.filter((leave) => leave.staff_profile_id === staffProfileId && leave.status === 'approved' && leave.end_date >= periodStart && leave.start_date <= periodEnd)
+  const employeeAdjustments = adjustments.filter((adjustment) => (
+    adjustment.profile_id === staffProfileId &&
+    ['approved', 'paid'].includes(adjustment.status) &&
+    adjustmentAppliesToPeriod(adjustment, periodStart, periodEnd)
+  ))
+
+  const scheduledMinutes = employeeShifts.reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
+  const workedMinutes = employeeLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
+  const regularMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.regular_minutes) || 0), 0)
+  const computedOvertimeMinutes = Math.max(0, workedMinutes - (regularMinutes || Math.min(workedMinutes, scheduledMinutes)))
+  const overtimeMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.overtime_minutes) || 0), 0) || computedOvertimeMinutes
+  const nightMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.night_minutes) || 0), 0)
+  const holidayMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.holiday_minutes) || 0), 0)
+  const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + Math.max(0, Number(leave.hours) || 0), 0)
+  const workedDays = new Set(employeeLogs.filter((log) => minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes) > 0).map((log) => log.work_date)).size
+  const annualEntitlement = Math.max(0, Number(employee?.contract_status === 'ended' ? 0 : settings.annual_leave_days) || 0)
+  const leaveBalanceDays = Math.max(0, annualEntitlement - (paidLeaveHours / Math.max(1, settings.standard_monthly_hours / settings.standard_monthly_days)))
+  const hourlyRate = employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, settings.standard_monthly_hours) : 0)
+  const monthlyBasePay = isMonthlyGrossEmployment(employee?.employment_type) ? Math.max(0, Number(employee?.base_salary_vnd) || 0) : 0
+  const hourlyBasePay = monthlyBasePay > 0 ? monthlyBasePay : Math.round((workedMinutes / 60) * Math.max(0, hourlyRate))
+  const overtimeMultiplier = employeeRate(employee?.overtime_rate_multiplier, settings.normal_overtime_multiplier)
+  const nightMultiplier = employeeRate(employee?.night_rate_multiplier, settings.night_overtime_multiplier)
+  const holidayMultiplier = employeeRate(employee?.holiday_rate_multiplier, settings.holiday_overtime_multiplier)
+  const overtimePay = Math.round(
+    (overtimeMinutes / 60) * hourlyRate * overtimeMultiplier +
+    (nightMinutes / 60) * hourlyRate * Math.max(0, nightMultiplier - 1) +
+    (holidayMinutes / 60) * hourlyRate * Math.max(0, holidayMultiplier - 1)
+  )
+  const lunchAllowance = employee?.lunch_allowance_vnd ?? settings.lunch_allowance_vnd
+  const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * workedDays)
+  const allowances = autoLunchAllowance + employeeAdjustments
+    .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
+    .reduce((sum, item) => sum + item.amount_vnd, 0)
+  const bonuses = employeeAdjustments
+    .filter((item) => ['bonus', 'commission'].includes(item.adjustment_type))
+    .reduce((sum, item) => sum + item.amount_vnd, 0)
+  const advances = employeeAdjustments
+    .filter((item) => ['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type))
+    .reduce((sum, item) => sum + item.amount_vnd, 0)
+  const deductions = employeeAdjustments
+    .filter((item) => item.adjustment_type === 'deduction')
+    .reduce((sum, item) => sum + item.amount_vnd, 0)
+  const basePay = Math.max(0, hourlyBasePay)
+  const grossIncome = Math.max(0, basePay + overtimePay + allowances + bonuses)
+  const employeeContributionRate = employeeRate(employee?.employee_contribution_rate, settings.employee_contribution_rate)
+  const employerContributionRate = employeeRate(employee?.employer_contribution_rate, settings.employer_contribution_rate)
+  const pitRate = employeeRate(employee?.pit_withholding_rate, settings.pit_withholding_rate)
+  const employeeContributions = Math.round(grossIncome * employeeContributionRate / 100)
+  const employerContributions = Math.round(grossIncome * employerContributionRate / 100)
+  const taxableIncome = Math.max(0, grossIncome - employeeContributions - deductions - advances)
+  const pitWithheld = Math.round(taxableIncome * pitRate / 100)
+  const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
+  const companyCost = Math.max(0, grossIncome + employerContributions)
+
+  return {
+    profileId: staffProfileId,
+    scheduledMinutes,
+    workedMinutes,
+    regularMinutes,
+    overtimeMinutes,
+    nightMinutes,
+    holidayMinutes,
+    paidLeaveHours,
+    leaveBalanceDays,
+    restWarningCount: countRestPeriodWarnings(employeeShifts, employeeRestPeriodMinutes(employee, settings)),
+    basePay,
+    overtimePay,
+    allowances,
+    bonuses,
+    advances,
+    deductions,
+    employeeContributions,
+    employerContributions,
+    pitWithheld,
+    grossIncome,
+    netIncome,
+    companyCost,
+  }
+}
+
+function emptyStaffPayrollCalculation(profileId = ''): StaffPayrollCalculation {
+  return {
+    profileId,
+    scheduledMinutes: 0,
+    workedMinutes: 0,
+    regularMinutes: 0,
+    overtimeMinutes: 0,
+    nightMinutes: 0,
+    holidayMinutes: 0,
+    paidLeaveHours: 0,
+    leaveBalanceDays: 0,
+    restWarningCount: 0,
+    basePay: 0,
+    overtimePay: 0,
+    allowances: 0,
+    bonuses: 0,
+    advances: 0,
+    deductions: 0,
+    employeeContributions: 0,
+    employerContributions: 0,
+    pitWithheld: 0,
+    grossIncome: 0,
+    netIncome: 0,
+    companyCost: 0,
+  }
+}
+
 type StaffPickerFieldProps = {
   ariaLabel: string
   type: 'date' | 'time'
@@ -2443,6 +3100,48 @@ function normalizeAttendanceSettings(value?: Partial<StaffAttendanceSettings> | 
   }
 }
 
+const defaultHrSettings = (): StaffHrSettings => ({
+  id: 'default',
+  currency: 'VND',
+  standard_monthly_days: 26,
+  standard_monthly_hours: 208,
+  rest_period_minutes: 660,
+  normal_overtime_multiplier: 1.5,
+  night_overtime_multiplier: 2,
+  holiday_overtime_multiplier: 3,
+  lunch_allowance_vnd: 0,
+  annual_leave_days: 12,
+  employee_contribution_rate: 10.5,
+  employer_contribution_rate: 21.5,
+  pit_withholding_rate: 10,
+  payslip_note: '',
+  updated_by: null,
+  updated_at: null,
+})
+
+function normalizeHrSettings(value?: Partial<StaffHrSettings> | null): StaffHrSettings {
+  const fallback = defaultHrSettings()
+  return {
+    ...fallback,
+    ...(value || {}),
+    currency: String(value?.currency || fallback.currency),
+    standard_monthly_days: Math.max(1, Number(value?.standard_monthly_days ?? fallback.standard_monthly_days) || fallback.standard_monthly_days),
+    standard_monthly_hours: Math.max(1, Number(value?.standard_monthly_hours ?? fallback.standard_monthly_hours) || fallback.standard_monthly_hours),
+    rest_period_minutes: minutesSetting(value?.rest_period_minutes, fallback.rest_period_minutes),
+    normal_overtime_multiplier: Math.max(0, Number(value?.normal_overtime_multiplier ?? fallback.normal_overtime_multiplier) || 0),
+    night_overtime_multiplier: Math.max(0, Number(value?.night_overtime_multiplier ?? fallback.night_overtime_multiplier) || 0),
+    holiday_overtime_multiplier: Math.max(0, Number(value?.holiday_overtime_multiplier ?? fallback.holiday_overtime_multiplier) || 0),
+    lunch_allowance_vnd: Math.max(0, Number(value?.lunch_allowance_vnd ?? fallback.lunch_allowance_vnd) || 0),
+    annual_leave_days: Math.max(0, Number(value?.annual_leave_days ?? fallback.annual_leave_days) || 0),
+    employee_contribution_rate: Math.max(0, Number(value?.employee_contribution_rate ?? fallback.employee_contribution_rate) || 0),
+    employer_contribution_rate: Math.max(0, Number(value?.employer_contribution_rate ?? fallback.employer_contribution_rate) || 0),
+    pit_withholding_rate: Math.max(0, Number(value?.pit_withholding_rate ?? fallback.pit_withholding_rate) || 0),
+    payslip_note: value?.payslip_note ?? fallback.payslip_note,
+    updated_by: value?.updated_by ?? fallback.updated_by,
+    updated_at: value?.updated_at ?? fallback.updated_at,
+  }
+}
+
 const defaultShiftForm = (settings?: StaffAttendanceSettings) => ({
   id: '',
   staff_profile_id: '',
@@ -2485,22 +3184,77 @@ const defaultLeaveForm = () => ({
 const defaultEmployeeForm = () => ({
   profile_id: '',
   employee_code: '',
+  attendance_number: '',
   legal_name: '',
   personal_phone: '',
   personal_email: '',
+  national_id: '',
+  date_of_birth: '',
+  gender: '',
+  address: '',
+  department: '',
   job_title: '',
   employment_type: 'part_time' as StaffEmploymentType,
+  main_work_location: '',
+  payroll_location: '',
+  contract_status: 'active' as StaffContractStatus,
+  contract_type: '',
+  contract_start_date: '',
+  contract_end_date: '',
   start_date: '',
   end_date: '',
   base_salary_vnd: '',
   hourly_rate_vnd: '',
+  lunch_allowance_vnd: '',
+  rest_period_hours: '',
+  overtime_rate_multiplier: '',
+  night_rate_multiplier: '',
+  holiday_rate_multiplier: '',
+  employee_contribution_rate: '',
+  employer_contribution_rate: '',
+  pit_withholding_rate: '',
+  dependents_count: '0',
   bank_name: '',
   bank_account_number: '',
   tax_code: '',
   social_insurance_number: '',
   emergency_contact: '',
   payroll_note: '',
+  profile_photo_path: '',
+  cv_document_path: '',
   active: true,
+})
+
+const defaultHrAdjustmentForm = (profileId = '', type: StaffHrAdjustmentType = 'bonus') => ({
+  id: '',
+  profile_id: profileId,
+  adjustment_type: type,
+  title: '',
+  amount_vnd: '',
+  effective_date: todayString(),
+  period_start: startOfMonth(todayString()),
+  period_end: endOfMonth(todayString()),
+  status: 'pending' as StaffHrAdjustmentStatus,
+  notes: '',
+})
+
+const defaultPayrollRunForm = () => ({
+  id: '',
+  code: `PAY-${todayString().slice(0, 7).replace('-', '')}`,
+  name: `Payroll ${todayString().slice(0, 7)}`,
+  pay_cycle: 'monthly' as StaffPayrollPayCycle,
+  period_start: startOfMonth(todayString()),
+  period_end: endOfMonth(todayString()),
+  notes: '',
+})
+
+const defaultHrSetupForm = (): Record<StaffHrSetupOptionType, string> => ({
+  department: '',
+  job_title: '',
+  location: '',
+  contract_status: '',
+  contract_type: '',
+  employment_type: '',
 })
 
 const paymentMethods = ['cash', 'bank_transfer'] as const
@@ -2510,11 +3264,19 @@ const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
 const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
 const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
-const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'employee', 'settings']
+const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'settings']
+const staffHrTabs: StaffHrTab[] = ['employees', 'schedule', 'timesheet', 'payroll', 'adjustments', 'advances', 'settings']
 const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed', 'cancelled']
 const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
 const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
 const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'probation_full_time', 'probation_part_time', 'contractor', 'intern']
+const staffGenderOptions: StaffGender[] = ['female', 'male', 'non_binary', 'prefer_not_to_say', 'other']
+const staffContractStatuses: StaffContractStatus[] = ['active', 'probation', 'suspended', 'ended', 'draft']
+const staffHrSetupOptionTypes: StaffHrSetupOptionType[] = ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']
+const staffHrAdjustmentTypes: StaffHrAdjustmentType[] = ['bonus', 'commission', 'allowance', 'lunch_allowance', 'deduction', 'advance', 'debt', 'debt_repayment']
+const staffHrAdjustmentStatuses: StaffHrAdjustmentStatus[] = ['draft', 'pending', 'approved', 'rejected', 'paid', 'cancelled']
+const staffPayrollStatuses: StaffPayrollStatus[] = ['draft', 'pending', 'approved', 'paid', 'cancelled']
+const staffPayrollPayCycles: StaffPayrollPayCycle[] = ['monthly', 'semi_monthly', 'weekly', 'custom']
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
@@ -2523,6 +3285,11 @@ const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials,
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
 const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const staffHrDocumentBucket = 'staff-hr-documents'
+const staffProfilePhotoMaxBytes = 2 * 1024 * 1024
+const staffCvMaxBytes = 10 * 1024 * 1024
+const staffProfilePhotoTypes = ['image/jpeg', 'image/png', 'image/webp']
+const staffCvTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 
 function normalizeStaffEmploymentType(value: StaffEmploymentType | string | null | undefined): StaffEmploymentType {
   if (value === 'probation') return 'probation_part_time'
@@ -2899,6 +3666,18 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     || `game-${Date.now()}`
+}
+
+function safeStorageFileName(value: string) {
+  const extension = value.includes('.') ? value.split('.').pop() || '' : ''
+  const baseName = value.replace(/\.[^.]+$/, '')
+  const safeBase = baseName
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'file'
+  return extension ? `${safeBase}.${extension.toLowerCase()}` : safeBase
 }
 
 function dayTypeFor(dateValue: string): 'weekday' | 'weekend' {
@@ -3660,6 +4439,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const [attendanceTab, setAttendanceTab] = useState<StaffAttendanceTab>('schedule')
+  const [hrTab, setHrTab] = useState<StaffHrTab>('employees')
   const [games, setGames] = useState<StaffGame[]>([])
   const [prices, setPrices] = useState<StaffPriceRule[]>([])
   const [discounts, setDiscounts] = useState<StaffDiscount[]>([])
@@ -3669,6 +4449,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([])
   const [employeeProfiles, setEmployeeProfiles] = useState<StaffEmployeeProfile[]>([])
   const [attendanceSettings, setAttendanceSettings] = useState<StaffAttendanceSettings>(() => defaultAttendanceSettings())
+  const [hrSettings, setHrSettings] = useState<StaffHrSettings>(() => defaultHrSettings())
+  const [hrSetupOptions, setHrSetupOptions] = useState<StaffHrSetupOption[]>([])
+  const [hrAdjustments, setHrAdjustments] = useState<StaffHrAdjustment[]>([])
+  const [payrollRuns, setPayrollRuns] = useState<StaffPayrollRun[]>([])
+  const [payrollItems, setPayrollItems] = useState<StaffPayrollItem[]>([])
+  const [hrDocuments, setHrDocuments] = useState<StaffHrDocument[]>([])
   const [selectedShiftTemplate, setSelectedShiftTemplate] = useState<StaffShiftTemplateId>('opening')
   const [draggingShiftId, setDraggingShiftId] = useState('')
   const [orders, setOrders] = useState<StaffOrder[]>([])
@@ -3701,6 +4487,12 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const [attendanceLogForm, setAttendanceLogForm] = useState(() => defaultAttendanceLogForm())
   const [leaveForm, setLeaveForm] = useState(() => defaultLeaveForm())
   const [employeeForm, setEmployeeForm] = useState(() => defaultEmployeeForm())
+  const [hrAdjustmentForm, setHrAdjustmentForm] = useState(() => defaultHrAdjustmentForm())
+  const [payrollRunForm, setPayrollRunForm] = useState(() => defaultPayrollRunForm())
+  const [hrSetupForm, setHrSetupForm] = useState<Record<StaffHrSetupOptionType, string>>(() => defaultHrSetupForm())
+  const [hrSearch, setHrSearch] = useState('')
+  const [hrStatusFilter, setHrStatusFilter] = useState<StaffContractStatus | 'all'>('all')
+  const [hrDepartmentFilter, setHrDepartmentFilter] = useState('all')
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
   const [operationsDate, setOperationsDate] = useState(todayString())
@@ -3727,6 +4519,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const inFlightDataRef = useRef<Partial<Record<StaffDataKey, Promise<void>>>>({})
   const [saving, setSaving] = useState(false)
   const [gameImageUploading, setGameImageUploading] = useState(false)
+  const [hrDocumentUploading, setHrDocumentUploading] = useState<StaffHrDocumentType | ''>('')
   const [roleSearch, setRoleSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all')
   const [roleSort, setRoleSort] = useState<StaffRoleSort>('name_asc')
@@ -3745,6 +4538,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       'orders',
       'report',
       'attendance',
+      'hr',
       'roles',
       'games',
       'prices',
@@ -3926,6 +4720,86 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   const selectedEmployeeStaffProfile = selectedEmployeeStaffId
     ? visibleAllStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
     : null
+  const hrOptionsByType = useMemo(() => {
+    const map = new Map<StaffHrSetupOptionType, StaffHrSetupOption[]>()
+    staffHrSetupOptionTypes.forEach((type) => map.set(type, []))
+    hrSetupOptions
+      .filter((option) => option.active)
+      .sort((left, right) => left.sort_order - right.sort_order || left.name.localeCompare(right.name))
+      .forEach((option) => {
+        const items = map.get(option.option_type) || []
+        items.push(option)
+        map.set(option.option_type, items)
+      })
+    return map
+  }, [hrSetupOptions])
+  const hrDepartmentOptions = hrOptionsByType.get('department') || []
+  const hrLocationOptions = hrOptionsByType.get('location') || []
+  const hrJobTitleOptions = hrOptionsByType.get('job_title') || []
+  const hrContractTypeOptions = hrOptionsByType.get('contract_type') || []
+  const filteredHrStaffProfiles = useMemo(() => {
+    const query = normalizeStaffSearchValue(hrSearch)
+    return visibleAllStaffProfileOptions.filter((staffProfile) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      if (hrStatusFilter !== 'all' && normalizeStaffContractStatus(employee?.contract_status) !== hrStatusFilter) return false
+      if (hrDepartmentFilter !== 'all' && (employee?.department || '') !== hrDepartmentFilter) return false
+      if (!query) return true
+      return [
+        customerName(staffProfile, text),
+        staffProfile.email || '',
+        staffProfile.phone || '',
+        employee?.employee_code || '',
+        employee?.attendance_number || '',
+        employee?.legal_name || '',
+        employee?.job_title || '',
+        employee?.department || '',
+        employee?.main_work_location || '',
+      ].some((value) => normalizeStaffSearchValue(value).includes(query))
+    })
+  }, [employeeProfileById, hrDepartmentFilter, hrSearch, hrStatusFilter, text, visibleAllStaffProfileOptions])
+  const payrollPeriodStart = payrollRunForm.period_start || startOfMonth(todayString())
+  const payrollPeriodEnd = payrollRunForm.period_end || endOfMonth(payrollPeriodStart)
+  const staffPayrollCalculations = useMemo(() => {
+    const map = new Map<string, StaffPayrollCalculation>()
+    visibleStaffProfileOptions.forEach((staffProfile) => {
+      map.set(staffProfile.id, calculateStaffPayroll(
+        staffProfile.id,
+        employeeProfileById.get(staffProfile.id),
+        attendanceShifts,
+        attendanceLogs,
+        leaveRequests,
+        hrAdjustments,
+        hrSettings,
+        payrollPeriodStart,
+        payrollPeriodEnd,
+      ))
+    })
+    return map
+  }, [attendanceLogs, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, visibleStaffProfileOptions])
+  const selectedEmployeePayrollSummary = staffPayrollCalculations.get(selectedEmployeeStaffId) || emptyStaffPayrollCalculation(selectedEmployeeStaffId)
+  const hrPayrollTotals = useMemo(() => {
+    const rows = Array.from(staffPayrollCalculations.values())
+    return {
+      gross: rows.reduce((sum, row) => sum + row.grossIncome, 0),
+      net: rows.reduce((sum, row) => sum + row.netIncome, 0),
+      companyCost: rows.reduce((sum, row) => sum + row.companyCost, 0),
+      restWarnings: rows.reduce((sum, row) => sum + row.restWarningCount, 0),
+    }
+  }, [staffPayrollCalculations])
+  const selectedEmployeeDocuments = useMemo(() => (
+    hrDocuments.filter((document) => document.profile_id === selectedEmployeeStaffId)
+  ), [hrDocuments, selectedEmployeeStaffId])
+  const periodHrAdjustments = useMemo(() => (
+    hrAdjustments.filter((adjustment) => adjustmentAppliesToPeriod(adjustment, payrollPeriodStart, payrollPeriodEnd))
+  ), [hrAdjustments, payrollPeriodEnd, payrollPeriodStart])
+  const selectedEmployeeOutstandingDebt = useMemo(() => (
+    hrAdjustments
+      .filter((item) => item.profile_id === selectedEmployeeStaffId && ['advance', 'debt'].includes(item.adjustment_type) && item.status !== 'cancelled' && item.status !== 'rejected')
+      .reduce((sum, item) => sum + item.amount_vnd, 0) -
+    hrAdjustments
+      .filter((item) => item.profile_id === selectedEmployeeStaffId && item.adjustment_type === 'debt_repayment' && item.status !== 'cancelled' && item.status !== 'rejected')
+      .reduce((sum, item) => sum + item.amount_vnd, 0)
+  ), [hrAdjustments, selectedEmployeeStaffId])
   const customerNameSuggestions = useMemo(() => {
     const query = normalizeStaffSearchValue(booking.customerName.trim())
     if (query.length < 2) return []
@@ -3945,25 +4819,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
   }, [booking.customerName, profiles, text])
   const showCustomerNameSuggestions = customerNameFocused && customerNameSuggestions.length > 0
   const employeeUsesMonthlyGross = isMonthlyGrossEmployment(employeeForm.employment_type)
-  const employeePayrollSummary = useMemo(() => {
-    const staffId = employeeForm.profile_id || firstEmployeeStaffProfileId
-    const scheduledMinutes = attendanceShifts
-      .filter((shift) => shift.staff_profile_id === staffId && shift.status !== 'cancelled')
-      .reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
-    const workedMinutes = attendanceLogs
-      .filter((log) => log.staff_profile_id === staffId)
-      .reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
-    const hourlyRate = parseDong(employeeForm.hourly_rate_vnd)
-    const monthlyGross = parseDong(employeeForm.base_salary_vnd)
-    const estimatedPayroll = isMonthlyGrossEmployment(employeeForm.employment_type)
-      ? monthlyGross
-      : Math.round((workedMinutes / 60) * hourlyRate)
-    return {
-      scheduledMinutes,
-      workedMinutes,
-      estimatedPayroll,
-    }
-  }, [attendanceLogs, attendanceShifts, employeeForm.base_salary_vnd, employeeForm.employment_type, employeeForm.hourly_rate_vnd, employeeForm.profile_id, firstEmployeeStaffProfileId])
+  const employeePayrollSummary = selectedEmployeePayrollSummary
   const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
   const attendanceGridStyle = useMemo(() => ({
     gridTemplateColumns: `minmax(156px, 0.75fr) repeat(${attendanceWeekDates.length}, minmax(108px, 1fr))`,
@@ -4108,19 +4964,21 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
           ? loadingData.games || loadingData.today || loadingData.todaySessions || loadingData.profiles
           : currentTab === 'attendance'
             ? loadingData.profiles || loadingData.attendance
-            : currentTab === 'games'
-              ? loadingData.games
-              : currentTab === 'prices'
-                ? loadingData.games || loadingData.prices
-                : currentTab === 'discounts'
-                  ? loadingData.games || loadingData.prices || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
-                  : currentTab === 'roles'
-                    ? loadingData.profiles
-                    : currentTab === 'restore'
-                      ? loadingData.restore
-                      : currentTab === 'orders'
-                        ? loadingData.games || loadingData.orders
-                        : loadingData.games || loadingData.report
+            : currentTab === 'hr'
+              ? loadingData.profiles || loadingData.attendance || loadingData.hr
+              : currentTab === 'games'
+                ? loadingData.games
+                : currentTab === 'prices'
+                  ? loadingData.games || loadingData.prices
+                  : currentTab === 'discounts'
+                    ? loadingData.games || loadingData.prices || loadingData.discounts || (commerceTab === 'loyalty' && loadingData.loyalty)
+                    : currentTab === 'roles'
+                      ? loadingData.profiles
+                      : currentTab === 'restore'
+                        ? loadingData.restore
+                        : currentTab === 'orders'
+                          ? loadingData.games || loadingData.orders
+                          : loadingData.games || loadingData.report
   )
 
   useEffect(() => {
@@ -4134,6 +4992,8 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       void Promise.all([loadGames(), loadProfiles(), loadTodayOrders(true), loadTodaySessions(true)])
     } else if (currentTab === 'attendance') {
       void Promise.all([loadProfiles(), loadAttendanceData(true)])
+    } else if (currentTab === 'hr') {
+      void Promise.all([loadProfiles(), loadAttendanceData(true), loadHrData(true)])
     } else if (currentTab === 'games') {
       void loadGames()
     } else if (currentTab === 'prices') {
@@ -4151,7 +5011,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     }
     // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, commerceTab, operationsDate, operationSessionScope, attendanceWeekEnd, attendanceWeekStart])
+  }, [currentTab, commerceTab, operationsDate, operationSessionScope, attendanceWeekEnd, attendanceWeekStart, payrollPeriodEnd, payrollPeriodStart])
 
   useEffect(() => {
     if (currentTab !== 'report') return
@@ -4661,8 +5521,9 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
 
   async function loadAttendanceData(force = false) {
     await runStaffLoader('attendance', async () => {
-      const weekStart = attendanceWeekStart
-      const weekEnd = attendanceWeekEnd
+      const [weekStart, weekEnd] = currentTab === 'hr'
+        ? orderedRange(payrollPeriodStart, payrollPeriodEnd)
+        : [attendanceWeekStart, attendanceWeekEnd]
       const [shiftsResult, logsResult, leaveResult, settingsResult, employeeResult] = await Promise.all([
         supabase
           .from('staff_schedule_shifts')
@@ -4721,6 +5582,71 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       setLeaveRequests((leaveResult.data ?? []) as StaffLeaveRequest[])
       setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : normalizeAttendanceSettings(settingsResult.data as Partial<StaffAttendanceSettings> | null))
       setEmployeeProfiles(employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[])
+    }, force)
+  }
+
+  async function loadHrData(force = false) {
+    await runStaffLoader('hr', async () => {
+      const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult] = await Promise.all([
+        supabase
+          .from('staff_hr_settings')
+          .select('*')
+          .eq('id', 'default')
+          .maybeSingle(),
+        supabase
+          .from('staff_hr_setup_options')
+          .select('*')
+          .is('deleted_at', null)
+          .order('option_type', { ascending: true })
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true }),
+        supabase
+          .from('staff_hr_adjustments')
+          .select('*')
+          .is('deleted_at', null)
+          .order('effective_date', { ascending: false })
+          .limit(500),
+        supabase
+          .from('staff_payroll_runs')
+          .select('*')
+          .is('deleted_at', null)
+          .order('period_start', { ascending: false })
+          .limit(50),
+        supabase
+          .from('staff_payroll_items')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(500),
+        supabase
+          .from('staff_hr_documents')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(500),
+      ])
+
+      const results = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult]
+      const blockingError = results.find((result) => result.error && !isStaffHrSchemaUnavailable(result.error))?.error
+      if (blockingError) throw new Error(blockingError.message)
+
+      const hrUnavailable = results.some((result) => result.error && isStaffHrSchemaUnavailable(result.error))
+      if (hrUnavailable) {
+        setHrSettings(defaultHrSettings())
+        setHrSetupOptions([])
+        setHrAdjustments([])
+        setPayrollRuns([])
+        setPayrollItems([])
+        setHrDocuments([])
+        return
+      }
+
+      setHrSettings(normalizeHrSettings(settingsResult.data as Partial<StaffHrSettings> | null))
+      setHrSetupOptions((optionsResult.data ?? []) as StaffHrSetupOption[])
+      setHrAdjustments((adjustmentsResult.data ?? []) as StaffHrAdjustment[])
+      setPayrollRuns((payrollRunsResult.data ?? []) as StaffPayrollRun[])
+      setPayrollItems((payrollItemsResult.data ?? []) as StaffPayrollItem[])
+      setHrDocuments((documentsResult.data ?? []) as StaffHrDocument[])
     }, force)
   }
 
@@ -5294,28 +6220,52 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     return {
       profile_id: staffProfile.id,
       employee_code: employee?.employee_code || '',
+      attendance_number: employee?.attendance_number || '',
       legal_name: employee?.legal_name || staffProfile.full_name || '',
       personal_phone: employee?.personal_phone || staffProfile.phone || '',
       personal_email: employee?.personal_email || staffProfile.email || '',
+      national_id: employee?.national_id || '',
+      date_of_birth: employee?.date_of_birth || '',
+      gender: normalizeStaffGender(employee?.gender),
+      address: employee?.address || '',
+      department: employee?.department || '',
       job_title: employee?.job_title || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text),
       employment_type: normalizeStaffEmploymentType(employee?.employment_type),
+      main_work_location: employee?.main_work_location || '',
+      payroll_location: employee?.payroll_location || '',
+      contract_status: normalizeStaffContractStatus(employee?.contract_status),
+      contract_type: employee?.contract_type || '',
+      contract_start_date: employee?.contract_start_date || '',
+      contract_end_date: employee?.contract_end_date || '',
       start_date: employee?.start_date || '',
       end_date: employee?.end_date || '',
       base_salary_vnd: employee?.base_salary_vnd ? String(employee.base_salary_vnd) : '',
       hourly_rate_vnd: employee?.hourly_rate_vnd ? String(employee.hourly_rate_vnd) : '',
+      lunch_allowance_vnd: employee?.lunch_allowance_vnd ? String(employee.lunch_allowance_vnd) : '',
+      rest_period_hours: employee?.rest_period_minutes ? String(Number((employee.rest_period_minutes / 60).toFixed(2))) : '',
+      overtime_rate_multiplier: employee?.overtime_rate_multiplier ? String(employee.overtime_rate_multiplier) : '',
+      night_rate_multiplier: employee?.night_rate_multiplier ? String(employee.night_rate_multiplier) : '',
+      holiday_rate_multiplier: employee?.holiday_rate_multiplier ? String(employee.holiday_rate_multiplier) : '',
+      employee_contribution_rate: employee?.employee_contribution_rate ? String(employee.employee_contribution_rate) : '',
+      employer_contribution_rate: employee?.employer_contribution_rate ? String(employee.employer_contribution_rate) : '',
+      pit_withholding_rate: employee?.pit_withholding_rate ? String(employee.pit_withholding_rate) : '',
+      dependents_count: String(employee?.dependents_count ?? 0),
       bank_name: employee?.bank_name || '',
       bank_account_number: employee?.bank_account_number || '',
       tax_code: employee?.tax_code || '',
       social_insurance_number: employee?.social_insurance_number || '',
       emergency_contact: employee?.emergency_contact || '',
       payroll_note: employee?.payroll_note || '',
+      profile_photo_path: employee?.profile_photo_path || '',
+      cv_document_path: employee?.cv_document_path || '',
       active: employee?.active ?? true,
     }
   }
 
   function editEmployeeProfile(staffProfile: StaffProfile) {
     setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
-    setAttendanceTab('employee')
+    setHrTab('employees')
+    setActiveTab('hr')
   }
 
   async function saveEmployeeProfile() {
@@ -5327,21 +6277,44 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
     const payload = {
       profile_id: staffProfileId,
       employee_code: employeeForm.employee_code.trim() || null,
+      attendance_number: employeeForm.attendance_number.trim() || null,
       legal_name: employeeForm.legal_name.trim() || selectedStaff?.full_name || null,
       personal_phone: employeeForm.personal_phone.trim() || selectedStaff?.phone || null,
       personal_email: employeeForm.personal_email.trim() || selectedStaff?.email || null,
+      national_id: employeeForm.national_id.trim() || null,
+      date_of_birth: employeeForm.date_of_birth || null,
+      gender: normalizeStaffGender(employeeForm.gender) || null,
+      address: employeeForm.address.trim() || null,
+      department: employeeForm.department.trim() || null,
       job_title: employeeForm.job_title.trim() || null,
       employment_type: normalizeStaffEmploymentType(employeeForm.employment_type),
+      main_work_location: employeeForm.main_work_location.trim() || null,
+      payroll_location: employeeForm.payroll_location.trim() || null,
+      contract_status: normalizeStaffContractStatus(employeeForm.contract_status),
+      contract_type: employeeForm.contract_type.trim() || null,
+      contract_start_date: employeeForm.contract_start_date || null,
+      contract_end_date: employeeForm.contract_end_date || null,
       start_date: employeeForm.start_date || null,
       end_date: employeeForm.end_date || null,
       base_salary_vnd: parseDong(employeeForm.base_salary_vnd),
       hourly_rate_vnd: parseDong(employeeForm.hourly_rate_vnd),
+      lunch_allowance_vnd: parseDong(employeeForm.lunch_allowance_vnd),
+      rest_period_minutes: employeeForm.rest_period_hours ? Math.round(decimalInput(employeeForm.rest_period_hours) * 60) : null,
+      overtime_rate_multiplier: employeeForm.overtime_rate_multiplier ? decimalInput(employeeForm.overtime_rate_multiplier) : null,
+      night_rate_multiplier: employeeForm.night_rate_multiplier ? decimalInput(employeeForm.night_rate_multiplier) : null,
+      holiday_rate_multiplier: employeeForm.holiday_rate_multiplier ? decimalInput(employeeForm.holiday_rate_multiplier) : null,
+      employee_contribution_rate: employeeForm.employee_contribution_rate ? decimalInput(employeeForm.employee_contribution_rate) : null,
+      employer_contribution_rate: employeeForm.employer_contribution_rate ? decimalInput(employeeForm.employer_contribution_rate) : null,
+      pit_withholding_rate: employeeForm.pit_withholding_rate ? decimalInput(employeeForm.pit_withholding_rate) : null,
+      dependents_count: Math.max(0, Math.round(Number(employeeForm.dependents_count) || 0)),
       bank_name: employeeForm.bank_name.trim() || null,
       bank_account_number: employeeForm.bank_account_number.trim() || null,
       tax_code: employeeForm.tax_code.trim() || null,
       social_insurance_number: employeeForm.social_insurance_number.trim() || null,
       emergency_contact: employeeForm.emergency_contact.trim() || null,
       payroll_note: employeeForm.payroll_note.trim() || null,
+      profile_photo_path: employeeForm.profile_photo_path || null,
+      cv_document_path: employeeForm.cv_document_path || null,
       active: employeeForm.active,
       created_by: profile?.id || null,
     }
@@ -5350,10 +6323,309 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
       .upsert(payload, { onConflict: 'profile_id' })
     setStatus(error ? error.message : text.messages.employeeProfileSaved)
     if (!error) {
-      markStaffDataStale('attendance')
-      await loadAttendanceData(true)
+      markStaffDataStale('attendance', 'hr')
+      await Promise.all([loadAttendanceData(true), loadHrData(true)])
     }
     setSaving(false)
+  }
+
+  async function saveHrSettings() {
+    if (!canManageAttendance) return
+    setSaving(true)
+    const payload = {
+      id: 'default',
+      currency: hrSettings.currency.trim() || 'VND',
+      standard_monthly_days: Math.max(1, Number(hrSettings.standard_monthly_days) || 26),
+      standard_monthly_hours: Math.max(1, Number(hrSettings.standard_monthly_hours) || 208),
+      rest_period_minutes: Math.max(0, Number(hrSettings.rest_period_minutes) || 0),
+      normal_overtime_multiplier: Math.max(0, Number(hrSettings.normal_overtime_multiplier) || 0),
+      night_overtime_multiplier: Math.max(0, Number(hrSettings.night_overtime_multiplier) || 0),
+      holiday_overtime_multiplier: Math.max(0, Number(hrSettings.holiday_overtime_multiplier) || 0),
+      lunch_allowance_vnd: Math.max(0, Number(hrSettings.lunch_allowance_vnd) || 0),
+      annual_leave_days: Math.max(0, Number(hrSettings.annual_leave_days) || 0),
+      employee_contribution_rate: Math.max(0, Number(hrSettings.employee_contribution_rate) || 0),
+      employer_contribution_rate: Math.max(0, Number(hrSettings.employer_contribution_rate) || 0),
+      pit_withholding_rate: Math.max(0, Number(hrSettings.pit_withholding_rate) || 0),
+      payslip_note: hrSettings.payslip_note?.trim() || null,
+      updated_by: profile?.id || null,
+    }
+    const { error } = await supabase.from('staff_hr_settings').upsert(payload, { onConflict: 'id' })
+    setStatus(error ? error.message : text.messages.hrSettingsSaved)
+    if (!error) {
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function saveHrSetupOption(optionType: StaffHrSetupOptionType) {
+    if (!canManageAttendance) return
+    const name = hrSetupForm[optionType].trim()
+    if (!name) return
+    setSaving(true)
+    const { error } = await supabase.from('staff_hr_setup_options').insert({
+      option_type: optionType,
+      name,
+      sort_order: (hrSetupOptions.filter((item) => item.option_type === optionType).length + 1) * 10,
+      created_by: profile?.id || null,
+    })
+    setStatus(error ? error.message : text.messages.hrSetupOptionSaved)
+    if (!error) {
+      setHrSetupForm((current) => ({ ...current, [optionType]: '' }))
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function saveHrAdjustment(kind: 'adjustment' | 'advance' = 'adjustment') {
+    if (!canManageAttendance) return
+    const profileId = hrAdjustmentForm.profile_id || selectedEmployeeStaffId || firstEmployeeStaffProfileId
+    if (!profileId) return
+    const adjustmentType = kind === 'advance' && !['advance', 'debt', 'debt_repayment'].includes(hrAdjustmentForm.adjustment_type)
+      ? 'advance'
+      : normalizeHrAdjustmentType(hrAdjustmentForm.adjustment_type)
+    const payload = {
+      profile_id: profileId,
+      adjustment_type: adjustmentType,
+      title: hrAdjustmentForm.title.trim() || text.adjustmentTypes[adjustmentType],
+      amount_vnd: parseDong(hrAdjustmentForm.amount_vnd),
+      effective_date: hrAdjustmentForm.effective_date || todayString(),
+      period_start: hrAdjustmentForm.period_start || null,
+      period_end: hrAdjustmentForm.period_end || null,
+      status: normalizeHrAdjustmentStatus(hrAdjustmentForm.status),
+      notes: hrAdjustmentForm.notes.trim() || null,
+      created_by: profile?.id || null,
+    }
+    setSaving(true)
+    const query = hrAdjustmentForm.id
+      ? supabase.from('staff_hr_adjustments').update(payload).eq('id', hrAdjustmentForm.id)
+      : supabase.from('staff_hr_adjustments').insert(payload)
+    const { error } = await query
+    setStatus(error ? error.message : text.messages.adjustmentSaved)
+    if (!error) {
+      setHrAdjustmentForm(defaultHrAdjustmentForm(profileId, kind === 'advance' ? 'advance' : 'bonus'))
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function updateHrAdjustmentStatus(adjustment: StaffHrAdjustment, statusValue: StaffHrAdjustmentStatus) {
+    if (!canManageAttendance) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('staff_hr_adjustments')
+      .update({
+        status: statusValue,
+        validated_by: ['approved', 'rejected'].includes(statusValue) ? profile?.id || null : adjustment.validated_by,
+        validated_at: ['approved', 'rejected'].includes(statusValue) ? new Date().toISOString() : adjustment.validated_at,
+      })
+      .eq('id', adjustment.id)
+    setStatus(error ? error.message : statusValue === 'approved' ? text.messages.adjustmentApproved : text.messages.adjustmentSaved)
+    if (!error) {
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function generatePayrollRun() {
+    if (!canManageAttendance) return
+    const [periodStart, periodEnd] = orderedRange(payrollRunForm.period_start, payrollRunForm.period_end)
+    const calculations = visibleStaffProfileOptions.map((staffProfile) => staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id))
+    const totals = calculations.reduce((sum, item) => ({
+      gross: sum.gross + item.grossIncome,
+      net: sum.net + item.netIncome,
+      companyCost: sum.companyCost + item.companyCost,
+    }), { gross: 0, net: 0, companyCost: 0 })
+
+    setSaving(true)
+    const { data: runData, error: runError } = await supabase
+      .from('staff_payroll_runs')
+      .upsert({
+        code: payrollRunForm.code.trim() || `PAY-${periodStart.replace(/-/g, '')}`,
+        name: payrollRunForm.name.trim() || `${text.labels.payrollRun} ${rangeLabel(periodStart, periodEnd)}`,
+        pay_cycle: normalizePayrollPayCycle(payrollRunForm.pay_cycle),
+        period_start: periodStart,
+        period_end: periodEnd,
+        status: 'draft',
+        total_gross_vnd: totals.gross,
+        total_net_vnd: totals.net,
+        total_company_cost_vnd: totals.companyCost,
+        generated_by: profile?.id || null,
+        notes: payrollRunForm.notes.trim() || null,
+      }, { onConflict: 'code' })
+      .select('*')
+      .single()
+
+    if (runError || !runData) {
+      setStatus(runError?.message || text.messages.hrSetupUnavailable)
+      setSaving(false)
+      return
+    }
+
+    const run = runData as StaffPayrollRun
+    const rows = calculations.map((item) => {
+      const employee = employeeProfileById.get(item.profileId)
+      const staffProfile = profileById.get(item.profileId)
+      const payslipNumber = `${run.code}-${employee?.employee_code || item.profileId.slice(0, 6)}`
+      return {
+        payroll_run_id: run.id,
+        profile_id: item.profileId,
+        payslip_number: payslipNumber,
+        worked_minutes: item.workedMinutes,
+        regular_minutes: item.regularMinutes,
+        overtime_minutes: item.overtimeMinutes,
+        night_minutes: item.nightMinutes,
+        holiday_minutes: item.holidayMinutes,
+        paid_leave_hours: item.paidLeaveHours,
+        rest_warning_count: item.restWarningCount,
+        base_salary_vnd: item.basePay,
+        overtime_pay_vnd: item.overtimePay,
+        allowances_vnd: item.allowances,
+        bonuses_vnd: item.bonuses,
+        advances_vnd: item.advances,
+        deductions_vnd: item.deductions,
+        employee_contributions_vnd: item.employeeContributions,
+        employer_contributions_vnd: item.employerContributions,
+        pit_withholding_vnd: item.pitWithheld,
+        gross_income_vnd: item.grossIncome,
+        net_income_vnd: item.netIncome,
+        company_cost_vnd: item.companyCost,
+        status: 'draft',
+        payslip_snapshot: {
+          employeeCode: employee?.employee_code || null,
+          employeeName: employee?.legal_name || (staffProfile ? customerName(staffProfile, text) : ''),
+          periodStart,
+          periodEnd,
+          currency: hrSettings.currency,
+          note: hrSettings.payslip_note || null,
+        },
+      }
+    })
+    const { error: itemError } = await supabase
+      .from('staff_payroll_items')
+      .upsert(rows, { onConflict: 'payroll_run_id,profile_id' })
+
+    setStatus(itemError ? itemError.message : text.messages.payrollGenerated)
+    if (!itemError) {
+      setPayrollRunForm({ ...payrollRunForm, id: run.id })
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function approvePayrollRun(run: StaffPayrollRun) {
+    if (!canManageAttendance) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('staff_payroll_runs')
+      .update({ status: 'approved', approved_by: profile?.id || null, approved_at: new Date().toISOString() })
+      .eq('id', run.id)
+    setStatus(error ? error.message : text.messages.payrollApproved)
+    if (!error) {
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function handleHrDocumentUpload(event: ChangeEvent<HTMLInputElement>, documentType: Extract<StaffHrDocumentType, 'profile_photo' | 'cv'>) {
+    if (!canEditEmployeeProfiles || !selectedEmployeeStaffId) return
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    const isProfilePhoto = documentType === 'profile_photo'
+    const allowedTypes = isProfilePhoto ? staffProfilePhotoTypes : staffCvTypes
+    const maxBytes = isProfilePhoto ? staffProfilePhotoMaxBytes : staffCvMaxBytes
+    if (!allowedTypes.includes(file.type)) {
+      setStatus(isProfilePhoto ? text.messages.gamePhotoType : text.messages.documentUploadFailed)
+      return
+    }
+    if (file.size > maxBytes) {
+      setStatus(isProfilePhoto ? text.messages.profilePhotoTooLarge : text.messages.cvTooLarge)
+      return
+    }
+
+    setHrDocumentUploading(documentType)
+    const storagePath = `${selectedEmployeeStaffId}/${documentType}/${Date.now()}-${safeStorageFileName(file.name)}`
+    const { error: uploadError } = await supabase.storage
+      .from(staffHrDocumentBucket)
+      .upload(storagePath, file, { contentType: file.type, upsert: true })
+
+    if (uploadError) {
+      setStatus(uploadError.message || text.messages.documentUploadFailed)
+      setHrDocumentUploading('')
+      return
+    }
+
+    const { error: documentError } = await supabase.from('staff_hr_documents').insert({
+      profile_id: selectedEmployeeStaffId,
+      document_type: documentType,
+      file_name: file.name,
+      storage_bucket: staffHrDocumentBucket,
+      storage_path: storagePath,
+      mime_type: file.type,
+      size_bytes: file.size,
+      uploaded_by: profile?.id || null,
+    })
+    const profilePathPatch = documentType === 'profile_photo'
+      ? { profile_photo_path: storagePath }
+      : { cv_document_path: storagePath }
+    const { error: profileError } = await supabase
+      .from('staff_employee_profiles')
+      .upsert({
+        profile_id: selectedEmployeeStaffId,
+        ...profilePathPatch,
+        created_by: profile?.id || null,
+      }, { onConflict: 'profile_id' })
+
+    const error = documentError || profileError
+    setStatus(error ? error.message : text.messages.documentUploaded)
+    if (!error) {
+      setEmployeeForm((current) => ({ ...current, ...profilePathPatch }))
+      markStaffDataStale('attendance', 'hr')
+      await Promise.all([loadAttendanceData(true), loadHrData(true)])
+    }
+    setHrDocumentUploading('')
+  }
+
+  async function downloadEmployeePayslip(staffProfileId = selectedEmployeeStaffId) {
+    const staffProfile = profileById.get(staffProfileId)
+    const employee = employeeProfileById.get(staffProfileId)
+    const calculation = staffPayrollCalculations.get(staffProfileId) || emptyStaffPayrollCalculation(staffProfileId)
+    const displayName = employee?.legal_name || (staffProfile ? customerName(staffProfile, text) : text.customerFallback)
+    const lines = [
+      'PHIEU LUONG / PAYSLIP',
+      `Company: VRena`,
+      `Payroll period: ${staffDateLabel(payrollPeriodStart)} - ${staffDateLabel(payrollPeriodEnd)}`,
+      `Employee: ${displayName}`,
+      `Employee code: ${employee?.employee_code || '-'}`,
+      `Attendance number: ${employee?.attendance_number || '-'}`,
+      `Workplace: ${employee?.main_work_location || attendanceSettings.location}`,
+      `Contract: ${employee?.contract_type || '-'} / ${text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)]}`,
+      '',
+      `${text.labels.workedHours}: ${hoursLabel(calculation.workedMinutes)}`,
+      `${text.labels.overtimeHours}: ${hoursLabel(calculation.overtimeMinutes)}`,
+      `${text.labels.leaveBalance}: ${Number(calculation.leaveBalanceDays.toFixed(2))} ${text.days}`,
+      '',
+      `${text.labels.baseSalary}: ${formatVnd(calculation.basePay)}`,
+      `${text.labels.overtimePay}: ${formatVnd(calculation.overtimePay)}`,
+      `${text.labels.allowances}: ${formatVnd(calculation.allowances)}`,
+      `${text.labels.bonuses}: ${formatVnd(calculation.bonuses)}`,
+      `${text.labels.grossIncome}: ${formatVnd(calculation.grossIncome)}`,
+      `${text.labels.employeeContributions}: ${formatVnd(calculation.employeeContributions)}`,
+      `${text.labels.pitWithheld}: ${formatVnd(calculation.pitWithheld)}`,
+      `${text.labels.advances}: ${formatVnd(calculation.advances)}`,
+      `${text.labels.deductions}: ${formatVnd(calculation.deductions)}`,
+      `${text.labels.netIncome}: ${formatVnd(calculation.netIncome)}`,
+      `${text.labels.companyCost}: ${formatVnd(calculation.companyCost)}`,
+      '',
+      hrSettings.payslip_note || '',
+    ].filter((line) => line !== '')
+    await downloadPdf(`payslip-${employee?.employee_code || staffProfileId.slice(0, 8)}-${payrollPeriodStart}.pdf`, lines, text)
   }
 
   function setAttendanceRange(start: string, end: string) {
@@ -6757,7 +8029,7 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             ))}
           </div>
 
-          {(currentAttendanceTab === 'employee' ? visibleAllStaffProfileOptions.length : visibleStaffProfileOptions.length) === 0 ? (
+          {visibleStaffProfileOptions.length === 0 ? (
             <p className="notice">{text.messages.noStaffProfiles}</p>
           ) : (
             <>
@@ -7144,113 +8416,6 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
                 </div>
               )}
 
-              {currentAttendanceTab === 'employee' && (
-                <div className="staff-attendance-layout staff-employee-layout">
-                  <div className="staff-attendance-list staff-employee-list">
-                    <h4>{text.labels.privateEmployeeProfile}</h4>
-                    <p className="staff-helper-text">{text.messages.employeeProfileIntro}</p>
-                    {visibleAllStaffProfileOptions.map((staffProfile) => {
-                      const employee = employeeProfileById.get(staffProfile.id)
-                      const isInactiveEmployee = employee?.active === false
-                      const isSelected = (employeeForm.profile_id || firstEmployeeStaffProfileId) === staffProfile.id
-                      return (
-                        <button
-                          className={`staff-employee-row ${isSelected ? 'active' : ''} ${isInactiveEmployee ? 'inactive' : ''}`}
-                          key={staffProfile.id}
-                          type="button"
-                          onClick={() => editEmployeeProfile(staffProfile)}
-                        >
-                          <StaffRoleAvatar profile={staffProfile} text={text} />
-                          <span>
-                            <strong>{customerName(staffProfile, text)}</strong>
-                            <small>
-                              {employee?.employee_code || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text)} · {employee?.job_title || text.labels.staffMember}
-                              {isInactiveEmployee ? ` · ${text.labels.inactiveEmployee}` : ''}
-                            </small>
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
-                    <h4>{text.labels.payrollLink}</h4>
-                    {selectedEmployeeStaffProfile && (
-                      <div className="staff-employee-selected">
-                        <StaffRoleAvatar profile={selectedEmployeeStaffProfile} text={text} />
-                        <div>
-                          <strong>{customerName(selectedEmployeeStaffProfile, text)}</strong>
-                          <span>{selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone || text.noContact}</span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="staff-summary-grid staff-employee-summary">
-                      <div><span>{text.labels.scheduledHours}</span><strong>{hoursLabel(employeePayrollSummary.scheduledMinutes)}</strong></div>
-                      <div><span>{text.labels.workedHours}</span><strong>{hoursLabel(employeePayrollSummary.workedMinutes)}</strong></div>
-                      <div><span>{text.labels.estimatedPayroll}</span><strong>{formatVnd(employeePayrollSummary.estimatedPayroll)}</strong></div>
-                    </div>
-                    <div className="form-grid compact-form-grid">
-                      <label>
-                        {text.labels.staffMember}
-                        <select value={employeeForm.profile_id || firstEmployeeStaffProfileId} onChange={(event) => {
-                          const staffProfile = visibleAllStaffProfileOptions.find((item) => item.id === event.target.value)
-                          if (staffProfile) setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
-                        }}>
-                          {visibleAllStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
-                        </select>
-                      </label>
-                      <label>{text.labels.employeeCode}<input value={employeeForm.employee_code} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_code: event.target.value })} /></label>
-                      <label>{text.labels.legalName}<input value={employeeForm.legal_name} onChange={(event) => setEmployeeForm({ ...employeeForm, legal_name: event.target.value })} /></label>
-                      <label>{text.labels.jobTitle}<input value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
-                      <label>
-                        {text.labels.employmentType}
-                        <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: normalizeStaffEmploymentType(event.target.value) })}>
-                          {staffEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
-                        </select>
-                      </label>
-                      <label>
-                        {text.labels.personalPhone}
-                        <PhoneNumberInput
-                          buttonLabel={sharedText.countryCode}
-                          className="staff-phone-control"
-                          inputLabel={text.labels.personalPhone}
-                          onChange={(phone) => setEmployeeForm({ ...employeeForm, personal_phone: phone })}
-                          searchPlaceholder={sharedText.searchCountry}
-                          value={employeeForm.personal_phone}
-                        />
-                      </label>
-                      <label>{text.labels.personalEmail}<input value={employeeForm.personal_email} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_email: event.target.value })} /></label>
-                      <label>
-                        {text.labels.startDate}
-                        <StaffPickerField ariaLabel={text.labels.startDate} placeholder={text.chooseDate} type="date" value={employeeForm.start_date} onChange={(value) => setEmployeeForm({ ...employeeForm, start_date: value })} />
-                      </label>
-                      <label>
-                        {text.labels.endDate}
-                        <StaffPickerField ariaLabel={text.labels.endDate} placeholder={text.chooseDate} type="date" value={employeeForm.end_date} onChange={(value) => setEmployeeForm({ ...employeeForm, end_date: value })} />
-                      </label>
-                      {employeeUsesMonthlyGross ? (
-                        <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
-                      ) : (
-                        <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
-                      )}
-                      <label>{text.labels.bankName}<input value={employeeForm.bank_name} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_name: event.target.value })} /></label>
-                      <label>{text.labels.bankAccount}<input value={employeeForm.bank_account_number} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_account_number: event.target.value })} /></label>
-                      <label>{text.labels.taxCodeEmployee}<input value={employeeForm.tax_code} onChange={(event) => setEmployeeForm({ ...employeeForm, tax_code: event.target.value })} /></label>
-                      <label>{text.labels.socialInsurance}<input value={employeeForm.social_insurance_number} onChange={(event) => setEmployeeForm({ ...employeeForm, social_insurance_number: event.target.value })} /></label>
-                      <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
-                      <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
-                    </div>
-                    <label className="staff-checkbox-row staff-employee-active-row">
-                      <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
-                      <span>{text.labels.activeEmployee}</span>
-                    </label>
-                    <button className="primary" type="button" disabled={saving || !canEditEmployeeProfiles || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>
-                      <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
-                    </button>
-                  </fieldset>
-                </div>
-              )}
-
               {currentAttendanceTab === 'settings' && (
                 <fieldset className="staff-readonly-fieldset staff-attendance-form staff-attendance-settings" disabled={!canManageAttendance}>
                   <h4>{text.attendanceTabs.settings}</h4>
@@ -7333,6 +8498,106 @@ export default function StaffConsole({ profile, authEmail, language, onOpenPlaye
             </>
           )}
         </div>
+      )}
+
+      {currentTab === 'hr' && (
+        <StaffHrHub
+          model={{
+            ButtonIconText,
+            StaffPickerField,
+            StaffRoleAvatar,
+            approvePayrollRun,
+            canEditEmployeeProfiles,
+            canManageAttendance,
+            customerName,
+            dongDigits,
+            downloadEmployeePayslip,
+            editEmployeeProfile,
+            employeeForm,
+            employeeFormForProfile,
+            employeePayrollSummary,
+            employeeProfileById,
+            employeeUsesMonthlyGross,
+            emptyStaffPayrollCalculation,
+            filteredHrStaffProfiles,
+            firstEmployeeStaffProfileId,
+            formatDongInput,
+            formatVnd,
+            formatVndCompact,
+            generatePayrollRun,
+            handleHrDocumentUpload,
+            hoursLabel,
+            hrAdjustmentForm,
+            hrContractTypeOptions,
+            hrDepartmentFilter,
+            hrDepartmentOptions,
+            hrDocumentUploading,
+            hrJobTitleOptions,
+            hrLocationOptions,
+            hrOptionsByType,
+            hrPayrollTotals,
+            hrSearch,
+            hrSettings,
+            hrSetupForm,
+            hrStatusFilter,
+            hrTab,
+            normalizeHrAdjustmentStatus,
+            normalizeHrAdjustmentType,
+            normalizePayrollPayCycle,
+            normalizePayrollStatus,
+            normalizeStaffContractStatus,
+            normalizeStaffEmploymentType,
+            normalizeTime,
+            parseDong,
+            payrollItems,
+            payrollPeriodEnd,
+            payrollPeriodStart,
+            payrollRunForm,
+            payrollRuns,
+            periodHrAdjustments,
+            profileById,
+            rangeLabel,
+            roleLabel,
+            saveEmployeeProfile,
+            saveHrAdjustment,
+            saveHrSettings,
+            saveHrSetupOption,
+            saving,
+            selectedEmployeeDocuments,
+            selectedEmployeeOutstandingDebt,
+            selectedEmployeeStaffId,
+            selectedEmployeeStaffProfile,
+            setEmployeeForm,
+            setHrAdjustmentForm,
+            setHrDepartmentFilter,
+            setHrSearch,
+            setHrSettings,
+            setHrSetupForm,
+            setHrStatusFilter,
+            setHrTab,
+            setPayrollRunForm,
+            sharedText,
+            shiftWarningsById,
+            staffContractStatuses,
+            staffCvTypes,
+            staffDateLabel,
+            staffEmploymentTypes,
+            staffGenderOptions,
+            staffHrAdjustmentStatuses,
+            staffHrAdjustmentTypes,
+            staffHrSetupOptionTypes,
+            staffHrTabs,
+            staffPayrollCalculations,
+            staffPayrollPayCycles,
+            staffProfilePhotoTypes,
+            staffRoleName,
+            text,
+            updateHrAdjustmentStatus,
+            visibleAllStaffProfileOptions,
+            visibleAttendanceShifts,
+            visibleStaffProfileOptions,
+          }}
+        />
       )}
 
       {currentTab === 'games' && (
