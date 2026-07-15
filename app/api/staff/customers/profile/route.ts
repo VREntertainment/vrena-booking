@@ -11,28 +11,6 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function metadataEmail(source: unknown) {
-  if (!source || typeof source !== 'object') return null
-  const value = (source as Record<string, unknown>).email
-  return typeof value === 'string' ? value : null
-}
-
-function authUserEmails(user: {
-  email?: string | null
-  user_metadata?: unknown
-  app_metadata?: unknown
-  identities?: Array<{ identity_data?: unknown } | null> | null
-}) {
-  const emails = [
-    user.email,
-    metadataEmail(user.user_metadata),
-    metadataEmail(user.app_metadata),
-    ...(user.identities || []).map((identity) => metadataEmail(identity?.identity_data)),
-  ]
-
-  return emails.filter((email): email is string => Boolean(email))
-}
-
 function cleanNullableString(value: unknown, maxLength = 255) {
   if (typeof value !== 'string') return null
   const cleaned = value.trim()
@@ -88,10 +66,9 @@ export async function PATCH(request: NextRequest) {
 
   if (actorError) return jsonError(actorError.message, 500)
 
-  const userEmails = authUserEmails(userData.user)
   const actorRank = Math.max(
     staffRank(actorProfile?.role, actorProfile?.email),
-    ...userEmails.map((email) => staffRank(userData.user.app_metadata?.role as string | undefined, email)),
+    staffRank(userData.user.app_metadata?.role as string | undefined, userData.user.email),
   )
   if (actorRank < 50) return jsonError('Staff access required.', 403)
 

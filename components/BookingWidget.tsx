@@ -14,7 +14,7 @@ import { ageBandFromBirthday, isUnder13Birthday } from '../lib/agePolicy'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
-import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
+import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
@@ -1704,19 +1704,6 @@ export default function WidgetPage({
     subject: string,
     setStatus: (message: string) => void = setCreateStatus
   ) {
-    if (action === 'login_attempt') {
-      const { error } = await (await getSupabase()).rpc('consume_login_attempt_rate_limit', {
-        p_email: subject || null,
-      })
-
-      if (error) {
-        setStatus(error.message || 'Too many attempts. Please wait a moment and try again.')
-        return false
-      }
-
-      return true
-    }
-
     if (action === 'booking_attempt') {
       const { error } = await (await getSupabase()).rpc('consume_booking_attempt_rate_limit', {
         p_subject: subject || null,
@@ -1730,11 +1717,8 @@ export default function WidgetPage({
       return true
     }
 
-    const rule = RATE_LIMITS[action]
-    const { error } = await (await getSupabase()).rpc('consume_rate_limit', {
+    const { error } = await (await getSupabase()).rpc('consume_user_action_rate_limit', {
       p_action: action,
-      p_limit: rule.limit,
-      p_window_seconds: rule.windowSeconds,
       p_subject: subject || null,
     })
 
@@ -1809,11 +1793,6 @@ export default function WidgetPage({
       if ((authMode === 'create' || authMode === 'login') && !captchaTokenForAuth) {
         setProfileStatus(text.captchaRequired)
         return
-      }
-
-      if (authMode === 'login') {
-        const allowed = await consumeAppRateLimit('login_attempt', loginEmail, setProfileStatus)
-        if (!allowed) return
       }
 
       setIsSavingProfile(true)

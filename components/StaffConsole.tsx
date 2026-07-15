@@ -28,7 +28,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode, RefObject } from 'react'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
-import { RATE_LIMITS, type RateLimitAction } from '../lib/security/rateLimit'
+import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import { supabase } from '../lib/supabase/client'
@@ -5795,13 +5795,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }
 
   async function consumeStaffRateLimit(action: RateLimitAction, subject: string) {
-    const rule = RATE_LIMITS[action]
-    const { error } = await supabase.rpc('consume_rate_limit', {
-      p_action: action,
-      p_limit: rule.limit,
-      p_window_seconds: rule.windowSeconds,
-      p_subject: subject || null,
-    })
+    const { error } = action === 'booking_attempt'
+      ? await supabase.rpc('consume_booking_attempt_rate_limit', { p_subject: subject || null })
+      : await supabase.rpc('consume_user_action_rate_limit', {
+        p_action: action,
+        p_subject: subject || null,
+      })
 
     if (error) {
       setStatus(error.message || text.messages.staffTooManyAttempts)
