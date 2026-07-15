@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, CalendarDays, Images, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
+import { BriefcaseBusiness, CalendarDays, Images, PanelLeftClose, PanelLeftOpen, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { publicAppRoutes } from '../lib/appRoutes'
@@ -13,9 +13,11 @@ export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs
 type AppSidebarProps = {
   activeView: AppView
   canAccessStaffConsole: boolean
+  consoleNavigationCollapsed: boolean
   isChampion: boolean
   language: LanguageCode
   onLanguageChange: (language: LanguageCode) => void
+  onConsoleNavigationCollapsedChange: (collapsed: boolean) => void
   onShareApp: () => void
   onViewChange: (view: AppView) => void
   profileAvatar: ReactNode
@@ -33,9 +35,11 @@ function ShareSymbol() {
 export default function AppSidebar({
   activeView,
   canAccessStaffConsole,
+  consoleNavigationCollapsed,
   isChampion,
   language,
   onLanguageChange,
+  onConsoleNavigationCollapsedChange,
   onShareApp,
   onViewChange,
   profileAvatar,
@@ -46,6 +50,10 @@ export default function AppSidebar({
   text,
 }: AppSidebarProps) {
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
+  const isConsoleView = activeView === 'staff' || activeView === 'hr'
+  const navigationCollapsed = isConsoleView && consoleNavigationCollapsed
+  const collapseLabel = language === 'vi' ? 'Thu gọn menu' : 'Collapse navigation'
+  const expandLabel = language === 'vi' ? 'Mở rộng menu' : 'Expand navigation'
 
   function selectLanguage(nextLanguage: LanguageCode) {
     onLanguageChange(nextLanguage)
@@ -54,13 +62,29 @@ export default function AppSidebar({
   }
 
   return (
-    <aside>
+    <aside className={navigationCollapsed ? 'console-sidebar console-sidebar-collapsed' : isConsoleView ? 'console-sidebar' : undefined}>
+      {isConsoleView && (
+        <button
+          aria-expanded={!navigationCollapsed}
+          aria-label={navigationCollapsed ? expandLabel : collapseLabel}
+          className="console-sidebar-toggle"
+          title={navigationCollapsed ? expandLabel : collapseLabel}
+          type="button"
+          onClick={() => onConsoleNavigationCollapsedChange(!navigationCollapsed)}
+        >
+          {navigationCollapsed ? <PanelLeftOpen aria-hidden="true" size={17} /> : <PanelLeftClose aria-hidden="true" size={17} />}
+        </button>
+      )}
       <div>
         <div className="app-title-row">
           <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">
-            <picture>
+            <picture className="brand-logo-full">
               <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
               <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
+            </picture>
+            <picture className="brand-logo-mark">
+              <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-mark-dark.svg" />
+              <img src="/brand/vrena-mark-light.svg" alt="" width="1000" height="1000" />
             </picture>
           </a>
           <div className="language-picker">
@@ -102,7 +126,7 @@ export default function AppSidebar({
         <p className="muted">{text.tagline}</p>
       </div>
 
-      <Link className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" href={publicAppRoutes.profile} onClick={() => onViewChange('profile')}>
+      <Link className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" href={publicAppRoutes.profile} title={profileTitle} onClick={() => onViewChange('profile')}>
         <div className="avatar" style={profileAvatarStyle}>
           {profileAvatar}
           {isChampion && <span className="champion-badge">🏆</span>}
@@ -114,33 +138,33 @@ export default function AppSidebar({
       </Link>
 
       <div className="tabs">
-        <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} onClick={() => onViewChange('sessions')}>
+        <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} title={text.sessions} onClick={() => onViewChange('sessions')}>
           <CalendarDays aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.sessions}</span>
         </Link>
-        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} href={publicAppRoutes.tickets} onClick={() => onViewChange('tickets')}>
+        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
           <Ticket aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.tickets}</span>
         </Link>
-        <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} onClick={() => onViewChange('leaderboard')}>
+        <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} title={text.hallOfFame} onClick={() => onViewChange('leaderboard')}>
           <Trophy aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.hallOfFame}</span>
         </Link>
-        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} onClick={() => onViewChange('clubs')}>
+        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} title={text.clubs} onClick={() => onViewChange('clubs')}>
           <UsersRound aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.clubs}</span>
         </Link>
-        <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+        <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer" title={text.galleryLink}>
           <Images aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.galleryLink}</span>
         </a>
         {canAccessStaffConsole && (
           <>
-            <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} onClick={() => onViewChange('staff')}>
+            <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} title={language === 'vi' ? 'Nhân viên' : 'Staff'} onClick={() => onViewChange('staff')}>
               <ShieldCheck aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
               <span className="sidebar-tab-label">{language === 'vi' ? 'Nhân viên' : 'Staff'}</span>
             </Link>
-            <Link className={activeView === 'hr' ? 'tab sidebar-staff-tab sidebar-hr-tab active' : 'tab sidebar-staff-tab sidebar-hr-tab'} href={publicAppRoutes.hr} onClick={() => onViewChange('hr')}>
+            <Link className={activeView === 'hr' ? 'tab sidebar-staff-tab sidebar-hr-tab active' : 'tab sidebar-staff-tab sidebar-hr-tab'} href={publicAppRoutes.hr} title="HR" onClick={() => onViewChange('hr')}>
               <BriefcaseBusiness aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
               <span className="sidebar-tab-label">HR</span>
             </Link>
