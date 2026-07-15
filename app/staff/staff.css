@@ -2523,6 +2523,32 @@
   flex-wrap: wrap;
 }
 
+.app .staff-planning-scope {
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  padding: 3px;
+}
+
+.app .staff-planning-scope button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--vrena-neutral-700);
+  padding: 5px 9px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.app .staff-planning-scope button.active {
+  background: var(--vrena-brand-gradient);
+  color: var(--vrena-white);
+}
+
 .app .staff-planning-actions button {
   min-height: 34px;
   border-radius: 7px;
@@ -3180,6 +3206,19 @@
 .app .staff-hr-table-panel {
   display: grid;
   gap: 10px;
+}
+
+.app .staff-hr-schedule-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-hr-schedule-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr);
+}
+
+.app .staff-hr-planning-panel {
+  margin-bottom: 0;
 }
 
 .app .staff-hr-table-panel .staff-table-wrap {
@@ -4046,6 +4085,7 @@
 
   .app .staff-planning-toolbar label,
   .app .staff-planning-actions,
+  .app .staff-planning-scope,
   .app .staff-planning-actions button {
     flex: 1 1 100%;
   }
@@ -4636,6 +4676,7 @@
   .app .staff-accountant-export-panel button,
   .app .staff-compare-toggle,
   .app .staff-planning-panel,
+  .app .staff-planning-scope,
   .app .staff-planning-corner,
   .app .staff-planning-day,
   .app .staff-planning-staff,
@@ -4733,6 +4774,7 @@
   .app .staff-comparison-list small,
   .app .staff-planning-title span,
   .app .staff-planning-toolbar label,
+  .app .staff-planning-scope button,
   .app .staff-planning-day span,
   .app .staff-planning-staff small,
   .app .staff-employee-list > .staff-helper-text,
@@ -5165,6 +5207,11 @@
 
   .app .staff-planning-cell-button {
     background: color-mix(in srgb, var(--vrena-purple-400) 12%, transparent);
+  }
+
+  .app .staff-planning-scope button.active {
+    background: var(--vrena-brand-gradient);
+    color: var(--vrena-white);
   }
 }
 
