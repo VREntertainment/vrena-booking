@@ -73,7 +73,7 @@ type ActionToast = {
 }
 
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
-const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'staff']
+const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
 
 function isBookingAppView(value: unknown): value is AppView {
   return typeof value === 'string' && bookingAppViews.includes(value as AppView)
@@ -8698,7 +8698,9 @@ function handleSessionDateChange(value: string) {
           canAccessStaffConsole ? (
             <StaffConsole
               authEmail={authEmail}
+              key="staff-console"
               language={language}
+              mode="staff"
               profile={profile}
               onOpenPlayerProfile={openStaffPlayerProfile}
               onOpenSessionCalendar={openCreateSessionCalendar}
@@ -8706,6 +8708,25 @@ function handleSessionDateChange(value: string) {
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
+              <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
+            </section>
+          )
+        )}
+
+        {activeView === 'hr' && (
+          canAccessStaffConsole ? (
+            <StaffConsole
+              authEmail={authEmail}
+              key="hr-console"
+              language={language}
+              mode="hr"
+              profile={profile}
+              onOpenPlayerProfile={openStaffPlayerProfile}
+              onOpenSessionCalendar={openCreateSessionCalendar}
+            />
+          ) : (
+            <section className="section staff-console">
+              <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
               <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
             </section>
           )
