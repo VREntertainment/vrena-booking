@@ -126,6 +126,70 @@ export const vrenaLogoGradients = {
   warm: ['#ff3c00', '#ffb800'],
 } as const
 
+export const vrenaCtaGradients = {
+  day: ['#00ffea', '#109fff'],
+  dark: ['#ffb800', '#fd5901'],
+} as const
+
+export const vrenaCtaHierarchy = {
+  day: {
+    primary: {
+      gradient: vrenaCtaGradients.day,
+      ink: vrenaPalette.neutral[950],
+      disabledBackground: vrenaPalette.neutral[200],
+      disabledInk: vrenaPalette.neutral[500],
+    },
+    secondary: {
+      background: vrenaPalette.white,
+      border: vrenaPalette.purple[500],
+      ink: vrenaPalette.purple[600],
+      hoverBackground: vrenaPalette.purple[50],
+      hoverBorder: vrenaPalette.purple[500],
+      hoverInk: vrenaPalette.purple[600],
+      pressedBackground: vrenaPalette.purple[100],
+      pressedBorder: vrenaPalette.purple[500],
+      pressedInk: vrenaPalette.purple[600],
+    },
+    tertiary: {
+      ink: vrenaPalette.purple[600],
+      hoverBackground: vrenaPalette.purple[50],
+      pressedBackground: vrenaPalette.purple[100],
+    },
+    focus: {
+      inner: vrenaPalette.neutral[50],
+      halo: vrenaPalette.cyan[700],
+    },
+  },
+  dark: {
+    primary: {
+      gradient: vrenaCtaGradients.dark,
+      ink: vrenaPalette.neutral[950],
+      disabledBackground: vrenaPalette.neutral[800],
+      disabledInk: vrenaPalette.neutral[600],
+    },
+    secondary: {
+      background: vrenaPalette.neutral[900],
+      border: vrenaPalette.orange[400],
+      ink: vrenaPalette.orange[400],
+      hoverBackground: vrenaPalette.neutral[800],
+      hoverBorder: vrenaPalette.orange[300],
+      hoverInk: vrenaPalette.orange[300],
+      pressedBackground: vrenaPalette.orange[950],
+      pressedBorder: vrenaPalette.orange[200],
+      pressedInk: vrenaPalette.orange[200],
+    },
+    tertiary: {
+      ink: vrenaPalette.orange[300],
+      hoverBackground: vrenaPalette.neutral[800],
+      pressedBackground: vrenaPalette.neutral[900],
+    },
+    focus: {
+      inner: vrenaPalette.neutral[950],
+      halo: vrenaPalette.cyan[300],
+    },
+  },
+} as const
+
 export const vrenaAvatarColors = [
   vrenaPalette.purple[500],
   vrenaPalette.cyan[500],

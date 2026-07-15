@@ -5816,3 +5816,306 @@
     background: color-mix(in srgb, var(--vrena-cyan-400) 8%, transparent);
   }
 }
+
+/* Official VRena CTA hierarchy: docs/brand/vrena-ui-color-palette-official.svg. */
+.app .staff-console button.primary {
+  min-height: 44px;
+  border: 0;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 12px 26px var(--vrena-cta-shadow);
+  filter: none;
+}
+
+.app .staff-console button.secondary,
+.app .staff-console .staff-calendar-shortcut,
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-attendance-row-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-report-date-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-compare-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-export-actions > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-export-actions > .staff-accountant-export > button:not(.primary):not(.danger),
+.app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-accountant-export-panel button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger),
+.app .staff-console .staff-hr-payslip > button:not(.primary):not(.danger),
+.app .staff-console .staff-role-actions button:not(.primary):not(.danger),
+.app .staff-console .staff-list-head button:not(.primary):not(.danger) {
+  min-height: 44px;
+  border: 1px solid var(--vrena-cta-secondary-border);
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console .staff-link-button,
+.app .staff-console button.modal-close {
+  min-width: 44px;
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-cta-tertiary-ink);
+  box-shadow: none;
+}
+
+.app .staff-console :is(
+  .staff-tabs button,
+  .staff-tab-categories button,
+  .staff-commerce-switcher button,
+  .staff-attendance-tabs button,
+  .staff-planning-scope button,
+  .staff-chart-mode button,
+  .staff-report-date-mode button,
+  .staff-report-date-presets button,
+  .staff-accountant-report-list button,
+  .staff-hr-module-rail button
+) {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-neutral-800);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console :is(
+  .staff-tabs button.active,
+  .staff-tab-categories button.active,
+  .staff-commerce-switcher button.active,
+  .staff-attendance-tabs button.active,
+  .staff-planning-scope button.active,
+  .staff-chart-mode button.active,
+  .staff-report-date-mode button.active,
+  .staff-report-date-presets button.active,
+  .staff-accountant-report-list button.active,
+  .staff-hr-module-rail button.active
+) {
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
+  color: var(--vrena-purple-700);
+  box-shadow: inset 0 -2px 0 var(--vrena-purple-500);
+}
+
+.app .staff-console .staff-hr-console {
+  --staff-hr-accent: var(--vrena-purple-500);
+}
+
+.app .staff-console button.danger {
+  min-height: 44px;
+  border: 1px solid var(--vrena-red-200);
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-700);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-console button:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 2px var(--vrena-focus-inner),
+    0 0 0 8px color-mix(in srgb, var(--vrena-focus-halo) 72%, transparent);
+}
+
+.app .staff-console button.primary:disabled {
+  border-color: transparent;
+  background: var(--vrena-cta-primary-disabled-bg);
+  color: var(--vrena-cta-primary-disabled-ink);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.app .staff-console button.secondary:disabled,
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger):disabled,
+.app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger):disabled {
+  border-color: var(--vrena-cta-secondary-disabled-border);
+  background: transparent;
+  color: var(--vrena-cta-secondary-disabled-ink);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.app .staff-console button.danger:disabled {
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-neutral-200);
+  color: var(--vrena-neutral-500);
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app .staff-console button.primary:hover:not(:disabled) {
+    background: var(--vrena-cta-primary-hover);
+    filter: none;
+  }
+
+  .app .staff-console button.secondary:hover:not(:disabled),
+  .app .staff-console .staff-calendar-shortcut:hover:not(:disabled),
+  .app .staff-console .staff-operations-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-planning-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-row-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-operation-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-date-actions > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-compare-actions > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-export-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-report-date-modal-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-document-actions button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-setup-row > button:not(.primary):not(.danger):hover:not(:disabled),
+  .app .staff-console .staff-hr-payslip > button:not(.primary):not(.danger):hover:not(:disabled) {
+    border-color: var(--vrena-cta-secondary-hover-border);
+    background: var(--vrena-cta-secondary-hover-bg);
+    color: var(--vrena-cta-secondary-hover-ink);
+    filter: none;
+  }
+
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ):not(.active):hover {
+    border-color: transparent;
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--vrena-neutral-950);
+    box-shadow: none;
+  }
+
+  .app .staff-console .staff-link-button:hover:not(:disabled),
+  .app .staff-console button.modal-close:hover:not(:disabled) {
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--vrena-cta-tertiary-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .app .staff-console button.danger:hover:not(:disabled) {
+    border-color: var(--vrena-red-300);
+    background: var(--vrena-red-100);
+    color: var(--vrena-red-800);
+    filter: none;
+  }
+}
+
+.app .staff-console button.primary:active:not(:disabled) {
+  background: var(--vrena-cta-primary-pressed);
+  filter: none;
+}
+
+.app .staff-console button.secondary:active:not(:disabled),
+.app .staff-console .staff-calendar-shortcut:active:not(:disabled),
+.app .staff-console .staff-operations-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-attendance-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-planning-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-row-actions button:not(.primary):not(.danger):active:not(:disabled),
+.app .staff-console .staff-operation-actions button:not(.primary):not(.danger):active:not(:disabled) {
+  border-color: var(--vrena-cta-secondary-pressed-border);
+  background: var(--vrena-cta-secondary-pressed-bg);
+  color: var(--vrena-cta-secondary-pressed-ink);
+  filter: none;
+}
+
+.app .staff-console .staff-link-button:active:not(:disabled),
+.app .staff-console button.modal-close:active:not(:disabled) {
+  background: var(--vrena-cta-tertiary-pressed-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ) {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .staff-console :is(
+    .staff-tabs button.active,
+    .staff-tab-categories button.active,
+    .staff-commerce-switcher button.active,
+    .staff-attendance-tabs button.active,
+    .staff-planning-scope button.active,
+    .staff-chart-mode button.active,
+    .staff-report-date-mode button.active,
+    .staff-report-date-presets button.active,
+    .staff-accountant-report-list button.active,
+    .staff-hr-module-rail button.active
+  ) {
+    border-color: var(--vrena-orange-400);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-orange-300);
+    box-shadow: inset 0 -2px 0 var(--vrena-orange-400);
+  }
+
+  .app .staff-console .staff-hr-console {
+    --staff-hr-accent: var(--vrena-orange-400);
+  }
+
+  .app .staff-console button.danger {
+    border-color: var(--vrena-red-700);
+    background: var(--vrena-red-950);
+    color: var(--vrena-red-200);
+  }
+
+  .app .staff-console button.danger:disabled {
+    border-color: var(--vrena-neutral-700);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-600);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (hover: hover) and (pointer: fine) {
+  .app .staff-console :is(
+    .staff-tabs button,
+    .staff-tab-categories button,
+    .staff-commerce-switcher button,
+    .staff-attendance-tabs button,
+    .staff-planning-scope button,
+    .staff-chart-mode button,
+    .staff-report-date-mode button,
+    .staff-report-date-presets button,
+    .staff-accountant-report-list button,
+    .staff-hr-module-rail button
+  ):not(.active):hover {
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-200);
+  }
+
+  .app .staff-console button.danger:hover:not(:disabled) {
+    border-color: var(--vrena-red-600);
+    background: color-mix(in srgb, var(--vrena-red-950) 78%, var(--vrena-neutral-900));
+    color: var(--vrena-red-100);
+  }
+}
+
+@media (max-width: 720px) {
+  .app .staff-console button.primary {
+    width: 100%;
+    min-height: 56px;
+    padding-inline: 24px;
+    font-size: 16px;
+  }
+}
