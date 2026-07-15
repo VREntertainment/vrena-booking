@@ -74,6 +74,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrSetupForm,
     hrStatusFilter,
     hrTab,
+    isOwnerOrAdmin,
     normalizeHrAdjustmentStatus,
     normalizeHrAdjustmentType,
     normalizePayrollPayCycle,
@@ -175,36 +176,28 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
             <p className="notice">{text.messages.noStaffProfiles}</p>
           ) : (
             <>
-              <div className="staff-hr-command">
-                <div>
-                  <h3>{text.tabs.hr}</h3>
-                  <p>{text.messages.hrIntro}</p>
+              <nav className="staff-hr-module-rail staff-hr-top-navigation" aria-label={text.tabs.hr}>
+                {staffHrTabs.map((tab: any) => (
+                  <button aria-current={hrTab === tab ? 'page' : undefined} className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
+                    <span className="staff-hr-module-icon">{hrModuleIcon(tab)}</span>
+                    <span>
+                      <strong>{text.hrTabs[tab]}</strong>
+                      <small>{hrModuleMeta(tab)}</small>
+                    </span>
+                  </button>
+                ))}
+              </nav>
+              {isOwnerOrAdmin && (
+                <div className="staff-hr-summary staff-hr-metrics">
+                  <div><span>{text.hrTabs.employees}</span><strong>{visibleAllStaffProfileOptions.length}</strong><small>{activeEmployeeCount} {text.labels.activeEmployee} · {missingEmployeeDocumentCount} {text.labels.missingDocuments}</small></div>
+                  <div><span>{text.labels.totalGross}</span><strong>{formatVndCompact(hrPayrollTotals.gross)}</strong></div>
+                  <div><span>{text.labels.totalNet}</span><strong>{formatVndCompact(hrPayrollTotals.net)}</strong></div>
+                  <div><span>{text.labels.totalCompanyCost}</span><strong>{formatVndCompact(hrPayrollTotals.companyCost)}</strong></div>
+                  <div><span>{text.labels.restWarnings}</span><strong>{hrPayrollTotals.restWarnings}</strong></div>
+                  <div><span>{text.labels.outstandingDebt}</span><strong>{formatVndCompact(Math.max(0, selectedEmployeeOutstandingDebt))}</strong><small>{selectedEmployeeLabel}</small></div>
                 </div>
-                <div className="staff-hr-command-panel" aria-label={text.tabs.hr}>
-                  <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
-                  <strong>{selectedEmployeeLabel}</strong>
-                </div>
-              </div>
-              <div className="staff-hr-summary staff-hr-metrics">
-                <div><span>{text.hrTabs.employees}</span><strong>{visibleAllStaffProfileOptions.length}</strong><small>{activeEmployeeCount} {text.labels.activeEmployee} · {missingEmployeeDocumentCount} {text.labels.missingDocuments}</small></div>
-                <div><span>{text.labels.totalGross}</span><strong>{formatVndCompact(hrPayrollTotals.gross)}</strong></div>
-                <div><span>{text.labels.totalNet}</span><strong>{formatVndCompact(hrPayrollTotals.net)}</strong></div>
-                <div><span>{text.labels.totalCompanyCost}</span><strong>{formatVndCompact(hrPayrollTotals.companyCost)}</strong></div>
-                <div><span>{text.labels.restWarnings}</span><strong>{hrPayrollTotals.restWarnings}</strong></div>
-                <div><span>{text.labels.outstandingDebt}</span><strong>{formatVndCompact(Math.max(0, selectedEmployeeOutstandingDebt))}</strong><small>{selectedEmployeeLabel}</small></div>
-              </div>
-              <div className="staff-hr-main">
-                <aside className="staff-hr-module-rail" aria-label={text.tabs.hr}>
-                  {staffHrTabs.map((tab: any) => (
-                    <button aria-current={hrTab === tab ? 'page' : undefined} className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
-                      <span className="staff-hr-module-icon">{hrModuleIcon(tab)}</span>
-                      <span>
-                        <strong>{text.hrTabs[tab]}</strong>
-                        <small>{hrModuleMeta(tab)}</small>
-                      </span>
-                    </button>
-                  ))}
-                </aside>
+              )}
+              <div className="staff-hr-main staff-hr-main-full">
                 <div className="staff-hr-content">
 
               {hrTab === 'employees' && (

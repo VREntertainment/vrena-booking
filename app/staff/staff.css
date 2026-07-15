@@ -6119,3 +6119,51 @@
     font-size: 16px;
   }
 }
+
+/* HR route hierarchy: module navigation replaces the removed title band. */
+.app .staff-console .staff-hr-top-navigation {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(126px, 1fr));
+  gap: 4px;
+  overflow-x: auto;
+  border: 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+  background: transparent;
+  padding: 8px 0 10px;
+}
+
+.app .staff-console .staff-hr-top-navigation button {
+  min-height: 56px;
+  padding: 7px 9px;
+}
+
+.app .staff-console .staff-hr-main-full {
+  display: block;
+  min-height: 620px;
+}
+
+.app .staff-console .staff-hr-main-full > .staff-hr-content {
+  padding: 18px 0 24px;
+}
+
+@media (max-width: 900px) {
+  .app .staff-console .staff-hr-top-navigation {
+    grid-template-columns: repeat(7, minmax(142px, 1fr));
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-width: 760px) {
+  .app .staff-console .staff-hr-top-navigation {
+    padding-top: 4px;
+  }
+
+  .app .staff-console .staff-hr-top-navigation button {
+    min-height: 52px;
+  }
+
+  .app .staff-console .staff-hr-main-full {
+    min-height: 0;
+  }
+}
