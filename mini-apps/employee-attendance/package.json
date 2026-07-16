@@ -1,0 +1,28 @@
+{
+  "name": "vrena-zalo-employee-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build",
+    "deploy": "zmp deploy"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zmp-sdk": "2.51.6"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.24",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.0.3",
+    "typescript": "5.8.3",
+    "vite": "8.1.4"
+  },
+  "overrides": {
+    "@sentry/browser": "7.119.1",
+    "@sentry/tracing": "7.119.1"
+  }
+}
