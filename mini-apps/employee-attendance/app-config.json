@@ -1,0 +1,18 @@
+{
+  "app": {
+    "title": "VRE HUB Attendance",
+    "headerColor": "#07111f",
+    "headerTitle": "Chấm công",
+    "textColor": "white",
+    "statusBarColor": "#07111f",
+    "leftButton": "none",
+    "actionBarHidden": false,
+    "hideIOSSafeAreaBottom": true,
+    "statusBar": "normal"
+  },
+  "debug": false,
+  "listCSS": ["assets/index.css"],
+  "listSyncJS": ["assets/index.module.js"],
+  "listAsyncJS": [],
+  "pages": []
+}
