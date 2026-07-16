@@ -213,7 +213,7 @@ type StaffLeaveType = 'annual' | 'sick' | 'unpaid' | 'personal' | 'public_holida
 type StaffLeaveStatus = 'requested' | 'approved' | 'rejected' | 'cancelled'
 type StaffGender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'other'
 type StaffContractStatus = 'active' | 'probation' | 'suspended' | 'ended' | 'draft'
-type StaffHrSetupOptionType = 'department' | 'job_title' | 'location' | 'contract_status' | 'contract_type' | 'employment_type'
+type StaffHrSetupOptionType = 'department' | 'job_title' | 'location' | 'contract_status' | 'contract_type' | 'employment_type' | 'payroll_template' | 'allowance' | 'deduction'
 type StaffHrAdjustmentType = 'bonus' | 'commission' | 'allowance' | 'lunch_allowance' | 'deduction' | 'advance' | 'debt' | 'debt_repayment'
 type StaffHrAdjustmentStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled'
 type StaffPayrollStatus = 'draft' | 'pending' | 'approved' | 'paid' | 'cancelled'
@@ -249,6 +249,12 @@ type StaffAttendanceLog = {
   overtime_minutes: number
   night_minutes: number
   holiday_minutes: number
+  late_minutes: number
+  early_leave_minutes: number
+  is_half_day: boolean
+  approval_status: 'pending' | 'approved'
+  approved_by: string | null
+  approved_at: string | null
   manager_note: string | null
   created_by: string | null
   created_at: string
@@ -329,6 +335,21 @@ type StaffAttendanceSettings = {
   night_start: string
   night_end: string
   annual_leave_days: number
+  half_day_enabled: boolean
+  half_day_min_minutes: number
+  half_day_max_minutes: number
+  count_late_early_on_half_day: boolean
+  late_arrival_enabled: boolean
+  late_after_minutes: number
+  early_leave_enabled: boolean
+  early_leave_before_minutes: number
+  overtime_before_shift_enabled: boolean
+  overtime_before_shift_minutes: number
+  overtime_after_shift_enabled: boolean
+  overtime_after_shift_minutes: number
+  single_clock_for_consecutive_shifts: boolean
+  work_week_start: number
+  weekly_rest_days: number[]
   shift_templates: StaffShiftTemplate[]
   updated_by: string | null
   updated_at: string | null
@@ -348,6 +369,12 @@ type StaffHrSettings = {
   employee_contribution_rate: number
   employer_contribution_rate: number
   pit_withholding_rate: number
+  pay_period_start_day: number
+  auto_create_payroll_runs: boolean
+  auto_update_payroll_daily: boolean
+  personal_income_tax_enabled: boolean
+  social_insurance_enabled: boolean
+  last_auto_payroll_sync_on: string | null
   payslip_note: string | null
   updated_by: string | null
   updated_at: string | null
@@ -969,6 +996,9 @@ const staffConsoleText = {
       contract_status: 'Contract status',
       contract_type: 'Contract type',
       employment_type: 'Employment type',
+      payroll_template: 'Payroll template',
+      allowance: 'Allowance category',
+      deduction: 'Deduction category',
     } satisfies Record<StaffHrSetupOptionType, string>,
     dayTypes: {
       custom: 'custom',
@@ -1748,6 +1778,9 @@ const staffConsoleText = {
       contract_status: 'Trạng thái hợp đồng',
       contract_type: 'Loại hợp đồng',
       employment_type: 'Loại việc làm',
+      payroll_template: 'Mẫu bảng lương',
+      allowance: 'Nhóm phụ cấp',
+      deduction: 'Nhóm khấu trừ',
     } satisfies Record<StaffHrSetupOptionType, string>,
     dayTypes: {
       custom: 'tùy chỉnh',
@@ -2744,10 +2777,10 @@ function calculateStaffPayroll(
   const employeeContributionRate = employeeRate(employee?.employee_contribution_rate, settings.employee_contribution_rate)
   const employerContributionRate = employeeRate(employee?.employer_contribution_rate, settings.employer_contribution_rate)
   const pitRate = employeeRate(employee?.pit_withholding_rate, settings.pit_withholding_rate)
-  const employeeContributions = Math.round(grossIncome * employeeContributionRate / 100)
-  const employerContributions = Math.round(grossIncome * employerContributionRate / 100)
+  const employeeContributions = settings.social_insurance_enabled ? Math.round(grossIncome * employeeContributionRate / 100) : 0
+  const employerContributions = settings.social_insurance_enabled ? Math.round(grossIncome * employerContributionRate / 100) : 0
   const taxableIncome = Math.max(0, grossIncome - employeeContributions - deductions - advances)
-  const pitWithheld = Math.round(taxableIncome * pitRate / 100)
+  const pitWithheld = settings.personal_income_tax_enabled ? Math.round(taxableIncome * pitRate / 100) : 0
   const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
   const companyCost = Math.max(0, grossIncome + employerContributions)
 
@@ -3092,6 +3125,21 @@ const defaultAttendanceSettings = (): StaffAttendanceSettings => ({
   night_start: '22:00',
   night_end: '06:00',
   annual_leave_days: 12,
+  half_day_enabled: true,
+  half_day_min_minutes: 0,
+  half_day_max_minutes: 270,
+  count_late_early_on_half_day: false,
+  late_arrival_enabled: true,
+  late_after_minutes: 5,
+  early_leave_enabled: true,
+  early_leave_before_minutes: 5,
+  overtime_before_shift_enabled: false,
+  overtime_before_shift_minutes: 10,
+  overtime_after_shift_enabled: false,
+  overtime_after_shift_minutes: 10,
+  single_clock_for_consecutive_shifts: true,
+  work_week_start: 1,
+  weekly_rest_days: [0],
   shift_templates: normalizeStaffShiftTemplates(defaultStaffShiftTemplates, 60),
   updated_by: null,
   updated_at: null,
@@ -3112,6 +3160,23 @@ function normalizeAttendanceSettings(value?: Partial<StaffAttendanceSettings> | 
     night_start: normalizeTime(value?.night_start) || fallback.night_start,
     night_end: normalizeTime(value?.night_end) || fallback.night_end,
     annual_leave_days: Math.max(0, Number(value?.annual_leave_days ?? fallback.annual_leave_days) || 0),
+    half_day_enabled: value?.half_day_enabled ?? fallback.half_day_enabled,
+    half_day_min_minutes: minutesSetting(value?.half_day_min_minutes, fallback.half_day_min_minutes),
+    half_day_max_minutes: minutesSetting(value?.half_day_max_minutes, fallback.half_day_max_minutes),
+    count_late_early_on_half_day: value?.count_late_early_on_half_day ?? fallback.count_late_early_on_half_day,
+    late_arrival_enabled: value?.late_arrival_enabled ?? fallback.late_arrival_enabled,
+    late_after_minutes: minutesSetting(value?.late_after_minutes, fallback.late_after_minutes),
+    early_leave_enabled: value?.early_leave_enabled ?? fallback.early_leave_enabled,
+    early_leave_before_minutes: minutesSetting(value?.early_leave_before_minutes, fallback.early_leave_before_minutes),
+    overtime_before_shift_enabled: value?.overtime_before_shift_enabled ?? fallback.overtime_before_shift_enabled,
+    overtime_before_shift_minutes: minutesSetting(value?.overtime_before_shift_minutes, fallback.overtime_before_shift_minutes),
+    overtime_after_shift_enabled: value?.overtime_after_shift_enabled ?? fallback.overtime_after_shift_enabled,
+    overtime_after_shift_minutes: minutesSetting(value?.overtime_after_shift_minutes, fallback.overtime_after_shift_minutes),
+    single_clock_for_consecutive_shifts: value?.single_clock_for_consecutive_shifts ?? fallback.single_clock_for_consecutive_shifts,
+    work_week_start: Math.min(6, Math.max(0, Math.round(Number(value?.work_week_start ?? fallback.work_week_start) || 0))),
+    weekly_rest_days: Array.isArray(value?.weekly_rest_days)
+      ? value.weekly_rest_days.map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+      : fallback.weekly_rest_days,
     shift_templates: normalizeStaffShiftTemplates(value?.shift_templates, standardBreakMinutes),
     updated_by: value?.updated_by ?? fallback.updated_by,
     updated_at: value?.updated_at ?? fallback.updated_at,
@@ -3132,6 +3197,12 @@ const defaultHrSettings = (): StaffHrSettings => ({
   employee_contribution_rate: 10.5,
   employer_contribution_rate: 21.5,
   pit_withholding_rate: 10,
+  pay_period_start_day: 1,
+  auto_create_payroll_runs: false,
+  auto_update_payroll_daily: false,
+  personal_income_tax_enabled: true,
+  social_insurance_enabled: true,
+  last_auto_payroll_sync_on: null,
   payslip_note: '',
   updated_by: null,
   updated_at: null,
@@ -3154,6 +3225,12 @@ function normalizeHrSettings(value?: Partial<StaffHrSettings> | null): StaffHrSe
     employee_contribution_rate: Math.max(0, Number(value?.employee_contribution_rate ?? fallback.employee_contribution_rate) || 0),
     employer_contribution_rate: Math.max(0, Number(value?.employer_contribution_rate ?? fallback.employer_contribution_rate) || 0),
     pit_withholding_rate: Math.max(0, Number(value?.pit_withholding_rate ?? fallback.pit_withholding_rate) || 0),
+    pay_period_start_day: Math.min(28, Math.max(1, Math.round(Number(value?.pay_period_start_day ?? fallback.pay_period_start_day) || 1))),
+    auto_create_payroll_runs: value?.auto_create_payroll_runs ?? fallback.auto_create_payroll_runs,
+    auto_update_payroll_daily: value?.auto_update_payroll_daily ?? fallback.auto_update_payroll_daily,
+    personal_income_tax_enabled: value?.personal_income_tax_enabled ?? fallback.personal_income_tax_enabled,
+    social_insurance_enabled: value?.social_insurance_enabled ?? fallback.social_insurance_enabled,
+    last_auto_payroll_sync_on: value?.last_auto_payroll_sync_on ?? fallback.last_auto_payroll_sync_on,
     payslip_note: value?.payslip_note ?? fallback.payslip_note,
     updated_by: value?.updated_by ?? fallback.updated_by,
     updated_at: value?.updated_at ?? fallback.updated_at,
@@ -3273,6 +3350,9 @@ const defaultHrSetupForm = (): Record<StaffHrSetupOptionType, string> => ({
   contract_status: '',
   contract_type: '',
   employment_type: '',
+  payroll_template: '',
+  allowance: '',
+  deduction: '',
 })
 
 const paymentMethods = ['cash', 'bank_transfer'] as const
@@ -3290,7 +3370,7 @@ const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal
 const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'probation_full_time', 'probation_part_time', 'contractor', 'intern']
 const staffGenderOptions: StaffGender[] = ['female', 'male', 'non_binary', 'prefer_not_to_say', 'other']
 const staffContractStatuses: StaffContractStatus[] = ['active', 'probation', 'suspended', 'ended', 'draft']
-const staffHrSetupOptionTypes: StaffHrSetupOptionType[] = ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']
+const staffHrSetupOptionTypes: StaffHrSetupOptionType[] = ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type', 'payroll_template', 'allowance', 'deduction']
 const staffHrAdjustmentTypes: StaffHrAdjustmentType[] = ['bonus', 'commission', 'allowance', 'lunch_allowance', 'deduction', 'advance', 'debt', 'debt_repayment']
 const staffHrAdjustmentStatuses: StaffHrAdjustmentStatus[] = ['draft', 'pending', 'approved', 'rejected', 'paid', 'cancelled']
 const staffPayrollStatuses: StaffPayrollStatus[] = ['draft', 'pending', 'approved', 'paid', 'cancelled']
@@ -6393,6 +6473,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       employee_contribution_rate: Math.max(0, Number(hrSettings.employee_contribution_rate) || 0),
       employer_contribution_rate: Math.max(0, Number(hrSettings.employer_contribution_rate) || 0),
       pit_withholding_rate: Math.max(0, Number(hrSettings.pit_withholding_rate) || 0),
+      pay_period_start_day: Math.min(28, Math.max(1, Math.round(Number(hrSettings.pay_period_start_day) || 1))),
+      auto_create_payroll_runs: Boolean(hrSettings.auto_create_payroll_runs),
+      auto_update_payroll_daily: Boolean(hrSettings.auto_update_payroll_daily),
+      personal_income_tax_enabled: Boolean(hrSettings.personal_income_tax_enabled),
+      social_insurance_enabled: Boolean(hrSettings.social_insurance_enabled),
       payslip_note: hrSettings.payslip_note?.trim() || null,
       updated_by: profile?.id || null,
     }
@@ -6401,6 +6486,45 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     if (!error) {
       markStaffDataStale('hr')
       await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function syncPayrollDraft() {
+    if (!isOwnerOrAdmin) return
+    setSaving(true)
+    const { data, error } = await supabase.rpc('staff_sync_payroll_draft', {
+      p_run_date: todayString(),
+      p_force: true,
+    })
+    setStatus(error
+      ? error.message
+      : resolvedLanguage === 'vi'
+        ? `Đã đồng bộ bảng lương tự động (${Number(data?.item_count) || 0} nhân viên).`
+        : `Automatic payroll synchronized (${Number(data?.item_count) || 0} employees).`)
+    if (!error) {
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function approveAttendancePeriod() {
+    if (!isOwnerOrAdmin) return
+    const [periodStart, periodEnd] = orderedRange(payrollPeriodStart, payrollPeriodEnd)
+    setSaving(true)
+    const { data, error } = await supabase.rpc('staff_approve_attendance_period', {
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+    })
+    setStatus(error
+      ? error.message
+      : resolvedLanguage === 'vi'
+        ? `Đã duyệt ${Number(data?.approved_log_count) || 0} bản ghi chấm công.`
+        : `Approved ${Number(data?.approved_log_count) || 0} attendance records.`)
+    if (!error) {
+      markStaffDataStale('attendance')
+      await loadAttendanceData(true)
     }
     setSaving(false)
   }
@@ -6917,6 +7041,24 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       night_start: normalizeTime(attendanceSettings.night_start) || '22:00',
       night_end: normalizeTime(attendanceSettings.night_end) || '06:00',
       annual_leave_days: attendanceSettings.annual_leave_days,
+      half_day_enabled: Boolean(attendanceSettings.half_day_enabled),
+      half_day_min_minutes: minutesSetting(attendanceSettings.half_day_min_minutes, 0),
+      half_day_max_minutes: Math.max(
+        minutesSetting(attendanceSettings.half_day_min_minutes, 0),
+        minutesSetting(attendanceSettings.half_day_max_minutes, 270),
+      ),
+      count_late_early_on_half_day: Boolean(attendanceSettings.count_late_early_on_half_day),
+      late_arrival_enabled: Boolean(attendanceSettings.late_arrival_enabled),
+      late_after_minutes: Math.min(240, minutesSetting(attendanceSettings.late_after_minutes, 5)),
+      early_leave_enabled: Boolean(attendanceSettings.early_leave_enabled),
+      early_leave_before_minutes: Math.min(240, minutesSetting(attendanceSettings.early_leave_before_minutes, 5)),
+      overtime_before_shift_enabled: Boolean(attendanceSettings.overtime_before_shift_enabled),
+      overtime_before_shift_minutes: Math.min(240, minutesSetting(attendanceSettings.overtime_before_shift_minutes, 10)),
+      overtime_after_shift_enabled: Boolean(attendanceSettings.overtime_after_shift_enabled),
+      overtime_after_shift_minutes: Math.min(240, minutesSetting(attendanceSettings.overtime_after_shift_minutes, 10)),
+      single_clock_for_consecutive_shifts: Boolean(attendanceSettings.single_clock_for_consecutive_shifts),
+      work_week_start: Math.min(6, Math.max(0, Math.round(Number(attendanceSettings.work_week_start) || 0))),
+      weekly_rest_days: attendanceSettings.weekly_rest_days,
       shift_templates: shiftTemplates,
       updated_by: profile?.id || null,
       updated_at: new Date().toISOString(),
@@ -8556,9 +8698,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             StaffPickerField,
             StaffRoleAvatar,
             approvePayrollRun,
+            approveAttendancePeriod,
             applyShiftTemplate,
             attendanceGridStyle,
+            attendanceLogs,
             attendanceScheduleScopeOptions,
+            attendanceSettings,
             attendanceShiftsByCell,
             attendanceWeekEnd,
             attendanceWeekDates,
@@ -8605,6 +8750,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             hrStatusFilter,
             hrTab,
             isOwnerOrAdmin,
+            leaveRequests,
             normalizeHrAdjustmentStatus,
             normalizeHrAdjustmentType,
             normalizePayrollPayCycle,
@@ -8627,6 +8773,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             saveHrAdjustment,
             saveHrSettings,
             saveHrSetupOption,
+            saveAttendanceSettings,
             saveShift,
             saving,
             selectedEmployeeDocuments,
@@ -8636,6 +8783,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             selectedShiftTemplate,
             setEmployeeForm,
             setAttendanceScheduleScope,
+            setAttendanceSettings,
             setAttendanceRange,
             setDraggingShiftId,
             setHrAdjustmentForm,
@@ -8668,6 +8816,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             staffShiftStatuses,
             staffRoleName,
             startShiftForCell,
+            syncPayrollDraft,
             text,
             resetAttendanceRangeToThisWeek,
             updateHrAdjustmentStatus,

@@ -1,8 +1,8 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Pencil, Plus, ReceiptText, Save, Send, Settings2, Smartphone, UserRound, WalletCards, X } from 'lucide-react'
-import { Fragment } from 'react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserRound, WalletCards, X } from 'lucide-react'
+import { Fragment, useState } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
@@ -10,6 +10,185 @@ type StaffContractStatus = string
 type StaffHrHubProps = {
   model: any
 }
+
+type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' | 'categories' | 'organization'
+
+const hrCompletionCopy = {
+  en: {
+    settingsTitle: 'Employee settings',
+    settingsIntro: 'Configure attendance, work rules, and salary processing from one place.',
+    sections: {
+      initialization: 'Initialization',
+      clocking: 'Clocking',
+      salary: 'Salary settings',
+      work_rest: 'Work & rest day',
+      categories: 'Salary categories',
+      organization: 'Organization',
+    } satisfies Record<HrSettingsSection, string>,
+    quickSetup: 'Quick setup',
+    quickSetupHelp: 'Complete the essential steps to start using HR attendance and payroll.',
+    setupRows: {
+      employees: ['Create employees', 'Employee profiles are ready'],
+      shifts: ['Create shifts', 'Standard shifts are available'],
+      schedule: ['Schedule work', 'Employees have published shifts'],
+      attendance: ['Timekeeping form', 'Attendance rules are configured'],
+      salary: ['Salary configuration', 'Employees have salary or hourly rates'],
+      payroll: ['Paysheet setting', 'At least one payroll run exists'],
+    },
+    open: 'Open',
+    attendanceSetup: 'Attendance setup',
+    shiftSetup: 'Shift setup',
+    shiftSetupHelp: 'Manage the shifts used for attendance calculations.',
+    standardDay: 'Number of hours in a standard workday',
+    standardDayHelp: 'Used when no published shift is assigned.',
+    halfDay: 'Count as half workday when worked time is',
+    from: 'From',
+    to: 'To',
+    countHalfDayLate: 'Record late arrival and early leave for half days',
+    lateEarly: 'Late arrival & early leave',
+    lateAfter: 'Late arrival after',
+    earlyBefore: 'Early leave before',
+    overtime: 'Overtime settings',
+    overtimeBefore: 'Overtime worked before shift',
+    overtimeAfter: 'Overtime worked after shift',
+    consecutive: 'Use one clock-in and clock-out for consecutive shifts',
+    minutes: 'minutes',
+    salaryTitle: 'Salary settings',
+    payday: 'Payday',
+    paydayHelp: 'Select the start day of each monthly pay period.',
+    day: 'Day',
+    autoCreate: 'Automatically create payroll drafts',
+    autoCreateHelp: 'Supabase Cron creates the current pay-period draft every day when enabled.',
+    autoUpdate: 'Automatically update payroll drafts daily',
+    autoUpdateHelp: 'Attendance, leave, bonuses, allowances, deductions, tax, and insurance are recalculated daily.',
+    tax: 'Personal income tax for employees',
+    taxHelp: 'Apply the configured personal-income-tax withholding rate.',
+    insurance: 'Social insurance for employees',
+    insuranceHelp: 'Apply employee and employer contribution rates.',
+    syncNow: 'Synchronize payroll now',
+    lastSync: 'Last automatic sync',
+    never: 'Not yet synchronized',
+    workRestTitle: 'Work & rest day settings',
+    weekStarts: 'Work week starts on',
+    restDays: 'Weekly rest days',
+    standardWeek: 'Standard workweek hours',
+    standardBreak: 'Standard break',
+    annualLeave: 'Annual leave days',
+    monthlyDays: 'Standard monthly days',
+    monthlyHours: 'Standard monthly hours',
+    minimumRest: 'Minimum rest between shifts',
+    overtimeMonth: 'Monthly overtime cap',
+    overtimeYear: 'Yearly overtime cap',
+    categoriesTitle: 'Payroll templates and categories',
+    categoriesHelp: 'Create reusable names for payroll templates, allowances, and deductions.',
+    organizationTitle: 'Organization options',
+    organizationHelp: 'Maintain locations, departments, roles, and employment classifications.',
+    add: 'Add',
+    noOptions: 'No options yet',
+    approveAttendance: 'Approve attendance',
+    approved: 'Approved',
+    pending: 'Pending',
+    searchEmployees: 'Search employees',
+    payType: 'Type of pay',
+    byMonth: 'Monthly salary',
+    byHour: 'By hour',
+    present: 'Present',
+    onLeave: 'On leave',
+    lateArrival: 'Late arrival',
+    earlyLeave: 'Early leave',
+    shifts: 'shifts',
+    occurrences: 'times',
+    noAttendance: 'No attendance records in this period.',
+    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  },
+  vi: {
+    settingsTitle: 'Thiết lập nhân viên',
+    settingsIntro: 'Quản lý chấm công, quy tắc làm việc và xử lý lương tại một nơi.',
+    sections: {
+      initialization: 'Khởi tạo',
+      clocking: 'Chấm công',
+      salary: 'Thiết lập lương',
+      work_rest: 'Ngày làm & nghỉ',
+      categories: 'Nhóm lương',
+      organization: 'Tổ chức',
+    } satisfies Record<HrSettingsSection, string>,
+    quickSetup: 'Thiết lập nhanh',
+    quickSetupHelp: 'Hoàn thành các bước cần thiết để sử dụng chấm công và bảng lương.',
+    setupRows: {
+      employees: ['Tạo nhân viên', 'Hồ sơ nhân viên đã sẵn sàng'],
+      shifts: ['Tạo ca', 'Đã có ca làm việc chuẩn'],
+      schedule: ['Xếp lịch làm việc', 'Nhân viên có ca đã xuất bản'],
+      attendance: ['Hình thức chấm công', 'Đã cấu hình quy tắc chấm công'],
+      salary: ['Cấu hình lương', 'Nhân viên có lương tháng hoặc lương giờ'],
+      payroll: ['Thiết lập bảng lương', 'Đã có ít nhất một bảng lương'],
+    },
+    open: 'Mở',
+    attendanceSetup: 'Thiết lập chấm công',
+    shiftSetup: 'Thiết lập ca',
+    shiftSetupHelp: 'Quản lý các ca dùng để tính chấm công.',
+    standardDay: 'Số giờ trong một ngày làm việc chuẩn',
+    standardDayHelp: 'Được dùng khi chưa có ca đã xuất bản.',
+    halfDay: 'Tính nửa ngày công khi thời gian làm việc từ',
+    from: 'Từ',
+    to: 'Đến',
+    countHalfDayLate: 'Ghi nhận đi trễ và về sớm trong nửa ngày',
+    lateEarly: 'Đi trễ & về sớm',
+    lateAfter: 'Đi trễ sau',
+    earlyBefore: 'Về sớm trước',
+    overtime: 'Thiết lập tăng ca',
+    overtimeBefore: 'Tăng ca trước ca',
+    overtimeAfter: 'Tăng ca sau ca',
+    consecutive: 'Dùng một lần chấm vào và ra cho các ca liên tiếp',
+    minutes: 'phút',
+    salaryTitle: 'Thiết lập lương',
+    payday: 'Ngày bắt đầu kỳ lương',
+    paydayHelp: 'Chọn ngày bắt đầu mỗi kỳ lương tháng.',
+    day: 'Ngày',
+    autoCreate: 'Tự động tạo bảng lương nháp',
+    autoCreateHelp: 'Supabase Cron tạo bản nháp kỳ lương hiện tại mỗi ngày khi được bật.',
+    autoUpdate: 'Tự động cập nhật bảng lương mỗi ngày',
+    autoUpdateHelp: 'Chấm công, nghỉ phép, thưởng, phụ cấp, khấu trừ, thuế và bảo hiểm được tính lại mỗi ngày.',
+    tax: 'Thuế thu nhập cá nhân',
+    taxHelp: 'Áp dụng tỷ lệ khấu trừ thuế thu nhập cá nhân đã cấu hình.',
+    insurance: 'Bảo hiểm xã hội',
+    insuranceHelp: 'Áp dụng tỷ lệ đóng của nhân viên và công ty.',
+    syncNow: 'Đồng bộ bảng lương ngay',
+    lastSync: 'Lần đồng bộ tự động gần nhất',
+    never: 'Chưa đồng bộ',
+    workRestTitle: 'Thiết lập ngày làm & nghỉ',
+    weekStarts: 'Tuần làm việc bắt đầu vào',
+    restDays: 'Ngày nghỉ hàng tuần',
+    standardWeek: 'Số giờ làm việc chuẩn mỗi tuần',
+    standardBreak: 'Thời gian nghỉ chuẩn',
+    annualLeave: 'Số ngày phép năm',
+    monthlyDays: 'Số ngày chuẩn mỗi tháng',
+    monthlyHours: 'Số giờ chuẩn mỗi tháng',
+    minimumRest: 'Thời gian nghỉ tối thiểu giữa các ca',
+    overtimeMonth: 'Giới hạn tăng ca tháng',
+    overtimeYear: 'Giới hạn tăng ca năm',
+    categoriesTitle: 'Mẫu và nhóm bảng lương',
+    categoriesHelp: 'Tạo tên dùng lại cho mẫu bảng lương, phụ cấp và khấu trừ.',
+    organizationTitle: 'Tùy chọn tổ chức',
+    organizationHelp: 'Quản lý cơ sở, bộ phận, chức danh và loại việc làm.',
+    add: 'Thêm',
+    noOptions: 'Chưa có tùy chọn',
+    approveAttendance: 'Duyệt chấm công',
+    approved: 'Đã duyệt',
+    pending: 'Chờ duyệt',
+    searchEmployees: 'Tìm nhân viên',
+    payType: 'Hình thức lương',
+    byMonth: 'Lương tháng',
+    byHour: 'Theo giờ',
+    present: 'Có mặt',
+    onLeave: 'Nghỉ phép',
+    lateArrival: 'Đi trễ',
+    earlyLeave: 'Về sớm',
+    shifts: 'ca',
+    occurrences: 'lần',
+    noAttendance: 'Không có dữ liệu chấm công trong kỳ này.',
+    days: ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'],
+  },
+} as const
 
 function hrModuleIcon(tab: string) {
   if (tab === 'employees') return <UserRound aria-hidden="true" size={18} />
@@ -27,10 +206,13 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     ButtonIconText,
     StaffPickerField,
     StaffRoleAvatar,
+    approveAttendancePeriod,
     approvePayrollRun,
     applyShiftTemplate,
     attendanceGridStyle,
+    attendanceLogs,
     attendanceScheduleScopeOptions,
+    attendanceSettings,
     attendanceShiftsByCell,
     attendanceWeekEnd,
     attendanceWeekDates,
@@ -77,6 +259,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrStatusFilter,
     hrTab,
     isOwnerOrAdmin,
+    leaveRequests,
     normalizeHrAdjustmentStatus,
     normalizeHrAdjustmentType,
     normalizePayrollPayCycle,
@@ -99,6 +282,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     saveHrAdjustment,
     saveHrSettings,
     saveHrSetupOption,
+    saveAttendanceSettings,
     saveShift,
     saving,
     selectedEmployeeDocuments,
@@ -107,6 +291,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     selectedEmployeeStaffProfile,
     selectedShiftTemplate,
     setAttendanceScheduleScope,
+    setAttendanceSettings,
     setDraggingShiftId,
     setAttendanceRange,
     setEmployeeForm,
@@ -140,6 +325,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     staffShiftStatuses,
     staffRoleName,
     startShiftForCell,
+    syncPayrollDraft,
     text,
     resetAttendanceRangeToThisWeek,
     updateHrAdjustmentStatus,
@@ -153,6 +339,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     publishAttendanceWeek,
   } = model
 
+  const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const [settingsSection, setSettingsSection] = useState<HrSettingsSection>('initialization')
+  const [timesheetSearch, setTimesheetSearch] = useState('')
+
   const activeEmployeeCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => (
     employeeProfileById.get(staffProfile.id)?.active !== false
   )).length
@@ -164,6 +354,37 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const periodAdvanceCount = periodHrAdjustments.filter((item: any) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
   const selectedEmployeeLabel = selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback
   const visibleHrTabs = isOwnerOrAdmin ? staffHrTabs : staffHrTabs.filter((tab: string) => tab !== 'zalo')
+  const periodAttendanceLogs = attendanceLogs.filter((log: any) => log.work_date >= payrollPeriodStart && log.work_date <= payrollPeriodEnd)
+  const pendingAttendanceCount = periodAttendanceLogs.filter((log: any) => log.approval_status !== 'approved').length
+  const timesheetProfiles = visibleStaffProfileOptions.filter((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    const query = timesheetSearch.trim().toLowerCase()
+    if (!query) return true
+    return [customerName(staffProfile, text), employee?.employee_code, employee?.attendance_number]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query))
+  })
+  const scheduledEmployeeCount = new Set(visibleScheduleAttendanceShifts.filter((shift: any) => shift.status === 'published').map((shift: any) => shift.staff_profile_id)).size
+  const salaryConfiguredCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    return Number(employee?.base_salary_vnd) > 0 || Number(employee?.hourly_rate_vnd) > 0
+  }).length
+  const settingsSections: Array<{ id: HrSettingsSection; icon: typeof ListChecks }> = [
+    { id: 'initialization', icon: ListChecks },
+    { id: 'clocking', icon: TimerReset },
+    { id: 'salary', icon: Landmark },
+    { id: 'work_rest', icon: CalendarDays },
+    { id: 'categories', icon: Coins },
+    { id: 'organization', icon: Settings2 },
+  ]
+  const initializationRows = [
+    { id: 'employees', complete: activeEmployeeCount > 0, meta: `${activeEmployeeCount}/${visibleAllStaffProfileOptions.length}`, open: () => setHrTab('employees') },
+    { id: 'shifts', complete: effectiveShiftTemplates.length > 0, meta: String(effectiveShiftTemplates.length), open: () => setHrTab('schedule') },
+    { id: 'schedule', complete: scheduledEmployeeCount > 0, meta: `${scheduledEmployeeCount}/${activeEmployeeCount}`, open: () => setHrTab('schedule') },
+    { id: 'attendance', complete: Boolean(attendanceSettings.location), meta: attendanceSettings.location || '—', open: () => setSettingsSection('clocking') },
+    { id: 'salary', complete: salaryConfiguredCount > 0, meta: `${salaryConfiguredCount}/${activeEmployeeCount}`, open: () => setSettingsSection('salary') },
+    { id: 'payroll', complete: payrollRuns.length > 0, meta: String(payrollRuns.length), open: () => setHrTab('payroll') },
+  ] as const
 
   const hrModuleMeta = (tab: string) => {
     if (tab === 'employees') return `${activeEmployeeCount}/${visibleAllStaffProfileOptions.length} ${text.labels.activeEmployee}`
@@ -659,48 +880,74 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
               {hrTab === 'timesheet' && (
                 <div className="staff-hr-table-panel">
-                  <div className="staff-hr-panel-head">
+                  <div className="staff-hr-panel-head staff-hr-timesheet-toolbar">
                     <div>
                       <h4>{text.hrTabs.timesheet}</h4>
                       <p className="staff-helper-text">{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</p>
                     </div>
-                    <strong>{visibleStaffProfileOptions.length}</strong>
+                    <label className="staff-hr-timesheet-search">
+                      <Search aria-hidden="true" size={17} />
+                      <input aria-label={completionText.searchEmployees} placeholder={completionText.searchEmployees} value={timesheetSearch} onChange={(event) => setTimesheetSearch(event.target.value)} />
+                    </label>
+                    {isOwnerOrAdmin && (
+                      <button className="primary staff-hr-approve-attendance" disabled={saving || periodAttendanceLogs.length === 0 || pendingAttendanceCount === 0} type="button" onClick={() => void approveAttendancePeriod()}>
+                        <CalendarCheck2 aria-hidden="true" size={17} />
+                        {completionText.approveAttendance}
+                        {pendingAttendanceCount > 0 && <span>{pendingAttendanceCount}</span>}
+                      </button>
+                    )}
                   </div>
                   <div className="staff-table-wrap">
                     <table className="staff-table staff-attendance-table">
                     <thead>
                       <tr>
                         <th>{text.labels.staffMember}</th>
-                        <th>{text.labels.workedHours}</th>
-                        <th>{text.labels.regularHours}</th>
+                        <th>{completionText.payType}</th>
+                        <th>{completionText.present}</th>
+                        <th>{completionText.onLeave}</th>
+                        <th>{completionText.lateArrival}</th>
+                        <th>{completionText.earlyLeave}</th>
                         <th>{text.labels.overtimeHours}</th>
-                        <th>{text.labels.nightHours}</th>
-                        <th>{text.labels.holidayHours}</th>
-                        <th>{text.labels.leaveBalance}</th>
-                        <th>{text.labels.grossIncome}</th>
-                        <th>{text.labels.netIncome}</th>
+                        <th>{completionText.approveAttendance}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleStaffProfileOptions.map((staffProfile: any) => {
+                      {timesheetProfiles.map((staffProfile: any) => {
                         const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
+                        const employee = employeeProfileById.get(staffProfile.id)
+                        const employeeLogs = periodAttendanceLogs.filter((log: any) => log.staff_profile_id === staffProfile.id)
+                        const employeeLeaves = leaveRequests.filter((leave: any) => (
+                          leave.staff_profile_id === staffProfile.id
+                          && leave.status === 'approved'
+                          && leave.end_date >= payrollPeriodStart
+                          && leave.start_date <= payrollPeriodEnd
+                        ))
+                        const presentShifts = employeeLogs.filter((log: any) => log.clock_in_at && log.clock_out_at).length
+                        const lateLogs = employeeLogs.filter((log: any) => Number(log.late_minutes) > 0)
+                        const earlyLogs = employeeLogs.filter((log: any) => Number(log.early_leave_minutes) > 0)
+                        const lateMinutes = lateLogs.reduce((sum: number, log: any) => sum + Number(log.late_minutes || 0), 0)
+                        const earlyMinutes = earlyLogs.reduce((sum: number, log: any) => sum + Number(log.early_leave_minutes || 0), 0)
+                        const approved = employeeLogs.length > 0 && employeeLogs.every((log: any) => log.approval_status === 'approved')
                         return (
                           <tr key={staffProfile.id}>
-                            <td>{customerName(staffProfile, text)}</td>
-                            <td>{hoursLabel(calculation.workedMinutes)}</td>
-                            <td>{hoursLabel(calculation.regularMinutes)}</td>
-                            <td>{hoursLabel(calculation.overtimeMinutes)}</td>
-                            <td>{hoursLabel(calculation.nightMinutes)}</td>
-                            <td>{hoursLabel(calculation.holidayMinutes)}</td>
-                            <td>{Number(calculation.leaveBalanceDays.toFixed(2))} {text.days}</td>
-                            <td>{formatVnd(calculation.grossIncome)}</td>
-                            <td>{formatVnd(calculation.netIncome)}</td>
+                            <td>
+                              <strong>{customerName(staffProfile, text)}</strong>
+                              <small>{employee?.employee_code || employee?.attendance_number || '—'}</small>
+                            </td>
+                            <td>{Number(employee?.base_salary_vnd) > 0 ? completionText.byMonth : completionText.byHour}</td>
+                            <td><strong>{presentShifts} {completionText.shifts}</strong><small>{hoursLabel(calculation.workedMinutes)}</small></td>
+                            <td><strong>{employeeLeaves.length || '—'}</strong><small>{employeeLeaves.length ? hoursLabel(calculation.paidLeaveHours * 60) : ''}</small></td>
+                            <td><strong>{lateLogs.length || '—'}{lateLogs.length ? ` ${completionText.occurrences}` : ''}</strong><small>{lateMinutes ? hoursLabel(lateMinutes) : ''}</small></td>
+                            <td><strong>{earlyLogs.length || '—'}{earlyLogs.length ? ` ${completionText.occurrences}` : ''}</strong><small>{earlyMinutes ? hoursLabel(earlyMinutes) : ''}</small></td>
+                            <td><strong>{calculation.overtimeMinutes > 0 ? hoursLabel(calculation.overtimeMinutes) : '—'}</strong></td>
+                            <td><span className={`staff-hr-approval-state ${approved ? 'approved' : 'pending'}`}>{approved ? completionText.approved : completionText.pending}</span></td>
                           </tr>
                         )
                       })}
                     </tbody>
                     </table>
                   </div>
+                  {timesheetProfiles.length === 0 && <p className="notice">{completionText.noAttendance}</p>}
                 </div>
               )}
 
@@ -829,41 +1076,148 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
               )}
 
               {hrTab === 'settings' && (
-                <div className="staff-attendance-layout staff-hr-settings-layout">
-                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-attendance-settings" disabled={!canManageAttendance}>
-                    <h4>{text.hrTabs.settings}</h4>
-                    <div className="form-grid compact-form-grid">
-                      <label>{text.labels.standardMonthlyDays}<input min={1} step="0.5" type="number" value={hrSettings.standard_monthly_days} onChange={(event) => setHrSettings({ ...hrSettings, standard_monthly_days: Number(event.target.value) || 26 })} /></label>
-                      <label>{text.labels.standardMonthlyHours}<input min={1} step="0.5" type="number" value={hrSettings.standard_monthly_hours} onChange={(event) => setHrSettings({ ...hrSettings, standard_monthly_hours: Number(event.target.value) || 208 })} /></label>
-                      <label>{text.labels.restPeriodHours}<input min={0} step="0.25" type="number" value={Number((hrSettings.rest_period_minutes / 60).toFixed(2))} onChange={(event) => setHrSettings({ ...hrSettings, rest_period_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
-                      <label>{text.labels.normalOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.normal_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, normal_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.nightOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.night_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, night_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.holidayOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.holiday_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, holiday_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.lunchAllowance}<input inputMode="numeric" value={formatDongInput(hrSettings.lunch_allowance_vnd)} onChange={(event) => setHrSettings({ ...hrSettings, lunch_allowance_vnd: parseDong(event.target.value) })} /></label>
-                      <label>{text.labels.annualLeaveDays}<input min={0} step="0.5" type="number" value={hrSettings.annual_leave_days} onChange={(event) => setHrSettings({ ...hrSettings, annual_leave_days: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employee_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_contribution_rate: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employer_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_contribution_rate: Number(event.target.value) || 0 })} /></label>
-                      <label>{text.labels.pitWithholdingRate}<input min={0} step="0.1" type="number" value={hrSettings.pit_withholding_rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_withholding_rate: Number(event.target.value) || 0 })} /></label>
-                      <label className="full">{text.labels.payrollNote}<textarea value={hrSettings.payslip_note || ''} onChange={(event) => setHrSettings({ ...hrSettings, payslip_note: event.target.value })} /></label>
-                    </div>
-                    <button className="primary" type="button" disabled={saving} onClick={saveHrSettings}>
-                      <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveHrSettings}</ButtonIconText>
-                    </button>
-                  </fieldset>
-                  <div className="staff-attendance-form">
-                    <h4>{text.labels.rule}</h4>
-                    {staffHrSetupOptionTypes.map((optionType: any) => (
-                      <div className="staff-hr-setup-row" key={optionType}>
-                        <label>
-                          {text.hrSetupOptionTypes[optionType]}
-                          <input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} />
-                        </label>
-                        <button type="button" disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} onClick={() => saveHrSetupOption(optionType)}>
-                          <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.actions.saveSetupOption}</ButtonIconText>
+                <div className="staff-hr-settings-shell">
+                  <header className="staff-hr-settings-heading">
+                    <h3>{completionText.settingsTitle}</h3>
+                    <p>{completionText.settingsIntro}</p>
+                  </header>
+                  <div className="staff-hr-settings-workspace">
+                    <nav className="staff-hr-settings-nav" aria-label={completionText.settingsTitle}>
+                      <span>{text.hrTabs.settings}</span>
+                      {settingsSections.map(({ id, icon: Icon }) => (
+                        <button aria-current={settingsSection === id ? 'page' : undefined} className={settingsSection === id ? 'active' : ''} key={id} type="button" onClick={() => setSettingsSection(id)}>
+                          <Icon aria-hidden="true" size={18} />
+                          {completionText.sections[id]}
                         </button>
-                        <p>{(hrOptionsByType.get(optionType) || []).map((option: any) => option.name).join(' · ') || text.noneYet}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </nav>
+
+                    <section className="staff-hr-settings-panel">
+                      {settingsSection === 'initialization' && (
+                        <div className="staff-hr-setup-checklist">
+                          <div className="staff-hr-settings-panel-title">
+                            <div><h4>{completionText.quickSetup}</h4><p>{completionText.quickSetupHelp}</p></div>
+                          </div>
+                          {initializationRows.map((row) => {
+                            const [title, description] = completionText.setupRows[row.id]
+                            return (
+                              <div className="staff-hr-checklist-row" key={row.id}>
+                                <CircleCheckBig aria-hidden="true" className={row.complete ? 'complete' : ''} size={24} />
+                                <div><strong>{title}</strong><span>{description} · {row.meta}</span></div>
+                                <button type="button" onClick={row.open}>{completionText.open}</button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {settingsSection === 'clocking' && (
+                        <fieldset className="staff-readonly-fieldset staff-hr-reference-settings" disabled={!canManageAttendance}>
+                          <div className="staff-hr-settings-panel-title"><div><h4>{completionText.attendanceSetup}</h4><p>{completionText.standardDayHelp}</p></div></div>
+                          <div className="staff-hr-reference-row">
+                            <div><strong>{completionText.shiftSetup}</strong><span>{completionText.shiftSetupHelp}</span></div>
+                            <button type="button" onClick={() => setHrTab('schedule')}>{effectiveShiftTemplates.length} {completionText.shifts}</button>
+                          </div>
+                          <div className="staff-hr-reference-group">
+                            <div className="staff-hr-reference-copy"><strong>{completionText.standardDay}</strong><span>{completionText.standardDayHelp}</span></div>
+                            <div className="staff-hr-inline-control">
+                              <StaffPickerField ariaLabel={completionText.standardDay} mode="duration" placeholder="08:00" type="time" value={`${String(Math.floor(attendanceSettings.standard_daily_minutes / 60)).padStart(2, '0')}:${String(attendanceSettings.standard_daily_minutes % 60).padStart(2, '0')}`} onChange={(value: string) => {
+                                const [hours, minutes] = value.split(':').map(Number)
+                                setAttendanceSettings({ ...attendanceSettings, standard_daily_minutes: Math.max(0, hours * 60 + minutes) })
+                              }} />
+                            </div>
+                            <label className="staff-hr-rule-toggle">
+                              <input checked={attendanceSettings.half_day_enabled} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, half_day_enabled: event.target.checked })} />
+                              <span>{completionText.halfDay}</span>
+                            </label>
+                            <div className="staff-hr-inline-control staff-hr-range-control">
+                              <label>{completionText.from}<input min={0} type="number" value={attendanceSettings.half_day_min_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, half_day_min_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                              <label>{completionText.to}<input min={0} type="number" value={attendanceSettings.half_day_max_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, half_day_max_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                            </div>
+                            <label className="staff-hr-rule-toggle">
+                              <input checked={attendanceSettings.count_late_early_on_half_day} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, count_late_early_on_half_day: event.target.checked })} />
+                              <span>{completionText.countHalfDayLate}</span>
+                            </label>
+                          </div>
+                          <div className="staff-hr-reference-group">
+                            <div className="staff-hr-reference-copy"><strong>{completionText.lateEarly}</strong></div>
+                            <label className="staff-hr-rule-toggle"><input checked={attendanceSettings.late_arrival_enabled} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, late_arrival_enabled: event.target.checked })} /><span>{completionText.lateAfter}</span><input min={0} type="number" value={attendanceSettings.late_after_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, late_after_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                            <label className="staff-hr-rule-toggle"><input checked={attendanceSettings.early_leave_enabled} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, early_leave_enabled: event.target.checked })} /><span>{completionText.earlyBefore}</span><input min={0} type="number" value={attendanceSettings.early_leave_before_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, early_leave_before_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                          </div>
+                          <div className="staff-hr-reference-group">
+                            <div className="staff-hr-reference-copy"><strong>{completionText.overtime}</strong></div>
+                            <label className="staff-hr-rule-toggle"><input checked={attendanceSettings.overtime_before_shift_enabled} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_before_shift_enabled: event.target.checked })} /><span>{completionText.overtimeBefore}</span><input min={0} type="number" value={attendanceSettings.overtime_before_shift_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_before_shift_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                            <label className="staff-hr-rule-toggle"><input checked={attendanceSettings.overtime_after_shift_enabled} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_after_shift_enabled: event.target.checked })} /><span>{completionText.overtimeAfter}</span><input min={0} type="number" value={attendanceSettings.overtime_after_shift_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_after_shift_minutes: Number(event.target.value) || 0 })} /><small>{completionText.minutes}</small></label>
+                            <label className="staff-hr-rule-toggle"><input checked={attendanceSettings.single_clock_for_consecutive_shifts} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, single_clock_for_consecutive_shifts: event.target.checked })} /><span>{completionText.consecutive}</span></label>
+                          </div>
+                          <div className="staff-hr-settings-actions"><button className="primary" disabled={saving} type="button" onClick={() => void saveAttendanceSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveRules}</button></div>
+                        </fieldset>
+                      )}
+
+                      {settingsSection === 'salary' && (
+                        <fieldset className="staff-readonly-fieldset staff-hr-reference-settings" disabled={!canManageAttendance}>
+                          <div className="staff-hr-settings-panel-title"><div><h4>{completionText.salaryTitle}</h4><p>{completionText.paydayHelp}</p></div></div>
+                          <div className="staff-hr-reference-row">
+                            <div><strong>{completionText.payday}</strong><span>{completionText.paydayHelp}</span></div>
+                            <label className="staff-hr-payday-select">{completionText.day}<select value={hrSettings.pay_period_start_day} onChange={(event) => setHrSettings({ ...hrSettings, pay_period_start_day: Number(event.target.value) })}>{Array.from({ length: 28 }, (_, index) => index + 1).map((day) => <option key={day} value={day}>{day}</option>)}</select></label>
+                          </div>
+                          <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.autoCreate}</strong><span>{completionText.autoCreateHelp}</span></div><input checked={hrSettings.auto_create_payroll_runs} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, auto_create_payroll_runs: event.target.checked })} /></label>
+                          <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.autoUpdate}</strong><span>{completionText.autoUpdateHelp}</span></div><input checked={hrSettings.auto_update_payroll_daily} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, auto_update_payroll_daily: event.target.checked })} /></label>
+                          {(['payroll_template', 'allowance', 'deduction'] as const).map((optionType) => (
+                            <button className="staff-hr-reference-row staff-hr-reference-link" key={optionType} type="button" onClick={() => setSettingsSection('categories')}>
+                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><span>{(hrOptionsByType.get(optionType) || []).map((option: any) => option.name).slice(0, 3).join(', ') || completionText.noOptions}</span></div>
+                              <span>{(hrOptionsByType.get(optionType) || []).length}</span>
+                            </button>
+                          ))}
+                          <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.tax}</strong><span>{completionText.taxHelp}</span></div><input checked={hrSettings.personal_income_tax_enabled} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, personal_income_tax_enabled: event.target.checked })} /></label>
+                          <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.insurance}</strong><span>{completionText.insuranceHelp}</span></div><input checked={hrSettings.social_insurance_enabled} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, social_insurance_enabled: event.target.checked })} /></label>
+                          <div className="staff-hr-salary-rates">
+                            <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employee_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_contribution_rate: Number(event.target.value) || 0 })} /></label>
+                            <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employer_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_contribution_rate: Number(event.target.value) || 0 })} /></label>
+                            <label>{text.labels.pitWithholdingRate}<input min={0} step="0.1" type="number" value={hrSettings.pit_withholding_rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_withholding_rate: Number(event.target.value) || 0 })} /></label>
+                          </div>
+                          <div className="staff-hr-settings-actions">
+                            <span>{completionText.lastSync}: {hrSettings.last_auto_payroll_sync_on || completionText.never}</span>
+                            <button disabled={saving} type="button" onClick={() => void syncPayrollDraft()}><RefreshCw aria-hidden="true" size={16} />{completionText.syncNow}</button>
+                            <button className="primary" disabled={saving} type="button" onClick={() => void saveHrSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveHrSettings}</button>
+                          </div>
+                        </fieldset>
+                      )}
+
+                      {settingsSection === 'work_rest' && (
+                        <fieldset className="staff-readonly-fieldset staff-hr-reference-settings" disabled={!canManageAttendance}>
+                          <div className="staff-hr-settings-panel-title"><div><h4>{completionText.workRestTitle}</h4></div></div>
+                          <div className="staff-hr-work-rest-grid">
+                            <label>{completionText.weekStarts}<select value={attendanceSettings.work_week_start} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, work_week_start: Number(event.target.value) })}>{completionText.days.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>
+                            <label>{completionText.standardWeek}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_weekly_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_weekly_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                            <label>{completionText.standardBreak}<input min={0} type="number" value={attendanceSettings.standard_break_minutes} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_break_minutes: Number(event.target.value) || 0 })} /></label>
+                            <label>{completionText.annualLeave}<input min={0} step="0.5" type="number" value={attendanceSettings.annual_leave_days} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, annual_leave_days: Number(event.target.value) || 0 })} /></label>
+                            <label>{completionText.monthlyDays}<input min={1} step="0.5" type="number" value={hrSettings.standard_monthly_days} onChange={(event) => setHrSettings({ ...hrSettings, standard_monthly_days: Number(event.target.value) || 26 })} /></label>
+                            <label>{completionText.monthlyHours}<input min={1} step="0.5" type="number" value={hrSettings.standard_monthly_hours} onChange={(event) => setHrSettings({ ...hrSettings, standard_monthly_hours: Number(event.target.value) || 208 })} /></label>
+                            <label>{completionText.minimumRest}<input min={0} step="0.25" type="number" value={Number((hrSettings.rest_period_minutes / 60).toFixed(2))} onChange={(event) => setHrSettings({ ...hrSettings, rest_period_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                            <label>{completionText.overtimeMonth}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_monthly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_monthly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                            <label>{completionText.overtimeYear}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_yearly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_yearly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
+                            <label>{text.labels.normalOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.normal_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, normal_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
+                            <label>{text.labels.nightOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.night_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, night_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
+                            <label>{text.labels.holidayOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.holiday_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, holiday_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
+                          </div>
+                          <div className="staff-hr-rest-days"><strong>{completionText.restDays}</strong>{completionText.days.map((day, index) => <label key={day}><input checked={attendanceSettings.weekly_rest_days.includes(index)} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, weekly_rest_days: event.target.checked ? [...new Set([...attendanceSettings.weekly_rest_days, index])].sort() : attendanceSettings.weekly_rest_days.filter((value: number) => value !== index) })} />{day}</label>)}</div>
+                          <div className="staff-hr-settings-actions"><button disabled={saving} type="button" onClick={() => void saveAttendanceSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveRules}</button><button className="primary" disabled={saving} type="button" onClick={() => void saveHrSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveHrSettings}</button></div>
+                        </fieldset>
+                      )}
+
+                      {(settingsSection === 'categories' || settingsSection === 'organization') && (
+                        <div className="staff-hr-option-settings">
+                          <div className="staff-hr-settings-panel-title"><div><h4>{settingsSection === 'categories' ? completionText.categoriesTitle : completionText.organizationTitle}</h4><p>{settingsSection === 'categories' ? completionText.categoriesHelp : completionText.organizationHelp}</p></div></div>
+                          {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => (
+                            <div className="staff-hr-option-row" key={optionType}>
+                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><p>{(hrOptionsByType.get(optionType) || []).map((option: any) => option.name).join(' · ') || completionText.noOptions}</p></div>
+                              <label><input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} /><button disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} type="button" onClick={() => void saveHrSetupOption(optionType)}><Plus aria-hidden="true" size={15} />{completionText.add}</button></label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
                   </div>
                 </div>
               )}
