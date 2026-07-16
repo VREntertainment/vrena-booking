@@ -6132,7 +6132,7 @@
 .app .staff-console .staff-hr-top-navigation {
   position: static;
   display: grid;
-  grid-template-columns: repeat(7, minmax(126px, 1fr));
+  grid-template-columns: repeat(8, minmax(126px, 1fr));
   gap: 4px;
   overflow-x: auto;
   border: 0;
@@ -6155,9 +6155,376 @@
   padding: 18px 0 24px;
 }
 
+.app .staff-zalo-settings {
+  display: grid;
+  gap: 20px;
+  max-width: 1320px;
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-zalo-settings-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 2px 0;
+}
+
+.app .staff-zalo-settings-header h3 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
+}
+
+.app .staff-zalo-settings-header p {
+  margin: 7px 0 0;
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+}
+
+.app .staff-zalo-settings-header > span {
+  flex: 0 0 auto;
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.app .staff-zalo-settings-card {
+  overflow: hidden;
+  border: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+  border-radius: 14px;
+  background: var(--staff-modern-surface, var(--vrena-white));
+  box-shadow: 0 16px 42px color-mix(in srgb, var(--vrena-neutral-950) 6%, transparent);
+}
+
+.app .staff-zalo-setting-row,
+.app .staff-zalo-permissions {
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+}
+
+.app .staff-zalo-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 108px;
+}
+
+.app .staff-zalo-app-row {
+  min-height: 124px;
+}
+
+.app .staff-zalo-permissions {
+  border-bottom: 0;
+}
+
+.app .staff-zalo-setting-copy {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.app .staff-zalo-setting-copy > strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.app .staff-zalo-app-row .staff-zalo-setting-copy > strong {
+  font-size: 22px;
+}
+
+.app .staff-zalo-setting-copy > span {
+  max-width: 900px;
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.app .staff-zalo-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--vrena-neutral-300);
+  box-shadow: none;
+}
+
+.app .staff-zalo-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--vrena-white);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
+  transition: transform 160ms ease;
+}
+
+.app .staff-zalo-switch.active {
+  background: var(--vrena-blue-600);
+}
+
+.app .staff-zalo-switch.active span {
+  transform: translateX(22px);
+}
+
+.app .staff-zalo-row-action,
+.app .staff-zalo-share-button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--vrena-blue-600);
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.app .staff-zalo-row-action::after {
+  content: '›';
+  margin-left: 7px;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 0;
+  vertical-align: -2px;
+}
+
+.app .staff-zalo-share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px solid var(--vrena-blue-600);
+  border-radius: 10px;
+  padding: 9px 18px;
+}
+
+.app .staff-zalo-permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 36px;
+  margin-top: 20px;
+}
+
+.app .staff-zalo-permission-grid label {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.app .staff-zalo-permission-grid input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--vrena-blue-600);
+}
+
+.app .staff-zalo-permission-grid label > span {
+  display: grid;
+  gap: 4px;
+}
+
+.app .staff-zalo-permission-grid small {
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.app .staff-zalo-permission-grid .unavailable {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.app .staff-zalo-permission-grid .staff-zalo-location-permission {
+  grid-column: 1 / -1;
+  padding-top: 18px;
+  border-top: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+}
+
+.app .staff-zalo-location-panel {
+  display: grid;
+  gap: 0;
+  padding: 0 28px 24px;
+  border-bottom: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+  background: color-mix(in srgb, var(--vrena-blue-50) 45%, var(--staff-modern-surface, var(--vrena-white)));
+}
+
+.app .staff-zalo-location-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+}
+
+.app .staff-zalo-location-toolbar p {
+  margin: 0;
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app .staff-zalo-location-toolbar button,
+.app .staff-zalo-location-form-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.app .staff-zalo-location {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+}
+
+.app .staff-zalo-location.inactive {
+  opacity: 0.58;
+}
+
+.app .staff-zalo-location-pin {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--vrena-blue-600) 11%, transparent);
+  color: var(--vrena-blue-600);
+}
+
+.app .staff-zalo-location > div:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.app .staff-zalo-location span,
+.app .staff-zalo-location small {
+  overflow-wrap: anywhere;
+  color: var(--staff-modern-muted, var(--vrena-neutral-600));
+  font-size: 12px;
+}
+
+.app .staff-zalo-location-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.app .staff-zalo-location-actions button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.app .staff-zalo-location-form {
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid var(--staff-modern-border, var(--vrena-neutral-200));
+  border-radius: 12px;
+  background: var(--staff-modern-surface, var(--vrena-white));
+}
+
+.app .staff-zalo-location-form h4 {
+  margin: 0 0 16px;
+}
+
+.app .staff-zalo-location-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-zalo-settings {
+    color: var(--vrena-bg);
+  }
+
+  .app .staff-zalo-location-panel {
+    background: color-mix(in srgb, var(--vrena-blue-900) 16%, var(--staff-modern-surface));
+  }
+
+  .app .staff-zalo-switch {
+    background: var(--vrena-neutral-600);
+  }
+}
+
+@media (max-width: 760px) {
+  .app .staff-zalo-settings-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .app .staff-zalo-setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .app .staff-zalo-app-row {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .app .staff-zalo-row-action,
+  .app .staff-zalo-share-button {
+    width: 100%;
+  }
+
+  .app .staff-zalo-row-action {
+    justify-content: flex-start;
+    padding-inline: 0;
+    text-align: left;
+  }
+
+  .app .staff-zalo-permissions,
+  .app .staff-zalo-location-panel {
+    padding: 20px;
+  }
+
+  .app .staff-zalo-permission-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-zalo-location-permission {
+    grid-column: auto;
+  }
+
+  .app .staff-zalo-location-toolbar,
+  .app .staff-zalo-location-form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-zalo-location-toolbar button,
+  .app .staff-zalo-location-form-actions button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 900px) {
   .app .staff-console .staff-hr-top-navigation {
-    grid-template-columns: repeat(7, minmax(142px, 1fr));
+    grid-template-columns: repeat(8, minmax(142px, 1fr));
     scrollbar-width: thin;
   }
 }

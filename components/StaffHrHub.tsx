@@ -1,9 +1,10 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Pencil, Plus, ReceiptText, Save, Send, Settings2, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Pencil, Plus, ReceiptText, Save, Send, Settings2, Smartphone, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
+import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
 type StaffContractStatus = string
 type StaffHrHubProps = {
@@ -17,6 +18,7 @@ function hrModuleIcon(tab: string) {
   if (tab === 'payroll') return <ReceiptText aria-hidden="true" size={18} />
   if (tab === 'adjustments') return <Coins aria-hidden="true" size={18} />
   if (tab === 'advances') return <WalletCards aria-hidden="true" size={18} />
+  if (tab === 'zalo') return <Smartphone aria-hidden="true" size={18} />
   return <Settings2 aria-hidden="true" size={18} />
 }
 
@@ -91,6 +93,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     periodHrAdjustments,
     profileById,
     rangeLabel,
+    resolvedLanguage,
     roleLabel,
     saveEmployeeProfile,
     saveHrAdjustment,
@@ -114,6 +117,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     setHrSetupForm,
     setHrStatusFilter,
     setHrTab,
+    setStatus,
     setPayrollRunForm,
     setShiftForm,
     sharedText,
@@ -159,6 +163,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const pendingAdjustmentCount = periodHrAdjustments.filter((item: any) => normalizeHrAdjustmentStatus(item.status) === 'pending').length
   const periodAdvanceCount = periodHrAdjustments.filter((item: any) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
   const selectedEmployeeLabel = selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback
+  const visibleHrTabs = isOwnerOrAdmin ? staffHrTabs : staffHrTabs.filter((tab: string) => tab !== 'zalo')
 
   const hrModuleMeta = (tab: string) => {
     if (tab === 'employees') return `${activeEmployeeCount}/${visibleAllStaffProfileOptions.length} ${text.labels.activeEmployee}`
@@ -167,6 +172,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     if (tab === 'payroll') return `${payrollRuns.length} ${text.labels.payrollRun}`
     if (tab === 'adjustments') return `${pendingAdjustmentCount} ${text.adjustmentStatuses.pending}`
     if (tab === 'advances') return `${periodAdvanceCount} ${text.hrTabs.advances}`
+    if (tab === 'zalo') return 'Mini App'
     return `${staffHrSetupOptionTypes.length} ${text.labels.rule}`
   }
 
@@ -177,7 +183,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
           ) : (
             <>
               <nav className="staff-hr-module-rail staff-hr-top-navigation" aria-label={text.tabs.hr}>
-                {staffHrTabs.map((tab: any) => (
+                {visibleHrTabs.map((tab: any) => (
                   <button aria-current={hrTab === tab ? 'page' : undefined} className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
                     <span className="staff-hr-module-icon">{hrModuleIcon(tab)}</span>
                     <span>
@@ -816,6 +822,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     {periodHrAdjustments.length === 0 && <p className="notice">{text.messages.noAdjustments}</p>}
                   </div>
                 </div>
+              )}
+
+              {hrTab === 'zalo' && isOwnerOrAdmin && (
+                <StaffZaloMiniAppSettings language={resolvedLanguage} onStatus={setStatus} />
               )}
 
               {hrTab === 'settings' && (

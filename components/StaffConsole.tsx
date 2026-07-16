@@ -50,7 +50,7 @@ type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'hr' | 'games
 type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
 type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'settings'
-type StaffHrTab = 'employees' | 'schedule' | 'timesheet' | 'payroll' | 'adjustments' | 'advances' | 'settings'
+type StaffHrTab = 'employees' | 'schedule' | 'timesheet' | 'payroll' | 'adjustments' | 'advances' | 'zalo' | 'settings'
 type StaffScheduleScope = 'all' | 'department' | 'mine'
 type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
@@ -867,6 +867,7 @@ const staffConsoleText = {
       payroll: 'Payroll',
       adjustments: 'Bonuses',
       advances: 'Debts & advances',
+      zalo: 'Zalo Mini App',
       settings: 'HR settings',
     } satisfies Record<StaffHrTab, string>,
     shiftStatuses: {
@@ -1645,6 +1646,7 @@ const staffConsoleText = {
       payroll: 'Bảng lương',
       adjustments: 'Thưởng',
       advances: 'Nợ & tạm ứng',
+      zalo: 'Zalo Mini App',
       settings: 'Thiết lập HR',
     } satisfies Record<StaffHrTab, string>,
     shiftStatuses: {
@@ -3281,7 +3283,7 @@ const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 
 const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
 const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
 const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'settings']
-const staffHrTabs: StaffHrTab[] = ['employees', 'schedule', 'timesheet', 'payroll', 'adjustments', 'advances', 'settings']
+const staffHrTabs: StaffHrTab[] = ['employees', 'schedule', 'timesheet', 'payroll', 'adjustments', 'advances', 'zalo', 'settings']
 const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed', 'cancelled']
 const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
 const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
@@ -8619,6 +8621,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             periodHrAdjustments,
             profileById,
             rangeLabel,
+            resolvedLanguage,
             roleLabel,
             saveEmployeeProfile,
             saveHrAdjustment,
@@ -8642,6 +8645,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             setHrSetupForm,
             setHrStatusFilter,
             setHrTab,
+            setStatus,
             setPayrollRunForm,
             setShiftForm,
             sharedText,

@@ -16,6 +16,19 @@ type ZaloProfile = {
   name: string | null
 }
 
+type ZaloLocation = {
+  latitude: number
+  longitude: number
+  provider: string | null
+}
+
+type ZaloSettings = {
+  enabled: boolean
+  require_location: boolean
+  allow_timesheet: boolean
+  allow_payslip: boolean
+}
+
 type ZaloIdentity = {
   id: string
   staff_profile_id: string
@@ -166,6 +179,48 @@ async function decodeZaloPhone(accessToken: string, phoneToken: string) {
   return phone
 }
 
+async function decodeZaloLocation(accessToken: string, locationToken: string): Promise<ZaloLocation> {
+  const appSecret = process.env.ZALO_APP_SECRET
+  if (!appSecret) throw new Error('Zalo employee attendance is not configured yet.')
+
+  const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me/info', {
+    access_token: accessToken,
+    code: locationToken,
+    secret_key: appSecret,
+  })
+  const data = payload.data && typeof payload.data === 'object'
+    ? payload.data as Record<string, unknown>
+    : {}
+  const latitude = Number(data.latitude)
+  const longitude = Number(data.longitude)
+  const provider = cleanString(data.provider, 40) || null
+  const rawTimestamp = typeof data.timestamp === 'string' || typeof data.timestamp === 'number'
+    ? data.timestamp
+    : null
+  const numericTimestamp = Number(rawTimestamp)
+  const timestampMs = Number.isFinite(numericTimestamp)
+    ? (numericTimestamp < 1_000_000_000_000 ? numericTimestamp * 1000 : numericTimestamp)
+    : Date.parse(String(rawTimestamp || ''))
+
+  if (
+    (typeof payload.error === 'number' && payload.error !== 0)
+    || !Number.isFinite(latitude)
+    || latitude < -90
+    || latitude > 90
+    || !Number.isFinite(longitude)
+    || longitude < -180
+    || longitude > 180
+  ) {
+    throw new Error('Zalo could not verify your current location. Approve location access and try again.')
+  }
+
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) {
+    throw new Error('Your location proof expired. Try clocking again to request a fresh location.')
+  }
+
+  return { latitude, longitude, provider }
+}
+
 async function consumeRateLimit(
   adminClient: SupabaseClient,
   subject: string,
@@ -196,6 +251,10 @@ function clockErrorMessage(value: unknown) {
     'The Zalo account is not linked to an employee.',
     'The employee profile is not active.',
     'There is no open attendance shift to clock out.',
+    'Zalo employee attendance is disabled.',
+    'A current location is required to record attendance.',
+    'Attendance location is not configured.',
+    'You are outside an approved check-in location.',
   ]
   return safeMessages.includes(message) || message.includes('Too many attempts')
     ? message
@@ -325,7 +384,7 @@ async function linkZaloIdentity(
   return identity
 }
 
-async function statusForIdentity(adminClient: SupabaseClient, identity: ZaloIdentity) {
+async function statusForIdentity(adminClient: SupabaseClient, identity: ZaloIdentity, settings: ZaloSettings) {
   const today = vietnamDate()
   const [employeeResult, profileResult, shiftsResult, openLogResult, todayLogResult] = await Promise.all([
     adminClient
@@ -406,6 +465,9 @@ async function statusForIdentity(adminClient: SupabaseClient, identity: ZaloIden
     attendanceLog,
     canClockIn: !openLogResult.data,
     canClockOut: Boolean(openLogResult.data),
+    locationRequired: settings.require_location,
+    allowTimesheet: settings.allow_timesheet,
+    allowPayslip: settings.allow_payslip,
   }
 }
 
@@ -414,6 +476,8 @@ function actionErrorStatus(message: string) {
   if (message.includes('temporarily unavailable')) return 503
   if (message === 'Attendance could not be recorded.') return 500
   if (message.includes('not active')) return 403
+  if (message.includes('disabled')) return 403
+  if (message.includes('current location') || message.includes('location proof') || message.includes('outside an approved')) return 403
   if (message.includes('already linked') || message.includes('no open attendance shift')) return 409
   if (message.includes('not configured')) return 503
   if (message.includes('Zalo session expired')) return 401
@@ -464,6 +528,15 @@ export async function POST(request: NextRequest) {
     const zaloProfile = await verifyZaloAccessToken(accessToken)
     await consumeRateLimit(adminClient, `zalo:${action}:${zaloProfile.id}`, action === 'status' ? 60 : 12, 60)
 
+    const { data: settingsData, error: settingsError } = await adminClient
+      .from('staff_zalo_settings')
+      .select('enabled, require_location, allow_timesheet, allow_payslip')
+      .eq('id', 'default')
+      .single()
+    if (settingsError || !settingsData) throw new Error('Zalo employee attendance is not configured yet.')
+    const settings = settingsData as ZaloSettings
+    if (!settings.enabled) throw new Error('Zalo employee attendance is disabled.')
+
     if (action === 'link') {
       const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
       if (!phoneToken) return jsonResponse(request, { error: 'Approve phone access in Zalo to link your employee profile.' }, 400)
@@ -471,7 +544,7 @@ export async function POST(request: NextRequest) {
       const phone = await decodeZaloPhone(accessToken, phoneToken)
       const employee = await findEmployeeByPhone(adminClient, phone)
       const identity = await linkZaloIdentity(adminClient, employee, zaloProfile, phone)
-      return jsonResponse(request, await statusForIdentity(adminClient, identity))
+      return jsonResponse(request, await statusForIdentity(adminClient, identity, settings))
     }
 
     const { data: identityData, error: identityError } = await adminClient
@@ -493,16 +566,27 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'status') {
-      return jsonResponse(request, await statusForIdentity(adminClient, identity))
+      return jsonResponse(request, await statusForIdentity(adminClient, identity, settings))
     }
+
+    const locationToken = cleanString(body.locationToken, MAX_TOKEN_LENGTH)
+    if (settings.require_location && !locationToken) {
+      throw new Error('A current location is required to record attendance.')
+    }
+    const location = settings.require_location
+      ? await decodeZaloLocation(accessToken, locationToken)
+      : null
 
     const { data: clockResult, error: clockError } = await adminClient.rpc('staff_zalo_attendance_clock', {
       p_identity_id: identity.id,
       p_action: action,
+      p_latitude: location?.latitude ?? null,
+      p_longitude: location?.longitude ?? null,
+      p_location_provider: location?.provider ?? null,
     })
     if (clockError) throw new Error(clockErrorMessage(clockError.message))
 
-    const status = await statusForIdentity(adminClient, identity)
+    const status = await statusForIdentity(adminClient, identity, settings)
     return jsonResponse(request, { ...status, result: clockResult })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Attendance request failed.'

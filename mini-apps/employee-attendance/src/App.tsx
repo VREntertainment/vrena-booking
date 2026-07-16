@@ -63,7 +63,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    void refresh()
+    const initialRefresh = window.setTimeout(() => void refresh(), 0)
+    return () => window.clearTimeout(initialRefresh)
   }, [refresh])
 
   useEffect(() => {
@@ -87,8 +88,8 @@ export default function App() {
       const nextStatus = action === 'link'
         ? await linkEmployeeProfile()
         : action === 'clock_in'
-          ? await clockIn()
-          : await clockOut()
+          ? await clockIn(status?.locationRequired !== false)
+          : await clockOut(status?.locationRequired !== false)
       setStatus(nextStatus)
       setNotice(action === 'link'
         ? 'Đã liên kết hồ sơ nhân viên. / Employee linked.'
@@ -169,27 +170,29 @@ export default function App() {
                 <span className="state-dot" aria-hidden="true" />
               </div>
 
-              <div className="time-grid">
-                <div>
-                  <span>Vào ca / In</span>
-                  <strong>{shortTime(status.attendanceLog?.clock_in_at)}</strong>
+              {status.allowTimesheet !== false && (
+                <div className="time-grid">
+                  <div>
+                    <span>Vào ca / In</span>
+                    <strong>{shortTime(status.attendanceLog?.clock_in_at)}</strong>
+                  </div>
+                  <div>
+                    <span>Ra ca / Out</span>
+                    <strong>{shortTime(status.attendanceLog?.clock_out_at)}</strong>
+                  </div>
+                  <div>
+                    <span>Đã làm / Worked</span>
+                    <strong>{durationLabel(workedMinutes)}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span>Ra ca / Out</span>
-                  <strong>{shortTime(status.attendanceLog?.clock_out_at)}</strong>
-                </div>
-                <div>
-                  <span>Đã làm / Worked</span>
-                  <strong>{durationLabel(workedMinutes)}</strong>
-                </div>
-              </div>
+              )}
 
               {status.attendanceLog?.status === 'late' && (
                 <p className="late-note">Giờ vào ca được ghi nhận là trễ. / Clock-in recorded as late.</p>
               )}
             </article>
 
-            <article className="schedule-card">
+            {status.allowTimesheet !== false && <article className="schedule-card">
               <div className="section-heading">
                 <div>
                   <span className="eyebrow">LỊCH HÔM NAY</span>
@@ -212,9 +215,15 @@ export default function App() {
               )) : (
                 <p className="empty-state">Không có ca đã xuất bản hôm nay. / No published shift today.</p>
               )}
-            </article>
+            </article>}
 
             <div className="action-panel">
+              {status.locationRequired && (
+                <p className="location-proof-note">
+                  <span aria-hidden="true">⌖</span>
+                  Vị trí GPS hiện tại sẽ được kiểm tra khi chấm công. / Current GPS location is checked for this action.
+                </p>
+              )}
               {status.canClockOut ? (
                 <button className="primary-button clock-out" type="button" disabled={busy} onClick={() => void runAction('clock_out')}>
                   {busy ? 'Đang ghi nhận…' : 'Ra ca'}
