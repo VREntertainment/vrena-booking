@@ -1,4 +1,4 @@
-import { getAccessToken, getPhoneNumber } from 'zmp-sdk'
+import { getAccessToken, getLocation, getPhoneNumber } from 'zmp-sdk'
 
 export type AttendanceLog = {
   id: string
@@ -38,13 +38,16 @@ export type AttendanceStatus = {
   attendanceLog?: AttendanceLog | null
   canClockIn?: boolean
   canClockOut?: boolean
+  locationRequired?: boolean
+  allowTimesheet?: boolean
+  allowPayslip?: boolean
 }
 
 type AttendanceAction = 'status' | 'link' | 'clock_in' | 'clock_out'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://vrena-booking.vercel.app').replace(/\/$/, '')
 
-async function apiRequest(action: AttendanceAction, phoneToken?: string) {
+async function apiRequest(action: AttendanceAction, tokens?: { phoneToken?: string; locationToken?: string }) {
   const accessToken = await getAccessToken()
   if (!accessToken) throw new Error('Zalo could not start a secure employee session.')
 
@@ -54,7 +57,7 @@ async function apiRequest(action: AttendanceAction, phoneToken?: string) {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ action, phoneToken }),
+    body: JSON.stringify({ action, ...tokens }),
   })
   const payload = await response.json().catch(() => null) as (AttendanceStatus & { error?: string }) | null
 
@@ -72,13 +75,20 @@ export function loadAttendanceStatus() {
 export async function linkEmployeeProfile() {
   const { token } = await getPhoneNumber()
   if (!token) throw new Error('Zalo did not return a phone verification token.')
-  return apiRequest('link', token)
+  return apiRequest('link', { phoneToken: token })
 }
 
-export function clockIn() {
-  return apiRequest('clock_in')
+async function attendanceLocationToken(required: boolean) {
+  if (!required) return undefined
+  const { token } = await getLocation()
+  if (!token) throw new Error('Zalo did not return a current location token. Please approve location access and try again.')
+  return token
 }
 
-export function clockOut() {
-  return apiRequest('clock_out')
+export async function clockIn(locationRequired = true) {
+  return apiRequest('clock_in', { locationToken: await attendanceLocationToken(locationRequired) })
+}
+
+export async function clockOut(locationRequired = true) {
+  return apiRequest('clock_out', { locationToken: await attendanceLocationToken(locationRequired) })
 }
