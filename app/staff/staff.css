@@ -5558,6 +5558,13 @@
   padding: 0;
 }
 
+.app .staff-console button.staff-employee-selected-save.primary {
+  flex: 0 0 auto;
+  width: auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .app .staff-hr-pay-summary {
   gap: 0;
   margin-top: 14px;
