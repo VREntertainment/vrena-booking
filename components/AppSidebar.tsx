@@ -78,14 +78,17 @@ export default function AppSidebar({
       <div>
         <div className="app-title-row">
           <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">
-            <picture className="brand-logo-full">
-              <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
-              <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
-            </picture>
-            <picture className="brand-logo-mark">
-              <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-mark-dark.svg" />
-              <img src="/brand/vrena-mark-light.svg" alt="" width="1000" height="1000" />
-            </picture>
+            {navigationCollapsed ? (
+              <picture className="brand-logo-mark">
+                <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-mark-dark.svg" />
+                <img src="/brand/vrena-mark-light.svg" alt="" width="1000" height="1000" />
+              </picture>
+            ) : (
+              <picture className="brand-logo-full">
+                <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
+                <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
+              </picture>
+            )}
           </a>
           <div className="language-picker">
             <button
