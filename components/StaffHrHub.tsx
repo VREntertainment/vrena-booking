@@ -203,13 +203,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
               {hrTab === 'employees' && (
                 <div className="staff-attendance-layout staff-employee-layout staff-hr-employee-layout">
                   <div className="staff-attendance-list staff-employee-list staff-hr-roster-panel">
-                    <div className="staff-hr-panel-head">
-                      <div>
-                        <h4>{text.labels.privateEmployeeProfile}</h4>
-                        <p className="staff-helper-text">{text.messages.employeeProfileIntro}</p>
-                      </div>
-                      <strong>{filteredHrStaffProfiles.length}</strong>
-                    </div>
                     <div className="staff-hr-filter-grid">
                       <label>{text.labels.searchUsers}<input value={hrSearch} onChange={(event) => setHrSearch(event.target.value)} /></label>
                       <label>
@@ -254,15 +247,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                   </div>
 
                   <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
-                    <div className="staff-hr-workspace-head">
-                      <div>
-                        <h4>{text.labels.payrollLink}</h4>
-                        <span>{selectedEmployeeLabel}</span>
-                      </div>
-                      <button className="primary" type="button" disabled={saving || !canEditEmployeeProfiles || !selectedEmployeeStaffProfile} onClick={saveEmployeeProfile}>
-                        <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
-                      </button>
-                    </div>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
                         <StaffRoleAvatar profile={selectedEmployeeStaffProfile} text={text} />
@@ -270,6 +254,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <strong>{customerName(selectedEmployeeStaffProfile, text)}</strong>
                           <span>{selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone || text.noContact}</span>
                         </div>
+                        <button className="primary staff-employee-selected-save" type="button" disabled={saving || !canEditEmployeeProfiles} onClick={saveEmployeeProfile}>
+                          <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
+                        </button>
                       </div>
                     )}
                     <div className="staff-summary-grid staff-employee-summary staff-hr-pay-summary">
