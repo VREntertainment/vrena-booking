@@ -4140,34 +4140,15 @@ function handleSessionDateChange(value: string) {
   async function prepareGuestTicketAction(
     action: 'create-account' | 'guest',
     options: { continueWithoutAccount?: boolean } = {}
-  ): Promise<'ready' | 'registered-account' | 'blocked'> {
+  ): Promise<'ready' | 'confirmation-required' | 'blocked'> {
     const validation = validateGuestTicketContact(guestTicketContact, looseText)
     if (validation.error) {
       showTicketStatus(validation.error, 'error')
       return 'blocked'
     }
 
-    const { data, error } = await (await getSupabase()).rpc('guest_ticket_phone_account_status', {
-      p_guest_phone: validation.normalizedPhone,
-    })
-
-    if (error) {
-      showTicketStatus(error.message || text.ticketBookingError, 'error')
-      return 'blocked'
-    }
-
-    const accountStatus = (data && typeof data === 'object' ? data : {}) as { has_account?: boolean }
-    if (!accountStatus.has_account) return 'ready'
-
-    if (action === 'create-account') {
-      showTicketStatus(text.guestTicketExistingAccountCreateMessage, 'error')
-      return 'registered-account'
-    }
-
-    if (!options.continueWithoutAccount) {
-      showTicketStatus(text.guestTicketExistingAccountGuestMessage, 'error')
-      return 'registered-account'
-    }
+    clearTicketStatus()
+    if (action === 'guest' && !options.continueWithoutAccount) return 'confirmation-required'
 
     return 'ready'
   }
@@ -5845,13 +5826,13 @@ function handleSessionDateChange(value: string) {
   }
 
   async function logTournamentAudit(sessionId: string, action: string, oldValue: Record<string, unknown> | null, newValue: Record<string, unknown> | null) {
-    await (await getSupabase()).from('tournament_audit_log').insert({
-      session_id: sessionId,
-      user_id: userId || null,
-      action,
-      old_value: oldValue,
-      new_value: newValue,
+    const { error } = await (await getSupabase()).rpc('log_tournament_audit', {
+      p_session_id: sessionId,
+      p_action: action,
+      p_old_value: oldValue,
+      p_new_value: newValue,
     })
+    if (error) throw error
   }
 
   function canEditTournamentSession(session: Session) {
