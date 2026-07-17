@@ -1,6 +1,7 @@
 /*
  * Official VRena UI palette and CTA contract.
- * Source: docs/brand/vrena-ui-color-palette-official.svg
+ * Base source: docs/brand/vrena-ui-color-palette-official.svg
+ * CTA addendum: VRena_UI_Palette_Addendum_CTA_Solid.svg
  * This file supersedes earlier palette and CTA direction references.
  */
 :root {
@@ -200,10 +201,10 @@
   --vrena-status-danger-hover-border: var(--vrena-red-300);
   --vrena-status-danger-hover-ink: var(--vrena-red-800);
 
-  --vrena-cta-primary: var(--vrena-cta-gradient-cool);
-  --vrena-cta-primary-hover: linear-gradient(90deg, color-mix(in srgb, #00ffea 92%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #109fff 92%, var(--vrena-neutral-950)) 100%);
-  --vrena-cta-primary-pressed: linear-gradient(90deg, color-mix(in srgb, #00ffea 84%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #109fff 84%, var(--vrena-neutral-950)) 100%);
-  --vrena-cta-primary-ink: var(--vrena-neutral-950);
+  --vrena-cta-primary: var(--vrena-purple-500);
+  --vrena-cta-primary-hover: color-mix(in srgb, var(--vrena-purple-500) 92%, var(--vrena-neutral-950));
+  --vrena-cta-primary-pressed: color-mix(in srgb, var(--vrena-purple-500) 84%, var(--vrena-neutral-950));
+  --vrena-cta-primary-ink: var(--vrena-white);
   --vrena-cta-primary-disabled-bg: var(--vrena-neutral-200);
   --vrena-cta-primary-disabled-ink: var(--vrena-neutral-500);
   --vrena-cta-secondary-bg: var(--vrena-white);
@@ -224,8 +225,8 @@
   --vrena-focus-inner: var(--vrena-neutral-50);
   --vrena-focus-halo: var(--vrena-cyan-700);
 
-  --vrena-cta-shadow: rgb(var(--vrena-blue-600-rgb) / 0.22);
-  --vrena-cta-soft: rgb(var(--vrena-blue-600-rgb) / 0.12);
+  --vrena-cta-shadow: rgb(var(--vrena-purple-500-rgb) / 0.22);
+  --vrena-cta-soft: rgb(var(--vrena-purple-500-rgb) / 0.12);
 
   --player-bg: var(--vrena-bg);
   --player-text: var(--vrena-neutral-950);
@@ -297,9 +298,9 @@
     --vrena-status-danger-hover-border: var(--vrena-red-600);
     --vrena-status-danger-hover-ink: var(--vrena-red-100);
 
-    --vrena-cta-primary: var(--vrena-cta-gradient-warm);
-    --vrena-cta-primary-hover: linear-gradient(90deg, color-mix(in srgb, #ffb800 92%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #fd5901 92%, var(--vrena-neutral-950)) 100%);
-    --vrena-cta-primary-pressed: linear-gradient(90deg, color-mix(in srgb, #ffb800 84%, var(--vrena-neutral-950)) 0%, color-mix(in srgb, #fd5901 84%, var(--vrena-neutral-950)) 100%);
+    --vrena-cta-primary: var(--vrena-orange-600);
+    --vrena-cta-primary-hover: color-mix(in srgb, var(--vrena-orange-600) 92%, var(--vrena-neutral-950));
+    --vrena-cta-primary-pressed: color-mix(in srgb, var(--vrena-orange-600) 84%, var(--vrena-neutral-950));
     --vrena-cta-primary-ink: var(--vrena-neutral-950);
     --vrena-cta-primary-disabled-bg: var(--vrena-neutral-800);
     --vrena-cta-primary-disabled-ink: var(--vrena-neutral-600);
