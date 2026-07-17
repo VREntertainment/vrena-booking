@@ -30,7 +30,7 @@ function resumeStorageKey(userId: string) {
 
 function readResumeStep(key: string) {
   try {
-    const step = Number(window.sessionStorage.getItem(key))
+    const step = Number(window.localStorage.getItem(key))
     return Number.isInteger(step) && step >= 0 && step < TOUR_STEP_COUNT ? step : null
   } catch {
     return null
@@ -39,17 +39,17 @@ function readResumeStep(key: string) {
 
 function saveResumeStep(key: string, step: number) {
   try {
-    window.sessionStorage.setItem(key, String(step))
+    window.localStorage.setItem(key, String(step))
   } catch {
-    // The tour can still start over if session storage is unavailable.
+    // The tour can still start over if browser storage is unavailable.
   }
 }
 
 function clearResumeStep(key: string) {
   try {
-    window.sessionStorage.removeItem(key)
+    window.localStorage.removeItem(key)
   } catch {
-    // The tour can still finish normally if session storage is unavailable.
+    // The tour can still finish normally if browser storage is unavailable.
   }
 }
 
