@@ -10,6 +10,7 @@ import './FirstLoginTour.css'
 
 const TOUR_VERSION = 'v1'
 const TOUR_STORAGE_PREFIX = 'vrena:first-login-tour'
+const TOUR_STEP_COUNT = 8
 
 export type FirstLoginTourProps = {
   enabled: boolean
@@ -21,6 +22,35 @@ export type FirstLoginTourProps = {
 
 function storageKey(userId: string) {
   return `${TOUR_STORAGE_PREFIX}:${TOUR_VERSION}:${userId}`
+}
+
+function resumeStorageKey(userId: string) {
+  return `${TOUR_STORAGE_PREFIX}:${TOUR_VERSION}:resume:${userId}`
+}
+
+function readResumeStep(key: string) {
+  try {
+    const step = Number(window.sessionStorage.getItem(key))
+    return Number.isInteger(step) && step >= 0 && step < TOUR_STEP_COUNT ? step : null
+  } catch {
+    return null
+  }
+}
+
+function saveResumeStep(key: string, step: number) {
+  try {
+    window.sessionStorage.setItem(key, String(step))
+  } catch {
+    // The tour can still start over if session storage is unavailable.
+  }
+}
+
+function clearResumeStep(key: string) {
+  try {
+    window.sessionStorage.removeItem(key)
+  } catch {
+    // The tour can still finish normally if session storage is unavailable.
+  }
 }
 
 function stepElement(primarySelector: string, fallbackSelector = '[data-tour="app-shell"]') {
@@ -47,12 +77,6 @@ function popover(title: string, description: string, side: Side = 'bottom') {
   }
 }
 
-function waitForPaint(callback: () => void) {
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(callback)
-  })
-}
-
 export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0, text, userId }: FirstLoginTourProps) {
   const startedRef = useRef(false)
   const driverRef = useRef<Driver | null>(null)
@@ -61,43 +85,36 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
     if (!enabled || !userId || startedRef.current || typeof window === 'undefined') return
 
     const key = storageKey(userId)
+    const resumeKey = resumeStorageKey(userId)
     const isManualReplay = replayNonce > 0
-    if (!isManualReplay && window.localStorage.getItem(key)) return
+    const resumeStep = readResumeStep(resumeKey)
+    if (!isManualReplay && resumeStep === null && window.localStorage.getItem(key)) return
 
     let cancelled = false
     let timer: number | undefined
 
     async function startTour() {
       const { driver } = await import('driver.js')
-      if (cancelled || startedRef.current || (!isManualReplay && window.localStorage.getItem(key))) return
+      if (cancelled || startedRef.current || (!isManualReplay && resumeStep === null && window.localStorage.getItem(key))) return
 
       startedRef.current = true
 
       timer = window.setTimeout(() => {
         if (cancelled) return
 
-        const moveToSessions: DriverHook = (_element, _step, { driver: tour }) => {
+        const moveToSessions: DriverHook = () => {
+          saveResumeStep(resumeKey, 2)
           onViewChange('sessions')
-          waitForPaint(() => {
-            tour.moveNext()
-            window.setTimeout(() => tour.refresh(), 120)
-          })
         }
 
-        const moveBackToCreateSession: DriverHook = (_element, _step, { driver: tour }) => {
+        const moveBackToCreateSession: DriverHook = () => {
+          saveResumeStep(resumeKey, 4)
           onViewChange('sessions')
-          waitForPaint(() => {
-            tour.movePrevious()
-            window.setTimeout(() => tour.refresh(), 120)
-          })
         }
 
-        const moveToLeaderboard: DriverHook = (_element, _step, { driver: tour }) => {
+        const moveToLeaderboard: DriverHook = () => {
+          saveResumeStep(resumeKey, 5)
           onViewChange('leaderboard')
-          waitForPaint(() => {
-            tour.moveNext()
-            window.setTimeout(() => tour.refresh(), 120)
-          })
         }
 
         const finishTour: DriverHook = (_element, _step, { driver: tour }) => {
@@ -169,7 +186,9 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           stageRadius: 14,
           steps,
           onDestroyed: () => {
-            window.localStorage.setItem(key, new Date().toISOString())
+            if (readResumeStep(resumeKey) === null) {
+              window.localStorage.setItem(key, new Date().toISOString())
+            }
             startedRef.current = false
             driverRef.current = null
           },
@@ -177,7 +196,8 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
 
         const tour = driver(config)
         driverRef.current = tour
-        tour.drive()
+        tour.drive(resumeStep ?? 0)
+        clearResumeStep(resumeKey)
       }, 900)
     }
 
