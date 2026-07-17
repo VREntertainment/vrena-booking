@@ -11404,6 +11404,12 @@ body {
   color: var(--vrena-green-900);
 }
 
+@media (prefers-color-scheme: light) {
+  .app .sessions-section .host-pill {
+    color: var(--vrena-purple-600);
+  }
+}
+
 .app .sessions-section .pill.session-visibility-private {
   color: var(--vrena-red-700);
 }
