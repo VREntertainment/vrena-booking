@@ -1580,6 +1580,7 @@ body {
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
+  filter: brightness(0);
 }
 
 .app .contact-channel span {
@@ -10917,6 +10918,10 @@ body {
     border-color: var(--player-border);
     color: var(--player-text) !important;
     box-shadow: var(--player-shadow-soft);
+  }
+
+  .app .contact-channel img {
+    filter: brightness(0) invert(1);
   }
 
   .app .contact-channel.whatsapp {
