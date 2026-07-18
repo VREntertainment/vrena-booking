@@ -121,6 +121,7 @@ export const fr = {
   guestTicketSavedTitle: 'Save this booking',
   guestTicketSavedBody: 'Your ticket is saved with your phone number and reference. Create a free account to join the Hall of Fame, challenge friends, and keep birthday rewards in one place.',
   guestTicketSavedToAccount: 'Booking confirmed and saved to your account.',
+  ticketAccountBookingConfirmed: 'Votre billet est réservé le {date} à {time} pour {players} joueurs et a été enregistré dans votre compte.',
   guestTicketCreateAccountCta: 'Create free account',
   guestTicketBookWithoutAccountCta: 'Book without an account',
   guestTicketExistingAccountCreateMessage: 'This phone number is already linked to a VRena account. Please log in to book with that account.',

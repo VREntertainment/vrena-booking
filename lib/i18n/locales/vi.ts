@@ -121,6 +121,7 @@ export const vi = {
   guestTicketSavedTitle: 'Save this booking',
   guestTicketSavedBody: 'Vé đã được lưu bằng số điện thoại và mã booking. Tạo tài khoản miễn phí để vào Hall of Fame, thách đấu bạn bè và giữ ưu đãi sinh nhật cùng một nơi.',
   guestTicketSavedToAccount: 'Booking confirmed and saved to your account.',
+  ticketAccountBookingConfirmed: 'Vé của bạn đã được đặt vào {time}, ngày {date}, cho {players} người chơi và đã lưu vào tài khoản của bạn.',
   guestTicketCreateAccountCta: 'Tạo tài khoản miễn phí',
   guestTicketBookWithoutAccountCta: 'Book without an account',
   guestTicketExistingAccountCreateMessage: 'This phone number is already linked to a VRena account. Please log in to book with that account.',

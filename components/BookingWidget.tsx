@@ -47,6 +47,8 @@ const CLUB_MESSAGE_LIMIT = 30
 
 const SESSION_MESSAGE_PAGE_SIZE = 30
 const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
+const PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY = 'vrena.ticket.pending-account-booking.v1'
+const PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS = 30 * 60 * 1000
 
 let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
 
@@ -72,12 +74,73 @@ type ActionToast = {
   message: string
 }
 
+type PendingTicketAccountBooking = {
+  authMode: 'login' | 'create'
+  createdAt: number
+  ticketType: TicketType
+  date: string
+  time: string
+  players: number
+  duration: number
+  specialNote: string
+}
+
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
 const CONSOLE_SIDEBAR_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
 
 function isBookingAppView(value: unknown): value is AppView {
   return typeof value === 'string' && bookingAppViews.includes(value as AppView)
+}
+
+function readPendingTicketAccountBooking(): PendingTicketAccountBooking | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const storedValue = window.sessionStorage.getItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
+    if (!storedValue) return null
+
+    const candidate = JSON.parse(storedValue) as Partial<PendingTicketAccountBooking>
+    const isTicketType = candidate.ticketType === 'individual' || candidate.ticketType === 'birthday' || candidate.ticketType === 'corporate'
+    const isValid = (candidate.authMode === 'login' || candidate.authMode === 'create')
+      && isTicketType
+      && typeof candidate.createdAt === 'number'
+      && Date.now() - candidate.createdAt <= PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS
+      && typeof candidate.date === 'string'
+      && typeof candidate.time === 'string'
+      && typeof candidate.players === 'number'
+      && Number.isInteger(candidate.players)
+      && candidate.players > 0
+      && typeof candidate.duration === 'number'
+      && Number.isInteger(candidate.duration)
+      && candidate.duration > 0
+      && typeof candidate.specialNote === 'string'
+
+    if (!isValid) {
+      window.sessionStorage.removeItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
+      return null
+    }
+
+    return candidate as PendingTicketAccountBooking
+  } catch {
+    return null
+  }
+}
+
+function writePendingTicketAccountBooking(booking: PendingTicketAccountBooking) {
+  try {
+    window.sessionStorage.setItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY, JSON.stringify(booking))
+  } catch {
+    // The current in-memory handoff still works when browser storage is unavailable.
+  }
+}
+
+function clearPendingTicketAccountBooking() {
+  try {
+    window.sessionStorage.removeItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
+  } catch {
+    // Nothing else is needed when browser storage is unavailable.
+  }
 }
 
 function bookingUpdateKind(session: Pick<Session, 'booking_type'>) {
@@ -838,7 +901,26 @@ export default function WidgetPage({
       date: ticketConfirmation.date,
     } : null)
 
-    setPendingTicketAuthAction(claimSource?.phone && claimSource.reference ? 'claim-after-auth' : 'book-after-login')
+    const ticketAuthAction = claimSource?.phone && claimSource.reference
+      ? 'claim-after-auth'
+      : ticketDate && ticketTime
+        ? 'book-after-login'
+        : null
+    if (ticketAuthAction === 'book-after-login') {
+      writePendingTicketAccountBooking({
+        authMode: 'login',
+        createdAt: Date.now(),
+        ticketType,
+        date: ticketDate,
+        time: ticketTime,
+        players: ticketPlayers,
+        duration: ticketDuration,
+        specialNote: ticketSpecialNote,
+      })
+    } else {
+      clearPendingTicketAccountBooking()
+    }
+    setPendingTicketAuthAction(ticketAuthAction)
     prefillProfileFromGuestTicketClaim(claimSource)
     goToLogin()
   }
@@ -851,7 +933,26 @@ export default function WidgetPage({
       date: ticketConfirmation.date,
     } : null)
 
-    setPendingTicketAuthAction(claimSource?.phone && claimSource.reference ? 'claim-after-auth' : 'book-after-login')
+    const ticketAuthAction = claimSource?.phone && claimSource.reference
+      ? 'claim-after-auth'
+      : ticketDate && ticketTime
+        ? 'book-after-login'
+        : null
+    if (ticketAuthAction === 'book-after-login') {
+      writePendingTicketAccountBooking({
+        authMode: 'create',
+        createdAt: Date.now(),
+        ticketType,
+        date: ticketDate,
+        time: ticketTime,
+        players: ticketPlayers,
+        duration: ticketDuration,
+        specialNote: ticketSpecialNote,
+      })
+    } else {
+      clearPendingTicketAccountBooking()
+    }
+    setPendingTicketAuthAction(ticketAuthAction)
     prefillProfileFromGuestTicketClaim(claimSource)
     setLoginPromptOpen(false)
     updateAuthMode('create')
@@ -3465,6 +3566,27 @@ export default function WidgetPage({
   }, [activeView, userId])
 
   useEffect(() => {
+    if (activeView !== 'profile' || pendingTicketAuthAction) return undefined
+
+    const pendingBooking = readPendingTicketAccountBooking()
+    if (!pendingBooking) return undefined
+
+    return schedulePostEffectStateUpdate(() => {
+      setTicketType(pendingBooking.ticketType)
+      setTicketDate(pendingBooking.date)
+      setTicketTime(pendingBooking.time)
+      setTicketPlayers(pendingBooking.players)
+      setTicketDuration(pendingBooking.duration)
+      setTicketSpecialNote(pendingBooking.specialNote)
+      setPendingTicketAuthAction('book-after-login')
+      setAuthMode(pendingBooking.authMode)
+      setAuthStep('email')
+      setProfilePassword('')
+      setProfileStatus('')
+    })
+  }, [activeView, pendingTicketAuthAction])
+
+  useEffect(() => {
     if (sessionTimeScope === 'past') {
       void ensurePastSessionsLoadedRef.current()
     }
@@ -4141,6 +4263,16 @@ function handleSessionDateChange(value: string) {
     setTicketStatusVariant('info')
   }
 
+  function ticketAccountBookingConfirmationMessage() {
+    const pendingBooking = readPendingTicketAccountBooking()
+    if (!pendingBooking) return text.guestTicketSavedToAccount
+
+    return text.ticketAccountBookingConfirmed
+      .replace('{date}', formatShortDate(pendingBooking.date, language))
+      .replace('{time}', pendingBooking.time)
+      .replace('{players}', String(pendingBooking.players))
+  }
+
   async function prepareGuestTicketAction(
     action: 'create-account' | 'guest',
     options: { continueWithoutAccount?: boolean } = {}
@@ -4207,11 +4339,13 @@ function handleSessionDateChange(value: string) {
       if (pendingTicketAuthAction === 'book-after-login') {
         const booked = ticketConfirmation ? true : await bookTickets(activeProfile)
         if (booked) {
+          const confirmationMessage = ticketAccountBookingConfirmationMessage()
+          clearPendingTicketAccountBooking()
           setTicketConfirmation((current) => current
             ? { ...current, guestPhone: undefined, guestName: undefined }
             : current)
-          showTicketStatus(text.guestTicketSavedToAccount)
-          setProfileStatus(text.guestTicketSavedToAccount)
+          showTicketStatus(confirmationMessage)
+          setProfileStatus(confirmationMessage)
         }
         setActiveView('tickets')
         return true
