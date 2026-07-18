@@ -102,19 +102,43 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
       timer = window.setTimeout(() => {
         if (cancelled) return
 
-        const moveToSessions: DriverHook = () => {
-          saveResumeStep(resumeKey, 2)
-          onViewChange('sessions')
+        const moveTourToView = (
+          tour: Driver,
+          view: AppView,
+          resumeStep: number,
+          targetSelector: string,
+          move: () => void,
+        ) => {
+          saveResumeStep(resumeKey, resumeStep)
+          onViewChange(view)
+
+          let frames = 0
+          const continueTour = () => {
+            if (cancelled || driverRef.current !== tour || !tour.isActive()) return
+
+            if (document.querySelector(targetSelector) || frames >= 30) {
+              clearResumeStep(resumeKey)
+              move()
+              return
+            }
+
+            frames += 1
+            window.requestAnimationFrame(continueTour)
+          }
+
+          window.requestAnimationFrame(continueTour)
         }
 
-        const moveBackToCreateSession: DriverHook = () => {
-          saveResumeStep(resumeKey, 4)
-          onViewChange('sessions')
+        const moveToSessions: DriverHook = (_element, _step, { driver: tour }) => {
+          moveTourToView(tour, 'sessions', 2, '[data-tour="sessions-list"]', () => tour.moveNext())
         }
 
-        const moveToLeaderboard: DriverHook = () => {
-          saveResumeStep(resumeKey, 5)
-          onViewChange('leaderboard')
+        const moveBackToCreateSession: DriverHook = (_element, _step, { driver: tour }) => {
+          moveTourToView(tour, 'sessions', 4, '[data-tour="create-session-button"]', () => tour.movePrevious())
+        }
+
+        const moveToLeaderboard: DriverHook = (_element, _step, { driver: tour }) => {
+          moveTourToView(tour, 'leaderboard', 5, '[data-tour="leaderboard-panel"]', () => tour.moveNext())
         }
 
         const finishTour: DriverHook = (_element, _step, { driver: tour }) => {
