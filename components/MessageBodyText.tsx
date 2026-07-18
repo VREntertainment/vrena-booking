@@ -1,12 +1,12 @@
 'use client'
 
 import { Languages } from 'lucide-react'
-import { useEffect } from 'react'
 import type { TranslationMap } from '../lib/i18n/base'
 import type { LanguageCode } from '../lib/i18n/languages'
 import { cleanMessageText } from '../lib/messageText'
 
 export type MessageTranslationState = {
+  attempted?: boolean
   loading?: boolean
   translatedText?: string
   sourceLanguage?: string | null
@@ -36,36 +36,32 @@ export default function MessageBodyText({
   text,
   translation,
 }: MessageBodyTextProps) {
-  useEffect(() => {
-    if (translation?.loading || translation?.translatedText || translation?.error) return
-    onRequestTranslation(messageKind, messageId, body, targetLanguage)
-  }, [body, messageId, messageKind, onRequestTranslation, targetLanguage, translation?.error, translation?.loading, translation?.translatedText])
-
   const translatedText = cleanMessageText(translation?.translatedText)
   const hasTranslation = Boolean(translation?.changed && translatedText)
   const showingOriginal = Boolean(translation?.showOriginal)
   const displayBody = hasTranslation && !showingOriginal ? translatedText : body
-  const hasAttemptedTranslation = Boolean(translation?.translatedText || translation?.error)
-  const showTranslateAction = !translation?.loading && !hasTranslation && hasAttemptedTranslation
-  const translationStatusLabel = hasTranslation
-    ? text.messageTranslated
-    : translation?.error || hasAttemptedTranslation
+  const showRetryAction = Boolean(translation?.error && translation.error !== 'login_required')
+  const translationStatusLabel = translation?.error === 'login_required'
+    ? text.signInToTranslate
+    : translation?.error
       ? text.messageTranslationUnavailable
-      : text.translateMessage
+      : hasTranslation
+        ? text.messageTranslated
+        : text.messageAlreadyInLanguage
 
   return (
     <>
       <p>{displayBody}</p>
       {translation?.loading ? (
         <div className="message-translation-row loading">
-          <span className="message-translation-status">
+          <span aria-live="polite" className="message-translation-status" role="status">
             <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
             <span>{text.translatingMessage}</span>
           </span>
         </div>
-      ) : (
+      ) : translation?.attempted ? (
         <div className="message-translation-row">
-          <span className="message-translation-status">
+          <span aria-live="polite" className="message-translation-status" role="status">
             <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
             <span>{translationStatusLabel}</span>
           </span>
@@ -74,7 +70,7 @@ export default function MessageBodyText({
               {showingOriginal ? text.showTranslatedMessage : text.showOriginalMessage}
             </button>
           )}
-          {showTranslateAction && (
+          {showRetryAction && (
             <button
               aria-label={text.translateMessage}
               className="message-translation-toggle"
@@ -84,6 +80,18 @@ export default function MessageBodyText({
               {text.translateMessage}
             </button>
           )}
+        </div>
+      ) : (
+        <div className="message-translation-row">
+          <button
+            aria-label={text.translateMessage}
+            className="message-translation-toggle"
+            type="button"
+            onClick={() => onRequestTranslation(messageKind, messageId, body, targetLanguage)}
+          >
+            <Languages aria-hidden="true" size={13} strokeWidth={2.4} />
+            <span>{text.translateMessage}</span>
+          </button>
         </div>
       )}
     </>

@@ -1282,7 +1282,7 @@ export default function WidgetPage({
 
     setMessageTranslations((current) => {
       const existing = current[key]
-      if (existing?.loading || (existing?.changed && existing.translatedText)) return current
+      if (existing?.loading || (existing?.attempted && !existing.error)) return current
       return {
         ...current,
         [key]: {
@@ -1303,6 +1303,7 @@ export default function WidgetPage({
           ...current,
           [key]: {
             ...(current[key] ?? {}),
+            attempted: true,
             error: 'login_required',
             loading: false,
           },
@@ -1328,6 +1329,7 @@ export default function WidgetPage({
           ...current,
           [key]: {
             ...(current[key] ?? {}),
+            attempted: true,
             error: 'translation_failed',
             loading: false,
           },
@@ -1340,6 +1342,7 @@ export default function WidgetPage({
       setMessageTranslations((current) => ({
         ...current,
         [key]: {
+          attempted: true,
           changed: Boolean(translatedText && !equivalentMessageText(translatedText, body)),
           error: undefined,
           loading: false,
@@ -1353,6 +1356,7 @@ export default function WidgetPage({
         ...current,
         [key]: {
           ...(current[key] ?? {}),
+          attempted: true,
           error: 'translation_failed',
           loading: false,
         },
