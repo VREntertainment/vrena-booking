@@ -30,7 +30,10 @@ function resumeStorageKey(userId: string) {
 
 function readResumeStep(key: string) {
   try {
-    const step = Number(window.localStorage.getItem(key))
+    const storedStep = window.localStorage.getItem(key)
+    if (storedStep === null) return null
+
+    const step = Number(storedStep)
     return Number.isInteger(step) && step >= 0 && step < TOUR_STEP_COUNT ? step : null
   } catch {
     return null
