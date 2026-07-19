@@ -1100,7 +1100,7 @@ export default function WidgetPage({
     void loadSessionDetail(session.id)
     void loadSessionMessages(session.id)
     ensureNetworkDataLoaded()
-    if (session.session_type === 'tournament') ensureTournamentDataLoaded()
+    if (session.session_type === 'tournament') void loadTournamentData(session.id)
   }
 
   function highlightSessionCard(sessionId: string) {
@@ -1125,7 +1125,7 @@ export default function WidgetPage({
     void loadSessionMessages(sessionId)
     if (targetSession) {
       setSessionTimeScope(isUpcomingSession(targetSession) ? 'upcoming' : 'past')
-      if (targetSession.session_type === 'tournament') ensureTournamentDataLoaded()
+      if (targetSession.session_type === 'tournament') void loadTournamentData(targetSession.id)
     }
     window.setTimeout(() => {
       document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -3324,23 +3324,33 @@ export default function WidgetPage({
     ])
   }
 
-  async function loadTournamentData() {
+  async function loadTournamentData(focusSessionId?: string) {
     tournamentDataLoadingRef.current = true
+    const client = await getSupabase()
+    const auditSessionIds = Array.from(new Set([
+      ...expandedSessionIdsRef.current,
+      ...(focusSessionId ? [focusSessionId] : []),
+    ]))
+    const auditRequest = auditSessionIds.length > 0
+      ? client
+        .from('tournament_audit_log')
+        .select('id, session_id, user_id, action, old_value, new_value, created_at')
+        .in('session_id', auditSessionIds)
+        .order('created_at', { ascending: false })
+        .limit(80)
+      : Promise.resolve({ data: [] as TournamentAuditLog[], error: null })
+
     const [editorsResult, poolsResult, entriesResult, matchesResult, auditResult] = await Promise.all([
-      (await getSupabase()).from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
-      (await getSupabase()).from('tournament_pools').select('id, session_id, name, sort_order').is('deleted_at', null).order('sort_order', { ascending: true }),
-      (await getSupabase()).from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label').is('deleted_at', null),
-      (await getSupabase())
+      client.from('tournament_editors').select('id, session_id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto'),
+      client.from('tournament_pools').select('id, session_id, name, sort_order').is('deleted_at', null).order('sort_order', { ascending: true }),
+      client.from('tournament_pool_entries').select('id, session_id, pool_id, participant_id, profile_id, seed, team_label').is('deleted_at', null),
+      client
         .from('tournament_matches')
         .select('id, session_id, pool_id, stage, round, match_number, participant_a_id, participant_b_id, score_a, score_b, wins_a, wins_b, winner_participant_id, loser_participant_id, status, arena_number, queue_position, best_of')
         .is('deleted_at', null)
         .order('round', { ascending: true })
         .order('match_number', { ascending: true }),
-      (await getSupabase())
-        .from('tournament_audit_log')
-        .select('id, session_id, user_id, action, old_value, new_value, created_at')
-        .order('created_at', { ascending: false })
-        .limit(80),
+      auditRequest,
     ])
 
     const firstError = editorsResult.error || poolsResult.error || entriesResult.error || matchesResult.error || auditResult.error

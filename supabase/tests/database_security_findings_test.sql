@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(11);
+select plan(17);
 
 select set_config(
   'request.jwt.claims',
@@ -47,6 +47,49 @@ values (
   'private',
   'SECURE-CODE',
   'community'
+);
+
+insert into public.tournament_audit_log (
+  session_id,
+  user_id,
+  action,
+  old_value,
+  new_value
+) values (
+  '4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  '41111111-1111-4111-8111-111111111111',
+  'Security read fixture',
+  null,
+  '{"secured":true}'::jsonb
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.tournament_audit_log', 'select'),
+  'anonymous requests cannot select tournament audit history'
+);
+
+select ok(
+  has_table_privilege('authenticated', 'public.tournament_audit_log', 'select')
+    and not has_table_privilege('authenticated', 'public.tournament_audit_log', 'insert')
+    and not has_table_privilege('authenticated', 'public.tournament_audit_log', 'update')
+    and not has_table_privilege('authenticated', 'public.tournament_audit_log', 'delete')
+    and not has_table_privilege('authenticated', 'public.tournament_audit_log', 'truncate'),
+  'signed-in users have read-only table grants and still require RLS authorization'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'tournament_audit_log'
+      and policyname = 'Tournament managers read audit history'
+      and cmd = 'SELECT'
+      and roles = array['authenticated'::name]
+      and position('can_manage_tournament' in qual) > 0
+      and position('is_anonymous' in qual) > 0
+  ),
+  'tournament audit reads require a permanent account with tournament management access'
 );
 
 select ok(
@@ -148,6 +191,16 @@ select throws_ok(
   'an anonymous Auth user cannot forge a tournament audit entry'
 );
 
+select is(
+  (
+    select count(*)
+    from public.tournament_audit_log
+    where session_id = '4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ),
+  0::bigint,
+  'an anonymous Auth tournament owner cannot read audit history'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"42222222-2222-4222-8222-222222222222","role":"authenticated","is_anonymous":false}',
@@ -168,10 +221,30 @@ select throws_ok(
   'an unrelated permanent user cannot forge a tournament audit entry'
 );
 
+select is(
+  (
+    select count(*)
+    from public.tournament_audit_log
+    where session_id = '4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ),
+  0::bigint,
+  'an unrelated permanent user cannot read tournament audit history'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"41111111-1111-4111-8111-111111111111","role":"authenticated","is_anonymous":false}',
   true
+);
+
+select is(
+  (
+    select count(*)
+    from public.tournament_audit_log
+    where session_id = '4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ),
+  1::bigint,
+  'the tournament owner can read the selected tournament audit history'
 );
 
 select lives_ok(
