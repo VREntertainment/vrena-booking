@@ -8,12 +8,24 @@ import { ageBandFromBirthday } from '@/lib/agePolicy'
 
 export const runtime = 'nodejs'
 
+const BOOKING_UPDATE_EMAIL_LIMIT = 3
+const BOOKING_UPDATE_EMAIL_WINDOW_SECONDS = 5 * 60
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
 
 function cleanString(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function cleanLimitedString(value: unknown, maxLength: number) {
+  return cleanString(value).slice(0, maxLength)
+}
+
+function cleanChangeValue(value: unknown) {
+  if (typeof value === 'number' || typeof value === 'boolean') return value
+  return cleanLimitedString(value, 500) || null
 }
 
 function cleanAction(value: unknown): BookingUpdateEmailPayload['action'] | null {
@@ -34,12 +46,12 @@ function cleanPayload(body: Record<string, unknown>): BookingUpdateEmailPayload 
       .map((item) => {
         if (!item || typeof item !== 'object') return null
         const change = item as Record<string, unknown>
-        const label = cleanString(change.label)
+        const label = cleanLimitedString(change.label, 120)
         if (!label) return null
         return {
           label,
-          before: typeof change.before === 'number' || typeof change.before === 'boolean' ? change.before : cleanString(change.before) || null,
-          after: typeof change.after === 'number' || typeof change.after === 'boolean' ? change.after : cleanString(change.after) || null,
+          before: cleanChangeValue(change.before),
+          after: cleanChangeValue(change.after),
         }
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -49,19 +61,19 @@ function cleanPayload(body: Record<string, unknown>): BookingUpdateEmailPayload 
   return {
     action,
     bookingKind,
-    sessionId: cleanString(body.sessionId) || null,
-    orderId: cleanString(body.orderId) || null,
-    title: cleanString(body.title) || null,
-    reference: cleanString(body.reference) || null,
-    date: cleanString(body.date) || null,
-    time: cleanString(body.time) || null,
-    customerName: cleanString(body.customerName) || null,
-    customerPhone: cleanString(body.customerPhone) || null,
-    customerEmail: cleanString(body.customerEmail) || null,
+    sessionId: cleanLimitedString(body.sessionId, 64) || null,
+    orderId: cleanLimitedString(body.orderId, 64) || null,
+    title: cleanLimitedString(body.title, 200) || null,
+    reference: cleanLimitedString(body.reference, 120) || null,
+    date: cleanLimitedString(body.date, 40) || null,
+    time: cleanLimitedString(body.time, 40) || null,
+    customerName: cleanLimitedString(body.customerName, 160) || null,
+    customerPhone: cleanLimitedString(body.customerPhone, 80) || null,
+    customerEmail: cleanLimitedString(body.customerEmail, 320) || null,
     total: typeof body.total === 'number' && Number.isFinite(body.total) ? body.total : null,
-    summary: cleanString(body.summary) || null,
-    minorWarning: cleanString(body.minorWarning) || null,
-    source: cleanString(body.source) || null,
+    summary: cleanLimitedString(body.summary, 2000) || null,
+    minorWarning: cleanLimitedString(body.minorWarning, 500) || null,
+    source: cleanLimitedString(body.source, 120) || null,
     changes,
   }
 }
@@ -76,6 +88,28 @@ function minorWarningForBirthday(birthday: unknown) {
     return 'UNDER-13 PLAYER: Online booking/session creation should remain disabled. Staff must handle this manually with a parent/guardian.'
   }
   return null
+}
+
+function canonicalAction(
+  requestedAction: BookingUpdateEmailPayload['action'],
+  session: Record<string, unknown> | null,
+  order: Record<string, unknown> | null,
+  allowCreatedNotice: boolean,
+): BookingUpdateEmailPayload['action'] {
+  if (session?.deleted_at) return 'deleted'
+  if (session?.status === 'cancelled' || session?.ticket_status === 'cancelled' || order?.order_status === 'cancelled') {
+    return 'cancelled'
+  }
+  const createdAt = Date.parse(cleanString(session?.created_at))
+  const isRecentlyCreated = Number.isFinite(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt <= 10 * 60 * 1000
+  return requestedAction === 'created' && allowCreatedNotice && isRecentlyCreated ? 'created' : 'edited'
+}
+
+function playerSummary(action: BookingUpdateEmailPayload['action']) {
+  if (action === 'created') return 'A booking was created by a player account and needs staff attention.'
+  if (action === 'deleted') return 'The booking was deleted.'
+  if (action === 'cancelled') return 'Booking status was changed to cancelled.'
+  return 'Booking details were edited.'
 }
 
 export async function POST(request: NextRequest) {
@@ -137,7 +171,7 @@ export async function POST(request: NextRequest) {
   if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status, ticket_customer_id')
+      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', payload.sessionId)
       .maybeSingle()
 
@@ -155,7 +189,8 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (error) return jsonError(error.message, 500)
-    if (data) order = data
+    if (!data) return jsonError('Booking order not found.', 404)
+    order = data
   } else if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('staff_orders')
@@ -171,7 +206,7 @@ export async function POST(request: NextRequest) {
   if (!session && order?.session_id) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, status, ticket_customer_id')
+      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', order.session_id)
       .maybeSingle()
 
@@ -179,36 +214,93 @@ export async function POST(request: NextRequest) {
     session = data || null
   }
 
+  if (payload.sessionId && order && cleanString(order.session_id) !== cleanString(session?.id)) {
+    return jsonError('Booking identifiers do not refer to the same booking.', 400)
+  }
+
   const isOwner = Boolean(session?.owner_id && session.owner_id === userData.user.id)
   if (actorRank < 50 && !isOwner) return jsonError('Booking update email is not authorized.', 403)
 
+  const canonicalSessionId = cleanString(session?.id)
+  const canonicalOrderId = cleanString(order?.id)
+  const rateLimitBookingId = canonicalSessionId || canonicalOrderId
+  if (!rateLimitBookingId) return jsonError('Booking not found.', 404)
+
+  const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
+    p_action: 'booking_update_email',
+    p_limit: BOOKING_UPDATE_EMAIL_LIMIT,
+    p_window_seconds: BOOKING_UPDATE_EMAIL_WINDOW_SECONDS,
+    p_subject: `actor:${userData.user.id}:booking:${rateLimitBookingId}`,
+  })
+
+  if (rateLimitError) {
+    const isRateLimited = rateLimitError.message.includes('Too many attempts')
+    return jsonError(
+      isRateLimited
+        ? 'Too many booking notifications. Please wait a few minutes and try again.'
+        : 'Booking notification security checks are temporarily unavailable.',
+      isRateLimited ? 429 : 503,
+    )
+  }
+
   const minorProfileId = cleanString(session?.ticket_customer_id) || cleanString(session?.owner_id)
   let trustedMinorWarning: string | null = null
+  let bookingProfile: Record<string, unknown> | null = null
   if (minorProfileId) {
     const { data: minorProfile, error: minorProfileError } = await adminClient
       .from('profiles')
-      .select('birthday')
+      .select('birthday, full_name, nickname, email, phone')
       .eq('id', minorProfileId)
       .maybeSingle()
 
     if (minorProfileError) return jsonError(minorProfileError.message, 500)
+    bookingProfile = minorProfile
     trustedMinorWarning = minorWarningForBirthday(minorProfile?.birthday)
   }
 
+  const isStaffActor = actorRank >= 50
+  const action = canonicalAction(
+    payload.action,
+    session,
+    order,
+    isStaffActor || Boolean(trustedMinorWarning?.startsWith('MINOR PLAYER:')),
+  )
+
   await sendBookingUpdateEmail({
     ...payload,
-    sessionId: cleanString(session?.id) || payload.sessionId || null,
-    orderId: cleanString(order?.id) || payload.orderId || null,
-    bookingKind: payload.bookingKind === 'ticket' || session?.booking_type === 'ticket' ? 'ticket' : 'session',
-    title: payload.title || cleanString(session?.name) || null,
-    reference: payload.reference || cleanString(order?.order_number) || cleanString(session?.ticket_reference) || null,
-    date: payload.date || cleanString(order?.booking_date) || cleanString(session?.date) || null,
-    time: payload.time || cleanString(order?.booking_time).slice(0, 5) || cleanString(session?.start_time).slice(0, 5) || null,
-    customerName: payload.customerName || cleanString(order?.customer_name) || null,
-    customerPhone: payload.customerPhone || cleanString(order?.customer_phone) || null,
-    customerEmail: payload.customerEmail || cleanString(order?.customer_email) || null,
-    total: payload.total ?? (typeof order?.total === 'number' ? order.total : null),
-    minorWarning: trustedMinorWarning || payload.minorWarning || null,
+    action,
+    sessionId: canonicalSessionId || payload.sessionId || null,
+    orderId: canonicalOrderId || payload.orderId || null,
+    bookingKind: session ? (session.booking_type === 'ticket' ? 'ticket' : 'session') : payload.bookingKind,
+    title: cleanString(session?.name) || (isStaffActor ? payload.title : null),
+    reference: cleanString(order?.order_number)
+      || cleanString(session?.ticket_reference)
+      || (isStaffActor ? payload.reference : null),
+    date: cleanString(order?.booking_date)
+      || cleanString(session?.date)
+      || (isStaffActor ? payload.date : null),
+    time: cleanString(order?.booking_time).slice(0, 5)
+      || cleanString(session?.start_time).slice(0, 5)
+      || (isStaffActor ? payload.time : null),
+    customerName: cleanString(order?.customer_name)
+      || cleanString(bookingProfile?.nickname)
+      || cleanString(bookingProfile?.full_name)
+      || (isStaffActor ? payload.customerName : null),
+    customerPhone: cleanString(order?.customer_phone)
+      || cleanString(bookingProfile?.phone)
+      || (isStaffActor ? payload.customerPhone : null),
+    customerEmail: cleanString(order?.customer_email)
+      || cleanString(bookingProfile?.email)
+      || (isStaffActor ? payload.customerEmail : null),
+    total: typeof order?.total === 'number'
+      ? order.total
+      : typeof session?.ticket_total_price === 'number'
+        ? session.ticket_total_price
+        : isStaffActor ? payload.total : null,
+    summary: isStaffActor ? payload.summary : playerSummary(action),
+    changes: isStaffActor ? payload.changes : [],
+    minorWarning: trustedMinorWarning || (isStaffActor ? payload.minorWarning : null),
+    source: isStaffActor ? payload.source : 'Player booking flow',
     actorEmail: actorProfile?.email || userData.user.email || null,
   })
 
