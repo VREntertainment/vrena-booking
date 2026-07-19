@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.0'
+import { hasMessageAdminPrivileges } from './messageAdmin.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +9,6 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-const ADMIN_EMAILS = ['emile@vre-vietnam.com', 'emilejacquet@icloud.com', 'contact@vre-vietnam.com']
 const MODERATION_MODEL = 'omni-moderation-latest'
 const ANONYMOUS_MASK_EMOJI = '🎭'
 const ANONYMOUS_MASK_COLOR = '#11181b'
@@ -33,11 +33,6 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
       'Content-Type': 'application/json',
     },
   })
-}
-
-function isAdmin(profile: { role?: string | null; email?: string | null } | null) {
-  const role = profile?.role?.toLowerCase()
-  return Boolean(role === 'super_admin' || role === 'owner' || role === 'admin' || (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())))
 }
 
 function anonymousCallsignForId(profileId: string | null | undefined) {
@@ -188,6 +183,15 @@ async function handleRequest(request: Request) {
       persistSession: false,
     },
   })
+  const callerSupabase = createClient(supabaseUrl, serviceRoleKey, {
+    global: {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 
   const { data: authData, error: authError } = await supabase.auth.getUser(token)
   const authUser = authData?.user
@@ -225,10 +229,10 @@ async function handleRequest(request: Request) {
     return rateLimitResponse(rateLimitError.message)
   }
 
-  const [{ data: profile }, { data: session }] = await Promise.all([
+  const [{ data: profile }, { data: session }, staffRankResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, nickname, email, role, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign')
+      .select('id, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign')
       .eq('id', authUser.id)
       .single(),
     supabase
@@ -236,13 +240,17 @@ async function handleRequest(request: Request) {
       .select('id, owner_id')
       .eq('id', sessionId)
       .single(),
+    callerSupabase.rpc('current_staff_role_rank'),
   ])
 
   if (!profile || !session) {
     return jsonResponse({ error: 'Profile or session not found.' }, 404)
   }
 
-  const admin = isAdmin(profile)
+  const admin = !staffRankResult.error && hasMessageAdminPrivileges({
+    isAnonymous: authUser.is_anonymous === true,
+    staffRoleRank: staffRankResult.data,
+  })
   const owner = session.owner_id === authUser.id
   const { data: participant } = await supabase
     .from('session_participants')
