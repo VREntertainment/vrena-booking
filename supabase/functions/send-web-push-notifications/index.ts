@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.0'
 import webpush from 'npm:web-push@3.6.7'
+import { isAllowedWebPushEndpoint } from './webPushEndpoint.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -152,6 +153,20 @@ serve(async (request) => {
     let lastError = ''
 
     for (const subscription of subscriptions as PushSubscriptionRow[]) {
+      if (!isAllowedWebPushEndpoint(subscription.endpoint)) {
+        lastError = 'Push endpoint is not an approved Web Push service'
+        await supabase
+          .from('push_subscriptions')
+          .update({
+            disabled_at: new Date().toISOString(),
+            fail_count: (subscription.fail_count || 0) + 1,
+            last_error: lastError,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', subscription.id)
+        continue
+      }
+
       try {
         await webpush.sendNotification({
           endpoint: subscription.endpoint,
@@ -167,7 +182,7 @@ serve(async (request) => {
           icon: '/vrena-icon.png',
           badge: '/vrena-icon.png',
           metadata: event.metadata || {},
-        }))
+        }), { timeout: 10_000 })
 
         eventSent += 1
         await supabase
