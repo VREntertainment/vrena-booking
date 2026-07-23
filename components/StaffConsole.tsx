@@ -2374,8 +2374,6 @@ const todayString = () => {
 
 const shortDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
 const staffDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: '2-digit' })
-const staffMonthFormatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
-const staffReportPresetOptions: StaffReportRangePreset[] = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'last_30', 'last_60', 'last_90']
 
 function dateInputValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -2454,44 +2452,6 @@ function reportPresetRange(preset: StaffReportRangePreset, anchor = todayString(
   if (preset === 'last_60') return [addDays(anchor, -59), anchor] as const
   if (preset === 'last_90') return [addDays(anchor, -89), anchor] as const
   return [addDays(anchor, -29), anchor] as const
-}
-
-function monthLabel(value: string) {
-  return staffMonthFormatter.format(dateFromInput(value))
-}
-
-type StaffReportCalendarCell = {
-  date: string
-  day: number
-  inMonth: boolean
-}
-
-function reportCalendarCells(monthValue: string) {
-  const monthStart = startOfMonth(monthValue)
-  const monthDate = dateFromInput(monthStart)
-  const year = monthDate.getFullYear()
-  const month = monthDate.getMonth()
-  const firstWeekday = (monthDate.getDay() + 6) % 7
-  const lastDay = new Date(year, month + 1, 0).getDate()
-  const cells: StaffReportCalendarCell[] = []
-
-  for (let index = 0; index < firstWeekday; index += 1) {
-    const date = addDays(monthStart, index - firstWeekday)
-    cells.push({ date, day: dateFromInput(date).getDate(), inMonth: false })
-  }
-
-  for (let day = 1; day <= lastDay; day += 1) {
-    const date = dateInputValue(new Date(year, month, day))
-    cells.push({ date, day, inMonth: true })
-  }
-
-  while (cells.length % 7 !== 0) {
-    const previous = cells[cells.length - 1]?.date || monthStart
-    const date = addDays(previous, 1)
-    cells.push({ date, day: dateFromInput(date).getDate(), inMonth: false })
-  }
-
-  return cells
 }
 
 function shortDateLabel(value: string) {

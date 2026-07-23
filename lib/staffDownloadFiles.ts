@@ -48,10 +48,6 @@ function xlsxSafeSheetName(name: string, usedNames: Set<string>) {
   return candidate
 }
 
-function xlsxFilename(filename: string) {
-  return filename.replace(/\.(xls|xlsx)$/i, '') + '.xlsx'
-}
-
 function xlsxCellXml(value: unknown, rowIndex: number, columnIndex: number, styleId = 0) {
   const reference = `${xlsxColumnName(columnIndex)}${rowIndex}`
   const style = styleId > 0 ? ` s="${styleId}"` : ''
