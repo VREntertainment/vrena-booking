@@ -10189,7 +10189,7 @@ function handleSessionDateChange(value: string) {
   }
 
   return (
-    <div className={`app ${isConsoleWorkspace ? 'console-workspace' : ''} ${isConsoleWorkspace && consoleSidebarCollapsed ? 'console-workspace-collapsed' : ''}`.trim()} data-tour="app-shell">
+    <div className={`app ${isConsoleWorkspace ? `console-workspace${consoleSidebarCollapsed ? ' console-workspace-collapsed' : ''}` : 'player-workspace'}`} data-tour="app-shell">
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}

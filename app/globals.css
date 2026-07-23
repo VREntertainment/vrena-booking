@@ -13271,3 +13271,439 @@ body {
     }
   }
 }
+
+/* Roomier player workspace: a calmer rhythm without changing staff/HR density. */
+.app.player-workspace {
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.app.player-workspace aside {
+  gap: 22px;
+  padding: 28px 24px;
+}
+
+.app.player-workspace main {
+  padding: clamp(28px, 3vw, 44px);
+}
+
+.app.player-workspace .section-head {
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.app.player-workspace .section-head h2 {
+  font-size: clamp(21px, 1.7vw, 26px);
+  line-height: 1.2;
+}
+
+.app.player-workspace .section-copy,
+.app.player-workspace .notes,
+.app.player-workspace .muted {
+  line-height: 1.55;
+}
+
+.app.player-workspace :is(
+  .sessions-section,
+  .leaderboard-section,
+  .tickets-section,
+  .clubs-section,
+  .create-session-section,
+  .profile-account-section-unframed
+) {
+  gap: 24px;
+}
+
+.app.player-workspace :is(
+  .profile-account-section-unframed .profile-sub-tabs,
+  .sessions-section .sub-tabs,
+  .clubs-section .form-segmented,
+  .create-session-section .create-session-mode-toggle
+) {
+  gap: 28px;
+}
+
+.app.player-workspace :is(
+  .profile-account-section-unframed .profile-sub-tabs button,
+  .sessions-section .sub-tabs button,
+  .clubs-section .form-segmented button,
+  .create-session-section .create-session-mode-toggle button
+) {
+  min-height: 38px;
+  padding-block: 8px;
+}
+
+.app.player-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.app.player-workspace :is(select, textarea, .country-button, .date-input-shell) {
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
+.app.player-workspace textarea {
+  min-height: 112px;
+}
+
+.app.player-workspace :is(button.primary, button.secondary, button.create-button) {
+  min-height: 44px;
+  padding: 11px 16px;
+}
+
+.app.player-workspace .sessions-filter-head {
+  gap: 22px;
+  padding-bottom: 12px;
+}
+
+.app.player-workspace .sessions-section .list {
+  gap: 14px;
+}
+
+.app.player-workspace .sessions-section .compact-session-card {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 18px;
+  min-height: 96px;
+  padding: 17px 14px !important;
+}
+
+.app.player-workspace .sessions-section .compact-session-image,
+.app.player-workspace .sessions-section .ticket-session-visual {
+  width: 64px;
+  height: 64px;
+}
+
+.app.player-workspace .sessions-section .compact-session-main {
+  gap: 7px;
+}
+
+.app.player-workspace .sessions-section .compact-session-title-row {
+  gap: 6px 10px;
+}
+
+.app.player-workspace .sessions-section .compact-session-title-row h3 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.app.player-workspace .sessions-section :is(.row-meta, .compact-meta) {
+  gap: 7px 9px;
+}
+
+.app.player-workspace .sessions-section .compact-session-actions {
+  gap: 10px;
+}
+
+.app.player-workspace .sessions-section .session-expanded {
+  gap: 16px;
+  padding: 4px 14px 20px 96px;
+}
+
+.app.player-workspace .sessions-section .session-retention-card {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 18px 14px;
+}
+
+.app.player-workspace .sessions-section .session-retention-card-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.app.player-workspace .sessions-section .session-retention-card-copy {
+  gap: 5px;
+}
+
+.app.player-workspace .sessions-section .session-retention-card-copy strong {
+  font-size: 16px;
+}
+
+.app.player-workspace .ticket-flow-grid {
+  gap: 28px;
+  padding-top: 8px;
+}
+
+.app.player-workspace .ticket-type-list,
+.app.player-workspace .ticket-service-grid,
+.app.player-workspace .ticket-form-panel .ticket-form-grid,
+.app.player-workspace .ticket-price-summary {
+  gap: 16px;
+}
+
+.app.player-workspace .ticket-service-card {
+  gap: 7px;
+  min-height: 104px;
+  padding: 18px;
+}
+
+.app.player-workspace .ticket-service-card strong {
+  font-size: 16px;
+}
+
+.app.player-workspace .ticket-fast-path-summary {
+  padding: 10px 0 8px;
+}
+
+.app.player-workspace .ticket-price-summary > div {
+  min-height: 54px;
+  padding: 13px 14px;
+}
+
+.app.player-workspace .leaderboard-section {
+  gap: 20px;
+}
+
+.app.player-workspace .leaderboard-controls {
+  gap: 14px;
+  width: min(540px, 100%);
+}
+
+.app.player-workspace .current-rank-card,
+.app.player-workspace .hall-gallery-card {
+  padding: 20px;
+}
+
+.app.player-workspace .leaderboard-list {
+  gap: 16px;
+}
+
+.app.player-workspace .leaderboard-row {
+  min-height: 134px;
+  padding: 20px 18px 18px;
+}
+
+.app.player-workspace .clubs-section .club-discovery-toolbar {
+  gap: 18px;
+}
+
+.app.player-workspace .clubs-section .club-create-panel {
+  gap: 18px;
+  margin-top: 20px;
+  padding: 20px;
+}
+
+.app.player-workspace .clubs-section .club-list {
+  gap: 44px;
+  margin-top: 34px;
+}
+
+.app.player-workspace .clubs-section .club-list-group {
+  gap: 20px;
+}
+
+.app.player-workspace .clubs-section .club-list-group-head {
+  padding-bottom: 12px;
+}
+
+.app.player-workspace .clubs-section .club-card {
+  gap: 18px;
+  padding: 18px;
+}
+
+.app.player-workspace .clubs-section .club-card-cover {
+  min-height: 128px;
+}
+
+.app.player-workspace .clubs-section :is(.club-card-main, .club-card-footer) {
+  gap: 18px;
+}
+
+.app.player-workspace .clubs-section .club-card-activity {
+  gap: 12px;
+}
+
+.app.player-workspace .clubs-section .club-card-signal {
+  gap: 11px;
+  min-height: 66px;
+  padding: 13px 14px;
+}
+
+.app.player-workspace .profile-account-form {
+  gap: 0 24px;
+}
+
+.app.player-workspace .profile-account-form .profile-account-hero {
+  padding-bottom: 24px;
+}
+
+.app.player-workspace .profile-account-form :is(
+  .country-phone-field,
+  .email-field,
+  .name-field,
+  .nickname-field,
+  .birthday-field,
+  .gender-field,
+  .motto-field,
+  .profile-consent-panel,
+  .marketing-consent-field
+) {
+  padding-block: 18px;
+}
+
+.app.player-workspace .profile-security-panel {
+  padding-top: 20px;
+}
+
+.app.player-workspace .profile-security-panel .account-links {
+  gap: 14px 24px;
+}
+
+.app.player-workspace .profile-save-actions {
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.app.player-workspace .create-session-section .form-grid {
+  gap: 20px 22px;
+}
+
+.app.player-workspace .create-session-section .form-grid > .full {
+  padding-bottom: 22px;
+}
+
+.app.player-workspace .create-session-section .game-grid {
+  gap: 18px;
+}
+
+.app.player-workspace .create-session-section .game-card {
+  gap: 10px;
+  padding: 12px;
+}
+
+.app.player-workspace :is(.login-modal, .player-profile-panel, .club-drawer) {
+  gap: 18px;
+  padding: 24px;
+}
+
+@media (max-width: 960px) {
+  .app.player-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .app.player-workspace aside {
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-right, 0px)) 8px calc(14px + env(safe-area-inset-left, 0px));
+  }
+
+  .app.player-workspace main {
+    padding: clamp(18px, 3.5vw, 28px);
+  }
+}
+
+@media (max-width: 720px) {
+  .app.player-workspace main {
+    padding: 18px 16px 28px;
+  }
+
+  .app.player-workspace :is(
+    .sessions-section,
+    .leaderboard-section,
+    .tickets-section,
+    .clubs-section,
+    .create-session-section,
+    .profile-account-section-unframed
+  ) {
+    gap: 20px;
+  }
+
+  .app.player-workspace .section-head {
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .app.player-workspace :is(
+    .profile-account-section-unframed .profile-sub-tabs,
+    .sessions-section .sub-tabs,
+    .clubs-section .form-segmented,
+    .create-session-section .create-session-mode-toggle
+  ) {
+    gap: 22px;
+  }
+
+  .app.player-workspace .sessions-section .list {
+    gap: 16px;
+  }
+
+  .app.player-workspace .sessions-section .compact-session-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 13px;
+    padding: 16px 0 !important;
+  }
+
+  .app.player-workspace .sessions-section .compact-session-image,
+  .app.player-workspace .sessions-section .ticket-session-visual {
+    width: 58px;
+    height: 58px;
+  }
+
+  .app.player-workspace .sessions-section .compact-session-actions {
+    gap: 9px;
+  }
+
+  .app.player-workspace .sessions-section .session-expanded {
+    gap: 14px;
+    padding: 2px 0 18px;
+  }
+
+  .app.player-workspace .sessions-section .session-retention-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 12px 14px;
+    padding: 17px 12px;
+  }
+
+  .app.player-workspace .sessions-section .session-retention-card-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .app.player-workspace .ticket-flow-grid,
+  .app.player-workspace .ticket-type-list,
+  .app.player-workspace .ticket-service-grid,
+  .app.player-workspace .ticket-form-panel .ticket-form-grid,
+  .app.player-workspace .ticket-price-summary {
+    gap: 14px;
+  }
+
+  .app.player-workspace .ticket-service-card {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .app.player-workspace .leaderboard-row {
+    min-height: 0;
+    padding: 18px 14px;
+  }
+
+  .app.player-workspace .clubs-section .club-list {
+    gap: 36px;
+    margin-top: 28px;
+  }
+
+  .app.player-workspace .clubs-section .club-card {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .app.player-workspace .clubs-section .club-card-cover {
+    min-height: 108px;
+  }
+
+  .app.player-workspace .profile-account-form :is(
+    .country-phone-field,
+    .email-field,
+    .name-field,
+    .nickname-field,
+    .birthday-field,
+    .gender-field,
+    .motto-field,
+    .profile-consent-panel,
+    .marketing-consent-field
+  ) {
+    padding-block: 16px;
+  }
+
+  .app.player-workspace .create-session-section .form-grid {
+    gap: 18px;
+  }
+
+  .app.player-workspace :is(.login-modal, .player-profile-panel, .club-drawer) {
+    gap: 16px;
+    padding: 20px;
+  }
+}
