@@ -3,10 +3,10 @@
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import { Fragment, useMemo, type ReactNode } from 'react'
-import { Bold, CalendarDays, ChevronDown, ChevronUp, Gift, Italic, Map as MapIcon, Send, Sparkles, Strikethrough, Ticket, Trophy, Underline, Users, X } from 'lucide-react'
+import { Bold, CalendarDays, ChevronDown, ChevronUp, Gift, Italic, Map as MapIcon, Sparkles, Strikethrough, Ticket, Trophy, Underline, Users, X } from 'lucide-react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
-import { games, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
-import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketArenaCountForPlayers, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type Participant } from '../lib/bookingWidgetDomain'
+import { games, ticketServices, type TicketType } from '../lib/bookingStaticData'
+import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketArenaCountForPlayers, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
 import { ShareSymbol } from './BookingWidgetUi'
@@ -21,6 +21,9 @@ const TournamentControlPanel = dynamic(() => import('./TournamentControlPanel'),
 })
 
 type BookingSessionsPanelProps = {
+  // The parent owns this large, inferred integration surface. Keep the escape
+  // hatch at the boundary instead of repeating unsafe casts throughout the UI.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: Record<string, any>
 }
 
@@ -34,6 +37,25 @@ type SessionRetentionCard = {
   icon: ReactNode
   id: string
   title: string
+}
+
+type SessionInviteTarget = {
+  avatar_color?: string | null
+  avatar_emoji?: string | null
+  avatar_initials?: string | null
+  avatar_text_color?: string | null
+  avatar_url: string | null
+  display_name: string | null
+  profile_id: string
+  profile_motto?: string | null
+}
+
+type SessionTournamentData = {
+  auditLogs: TournamentAuditLog[]
+  editors: TournamentEditor[]
+  matches: TournamentMatch[]
+  poolEntries: TournamentPoolEntry[]
+  pools: TournamentPool[]
 }
 
 const sessionRetentionGapOptions = [3, 4, 5] as const
@@ -56,7 +78,194 @@ function stableRetentionIndex(seed: string, step: string, length: number) {
 
 export default function BookingSessionsPanel({ context }: BookingSessionsPanelProps) {
   const {
-    activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession, canManageSession, canReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, compactDisplayName: compactDisplayNameFromContext, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition
+    announcementDrafts,
+    applyRichTextCommand,
+    commentDrafts,
+    editSelectedGames,
+    editTournamentBestOf,
+    editTournamentCustomQualifiers,
+    editTournamentFirstPrize,
+    editTournamentFormat,
+    editTournamentQualificationRule,
+    editTournamentRequirePayment,
+    editTournamentRoundsPerMatch,
+    editTournamentSecondPrize,
+    editTournamentThirdPlace,
+    editTournamentThirdPrize,
+    handleEditArenaCountChange,
+    handleEditMaxPlayersChange,
+    inviteSearch,
+    setAnnouncementDrafts,
+    setCommentDrafts,
+    setEditTournamentBestOf,
+    setEditTournamentCustomQualifiers,
+    setEditTournamentFirstPrize,
+    setEditTournamentFormat,
+    setEditTournamentQualificationRule,
+    setEditTournamentRequirePayment,
+    setEditTournamentRoundsPerMatch,
+    setEditTournamentSecondPrize,
+    setEditTournamentThirdPlace,
+    setEditTournamentThirdPrize,
+    setInviteSearch,
+    setInviteModalSessionId,
+    addTournamentEditor,
+    advanceTournamentRound,
+    allProfiles,
+    avatarFields,
+    avatarNode,
+    avatarStyle,
+    bestOfLabel,
+    bestPerformerText,
+    busyClubId,
+    busyInviteKey,
+    busyMessageKey,
+    busySessionId,
+    busyTournamentId,
+    busyVoteKey,
+    cancelSession,
+    canAccessClubSession,
+    canEditTournamentSession,
+    canManageSession,
+    canReviewSessionMessages,
+    claimPrize,
+    canSeeClubPrivateData,
+    canStaffExpandTicketSessions,
+    challengeStatusLabel,
+    clubMembershipFor,
+    confirmPlayedGame,
+    confirmedGameDrafts,
+    copyInviteCode,
+    copiedInviteId,
+    createThirdPlaceMatch,
+    crownedTopPlayer,
+    createStatus,
+    dayStripRef,
+    deleteSessionMessage,
+    editBookingType,
+    editSessionArenaCount,
+    editSessionDate,
+    editSessionDuration,
+    editSessionDurationRecommendation,
+    editSessionMaxPlayers,
+    editSessionName,
+    editSessionNotes,
+    editSessionTime,
+    editSessionVisibility,
+    editTicketCustomerId,
+    editTicketPricing,
+    editTicketStatus,
+    editTicketTotalPrice,
+    editTicketType,
+    editTimeOptions,
+    editingSessionId,
+    enablePushReminders,
+    expandedNotes,
+    expandedSessions,
+    filteredSessions,
+    finishTournament,
+    formatVnd,
+    friendList,
+    generateTournamentMatches,
+    hasMoreUpcomingSessions,
+    highlightedSessionId,
+    isAdmin,
+    isEnablingPush,
+    isLoadingMoreSessions,
+    isLoadingPastSessions,
+    isPushSubscribed,
+    isSearchOpen,
+    isSessionCreator,
+    isUpdatingSession,
+    inviteModalSessionId,
+    invitePlayerToSession,
+    invitesForSession,
+    joinClub,
+    joinCodes,
+    joinSession,
+    joinWaitlist,
+    language,
+    leaveSession,
+    loadedSessionDetailIds,
+    loadingSessionDetailIds,
+    loadSessionMessages,
+    looseText,
+    messageTranslationKey,
+    messageTranslations,
+    messagesForSession,
+    networkTablesReady,
+    openClubPage,
+    openPlayerProfile,
+    openSessionFromProfile,
+    participantById,
+    participantName,
+    poolStandingsForSession,
+    postSessionMessage,
+    previousPlayersForSession,
+    profile,
+    promptLogin,
+    pushReminderStatus,
+    removeParticipant,
+    renderGameGuideTrigger,
+    renderTariffTrigger,
+    requestMessageTranslation,
+    reviewSessionMessage,
+    search,
+    searchShellRef,
+    selectedSessionDate,
+    sessionClubFor,
+    sessionDayOptions,
+    sessionMessagePages,
+    sessionReminders,
+    sessionTimeScope,
+    setActiveView,
+    setCheckInTarget,
+    setConfirmedGameDrafts,
+    setEditBookingType,
+    setEditSessionArenaCount,
+    setEditSessionDate,
+    setEditSessionDuration,
+    setEditSessionName,
+    setEditSessionNotes,
+    setEditSessionTime,
+    setEditSessionVisibility,
+    setEditTicketCustomerId,
+    setEditTicketStatus,
+    setEditTicketTotalPrice,
+    setEditTicketType,
+    setExpandedNotes,
+    setIsSearchOpen,
+    setJoinCodes,
+    setSearch,
+    setSelectedSessionDate,
+    setSessionExpanded,
+    setSessionTimeScope,
+    setTournamentEditorEmail,
+    setTournamentPoolSize,
+    setupTournamentPools,
+    shareLink,
+    shareTournamentResults,
+    sharedKey,
+    startEditingSession,
+    stopEditingSession,
+    text,
+    toggleMessageOriginal,
+    tournamentStageLabel,
+    tournamentEditorEmail,
+    tournamentEditorResults,
+    tournamentForSession,
+    tournamentLocked,
+    tournamentPoolSize,
+    tournamentRoleHint,
+    toggleEditGame,
+    updateSession,
+    updateTournamentMatch,
+    updateTournamentPoolEntry,
+    userId,
+    voteCount,
+    voteForGame,
+    waitlistForSession,
+    waitlistPosition,
   } = context
 
   const sessionRetentionCards: SessionRetentionCard[] = useMemo(() => [
@@ -253,7 +462,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
     {filteredSessions.map((session: Session, sessionIndex: number) => {
       const sessionRetentionCard = sessionRetentionCardForIndex(sessionIndex)
       const participants = session.session_participants ?? []
-      const waitlist: any[] = waitlistForSession(session)
+      const waitlist: WaitlistEntry[] = waitlistForSession(session)
       const remaining = seatsLeft(session)
       const alreadyJoined = participants.some((participant) => participant.profile_id === userId)
       const myWaitlistPosition = userId ? waitlistPosition(session, userId) : null
@@ -285,10 +494,10 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
         : session.game_options
           .map((gameId) => games.find((item) => item.id === gameId))
           .filter((game): game is (typeof games)[number] => Boolean(game))
-      const sessionInviteRows: any[] = invitesForSession(session.id)
+      const sessionInviteRows: SessionInvite[] = invitesForSession(session.id)
       const invitedMe = sessionInviteRows.some((invite) => invite.recipient_id === userId)
-      const invitedIds = new Set(sessionInviteRows.map((invite: any) => invite.recipient_id))
-      const friendInviteTargets = friendList().map((friend: any) => ({
+      const invitedIds = new Set(sessionInviteRows.map((invite) => invite.recipient_id))
+      const friendInviteTargets: SessionInviteTarget[] = friendList().map((friend: FriendConnection) => ({
         profile_id: friend.following_id,
         display_name: friend.display_name,
         avatar_url: friend.avatar_url,
@@ -298,7 +507,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
         avatar_text_color: friend.avatar_text_color,
         profile_motto: friend.profile_motto,
       }))
-      const previousInviteTargets = previousPlayersForSession(session)
+      const previousInviteTargets: SessionInviteTarget[] = previousPlayersForSession(session)
       const inviteTargets = [...friendInviteTargets, ...previousInviteTargets]
         .filter((target, index, list) => list.findIndex((item) => item.profile_id === target.profile_id) === index)
         .filter((target) => !participants.some((participant) => participant.profile_id === target.profile_id))
@@ -311,7 +520,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
         })
         : inviteTargets
       const visibleInviteTargets = filteredInviteTargets.slice(0, 24)
-      const sessionMessageRows = messagesForSession(session)
+      const sessionMessageRows: SessionMessage[] = messagesForSession(session)
       const sessionMessagePage = sessionMessagePages[session.id]
       const isSessionMessagesLoading = Boolean(sessionMessagePage?.loading)
       const hasEarlierSessionMessages = Boolean(sessionMessagePage?.hasMore && sessionMessagePage.oldestCreatedAt)
@@ -634,7 +843,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                             <label>{text.ticketCustomer}</label>
                             <select value={editTicketCustomerId} onChange={(event) => setEditTicketCustomerId(event.target.value)}>
                               <option value="">{text.noProfile}</option>
-                            {(allProfiles as any[]).map((player) => (
+                            {allProfiles.map((player: Profile) => (
                                 <option key={player.id} value={player.id}>
                                   {displayName(player)}{player.email ? ` · ${player.email}` : ''}
                                 </option>
@@ -689,7 +898,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                   </div>
                 )}
                 {session.session_type === 'tournament' && (() => {
-                  const tournament = tournamentForSession(session.id)
+                  const tournament: SessionTournamentData = tournamentForSession(session.id)
                   const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
 
                   return (
@@ -947,7 +1156,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                   <p className="notice">{text.noInviteTargets}</p>
                 ) : (
                   <div className="invite-search-results">
-                    {visibleInviteTargets.map((target: any) => {
+                    {visibleInviteTargets.map((target) => {
                       const inviteKey = `${session.id}-${target.profile_id}`
                       const isInvited = invitedIds.has(target.profile_id)
 
@@ -977,7 +1186,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
           )}
 
           <div className="players">
-            {participants.map((participant: any) => (
+            {participants.map((participant) => (
               <div className="player result-player" key={participant.id} title={participant.display_name || text.player}>
                 <button
                   aria-label={canSeeSessionPlayers ? playerCardLabel(participant.display_name, text.player) : playerCardLabel(text.member, text.member)}
@@ -1094,7 +1303,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
               </p>
             ) : (
               <div className="message-list">
-                {sessionMessageRows.map((message: any) => {
+                {sessionMessageRows.map((message) => {
                   const moderationStatus = message.moderation_status || 'approved'
                   const canReviewMessage = canReviewSessionMessages(session) && moderationStatus === 'pending_review'
                   const isOwnMessage = message.author_id === userId
@@ -1195,14 +1404,14 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
           )}
 
           {session.session_type === 'tournament' && (() => {
-            const tournament = tournamentForSession(session.id)
+            const tournament: SessionTournamentData = tournamentForSession(session.id)
             const canEditTournament = canEditTournamentSession(session) && !tournamentLocked(session)
             const creatorCanAssignEditors = isSessionCreator(session)
             const eligiblePlayers = eligibleTournamentParticipants(session)
             const hasTournamentStructure = tournament.pools.length > 0 || tournament.matches.length > 0
             const queueMatches = tournament.matches
-              .filter((match: any) => match.status !== 'completed')
-              .sort((a: any, b: any) => (a.queue_position ?? 999) - (b.queue_position ?? 999) || a.round - b.round || a.match_number - b.match_number)
+              .filter((match) => match.status !== 'completed')
+              .sort((a, b) => (a.queue_position ?? 999) - (b.queue_position ?? 999) || a.round - b.round || a.match_number - b.match_number)
             const podium = [2, 1, 3]
               .map((rank) => participants.find((participant) => participant.placement === rank))
               .filter(Boolean) as Participant[]
@@ -1235,7 +1444,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                       </button>
                     </div>
                     <div className="podium-row">
-                      {podium.map((participant: any) => (
+                      {podium.map((participant) => (
                         <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
                           <span className="podium-medal">{rankEmoji(participant.placement)}</span>
                           <button aria-label={playerCardLabel(participant.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
@@ -1257,11 +1466,11 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 {queueMatches.length > 0 && (
                   <div className="queue-board">
                     {[1, 2].map((arenaNumber) => {
-                      const arenaMatches = queueMatches.filter((match: any) => (match.arena_number || arenaNumber) === arenaNumber).slice(0, 4)
+                      const arenaMatches = queueMatches.filter((match) => (match.arena_number || arenaNumber) === arenaNumber).slice(0, 4)
                       return (
                         <div className="queue-lane" key={`arena-${arenaNumber}`}>
                           <strong>Arena {arenaNumber}</strong>
-                          {arenaMatches.length === 0 ? <span className="muted">{text.tournamentQueueEmpty}</span> : arenaMatches.map((match: any, index: number) => (
+                          {arenaMatches.length === 0 ? <span className="muted">{text.tournamentQueueEmpty}</span> : arenaMatches.map((match, index: number) => (
                             <div className={`queue-match ${match.status}`} key={`queue-${match.id}`}>
                               <span>{queueLabel(match.status, index)}</span>
                               <strong>{participantName(session, match.participant_a_id)} vs {participantName(session, match.participant_b_id)}</strong>
@@ -1289,7 +1498,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                     </button>
                     {tournamentEditorResults.length > 0 && (
                       <div className="editor-results">
-                        {tournamentEditorResults.map((editorProfile: any) => (
+                        {tournamentEditorResults.map((editorProfile: Profile) => (
                           <button key={editorProfile.id} onClick={() => addTournamentEditor(session, editorProfile)} type="button">
                             <span className="player-avatar tiny-avatar" style={avatarStyle(avatarFields(editorProfile))}>{avatarNode({
                               ...avatarFields(editorProfile),
@@ -1305,7 +1514,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
 
                 {tournament.editors.length > 0 && (
                   <div className="players compact-roster">
-                    {tournament.editors.map((editor: any) => (
+                    {tournament.editors.map((editor) => (
                       <div className="player" key={editor.id}>
                         <span className="player-avatar" style={avatarStyle(editor)}>
                           {avatarNode(editor, 'E')}
@@ -1318,11 +1527,11 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
 
                 {tournament.pools.length > 0 && (
                   <div className="tournament-grid">
-                    {tournament.pools.map((pool: any) => (
+                    {tournament.pools.map((pool) => (
                       <div className="tournament-panel" key={pool.id}>
                         <strong>{pool.name}</strong>
                         <div className="standings-table">
-                          {poolStandingsForSession(session, pool).map((standing: any, index: number) => (
+                          {poolStandingsForSession(session, pool).map((standing: PoolStanding, index: number) => (
                             <div className="standing-row" key={standing.participantId} title={standing.tieBreakNote}>
                               <span>{index + 1}</span>
                               <strong>{standing.displayName}</strong>
@@ -1332,7 +1541,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                         </div>
                         <p className="field-help">{text.tournamentStandingsHint}</p>
                         <div className="players compact-roster">
-                          {tournament.poolEntries.filter((entry: any) => entry.pool_id === pool.id).map((entry: any) => {
+                          {tournament.poolEntries.filter((entry) => entry.pool_id === pool.id).map((entry) => {
                             const entryParticipant = participantById(session, entry.participant_id)
                             return (
                               <div className="player tournament-entry" key={entry.id}>
@@ -1345,7 +1554,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                                 {canEditTournament && (
                                   <div className="entry-controls">
                                     <select value={entry.pool_id} onChange={(event) => updateTournamentPoolEntry(entry, { pool_id: event.target.value })} aria-label={text.pool}>
-                                      {tournament.pools.map((optionPool: any) => (
+                                      {tournament.pools.map((optionPool) => (
                                         <option key={optionPool.id} value={optionPool.id}>{optionPool.name}</option>
                                       ))}
                                     </select>
@@ -1363,7 +1572,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
 
                 {tournament.matches.length > 0 && (
                   <div className="match-list">
-                    {tournament.matches.map((match: any) => (
+                    {tournament.matches.map((match) => (
                       (() => {
                         const playerA = participantById(session, match.participant_a_id)
                         const playerB = participantById(session, match.participant_b_id)
@@ -1394,13 +1603,13 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               <div className="score-row match-edit-row">
                                 <select value={match.participant_a_id || ''} onChange={(event) => updateTournamentMatch(match, { participant_a_id: event.target.value || null })} aria-label={`${text.match} A`}>
                                   <option value="">{text.noMatch}</option>
-                                  {participants.map((participant: any) => (
+                                  {participants.map((participant) => (
                                     <option key={participant.id} value={participant.id}>{compactDisplayName(participant.display_name, text.player)}</option>
                                   ))}
                                 </select>
                                 <select value={match.participant_b_id || ''} onChange={(event) => updateTournamentMatch(match, { participant_b_id: event.target.value || null })} aria-label={`${text.match} B`}>
                                   <option value="">{text.noMatch}</option>
-                                  {participants.map((participant: any) => (
+                                  {participants.map((participant) => (
                                     <option key={participant.id} value={participant.id}>{compactDisplayName(participant.display_name, text.player)}</option>
                                   ))}
                                 </select>
@@ -1431,7 +1640,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 {tournament.auditLogs.length > 0 && creatorCanAssignEditors && (
                   <details className="audit-log">
                     <summary>{text.auditLog}</summary>
-                    {tournament.auditLogs.slice(0, 10).map((log: any) => (
+                    {tournament.auditLogs.slice(0, 10).map((log) => (
                       <div className="audit-row" key={log.id}>
                         <strong>{log.action}</strong>
                         <span>

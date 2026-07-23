@@ -1,4 +1,85 @@
-// @ts-nocheck
+type AccountantOrder = {
+  booking_date: string
+  company_name: string | null
+  created_at: string
+  created_by: string | null
+  customer_email: string | null
+  customer_name: string | null
+  customer_phone: string | null
+  discount_code: string | null
+  discount_rule_id: string | null
+  discount_total: number
+  external_invoice_id: string | null
+  game_id: string | null
+  id: string
+  internal_note: string | null
+  invoice_address: string | null
+  invoice_status: string
+  order_number: string
+  order_status: 'draft' | 'confirmed' | 'paid' | 'partially_paid' | 'cancelled' | 'refunded' | 'no_show' | 'completed'
+  payment_method: string
+  payment_status: 'unpaid' | 'partially_paid' | 'paid' | 'refunded'
+  players_count: number
+  subtotal: number
+  tax_code: string | null
+  total: number
+  updated_at: string
+}
+
+type AccountantPayment = {
+  amount: number
+  created_at: string
+  created_by: string | null
+  id: string
+  payment_method: string
+}
+
+type AccountantText = {
+  discountTypes: Readonly<Record<string, string>>
+  labels: {
+    no: string
+    yes: string
+  }
+  messages: {
+    accountantExportSourcePending: string
+  }
+  orderStatuses: Readonly<Record<string, string>>
+  paymentMethods: Readonly<Record<string, string>>
+  split: string
+  unpaid: string
+  walkIn: string
+}
+
+type AccountantExportContext = {
+  auditLogs: Array<{
+    action: string
+    actor_user_id: string | null
+    created_at: string
+    new_value?: unknown
+    old_value?: unknown
+  }>
+  discounts: Array<{
+    code: string | null
+    discount_type: string
+    id: string
+    name: string
+  }>
+  games: Array<{
+    id: string
+    name: string
+  }>
+  includeAttachments: boolean
+  language: string
+  orders: AccountantOrder[]
+  paymentsByOrderId: Map<string, AccountantPayment[]>
+  report: {
+    cashTotal: number
+  }
+  reportEnd: string
+  reportStart: string
+  storeLabel: string
+  text: AccountantText
+}
 
 function dateInputValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -12,14 +93,14 @@ function rangeLabel(start: string, end: string) {
   return start === end ? start : `${start} - ${end}`
 }
 
-function paymentMethodLabel(value: string, text: any) {
+function paymentMethodLabel(value: string, text: AccountantText) {
   if (value === 'split') return text.split
   if (value === 'unpaid') return text.unpaid
   if (value === 'cash' || value === 'bank_transfer') return text.paymentMethods[value]
   return value.replace(/_/g, ' ')
 }
 
-function paymentStatusLabel(value: string, text: any) {
+function paymentStatusLabel(value: string, text: AccountantText) {
   if (value === 'unpaid') return text.unpaid
   if (value === 'paid') return text.orderStatuses.paid
   if (value === 'partially_paid') return text.orderStatuses.partially_paid
@@ -27,11 +108,11 @@ function paymentStatusLabel(value: string, text: any) {
   return value
 }
 
-function staffOrderPaymentRows(order: any, paymentsByOrderId: Map<string, any[]>) {
+function staffOrderPaymentRows(order: AccountantOrder, paymentsByOrderId: Map<string, AccountantPayment[]>) {
   return paymentsByOrderId.get(order.id) || []
 }
 
-function orderPaymentLabel(order: any, paymentsByOrderId: Map<string, any[]>, text: any) {
+function orderPaymentLabel(order: AccountantOrder, paymentsByOrderId: Map<string, AccountantPayment[]>, text: AccountantText) {
   const payments = staffOrderPaymentRows(order, paymentsByOrderId)
   if (payments.length === 0) return paymentMethodLabel(order.payment_method, text)
   return payments
@@ -39,7 +120,7 @@ function orderPaymentLabel(order: any, paymentsByOrderId: Map<string, any[]>, te
     .join(' + ')
 }
 
-function orderPaidAmount(order: any, paymentsByOrderId: Map<string, any[]>) {
+function orderPaidAmount(order: AccountantOrder, paymentsByOrderId: Map<string, AccountantPayment[]>) {
   const payments = staffOrderPaymentRows(order, paymentsByOrderId)
   if (payments.length > 0) return payments.reduce((sum, payment) => sum + payment.amount, 0)
   return order.payment_status === 'paid' ? order.total : 0
@@ -49,11 +130,11 @@ function formatVnd(value: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value || 0)
 }
 
-function accountantCustomer(order: any, text: any) {
+function accountantCustomer(order: AccountantOrder, text: AccountantText) {
   return order.customer_name || order.customer_phone || order.customer_email || text.walkIn
 }
 
-function accountantGameName(order: any, games: any[]) {
+function accountantGameName(order: AccountantOrder, games: AccountantExportContext['games']) {
   return games.find((game) => game.id === order.game_id)?.name || ''
 }
 
@@ -75,17 +156,17 @@ function accountantJsonValue(value: unknown) {
   }
 }
 
-function accountantFirstPayment(order: any, paymentsByOrderId: Map<string, any[]>) {
+function accountantFirstPayment(order: AccountantOrder, paymentsByOrderId: Map<string, AccountantPayment[]>) {
   return [...staffOrderPaymentRows(order, paymentsByOrderId)].sort((left, right) => (
     new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
   ))[0] || null
 }
 
-function accountantPaymentDate(order: any, paymentsByOrderId: Map<string, any[]>) {
+function accountantPaymentDate(order: AccountantOrder, paymentsByOrderId: Map<string, AccountantPayment[]>) {
   return (accountantFirstPayment(order, paymentsByOrderId)?.created_at || order.created_at).slice(0, 10)
 }
 
-function accountantIsRecognized(order: any) {
+function accountantIsRecognized(order: AccountantOrder) {
   return order.order_status === 'completed' || order.booking_date <= todayString()
 }
 
@@ -94,7 +175,7 @@ function accountantVatSplit(total: number) {
   return { net, vat: Math.max(total - net, 0) }
 }
 
-function accountantSourcePendingRow(columns: string[], context: any) {
+function accountantSourcePendingRow(columns: string[], context: AccountantExportContext) {
   const noteColumn = columns.includes('Notes') ? 'Notes' : columns[columns.length - 1]
   return columns.reduce<Record<string, unknown>>((row, column, index) => {
     row[column] = column === noteColumn || (index === 0 && !noteColumn)
@@ -115,7 +196,7 @@ function accountantRowsOrBlank(rows: Array<Record<string, unknown>>, columns: st
   return rows.length > 0 ? rows : [accountantBlankRow(columns)]
 }
 
-export function accountantExportInfoRows(reportTitle: string, context: any) {
+export function accountantExportInfoRows(reportTitle: string, context: AccountantExportContext): Array<Record<string, unknown>> {
   return [
     { Field: 'Report', Value: reportTitle },
     { Field: 'Period', Value: rangeLabel(context.reportStart, context.reportEnd) },
@@ -126,7 +207,7 @@ export function accountantExportInfoRows(reportTitle: string, context: any) {
   ]
 }
 
-export function buildAccountantExportRows(reportId: string, context: any) {
+export function buildAccountantExportRows(reportId: string, context: AccountantExportContext): Array<Record<string, unknown>> {
   const eInvoiceColumns = [
     'Sale ID',
     'Invoice issued?',

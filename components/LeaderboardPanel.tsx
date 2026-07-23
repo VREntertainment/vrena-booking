@@ -1,5 +1,6 @@
 'use client'
 
+import NextImage from 'next/image'
 import { ChevronLeft, ChevronRight, ExternalLink, Images, Share, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/base'
@@ -604,11 +605,12 @@ export default function LeaderboardPanel({
                 onClick={() => setActiveGalleryIndex(index)}
                 type="button"
               >
-                <img
+                <NextImage
                   alt={text[image.altKey]}
                   decoding="async"
                   height="1080"
                   loading="lazy"
+                  sizes="(max-width: 700px) 68vw, 240px"
                   src={image.src}
                   width="1920"
                 />
@@ -628,10 +630,11 @@ export default function LeaderboardPanel({
               <ChevronLeft aria-hidden="true" size={30} />
             </button>
             <figure>
-              <img
+              <NextImage
                 alt={text[activeGalleryImage.altKey]}
                 decoding="async"
                 height="1080"
+                sizes="(max-width: 700px) calc(100vw - 34px), calc(100vw - 168px)"
                 src={activeGalleryImage.src}
                 width="1920"
               />

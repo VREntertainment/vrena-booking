@@ -480,6 +480,7 @@ export default function WidgetPage({
   const loadClubsRef = useRef(loadClubs)
   const loadExpandedSessionDetailsRef = useRef(loadExpandedSessionDetails)
   const loadExpandedSessionMessagesRef = useRef(loadExpandedSessionMessages)
+  const hydrateCurrentUserShareStatsRef = useRef(hydrateCurrentUserShareStats)
   const loadLeaderboardPlayersRef = useRef(loadLeaderboardPlayers)
   const loadMoreUpcomingSessionsRef = useRef(loadMoreUpcomingSessions)
   const loadNetworkDataRef = useRef(loadNetworkData)
@@ -855,25 +856,6 @@ export default function WidgetPage({
   function promptLogin() {
     setLoginPromptOpen(true)
     setProfileStatus(text.loginToContinue)
-  }
-
-  function promptCreateAccount() {
-    setLoginPromptOpen(false)
-    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
-      phone: ticketConfirmation.guestPhone,
-      reference: ticketConfirmation.reference,
-      name: ticketConfirmation.guestName,
-      date: ticketConfirmation.date,
-    } : null)
-    if (claimSource?.phone) {
-      const phoneParts = splitPhoneNumber(claimSource.phone)
-      setProfileCountryCode(phoneParts.countryInput || '+84')
-      setProfilePhone(phoneParts.localPhone)
-      if (claimSource.name) setProfileName(claimSource.name)
-      if (claimSource.reference) setPendingGuestTicketClaim(claimSource)
-    }
-    updateAuthMode('create')
-    setActiveView('profile')
   }
 
   function prefillProfileFromGuestTicketClaim(claimSource: { phone: string; reference?: string; name?: string; date?: string } | null) {
@@ -3441,6 +3423,7 @@ export default function WidgetPage({
     loadClubsRef.current = loadClubs
     loadExpandedSessionDetailsRef.current = loadExpandedSessionDetails
     loadExpandedSessionMessagesRef.current = loadExpandedSessionMessages
+    hydrateCurrentUserShareStatsRef.current = hydrateCurrentUserShareStats
     loadLeaderboardPlayersRef.current = loadLeaderboardPlayers
     loadMoreUpcomingSessionsRef.current = loadMoreUpcomingSessions
     loadNetworkDataRef.current = loadNetworkData
@@ -3524,7 +3507,7 @@ export default function WidgetPage({
     if (currentUserShareStats?.profileId === userId) return
 
     return scheduleDeferredWork(() => {
-      void hydrateCurrentUserShareStats(userId)
+      void hydrateCurrentUserShareStatsRef.current(userId)
     })
   }, [profile, userId, currentUserShareStats])
 
@@ -3987,7 +3970,6 @@ export default function WidgetPage({
     activeTicketDuration,
     getAvailableTimeOptions,
     ticketDate,
-    ticketAvailabilitySearchTick,
     ticketNextAvailableSearchEndDate,
     ticketTimeOptions.length,
   ])
@@ -8931,7 +8913,6 @@ function handleSessionDateChange(value: string) {
             ticketDate={ticketDate}
             ticketDiscountAmount={activeTicketDiscountAmount}
             ticketDiscountCode={ticketDiscountCode}
-            ticketDiscountName={ticketAutomaticDiscountQuote?.discount_name || ticketDiscountQuote?.discount_name || ''}
             ticketDiscountSource={activeTicketDiscountSource}
             ticketDiscountStatus={ticketDiscountStatus}
             ticketDurationOptions={ticketDurationOptions}

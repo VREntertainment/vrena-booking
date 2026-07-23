@@ -28,10 +28,42 @@ type ButtonIconTextComponent = ComponentType<{
   icon: ReactNode
 }>
 
+type StaffReportDateRangeText = {
+  actions: {
+    apply: string
+    cancel: string
+  }
+  aria: {
+    closeReportCalendar: string
+    compareEndDate: string
+    compareStartDate: string
+    nextReportMonth: string
+    previousReportMonth: string
+    reportEndDate: string
+    reportStartDate: string
+  }
+  chooseDate: string
+  labels: {
+    compare: string
+    compareEditingHint: string
+    compareInactiveHint: string
+    compareRange: string
+    editingRange: string
+    endDate: string
+    off: string
+    referenceRange: string
+    reportRange: string
+    selectedRange: string
+    startDate: string
+  }
+  reportRangePresets: Readonly<Record<StaffReportRangePreset, string>>
+  reportWeekdays: readonly string[]
+}
+
 type StaffReportDateRangeModalProps = {
   ButtonIconText: ButtonIconTextComponent
   StaffPickerField: StaffPickerFieldComponent
-  text: any
+  text: StaffReportDateRangeText
   reportStart: string
   reportEnd: string
   compareEnabled: boolean

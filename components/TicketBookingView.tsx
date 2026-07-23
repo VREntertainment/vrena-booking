@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { X } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
@@ -102,7 +102,6 @@ export type TicketBookingViewProps = {
   isCheckingTicketDiscount: boolean
   ticketDiscountAmount: number
   ticketDiscountCode: string
-  ticketDiscountName: string
   ticketDiscountStatus: string
   ticketDiscountSource: 'automatic' | 'voucher'
   loyaltyDiscountAmount: number
@@ -163,7 +162,6 @@ export default function TicketBookingView({
   isCheckingTicketDiscount,
   ticketDiscountAmount,
   ticketDiscountCode,
-  ticketDiscountName,
   ticketDiscountStatus,
   ticketDiscountSource,
   loyaltyDiscountAmount,
@@ -219,10 +217,6 @@ export default function TicketBookingView({
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
-
-  useEffect(() => {
-    if (ticketConfirmation) setGuestTicketContactOpen(false)
-  }, [ticketConfirmation])
 
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
