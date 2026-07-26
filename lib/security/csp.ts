@@ -5,6 +5,17 @@ type ContentSecurityPolicyOptions = {
   supabaseRealtimeOrigin?: string | null
 }
 
+export const contentStudioFrameAncestors = [
+  "'self'",
+  'https://vre-vietnam.com',
+  'https://www.vre-vietnam.com',
+  'https://vrena-website.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:3002',
+  'http://127.0.0.1:3002',
+] as const
+
 export function buildContentSecurityPolicy({
   isDev,
   nonce,
@@ -45,7 +56,7 @@ export function buildContentSecurityPolicy({
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    `frame-ancestors ${contentStudioFrameAncestors.join(' ')}`,
     isDev ? null : 'upgrade-insecure-requests',
   ].filter(Boolean).join('; ')
 }
