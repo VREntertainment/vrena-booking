@@ -25,6 +25,13 @@ function parentOriginFromReferrer() {
 
   try {
     const origin = new URL(document.referrer).origin;
+    // A same-origin redirect inside the framed app can replace the original
+    // Content Studio referrer with the app's own URL. Wait for a validated
+    // message from the real parent instead of locking onto the wrong origin.
+    if (origin === window.location.origin) {
+      return null;
+    }
+
     return allowedParentOrigin(origin) ? origin : null;
   } catch {
     return null;
@@ -47,11 +54,7 @@ export default function ContentStudioPreviewBridge() {
       return;
     }
 
-    const parentOrigin = parentOriginFromReferrer();
-
-    if (!parentOrigin) {
-      return;
-    }
+    let parentOrigin = parentOriginFromReferrer();
 
     let annotationMode = false;
     let highlightedElement: HTMLElement | null = null;
@@ -102,7 +105,7 @@ export default function ContentStudioPreviewBridge() {
           type,
           ...payload,
         },
-        parentOrigin!,
+        parentOrigin ?? "*",
       );
     }
 
@@ -248,12 +251,14 @@ export default function ContentStudioPreviewBridge() {
 
     function handleMessage(event: MessageEvent) {
       if (
-        event.origin !== parentOrigin ||
         event.source !== window.parent ||
+        !allowedParentOrigin(event.origin) ||
         event.data?.namespace !== messageNamespace
       ) {
         return;
       }
+
+      parentOrigin = event.origin;
 
       if (event.data.type === "set-annotation-mode") {
         annotationMode = event.data.enabled === true;
