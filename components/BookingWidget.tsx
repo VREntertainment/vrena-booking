@@ -558,7 +558,8 @@ export default function WidgetPage({
     { value: 'winRate', label: text.winRateCriterion },
     { value: 'accuracy', label: text.accuracyCriterion },
     { value: 'reliability', label: text.reliabilityCriterion },
-    { value: 'projectiles', label: text.projectilesCriterion },
+    { value: 'hits', label: text.projectilesCriterion },
+    { value: 'movement', label: text.movementCriterion },
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
@@ -586,7 +587,7 @@ export default function WidgetPage({
 
     try {
       const { data, error } = await (await getSupabase()).rpc(
-        'get_leaderboard_players_page',
+        'get_leaderboard_players_page_v2',
         leaderboardRpcArgs(leaderboardQueryRef.current, 0, 1, profileId)
       )
 
@@ -996,6 +997,13 @@ export default function WidgetPage({
     reloadLeaderboard({
       ...leaderboardQueryRef.current,
       criterion,
+    })
+  }
+
+  function handleLeaderboardGameChange(gameId: string) {
+    reloadLeaderboard({
+      ...leaderboardQueryRef.current,
+      gameId,
     })
   }
 
@@ -2473,7 +2481,7 @@ export default function WidgetPage({
 
   async function fetchLeaderboardRows(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
     const { data, error } = await (await getSupabase()).rpc(
-      'get_leaderboard_players_page',
+      'get_leaderboard_players_page_v2',
       leaderboardRpcArgs(query, offset, limit, profileId)
     )
 
@@ -5097,7 +5105,11 @@ function handleSessionDateChange(value: string) {
     const nextQuery = {
       ...initialLeaderboardQuery(),
       clubId: selectedClubHallId,
-      criterion: isLeaderboardCriterion(selectedClubHallRankingCriterion) ? selectedClubHallRankingCriterion : 'totalScore',
+      criterion: selectedClubHallRankingCriterion === 'projectiles'
+        ? 'hits'
+        : isLeaderboardCriterion(selectedClubHallRankingCriterion)
+          ? selectedClubHallRankingCriterion
+          : 'totalScore',
     }
     leaderboardQueryRef.current = nextQuery
     leaderboardLoadedCountRef.current = 0
@@ -6038,6 +6050,7 @@ function handleSessionDateChange(value: string) {
 
   function clubRankingCriterion(club: Club | undefined): LeaderboardCriterion {
     const criterion = club?.ranking_criterion
+    if (criterion === 'projectiles') return 'hits'
     return isLeaderboardCriterion(criterion) ? criterion : 'totalScore'
   }
 
@@ -8746,12 +8759,14 @@ function handleSessionDateChange(value: string) {
                 currentUserRankPlayer={currentUserRankPlayer}
                 hasMorePlayers={hasMoreLeaderboardPlayers}
                 initialCriterion={leaderboardQueryRef.current.criterion}
+                initialGameId={leaderboardQueryRef.current.gameId}
                 isCurrentUserStatsShared={currentUserStatsShared}
                 isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
                 onLeaderboardClubChange={handleLeaderboardClubChange}
                 onLeaderboardClubFilterOpen={ensureClubsLoaded}
                 onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
                 onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+                onLeaderboardGameChange={handleLeaderboardGameChange}
                 onLeaderboardSearchChange={handleLeaderboardSearchChange}
                 onLoadMorePlayers={loadMoreLeaderboardPlayers}
                 onShareCurrentUserStats={() => shareCurrentUserStats()}
@@ -9599,9 +9614,11 @@ function handleSessionDateChange(value: string) {
                           hasMorePlayers={hasMoreLeaderboardPlayers}
                           hideIntro
                           initialCriterion={clubRankingCriterion(selectedClub)}
+                          initialGameId={leaderboardQueryRef.current.gameId}
                           isCurrentUserStatsShared={currentUserStatsShared}
                           isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
                           onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+                          onLeaderboardGameChange={handleLeaderboardGameChange}
                           onLeaderboardSearchChange={handleLeaderboardSearchChange}
                           onLoadMorePlayers={loadMoreLeaderboardPlayers}
                           onOpenPlayerProfile={openPlayerProfile}

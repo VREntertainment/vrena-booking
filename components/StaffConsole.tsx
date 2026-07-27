@@ -561,6 +561,8 @@ type StaffSessionParticipant = {
   payment_splits?: unknown
   score?: number | null
   accuracy_percent?: number | null
+  hits?: number | null
+  movement_meters?: number | null
   projectiles_fired?: number | null
   escape_duration_seconds?: number | null
   placement?: number | null
@@ -1218,7 +1220,8 @@ const staffConsoleText = {
       score: 'Score',
       place: 'Place',
       accuracy: 'Accuracy',
-      projectiles: 'Shots',
+      projectiles: 'Hits',
+      movement: 'Movement',
       escapeTime: 'Escape time',
       loyaltyPoints: 'Loyalty points',
       pointsEarned: 'Points earned',
@@ -2000,7 +2003,8 @@ const staffConsoleText = {
       score: 'Điểm',
       place: 'Hạng',
       accuracy: 'Độ chính xác',
-      projectiles: 'Số phát bắn',
+      projectiles: 'Số lần trúng',
+      movement: 'Quãng đường',
       escapeTime: 'Thời gian Escape',
       loyaltyPoints: 'Điểm thưởng',
       pointsEarned: 'Điểm nhận được',
@@ -5338,7 +5342,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const today = todayString()
       let query = supabase
         .from('sessions')
-        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, deleted_at, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
+        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, deleted_at, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, hits, movement_meters, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
         .is('deleted_at', null)
 
       query = operationSessionScope === 'past'
@@ -5519,7 +5523,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     )
 
     setSaving(true)
-    const { error } = await supabase.rpc('staff_upsert_session_participant_operation', {
+    const { error } = await supabase.rpc('staff_upsert_session_participant_result_v2', {
       p_session_id: session.id,
       p_participant_id: participant.id,
       p_profile_id: participant.profile_id,
@@ -5529,7 +5533,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       p_payment_amount: patchValue('payment_amount'),
       p_score: patchValue('score'),
       p_accuracy_percent: patchValue('accuracy_percent'),
-      p_projectiles_fired: patchValue('projectiles_fired'),
+      p_hits: patchValue('hits'),
+      p_movement_meters: patchValue('movement_meters'),
       p_escape_duration_seconds: patchValue('escape_duration_seconds'),
       p_placement: patchValue('placement'),
     })
@@ -5549,7 +5554,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     if (!profileId) return
 
     setSaving(true)
-    const { error } = await supabase.rpc('staff_upsert_session_participant_operation', {
+    const { error } = await supabase.rpc('staff_upsert_session_participant_result_v2', {
       p_session_id: session.id,
       p_profile_id: profileId,
     })
@@ -8073,7 +8078,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                                   <label>{text.labels.score}<input defaultValue={participant.score ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { score: event.target.value === '' ? null : Number(event.target.value) })} /></label>
                                   <label>{text.labels.place}<input defaultValue={participant.placement ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { placement: event.target.value === '' ? null : Number(event.target.value) })} /></label>
                                   <label>{text.labels.accuracy}<input defaultValue={participant.accuracy_percent ?? ''} disabled={!canCreateOrders || saving} inputMode="decimal" onBlur={(event) => updateOperationParticipant(session, participant, { accuracy_percent: event.target.value === '' ? null : Number(event.target.value) })} /></label>
-                                  <label>{text.labels.projectiles}<input defaultValue={participant.projectiles_fired ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { projectiles_fired: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  <label>{text.labels.projectiles}<input defaultValue={participant.hits ?? participant.projectiles_fired ?? ''} disabled={!canCreateOrders || saving} inputMode="numeric" onBlur={(event) => updateOperationParticipant(session, participant, { hits: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+                                  <label>{text.labels.movement}<input defaultValue={participant.movement_meters ?? ''} disabled={!canCreateOrders || saving} inputMode="decimal" onBlur={(event) => updateOperationParticipant(session, participant, { movement_meters: event.target.value === '' ? null : Number(event.target.value) })} /></label>
                                   {isEscapeGame && <label>{text.labels.escapeTime}<input defaultValue={formatStaffDuration(participant.escape_duration_seconds)} disabled={!canCreateOrders || saving} inputMode="text" placeholder="12:34" onBlur={(event) => updateOperationParticipant(session, participant, { escape_duration_seconds: parseStaffDuration(event.target.value) })} /></label>}
                                 </div>
                                 {isEscapeGame && (

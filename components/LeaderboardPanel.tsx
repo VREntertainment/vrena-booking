@@ -3,6 +3,7 @@
 import NextImage from 'next/image'
 import { ChevronLeft, ChevronRight, ExternalLink, Images, Share, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { games } from '../lib/bookingStaticData'
 import type { TranslationMap } from '../lib/i18n/base'
 import { vrenaGalleryUrl } from '../lib/siteMetadata'
 
@@ -26,6 +27,7 @@ export type LeaderboardPlayer = {
   totalAccuracy: number
   accuracyCount: number
   totalProjectiles: number
+  totalMovementMeters?: number
   averageAccuracy: number | null
   reliabilityScore: number
   bestByGame: Array<{ game: string; score: number; escapeDurationSeconds?: number | null }>
@@ -49,7 +51,7 @@ type LeaderboardClub = {
   }> | null
 }
 
-export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'gamesPlayed' | 'escapeTime'
+export type LeaderboardCriterion = 'totalScore' | 'wins' | 'winRate' | 'accuracy' | 'reliability' | 'projectiles' | 'hits' | 'movement' | 'gamesPlayed' | 'escapeTime'
 
 type LeaderboardPanelProps = {
   avatarStyleFor: (player: LeaderboardPlayer) => CSSProperties | undefined
@@ -61,6 +63,7 @@ type LeaderboardPanelProps = {
   hideIntro?: boolean
   isCurrentUserStatsShared?: boolean
   initialCriterion?: LeaderboardCriterion
+  initialGameId?: string
   isLoadingMorePlayers?: boolean
   isLoadingClubs?: boolean
   onOpenPlayerProfile: (profileId: string) => void
@@ -68,6 +71,7 @@ type LeaderboardPanelProps = {
   onLeaderboardClubFilterOpen?: () => void
   onLeaderboardClubPinUnlock?: (clubId: string, pinCode: string) => void
   onLeaderboardCriterionChange?: (criterion: LeaderboardCriterion) => void
+  onLeaderboardGameChange?: (gameId: string) => void
   onLeaderboardSearchChange?: (search: string) => void
   onLoadMorePlayers?: () => void
   onShareCurrentUserStats?: () => void
@@ -191,7 +195,8 @@ function leaderboardMetricValue(player: LeaderboardPlayer, criterion: Leaderboar
   if (criterion === 'winRate') return percentValue(player.wins, player.gamesJoined)
   if (criterion === 'accuracy') return player.averageAccuracy ?? 0
   if (criterion === 'reliability') return player.reliabilityScore
-  if (criterion === 'projectiles') return player.totalProjectiles
+  if (criterion === 'projectiles' || criterion === 'hits') return player.totalProjectiles
+  if (criterion === 'movement') return player.totalMovementMeters ?? 0
   if (criterion === 'gamesPlayed') return player.gamesJoined
   if (criterion === 'escapeTime') return player.bestEscapeDurationSeconds ?? 0
   return player.totalScore
@@ -226,12 +231,14 @@ export default function LeaderboardPanel({
   hideIntro = false,
   isCurrentUserStatsShared = false,
   initialCriterion = 'totalScore',
+  initialGameId = '',
   isLoadingMorePlayers = false,
   isLoadingClubs = false,
   onLeaderboardClubChange,
   onLeaderboardClubFilterOpen,
   onLeaderboardClubPinUnlock,
   onLeaderboardCriterionChange,
+  onLeaderboardGameChange,
   onLeaderboardSearchChange,
   onLoadMorePlayers,
   onOpenPlayerProfile,
@@ -245,6 +252,7 @@ export default function LeaderboardPanel({
   userId,
 }: LeaderboardPanelProps) {
   const [leaderboardCriterion, setLeaderboardCriterion] = useState<LeaderboardCriterion>(initialCriterion)
+  const [leaderboardGameId, setLeaderboardGameId] = useState(initialGameId)
   const [leaderboardSearch, setLeaderboardSearch] = useState('')
   const [leaderboardClubId, setLeaderboardClubId] = useState(fixedClubId)
   const [leaderboardClubPinDrafts, setLeaderboardClubPinDrafts] = useState<Record<string, string>>({})
@@ -260,7 +268,8 @@ export default function LeaderboardPanel({
     { value: 'winRate', label: text.winRateCriterion },
     { value: 'accuracy', label: text.accuracyCriterion },
     { value: 'reliability', label: text.reliabilityCriterion },
-    { value: 'projectiles', label: text.projectilesCriterion },
+    { value: 'hits', label: text.projectilesCriterion },
+    { value: 'movement', label: text.movementCriterion },
     { value: 'gamesPlayed', label: text.gamesPlayedCriterion },
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
@@ -273,6 +282,10 @@ export default function LeaderboardPanel({
   useEffect(() => {
     return schedulePostEffectStateUpdate(() => setLeaderboardCriterion(initialCriterion))
   }, [initialCriterion])
+
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => setLeaderboardGameId(initialGameId))
+  }, [initialGameId])
 
   const rankedLeaderboardRows = useMemo(() => {
     const lowerIsBetter = isAscendingLeaderboardCriterion(leaderboardCriterion)
@@ -478,6 +491,22 @@ export default function LeaderboardPanel({
                 <option key={criterion.value} value={criterion.value}>
                   {criterion.label}
                 </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{text.gameFilter}</span>
+            <select
+              value={leaderboardGameId}
+              onChange={(event) => {
+                const nextGameId = event.target.value
+                setLeaderboardGameId(nextGameId)
+                onLeaderboardGameChange?.(nextGameId)
+              }}
+            >
+              <option value="">{text.allGames}</option>
+              {games.map((game) => (
+                <option key={game.id} value={game.id}>{game.title}</option>
               ))}
             </select>
           </label>
