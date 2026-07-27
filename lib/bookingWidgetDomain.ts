@@ -194,6 +194,8 @@ export type Participant = {
   payment_splits?: ParticipantPaymentSplit[] | null
   score?: number | null
   accuracy_percent?: number | null
+  hits?: number | null
+  movement_meters?: number | null
   projectiles_fired?: number | null
   escape_duration_seconds?: number | null
   placement?: number | null

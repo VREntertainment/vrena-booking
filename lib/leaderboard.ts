@@ -19,6 +19,7 @@ export type LeaderboardRpcRow = {
   total_accuracy: number | null
   accuracy_count: number | null
   total_projectiles: number | null
+  total_movement_meters: number | null
   average_accuracy: number | null
   reliability_score: number | null
   best_by_game: unknown
@@ -33,6 +34,7 @@ export type LeaderboardQuery = {
   clubId: string
   clubPin: string
   criterion: LeaderboardCriterion
+  gameId: string
   search: string
 }
 
@@ -67,6 +69,8 @@ export function isLeaderboardCriterion(value: string | null | undefined): value 
     || value === 'accuracy'
     || value === 'reliability'
     || value === 'projectiles'
+    || value === 'hits'
+    || value === 'movement'
     || value === 'gamesPlayed'
     || value === 'escapeTime'
 }
@@ -76,6 +80,7 @@ export function initialLeaderboardQuery(): LeaderboardQuery {
     clubId: '',
     clubPin: '',
     criterion: 'totalScore',
+    gameId: '',
     search: '',
   }
 }
@@ -84,6 +89,7 @@ export function leaderboardRpcArgs(query: LeaderboardQuery, offset: number, limi
   return {
     p_club_id: query.clubId || null,
     p_club_pin: query.clubPin || null,
+    p_game_id: query.gameId || null,
     p_limit: limit,
     p_offset: offset,
     p_profile_id: profileId || null,
@@ -129,6 +135,7 @@ export function leaderboardPlayerFromRpcRow(row: LeaderboardRpcRow, fallbackName
     totalAccuracy: finiteLeaderboardNumber(row.total_accuracy),
     accuracyCount: finiteLeaderboardNumber(row.accuracy_count),
     totalProjectiles: finiteLeaderboardNumber(row.total_projectiles),
+    totalMovementMeters: finiteLeaderboardNumber(row.total_movement_meters),
     averageAccuracy: row.average_accuracy === null || row.average_accuracy === undefined ? null : finiteLeaderboardNumber(row.average_accuracy),
     reliabilityScore: finiteLeaderboardNumber(row.reliability_score),
     bestEscapeDurationSeconds,
