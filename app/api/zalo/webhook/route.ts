@@ -67,6 +67,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const suppliedSignature = cleanString(request.headers.get(SIGNATURE_HEADER), 128)
+  if (!suppliedSignature) {
+    return NextResponse.json(
+      { ok: true, probe: true },
+      { headers: { 'Cache-Control': 'no-store' } },
+    )
+  }
+
   const apiKey = process.env.ZALO_OPEN_API_KEY
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -91,7 +99,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid webhook payload.' }, { status: 400 })
   }
 
-  const suppliedSignature = cleanString(request.headers.get(SIGNATURE_HEADER), 128)
   const expectedSignature = signatureFor(payload, apiKey)
   if (!signaturesMatch(suppliedSignature, expectedSignature)) {
     return NextResponse.json({ error: 'Invalid webhook signature.' }, { status: 401 })
