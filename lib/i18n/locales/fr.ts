@@ -687,6 +687,8 @@ export const fr = {
   accountCreated: 'Compte créé. Ton profil, tes récompenses et tes réservations restent ensemble.',
   savingProfile: 'Profil en save...',
   profileSaved: 'Profil sauvé.',
+  profileSaveError: 'Le profil n’a pas pu être enregistré. Réessayez.',
+  profileIdentityTaken: 'Ce nom ou ce pseudo est déjà utilisé par un autre joueur.',
   logOut: 'Déconnexion',
   mySessions: 'Mes parties',
   mySessionsHint: 'Parties créées ou rejointes.',

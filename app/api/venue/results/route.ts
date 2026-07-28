@@ -12,6 +12,7 @@ import {
 export const runtime = 'nodejs'
 
 type ProfileRow = {
+  full_name: string
   id: string
   nickname: string
 }
@@ -54,11 +55,9 @@ async function exactProfilesForName(
   playerName: string
 ) {
   const { data, error } = await adminClient
-    .from('profiles')
-    .select('id, nickname')
-    .eq('nickname', playerName)
-    .is('deleted_at', null)
-    .limit(2)
+    .rpc('service_profiles_for_venue_identity', {
+      p_player_name: playerName,
+    } as never)
 
   if (error) throw error
   return (data ?? []) as ProfileRow[]

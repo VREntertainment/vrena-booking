@@ -687,6 +687,8 @@ export const vi = {
   accountCreated: 'Tài khoản đã tạo. Hồ sơ, phần thưởng và đặt chỗ của bạn sẽ ở cùng một nơi.',
   savingProfile: 'Đang lưu hồ sơ...',
   profileSaved: 'Đã lưu hồ sơ.',
+  profileSaveError: 'Không thể lưu hồ sơ. Vui lòng thử lại.',
+  profileIdentityTaken: 'Tên hoặc biệt danh này đã được người chơi khác sử dụng.',
   logOut: 'Đăng xuất',
   mySessions: 'Phiên tôi',
   mySessionsHint: 'Phiên bạn tạo hoặc đã vào.',

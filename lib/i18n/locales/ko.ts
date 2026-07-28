@@ -687,6 +687,8 @@ export const ko = {
   accountCreated: '계정 생성됨. 프로필, 보상, 예약을 함께 보관할 수 있어요.',
   savingProfile: '프로필 저장 중...',
   profileSaved: '프로필 저장됨.',
+  profileSaveError: '프로필을 저장할 수 없습니다. 다시 시도해 주세요.',
+  profileIdentityTaken: '이 이름 또는 닉네임은 다른 플레이어가 사용 중입니다.',
   logOut: '로그아웃',
   mySessions: '내 세션',
   mySessionsHint: '내가 만들거나 참가한 세션.',

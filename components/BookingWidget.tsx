@@ -249,8 +249,10 @@ export default function WidgetPage({
   const [profileStatus, setProfileStatus] = useState('')
   const [actionToast, setActionToast] = useState<ActionToast | null>(null)
   const actionToastTimerRef = useRef<number | null>(null)
+  const profileSaveSuccessTimerRef = useRef<number | null>(null)
   const [isProfileAuthLoading, setIsProfileAuthLoading] = useState(true)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isProfileSaveSuccessful, setIsProfileSaveSuccessful] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
@@ -834,6 +836,9 @@ export default function WidgetPage({
   useEffect(() => () => {
     if (actionToastTimerRef.current !== null) {
       window.clearTimeout(actionToastTimerRef.current)
+    }
+    if (profileSaveSuccessTimerRef.current !== null) {
+      window.clearTimeout(profileSaveSuccessTimerRef.current)
     }
   }, [])
 
@@ -6784,117 +6789,131 @@ function handleSessionDateChange(value: string) {
 
     if (!profilePhone.trim()) {
       setProfileStatus(text.phoneRequired)
+      document.getElementById('profile-phone-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document.getElementById('profile-phone-input')?.focus({ preventScroll: true })
       return
     }
 
     if (!fullName) {
       setProfileStatus(text.nameRequired)
+      document.getElementById('profile-name-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document.getElementById('profile-name-input')?.focus({ preventScroll: true })
       return
     }
 
     setIsSavingProfile(true)
+    setIsProfileSaveSuccessful(false)
     setProfileStatus(text.savingProfile)
 
-    const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(userId, profile?.avatar_url || null) : null
+    try {
+      const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(userId, profile?.avatar_url || null) : null
 
-    if (avatarUrl === false) return
+      if (avatarUrl === false) return
 
-    const avatarPayload = {
-      avatar_url: avatarMode === 'photo' ? avatarUrl : null,
-      avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
-      avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || displayName(profile) || fullName) : null,
-      avatar_color: avatarColor,
-      avatar_text_color: avatarTextColor,
-    }
+      const avatarPayload = {
+        avatar_url: avatarMode === 'photo' ? avatarUrl : null,
+        avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
+        avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || displayName(profile) || fullName) : null,
+        avatar_color: avatarColor,
+        avatar_text_color: avatarTextColor,
+      }
 
-    const row = {
-      full_name: fullName,
-      phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
-      profile_motto: cleanMotto || null,
-      nickname: nickname || null,
-      birthday: profileBirthday || null,
-      gender: isUnder13Birthday(profileBirthday) ? null : profileGender || null,
-      ...marketingConsentValues(marketingConsent, profile),
-      ...avatarPayload,
-      updated_at: new Date().toISOString(),
-    }
-
-    const { data, error } = await (await getSupabase())
-      .from('profiles')
-      .update(row)
-      .eq('id', userId)
-      .select(PROFILE_SELECT)
-      .single()
-
-    if (error) {
-      setProfileStatus(error.message)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const display = displayName(data)
-    const publicAvatar = avatarFields(data)
-    const metadataUpdate = await (await getSupabase()).auth.updateUser({
-      data: {
-        display_name: display,
+      const row = {
         full_name: fullName,
-        name: display,
+        phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
+        profile_motto: cleanMotto || null,
         nickname: nickname || null,
-        birthday: data.birthday,
-        gender: data.gender,
-        phone: data.phone,
-        avatar_url: publicAvatar.avatar_url,
-        avatar_emoji: publicAvatar.avatar_emoji,
-        avatar_initials: publicAvatar.avatar_initials,
-        avatar_color: publicAvatar.avatar_color,
-        avatar_text_color: publicAvatar.avatar_text_color,
-        profile_motto: data.profile_motto,
-        marketing_consent: data.marketing_consent,
-        marketing_consent_at: data.marketing_consent_at,
-        marketing_opted_out_at: data.marketing_opted_out_at,
-        personal_data_consent: data.personal_data_consent,
-        personal_data_consent_at: data.personal_data_consent_at,
-        privacy_policy_url: data.privacy_policy_url,
-        terms_conditions_url: data.terms_conditions_url,
-        consent_waiver_url: data.consent_waiver_url,
-        legal_consent_version: data.legal_consent_version,
-      },
-    })
+        birthday: profileBirthday || null,
+        gender: isUnder13Birthday(profileBirthday) ? null : profileGender || null,
+        ...marketingConsentValues(marketingConsent, profile),
+        ...avatarPayload,
+        updated_at: new Date().toISOString(),
+      }
 
-    if (metadataUpdate.error) {
-      setProfileStatus(metadataUpdate.error.message)
+      const { data, error } = await (await getSupabase())
+        .from('profiles')
+        .update(row)
+        .eq('id', userId)
+        .select(PROFILE_SELECT)
+        .single()
+
+      if (error) {
+        setProfileStatus(error.code === '23505' ? text.profileIdentityTaken : error.message)
+        return
+      }
+
+      const display = displayName(data)
+      const publicAvatar = avatarFields(data)
+      const metadataUpdate = await (await getSupabase()).auth.updateUser({
+        data: {
+          display_name: display,
+          full_name: fullName,
+          name: display,
+          nickname: nickname || null,
+          birthday: data.birthday,
+          gender: data.gender,
+          phone: data.phone,
+          avatar_url: publicAvatar.avatar_url,
+          avatar_emoji: publicAvatar.avatar_emoji,
+          avatar_initials: publicAvatar.avatar_initials,
+          avatar_color: publicAvatar.avatar_color,
+          avatar_text_color: publicAvatar.avatar_text_color,
+          profile_motto: data.profile_motto,
+          marketing_consent: data.marketing_consent,
+          marketing_consent_at: data.marketing_consent_at,
+          marketing_opted_out_at: data.marketing_opted_out_at,
+          personal_data_consent: data.personal_data_consent,
+          personal_data_consent_at: data.personal_data_consent_at,
+          privacy_policy_url: data.privacy_policy_url,
+          terms_conditions_url: data.terms_conditions_url,
+          consent_waiver_url: data.consent_waiver_url,
+          legal_consent_version: data.legal_consent_version,
+        },
+      })
+
+      if (metadataUpdate.error) {
+        setProfileStatus(metadataUpdate.error.message)
+        return
+      }
+
+      const snapshotError = await syncProfilePublicSnapshots(data.id)
+      if (snapshotError) {
+        setProfileStatus(snapshotError)
+        return
+      }
+
+      const marketingListError = await syncMarketingListForProfile(data, data.marketing_consent !== false)
+      if (marketingListError) {
+        setProfileStatus(marketingListError)
+        return
+      }
+
+      setProfile(data)
+      await loadSessions()
+      await loadClubs()
+      await loadTournamentData()
+      syncProfileEverywhere(data)
+      setAvatarFile(null)
+      setAvatarPreview('')
+      setProfileCountryCode(countryCode)
+      setProfilePhone(localPhone)
+      setProfileBirthday(data.birthday || '')
+      setProfileGender(normalizeProfileGender(data.gender))
+      setProfileStatus(text.profileSaved)
+      showActionToast(text.profileSaved)
+      setIsProfileSaveSuccessful(true)
+      if (profileSaveSuccessTimerRef.current !== null) {
+        window.clearTimeout(profileSaveSuccessTimerRef.current)
+      }
+      profileSaveSuccessTimerRef.current = window.setTimeout(() => {
+        setIsProfileSaveSuccessful(false)
+        profileSaveSuccessTimerRef.current = null
+      }, 2600)
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : text.profileSaveError)
+    } finally {
       setIsSavingProfile(false)
-      return
     }
-
-    const snapshotError = await syncProfilePublicSnapshots(data.id)
-    if (snapshotError) {
-      setProfileStatus(snapshotError)
-      setIsSavingProfile(false)
-      return
-    }
-
-    const marketingListError = await syncMarketingListForProfile(data, data.marketing_consent !== false)
-    if (marketingListError) {
-      setProfileStatus(marketingListError)
-      setIsSavingProfile(false)
-      return
-    }
-
-    setProfile(data)
-    await loadSessions()
-    await loadClubs()
-    await loadTournamentData()
-    syncProfileEverywhere(data)
-    setAvatarFile(null)
-    setAvatarPreview('')
-    setProfileCountryCode(countryCode)
-    setProfilePhone(localPhone)
-    setProfileBirthday(data.birthday || '')
-    setProfileGender(normalizeProfileGender(data.gender))
-    setProfileStatus(text.profileSaved)
-    showActionToast(text.profileSaved)
-    setIsSavingProfile(false)
   }
 
   async function uploadAvatar(ownerId: string, currentAvatarUrl: string | null) {
@@ -8506,7 +8525,7 @@ function handleSessionDateChange(value: string) {
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
 
-  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isProfileSaveSuccessful, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 

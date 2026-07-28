@@ -954,6 +954,57 @@ body {
   grid-column: 1 / -1;
 }
 
+.app .profile-save-actions .profile-save-status {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.app .profile-save-button.save-success {
+  border-color: #22c55e;
+  background: #ecfdf3;
+  box-shadow: 0 10px 24px color-mix(in srgb, #22c55e 22%, transparent);
+  color: #15803d;
+}
+
+.app .profile-save-success-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.app .profile-save-success-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #fff;
+  animation: profile-save-check-in 420ms cubic-bezier(.2, .9, .3, 1.35) both;
+}
+
+@keyframes profile-save-check-in {
+  0% {
+    opacity: 0;
+    transform: scale(.35) rotate(-18deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app .profile-save-success-icon {
+    animation: none;
+  }
+}
+
 @media (min-width: 721px) {
   .app .profile-account-form .avatar-options {
     gap: 10px;
