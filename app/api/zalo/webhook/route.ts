@@ -68,21 +68,6 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const suppliedSignature = cleanString(request.headers.get(SIGNATURE_HEADER), 128)
-  if (!suppliedSignature) {
-    return NextResponse.json(
-      { ok: true, probe: true },
-      { headers: { 'Cache-Control': 'no-store' } },
-    )
-  }
-
-  const apiKey = process.env.ZALO_OPEN_API_KEY
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!apiKey || !supabaseUrl || !serviceRoleKey) {
-    return NextResponse.json({ error: 'Webhook is not configured.' }, { status: 503 })
-  }
-
   const rawBody = await request.text()
   if (!rawBody || rawBody.length > MAX_BODY_LENGTH) {
     return NextResponse.json({ error: 'Invalid webhook payload.' }, { status: 400 })
@@ -97,6 +82,21 @@ export async function POST(request: NextRequest) {
 
   if (!isRecord(payload)) {
     return NextResponse.json({ error: 'Invalid webhook payload.' }, { status: 400 })
+  }
+
+  if (cleanString(payload.event, 80) !== 'user.revoke.consent') {
+    return NextResponse.json(
+      { ok: true, ignored: true },
+      { headers: { 'Cache-Control': 'no-store' } },
+    )
+  }
+
+  const apiKey = process.env.ZALO_OPEN_API_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!apiKey || !supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ error: 'Webhook is not configured.' }, { status: 503 })
   }
 
   const expectedSignature = signatureFor(payload, apiKey)
