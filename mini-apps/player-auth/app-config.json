@@ -1,22 +1,18 @@
 {
   "app": {
     "title": "VRena Player",
+    "headerTitle": "VRena Player",
+    "headerColor": "#FAFBFB",
     "textColor": "black",
     "statusBarColor": "#FAFBFB",
-    "actionBarColor": "#FFFFFF",
-    "backgroundColor": "#FAFBFB",
-    "scrollable": true
+    "leftButton": "none",
+    "actionBarHidden": false,
+    "hideIOSSafeAreaBottom": true,
+    "statusBar": "normal"
   },
-  "listCSS": [],
-  "listSyncJS": [],
+  "debug": false,
+  "listCSS": ["assets/index.css"],
+  "listSyncJS": ["assets/index.module.js"],
   "listAsyncJS": [],
-  "pages": [],
-  "template": {
-    "name": "zaui",
-    "primaryColor": "#525BFD",
-    "headerColor": "#FFFFFF",
-    "headerText": "VRena Player",
-    "textColor": "#020E0E",
-    "leftButton": "back"
-  }
+  "pages": []
 }

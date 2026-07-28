@@ -3,6 +3,9 @@
 This customer-facing Mini App creates or signs in to a permanent VRena player
 account using a Zalo-verified Vietnamese phone number. Email is not requested.
 
+The Zalo Mini App ID is `2586740010836800026`, under the verified parent Zalo
+App `VRena Attendance` (`675490363839227109`).
+
 ## Secure flow
 
 1. The Mini App sends the current Zalo access token to
@@ -36,8 +39,13 @@ runtime. The default local preview renders the new-player state.
 ```bash
 npm run build
 zmp login
-zmp deploy
+zmp deploy --existing --testing --desc "Initial VRena Player phone account flow" --outputDir dist
 ```
 
 Set `VITE_API_BASE_URL` only when targeting a booking backend other than
 `https://vrena-booking.vercel.app`.
+
+Zalo version review also requires the booking backend webhook
+`https://vrena-booking.vercel.app/api/zalo/webhook`. Configure its
+`ZALO_OPEN_API_KEY` server environment variable with the Open API key shown by
+Zalo after the Mini App review settings are complete.
