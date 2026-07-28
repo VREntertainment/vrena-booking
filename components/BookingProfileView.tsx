@@ -7,6 +7,7 @@ import {
   Bell,
   CalendarPlus,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -115,6 +116,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     isMfaLoading,
     isOAuthLoading,
     isProfileAuthLoading,
+    isProfileSaveSuccessful,
     isPasskeyLoading,
     isRecoveryMode,
     isResettingPassword,
@@ -494,12 +496,24 @@ export default function BookingProfileView({ context }: { context: any }) {
                 </section>
                 <div className="action-row profile-save-actions profile-settings-actions">
                   <button
-                    className={isSavingProfile ? 'primary loading create-button' : 'primary create-button'}
+                    className={[
+                      'primary create-button profile-save-button',
+                      isSavingProfile ? 'loading' : '',
+                      isProfileSaveSuccessful ? 'save-success' : '',
+                    ].filter(Boolean).join(' ')}
+                    aria-describedby={profileStatus ? 'profile-save-status' : undefined}
                     disabled={isSavingProfile}
                     onClick={saveProfile}
                     type="button"
                   >
-                    {isSavingProfile ? text.saving : text.saveProfile}
+                    {isProfileSaveSuccessful ? (
+                      <span className="profile-save-success-content">
+                        <span className="profile-save-success-icon" aria-hidden="true">
+                          <Check size={18} strokeWidth={3} />
+                        </span>
+                        <span>{text.profileSaved}</span>
+                      </span>
+                    ) : isSavingProfile ? text.saving : text.saveProfile}
                   </button>
                   <button className="secondary create-button" onClick={logout} type="button">
                     {text.logOut}
@@ -508,6 +522,16 @@ export default function BookingProfileView({ context }: { context: any }) {
                     <button className="secondary create-button mobile-staff-profile-action" onClick={() => setActiveView('staff')} type="button">
                       Staff Console
                     </button>
+                  )}
+                  {profileStatus && (
+                    <p
+                      aria-live="polite"
+                      className="notice compact-notice profile-save-status"
+                      id="profile-save-status"
+                      role="status"
+                    >
+                      {profileStatus}
+                    </p>
                   )}
                 </div>
               </>
@@ -683,7 +707,15 @@ export default function BookingProfileView({ context }: { context: any }) {
                       />
                     </div>
                     <div className="phone-field">
-                      <input aria-label={text.phoneNumber} value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} placeholder="0981152315" />
+                      <input
+                        aria-invalid={profileStatus === text.phoneRequired}
+                        aria-label={text.phoneNumber}
+                        aria-required="true"
+                        id="profile-phone-input"
+                        onChange={(event) => setProfilePhone(event.target.value)}
+                        placeholder="0981152315"
+                        value={profilePhone}
+                      />
                     </div>
                   </div>
                 </>
@@ -710,7 +742,14 @@ export default function BookingProfileView({ context }: { context: any }) {
               {showProfileFields && (
                 <div className="name-field">
                   <label>{text.name} <span className="required">*</span></label>
-                  <input value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Nguyen Van A" />
+                  <input
+                    aria-invalid={profileStatus === text.nameRequired}
+                    aria-required="true"
+                    id="profile-name-input"
+                    onChange={(event) => setProfileName(event.target.value)}
+                    placeholder="Nguyen Van A"
+                    value={profileName}
+                  />
                 </div>
               )}
               {showProfileFields && (
@@ -1075,7 +1114,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                 {mfaStatus && <p className="notice compact-notice">{mfaStatus}</p>}
               </div>
             )}
-            {profileStatus && <p className="notice">{profileStatus}</p>}
+            {!profile && profileStatus && <p aria-live="polite" className="notice" role="status">{profileStatus}</p>}
 
             <div className="profile-mobile-contact">
               <strong>VRena Vietnam</strong>

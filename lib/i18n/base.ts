@@ -685,6 +685,8 @@ export const en = {
   accountCreated: 'Account created. Your profile, rewards, and bookings can stay together.',
   savingProfile: 'Saving profile...',
   profileSaved: 'Profile saved.',
+  profileSaveError: 'Profile could not be saved. Please try again.',
+  profileIdentityTaken: 'This name or nickname is already used by another player.',
   logOut: 'Log Out',
   mySessions: 'My sessions',
   mySessionsHint: 'Sessions you created or joined.',

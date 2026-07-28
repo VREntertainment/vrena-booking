@@ -687,6 +687,8 @@ export const it = {
   accountCreated: 'Account creato. Profilo, ricompense e prenotazioni restano insieme.',
   savingProfile: 'Salvo profilo...',
   profileSaved: 'Profilo ok.',
+  profileSaveError: 'Impossibile salvare il profilo. Riprova.',
+  profileIdentityTaken: 'Questo nome o nickname è già usato da un altro giocatore.',
   logOut: 'Esci',
   mySessions: 'Mie partite',
   mySessionsHint: 'Partite create o raggiunte.',

@@ -687,6 +687,8 @@ export const ja = {
   accountCreated: 'アカウント作成済み。プロフィール、リワード、予約をまとめて保存できます。',
   savingProfile: 'プロフィール保存中...',
   profileSaved: 'プロフィール保存済み。',
+  profileSaveError: 'プロフィールを保存できませんでした。もう一度お試しください。',
+  profileIdentityTaken: 'この名前またはニックネームは別のプレイヤーが使用しています。',
   logOut: 'ログアウト',
   mySessions: '自分のセッション',
   mySessionsHint: '作成または参加したセッション。',

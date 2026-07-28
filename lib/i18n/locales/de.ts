@@ -687,6 +687,8 @@ export const de = {
   accountCreated: 'Konto erstellt. Profil, Rewards und Buchungen bleiben zusammen.',
   savingProfile: 'Profil save...',
   profileSaved: 'Profil save.',
+  profileSaveError: 'Profil konnte nicht gespeichert werden. Bitte erneut versuchen.',
+  profileIdentityTaken: 'Dieser Name oder Nickname wird bereits von einem anderen Spieler verwendet.',
   logOut: 'Abmelden',
   mySessions: 'Meine Games',
   mySessionsHint: 'Gebaut oder beigetreten.',
