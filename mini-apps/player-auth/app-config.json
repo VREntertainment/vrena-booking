@@ -1,0 +1,22 @@
+{
+  "app": {
+    "title": "VRena Player",
+    "textColor": "black",
+    "statusBarColor": "#FAFBFB",
+    "actionBarColor": "#FFFFFF",
+    "backgroundColor": "#FAFBFB",
+    "scrollable": true
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": [],
+  "pages": [],
+  "template": {
+    "name": "zaui",
+    "primaryColor": "#525BFD",
+    "headerColor": "#FFFFFF",
+    "headerText": "VRena Player",
+    "textColor": "#020E0E",
+    "leftButton": "back"
+  }
+}
