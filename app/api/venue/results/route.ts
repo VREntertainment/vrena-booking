@@ -1,6 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import {
   parseVenueResultPayload,
   venueCaptureDateRange,
@@ -8,6 +6,11 @@ import {
   type VenueResultPayload,
   type VenueResultPlayer,
 } from '@/lib/venueResults'
+import {
+  createVenueAdminClient,
+  isAuthorizedVenueRequest,
+  usableVenueToken,
+} from '@/lib/venueService'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +19,8 @@ type ProfileRow = {
   id: string
   nickname: string
 }
+
+type VenueAdminClient = NonNullable<ReturnType<typeof createVenueAdminClient>>
 
 type SessionParticipantRow = {
   display_name: string | null
@@ -35,23 +40,12 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function authorized(request: NextRequest, configuredToken: string) {
-  const supplied = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
-  const suppliedDigest = createHash('sha256').update(supplied).digest()
-  const configuredDigest = createHash('sha256').update(configuredToken).digest()
-  return Boolean(supplied) && timingSafeEqual(suppliedDigest, configuredDigest)
-}
-
-function usableConfiguredToken(value: string | undefined): value is string {
-  return typeof value === 'string' && value.trim().length >= 24
-}
-
 function sessionMatchesGame(session: NonNullable<SessionParticipantRow['sessions']>, gameSlug: string) {
   return session.confirmed_game_id === gameSlug || (session.game_options ?? []).includes(gameSlug)
 }
 
 async function exactProfilesForName(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: VenueAdminClient,
   playerName: string
 ) {
   const { data, error } = await adminClient
@@ -64,7 +58,7 @@ async function exactProfilesForName(
 }
 
 async function candidateSessionParticipants(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: VenueAdminClient,
   profileId: string,
   payload: VenueResultPayload
 ) {
@@ -110,7 +104,7 @@ async function candidateSessionParticipants(
 }
 
 async function importPlayerResult(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: VenueAdminClient,
   payload: VenueResultPayload,
   player: VenueResultPlayer
 ) {
@@ -179,20 +173,19 @@ async function importPlayerResult(
 
 export async function GET(request: NextRequest) {
   const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
-  if (!usableConfiguredToken(configuredToken)) return jsonError('Venue results import is not configured.', 503)
-  if (!authorized(request, configuredToken)) return jsonError('Unauthorized.', 401)
+  if (!usableVenueToken(configuredToken)) return jsonError('Venue results import is not configured.', 503)
+  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
   return NextResponse.json({ ok: true })
 }
 
 export async function POST(request: NextRequest) {
   const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const adminClient = createVenueAdminClient()
 
-  if (!usableConfiguredToken(configuredToken) || !supabaseUrl || !serviceRoleKey) {
+  if (!usableVenueToken(configuredToken) || !adminClient) {
     return jsonError('Venue results import is not configured.', 503)
   }
-  if (!authorized(request, configuredToken)) return jsonError('Unauthorized.', 401)
+  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
 
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (contentLength > 65_536) return jsonError('Payload too large.', 413)
@@ -206,10 +199,6 @@ export async function POST(request: NextRequest) {
 
   const payload = parseVenueResultPayload(body)
   if (!payload) return jsonError('Invalid venue result payload.', 400)
-
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  }) as unknown as ReturnType<typeof createClient>
 
   try {
     const results = []

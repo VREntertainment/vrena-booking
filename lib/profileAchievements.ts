@@ -28,6 +28,15 @@ export type AchievementSession = {
   ticket_type?: string | null
 }
 
+export type AchievementVenueResult = {
+  accuracy_percent?: number | string | null
+  captured_at: string
+  game_slug?: string | null
+  id: string
+  matched_participant_id?: string | null
+  score?: number | string | null
+}
+
 export type GameAchievement = {
   bestScore: number | null
   game: GameInfo
@@ -114,6 +123,56 @@ const levelRequirements = {
 
 function isKnownGameId(gameId: string | null | undefined): gameId is GameId {
   return games.some((game) => game.id === gameId)
+}
+
+function venueDateParts(capturedAt: string) {
+  const date = new Date(capturedAt)
+  if (Number.isNaN(date.getTime())) return null
+
+  const values = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      day: '2-digit',
+      hour: '2-digit',
+      hourCycle: 'h23',
+      minute: '2-digit',
+      month: '2-digit',
+      second: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+    }).formatToParts(date).map((part) => [part.type, part.value]),
+  )
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    startTime: `${values.hour}:${values.minute}:${values.second}`,
+  }
+}
+
+export function venueResultsAsAchievementSessions(
+  results: AchievementVenueResult[],
+  profileId: string | null | undefined,
+): AchievementSession[] {
+  if (!profileId) return []
+
+  return results.flatMap((result) => {
+    if (result.matched_participant_id || !isKnownGameId(result.game_slug)) return []
+    const parts = venueDateParts(result.captured_at)
+    if (!parts) return []
+
+    return [{
+      booking_type: 'venue_result',
+      confirmed_game_id: result.game_slug,
+      date: parts.date,
+      session_participants: [{
+        accuracy_percent: result.accuracy_percent,
+        checked_in: true,
+        profile_id: profileId,
+        score: result.score,
+      }],
+      start_time: parts.startTime,
+      status: 'completed',
+    }]
+  })
 }
 
 function participantForSession(session: AchievementSession, profileId: string | null | undefined) {
