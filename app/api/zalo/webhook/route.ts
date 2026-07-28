@@ -33,6 +33,9 @@ function signatureFor(payload: Record<string, unknown>, apiKey: string) {
     })
     .join('')
 
+  // Zalo's webhook protocol requires SHA-256(sorted payload values + Open API key).
+  // This is message authentication, not password storage.
+  // lgtm[js/insufficient-password-hash]
   return createHash('sha256').update(`${content}${apiKey}`).digest('hex')
 }
 
