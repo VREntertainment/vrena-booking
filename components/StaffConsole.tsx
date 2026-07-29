@@ -30,13 +30,13 @@ import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
-import { staffAchievementAwardById, staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import { supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import StaffAchievementAwardPanel, { type StaffAchievementAward } from './StaffAchievementAwardPanel'
+import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
+import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
   ssr: false,
@@ -118,6 +118,7 @@ export type StaffProfile = {
   avatar_initials?: string | null
   avatar_color?: string | null
   avatar_text_color?: string | null
+  birthday?: string | null
   profile_motto?: string | null
   anonymous_mode?: boolean | null
   anonymous_callsign?: string | null
@@ -3359,7 +3360,7 @@ const staffPayrollPayCycles: StaffPayrollPayCycle[] = ['monthly', 'semi_monthly'
 const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, is_seed_demo, seed_batch'
+const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, birthday, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 const staffGameImageBucket = 'staff-game-images'
 const staffGameImageMaxBytes = 2 * 1024 * 1024
@@ -4579,11 +4580,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
   const [customerInviteStatus, setCustomerInviteStatus] = useState('')
   const [isCustomerInviteSaving, setIsCustomerInviteSaving] = useState(false)
-  const [achievementAwardProfileId, setAchievementAwardProfileId] = useState('')
-  const [achievementAwardId, setAchievementAwardId] = useState(staffAchievementAwardCatalog[0]?.id || '')
-  const [achievementAwardNote, setAchievementAwardNote] = useState('')
-  const [achievementAwardStatus, setAchievementAwardStatus] = useState('')
-  const [isAchievementAwardSaving, setIsAchievementAwardSaving] = useState(false)
+  const [clientProfileDirty, setClientProfileDirty] = useState(false)
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
   const [priceForm, setPriceForm] = useState(() => defaultPriceForm())
   const [discountForm, setDiscountForm] = useState(() => defaultDiscountForm())
@@ -7272,45 +7269,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
   }
 
-  async function awardAchievementToPlayer() {
-    if (!canAwardAchievements || isAchievementAwardSaving) return
-    const selectedProfileId = achievementAwardProfileId || awardableProfiles[0]?.id || ''
-    if (!selectedProfileId) {
-      setAchievementAwardStatus(text.messages.achievementAwardSelectPlayer)
-      return
-    }
-
-    const selectedAchievement = staffAchievementAwardById(achievementAwardId) || staffAchievementAwardCatalog[0]
-    if (!selectedAchievement) return
-
-    setIsAchievementAwardSaving(true)
-    setAchievementAwardStatus('')
-    try {
-      const { error } = await supabase.rpc('staff_award_profile_achievement', {
-        p_profile_id: selectedProfileId,
-        p_achievement_id: selectedAchievement.id,
-        p_achievement_kind: selectedAchievement.kind,
-        p_title: selectedAchievement.title,
-        p_description: selectedAchievement.description,
-        p_note: achievementAwardNote.trim() || null,
-      })
-
-      if (error) throw error
-
-      setAchievementAwardNote('')
-      setAchievementAwardStatus(text.messages.achievementAwarded)
-      markStaffDataStale('achievementAwards')
-      await loadAchievementAwards(true)
-    } catch (error) {
-      const message = error && typeof error === 'object' && 'message' in error
-        ? String((error as { message?: unknown }).message || '')
-        : String(error)
-      setAchievementAwardStatus(message)
-    } finally {
-      setIsAchievementAwardSaving(false)
-    }
-  }
-
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
     if (!canManageRoles) return
     setSaving(true)
@@ -7688,6 +7646,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
   }
 
+  function openStaffTab(tab: StaffTab) {
+    if (tab === currentTab) return
+    if (
+      currentTab === 'clientProfile'
+      && clientProfileDirty
+      && !window.confirm('You have unsaved customer profile changes. Discard them and leave this page?')
+    ) return
+    setClientProfileDirty(false)
+    setActiveTab(tab)
+  }
+
   const tabButton = (tab: StaffTab, label: string) => (
     allowedTabs.includes(tab) && (
       <button
@@ -7695,7 +7664,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         className={currentTab === tab ? 'active' : ''}
         role="tab"
         type="button"
-        onClick={() => setActiveTab(tab)}
+        onClick={() => openStaffTab(tab)}
       >
         {label}
       </button>
@@ -7705,7 +7674,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const openTabGroup = (groupId: StaffTabGroupId) => {
     const group = visibleTabGroups.find((item) => item.id === groupId)
     const firstTab = group?.tabs[0]
-    if (firstTab) setActiveTab(firstTab)
+    if (firstTab) openStaffTab(firstTab)
   }
 
   const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
@@ -9419,45 +9388,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       )}
 
       {currentTab === 'clientProfile' && (canCreateCustomerAccounts || canAwardAchievements) && (
-        <div className="staff-card staff-card-wide">
-          {!canAwardAchievements && (
-            <div className="staff-card-heading">
-              <h3>{text.labels.createCustomerAccount}</h3>
-            </div>
-          )}
-          {canAwardAchievements && (
-            <StaffAchievementAwardPanel
-              awards={achievementAwards}
-              canOpenProfiles={canOpenRoleProfiles}
-              isSaving={isAchievementAwardSaving}
-              note={achievementAwardNote}
-              onAward={awardAchievementToPlayer}
-              onAchievementChange={setAchievementAwardId}
-              onNoteChange={setAchievementAwardNote}
-              onOpenProfile={onOpenPlayerProfile}
-              onProfileChange={setAchievementAwardProfileId}
-              profiles={awardableProfiles}
-              selectedAchievementId={achievementAwardId}
-              selectedProfileId={achievementAwardProfileId || awardableProfiles[0]?.id || ''}
-              status={achievementAwardStatus}
-              text={{
-                alreadyAwarded: text.messages.achievementAlreadyAwarded,
-                awardNote: text.labels.awardNote,
-                awardToPlayer: text.labels.awardToPlayer,
-                chooseAchievement: text.labels.chooseAchievement,
-                choosePlayer: text.labels.choosePlayer,
-                editStats: text.actions.editStats,
-                grantedAwards: text.labels.grantedAwards,
-                noAwardsYet: text.labels.noAwardsYet,
-                noPlayersFound: text.labels.noPlayersFound,
-                optional: text.labels.optional,
-                searchPlayers: text.labels.searchUsers,
-                sendAward: text.labels.sendAward,
-              }}
-            />
-          )}
+        <div className="staff-client-profile-page">
           {canCreateCustomerAccounts && (
-          <div className="staff-customer-invite-panel">
+          <div className="staff-card staff-card-wide staff-customer-invite-panel">
             <div className="staff-customer-invite-copy">
               <strong>{text.labels.createCustomerAccount}</strong>
               <span>{text.labels.customerAccountHelp}</span>
@@ -9512,6 +9445,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             </div>
             {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
           </div>
+          )}
+          {canAwardAchievements && (
+            <div className="staff-card staff-card-wide">
+              <StaffPlayerAchievementProfile
+                awards={achievementAwards}
+                language={resolvedLanguage}
+                onDirtyChange={setClientProfileDirty}
+                onRefreshAwards={async () => {
+                  markStaffDataStale('achievementAwards')
+                  await loadAchievementAwards(true)
+                }}
+                profiles={awardableProfiles}
+                profilesLoading={Boolean(loadingData.profiles)}
+                text={sharedText}
+              />
+            </div>
           )}
         </div>
       )}
