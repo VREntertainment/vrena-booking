@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-booking/releases/download/v2.1.2/VRenaResultsCapture-Setup.exe',
-      publishedAt: '2026-07-29T12:11:56Z',
-      releaseNotes: 'Read venue result screens more reliably, include the latest screenshot in private debug logs, and simplify app messages.',
-      sha256: '2acdb1826739cca57530ad53bb8501a3cffa4fd819d8d483fe7c5b4d7428cc2f',
-      version: '2.1.2',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-booking/releases/download/v2.1.3/VRenaResultsCapture-Setup.exe',
+      publishedAt: '2026-07-29T13:42:11Z',
+      releaseNotes: 'Keep the web app URL and token saved across Windows restarts and recover them from a safe backup.',
+      sha256: '84aaf581f79e4fcd0ab0647f96b8f03c7eb2d18552689e276e09a031f85d190d',
+      version: '2.1.3',
     },
     {
       headers: {
