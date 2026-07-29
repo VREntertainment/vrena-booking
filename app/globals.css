@@ -1455,6 +1455,14 @@ body {
   transform: translateY(-0.02em);
 }
 
+.app.platform-android .avatar-emoji {
+  transform: translateY(-0.02em) scale(0.84);
+}
+
+.app.platform-android .profile-photo-preview .avatar-emoji {
+  transform: translateY(-1px) scale(0.84);
+}
+
 .app .avatar-text {
   font-size: var(--avatar-text-size);
   font-weight: 900;

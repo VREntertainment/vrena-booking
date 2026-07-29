@@ -164,6 +164,91 @@ function fieldsPayload(fields: StaffPlayerStatFields, scope?: string) {
   }
 }
 
+const additiveLinkedFields: Array<keyof StaffPlayerStatFields> = [
+  'sessionsJoined',
+  'gamesJoined',
+  'wins',
+  'bestPerformerCount',
+  'totalScore',
+  'totalProjectiles',
+  'totalMovementMeters',
+]
+
+function calculatedField(
+  player: LeaderboardPlayer | undefined,
+  field: keyof StaffPlayerStatFields,
+) {
+  if (!player) return 0
+  if (field === 'bestScore') return player.bestByGame[0]?.score ?? 0
+  if (field === 'bestEscapeDurationSeconds') return player.bestEscapeDurationSeconds ?? 0
+  const value = player[field as keyof LeaderboardPlayer]
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function fieldNumber(value: string, fallback: number) {
+  if (!value.trim()) return fallback
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function linkedOverallFields(
+  currentOverall: StaffPlayerStatFields,
+  nextGameFields: Record<string, StaffPlayerStatFields>,
+  calculatedByScope: Record<string, LeaderboardPlayer>,
+  player: LeaderboardPlayer,
+) {
+  const linked = { ...currentOverall }
+
+  additiveLinkedFields.forEach((field) => {
+    if (!games.some((game) => (nextGameFields[game.id]?.[field] || '').trim())) return
+    const adjustment = games.reduce((total, game) => {
+      const calculated = calculatedField(calculatedByScope[game.id], field)
+      const effective = fieldNumber(nextGameFields[game.id]?.[field] || '', calculated)
+      return total + effective - calculated
+    }, 0)
+    const nextValue = calculatedField(player, field) + adjustment
+    linked[field] = Number.isInteger(nextValue) ? String(nextValue) : String(Number(nextValue.toFixed(2)))
+  })
+
+  const hasAccuracyOverride = games.some(
+    (game) => (nextGameFields[game.id]?.averageAccuracy || '').trim(),
+  )
+  const weightedAccuracy = games.reduce((summary, game) => {
+    const calculated = calculatedByScope[game.id]
+    const gamesPlayed = fieldNumber(
+      nextGameFields[game.id]?.gamesJoined || '',
+      calculatedField(calculated, 'gamesJoined'),
+    )
+    const accuracy = fieldNumber(
+      nextGameFields[game.id]?.averageAccuracy || '',
+      calculatedField(calculated, 'averageAccuracy'),
+    )
+    return {
+      samples: summary.samples + Math.max(0, gamesPlayed),
+      total: summary.total + Math.max(0, gamesPlayed) * accuracy,
+    }
+  }, { samples: 0, total: 0 })
+  if (hasAccuracyOverride && weightedAccuracy.samples > 0) {
+    linked.averageAccuracy = String(Number((weightedAccuracy.total / weightedAccuracy.samples).toFixed(2)))
+  }
+
+  const hasEscapeOverride = games.some(
+    (game) => (nextGameFields[game.id]?.bestEscapeDurationSeconds || '').trim(),
+  )
+  const escapeDurations = games
+    .filter((game) => game.category === 'Escape')
+    .map((game) => fieldNumber(
+      nextGameFields[game.id]?.bestEscapeDurationSeconds || '',
+      calculatedField(calculatedByScope[game.id], 'bestEscapeDurationSeconds'),
+    ))
+    .filter((value) => value > 0)
+  if (hasEscapeOverride && escapeDurations.length > 0) {
+    linked.bestEscapeDurationSeconds = String(Math.min(...escapeDurations))
+  }
+
+  return linked
+}
+
 function StatField({
   label,
   min,
@@ -227,12 +312,21 @@ export default function StaffPlayerStatsEditor({
 
       try {
         const { supabase } = await import('../lib/supabase/client')
-        const [overrideResult, ...gameResults] = await Promise.all([
+        const [overrideResult, overallResult, ...gameResults] = await Promise.all([
           supabase.rpc('staff_get_player_stat_overrides', {
             p_profile_id: player.profileId,
           }),
+          supabase.rpc(
+            'get_leaderboard_players_page_v2',
+            leaderboardRpcArgs(
+              initialLeaderboardQuery(),
+              0,
+              1,
+              player.profileId,
+            ),
+          ),
           ...games.map((game) => supabase.rpc(
-            'get_leaderboard_players_page_v3',
+            'get_leaderboard_players_page_v2',
             leaderboardRpcArgs(
               { ...initialLeaderboardQuery(), gameId: game.id },
               0,
@@ -248,7 +342,14 @@ export default function StaffPlayerStatsEditor({
         const payload = (overrideResult.data || {}) as OverridePayload
         const overrideRows = Array.isArray(payload.overrides) ? payload.overrides : []
         const overridesByScope = new Map(overrideRows.map((row) => [row.scope, row]))
-        const nextCalculated: Record<string, LeaderboardPlayer> = { overall: player }
+        const overallRow = !overallResult?.error && Array.isArray(overallResult?.data)
+          ? (overallResult.data as LeaderboardRpcRow[])[0]
+          : null
+        const nextCalculated: Record<string, LeaderboardPlayer> = {
+          overall: overallRow
+            ? leaderboardPlayerFromRpcRow(overallRow, player.displayName)
+            : player,
+        }
         const nextGameFields: Record<string, StaffPlayerStatFields> = {}
 
         games.forEach((game, index) => {
@@ -260,15 +361,21 @@ export default function StaffPlayerStatsEditor({
           nextGameFields[game.id] = fieldsFromOverride(overridesByScope.get(game.id))
         })
 
+        const loadedOverall = linkedOverallFields(
+          fieldsFromOverride(overridesByScope.get('overall')),
+          nextGameFields,
+          nextCalculated,
+          nextCalculated.overall,
+        )
         setCalculatedByScope(nextCalculated)
-        setOverall(fieldsFromOverride(overridesByScope.get('overall')))
+        setOverall(loadedOverall)
         setGameFields(nextGameFields)
         const nextLoyaltyPoints = String(payload.loyaltyPoints ?? player.loyaltyPoints ?? 0)
         setLoyaltyPoints(nextLoyaltyPoints)
         setBaseline(JSON.stringify({
           gameFields: nextGameFields,
           loyaltyPoints: nextLoyaltyPoints,
-          overall: fieldsFromOverride(overridesByScope.get('overall')),
+          overall: loadedOverall,
         }))
       } catch (error) {
         if (active) setStatus(errorText(error))
@@ -298,13 +405,20 @@ export default function StaffPlayerStatsEditor({
 
   function patchActiveGame(field: keyof StaffPlayerStatFields, value: string) {
     if (!activeGame) return
-    setGameFields((current) => ({
-      ...current,
+    const nextGameFields = {
+      ...gameFields,
       [activeGame.id]: {
-        ...(current[activeGame.id] || emptyFields()),
+        ...(gameFields[activeGame.id] || emptyFields()),
         [field]: value,
       },
-    }))
+    }
+    setGameFields(nextGameFields)
+    setOverall((current) => linkedOverallFields(
+      current,
+      nextGameFields,
+      calculatedByScope,
+      calculatedByScope.overall || player,
+    ))
   }
 
   const draftState = useMemo(() => {

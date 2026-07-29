@@ -492,7 +492,11 @@ export function completedAchievementSessions(sessions: AchievementSession[], pro
   })
 }
 
-export function buildGameAchievements(sessions: AchievementSession[], profileId: string | null | undefined): GameAchievement[] {
+export function buildGameAchievements(
+  sessions: AchievementSession[],
+  profileId: string | null | undefined,
+  gameCountOverrides: Record<string, number> = {},
+): GameAchievement[] {
   const completedSessions = completedAchievementSessions(sessions, profileId)
   const counts = new Map<GameId, number>()
   const bestScores = new Map<GameId, number>()
@@ -508,6 +512,10 @@ export function buildGameAchievements(sessions: AchievementSession[], profileId:
         if (previous === undefined || score > previous) bestScores.set(gameId, score)
       }
     })
+  })
+  games.forEach((game) => {
+    const override = gameCountOverrides[game.id]
+    if (Number.isFinite(override) && override >= 0) counts.set(game.id, Math.floor(override))
   })
 
   return games.map((game) => {
@@ -535,6 +543,7 @@ export function buildRetentionAchievements(
   sessions: AchievementSession[],
   profileId: string | null | undefined,
   profile?: RetentionAchievementProfile | null,
+  gameCountOverrides: Record<string, number> = {},
 ): RetentionAchievement[] {
   const completedSessions = completedAchievementSessions(sessions, profileId)
   const gameCounts = new Map<GameId, number>()
@@ -553,6 +562,10 @@ export function buildRetentionAchievements(
     playedGameIds(session).forEach((gameId) => {
       gameCounts.set(gameId, (gameCounts.get(gameId) ?? 0) + 1)
     })
+  })
+  games.forEach((game) => {
+    const override = gameCountOverrides[game.id]
+    if (Number.isFinite(override) && override >= 0) gameCounts.set(game.id, Math.floor(override))
   })
 
   gameCounts.forEach((count, gameId) => {

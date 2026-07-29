@@ -113,11 +113,11 @@ function PlayerAvatar({ profile }: { profile: StaffProfile }) {
   return (
     <span className="staff-profile-combobox-avatar" style={{ background, color }}>
       {anonymous ? (
-        <span aria-hidden="true">{ANONYMOUS_MASK_EMOJI}</span>
+        <span aria-hidden="true" className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
       ) : profile.avatar_url ? (
         <NextImage alt="" fill sizes="40px" src={profile.avatar_url} unoptimized />
       ) : profile.avatar_emoji ? (
-        <span aria-hidden="true">{profile.avatar_emoji}</span>
+        <span aria-hidden="true" className="avatar-emoji">{profile.avatar_emoji}</span>
       ) : (
         <span aria-hidden="true">{profileInitials(profile)}</span>
       )}
@@ -287,6 +287,38 @@ export default function StaffPlayerAchievementProfile({
   const handleStatsLoading = useCallback((loading: boolean) => {
     setStatsLoading(loading)
   }, [])
+
+  const effectivePlayer = useMemo(() => {
+    if (!player || !statsDraft) return player
+    const numberValue = (key: string, fallback: number | null | undefined) => {
+      const value = statsDraft.overall[key]
+      return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+    }
+    return {
+      ...player,
+      averageAccuracy: numberValue('averageAccuracy', player.averageAccuracy),
+      bestEscapeDurationSeconds: numberValue(
+        'bestEscapeDurationSeconds',
+        player.bestEscapeDurationSeconds,
+      ),
+      bestPerformerCount: numberValue('bestPerformerCount', player.bestPerformerCount) ?? 0,
+      gamesJoined: numberValue('gamesJoined', player.gamesJoined) ?? 0,
+      loyaltyPoints: statsDraft.loyaltyPoints,
+      sessionsJoined: numberValue('sessionsJoined', player.sessionsJoined) ?? 0,
+      totalMovementMeters: numberValue('totalMovementMeters', player.totalMovementMeters) ?? 0,
+      totalProjectiles: numberValue('totalProjectiles', player.totalProjectiles) ?? 0,
+      totalScore: numberValue('totalScore', player.totalScore) ?? 0,
+      wins: numberValue('wins', player.wins) ?? 0,
+    }
+  }, [player, statsDraft])
+  const gamePlayCountOverrides = useMemo(() => {
+    if (!statsDraft) return undefined
+    return Object.fromEntries(statsDraft.games.flatMap((game) => (
+      typeof game.scope === 'string' && typeof game.gamesJoined === 'number'
+        ? [[game.scope, game.gamesJoined]]
+        : []
+    )))
+  }, [statsDraft])
 
   const closeSessionPicker = useCallback(() => {
     setSessionPickerOpen(false)
@@ -528,7 +560,8 @@ export default function StaffPlayerAchievementProfile({
           language={language}
           manualAwardsOverride={effectiveAwards}
           mySessions={sessions}
-          playerStats={player}
+          playerGameCountOverrides={gamePlayCountOverrides}
+          playerStats={effectivePlayer || player}
           profile={{
             ...selectedProfile,
             birthday: selectedProfile.birthday,
