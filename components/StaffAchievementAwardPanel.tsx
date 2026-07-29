@@ -5,6 +5,7 @@ import { Award, Search, Send, UserRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { staffAchievementAwardCatalog } from '../lib/staffAchievementAwards'
 import type { StaffAchievementAwardCatalogItem } from '../lib/staffAchievementAwards'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffProfile } from './StaffConsole'
 
 export type StaffAchievementAward = {
@@ -20,12 +21,11 @@ export type StaffAchievementAward = {
 
 type StaffAchievementAwardPanelText = {
   alreadyAwarded: string
-  awardAchievement: string
-  awardAchievementHelp: string
   awardNote: string
   awardToPlayer: string
   chooseAchievement: string
   choosePlayer: string
+  editStats: string
   grantedAwards: string
   noAwardsYet: string
   noPlayersFound: string
@@ -66,6 +66,64 @@ function profileSearchText(profile: StaffProfile) {
   ].join(' ').toLowerCase()
 }
 
+function avatarInitials(value: string) {
+  const cleaned = value.trim()
+  if (!cleaned || cleaned === '?') return 'PL'
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  const letters = words.length > 1
+    ? words.slice(0, 2).map((word) => Array.from(word)[0] || '').join('')
+    : Array.from(cleaned).slice(0, 2).join('')
+  return letters.toUpperCase() || 'PL'
+}
+
+function shouldSkipImageOptimization(source: string) {
+  const normalizedSource = source.trim().toLowerCase()
+  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || /\.gif($|\?)/.test(normalizedSource)
+}
+
+function StaffAchievementProfileAvatar({ profile }: { profile: StaffProfile }) {
+  const [failedImageUrl, setFailedImageUrl] = useState('')
+  const name = profileName(profile)
+  const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim() || ''
+  const shouldUseImage = Boolean(imageUrl && failedImageUrl !== imageUrl)
+  const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
+  const initials = profile.anonymous_mode || profile.avatar_initials?.trim() === '?' ? '' : profile.avatar_initials?.trim()
+  const style = {
+    background: profile.anonymous_mode ? vrenaPalette.neutral[950] : profile.avatar_color || vrenaPalette.purple[500],
+    color: profile.anonymous_mode ? vrenaPalette.white : profile.avatar_text_color || vrenaPalette.white,
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className="player-avatar staff-role-avatar staff-achievement-player-avatar"
+      style={style}
+    >
+      {shouldUseImage ? (
+        <span
+          className="avatar-photo"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        >
+          <NextImage
+            alt=""
+            fill
+            loading="lazy"
+            sizes="34px"
+            src={imageUrl}
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+            unoptimized={shouldSkipImageOptimization(imageUrl)}
+            onError={() => setFailedImageUrl(imageUrl)}
+          />
+        </span>
+      ) : (
+        <span className={emoji ? 'avatar-emoji' : 'avatar-text'}>
+          {emoji || avatarInitials(initials || name)}
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function StaffAchievementAwardPanel({
   awards,
   canOpenProfiles,
@@ -104,16 +162,6 @@ export default function StaffAchievementAwardPanel({
 
   return (
     <div className="staff-achievement-award-panel">
-      <div className="staff-achievement-award-copy">
-        <span className="staff-achievement-award-mark" aria-hidden="true">
-          <Award size={20} />
-        </span>
-        <div>
-          <strong>{text.awardAchievement}</strong>
-          <span>{text.awardAchievementHelp}</span>
-        </div>
-      </div>
-
       <div className="staff-achievement-award-layout">
         <div className="staff-achievement-player-picker">
           <label>
@@ -137,9 +185,7 @@ export default function StaffAchievementAwardPanel({
                   onClick={() => onProfileChange(profile.id)}
                   type="button"
                 >
-                  <span className="staff-achievement-player-avatar" aria-hidden="true">
-                    <UserRound size={16} />
-                  </span>
+                  <StaffAchievementProfileAvatar profile={profile} />
                   <span>
                     <strong>{profileName(profile)}</strong>
                     <small>{profile.email || profile.phone || profile.profile_motto || text.choosePlayer}</small>
@@ -193,9 +239,14 @@ export default function StaffAchievementAwardPanel({
 
           <div className="staff-achievement-award-actions">
             {canOpenProfiles && selectedProfile && (
-              <button className="secondary" onClick={() => onOpenProfile?.(selectedProfile)} type="button">
+              <button
+                aria-label={`${text.editStats}: ${profileName(selectedProfile)}`}
+                className="secondary"
+                onClick={() => onOpenProfile?.(selectedProfile)}
+                type="button"
+              >
                 <UserRound aria-hidden="true" size={15} />
-                {profileName(selectedProfile)}
+                {text.editStats}
               </button>
             )}
             <button

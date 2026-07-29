@@ -541,6 +541,14 @@ type StaffOrder = {
   internal_note: string | null
 }
 
+type StaffOrderEditDraft = {
+  orderId: string
+  gameId: string
+  bookingDate: string
+  bookingTime: string
+  total: string
+}
+
 type StaffOrderPayment = {
   id: string
   order_id: string
@@ -631,6 +639,9 @@ type SoftDeletedRecord = {
   deleted_at: string
   deleted_by: string | null
   delete_reason: string | null
+  deleted_by_name?: string | null
+  deleted_by_email?: string | null
+  deleted_by_phone?: string | null
 }
 
 type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'hr' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report'
@@ -782,6 +793,7 @@ const staffConsoleText = {
       copyPreviousWeek: 'Copy previous week',
       done: 'Done',
       edit: 'Edit',
+      editStats: 'Edit stats',
       excel: 'Excel',
       newGame: 'New game',
       nextWeek: 'Next week',
@@ -821,7 +833,7 @@ const staffConsoleText = {
       saveShift: 'Save shift',
       saveSetupOption: 'Save option',
       saveVoucher: 'Save voucher',
-      sendPasswordRequest: 'Send setup link',
+      sendPasswordRequest: 'Send setup email',
       sessionCalendar: 'Session Calendar',
       submitLeave: 'Submit leave',
       today: 'Today',
@@ -1102,7 +1114,7 @@ const staffConsoleText = {
       current: 'current',
       communitySession: 'Community session',
       customer: 'Customer',
-      customerAccountHelp: 'Create a customer profile and email them a secure link to set their password.',
+      customerAccountHelp: 'Create a customer profile. The secure password setup link is always sent to the required email address.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
       noAwardsYet: 'No manual unlocks yet.',
@@ -1240,6 +1252,7 @@ const staffConsoleText = {
       regularHours: 'Regular hours',
       remaining: 'Remaining',
       restoreDeletedRecords: 'Restore deleted records',
+      deletedBy: 'Deleted by',
       referenceRange: 'Reference range',
       reportRange: 'Report range',
       roleExplanation: 'Role explanation',
@@ -1405,6 +1418,7 @@ const staffConsoleText = {
       noVouchers: 'No vouchers yet.',
       orderConfirmed: 'Order {order} confirmed · {total}',
       orderCreating: 'Creating order...',
+      orderEditInvalid: 'Choose a game, date, and time, then enter a whole VND total of zero or more.',
       orderUpdated: 'Order updated.',
       priceRuleSaved: 'Price rule saved.',
       readOnlyBooking: 'Read-only view. Viewer can inspect this flow, but cannot create bookings.',
@@ -1565,6 +1579,7 @@ const staffConsoleText = {
       copyPreviousWeek: 'Sao chép tuần trước',
       done: 'Hoàn tất',
       edit: 'Sửa',
+      editStats: 'Chỉnh sửa thống kê',
       excel: 'Excel',
       newGame: 'Trò chơi mới',
       nextWeek: 'Tuần sau',
@@ -1604,7 +1619,7 @@ const staffConsoleText = {
       saveShift: 'Lưu ca',
       saveSetupOption: 'Lưu tùy chọn',
       saveVoucher: 'Lưu voucher',
-      sendPasswordRequest: 'Gửi link tạo mật khẩu',
+      sendPasswordRequest: 'Gửi email tạo mật khẩu',
       sessionCalendar: 'Lịch phiên',
       submitLeave: 'Gửi nghỉ phép',
       today: 'Hôm nay',
@@ -1885,7 +1900,7 @@ const staffConsoleText = {
       current: 'hiện tại',
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
-      customerAccountHelp: 'Tạo hồ sơ khách hàng và gửi email bảo mật để họ đặt mật khẩu.',
+      customerAccountHelp: 'Tạo hồ sơ khách hàng. Link bảo mật để đặt mật khẩu luôn được gửi đến địa chỉ email bắt buộc.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
       noAwardsYet: 'Chưa có mở khóa thủ công.',
@@ -2023,6 +2038,7 @@ const staffConsoleText = {
       regularHours: 'Giờ thường',
       remaining: 'Còn lại',
       restoreDeletedRecords: 'Khôi phục dữ liệu đã xóa',
+      deletedBy: 'Đã xóa bởi',
       referenceRange: 'Khoảng tham chiếu',
       reportRange: 'Khoảng báo cáo',
       roleExplanation: 'Giải thích vai trò',
@@ -2188,6 +2204,7 @@ const staffConsoleText = {
       noVouchers: 'Chưa có voucher.',
       orderConfirmed: 'Đơn {order} đã xác nhận · {total}',
       orderCreating: 'Đang tạo đơn...',
+      orderEditInvalid: 'Chọn trò chơi, ngày và giờ, sau đó nhập tổng tiền VND nguyên từ 0 trở lên.',
       orderUpdated: 'Đã cập nhật đơn.',
       priceRuleSaved: 'Đã lưu quy tắc giá.',
       readOnlyBooking: 'Chế độ chỉ xem. Viewer có thể xem luồng này nhưng không thể tạo đặt chỗ.',
@@ -3654,6 +3671,16 @@ function normalizeTime(value: string | null | undefined) {
   return (value || '').slice(0, 5)
 }
 
+function staffOrderEditDraft(order: StaffOrder): StaffOrderEditDraft {
+  return {
+    orderId: order.id,
+    gameId: order.game_id || '',
+    bookingDate: order.booking_date,
+    bookingTime: normalizeTime(order.booking_time),
+    total: String(order.total),
+  }
+}
+
 function operationBookingKind(session: Pick<StaffOperationSession, 'booking_type'>) {
   return session.booking_type === 'ticket' ? 'ticket' : 'session'
 }
@@ -3677,11 +3704,15 @@ function operationSessionChanges(session: StaffOperationSession, patch: Partial<
     .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
 }
 
-function orderChanges(order: StaffOrder, patch: Partial<StaffOrder>) {
+function orderChanges(order: StaffOrder, patch: Partial<StaffOrder>, games: StaffGame[] = []) {
+  const gameName = (gameId: string | null | undefined) => (
+    games.find((game) => game.id === gameId)?.name || gameId || ''
+  )
   const rows: Array<[string, unknown, unknown]> = [
     ['Payment status', order.payment_status, patch.payment_status],
     ['Order status', order.order_status, patch.order_status],
     ['Total', order.total, patch.total],
+    ['Game', gameName(order.game_id), patch.game_id === undefined ? undefined : gameName(patch.game_id)],
     ['Customer name', order.customer_name, patch.customer_name],
     ['Customer phone', order.customer_phone, patch.customer_phone],
     ['Customer email', order.customer_email, patch.customer_email],
@@ -3899,6 +3930,13 @@ function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], tex
 function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
   if (profile.anonymous_mode) return profile.nickname || profile.anonymous_callsign || text.customerFallback
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
+}
+
+function deletedRecordActorLabel(record: SoftDeletedRecord) {
+  const name = record.deleted_by_name?.trim() || ''
+  const contact = record.deleted_by_email?.trim() || record.deleted_by_phone?.trim() || ''
+  if (name && contact && name !== contact) return `${name} · ${contact}`
+  return name || contact || record.deleted_by || ''
 }
 
 function normalizeStaffSearchValue(value: string | null | undefined) {
@@ -4524,6 +4562,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [draggingShiftId, setDraggingShiftId] = useState('')
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])
+  const [orderEditDraft, setOrderEditDraft] = useState<StaffOrderEditDraft | null>(null)
+  const [orderEditError, setOrderEditError] = useState('')
   const [operationSessions, setOperationSessions] = useState<StaffOperationSession[]>([])
   const [operationSessionScope, setOperationSessionScope] = useState<StaffOperationScope>('today')
   const [expandedOperationSessions, setExpandedOperationSessions] = useState<Record<string, boolean>>({})
@@ -5279,9 +5319,16 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setDeletedRecords([])
         return
       }
-      const { data, error } = await supabase.rpc('get_soft_deleted_records', { p_limit: 100 })
-      if (error) throw new Error(error.message)
-      setDeletedRecords((data ?? []) as SoftDeletedRecord[])
+      const actorResult = await supabase.rpc('get_soft_deleted_records_v2', { p_limit: 100 })
+      if (!actorResult.error) {
+        setDeletedRecords((actorResult.data ?? []) as SoftDeletedRecord[])
+        return
+      }
+      if (!rpcFunctionMissing(actorResult.error)) throw new Error(actorResult.error.message)
+
+      const fallbackResult = await supabase.rpc('get_soft_deleted_records', { p_limit: 100 })
+      if (fallbackResult.error) throw new Error(fallbackResult.error.message)
+      setDeletedRecords((fallbackResult.data ?? []) as SoftDeletedRecord[])
     }, force)
   }
 
@@ -7055,13 +7102,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         action: patch.order_status === 'cancelled' ? 'cancelled' : 'edited',
         title: linkedSession?.name || 'Ticket booking',
         reference: order.order_number,
-        date: order.booking_date,
-        time: normalizeTime(order.booking_time),
+        date: updatedOrder.booking_date,
+        time: normalizeTime(updatedOrder.booking_time),
         total: updatedOrder.total,
         summary: patch.order_status === 'cancelled'
           ? 'Booking order was changed to cancelled.'
           : 'Booking order details were edited.',
-        changes: orderChanges(order, patch),
+        changes: orderChanges(order, patch, games),
       })
       markStaffDataStale('today', 'orders', 'report')
       if (currentTab === 'today') await loadTodayOrders(true)
@@ -7069,6 +7116,107 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       if (currentTab === 'report') await loadReportData(true)
     }
     setSaving(false)
+  }
+
+  function beginOrderEdit(order: StaffOrder) {
+    if (!canCreateOrders || saving) return
+    setOrderEditDraft(staffOrderEditDraft(order))
+    setOrderEditError('')
+    setStatus('')
+  }
+
+  function patchOrderEditDraft(patch: Partial<StaffOrderEditDraft>) {
+    setOrderEditDraft((current) => current ? { ...current, ...patch } : current)
+    setOrderEditError('')
+  }
+
+  function cancelOrderEdit() {
+    if (saving) return
+    setOrderEditDraft(null)
+    setOrderEditError('')
+  }
+
+  async function saveOrderEdit(order: StaffOrder) {
+    if (!canCreateOrders || saving || orderEditDraft?.orderId !== order.id) return
+
+    const selectedGame = games.find((game) => game.id === orderEditDraft.gameId)
+    const nextTotal = Number(orderEditDraft.total)
+    if (
+      !selectedGame
+      || !orderEditDraft.bookingDate
+      || !orderEditDraft.bookingTime
+      || !Number.isInteger(nextTotal)
+      || nextTotal < 0
+    ) {
+      setOrderEditError(text.messages.orderEditInvalid)
+      return
+    }
+
+    setSaving(true)
+    setOrderEditError('')
+    setStatus('')
+
+    try {
+      const { data, error } = await supabase.rpc('staff_update_order_operation', {
+        p_booking_date: orderEditDraft.bookingDate,
+        p_booking_time: orderEditDraft.bookingTime,
+        p_game_id: selectedGame.id,
+        p_order_id: order.id,
+        p_total: nextTotal,
+      })
+      if (error) throw error
+
+      const patch: Partial<StaffOrder> = {
+        booking_date: orderEditDraft.bookingDate,
+        booking_time: orderEditDraft.bookingTime,
+        game_id: selectedGame.id,
+        subtotal: nextTotal + order.discount_total,
+        total: nextTotal,
+      }
+      const returnedOrder = data && typeof data === 'object' && !Array.isArray(data)
+        ? data as Partial<StaffOrder>
+        : null
+      const updatedOrder = { ...order, ...patch, ...(returnedOrder || {}) }
+
+      setOrders((items) => items.map((item) => item.id === order.id ? updatedOrder : item))
+      if (order.session_id) {
+        setOperationSessions((items) => items.map((session) => session.id === order.session_id
+          ? {
+              ...session,
+              confirmed_game_id: selectedGame.slug,
+              date: orderEditDraft.bookingDate,
+              start_time: orderEditDraft.bookingTime,
+              ticket_total_price: session.booking_type === 'ticket' ? nextTotal : session.ticket_total_price,
+            }
+          : session))
+      }
+
+      setOrderEditDraft(null)
+      setStatus(text.messages.orderUpdated)
+      const linkedSession = operationSessions.find((session) => session.id === order.session_id) || null
+      void sendStaffBookingUpdateNotification(linkedSession, updatedOrder, {
+        action: 'edited',
+        title: linkedSession?.name || 'Ticket booking',
+        reference: order.order_number,
+        date: updatedOrder.booking_date,
+        time: normalizeTime(updatedOrder.booking_time),
+        total: updatedOrder.total,
+        summary: 'Booking order game, schedule, or total was edited.',
+        changes: orderChanges(order, patch, games),
+      })
+      markStaffDataStale('today', 'orders', 'report')
+      if (currentTab === 'today') await Promise.all([loadTodayOrders(true), loadTodaySessions(true)])
+      if (currentTab === 'orders') await loadRecentOrders(true)
+      if (currentTab === 'report') await loadReportData(true)
+    } catch (error) {
+      const message = error && typeof error === 'object' && 'message' in error
+        ? String((error as { message?: unknown }).message || '')
+        : String(error)
+      setOrderEditError(message)
+      setStatus(message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function createCustomerAccount() {
@@ -7137,26 +7285,30 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     setIsAchievementAwardSaving(true)
     setAchievementAwardStatus('')
-    const { error } = await supabase.rpc('staff_award_profile_achievement', {
-      p_profile_id: selectedProfileId,
-      p_achievement_id: selectedAchievement.id,
-      p_achievement_kind: selectedAchievement.kind,
-      p_title: selectedAchievement.title,
-      p_description: selectedAchievement.description,
-      p_note: achievementAwardNote.trim() || null,
-    })
+    try {
+      const { error } = await supabase.rpc('staff_award_profile_achievement', {
+        p_profile_id: selectedProfileId,
+        p_achievement_id: selectedAchievement.id,
+        p_achievement_kind: selectedAchievement.kind,
+        p_title: selectedAchievement.title,
+        p_description: selectedAchievement.description,
+        p_note: achievementAwardNote.trim() || null,
+      })
 
-    if (error) {
-      setAchievementAwardStatus(error.message)
+      if (error) throw error
+
+      setAchievementAwardNote('')
+      setAchievementAwardStatus(text.messages.achievementAwarded)
+      markStaffDataStale('achievementAwards')
+      await loadAchievementAwards(true)
+    } catch (error) {
+      const message = error && typeof error === 'object' && 'message' in error
+        ? String((error as { message?: unknown }).message || '')
+        : String(error)
+      setAchievementAwardStatus(message)
+    } finally {
       setIsAchievementAwardSaving(false)
-      return
     }
-
-    setAchievementAwardNote('')
-    setAchievementAwardStatus(text.messages.achievementAwarded)
-    markStaffDataStale('achievementAwards')
-    await loadAchievementAwards(true)
-    setIsAchievementAwardSaving(false)
   }
 
   async function updateProfileRole(profileId: string, nextRole: StaffRole) {
@@ -7572,32 +7724,134 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           </tr>
         </thead>
         <tbody>
-          {rows.map((order) => (
-            <tr key={order.id}>
-              <td><strong>{order.order_number}</strong></td>
-              <td>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</td>
-              <td>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</td>
-              <td>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</td>
-              <td>{formatVnd(order.total)}</td>
-              <td>{orderPaymentLabel(order, paymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
-              <td>{text.orderStatuses[order.order_status]}</td>
-              {canCreateOrders && (
-                <td>
-                  <div className="staff-row-actions">
-                    <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
-                      <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
-                    </button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
-                      <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
-                    </button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
-                      <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
-                    </button>
-                  </div>
-                </td>
-              )}
-            </tr>
-          ))}
+          {rows.map((order) => {
+            const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
+            const isEditing = Boolean(draft)
+            const gameName = games.find((game) => game.id === order.game_id)?.name || text.gameFallback
+            return (
+              <Fragment key={order.id}>
+                <tr className={isEditing ? 'staff-order-row editing' : 'staff-order-row'}>
+                  <td><strong>{order.order_number}</strong></td>
+                  <td>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</td>
+                  <td className="staff-order-editable-cell">
+                    {draft ? (
+                      <select
+                        aria-label={text.labels.game}
+                        disabled={saving}
+                        value={draft.gameId}
+                        onChange={(event) => patchOrderEditDraft({ gameId: event.target.value })}
+                      >
+                        <option value="">{text.noneYet}</option>
+                        {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
+                      </select>
+                    ) : canCreateOrders ? (
+                      <button
+                        aria-label={`${text.actions.edit} ${text.labels.game}: ${gameName}`}
+                        className="staff-order-edit-trigger"
+                        type="button"
+                        onClick={() => beginOrderEdit(order)}
+                      >
+                        {gameName}
+                        <Pencil aria-hidden="true" size={12} />
+                      </button>
+                    ) : gameName}
+                  </td>
+                  <td className="staff-order-editable-cell staff-order-date-cell">
+                    {draft ? (
+                      <div className="staff-order-date-fields">
+                        <input
+                          aria-label={text.aria.bookingDate}
+                          disabled={saving}
+                          type="date"
+                          value={draft.bookingDate}
+                          onChange={(event) => patchOrderEditDraft({ bookingDate: event.target.value })}
+                        />
+                        <input
+                          aria-label={text.aria.bookingTime}
+                          disabled={saving}
+                          type="time"
+                          value={draft.bookingTime}
+                          onChange={(event) => patchOrderEditDraft({ bookingTime: event.target.value })}
+                        />
+                      </div>
+                    ) : canCreateOrders ? (
+                      <button
+                        aria-label={`${text.actions.edit} ${text.labels.date}: ${staffDateLabel(order.booking_date)} ${normalizeTime(order.booking_time)}`}
+                        className="staff-order-edit-trigger"
+                        type="button"
+                        onClick={() => beginOrderEdit(order)}
+                      >
+                        {staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}
+                        <Pencil aria-hidden="true" size={12} />
+                      </button>
+                    ) : `${staffDateLabel(order.booking_date)} · ${normalizeTime(order.booking_time)}`}
+                  </td>
+                  <td className="staff-order-editable-cell">
+                    {draft ? (
+                      <label className="staff-order-total-field">
+                        <input
+                          aria-label={text.labels.total}
+                          disabled={saving}
+                          inputMode="numeric"
+                          min={0}
+                          step={1000}
+                          type="number"
+                          value={draft.total}
+                          onChange={(event) => patchOrderEditDraft({ total: event.target.value })}
+                        />
+                        <span>₫</span>
+                      </label>
+                    ) : canCreateOrders ? (
+                      <button
+                        aria-label={`${text.actions.edit} ${text.labels.total}: ${formatVnd(order.total)}`}
+                        className="staff-order-edit-trigger"
+                        type="button"
+                        onClick={() => beginOrderEdit(order)}
+                      >
+                        {formatVnd(order.total)}
+                        <Pencil aria-hidden="true" size={12} />
+                      </button>
+                    ) : formatVnd(order.total)}
+                  </td>
+                  <td>{orderPaymentLabel(order, paymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
+                  <td>{text.orderStatuses[order.order_status]}</td>
+                  {canCreateOrders && (
+                    <td>
+                      <div className="staff-row-actions">
+                        {isEditing ? (
+                          <>
+                            <button className="primary" disabled={saving} type="button" onClick={() => saveOrderEdit(order)}>
+                              <ButtonIconText icon={<Save aria-hidden="true" size={14} />}>{text.actions.save}</ButtonIconText>
+                            </button>
+                            <button className="secondary" disabled={saving} type="button" onClick={cancelOrderEdit}>
+                              <ButtonIconText icon={<X aria-hidden="true" size={14} />}>{text.actions.cancel}</ButtonIconText>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" onClick={() => updateOrder(order, { payment_status: 'paid', order_status: 'paid' })}>
+                              <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.actions.paid}</ButtonIconText>
+                            </button>
+                            <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
+                              <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
+                            </button>
+                            <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
+                              <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+                {isEditing && orderEditError && (
+                  <tr className="staff-order-edit-error-row">
+                    <td colSpan={canCreateOrders ? 8 : 7}>{orderEditError}</td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
           {rows.length === 0 && (
             <tr>
               <td colSpan={canCreateOrders ? 8 : 7}>{text.messages.noOrders}</td>
@@ -7619,13 +7873,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   return (
     <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
-      <div className="section-head">
-        <div>
-          <h2>{consoleTitle}</h2>
-        </div>
-        <span className="staff-role-pill">{staffRoleName(role, text)}</span>
-      </div>
-
       {!isHrConsole && (
         <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
           <div className="staff-tab-categories" role="tablist" aria-label={text.aria.staffConsole}>
@@ -9173,9 +9420,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
       {currentTab === 'clientProfile' && (canCreateCustomerAccounts || canAwardAchievements) && (
         <div className="staff-card staff-card-wide">
-          <div className="staff-card-heading">
-            <h3>{canAwardAchievements ? text.labels.awardAchievement : text.labels.createCustomerAccount}</h3>
-          </div>
+          {!canAwardAchievements && (
+            <div className="staff-card-heading">
+              <h3>{text.labels.createCustomerAccount}</h3>
+            </div>
+          )}
           {canAwardAchievements && (
             <StaffAchievementAwardPanel
               awards={achievementAwards}
@@ -9193,12 +9442,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               status={achievementAwardStatus}
               text={{
                 alreadyAwarded: text.messages.achievementAlreadyAwarded,
-                awardAchievement: text.labels.awardAchievement,
-                awardAchievementHelp: text.labels.awardAchievementHelp,
                 awardNote: text.labels.awardNote,
                 awardToPlayer: text.labels.awardToPlayer,
                 chooseAchievement: text.labels.chooseAchievement,
                 choosePlayer: text.labels.choosePlayer,
+                editStats: text.actions.editStats,
                 grantedAwards: text.labels.grantedAwards,
                 noAwardsYet: text.labels.noAwardsYet,
                 noPlayersFound: text.labels.noPlayersFound,
@@ -9410,6 +9658,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   <strong>{record.label || record.entity_id}</strong>
                   <span>{record.entity_table} · {staffDateLabel(record.deleted_at.slice(0, 10))}</span>
                   {record.delete_reason && <small>{record.delete_reason}</small>}
+                  {record.deleted_by && (
+                    <small className="staff-restore-actor">
+                      {text.labels.deletedBy}: {deletedRecordActorLabel(record)}
+                    </small>
+                  )}
                 </div>
                 <button className="secondary" disabled={saving} type="button" onClick={() => restoreDeletedRecord(record)}>
                   <ButtonIconText icon={<RotateCcw aria-hidden="true" size={15} />}>{text.actions.restore}</ButtonIconText>
