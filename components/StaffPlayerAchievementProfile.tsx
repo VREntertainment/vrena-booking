@@ -358,7 +358,7 @@ export default function StaffPlayerAchievementProfile({
     setSaved(false)
     setStatus('')
     try {
-      const { error } = await supabase.rpc('staff_save_player_achievement_profile_v2', {
+      const { error } = await supabase.rpc('staff_save_player_achievement_profile_v3', {
         p_profile_id: selectedProfile.id,
         p_loyalty_points: statsDraft.loyaltyPoints,
         p_overall: statsDraft.overall,
