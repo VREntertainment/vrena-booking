@@ -5776,6 +5776,26 @@
     color: var(--vrena-neutral-100);
   }
 
+  .app .staff-achievement-editor-toolbar .staff-player-stats-editor {
+    border-color: var(--staff-modern-border);
+    background: var(--staff-modern-surface);
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-achievement-editor-toolbar .staff-player-stats-editor-head > span {
+    background: color-mix(in srgb, var(--vrena-cyan-700) 24%, transparent);
+    color: var(--vrena-cyan-200);
+  }
+
+  .app .staff-achievement-editor-toolbar .staff-player-stats-editor-head strong,
+  .app .staff-achievement-editor-toolbar .staff-player-stats-editor h4 {
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-achievement-editor-toolbar .staff-player-stats-grid label > span {
+    color: var(--vrena-neutral-400);
+  }
+
   .app .staff-customer-suggestions,
   .app .staff-operation-player-results {
     border-color: var(--staff-modern-border);
