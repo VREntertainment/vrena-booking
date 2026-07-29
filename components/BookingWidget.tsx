@@ -29,6 +29,7 @@ import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
 import type { StaffProfile } from './StaffConsole'
+import StaffPlayerStatsEditor from './StaffPlayerStatsEditor'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
@@ -589,7 +590,7 @@ export default function WidgetPage({
 
     try {
       const { data, error } = await (await getSupabase()).rpc(
-        'get_leaderboard_players_page_v2',
+        'get_leaderboard_players_page_v3',
         leaderboardRpcArgs(leaderboardQueryRef.current, 0, 1, profileId)
       )
 
@@ -2486,7 +2487,7 @@ export default function WidgetPage({
 
   async function fetchLeaderboardRows(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
     const { data, error } = await (await getSupabase()).rpc(
-      'get_leaderboard_players_page_v2',
+      'get_leaderboard_players_page_v3',
       leaderboardRpcArgs(query, offset, limit, profileId)
     )
 
@@ -5095,6 +5096,7 @@ function handleSessionDateChange(value: string) {
     && hasVerifiedTotpFactor
     && mfaAssuranceLevel === 'aal2'
   )
+  const canEditStaffPlayerCards = canAccessStaffConsole && staffAccessRank >= 50
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -10155,6 +10157,18 @@ function handleSessionDateChange(value: string) {
           challengeControls={renderChallengeControls(selectedPlayerProfile)}
           bestScoresTitle={text.bestScores}
           bestScores={selectedPlayerProfile.bestByGame}
+          adminControls={canEditStaffPlayerCards ? (
+            <StaffPlayerStatsEditor
+              key={selectedPlayerProfile.profileId}
+              language={language}
+              player={selectedPlayerProfile}
+              onSaved={() => {
+                selectedPlayerStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
+                void loadSelectedPlayerStats(selectedPlayerProfile.profileId, true)
+                void refreshLeaderboardIfLoaded()
+              }}
+            />
+          ) : null}
         />
       )}
 

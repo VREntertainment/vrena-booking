@@ -246,6 +246,24 @@
   margin-bottom: 0;
 }
 
+.app .staff-card .compact-form-grid > .checkbox-row {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  gap: 7px;
+  min-height: 32px;
+}
+
+.app .staff-card .compact-form-grid > .checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--vrena-mode-accent);
+}
+
 .app .staff-card .compact-form-grid > .staff-customer-name-field {
   position: relative;
   display: grid;
@@ -935,8 +953,9 @@
 }
 
 .app .staff-customer-invite-form {
+  --staff-invite-control-height: 40px;
   display: grid;
-  grid-template-columns: minmax(130px, 1fr) minmax(180px, 1.15fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) max-content;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.3fr) minmax(0, 0.9fr) max-content;
   gap: 7px;
   align-items: end;
 }
@@ -953,17 +972,37 @@
   line-height: 1.1;
 }
 
-.app .staff-customer-invite-form input {
-  min-height: 38px;
+.app .staff-card .staff-customer-invite-form input:not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
+  box-sizing: border-box;
+  height: var(--staff-invite-control-height);
+  min-height: var(--staff-invite-control-height);
   padding: 7px 10px;
   font-size: 15px;
   line-height: 1.15;
 }
 
-.app .staff-customer-invite-form button {
+.app .staff-customer-invite-form .staff-phone-control {
+  height: var(--staff-invite-control-height);
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 7px;
+  align-items: stretch;
+}
+
+.app .staff-customer-invite-form .staff-phone-control .country-picker,
+.app .staff-customer-invite-form .staff-phone-control .country-button {
+  height: 100%;
+}
+
+.app .staff-customer-invite-form .staff-phone-control .country-button {
+  min-height: var(--staff-invite-control-height);
+  padding-block: 7px;
+}
+
+.app .staff-card .staff-customer-invite-form > button.primary {
+  box-sizing: border-box;
   align-self: end;
-  height: 38px;
-  min-height: 38px;
+  height: var(--staff-invite-control-height);
+  min-height: var(--staff-invite-control-height);
   border-radius: 9px;
   padding: 7px 13px;
   font-size: 15px;
@@ -979,13 +1018,6 @@
   border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
-.app .staff-achievement-award-copy {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.app .staff-achievement-award-mark,
 .app .staff-achievement-preview-icon,
 .app .staff-achievement-player-avatar {
   display: inline-flex;
@@ -996,20 +1028,12 @@
   background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
 }
 
-.app .staff-achievement-award-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-
-.app .staff-achievement-award-copy strong,
 .app .staff-achievement-awarded-list > strong {
   display: block;
   font-size: 15px;
   line-height: 1.2;
 }
 
-.app .staff-achievement-award-copy span,
 .app .staff-achievement-preview span,
 .app .staff-achievement-awarded-list small {
   color: var(--vrena-neutral-600);
@@ -1087,9 +1111,16 @@
 }
 
 .app .staff-achievement-player-avatar {
+  --avatar-size: 34px;
+  --avatar-emoji-size: 19px;
+  --avatar-text-size: 12px;
+  position: relative;
   width: 34px;
   height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: 50%;
+  overflow: hidden;
 }
 
 .app .staff-achievement-player span:last-child {
@@ -1273,6 +1304,11 @@
   font-weight: 800;
 }
 
+.app .staff-restore-row small.staff-restore-actor {
+  color: var(--staff-modern-muted);
+  font-weight: 700;
+}
+
 .app .staff-role-action-cell {
   display: grid;
   gap: 5px;
@@ -1358,6 +1394,96 @@
 .app .staff-table th {
   color: var(--vrena-neutral-600);
   font-size: 12px;
+}
+
+.app .staff-order-row.editing {
+  background: color-mix(in srgb, var(--vrena-cyan-500) 7%, transparent);
+}
+
+.app .staff-order-editable-cell {
+  min-width: 112px;
+}
+
+.app .staff-order-date-cell {
+  min-width: 145px;
+}
+
+.app .staff-order-edit-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  padding: 2px 3px;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+}
+
+.app .staff-order-edit-trigger svg {
+  flex: 0 0 auto;
+  color: var(--vrena-neutral-400);
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease;
+}
+
+.app .staff-order-edit-trigger:hover,
+.app .staff-order-edit-trigger:focus-visible {
+  background: color-mix(in srgb, var(--vrena-purple-500) 8%, transparent);
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-order-edit-trigger:hover svg,
+.app .staff-order-edit-trigger:focus-visible svg {
+  color: currentColor;
+  opacity: 1;
+}
+
+.app .staff-order-row select,
+.app .staff-order-row input {
+  min-height: 36px;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-order-row select {
+  width: 100%;
+  min-width: 132px;
+}
+
+.app .staff-order-date-fields {
+  display: grid;
+  gap: 5px;
+  min-width: 138px;
+}
+
+.app .staff-order-date-fields input {
+  width: 100%;
+}
+
+.app .staff-order-total-field {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 126px;
+}
+
+.app .staff-order-total-field input {
+  width: 100%;
+}
+
+.app .staff-order-edit-error-row td {
+  border-bottom-color: color-mix(in srgb, var(--vrena-red-700) 20%, transparent);
+  background: color-mix(in srgb, var(--vrena-red-700) 8%, transparent);
+  color: var(--vrena-red-700);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .app .staff-row-actions {
@@ -4721,7 +4847,6 @@
     border-color: color-mix(in srgb, var(--vrena-purple-400) 55%, transparent);
   }
 
-  .app .staff-achievement-award-mark,
   .app .staff-achievement-preview-icon,
   .app .staff-achievement-player-avatar {
     background: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
@@ -4757,7 +4882,6 @@
   .app .staff-table span,
   .app .staff-list-item span,
   .app .staff-customer-invite-copy span,
-  .app .staff-achievement-award-copy span,
   .app .staff-achievement-preview span,
   .app .staff-achievement-player small,
   .app .staff-achievement-awarded-list small,
@@ -5276,16 +5400,6 @@
   box-shadow: none;
 }
 
-.app .staff-console > .section-head {
-  align-items: center;
-  padding: 2px 2px 10px;
-  border-bottom: 1px solid var(--staff-modern-border);
-}
-
-.app .staff-hr-route > .section-head {
-  display: none;
-}
-
 .app .staff-console-nav {
   gap: 4px;
   padding-bottom: 10px;
@@ -5712,10 +5826,6 @@
 @media (max-width: 760px) {
   .app .section.staff-console {
     margin-inline: -2px;
-  }
-
-  .app .staff-console > .section-head {
-    padding-inline: 2px;
   }
 
   .app .staff-tab-group.active {
