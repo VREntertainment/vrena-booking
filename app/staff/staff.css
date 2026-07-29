@@ -1235,6 +1235,24 @@
   max-width: 620px;
 }
 
+.app .staff-profile-selector-row {
+  position: relative;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: minmax(0, 620px) minmax(180px, 1fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.app .staff-profile-selector-row .staff-profile-combobox {
+  width: 100%;
+  max-width: none;
+}
+
+.app .staff-profile-selector-row .staff-achievement-save-row {
+  justify-content: flex-end;
+}
+
 .app .staff-profile-combobox > label {
   color: var(--vrena-neutral-600);
   font-size: 12px;
@@ -1440,6 +1458,271 @@
   border-color: var(--vrena-green-700);
   background: var(--vrena-green-700);
   color: var(--vrena-white);
+}
+
+.app .staff-session-add-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.app .staff-session-add-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.app .staff-session-pending-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
+  color: var(--vrena-cyan-800);
+  padding: 4px 5px 4px 9px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-session-pending-chip button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+
+.app .staff-session-picker-backdrop {
+  z-index: 140;
+}
+
+.app .staff-session-picker-modal {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(780px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 14px;
+  background: var(--vrena-white);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--vrena-neutral-950) 26%, transparent);
+  padding: 18px;
+}
+
+.app .staff-session-picker-modal > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding-right: 38px;
+}
+
+.app .staff-session-picker-modal h3,
+.app .staff-session-picker-modal p {
+  margin: 0;
+}
+
+.app .staff-session-picker-modal header p {
+  margin-top: 4px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .staff-session-picker-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
+  color: var(--vrena-cyan-800);
+}
+
+.app .staff-session-picker-nav {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.app .staff-session-picker-nav button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 9px;
+  background: var(--vrena-white);
+  color: inherit;
+}
+
+.app .staff-session-picker-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(300px, 1.1fr);
+  gap: 14px;
+  min-height: 320px;
+}
+
+.app .staff-session-picker-calendar,
+.app .staff-session-picker-list {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 11px;
+  background: var(--vrena-bg-soft);
+  padding: 10px;
+}
+
+.app .staff-session-picker-weekdays,
+.app .staff-session-picker-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.app .staff-session-picker-weekdays {
+  margin-bottom: 5px;
+}
+
+.app .staff-session-picker-weekdays span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .staff-session-picker-days > button,
+.app .staff-session-picker-days > span {
+  min-width: 0;
+  min-height: 40px;
+}
+
+.app .staff-session-picker-days > button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-session-picker-days > button.has-sessions {
+  border-color: color-mix(in srgb, var(--vrena-mode-accent) 22%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-session-picker-days > button.active {
+  border-color: var(--vrena-mode-accent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 13%, var(--vrena-white));
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-session-picker-days i {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.app .staff-session-picker-list {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.app .staff-session-picker-list > button {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 11%, transparent);
+  border-radius: 9px;
+  background: var(--vrena-white);
+  color: inherit;
+  text-align: left;
+}
+
+.app .staff-session-picker-list > button.active {
+  border-color: var(--vrena-mode-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-mode-accent) 12%, transparent);
+}
+
+.app .staff-session-picker-list > button:disabled {
+  opacity: 0.58;
+}
+
+.app .staff-session-picker-list > button > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .staff-session-picker-list strong,
+.app .staff-session-picker-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-session-picker-list small,
+.app .staff-session-picker-list em {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.app .staff-session-picker-time {
+  color: var(--vrena-mode-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-session-picker-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 180px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.app .staff-session-picker-modal > footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.app .staff-session-picker-modal > footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 118px;
 }
 
 .app .staff-player-stats-collapse {
@@ -4354,22 +4637,12 @@
     max-width: none;
   }
 
+  .app .staff-profile-selector-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .app .staff-achievement-editor-toolbar {
     padding: 10px;
-  }
-
-  .app .staff-achievement-save-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .app .staff-achievement-profile-workspace .achievement-rank-name-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .app .staff-achievement-save-row button {
-    width: 100%;
   }
 
   .app .staff-achievement-award-actions {
@@ -7495,5 +7768,59 @@
 
   .app .staff-console .staff-hr-main-full {
     min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .staff-session-picker-modal {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+
+  .app .staff-session-picker-layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .app .staff-session-picker-list {
+    max-height: 260px;
+  }
+
+  .app .staff-session-add-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .app .staff-session-add-actions > button {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .app .staff-profile-selector-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-profile-selector-row .staff-achievement-save-row,
+  .app .staff-profile-selector-row .staff-achievement-save-row button {
+    width: 100%;
+  }
+
+  .app .staff-profile-selector-row .staff-achievement-save-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-session-picker-modal > footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .app .staff-session-picker-modal > footer button {
+    min-width: 0;
+    width: 100%;
   }
 }

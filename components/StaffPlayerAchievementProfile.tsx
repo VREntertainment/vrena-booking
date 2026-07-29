@@ -1,7 +1,7 @@
 'use client'
 
 import NextImage from 'next/image'
-import { Check, ChevronDown, LoaderCircle, Save, Search, UserRound } from 'lucide-react'
+import { CalendarPlus, Check, ChevronDown, LoaderCircle, Save, Search, Trash2, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import {
   ANONYMOUS_MASK_COLOR,
@@ -22,6 +22,7 @@ import type { StaffProfile } from './StaffConsole'
 import ProfileAchievementsPanel, { type ManualProfileAchievementAward } from './ProfileAchievementsPanel'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import StaffPlayerStatsEditor, { type StaffPlayerStatsDraft } from './StaffPlayerStatsEditor'
+import StaffSessionPickerModal, { type StaffSessionOption } from './StaffSessionPickerModal'
 import type { LeaderboardPlayer } from './LeaderboardPanel'
 
 type PendingAchievementChange = {
@@ -152,12 +153,15 @@ export default function StaffPlayerAchievementProfile({
   const [statsDraft, setStatsDraft] = useState<StaffPlayerStatsDraft | null>(null)
   const [statsDirty, setStatsDirty] = useState(false)
   const [pendingAchievements, setPendingAchievements] = useState<Map<string, PendingAchievementChange>>(() => new Map())
+  const [pendingSessions, setPendingSessions] = useState<Map<string, StaffSessionOption>>(() => new Map())
+  const [sessionPickerOpen, setSessionPickerOpen] = useState(false)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [status, setStatus] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const comboboxRef = useRef<HTMLDivElement>(null)
+  const sessionTriggerRef = useRef<HTMLButtonElement>(null)
   const successTimerRef = useRef<number | null>(null)
 
   const selectedProfile = useMemo(
@@ -202,7 +206,8 @@ export default function StaffPlayerAchievementProfile({
     return [...additions, ...current]
   }, [baselineAwards, note, pendingAchievements])
   const pendingKeys = useMemo(() => new Set(pendingAchievements.keys()), [pendingAchievements])
-  const dirty = statsDirty || pendingAchievements.size > 0 || Boolean(note.trim())
+  const pendingSessionIds = useMemo(() => new Set(pendingSessions.keys()), [pendingSessions])
+  const dirty = statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0 || Boolean(note.trim())
 
   useEffect(() => {
     onDirtyChange(dirty)
@@ -284,6 +289,11 @@ export default function StaffPlayerAchievementProfile({
     setStatsLoading(loading)
   }, [])
 
+  const closeSessionPicker = useCallback(() => {
+    setSessionPickerOpen(false)
+    window.requestAnimationFrame(() => sessionTriggerRef.current?.focus())
+  }, [])
+
   function chooseProfile(profile: StaffProfile) {
     if (dirty && profile.id !== selectedProfileId && !window.confirm('Discard unsaved changes and switch customers?')) return
     setSelectedProfileId(profile.id)
@@ -293,6 +303,8 @@ export default function StaffPlayerAchievementProfile({
     setStatsDraft(null)
     setStatsDirty(false)
     setPendingAchievements(new Map())
+    setPendingSessions(new Map())
+    setSessionPickerOpen(false)
     setNote('')
     setStatus('')
   }
@@ -348,17 +360,19 @@ export default function StaffPlayerAchievementProfile({
     setSaved(false)
     setStatus('')
     try {
-      const { error } = await supabase.rpc('staff_save_player_achievement_profile', {
+      const { error } = await supabase.rpc('staff_save_player_achievement_profile_v2', {
         p_profile_id: selectedProfile.id,
         p_loyalty_points: statsDraft.loyaltyPoints,
         p_overall: statsDraft.overall,
         p_games: statsDraft.games,
         p_achievement_changes: Array.from(pendingAchievements.values()),
         p_note: note.trim() || null,
+        p_session_ids: Array.from(pendingSessions.keys()),
       })
       if (error) throw error
 
       setPendingAchievements(new Map())
+      setPendingSessions(new Map())
       setStatsDirty(false)
       setNote('')
       await onRefreshAwards()
@@ -379,67 +393,80 @@ export default function StaffPlayerAchievementProfile({
 
   return (
     <section className="staff-achievement-profile-workspace" aria-label="Customer Achievement Profile">
-      <div className="staff-profile-combobox" ref={comboboxRef}>
-        <label htmlFor="staff-player-search">Choose player</label>
-        <div className="staff-profile-combobox-control">
-          <Search aria-hidden="true" size={18} />
-          <input
-            aria-activedescendant={open && filteredProfiles[activeIndex] ? `staff-player-option-${filteredProfiles[activeIndex].id}` : undefined}
-            aria-autocomplete="list"
-            aria-controls="staff-player-options"
-            aria-expanded={open}
-            autoComplete="off"
-            id="staff-player-search"
-            onChange={(event) => {
-              setQuery(event.target.value)
-              setOpen(true)
-              setActiveIndex(0)
-            }}
-            onClick={() => setOpen(true)}
-            onFocus={() => setOpen(true)}
-            onKeyDown={handleComboboxKeyDown}
-            placeholder="Search name, nickname, email, or phone"
-            role="combobox"
-            value={query}
-          />
-          <button aria-label="Open customer list" onClick={() => setOpen((value) => !value)} type="button">
-            <ChevronDown aria-hidden="true" size={18} />
+      <div className="staff-profile-selector-row">
+        <div className="staff-profile-combobox" ref={comboboxRef}>
+          <label htmlFor="staff-player-search">Choose player</label>
+          <div className="staff-profile-combobox-control">
+            <Search aria-hidden="true" size={18} />
+            <input
+              aria-activedescendant={open && filteredProfiles[activeIndex] ? `staff-player-option-${filteredProfiles[activeIndex].id}` : undefined}
+              aria-autocomplete="list"
+              aria-controls="staff-player-options"
+              aria-expanded={open}
+              autoComplete="off"
+              id="staff-player-search"
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setOpen(true)
+                setActiveIndex(0)
+              }}
+              onClick={() => setOpen(true)}
+              onFocus={() => setOpen(true)}
+              onKeyDown={handleComboboxKeyDown}
+              placeholder="Search name, nickname, email, or phone"
+              role="combobox"
+              value={query}
+            />
+            <button aria-label="Open customer list" onClick={() => setOpen((value) => !value)} type="button">
+              <ChevronDown aria-hidden="true" size={18} />
+            </button>
+          </div>
+          {open && (
+            <div className="staff-profile-combobox-menu" id="staff-player-options" role="listbox">
+              {profilesLoading ? (
+                <div className="staff-profile-combobox-state"><LoaderCircle className="spin" size={18} />Loading customers…</div>
+              ) : profiles.length === 0 ? (
+                <div className="staff-profile-combobox-state"><UserRound size={18} />No customer profiles yet.</div>
+              ) : filteredProfiles.length === 0 ? (
+                <div className="staff-profile-combobox-state"><Search size={18} />No results found.</div>
+              ) : filteredProfiles.map((profile, index) => (
+                <button
+                  aria-selected={selectedProfileId === profile.id}
+                  className={index === activeIndex ? 'active' : ''}
+                  id={`staff-player-option-${profile.id}`}
+                  key={profile.id}
+                  onClick={() => chooseProfile(profile)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  role="option"
+                  type="button"
+                >
+                  <PlayerAvatar profile={profile} />
+                  <span>
+                    <strong>{profileName(profile)}</strong>
+                    {profile.anonymous_mode && profile.anonymous_callsign && profile.anonymous_callsign !== profileName(profile) ? (
+                      <small>{profile.anonymous_callsign}</small>
+                    ) : profile.nickname && profile.nickname !== profile.full_name ? (
+                      <small>{profile.nickname}</small>
+                    ) : null}
+                    <small>{profileContact(profile)}</small>
+                  </span>
+                  {selectedProfileId === profile.id && <Check aria-hidden="true" size={17} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="staff-achievement-save-row">
+          <span aria-live="polite">{status}</span>
+          <button
+            className={saved ? 'primary staff-save-success' : saving ? 'primary loading' : 'primary'}
+            disabled={!dirty || !statsDraft || statsLoading || saving}
+            onClick={saveChanges}
+            type="button"
+          >
+            {saved ? <><Check aria-hidden="true" size={17} /><Check aria-hidden="true" size={17} /> Saved</> : <><Save aria-hidden="true" size={17} />Save changes</>}
           </button>
         </div>
-        {open && (
-          <div className="staff-profile-combobox-menu" id="staff-player-options" role="listbox">
-            {profilesLoading ? (
-              <div className="staff-profile-combobox-state"><LoaderCircle className="spin" size={18} />Loading customers…</div>
-            ) : profiles.length === 0 ? (
-              <div className="staff-profile-combobox-state"><UserRound size={18} />No customer profiles yet.</div>
-            ) : filteredProfiles.length === 0 ? (
-              <div className="staff-profile-combobox-state"><Search size={18} />No results found.</div>
-            ) : filteredProfiles.map((profile, index) => (
-              <button
-                aria-selected={selectedProfileId === profile.id}
-                className={index === activeIndex ? 'active' : ''}
-                id={`staff-player-option-${profile.id}`}
-                key={profile.id}
-                onClick={() => chooseProfile(profile)}
-                onMouseEnter={() => setActiveIndex(index)}
-                role="option"
-                type="button"
-              >
-                <PlayerAvatar profile={profile} />
-                <span>
-                  <strong>{profileName(profile)}</strong>
-                  {profile.anonymous_mode && profile.anonymous_callsign && profile.anonymous_callsign !== profileName(profile) ? (
-                    <small>{profile.anonymous_callsign}</small>
-                  ) : profile.nickname && profile.nickname !== profile.full_name ? (
-                    <small>{profile.nickname}</small>
-                  ) : null}
-                  <small>{profileContact(profile)}</small>
-                </span>
-                {selectedProfileId === profile.id && <Check aria-hidden="true" size={17} />}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {!selectedProfile ? (
@@ -459,17 +486,33 @@ export default function StaffPlayerAchievementProfile({
             onToggleAchievement: toggleAchievement,
             pendingAchievementKeys: pendingKeys,
           }}
-          editorRankAction={(
-            <div className="staff-achievement-save-row">
-              <span aria-live="polite">{status}</span>
+          editorSessionsAction={(
+            <div className="staff-session-add-actions">
               <button
-                className={saved ? 'primary staff-save-success' : saving ? 'primary loading' : 'primary'}
-                disabled={!dirty || !statsDraft || statsLoading || saving}
-                onClick={saveChanges}
+                className="secondary small-button"
+                onClick={() => setSessionPickerOpen(true)}
+                ref={sessionTriggerRef}
                 type="button"
               >
-                {saved ? <><Check aria-hidden="true" size={17} /><Check aria-hidden="true" size={17} /> Saved</> : <><Save aria-hidden="true" size={17} />Save changes</>}
+                <CalendarPlus aria-hidden="true" size={16} />
+                Add to session
               </button>
+              {Array.from(pendingSessions.values()).map((session) => (
+                <span className="staff-session-pending-chip" key={session.id}>
+                  <span>{session.date} · {session.startTime.slice(0, 5)}</span>
+                  <button
+                    aria-label={`Remove queued session ${session.name}`}
+                    onClick={() => setPendingSessions((current) => {
+                      const next = new Map(current)
+                      next.delete(session.id)
+                      return next
+                    })}
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" size={13} />
+                  </button>
+                </span>
+              ))}
             </div>
           )}
           editorToolbar={(
@@ -512,7 +555,19 @@ export default function StaffPlayerAchievementProfile({
         />
       )}
 
-      {status && !saved && !saving && <p className="notice compact-notice" role="alert">{status}</p>}
+      {sessionPickerOpen && selectedProfile && (
+        <StaffSessionPickerModal
+          onClose={closeSessionPicker}
+          onValidate={(session) => {
+            setPendingSessions((current) => new Map(current).set(session.id, session))
+            closeSessionPicker()
+            setStatus('Session queued. Click Save changes to apply it.')
+          }}
+          pendingSessionIds={pendingSessionIds}
+          profileId={selectedProfile.id}
+        />
+      )}
+
     </section>
   )
 }
