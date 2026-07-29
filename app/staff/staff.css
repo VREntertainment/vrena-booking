@@ -934,6 +934,20 @@
   margin: 0 0 10px;
 }
 
+.app .staff-client-profile-page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app .staff-card.staff-customer-invite-panel {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 12px;
+  margin: 0;
+}
+
 .app .staff-customer-invite-copy {
   display: flex;
   gap: 12px;
@@ -1205,6 +1219,225 @@
   color: var(--vrena-cyan-800);
   font-size: 12px;
   font-weight: 800;
+}
+
+.app .staff-achievement-profile-workspace {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.app .staff-profile-combobox {
+  position: relative;
+  z-index: 12;
+  display: grid;
+  gap: 5px;
+  max-width: 620px;
+}
+
+.app .staff-profile-combobox > label {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-profile-combobox-control {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding-left: 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+}
+
+.app .staff-profile-combobox-control:focus-within {
+  border-color: var(--vrena-mode-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-mode-accent) 14%, transparent);
+}
+
+.app .staff-card .staff-profile-combobox-control input {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.app .staff-profile-combobox-control > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.app .staff-profile-combobox-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: min(420px, 55vh);
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+  box-shadow: 0 18px 46px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+  padding: 6px;
+}
+
+.app .staff-profile-combobox-menu > button {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.app .staff-profile-combobox-menu > button.active,
+.app .staff-profile-combobox-menu > button:hover {
+  background: color-mix(in srgb, var(--vrena-mode-accent) 9%, transparent);
+}
+
+.app .staff-profile-combobox-menu > button > span:nth-child(2) {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.app .staff-profile-combobox-menu strong,
+.app .staff-profile-combobox-menu small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-profile-combobox-menu small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+}
+
+.app .staff-profile-combobox-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-profile-combobox-avatar img {
+  object-fit: cover;
+}
+
+.app .staff-profile-combobox-state,
+.app .staff-achievement-profile-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 64px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.app .staff-achievement-profile-empty {
+  min-height: 220px;
+  flex-direction: column;
+  border: 1px dashed color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.app .staff-achievement-profile-empty strong {
+  color: var(--vrena-neutral-950);
+  font-size: 15px;
+}
+
+.app .staff-achievement-editor-toolbar {
+  display: grid;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 20%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vrena-mode-accent) 5%, var(--vrena-white));
+  padding: 14px;
+}
+
+.app .staff-achievement-editor-toolbar > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.app .staff-achievement-editor-toolbar > div:first-child span,
+.app .staff-achievement-editor-toolbar > label > span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-achievement-editor-toolbar > label {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-achievement-editor-toolbar textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.app .staff-achievement-editor-toolbar .staff-player-stats-editor {
+  margin: 0;
+}
+
+.app .staff-achievement-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 42px;
+}
+
+.app .staff-achievement-save-row > span {
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-achievement-save-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 156px;
+}
+
+.app .staff-achievement-save-row .staff-save-success {
+  border-color: var(--vrena-green-700);
+  background: var(--vrena-green-700);
+  color: var(--vrena-white);
+}
+
+.app .achievement-card.achievement-pending-change,
+.app .retention-achievement-card.achievement-pending-change {
+  outline: 3px solid var(--vrena-yellow-400);
+  outline-offset: 2px;
 }
 
 .app .staff-role-tools {
@@ -4082,6 +4315,23 @@
     grid-template-columns: 1fr;
   }
 
+  .app .staff-profile-combobox {
+    max-width: none;
+  }
+
+  .app .staff-achievement-editor-toolbar {
+    padding: 10px;
+  }
+
+  .app .staff-achievement-save-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-achievement-save-row button {
+    width: 100%;
+  }
+
   .app .staff-achievement-award-actions {
     justify-content: stretch;
   }
@@ -4835,6 +5085,9 @@
   .app .staff-operation-session,
   .app .staff-operation-player-results,
   .app .staff-search-control,
+  .app .staff-profile-combobox-control,
+  .app .staff-profile-combobox-menu,
+  .app .staff-achievement-editor-toolbar,
   .app .staff-achievement-player,
   .app .staff-achievement-preview {
     background: var(--vrena-neutral-800);

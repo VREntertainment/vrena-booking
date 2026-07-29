@@ -12,7 +12,7 @@ import {
 } from '../lib/leaderboard'
 import type { LeaderboardPlayer } from './LeaderboardPanel'
 
-type StatFields = {
+export type StaffPlayerStatFields = {
   sessionsJoined: string
   gamesJoined: string
   wins: string
@@ -25,7 +25,7 @@ type StatFields = {
   bestEscapeDurationSeconds: string
 }
 
-type StoredOverride = Partial<Record<keyof StatFields, number>> & {
+type StoredOverride = Partial<Record<keyof StaffPlayerStatFields, number>> & {
   scope: string
 }
 
@@ -35,13 +35,22 @@ type OverridePayload = {
   overrides?: StoredOverride[]
 }
 
+export type StaffPlayerStatsDraft = {
+  games: Array<Record<string, number | string | null>>
+  loyaltyPoints: number
+  overall: Record<string, number | string | null>
+}
+
 type StaffPlayerStatsEditorProps = {
+  deferredSave?: boolean
   language: LanguageCode
+  onDraftChange?: (draft: StaffPlayerStatsDraft | null, dirty: boolean) => void
+  onLoadingChange?: (loading: boolean) => void
   onSaved: () => void
   player: LeaderboardPlayer
 }
 
-const emptyFields = (): StatFields => ({
+const emptyFields = (): StaffPlayerStatFields => ({
   sessionsJoined: '',
   gamesJoined: '',
   wins: '',
@@ -109,7 +118,7 @@ function errorText(error: unknown) {
   return String(error)
 }
 
-function fieldsFromOverride(value?: StoredOverride): StatFields {
+function fieldsFromOverride(value?: StoredOverride): StaffPlayerStatFields {
   if (!value) return emptyFields()
   return {
     sessionsJoined: numberString(value.sessionsJoined),
@@ -141,7 +150,7 @@ function numberOrNull(value: string) {
   return parsed
 }
 
-function fieldsPayload(fields: StatFields, scope?: string) {
+function fieldsPayload(fields: StaffPlayerStatFields, scope?: string) {
   return {
     ...(scope ? { scope } : {}),
     sessionsJoined: integerOrNull(fields.sessionsJoined),
@@ -189,7 +198,10 @@ function StatField({
 }
 
 export default function StaffPlayerStatsEditor({
+  deferredSave = false,
   language,
+  onDraftChange,
+  onLoadingChange,
   onSaved,
   player,
 }: StaffPlayerStatsEditorProps) {
@@ -198,9 +210,10 @@ export default function StaffPlayerStatsEditor({
   const [calculatedByScope, setCalculatedByScope] = useState<Record<string, LeaderboardPlayer>>({
     overall: player,
   })
-  const [overall, setOverall] = useState<StatFields>(() => emptyFields())
-  const [gameFields, setGameFields] = useState<Record<string, StatFields>>({})
+  const [overall, setOverall] = useState<StaffPlayerStatFields>(() => emptyFields())
+  const [gameFields, setGameFields] = useState<Record<string, StaffPlayerStatFields>>({})
   const [loyaltyPoints, setLoyaltyPoints] = useState(String(player.loyaltyPoints ?? 0))
+  const [baseline, setBaseline] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState('')
@@ -210,6 +223,7 @@ export default function StaffPlayerStatsEditor({
 
     void (async () => {
       setIsLoading(true)
+      onLoadingChange?.(true)
       setStatus('')
 
       try {
@@ -236,7 +250,7 @@ export default function StaffPlayerStatsEditor({
         const overrideRows = Array.isArray(payload.overrides) ? payload.overrides : []
         const overridesByScope = new Map(overrideRows.map((row) => [row.scope, row]))
         const nextCalculated: Record<string, LeaderboardPlayer> = { overall: player }
-        const nextGameFields: Record<string, StatFields> = {}
+        const nextGameFields: Record<string, StaffPlayerStatFields> = {}
 
         games.forEach((game, index) => {
           const result = gameResults[index]
@@ -250,18 +264,27 @@ export default function StaffPlayerStatsEditor({
         setCalculatedByScope(nextCalculated)
         setOverall(fieldsFromOverride(overridesByScope.get('overall')))
         setGameFields(nextGameFields)
-        setLoyaltyPoints(String(payload.loyaltyPoints ?? player.loyaltyPoints ?? 0))
+        const nextLoyaltyPoints = String(payload.loyaltyPoints ?? player.loyaltyPoints ?? 0)
+        setLoyaltyPoints(nextLoyaltyPoints)
+        setBaseline(JSON.stringify({
+          gameFields: nextGameFields,
+          loyaltyPoints: nextLoyaltyPoints,
+          overall: fieldsFromOverride(overridesByScope.get('overall')),
+        }))
       } catch (error) {
         if (active) setStatus(errorText(error))
       } finally {
-        if (active) setIsLoading(false)
+        if (active) {
+          setIsLoading(false)
+          onLoadingChange?.(false)
+        }
       }
     })()
 
     return () => {
       active = false
     }
-  }, [player])
+  }, [onLoadingChange, player])
 
   const activeGame = useMemo(
     () => games.find((game) => game.id === activeGameId) || games[0],
@@ -270,11 +293,11 @@ export default function StaffPlayerStatsEditor({
   const activeFields = gameFields[activeGame?.id || ''] || emptyFields()
   const activeCalculated = calculatedByScope[activeGame?.id || '']
 
-  function patchOverall(field: keyof StatFields, value: string) {
+  function patchOverall(field: keyof StaffPlayerStatFields, value: string) {
     setOverall((current) => ({ ...current, [field]: value }))
   }
 
-  function patchActiveGame(field: keyof StatFields, value: string) {
+  function patchActiveGame(field: keyof StaffPlayerStatFields, value: string) {
     if (!activeGame) return
     setGameFields((current) => ({
       ...current,
@@ -284,6 +307,27 @@ export default function StaffPlayerStatsEditor({
       },
     }))
   }
+
+  const draftState = useMemo(() => {
+    if (isLoading) return { draft: null, dirty: false }
+    try {
+      const nextLoyaltyPoints = integerOrNull(loyaltyPoints)
+      if (nextLoyaltyPoints === null || nextLoyaltyPoints < 0) return { draft: null, dirty: true }
+      const draft: StaffPlayerStatsDraft = {
+        loyaltyPoints: nextLoyaltyPoints,
+        overall: fieldsPayload(overall),
+        games: games.map((game) => fieldsPayload(gameFields[game.id] || emptyFields(), game.id)),
+      }
+      const current = JSON.stringify({ gameFields, loyaltyPoints, overall })
+      return { draft, dirty: Boolean(baseline) && current !== baseline }
+    } catch {
+      return { draft: null, dirty: true }
+    }
+  }, [baseline, gameFields, isLoading, loyaltyPoints, overall])
+
+  useEffect(() => {
+    onDraftChange?.(draftState.draft, draftState.dirty)
+  }, [draftState, onDraftChange])
 
   async function save() {
     if (isSaving) return
@@ -376,13 +420,13 @@ export default function StaffPlayerStatsEditor({
             </div>
           </section>
 
-          <div className="staff-player-stats-actions">
+          {!deferredSave && <div className="staff-player-stats-actions">
             <button className={isSaving ? 'primary loading' : 'primary'} disabled={isSaving} onClick={save} type="button">
               <Save aria-hidden="true" size={15} />
               {text.save}
             </button>
             {status === text.saved && <span>{status}</span>}
-          </div>
+          </div>}
         </>
       )}
 

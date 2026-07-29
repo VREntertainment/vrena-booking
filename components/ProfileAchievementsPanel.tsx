@@ -19,7 +19,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
@@ -63,7 +63,19 @@ import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
 
 type ProfileAchievementsPanelProps = {
+  editor?: {
+    onToggleAchievement: (achievement: {
+      description: string
+      id: string
+      kind: 'game' | 'retention'
+      manuallyUnlocked: boolean
+      title: string
+    }) => void
+    pendingAchievementKeys: Set<string>
+  }
+  editorToolbar?: ReactNode
   language: LanguageCode
+  manualAwardsOverride?: ManualProfileAchievementAward[]
   mySessions: AchievementSession[]
   playerStats: {
     averageAccuracy?: number | null
@@ -88,6 +100,7 @@ type ProfileAchievementsPanelProps = {
   }
   text: TranslationMap
   userId: string
+  venueResultsOverride?: AchievementVenueResult[]
 }
 
 type AchievementCopy = {
@@ -156,7 +169,7 @@ type AchievementCopy = {
   xp: string
 }
 
-type ManualProfileAchievementAward = {
+export type ManualProfileAchievementAward = {
   id: string
   achievement_id: string
   achievement_kind: 'game' | 'retention' | string
@@ -863,12 +876,16 @@ function writeLocalSeenUnlockKeys(profileId: string, keys: Set<string>) {
 }
 
 export default function ProfileAchievementsPanel({
+  editor,
+  editorToolbar,
   language,
+  manualAwardsOverride,
   mySessions,
   playerStats,
   profile,
   text,
   userId,
+  venueResultsOverride,
 }: ProfileAchievementsPanelProps) {
   const copy = achievementCopy[language] ?? achievementCopy.en
   const [selectedAchievement, setSelectedAchievement] = useState<GameAchievement | null>(null)
@@ -877,14 +894,15 @@ export default function ProfileAchievementsPanel({
   const [showRankList, setShowRankList] = useState(false)
   const [shareStatus, setShareStatus] = useState('')
   const [sparkedAchievementId, setSparkedAchievementId] = useState('')
-  const [manualAwards, setManualAwards] = useState<ManualProfileAchievementAward[]>([])
-  const [venueResults, setVenueResults] = useState<AchievementVenueResult[]>([])
+  const [fetchedManualAwards, setFetchedManualAwards] = useState<ManualProfileAchievementAward[]>([])
+  const [fetchedVenueResults, setFetchedVenueResults] = useState<AchievementVenueResult[]>([])
   const [seenUnlockKeys, setSeenUnlockKeys] = useState<Set<string>>(() => new Set())
   const [unlockViewsLoaded, setUnlockViewsLoaded] = useState(false)
   const [sharingAchievementKey, setSharingAchievementKey] = useState('')
   const [, setTapCounts] = useState<Record<string, number>>({})
 
   useEffect(() => {
+    if (manualAwardsOverride) return
     const profileId = profile.id || userId
     if (!profileId) return
 
@@ -896,15 +914,16 @@ export default function ProfileAchievementsPanel({
       .is('revoked_at', null)
       .order('awarded_at', { ascending: false })
       .then(({ data }) => {
-        if (!cancelled) setManualAwards((data ?? []) as ManualProfileAchievementAward[])
+        if (!cancelled) setFetchedManualAwards((data ?? []) as ManualProfileAchievementAward[])
       })
 
     return () => {
       cancelled = true
     }
-  }, [profile.id, userId])
+  }, [manualAwardsOverride, profile.id, userId])
 
   useEffect(() => {
+    if (venueResultsOverride) return
     const profileId = profile.id || userId
     if (!profileId) return
 
@@ -918,17 +937,19 @@ export default function ProfileAchievementsPanel({
         if (cancelled) return
         if (error) {
           console.error('Venue achievement results could not be loaded.', error)
-          setVenueResults([])
+          setFetchedVenueResults([])
           return
         }
-        setVenueResults((data ?? []) as AchievementVenueResult[])
+        setFetchedVenueResults((data ?? []) as AchievementVenueResult[])
       })
 
     return () => {
       cancelled = true
     }
-  }, [profile.id, userId])
+  }, [profile.id, userId, venueResultsOverride])
 
+  const manualAwards = manualAwardsOverride ?? fetchedManualAwards
+  const venueResults = venueResultsOverride ?? fetchedVenueResults
   const achievementSessions = useMemo(
     () => [...mySessions, ...venueResultsAsAchievementSessions(venueResults, userId)],
     [mySessions, userId, venueResults],
@@ -1024,7 +1045,7 @@ export default function ProfileAchievementsPanel({
     return [...gameCelebrations, ...retentionCelebrations]
   }, [achievements, copy, retentionAchievements])
   const celebrationByKey = useMemo(() => new Map(achievementCelebrations.map((celebration) => [celebration.key, celebration])), [achievementCelebrations])
-  const activeCelebration = unlockViewsLoaded
+  const activeCelebration = !editor && unlockViewsLoaded
     ? achievementCelebrations.find((celebration) => !seenUnlockKeys.has(celebration.key)) ?? null
     : null
   const selectedAchievementCelebration = selectedAchievement
@@ -1072,6 +1093,17 @@ export default function ProfileAchievementsPanel({
   }, [profile.id, userId])
 
   function openAchievement(achievement: GameAchievement) {
+    if (editor) {
+      const manualAward = manualAwards.find((award) => award.achievement_kind === 'game' && award.achievement_id === achievement.game.id)
+      editor.onToggleAchievement({
+        description: `Unlock the ${achievement.game.title} game achievement for this player.`,
+        id: achievement.game.id,
+        kind: 'game',
+        manuallyUnlocked: Boolean(manualAward),
+        title: achievement.game.title,
+      })
+      return
+    }
     setSelectedAchievement(achievement)
     setShareStatus('')
 
@@ -1089,6 +1121,17 @@ export default function ProfileAchievementsPanel({
   }
 
   function openRetentionAchievement(achievement: RetentionAchievement) {
+    if (editor) {
+      const manualAward = manualAwards.find((award) => award.achievement_kind === 'retention' && award.achievement_id === achievement.id)
+      editor.onToggleAchievement({
+        description: achievement.description,
+        id: achievement.id,
+        kind: 'retention',
+        manuallyUnlocked: Boolean(manualAward),
+        title: achievement.title,
+      })
+      return
+    }
     setSelectedRetentionAchievement(achievement)
     setShareStatus('')
 
@@ -1205,6 +1248,7 @@ export default function ProfileAchievementsPanel({
 
   return (
     <div className="profile-achievements-panel">
+      {editorToolbar}
       <div className="achievement-rank-card">
         <div className="achievement-rank-main">
           <div className="achievement-rank-ring" style={{ '--rank-progress': `${levelProgress.progressToNext}%` } as CSSProperties}>
@@ -1434,7 +1478,9 @@ export default function ProfileAchievementsPanel({
                 `achievement-${achievement.state}`,
                 achievement.tier !== 'none' ? `achievement-tier-${achievement.tier}` : '',
                 sparkedAchievementId === achievement.game.id ? 'achievement-sparked' : '',
+                editor?.pendingAchievementKeys.has(`game:${achievement.game.id}`) ? 'achievement-pending-change' : '',
               ].filter(Boolean).join(' ')}
+              aria-label={editor ? `${achievement.game.title}. ${manualAwards.some((award) => award.achievement_kind === 'game' && award.achievement_id === achievement.game.id) ? 'Remove manual unlock' : 'Add manual unlock'}` : undefined}
               key={achievement.game.id}
               onClick={() => openAchievement(achievement)}
               type="button"
@@ -1496,7 +1542,9 @@ export default function ProfileAchievementsPanel({
                 `retention-${achievement.category}`,
                 achievement.state === 'locked' ? 'retention-locked' : 'retention-unlocked',
                 sparkedAchievementId === achievement.id ? 'achievement-sparked' : '',
+                editor?.pendingAchievementKeys.has(`retention:${achievement.id}`) ? 'achievement-pending-change' : '',
               ].filter(Boolean).join(' ')}
+              aria-label={editor ? `${achievement.title}. ${manualAwards.some((award) => award.achievement_kind === 'retention' && award.achievement_id === achievement.id) ? 'Remove manual unlock' : 'Add manual unlock'}` : undefined}
               key={achievement.id}
               onClick={() => openRetentionAchievement(achievement)}
               type="button"
