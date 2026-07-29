@@ -11,6 +11,7 @@ export type AchievementShareTheme = {
 export type AchievementShareOptions = {
   appUrl?: string
   badgeImageUrl?: string | null
+  badgeImageUrls?: Array<string | null | undefined>
   current?: number | null
   description: string
   displayName: string
@@ -19,6 +20,7 @@ export type AchievementShareOptions = {
   kindLabel: string
   progressLabel?: string
   rarityLabel?: string
+  shareSummary?: string
   target?: number | null
   theme?: AchievementShareTheme
   title: string
@@ -52,6 +54,25 @@ function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, widt
   ctx.lineTo(x, y + safeRadius)
   ctx.quadraticCurveTo(x, y, x + safeRadius, y)
   ctx.closePath()
+}
+
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight)
+  const imageWidth = image.naturalWidth * scale
+  const imageHeight = image.naturalHeight * scale
+  ctx.save()
+  drawRoundRect(ctx, x, y, width, height, radius)
+  ctx.clip()
+  ctx.drawImage(image, x + (width - imageWidth) / 2, y + (height - imageHeight) / 2, imageWidth, imageHeight)
+  ctx.restore()
 }
 
 function fitText(
@@ -172,7 +193,7 @@ export function openAchievementShareChannel(channel: 'email' | 'whatsapp' | 'zal
 export async function shareAchievementImage(options: AchievementShareOptions): Promise<AchievementShareResult> {
   const appUrl = options.appUrl || DEFAULT_APP_URL
   const theme = { ...defaultTheme, ...options.theme }
-  const summary = achievementShareText({ ...options, appUrl })
+  const summary = options.shareSummary || achievementShareText({ ...options, appUrl })
 
   let templateImage: HTMLImageElement | null = null
   try {
@@ -241,17 +262,42 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   ctx.restore()
 
   let drewBadge = false
-  if (options.badgeImageUrl) {
+  const batchBadgeUrls = (options.badgeImageUrls ?? []).filter((url): url is string => Boolean(url)).slice(0, 4)
+  if (batchBadgeUrls.length > 1) {
+    try {
+      const images = await Promise.all(batchBadgeUrls.map((url) => loadCanvasImage(url)))
+      const gap = ss(14)
+      const half = (badgeSize - gap) / 2
+      const smallRadius = ss(24)
+      const layouts = images.length === 2
+        ? [
+            { x: badgeX, y: badgeY, width: half, height: badgeSize },
+            { x: badgeX + half + gap, y: badgeY, width: half, height: badgeSize },
+          ]
+        : images.length === 3
+          ? [
+              { x: badgeX, y: badgeY, width: half, height: badgeSize },
+              { x: badgeX + half + gap, y: badgeY, width: half, height: half },
+              { x: badgeX + half + gap, y: badgeY + half + gap, width: half, height: half },
+            ]
+          : images.map((_, index) => ({
+              x: badgeX + (index % 2) * (half + gap),
+              y: badgeY + Math.floor(index / 2) * (half + gap),
+              width: half,
+              height: half,
+            }))
+      images.forEach((image, index) => {
+        const layout = layouts[index]
+        drawImageCover(ctx, image, layout.x, layout.y, layout.width, layout.height, smallRadius)
+      })
+      drewBadge = true
+    } catch {
+      drewBadge = false
+    }
+  } else if (options.badgeImageUrl) {
     try {
       const image = await loadCanvasImage(options.badgeImageUrl)
-      const scale = Math.max(badgeSize / image.naturalWidth, badgeSize / image.naturalHeight)
-      const width = image.naturalWidth * scale
-      const height = image.naturalHeight * scale
-      ctx.save()
-      drawRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, ss(48))
-      ctx.clip()
-      ctx.drawImage(image, badgeX + (badgeSize - width) / 2, badgeY + (badgeSize - height) / 2, width, height)
-      ctx.restore()
+      drawImageCover(ctx, image, badgeX, badgeY, badgeSize, badgeSize, ss(48))
       drewBadge = true
     } catch {
       drewBadge = false

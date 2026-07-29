@@ -8339,54 +8339,313 @@ body {
 }
 
 .app .achievement-unlock-sheet {
+  --unlock-accent: var(--vrena-yellow-500);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  max-height: min(92dvh, 860px);
   overflow: hidden;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--unlock-accent) 46%, transparent);
+  border-radius: 24px 24px 16px 16px;
+  background:
+    radial-gradient(circle at 12% 2%, color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--vrena-white) 0%, var(--vrena-bg-soft) 100%);
+  box-shadow:
+    0 32px 90px color-mix(in srgb, var(--vrena-neutral-950) 28%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--vrena-white) 68%, transparent) inset;
+}
+
+.app .achievement-celebration-backdrop {
+  padding: 12px;
+  background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent), transparent 42%),
+    color-mix(in srgb, var(--vrena-neutral-950) 58%, transparent);
+  backdrop-filter: blur(12px) saturate(1.12);
+}
+
+.app .achievement-unlock-close {
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: color-mix(in srgb, var(--vrena-white) 88%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .app .achievement-unlock-stage {
   position: relative;
-  min-height: 232px;
+  min-height: 204px;
   display: grid;
   place-items: center;
   isolation: isolate;
+  overflow: hidden;
+  padding: 24px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent), color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent)),
+    var(--vrena-neutral-950);
 }
 
 .app .achievement-unlock-stage::before {
   content: '';
   position: absolute;
-  inset: 10%;
+  inset: 5%;
   z-index: -1;
   border-radius: 999px;
   background:
-    radial-gradient(circle, color-mix(in srgb, var(--vrena-yellow-500) 42%, transparent), transparent 58%),
-    radial-gradient(circle at 72% 28%, color-mix(in srgb, var(--vrena-cyan-700) 26%, transparent), transparent 38%);
+    radial-gradient(circle, color-mix(in srgb, var(--vrena-yellow-500) 44%, transparent), transparent 58%),
+    radial-gradient(circle at 72% 28%, color-mix(in srgb, var(--vrena-cyan-500) 34%, transparent), transparent 42%);
+  filter: blur(2px);
   animation: achievementGlowPop 900ms ease both;
 }
 
-.app .achievement-unlock-badge {
+.app .achievement-unlock-badge-stack {
   position: relative;
-  width: min(220px, 58vw);
+  width: min(184px, 48vw);
   aspect-ratio: 1;
+  animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
+}
+
+.app .achievement-unlock-badge {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 3px solid color-mix(in srgb, var(--vrena-yellow-500) 68%, transparent);
-  border-radius: 28px;
+  border: 3px solid color-mix(in srgb, var(--unlock-accent) 78%, transparent);
+  border-radius: 26px;
   color: var(--vrena-white);
   background: var(--vrena-decorative-gradient);
-  box-shadow: 0 22px 48px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent), 0 0 0 8px color-mix(in srgb, var(--vrena-yellow-500) 14%, transparent);
-  animation: achievementBadgePop 720ms cubic-bezier(.2, 1.4, .3, 1) both;
+  box-shadow:
+    0 24px 54px color-mix(in srgb, var(--vrena-neutral-950) 42%, transparent),
+    0 0 0 7px color-mix(in srgb, var(--unlock-accent) 12%, transparent);
+}
+
+.app .achievement-unlock-badge[data-stack-index='0'] {
+  z-index: 3;
+}
+
+.app .achievement-unlock-badge[data-stack-index='1'] {
+  z-index: 2;
+  transform: translate(18px, 10px) rotate(7deg) scale(0.92);
+  opacity: 0.88;
+}
+
+.app .achievement-unlock-badge[data-stack-index='2'] {
+  z-index: 1;
+  transform: translate(-18px, 12px) rotate(-7deg) scale(0.86);
+  opacity: 0.72;
 }
 
 .app .achievement-unlock-badge img {
   object-fit: cover;
 }
 
+.app .achievement-unlock-count {
+  position: absolute;
+  right: max(18px, 8%);
+  bottom: 18px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-white) 24%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 76%, transparent);
+  color: var(--vrena-white);
+  font-size: 15px;
+  font-weight: 950;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-neutral-950) 28%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.app .achievement-unlock-copy {
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  overscroll-behavior: contain;
+}
+
+.app .achievement-unlock-copy .achievement-tier-pill {
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-600) 26%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 11%, transparent);
+  color: var(--vrena-cyan-800);
+  letter-spacing: 0.02em;
+}
+
 .app .achievement-unlock-copy h3 {
-  color: var(--vrena-yellow-800);
+  max-width: 18ch;
+  color: var(--vrena-neutral-950);
+  font-size: clamp(28px, 7vw, 38px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.app .achievement-unlock-copy > strong {
+  max-width: 48ch;
+  color: var(--vrena-cyan-800);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.app .achievement-unlock-copy > .compact-notice {
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 5%, transparent);
+  color: var(--vrena-neutral-700);
+}
+
+.app .achievement-unlock-list {
+  display: grid;
+  gap: 7px;
+  max-height: 236px;
+  overflow-y: auto;
+  padding: 2px;
+  overscroll-behavior: contain;
+}
+
+.app .achievement-unlock-list > button {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 26px;
+  gap: 10px;
+  align-items: center;
+  min-height: 62px;
+  padding: 7px 9px 7px 7px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 9%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--vrena-white) 78%, transparent);
+  color: var(--vrena-neutral-950);
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.app .achievement-unlock-list > button:hover,
+.app .achievement-unlock-list > button.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-600) 42%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-500) 9%, var(--vrena-white));
+}
+
+.app .achievement-unlock-list > button:hover {
+  transform: translateY(-1px);
+}
+
+.app .achievement-unlock-list > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--vrena-blue-500) 36%, transparent);
+  outline-offset: 2px;
+}
+
+.app .achievement-unlock-list-art {
+  position: relative;
+  width: 48px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 11px;
+  background: var(--vrena-decorative-gradient);
+  color: var(--vrena-white);
+}
+
+.app .achievement-unlock-list-art img {
+  object-fit: cover;
+}
+
+.app .achievement-unlock-list-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .achievement-unlock-list-copy strong,
+.app .achievement-unlock-list-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .achievement-unlock-list-copy strong {
+  color: var(--vrena-neutral-950);
+  font-size: 13px;
+}
+
+.app .achievement-unlock-list-copy small {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.app .achievement-unlock-list-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 12%, transparent);
+  color: var(--vrena-cyan-800);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.app .achievement-unlock-share-panel {
+  position: sticky;
+  bottom: -20px;
+  z-index: 4;
+  display: grid;
+  gap: 9px;
+  margin: 2px -4px -4px;
+  padding: 12px 4px 4px;
+  background: linear-gradient(180deg, transparent, var(--vrena-bg-soft) 18%);
+}
+
+.app .achievement-unlock-share-primary {
+  width: 100%;
+  min-height: 50px;
+  justify-content: center;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--vrena-purple-500) 25%, transparent);
+}
+
+.app .achievement-unlock-channels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app .achievement-unlock-channels .small-button {
+  min-height: 44px;
+  justify-content: center;
+  padding-inline: 8px;
+  border-radius: 12px;
+  font-size: 11px;
 }
 
 .app .achievement-dismiss-button {
+  justify-self: center;
   width: fit-content;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+
+.app .achievement-dismiss-button:hover,
+.app .achievement-dismiss-button:focus-visible {
+  color: var(--vrena-neutral-950);
+  text-decoration-color: currentColor;
 }
 
 .app .achievement-confetti-dot {
@@ -8465,6 +8724,7 @@ body {
   .app .achievement-secret-mark,
   .app .achievement-unlock-stage::before,
   .app .achievement-unlock-badge,
+  .app .achievement-unlock-badge-stack,
   .app .achievement-confetti-dot {
     animation: none;
   }
@@ -8494,6 +8754,46 @@ body {
     width: min(720px, calc(100vw - 40px));
     grid-template-columns: 240px minmax(0, 1fr);
     transform: translate(-50%, 50%);
+  }
+
+  .app .achievement-unlock-sheet {
+    width: min(900px, calc(100vw - 48px));
+    max-height: min(780px, calc(100dvh - 48px));
+    grid-template-columns: 330px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    border-radius: 28px;
+  }
+
+  .app .achievement-unlock-stage {
+    min-height: 100%;
+    padding: 42px 32px;
+  }
+
+  .app .achievement-unlock-badge-stack {
+    width: min(246px, 24vw);
+  }
+
+  .app .achievement-unlock-copy {
+    align-content: center;
+    padding: 34px 36px;
+  }
+
+  .app .achievement-unlock-copy h3 {
+    font-size: clamp(34px, 4vw, 48px);
+  }
+
+  .app .achievement-unlock-batch .achievement-unlock-copy {
+    align-content: start;
+  }
+
+  .app .achievement-unlock-list {
+    max-height: 280px;
+  }
+
+  .app .achievement-unlock-share-panel {
+    bottom: -34px;
+    margin-inline: -6px;
+    padding: 16px 6px 6px;
   }
 
   .app .achievement-rank-list-sheet {
@@ -8529,6 +8829,49 @@ body {
 
   .app .achievement-rank-ring::after {
     background: var(--vrena-neutral-900);
+  }
+
+  .app .achievement-unlock-sheet {
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 42%, transparent);
+    background:
+      radial-gradient(circle at 12% 2%, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), transparent 36%),
+      var(--vrena-neutral-900);
+  }
+
+  .app .achievement-unlock-copy .achievement-tier-pill {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 34%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent);
+    color: var(--vrena-cyan-300);
+  }
+
+  .app .achievement-unlock-copy > strong {
+    color: var(--vrena-cyan-300);
+  }
+
+  .app .achievement-unlock-copy > .compact-notice,
+  .app .achievement-unlock-list > button {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 6%, transparent);
+    color: var(--player-text);
+  }
+
+  .app .achievement-unlock-list > button:hover,
+  .app .achievement-unlock-list > button.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 46%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 13%, var(--vrena-neutral-900));
+  }
+
+  .app .achievement-unlock-list-copy strong {
+    color: var(--player-text);
+  }
+
+  .app .achievement-unlock-list-copy small,
+  .app .achievement-dismiss-button {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-unlock-share-panel {
+    background: linear-gradient(180deg, transparent, var(--vrena-neutral-900) 18%);
   }
 
   .app .achievement-rank-copy strong,

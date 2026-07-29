@@ -4,6 +4,7 @@ import NextImage from 'next/image'
 import {
   Award,
   CalendarPlus,
+  Check,
   Crown,
   Flame,
   Gamepad2,
@@ -48,6 +49,7 @@ import {
   achievementShareText,
   openAchievementShareChannel,
   shareAchievementImage,
+  type AchievementShareOptions,
 } from '../lib/achievementShare'
 import {
   anonymousCallsignForId,
@@ -152,6 +154,7 @@ type AchievementCopy = {
   sessionsCreated: string
   shareAchievement: string
   shareAchievements: string
+  shareAllAchievements: string
   shareByEmail: string
   shareCopied: string
   shareComingSoon: string
@@ -166,6 +169,8 @@ type AchievementCopy = {
   trickster: string
   unlocked: string
   unlockCelebrationDismiss: string
+  unlockCelebrationBatchMessage: string
+  unlockCelebrationBatchTitle: string
   unlockCelebrationTitle: string
   unlockJesterMessage: string
   unlockCondition: string
@@ -253,6 +258,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: 'Sessions created',
     shareAchievement: 'Share achievement',
     shareAchievements: 'Share achievements',
+    shareAllAchievements: 'Share all {count}',
     shareByEmail: 'Email',
     shareCopied: 'Copied',
     shareComingSoon: 'Share coming soon',
@@ -267,6 +273,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'Trickster',
     unlocked: 'Unlocked',
     unlockCelebrationDismiss: 'Keep playing',
+    unlockCelebrationBatchMessage: 'A whole collection just landed in your profile.',
+    unlockCelebrationBatchTitle: '{count} achievements unlocked',
     unlockCelebrationTitle: 'Achievement unlocked',
     unlockJesterMessage: 'The Jester declares this moment too shiny to keep secret.',
     unlockCondition: 'Bronze: play once. Silver: 3 plays. Gold: 5 plays. Mastered: 10 plays.',
@@ -319,6 +327,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: 'Phiên đã tạo',
     shareAchievement: 'Chia sẻ thành tựu',
     shareAchievements: 'Chia sẻ thành tựu',
+    shareAllAchievements: 'Chia sẻ cả {count}',
     shareByEmail: 'Email',
     shareCopied: 'Đã sao chép',
     shareComingSoon: 'Chia sẻ sắp có',
@@ -333,6 +342,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'Trickster',
     unlocked: 'Đã mở',
     unlockCelebrationDismiss: 'Chơi tiếp',
+    unlockCelebrationBatchMessage: 'Một bộ sưu tập mới vừa xuất hiện trong hồ sơ của bạn.',
+    unlockCelebrationBatchTitle: 'Đã mở khóa {count} thành tựu',
     unlockCelebrationTitle: 'Mở khóa thành tựu',
     unlockJesterMessage: 'Jester tuyên bố khoảnh khắc này quá lấp lánh để giấu kín.',
     unlockCondition: 'Đồng: chơi 1 lần. Bạc: 3 lần. Vàng: 5 lần. Tinh thông: 10 lần.',
@@ -385,6 +396,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: '생성한 세션',
     shareAchievement: '업적 공유',
     shareAchievements: '업적 공유',
+    shareAllAchievements: '{count}개 모두 공유',
     shareByEmail: '이메일',
     shareCopied: '복사됨',
     shareComingSoon: '공유 준비 중',
@@ -399,6 +411,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: '트릭스터',
     unlocked: '해제됨',
     unlockCelebrationDismiss: '계속 플레이',
+    unlockCelebrationBatchMessage: '새로운 업적 컬렉션이 프로필에 추가되었습니다.',
+    unlockCelebrationBatchTitle: '업적 {count}개 해제',
     unlockCelebrationTitle: '업적 해제',
     unlockJesterMessage: '트릭스터가 선언합니다. 이 순간은 혼자 간직하기엔 너무 반짝입니다.',
     unlockCondition: '브론즈: 1회 플레이. 실버: 3회. 골드: 5회. 마스터: 10회.',
@@ -451,6 +465,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: '作成したセッション',
     shareAchievement: '実績を共有',
     shareAchievements: '実績を共有',
+    shareAllAchievements: '{count}件をまとめて共有',
     shareByEmail: 'メール',
     shareCopied: 'コピー済み',
     shareComingSoon: '共有は近日対応',
@@ -465,6 +480,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'トリックスター',
     unlocked: '解除済み',
     unlockCelebrationDismiss: 'プレイを続ける',
+    unlockCelebrationBatchMessage: '新しい実績コレクションがプロフィールに追加されました。',
+    unlockCelebrationBatchTitle: '{count}件の実績を解除',
     unlockCelebrationTitle: '実績解除',
     unlockJesterMessage: 'トリックスター曰く、この瞬間は秘密にするには輝きすぎています。',
     unlockCondition: 'ブロンズ: 1回プレイ。シルバー: 3回。ゴールド: 5回。マスター: 10回。',
@@ -517,6 +534,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: 'Sessions créées',
     shareAchievement: 'Partager le succès',
     shareAchievements: 'Partager les succès',
+    shareAllAchievements: 'Partager les {count}',
     shareByEmail: 'Email',
     shareCopied: 'Copié',
     shareComingSoon: 'Partage bientôt disponible',
@@ -531,6 +549,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'Trickster',
     unlocked: 'Déverrouillé',
     unlockCelebrationDismiss: 'Continuer à jouer',
+    unlockCelebrationBatchMessage: 'Une nouvelle collection vient d’arriver sur ton profil.',
+    unlockCelebrationBatchTitle: '{count} succès débloqués',
     unlockCelebrationTitle: 'Succès débloqué',
     unlockJesterMessage: 'Le Jester déclare ce moment trop brillant pour rester secret.',
     unlockCondition: 'Bronze : jouer 1 fois. Argent : 3 fois. Or : 5 fois. Maîtrisé : 10 fois.',
@@ -583,6 +603,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: 'Erstellte Sessions',
     shareAchievement: 'Erfolg teilen',
     shareAchievements: 'Erfolge teilen',
+    shareAllAchievements: 'Alle {count} teilen',
     shareByEmail: 'E-Mail',
     shareCopied: 'Kopiert',
     shareComingSoon: 'Teilen bald verfügbar',
@@ -597,6 +618,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'Trickster',
     unlocked: 'Freigeschaltet',
     unlockCelebrationDismiss: 'Weiterspielen',
+    unlockCelebrationBatchMessage: 'Eine neue Sammlung ist gerade in deinem Profil gelandet.',
+    unlockCelebrationBatchTitle: '{count} Erfolge freigeschaltet',
     unlockCelebrationTitle: 'Erfolg freigeschaltet',
     unlockJesterMessage: 'Der Jester erklärt diesen Moment für zu glänzend, um ihn geheim zu halten.',
     unlockCondition: 'Bronze: 1 Spiel. Silber: 3 Spiele. Gold: 5 Spiele. Gemeistert: 10 Spiele.',
@@ -649,6 +672,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     sessionsCreated: 'Sessioni create',
     shareAchievement: 'Condividi obiettivo',
     shareAchievements: 'Condividi obiettivi',
+    shareAllAchievements: 'Condividi tutti e {count}',
     shareByEmail: 'Email',
     shareCopied: 'Copiato',
     shareComingSoon: 'Condivisione in arrivo',
@@ -663,6 +687,8 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     trickster: 'Trickster',
     unlocked: 'Sbloccato',
     unlockCelebrationDismiss: 'Continua a giocare',
+    unlockCelebrationBatchMessage: 'Una nuova collezione è appena arrivata sul tuo profilo.',
+    unlockCelebrationBatchTitle: '{count} obiettivi sbloccati',
     unlockCelebrationTitle: 'Obiettivo sbloccato',
     unlockJesterMessage: 'Il Jester dichiara questo momento troppo brillante per restare segreto.',
     unlockCondition: 'Bronzo: gioca 1 volta. Argento: 3 volte. Oro: 5 volte. Maestro: 10 volte.',
@@ -911,6 +937,7 @@ export default function ProfileAchievementsPanel({
   const [seenUnlockKeys, setSeenUnlockKeys] = useState<Set<string>>(() => new Set())
   const [unlockViewsLoaded, setUnlockViewsLoaded] = useState(false)
   const [sharingAchievementKey, setSharingAchievementKey] = useState('')
+  const [featuredCelebrationKey, setFeaturedCelebrationKey] = useState('')
   const [, setTapCounts] = useState<Record<string, number>>({})
 
   useEffect(() => {
@@ -1057,9 +1084,16 @@ export default function ProfileAchievementsPanel({
     return [...gameCelebrations, ...retentionCelebrations]
   }, [achievements, copy, retentionAchievements])
   const celebrationByKey = useMemo(() => new Map(achievementCelebrations.map((celebration) => [celebration.key, celebration])), [achievementCelebrations])
-  const activeCelebration = !editor && unlockViewsLoaded
-    ? achievementCelebrations.find((celebration) => !seenUnlockKeys.has(celebration.key)) ?? null
-    : null
+  const pendingCelebrations = useMemo(
+    () => !editor && unlockViewsLoaded
+      ? achievementCelebrations.filter((celebration) => !seenUnlockKeys.has(celebration.key))
+      : [],
+    [achievementCelebrations, editor, seenUnlockKeys, unlockViewsLoaded],
+  )
+  const activeCelebration = pendingCelebrations[0] ?? null
+  const featuredCelebration = pendingCelebrations.find((celebration) => celebration.key === featuredCelebrationKey)
+    ?? activeCelebration
+  const isCelebrationBatch = pendingCelebrations.length > 1
   const selectedAchievementCelebration = selectedAchievement
     ? celebrationByKey.get(achievementUnlockKey('game', selectedAchievement.game.id, selectedAchievement.tier))
     : null
@@ -1153,24 +1187,26 @@ export default function ProfileAchievementsPanel({
     window.setTimeout(() => setSparkedAchievementId(''), 900)
   }
 
-  async function rememberCelebration(celebration: AchievementCelebration, shared = false) {
+  async function rememberCelebrations(celebrations: AchievementCelebration[], shared = false) {
+    if (celebrations.length === 0) return
+
     const profileId = profile.id || userId
     const nextKeys = new Set(seenUnlockKeys)
-    nextKeys.add(celebration.key)
+    celebrations.forEach((celebration) => nextKeys.add(celebration.key))
     setSeenUnlockKeys(nextKeys)
     if (profileId) writeLocalSeenUnlockKeys(profileId, nextKeys)
 
     if (!profileId) return
 
     const now = new Date().toISOString()
-    const payload = {
+    const payload = celebrations.map((celebration) => ({
       achievement_id: celebration.id,
       achievement_kind: celebration.kind,
       achievement_tier: celebration.tier || 'base',
       first_seen_at: now,
       profile_id: profileId,
       shared_at: shared ? now : null,
-    }
+    }))
 
     try {
       const { error } = await supabase
@@ -1178,17 +1214,21 @@ export default function ProfileAchievementsPanel({
         .upsert(payload, { onConflict: 'profile_id,achievement_kind,achievement_id,achievement_tier' })
 
       if (!error && shared) {
-        await supabase
+        await Promise.all(celebrations.map((celebration) => supabase
           .from('profile_achievement_unlock_views')
           .update({ shared_at: now })
           .eq('profile_id', profileId)
           .eq('achievement_kind', celebration.kind)
           .eq('achievement_id', celebration.id)
-          .eq('achievement_tier', celebration.tier || 'base')
+          .eq('achievement_tier', celebration.tier || 'base')))
       }
     } catch {
       // The local seen key already prevents repeat popups for this browser.
     }
+  }
+
+  async function rememberCelebration(celebration: AchievementCelebration, shared = false) {
+    await rememberCelebrations([celebration], shared)
   }
 
   function shareOptionsForCelebration(celebration: AchievementCelebration) {
@@ -1205,6 +1245,29 @@ export default function ProfileAchievementsPanel({
       rarityLabel: celebration.rarityLabel,
       target: celebration.target,
       title: celebration.title,
+    }
+  }
+
+  function shareOptionsForCelebrations(celebrations: AchievementCelebration[]): AchievementShareOptions {
+    if (celebrations.length === 1) return shareOptionsForCelebration(celebrations[0])
+
+    const count = celebrations.length
+    const title = copy.unlockCelebrationBatchTitle.replace('{count}', String(count))
+    const achievementList = celebrations.map((celebration) => `• ${celebration.title} — ${celebration.description}`).join('\n')
+    return {
+      appUrl: DEFAULT_APP_URL,
+      badgeImageUrl: celebrations[0]?.badgeImageUrl,
+      badgeImageUrls: celebrations.map((celebration) => celebration.badgeImageUrl),
+      current: count,
+      description: celebrations.map((celebration) => celebration.title).join(' · '),
+      displayName: playerDisplayName,
+      fileLabel: `${playerDisplayName}-${count}-achievements`,
+      footer: DEFAULT_APP_URL.replace(/^https?:\/\//, ''),
+      kindLabel: copy.collection,
+      progressLabel: title,
+      shareSummary: `${playerDisplayName} — ${title}\n${achievementList}\n${DEFAULT_APP_URL}`,
+      target: count,
+      title,
     }
   }
 
@@ -1233,8 +1296,38 @@ export default function ProfileAchievementsPanel({
     }
   }
 
-  async function dismissCelebration(celebration: AchievementCelebration) {
-    await rememberCelebration(celebration)
+  async function shareCelebrations(celebrations: AchievementCelebration[], markShared = false) {
+    if (celebrations.length === 1) {
+      await shareCelebration(celebrations[0], markShared)
+      return
+    }
+
+    setShareStatus('')
+    setSharingAchievementKey('batch')
+    const options = shareOptionsForCelebrations(celebrations)
+    try {
+      const shareResult = await shareAchievementImage(options)
+      if (shareResult === 'ready') {
+        setShareStatus(copy.shareReady)
+        window.setTimeout(() => setShareStatus(''), 1800)
+      }
+      if (shareResult !== 'cancelled' && markShared) {
+        await rememberCelebrations(celebrations, true)
+      }
+    } catch {
+      await navigator.clipboard?.writeText(options.shareSummary ?? achievementShareText(options))
+      setShareStatus(copy.shareCopied)
+      window.setTimeout(() => setShareStatus(''), 1800)
+      if (markShared) {
+        await rememberCelebrations(celebrations, true)
+      }
+    } finally {
+      setSharingAchievementKey('')
+    }
+  }
+
+  async function dismissCelebrations(celebrations: AchievementCelebration[]) {
+    await rememberCelebrations(celebrations)
   }
 
   async function shareAchievementSummary() {
@@ -1257,6 +1350,19 @@ export default function ProfileAchievementsPanel({
     const options = shareOptionsForCelebration(celebration)
     openAchievementShareChannel(channel, achievementShareText(options), options.title)
   }
+
+  function openDirectBatchShare(channel: 'email' | 'whatsapp' | 'zalo', celebrations: AchievementCelebration[]) {
+    const options = shareOptionsForCelebrations(celebrations)
+    openAchievementShareChannel(channel, options.shareSummary ?? achievementShareText(options), options.title)
+    void rememberCelebrations(celebrations, true)
+  }
+
+  const celebrationStageItems = featuredCelebration
+    ? [
+        featuredCelebration,
+        ...pendingCelebrations.filter((celebration) => celebration.key !== featuredCelebration.key),
+      ].slice(0, 3)
+    : []
 
   return (
     <div className="profile-achievements-panel">
@@ -1732,57 +1838,150 @@ export default function ProfileAchievementsPanel({
         </div>
       )}
 
-      {activeCelebration && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="achievement-unlock-title" onClick={() => void dismissCelebration(activeCelebration)}>
-          <div className="achievement-detail-sheet achievement-unlock-sheet" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" onClick={() => void dismissCelebration(activeCelebration)} type="button" aria-label={text.close}>
+      {activeCelebration && featuredCelebration && (
+        <div
+          className="modal-backdrop achievement-celebration-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="achievement-unlock-title"
+          onClick={() => void dismissCelebrations(pendingCelebrations)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape') return
+            event.preventDefault()
+            void dismissCelebrations(pendingCelebrations)
+          }}
+        >
+          <div
+            className={`achievement-detail-sheet achievement-unlock-sheet${isCelebrationBatch ? ' achievement-unlock-batch' : ''}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              autoFocus
+              className="modal-close achievement-unlock-close"
+              onClick={() => void dismissCelebrations(pendingCelebrations)}
+              type="button"
+              aria-label={text.close}
+            >
               <X aria-hidden="true" size={18} />
             </button>
             <div className="achievement-unlock-stage" aria-hidden="true">
               <span className="achievement-confetti-dot dot-one" />
               <span className="achievement-confetti-dot dot-two" />
               <span className="achievement-confetti-dot dot-three" />
-              <div className="achievement-unlock-badge">
-                {activeCelebration.badgeImageUrl ? (
-                  <NextImage alt="" fill sizes="240px" src={activeCelebration.badgeImageUrl} />
-                ) : (
-                  <Sparkles size={72} />
-                )}
-                <span className="achievement-image-mask" />
+              <div className="achievement-unlock-badge-stack">
+                {celebrationStageItems.map((celebration, index) => (
+                  <div
+                    className="achievement-unlock-badge"
+                    data-stack-index={index}
+                    key={celebration.key}
+                  >
+                    {celebration.badgeImageUrl ? (
+                      <NextImage alt="" fill sizes="(max-width: 719px) 170px, 260px" src={celebration.badgeImageUrl} />
+                    ) : (
+                      <Sparkles size={72} />
+                    )}
+                    <span className="achievement-image-mask" />
+                  </div>
+                ))}
               </div>
+              {isCelebrationBatch && (
+                <span className="achievement-unlock-count">
+                  <Sparkles size={16} />
+                  {pendingCelebrations.length}
+                </span>
+              )}
             </div>
             <div className="achievement-detail-copy achievement-unlock-copy">
               <span className="achievement-tier-pill">
                 <Sparkles aria-hidden="true" size={15} />
                 {copy.unlockCelebrationTitle}
               </span>
-              <h3 id="achievement-unlock-title">{activeCelebration.title}</h3>
-              <strong>{copy.unlockJesterMessage}</strong>
-              <p className="notice compact-notice">{activeCelebration.description}</p>
-              <div className="achievement-share-actions">
+              <h3 id="achievement-unlock-title">
+                {isCelebrationBatch
+                  ? copy.unlockCelebrationBatchTitle.replace('{count}', String(pendingCelebrations.length))
+                  : featuredCelebration.title}
+              </h3>
+              <strong>{isCelebrationBatch ? copy.unlockCelebrationBatchMessage : copy.unlockJesterMessage}</strong>
+              {isCelebrationBatch ? (
+                <div className="achievement-unlock-list" role="list">
+                  {pendingCelebrations.map((celebration) => (
+                    <button
+                      aria-current={featuredCelebration.key === celebration.key ? 'true' : undefined}
+                      className={featuredCelebration.key === celebration.key ? 'active' : ''}
+                      key={celebration.key}
+                      onClick={() => setFeaturedCelebrationKey(celebration.key)}
+                      type="button"
+                    >
+                      <span className="achievement-unlock-list-art">
+                        {celebration.badgeImageUrl ? (
+                          <NextImage alt="" fill sizes="48px" src={celebration.badgeImageUrl} />
+                        ) : (
+                          <Sparkles aria-hidden="true" size={22} />
+                        )}
+                      </span>
+                      <span className="achievement-unlock-list-copy">
+                        <strong>{celebration.title}</strong>
+                        <small>{celebration.rarityLabel || celebration.kindLabel} · {celebration.description}</small>
+                      </span>
+                      <span className="achievement-unlock-list-check" aria-hidden="true"><Check size={14} /></span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="notice compact-notice">{featuredCelebration.description}</p>
+              )}
+              <div className="achievement-unlock-share-panel">
                 <button
-                  className="primary small-button"
-                  disabled={sharingAchievementKey === activeCelebration.key}
-                  onClick={() => void shareCelebration(activeCelebration, true)}
+                  className="primary achievement-unlock-share-primary"
+                  disabled={sharingAchievementKey === (isCelebrationBatch ? 'batch' : featuredCelebration.key)}
+                  onClick={() => void shareCelebrations(pendingCelebrations, true)}
                   type="button"
                 >
-                  <Share2 aria-hidden="true" size={15} />
-                  {shareStatus || copy.shareToFriends}
+                  <Share2 aria-hidden="true" size={18} />
+                  <span>
+                    {shareStatus || (isCelebrationBatch
+                      ? copy.shareAllAchievements.replace('{count}', String(pendingCelebrations.length))
+                      : copy.shareToFriends)}
+                  </span>
                 </button>
-                <button className="secondary small-button" onClick={() => openDirectShare('whatsapp', activeCelebration)} type="button">
-                  <MessageCircle aria-hidden="true" size={15} />
-                  {copy.shareToWhatsApp}
-                </button>
-                <button className="secondary small-button" onClick={() => openDirectShare('zalo', activeCelebration)} type="button">
-                  <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
-                  {copy.shareToZalo}
-                </button>
-                <button className="secondary small-button" onClick={() => openDirectShare('email', activeCelebration)} type="button">
-                  <Mail aria-hidden="true" size={15} />
-                  {copy.shareByEmail}
-                </button>
+                <div className="achievement-share-actions achievement-unlock-channels">
+                  <button
+                    className="secondary small-button"
+                    onClick={() => isCelebrationBatch
+                      ? openDirectBatchShare('whatsapp', pendingCelebrations)
+                      : openDirectShare('whatsapp', featuredCelebration)}
+                    type="button"
+                  >
+                    <MessageCircle aria-hidden="true" size={17} />
+                    {copy.shareToWhatsApp}
+                  </button>
+                  <button
+                    className="secondary small-button"
+                    onClick={() => isCelebrationBatch
+                      ? openDirectBatchShare('zalo', pendingCelebrations)
+                      : openDirectShare('zalo', featuredCelebration)}
+                    type="button"
+                  >
+                    <NextImage aria-hidden="true" alt="" height={17} src="/brand/zalo.svg" width={17} />
+                    {copy.shareToZalo}
+                  </button>
+                  <button
+                    className="secondary small-button"
+                    onClick={() => isCelebrationBatch
+                      ? openDirectBatchShare('email', pendingCelebrations)
+                      : openDirectShare('email', featuredCelebration)}
+                    type="button"
+                  >
+                    <Mail aria-hidden="true" size={17} />
+                    {copy.shareByEmail}
+                  </button>
+                </div>
               </div>
-              <button className="secondary small-button achievement-dismiss-button" onClick={() => void dismissCelebration(activeCelebration)} type="button">
+              <button
+                className="achievement-dismiss-button"
+                onClick={() => void dismissCelebrations(pendingCelebrations)}
+                type="button"
+              >
                 {copy.unlockCelebrationDismiss}
               </button>
             </div>
