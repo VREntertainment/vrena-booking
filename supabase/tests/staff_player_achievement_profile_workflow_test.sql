@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(13);
 
 select has_function(
   'public',
@@ -142,6 +142,16 @@ select ok(
     where procedures.oid = 'public.staff_save_player_achievement_profile_v2(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])'::regprocedure
   ),
   'staff save audit records previous and new session membership'
+);
+
+select ok(
+  (
+    select pg_get_functiondef(procedures.oid) like '%joined_at desc%'
+      and pg_get_functiondef(procedures.oid) not like '%created_at desc%'
+    from pg_proc procedures
+    where procedures.oid = 'public.staff_upsert_session_participant_result_v2(uuid,uuid,uuid,text,boolean,text,integer,integer,double precision,integer,numeric,integer,integer)'::regprocedure
+  ),
+  'staff session membership upsert orders by existing participant timestamps'
 );
 
 select * from finish();
