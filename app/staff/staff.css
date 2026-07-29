@@ -1239,7 +1239,7 @@
   position: relative;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(0, 620px) minmax(180px, 1fr);
+  grid-template-columns: minmax(0, 440px) minmax(180px, 1fr);
   align-items: end;
   gap: 12px;
 }
