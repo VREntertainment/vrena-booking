@@ -1,6 +1,6 @@
 'use client'
 
-import { Save, ShieldCheck } from 'lucide-react'
+import { ChevronDown, Save, ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { games } from '../lib/bookingStaticData'
 import type { LanguageCode } from '../lib/i18n/languages'
@@ -214,6 +214,7 @@ export default function StaffPlayerStatsEditor({
   const [gameFields, setGameFields] = useState<Record<string, StaffPlayerStatFields>>({})
   const [loyaltyPoints, setLoyaltyPoints] = useState(String(player.loyaltyPoints ?? 0))
   const [baseline, setBaseline] = useState('')
+  const [generalExpanded, setGeneralExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState('')
@@ -376,19 +377,29 @@ export default function StaffPlayerStatsEditor({
       ) : (
         <>
           <section>
-            <h4>{text.generalStats}</h4>
-            <div className="staff-player-stats-grid">
-              <StatField label={text.sessions} min={0} onChange={(value) => patchOverall('sessionsJoined', value)} placeholder={String(player.sessionsJoined)} value={overall.sessionsJoined} />
-              <StatField label={text.games} min={0} onChange={(value) => patchOverall('gamesJoined', value)} placeholder={String(player.gamesJoined)} value={overall.gamesJoined} />
-              <StatField label={text.wins} min={0} onChange={(value) => patchOverall('wins', value)} placeholder={String(player.wins)} value={overall.wins} />
-              <StatField label={text.bestPerformer} min={0} onChange={(value) => patchOverall('bestPerformerCount', value)} placeholder={String(player.bestPerformerCount)} value={overall.bestPerformerCount} />
-              <StatField label={text.totalScore} onChange={(value) => patchOverall('totalScore', value)} placeholder={String(player.totalScore)} value={overall.totalScore} />
-              <StatField label={text.loyalty} min={0} onChange={setLoyaltyPoints} placeholder="0" value={loyaltyPoints} />
-              <StatField label={text.accuracy} min={0} onChange={(value) => patchOverall('averageAccuracy', value)} placeholder={numberString(player.averageAccuracy)} step={0.01} value={overall.averageAccuracy} />
-              <StatField label={text.hits} min={0} onChange={(value) => patchOverall('totalProjectiles', value)} placeholder={String(player.totalProjectiles)} value={overall.totalProjectiles} />
-              <StatField label={text.movement} min={0} onChange={(value) => patchOverall('totalMovementMeters', value)} placeholder={numberString(player.totalMovementMeters)} step={0.01} value={overall.totalMovementMeters} />
-              <StatField label={text.bestEscape} min={1} onChange={(value) => patchOverall('bestEscapeDurationSeconds', value)} placeholder={numberString(player.bestEscapeDurationSeconds)} value={overall.bestEscapeDurationSeconds} />
-            </div>
+            <button
+              aria-expanded={generalExpanded}
+              className="staff-player-stats-collapse"
+              onClick={() => setGeneralExpanded((value) => !value)}
+              type="button"
+            >
+              <span>{text.generalStats}</span>
+              <ChevronDown aria-hidden="true" className={generalExpanded ? 'expanded' : ''} size={18} />
+            </button>
+            {generalExpanded && (
+              <div className="staff-player-stats-grid">
+                <StatField label={text.sessions} min={0} onChange={(value) => patchOverall('sessionsJoined', value)} placeholder={String(player.sessionsJoined)} value={overall.sessionsJoined} />
+                <StatField label={text.games} min={0} onChange={(value) => patchOverall('gamesJoined', value)} placeholder={String(player.gamesJoined)} value={overall.gamesJoined} />
+                <StatField label={text.wins} min={0} onChange={(value) => patchOverall('wins', value)} placeholder={String(player.wins)} value={overall.wins} />
+                <StatField label={text.bestPerformer} min={0} onChange={(value) => patchOverall('bestPerformerCount', value)} placeholder={String(player.bestPerformerCount)} value={overall.bestPerformerCount} />
+                <StatField label={text.totalScore} onChange={(value) => patchOverall('totalScore', value)} placeholder={String(player.totalScore)} value={overall.totalScore} />
+                <StatField label={text.loyalty} min={0} onChange={setLoyaltyPoints} placeholder="0" value={loyaltyPoints} />
+                <StatField label={text.accuracy} min={0} onChange={(value) => patchOverall('averageAccuracy', value)} placeholder={numberString(player.averageAccuracy)} step={0.01} value={overall.averageAccuracy} />
+                <StatField label={text.hits} min={0} onChange={(value) => patchOverall('totalProjectiles', value)} placeholder={String(player.totalProjectiles)} value={overall.totalProjectiles} />
+                <StatField label={text.movement} min={0} onChange={(value) => patchOverall('totalMovementMeters', value)} placeholder={numberString(player.totalMovementMeters)} step={0.01} value={overall.totalMovementMeters} />
+                <StatField label={text.bestEscape} min={1} onChange={(value) => patchOverall('bestEscapeDurationSeconds', value)} placeholder={numberString(player.bestEscapeDurationSeconds)} value={overall.bestEscapeDurationSeconds} />
+              </div>
+            )}
           </section>
 
           <section>

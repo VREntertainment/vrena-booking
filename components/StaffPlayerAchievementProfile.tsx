@@ -3,6 +3,11 @@
 import NextImage from 'next/image'
 import { Check, ChevronDown, LoaderCircle, Save, Search, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  ANONYMOUS_MASK_COLOR,
+  ANONYMOUS_MASK_EMOJI,
+  ANONYMOUS_MASK_TEXT_COLOR,
+} from '../lib/bookingWidgetDomain'
 import type { AchievementSession, AchievementVenueResult } from '../lib/profileAchievements'
 import {
   initialLeaderboardQuery,
@@ -52,11 +57,16 @@ function normalizeSearch(value: string) {
 }
 
 function profileName(profile: StaffProfile) {
+  if (profile.anonymous_mode) {
+    return profile.nickname?.trim() || profile.anonymous_callsign?.trim() || 'Anonymous player'
+  }
   return profile.full_name?.trim() || profile.nickname?.trim() || profile.email?.trim() || profile.phone?.trim() || 'Customer'
 }
 
 function profileContact(profile: StaffProfile) {
-  return profile.email?.trim() || profile.phone?.trim() || 'No email or phone'
+  const contact = profile.email?.trim() || profile.phone?.trim()
+  if (profile.anonymous_mode) return contact ? `Anonymous mode · ${contact}` : 'Anonymous mode'
+  return contact || 'No email or phone'
 }
 
 function profileInitials(profile: StaffProfile) {
@@ -65,14 +75,15 @@ function profileInitials(profile: StaffProfile) {
 }
 
 function emptyPlayer(profile: StaffProfile): LeaderboardPlayer {
+  const anonymous = Boolean(profile.anonymous_mode)
   return {
     profileId: profile.id,
     displayName: profileName(profile),
-    avatarUrl: profile.avatar_url || null,
-    avatarEmoji: profile.avatar_emoji || null,
-    avatarInitials: profile.avatar_initials || null,
-    avatarColor: profile.avatar_color || null,
-    avatarTextColor: profile.avatar_text_color || null,
+    avatarUrl: anonymous ? null : profile.avatar_url || null,
+    avatarEmoji: anonymous ? ANONYMOUS_MASK_EMOJI : profile.avatar_emoji || null,
+    avatarInitials: anonymous ? null : profile.avatar_initials || null,
+    avatarColor: anonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || null,
+    avatarTextColor: anonymous ? ANONYMOUS_MASK_TEXT_COLOR : profile.avatar_text_color || null,
     profileMotto: profile.profile_motto || null,
     sessionsJoined: 0,
     gamesJoined: 0,
@@ -94,12 +105,15 @@ function emptyPlayer(profile: StaffProfile): LeaderboardPlayer {
 }
 
 function PlayerAvatar({ profile }: { profile: StaffProfile }) {
-  const background = profile.avatar_color || 'var(--vrena-purple-100)'
-  const color = profile.avatar_text_color || 'var(--vrena-purple-800)'
+  const anonymous = Boolean(profile.anonymous_mode)
+  const background = anonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || 'var(--vrena-purple-100)'
+  const color = anonymous ? ANONYMOUS_MASK_TEXT_COLOR : profile.avatar_text_color || 'var(--vrena-purple-800)'
 
   return (
     <span className="staff-profile-combobox-avatar" style={{ background, color }}>
-      {profile.avatar_url ? (
+      {anonymous ? (
+        <span aria-hidden="true">{ANONYMOUS_MASK_EMOJI}</span>
+      ) : profile.avatar_url ? (
         <NextImage alt="" fill sizes="40px" src={profile.avatar_url} unoptimized />
       ) : profile.avatar_emoji ? (
         <span aria-hidden="true">{profile.avatar_emoji}</span>
@@ -158,6 +172,7 @@ export default function StaffPlayerAchievementProfile({
           profile.nickname,
           profile.email,
           profile.phone,
+          profile.anonymous_callsign,
         ].filter(Boolean).join(' ')).includes(search))
       : profiles
     return matches.slice(0, 80)
@@ -413,7 +428,11 @@ export default function StaffPlayerAchievementProfile({
                 <PlayerAvatar profile={profile} />
                 <span>
                   <strong>{profileName(profile)}</strong>
-                  {profile.nickname && profile.nickname !== profile.full_name && <small>{profile.nickname}</small>}
+                  {profile.anonymous_mode && profile.anonymous_callsign && profile.anonymous_callsign !== profileName(profile) ? (
+                    <small>{profile.anonymous_callsign}</small>
+                  ) : profile.nickname && profile.nickname !== profile.full_name ? (
+                    <small>{profile.nickname}</small>
+                  ) : null}
                   <small>{profileContact(profile)}</small>
                 </span>
                 {selectedProfileId === profile.id && <Check aria-hidden="true" size={17} />}
@@ -440,6 +459,19 @@ export default function StaffPlayerAchievementProfile({
             onToggleAchievement: toggleAchievement,
             pendingAchievementKeys: pendingKeys,
           }}
+          editorRankAction={(
+            <div className="staff-achievement-save-row">
+              <span aria-live="polite">{status}</span>
+              <button
+                className={saved ? 'primary staff-save-success' : saving ? 'primary loading' : 'primary'}
+                disabled={!dirty || !statsDraft || statsLoading || saving}
+                onClick={saveChanges}
+                type="button"
+              >
+                {saved ? <><Check aria-hidden="true" size={17} /><Check aria-hidden="true" size={17} /> Saved</> : <><Save aria-hidden="true" size={17} />Save changes</>}
+              </button>
+            </div>
+          )}
           editorToolbar={(
             <div className="staff-achievement-editor-toolbar">
               <div>
@@ -464,17 +496,6 @@ export default function StaffPlayerAchievementProfile({
                 onSaved={() => undefined}
                 player={player}
               />
-              <div className="staff-achievement-save-row">
-                <span aria-live="polite">{status}</span>
-                <button
-                  className={saved ? 'primary staff-save-success' : saving ? 'primary loading' : 'primary'}
-                  disabled={!dirty || !statsDraft || statsLoading || saving}
-                  onClick={saveChanges}
-                  type="button"
-                >
-                  {saved ? <><Check aria-hidden="true" size={17} /><Check aria-hidden="true" size={17} /> Saved</> : <><Save aria-hidden="true" size={17} />Save changes</>}
-                </button>
-              </div>
             </div>
           )}
           language={language}
