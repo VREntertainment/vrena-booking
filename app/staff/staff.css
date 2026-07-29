@@ -1406,8 +1406,12 @@
   margin: 0;
 }
 
-.app .staff-achievement-profile-workspace .achievement-rank-card {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+.app .staff-achievement-profile-workspace .achievement-rank-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 
 .app .staff-achievement-save-row {
@@ -4359,23 +4363,9 @@
     flex-direction: column;
   }
 
-  .app .staff-achievement-profile-workspace .achievement-rank-card {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .app .staff-achievement-profile-workspace .achievement-rank-main {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .app .staff-achievement-profile-workspace .achievement-rank-badge {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .app .staff-achievement-profile-workspace .staff-achievement-save-row {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .app .staff-achievement-profile-workspace .achievement-rank-name-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .app .staff-achievement-save-row button {
