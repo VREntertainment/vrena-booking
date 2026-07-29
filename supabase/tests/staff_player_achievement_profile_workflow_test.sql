@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(15);
 
 select has_function(
   'public',
@@ -30,6 +30,13 @@ select has_function(
   'atomic staff save RPC with queued sessions exists'
 );
 
+select has_function(
+  'public',
+  'staff_save_player_achievement_profile_v3',
+  array['uuid', 'integer', 'jsonb', 'jsonb', 'jsonb', 'text', 'uuid[]'],
+  'staff save RPC with historical attendance backfill exists'
+);
+
 select ok(
   not has_function_privilege(
     'anon',
@@ -49,6 +56,11 @@ select ok(
   and not has_function_privilege(
     'anon',
     'public.staff_save_player_achievement_profile_v2(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
     'execute'
   ),
   'anonymous callers cannot use the staff profile RPCs'
@@ -73,6 +85,11 @@ select ok(
   and has_function_privilege(
     'authenticated',
     'public.staff_save_player_achievement_profile_v2(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
+    'execute'
+  )
+  and has_function_privilege(
+    'authenticated',
+    'public.staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
     'execute'
   ),
   'authenticated callers can reach the internally authorized staff RPCs'
@@ -152,6 +169,20 @@ select ok(
     where procedures.oid = 'public.staff_upsert_session_participant_result_v2(uuid,uuid,uuid,text,boolean,text,integer,integer,double precision,integer,numeric,integer,integer)'::regprocedure
   ),
   'staff session membership upsert orders by existing participant timestamps'
+);
+
+select ok(
+  (
+    select procedures.prosecdef
+      and pg_get_functiondef(procedures.oid) like '%staff_save_player_achievement_profile_v2(%'
+      and pg_get_functiondef(procedures.oid) like '%p_checked_in := true%'
+      and pg_get_functiondef(procedures.oid) like '%' || quote_literal('Asia/Ho_Chi_Minh') || '%'
+      and pg_get_functiondef(procedures.oid) like '%sessions.status <> ''cancelled''%'
+      and pg_get_functiondef(procedures.oid) like '%player_session_check_in_backfilled%'
+    from pg_proc procedures
+    where procedures.oid = 'public.staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])'::regprocedure
+  ),
+  'staff save marks only elapsed non-cancelled queued sessions as checked in'
 );
 
 select * from finish();

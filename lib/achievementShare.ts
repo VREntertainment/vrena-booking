@@ -155,12 +155,16 @@ export function achievementShareText({
   ].filter(Boolean).join('\n')
 }
 
-export function openAchievementShareChannel(channel: 'email' | 'whatsapp', summary: string, subject: string) {
+export function openAchievementShareChannel(channel: 'email' | 'whatsapp' | 'zalo', summary: string, subject: string) {
   const encodedSummary = encodeURIComponent(summary)
   const encodedSubject = encodeURIComponent(subject)
   const url = channel === 'whatsapp'
     ? `https://wa.me/?text=${encodedSummary}`
-    : `mailto:?subject=${encodedSubject}&body=${encodedSummary}`
+    : channel === 'zalo'
+      ? `https://zalo.me/share?url=${encodeURIComponent(DEFAULT_APP_URL)}`
+      : `mailto:?subject=${encodedSubject}&body=${encodedSummary}`
+
+  if (channel === 'zalo') void copyShareText(summary)
 
   window.open(url, '_blank', 'noopener,noreferrer')
 }

@@ -157,6 +157,7 @@ type AchievementCopy = {
   shareComingSoon: string
   shareToFriends: string
   shareToWhatsApp: string
+  shareToZalo: string
   shareReady: string
   silver: string
   social: string
@@ -257,6 +258,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: 'Share coming soon',
     shareToFriends: 'Share with friends',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: 'Share ready',
     silver: 'Silver',
     social: 'Social',
@@ -322,6 +324,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: 'Chia sẻ sắp có',
     shareToFriends: 'Khoe với bạn bè',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: 'Đã sẵn sàng chia sẻ',
     silver: 'Bạc',
     social: 'Xã hội',
@@ -387,6 +390,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: '공유 준비 중',
     shareToFriends: '친구에게 공유',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: '공유 준비 완료',
     silver: '실버',
     social: '소셜',
@@ -452,6 +456,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: '共有は近日対応',
     shareToFriends: '友だちに共有',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: '共有の準備完了',
     silver: 'シルバー',
     social: 'ソーシャル',
@@ -517,6 +522,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: 'Partage bientôt disponible',
     shareToFriends: 'Partager aux amis',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: 'Partage prêt',
     silver: 'Argent',
     social: 'Social',
@@ -582,6 +588,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: 'Teilen bald verfügbar',
     shareToFriends: 'Mit Freunden teilen',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: 'Teilen bereit',
     silver: 'Silber',
     social: 'Sozial',
@@ -647,6 +654,7 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     shareComingSoon: 'Condivisione in arrivo',
     shareToFriends: 'Condividi con amici',
     shareToWhatsApp: 'WhatsApp',
+    shareToZalo: 'Zalo',
     shareReady: 'Condivisione pronta',
     silver: 'Argento',
     social: 'Sociale',
@@ -1245,7 +1253,7 @@ export default function ProfileAchievementsPanel({
     await shareCelebration(celebration)
   }
 
-  function openDirectShare(channel: 'email' | 'whatsapp', celebration: AchievementCelebration) {
+  function openDirectShare(channel: 'email' | 'whatsapp' | 'zalo', celebration: AchievementCelebration) {
     const options = shareOptionsForCelebration(celebration)
     openAchievementShareChannel(channel, achievementShareText(options), options.title)
   }
@@ -1641,6 +1649,10 @@ export default function ProfileAchievementsPanel({
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
                   </button>
+                  <button className="secondary small-button" onClick={() => openDirectShare('zalo', selectedAchievementCelebration)} type="button">
+                    <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
+                    {copy.shareToZalo}
+                  </button>
                   <button className="secondary small-button" onClick={() => openDirectShare('email', selectedAchievementCelebration)} type="button">
                     <Mail aria-hidden="true" size={15} />
                     {copy.shareByEmail}
@@ -1705,6 +1717,10 @@ export default function ProfileAchievementsPanel({
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
                   </button>
+                  <button className="secondary small-button" onClick={() => openDirectShare('zalo', selectedRetentionCelebration)} type="button">
+                    <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
+                    {copy.shareToZalo}
+                  </button>
                   <button className="secondary small-button" onClick={() => openDirectShare('email', selectedRetentionCelebration)} type="button">
                     <Mail aria-hidden="true" size={15} />
                     {copy.shareByEmail}
@@ -1756,6 +1772,10 @@ export default function ProfileAchievementsPanel({
                 <button className="secondary small-button" onClick={() => openDirectShare('whatsapp', activeCelebration)} type="button">
                   <MessageCircle aria-hidden="true" size={15} />
                   {copy.shareToWhatsApp}
+                </button>
+                <button className="secondary small-button" onClick={() => openDirectShare('zalo', activeCelebration)} type="button">
+                  <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
+                  {copy.shareToZalo}
                 </button>
                 <button className="secondary small-button" onClick={() => openDirectShare('email', activeCelebration)} type="button">
                   <Mail aria-hidden="true" size={15} />
