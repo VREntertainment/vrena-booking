@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(12);
 
 select has_function(
   'public',
@@ -108,6 +108,15 @@ select ok(
     where procedures.oid = 'public.staff_list_player_session_options(uuid,date)'::regprocedure
   ),
   'staff session calendar is rank checked and reports existing membership'
+);
+
+select ok(
+  (
+    select pg_get_functiondef(procedures.oid) like '%staff_games.slug = sessions.confirmed_game_id%'
+    from pg_proc procedures
+    where procedures.oid = 'public.staff_list_player_session_options(uuid,date)'::regprocedure
+  ),
+  'staff session calendar resolves production game slugs'
 );
 
 select ok(
