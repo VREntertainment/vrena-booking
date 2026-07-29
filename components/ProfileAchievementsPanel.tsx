@@ -1258,7 +1258,10 @@ export default function ProfileAchievementsPanel({
           </div>
           <div className="achievement-rank-copy">
             <span>{copy.playerRank}</span>
-            <strong>{playerDisplayName}</strong>
+            <div className="achievement-rank-name-row">
+              <strong>{playerDisplayName}</strong>
+              {editorRankAction}
+            </div>
             <small>{levelProgress.rankLabel} · {copy.level} {levelProgress.level}</small>
             <div className="achievement-xp-track" aria-label={`${levelProgress.progressToNext}% ${copy.progress}`}>
               <span style={{ width: `${levelProgress.progressToNext}%` }} />
@@ -1274,7 +1277,6 @@ export default function ProfileAchievementsPanel({
             </button>
           </div>
         </div>
-        {editorRankAction}
         <div className="achievement-rank-badge" aria-hidden="true">
           <ShieldCheck size={34} />
           <span>{levelProgress.level}</span>
