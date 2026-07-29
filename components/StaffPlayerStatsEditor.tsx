@@ -66,7 +66,6 @@ const emptyFields = (): StaffPlayerStatFields => ({
 const copy = {
   en: {
     accuracy: 'Average accuracy (%)',
-    automaticHint: 'Leave a field empty to keep its automatically calculated value.',
     bestEscape: 'Best escape time (seconds)',
     bestPerformer: 'Best Performer count',
     bestScore: 'Best single-game score',
@@ -86,7 +85,6 @@ const copy = {
   },
   vi: {
     accuracy: 'Độ chính xác trung bình (%)',
-    automaticHint: 'Để trống một trường để tiếp tục dùng giá trị được tính tự động.',
     bestEscape: 'Thời gian thoát tốt nhất (giây)',
     bestPerformer: 'Số lần Best Performer',
     bestScore: 'Điểm cao nhất trong một lượt',
@@ -368,7 +366,6 @@ export default function StaffPlayerStatsEditor({
         <span aria-hidden="true"><ShieldCheck size={18} /></span>
         <div>
           <strong>{text.title}</strong>
-          <small>{text.automaticHint}</small>
         </div>
       </div>
 

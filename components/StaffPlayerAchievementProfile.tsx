@@ -155,7 +155,6 @@ export default function StaffPlayerAchievementProfile({
   const [pendingAchievements, setPendingAchievements] = useState<Map<string, PendingAchievementChange>>(() => new Map())
   const [pendingSessions, setPendingSessions] = useState<Map<string, StaffSessionOption>>(() => new Map())
   const [sessionPickerOpen, setSessionPickerOpen] = useState(false)
-  const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [status, setStatus] = useState('')
@@ -200,14 +199,14 @@ export default function StaffPlayerAchievementProfile({
         achievement_kind: change.kind,
         title: change.title,
         description: change.description,
-        note: note.trim() || null,
+        note: null,
         awarded_at: new Date().toISOString(),
       }))
     return [...additions, ...current]
-  }, [baselineAwards, note, pendingAchievements])
+  }, [baselineAwards, pendingAchievements])
   const pendingKeys = useMemo(() => new Set(pendingAchievements.keys()), [pendingAchievements])
   const pendingSessionIds = useMemo(() => new Set(pendingSessions.keys()), [pendingSessions])
-  const dirty = statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0 || Boolean(note.trim())
+  const dirty = statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0
 
   useEffect(() => {
     onDirtyChange(dirty)
@@ -305,7 +304,6 @@ export default function StaffPlayerAchievementProfile({
     setPendingAchievements(new Map())
     setPendingSessions(new Map())
     setSessionPickerOpen(false)
-    setNote('')
     setStatus('')
   }
 
@@ -366,7 +364,7 @@ export default function StaffPlayerAchievementProfile({
         p_overall: statsDraft.overall,
         p_games: statsDraft.games,
         p_achievement_changes: Array.from(pendingAchievements.values()),
-        p_note: note.trim() || null,
+        p_note: null,
         p_session_ids: Array.from(pendingSessions.keys()),
       })
       if (error) throw error
@@ -374,7 +372,6 @@ export default function StaffPlayerAchievementProfile({
       setPendingAchievements(new Map())
       setPendingSessions(new Map())
       setStatsDirty(false)
-      setNote('')
       await onRefreshAwards()
       setReloadKey((value) => value + 1)
       setSaved(true)
@@ -517,19 +514,6 @@ export default function StaffPlayerAchievementProfile({
           )}
           editorToolbar={(
             <div className="staff-achievement-editor-toolbar">
-              <div>
-                <strong>Staff edit mode</strong>
-                <span>Enter totals and per-game overrides. Select an achievement card to add or remove a manual unlock.</span>
-              </div>
-              <label>
-                <span>Audit note (optional)</span>
-                <textarea
-                  maxLength={500}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Reason for these changes"
-                  value={note}
-                />
-              </label>
               <StaffPlayerStatsEditor
                 deferredSave
                 key={`${selectedProfile.id}:${reloadKey}`}

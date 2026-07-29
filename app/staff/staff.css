@@ -1398,28 +1398,6 @@
   padding: 14px;
 }
 
-.app .staff-achievement-editor-toolbar > div:first-child {
-  display: grid;
-  gap: 3px;
-}
-
-.app .staff-achievement-editor-toolbar > div:first-child span,
-.app .staff-achievement-editor-toolbar > label > span {
-  color: var(--vrena-neutral-600);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.app .staff-achievement-editor-toolbar > label {
-  display: grid;
-  gap: 5px;
-}
-
-.app .staff-achievement-editor-toolbar textarea {
-  min-height: 72px;
-  resize: vertical;
-}
-
 .app .staff-achievement-editor-toolbar .staff-player-stats-editor {
   margin: 0;
 }
