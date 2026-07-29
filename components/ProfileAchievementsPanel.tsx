@@ -81,6 +81,7 @@ type ProfileAchievementsPanelProps = {
   language: LanguageCode
   manualAwardsOverride?: ManualProfileAchievementAward[]
   mySessions: AchievementSession[]
+  playerGameCountOverrides?: Record<string, number>
   playerStats: {
     averageAccuracy?: number | null
     gamesJoined?: number | null
@@ -798,7 +799,7 @@ function AchievementAvatar({ profile }: { profile: ProfileAchievementsPanelProps
   return (
     <div className="achievement-rank-avatar" style={{ background, color }}>
       {isAnonymous ? (
-        <span>{ANONYMOUS_MASK_EMOJI}</span>
+        <span className="avatar-emoji">{ANONYMOUS_MASK_EMOJI}</span>
       ) : profile.avatar_url ? (
         <NextImage
           alt=""
@@ -808,7 +809,7 @@ function AchievementAvatar({ profile }: { profile: ProfileAchievementsPanelProps
           width={92}
         />
       ) : profile.avatar_emoji ? (
-        <span>{profile.avatar_emoji}</span>
+        <span className="avatar-emoji">{profile.avatar_emoji}</span>
       ) : (
         <span>{compactInitials(profile.avatar_initials || fallbackName)}</span>
       )}
@@ -919,6 +920,7 @@ export default function ProfileAchievementsPanel({
   language,
   manualAwardsOverride,
   mySessions,
+  playerGameCountOverrides,
   playerStats,
   profile,
   text,
@@ -934,6 +936,7 @@ export default function ProfileAchievementsPanel({
   const [sparkedAchievementId, setSparkedAchievementId] = useState('')
   const [fetchedManualAwards, setFetchedManualAwards] = useState<ManualProfileAchievementAward[]>([])
   const [fetchedVenueResults, setFetchedVenueResults] = useState<AchievementVenueResult[]>([])
+  const [fetchedGameCountOverrides, setFetchedGameCountOverrides] = useState<Record<string, number>>({})
   const [seenUnlockKeys, setSeenUnlockKeys] = useState<Set<string>>(() => new Set())
   const [unlockViewsLoaded, setUnlockViewsLoaded] = useState(false)
   const [sharingAchievementKey, setSharingAchievementKey] = useState('')
@@ -987,14 +990,44 @@ export default function ProfileAchievementsPanel({
     }
   }, [profile.id, userId, venueResultsOverride])
 
+  useEffect(() => {
+    if (playerGameCountOverrides || manualAwardsOverride) return
+    let cancelled = false
+    void supabase
+      .rpc('get_my_player_game_count_overrides')
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.error('Player game progress overrides could not be loaded.', error)
+          setFetchedGameCountOverrides({})
+          return
+        }
+        setFetchedGameCountOverrides(
+          data && typeof data === 'object' && !Array.isArray(data)
+            ? data as Record<string, number>
+            : {},
+        )
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [manualAwardsOverride, playerGameCountOverrides, userId])
+
   const manualAwards = manualAwardsOverride ?? fetchedManualAwards
   const venueResults = venueResultsOverride ?? fetchedVenueResults
+  const gameCountOverrides = playerGameCountOverrides ?? fetchedGameCountOverrides
   const achievementSessions = useMemo(
     () => [...mySessions, ...venueResultsAsAchievementSessions(venueResults, userId)],
     [mySessions, userId, venueResults],
   )
-  const automaticAchievements = useMemo(() => buildGameAchievements(achievementSessions, userId), [achievementSessions, userId])
-  const automaticRetentionAchievements = useMemo(() => buildRetentionAchievements(achievementSessions, userId, profile), [achievementSessions, profile, userId])
+  const automaticAchievements = useMemo(
+    () => buildGameAchievements(achievementSessions, userId, gameCountOverrides),
+    [achievementSessions, gameCountOverrides, userId],
+  )
+  const automaticRetentionAchievements = useMemo(
+    () => buildRetentionAchievements(achievementSessions, userId, profile, gameCountOverrides),
+    [achievementSessions, gameCountOverrides, profile, userId],
+  )
   const achievements = useMemo(() => applyManualGameAwards(automaticAchievements, manualAwards), [automaticAchievements, manualAwards])
   const retentionAchievements = useMemo(
     () => applyManualRetentionAwards(automaticRetentionAchievements, manualAwards),

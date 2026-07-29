@@ -167,6 +167,7 @@ export default function WidgetPage({
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const [consoleSidebarCollapsed, setConsoleSidebarCollapsed] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
   useEffect(() => {
     const restoreFrame = window.requestAnimationFrame(() => {
       try {
@@ -177,6 +178,12 @@ export default function WidgetPage({
     })
 
     return () => window.cancelAnimationFrame(restoreFrame)
+  }, [])
+  useEffect(() => {
+    const platformFrame = window.requestAnimationFrame(() => {
+      setIsAndroid(/Android/i.test(window.navigator.userAgent))
+    })
+    return () => window.cancelAnimationFrame(platformFrame)
   }, [])
   const hasMountedInitialViewSyncRef = useRef(false)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -10223,7 +10230,7 @@ function handleSessionDateChange(value: string) {
   }
 
   return (
-    <div className={`app ${isConsoleWorkspace ? `console-workspace${consoleSidebarCollapsed ? ' console-workspace-collapsed' : ''}` : 'player-workspace'}`} data-tour="app-shell">
+    <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? `console-workspace${consoleSidebarCollapsed ? ' console-workspace-collapsed' : ''}` : 'player-workspace'}`} data-tour="app-shell">
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}
