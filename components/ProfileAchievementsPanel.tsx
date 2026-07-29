@@ -74,6 +74,7 @@ type ProfileAchievementsPanelProps = {
     pendingAchievementKeys: Set<string>
   }
   editorRankAction?: ReactNode
+  editorSessionsAction?: ReactNode
   editorToolbar?: ReactNode
   language: LanguageCode
   manualAwardsOverride?: ManualProfileAchievementAward[]
@@ -879,6 +880,7 @@ function writeLocalSeenUnlockKeys(profileId: string, keys: Set<string>) {
 export default function ProfileAchievementsPanel({
   editor,
   editorRankAction,
+  editorSessionsAction,
   editorToolbar,
   language,
   manualAwardsOverride,
@@ -1420,6 +1422,7 @@ export default function ProfileAchievementsPanel({
             <h3>{copy.progressGraph}</h3>
             <p className="muted">{copy.achievementsHint}</p>
           </div>
+          {editorSessionsAction}
         </div>
         {hasProgress ? (
           <div className="achievement-chart">
