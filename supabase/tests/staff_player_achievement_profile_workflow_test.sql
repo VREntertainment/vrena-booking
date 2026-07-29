@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(17);
 
 select has_function(
   'public',
@@ -183,6 +183,29 @@ select ok(
     where procedures.oid = 'public.staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])'::regprocedure
   ),
   'staff save marks only elapsed non-cancelled queued sessions as checked in'
+);
+
+select ok(
+  (
+    select pg_get_functiondef(procedures.oid) like '%v_session.date::timestamp + v_session.start_time%'
+      and pg_get_functiondef(procedures.oid) like '%' || quote_literal('Asia/Ho_Chi_Minh') || '%'
+      and pg_get_functiondef(procedures.oid) like '%checked_in = coalesce(v_checked_in, checked_in)%'
+      and pg_get_functiondef(procedures.oid) like '%when v_checked_in is true and checked_in_at is null then now()%'
+    from pg_proc procedures
+    where procedures.oid = 'public.staff_upsert_session_participant_result_v2(uuid,uuid,uuid,text,boolean,text,integer,integer,double precision,integer,numeric,integer,integer)'::regprocedure
+  ),
+  'staff participant upsert checks elapsed sessions in both new and existing rows'
+);
+
+select ok(
+  (
+    select pg_get_functiondef(procedures.oid) like '%profile_public_display_name(%'
+      and pg_get_functiondef(procedures.oid) like '%v_profile.anonymous_mode%'
+      and pg_get_functiondef(procedures.oid) like '%v_avatar_emoji := ''🎭''%'
+    from pg_proc procedures
+    where procedures.oid = 'public.staff_upsert_session_participant_result_v2(uuid,uuid,uuid,text,boolean,text,integer,integer,double precision,integer,numeric,integer,integer)'::regprocedure
+  ),
+  'staff participant upsert preserves anonymous public identity snapshots'
 );
 
 select * from finish();
