@@ -73,6 +73,7 @@ type ProfileAchievementsPanelProps = {
     }) => void
     pendingAchievementKeys: Set<string>
   }
+  editorRankAction?: ReactNode
   editorToolbar?: ReactNode
   language: LanguageCode
   manualAwardsOverride?: ManualProfileAchievementAward[]
@@ -877,6 +878,7 @@ function writeLocalSeenUnlockKeys(profileId: string, keys: Set<string>) {
 
 export default function ProfileAchievementsPanel({
   editor,
+  editorRankAction,
   editorToolbar,
   language,
   manualAwardsOverride,
@@ -1272,6 +1274,7 @@ export default function ProfileAchievementsPanel({
             </button>
           </div>
         </div>
+        {editorRankAction}
         <div className="achievement-rank-badge" aria-hidden="true">
           <ShieldCheck size={34} />
           <span>{levelProgress.level}</span>

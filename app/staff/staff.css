@@ -1406,6 +1406,10 @@
   margin: 0;
 }
 
+.app .staff-achievement-profile-workspace .achievement-rank-card {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .app .staff-achievement-save-row {
   display: flex;
   align-items: center;
@@ -1432,6 +1436,33 @@
   border-color: var(--vrena-green-700);
   background: var(--vrena-green-700);
   color: var(--vrena-white);
+}
+
+.app .staff-player-stats-collapse {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  padding: 8px 11px;
+  text-align: left;
+}
+
+.app .staff-player-stats-collapse > span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-player-stats-collapse svg {
+  transition: transform 160ms ease;
+}
+
+.app .staff-player-stats-collapse svg.expanded {
+  transform: rotate(180deg);
 }
 
 .app .achievement-card.achievement-pending-change,
@@ -4328,6 +4359,25 @@
     flex-direction: column;
   }
 
+  .app .staff-achievement-profile-workspace .achievement-rank-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .app .staff-achievement-profile-workspace .achievement-rank-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .app .staff-achievement-profile-workspace .achievement-rank-badge {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .app .staff-achievement-profile-workspace .staff-achievement-save-row {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
   .app .staff-achievement-save-row button {
     width: 100%;
   }
@@ -5087,6 +5137,7 @@
   .app .staff-search-control,
   .app .staff-profile-combobox-control,
   .app .staff-profile-combobox-menu,
+  .app .staff-player-stats-collapse,
   .app .staff-achievement-editor-toolbar,
   .app .staff-achievement-player,
   .app .staff-achievement-preview {

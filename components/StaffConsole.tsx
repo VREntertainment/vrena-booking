@@ -5226,17 +5226,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   async function loadProfiles(force = false) {
     await runStaffLoader('profiles', async () => {
       async function hydrateProfileAvatars(rows: StaffProfile[]) {
-        const missingAvatarRows = rows.filter((item) => (
-          !item.avatar_url
-          && !item.avatar_emoji
-          && !item.avatar_initials
-          && !item.avatar_color
-          && !item.avatar_text_color
-        ))
-
-        if (missingAvatarRows.length === 0) return rows
-
-        const profileIds = missingAvatarRows.map((item) => item.id).filter(Boolean)
+        const profileIds = rows.map((item) => item.id).filter(Boolean)
         if (profileIds.length === 0) return rows
 
         const { data } = await supabase
