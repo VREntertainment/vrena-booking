@@ -4677,7 +4677,7 @@ function handleSessionDateChange(value: string) {
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
 
-    return sessions.filter((session) => {
+    const matchingSessions = sessions.filter((session) => {
       if (sessionTimeScope === 'upcoming' && !isUpcomingSession(session)) return false
       if (sessionTimeScope === 'past' && !isPastSession(session)) return false
       if (selectedSessionDate && session.date !== selectedSessionDate) return false
@@ -4698,6 +4698,9 @@ function handleSessionDateChange(value: string) {
 
       return haystack.includes(query)
     })
+
+    const sortedSessions = sortSessionsByStart(matchingSessions)
+    return sessionTimeScope === 'past' ? sortedSessions.reverse() : sortedSessions
   }, [search, selectedSessionDate, sessionTimeScope, sessions])
 
   const filteredClubs = useMemo(() => {
