@@ -13,11 +13,11 @@ export type AppView = 'sessions' | 'tickets' | 'create' | 'leaderboard' | 'clubs
 type AppSidebarProps = {
   activeView: AppView
   canAccessStaffConsole: boolean
-  consoleNavigationCollapsed: boolean
   isChampion: boolean
   language: LanguageCode
+  navigationCollapsed: boolean
   onLanguageChange: (language: LanguageCode) => void
-  onConsoleNavigationCollapsedChange: (collapsed: boolean) => void
+  onNavigationCollapsedChange: (collapsed: boolean) => void
   onShareApp: () => void
   onViewChange: (view: AppView) => void
   profileAvatar: ReactNode
@@ -35,11 +35,11 @@ function ShareSymbol() {
 export default function AppSidebar({
   activeView,
   canAccessStaffConsole,
-  consoleNavigationCollapsed,
   isChampion,
   language,
+  navigationCollapsed,
   onLanguageChange,
-  onConsoleNavigationCollapsedChange,
+  onNavigationCollapsedChange,
   onShareApp,
   onViewChange,
   profileAvatar,
@@ -50,8 +50,6 @@ export default function AppSidebar({
   text,
 }: AppSidebarProps) {
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
-  const isConsoleView = activeView === 'staff' || activeView === 'hr'
-  const navigationCollapsed = isConsoleView && consoleNavigationCollapsed
   const collapseLabel = language === 'vi' ? 'Thu gọn menu' : 'Collapse navigation'
   const expandLabel = language === 'vi' ? 'Mở rộng menu' : 'Expand navigation'
 
@@ -62,19 +60,17 @@ export default function AppSidebar({
   }
 
   return (
-    <aside className={navigationCollapsed ? 'console-sidebar console-sidebar-collapsed' : isConsoleView ? 'console-sidebar' : undefined}>
-      {isConsoleView && (
-        <button
-          aria-expanded={!navigationCollapsed}
-          aria-label={navigationCollapsed ? expandLabel : collapseLabel}
-          className="console-sidebar-toggle"
-          title={navigationCollapsed ? expandLabel : collapseLabel}
-          type="button"
-          onClick={() => onConsoleNavigationCollapsedChange(!navigationCollapsed)}
-        >
-          {navigationCollapsed ? <PanelLeftOpen aria-hidden="true" size={17} /> : <PanelLeftClose aria-hidden="true" size={17} />}
-        </button>
-      )}
+    <aside className={navigationCollapsed ? 'console-sidebar console-sidebar-collapsed' : 'console-sidebar'}>
+      <button
+        aria-expanded={!navigationCollapsed}
+        aria-label={navigationCollapsed ? expandLabel : collapseLabel}
+        className="console-sidebar-toggle"
+        title={navigationCollapsed ? expandLabel : collapseLabel}
+        type="button"
+        onClick={() => onNavigationCollapsedChange(!navigationCollapsed)}
+      >
+        {navigationCollapsed ? <PanelLeftOpen aria-hidden="true" size={17} /> : <PanelLeftClose aria-hidden="true" size={17} />}
+      </button>
       <div>
         <div className="app-title-row">
           <a className="brand-logo" href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer" aria-label="VRena Vietnam">

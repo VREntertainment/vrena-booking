@@ -87,7 +87,7 @@ type PendingTicketAccountBooking = {
 }
 
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
-const CONSOLE_SIDEBAR_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
+const NAVIGATION_COLLAPSE_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
 
 function isBookingAppView(value: unknown): value is AppView {
@@ -166,12 +166,12 @@ export default function WidgetPage({
   restoreStoredView = true,
 }: BookingWidgetProps = {}) {
   const [activeView, setActiveView] = useState<AppView>(initialView)
-  const [consoleSidebarCollapsed, setConsoleSidebarCollapsed] = useState(false)
+  const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
   useEffect(() => {
     const restoreFrame = window.requestAnimationFrame(() => {
       try {
-        setConsoleSidebarCollapsed(window.localStorage.getItem(CONSOLE_SIDEBAR_STORAGE_KEY) === '1')
+        setNavigationCollapsed(window.localStorage.getItem(NAVIGATION_COLLAPSE_STORAGE_KEY) === '1')
       } catch {
         // The default expanded layout remains available when storage is blocked.
       }
@@ -8607,14 +8607,14 @@ function handleSessionDateChange(value: string) {
     <AppSidebar
       activeView={activeView}
       canAccessStaffConsole={canAccessStaffConsole}
-      consoleNavigationCollapsed={consoleSidebarCollapsed}
       isChampion={crownedTopPlayer?.profileId === userId}
       language={language}
+      navigationCollapsed={navigationCollapsed}
       onLanguageChange={setLanguage}
-      onConsoleNavigationCollapsedChange={(collapsed) => {
-        setConsoleSidebarCollapsed(collapsed)
+      onNavigationCollapsedChange={(collapsed) => {
+        setNavigationCollapsed(collapsed)
         try {
-          window.localStorage.setItem(CONSOLE_SIDEBAR_STORAGE_KEY, collapsed ? '1' : '0')
+          window.localStorage.setItem(NAVIGATION_COLLAPSE_STORAGE_KEY, collapsed ? '1' : '0')
         } catch {
           // The layout still works when storage is blocked; only persistence is skipped.
         }
@@ -10340,7 +10340,7 @@ function handleSessionDateChange(value: string) {
   }
 
   return (
-    <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? `console-workspace${consoleSidebarCollapsed ? ' console-workspace-collapsed' : ''}` : 'player-workspace'}`} data-tour="app-shell">
+    <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? 'console-workspace' : 'player-workspace'}${navigationCollapsed ? ' navigation-collapsed' : ''}`} data-tour="app-shell">
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}

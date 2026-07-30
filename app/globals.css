@@ -12365,11 +12365,12 @@ body {
 }
 
 @media (min-width: 961px) {
-  .app.console-workspace {
+  .app.console-workspace,
+  .app.player-workspace {
     transition: grid-template-columns 180ms ease;
   }
 
-  .app.console-workspace-collapsed {
+  .app.navigation-collapsed {
     grid-template-columns: 80px minmax(0, 1fr);
   }
 
@@ -13985,6 +13986,12 @@ body {
   grid-template-columns: 300px minmax(0, 1fr);
 }
 
+@media (min-width: 961px) {
+  .app.player-workspace.navigation-collapsed {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+}
+
 .app.player-workspace aside {
   gap: 22px;
   padding: 28px 24px;
@@ -14177,6 +14184,13 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .app.player-workspace .current-rank-link:not(:disabled),
+  .app.player-workspace .current-rank-link:not(:disabled):hover {
+    transform: none;
+    box-shadow: none;
+    filter: none;
+  }
+
   .app.player-workspace .current-rank-card:hover {
     transform: translateY(-3px);
     border-color: color-mix(in srgb, var(--vrena-cyan-500) 46%, transparent);
