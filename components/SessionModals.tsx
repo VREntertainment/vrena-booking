@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { CalendarPlus, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { CalendarPlus, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { useRef, type ReactNode } from 'react'
 import ContactChannels from './ContactChannels'
 
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
@@ -368,8 +368,16 @@ export type PlayerProfileModalProps = {
   stats: Array<{ key: string; value: ReactNode; className?: string }>
   scoreSummary: ReactNode
   challengeControls?: ReactNode
-  bestScoresTitle: string
-  bestScores: Array<{ game: string; score: number }>
+  gameStatsTitle: string
+  gameStats: Array<{
+    id: string
+    image: string
+    title: string
+    stats: Array<{ key: string; label: string; value: ReactNode }>
+  }>
+  gameStatsLoading?: boolean
+  previousGameText: string
+  nextGameText: string
   adminControls?: ReactNode
 }
 
@@ -388,10 +396,24 @@ export function PlayerProfileModal({
   stats,
   scoreSummary,
   challengeControls,
-  bestScoresTitle,
-  bestScores,
+  gameStatsTitle,
+  gameStats,
+  gameStatsLoading = false,
+  previousGameText,
+  nextGameText,
   adminControls,
 }: PlayerProfileModalProps) {
+  const gameCarouselRef = useRef<HTMLDivElement | null>(null)
+
+  function scrollGameCarousel(direction: -1 | 1) {
+    const carousel = gameCarouselRef.current
+    if (!carousel) return
+    carousel.scrollBy({
+      behavior: 'smooth',
+      left: direction * Math.max(240, carousel.clientWidth * 0.72),
+    })
+  }
+
   return (
     <div className="club-drawer-backdrop player-profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="player-profile-title" onClick={onClose}>
       <div className="player-profile-panel" onClick={(event) => event.stopPropagation()}>
@@ -419,13 +441,58 @@ export function PlayerProfileModal({
         </div>
         {scoreSummary}
         {challengeControls}
-        {bestScores.length > 0 && (
-          <div className="best-score-list">
-            <strong>{bestScoresTitle}</strong>
-            {bestScores.map((item) => (
-              <span key={item.game}>{item.game}: {item.score}</span>
-            ))}
-          </div>
+        {gameStats.length > 0 && (
+          <section className="player-game-carousel-section" aria-labelledby="player-game-carousel-title">
+            <div className="player-game-carousel-heading">
+              <strong id="player-game-carousel-title">{gameStatsTitle}</strong>
+              <div className="player-game-carousel-actions">
+                <button aria-controls="player-game-carousel" aria-label={previousGameText} type="button" onClick={() => scrollGameCarousel(-1)}>
+                  <ChevronLeft aria-hidden="true" size={18} />
+                </button>
+                <button aria-controls="player-game-carousel" aria-label={nextGameText} type="button" onClick={() => scrollGameCarousel(1)}>
+                  <ChevronRight aria-hidden="true" size={18} />
+                </button>
+              </div>
+            </div>
+            <div
+              aria-busy={gameStatsLoading}
+              aria-label={gameStatsTitle}
+              className="player-game-carousel"
+              id="player-game-carousel"
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+                event.preventDefault()
+                scrollGameCarousel(event.key === 'ArrowLeft' ? -1 : 1)
+              }}
+              ref={gameCarouselRef}
+              role="list"
+              tabIndex={0}
+            >
+              {gameStats.map((game) => (
+                <article className="player-game-stat-card" key={game.id} role="listitem">
+                  <header className="player-game-stat-head">
+                    <Image
+                      alt=""
+                      className="player-game-stat-poster"
+                      height={76}
+                      loading="lazy"
+                      src={game.image}
+                      width={76}
+                    />
+                    <h4>{game.title}</h4>
+                  </header>
+                  <dl className="player-game-stat-grid">
+                    {game.stats.map((stat) => (
+                      <div key={stat.key}>
+                        <dt>{stat.label}</dt>
+                        <dd>{stat.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
         {adminControls}
       </div>

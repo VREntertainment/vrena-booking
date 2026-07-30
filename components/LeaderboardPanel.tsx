@@ -259,7 +259,9 @@ export default function LeaderboardPanel({
   const [leaderboardClubPinStatus, setLeaderboardClubPinStatus] = useState('')
   const [unlockedLeaderboardClubIds, setUnlockedLeaderboardClubIds] = useState<Record<string, boolean>>({})
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null)
+  const [pendingCurrentUserScroll, setPendingCurrentUserScroll] = useState(false)
   const galleryCloseButtonRef = useRef<HTMLButtonElement | null>(null)
+  const currentUserRowRef = useRef<HTMLElement | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const leaderboardCriteria: Array<{ value: LeaderboardCriterion; label: string }> = [
@@ -423,6 +425,19 @@ export default function LeaderboardPanel({
   }, [hasMorePlayers, isLoadingMorePlayers, onLoadMorePlayers])
 
   useEffect(() => {
+    if (!pendingCurrentUserScroll) return
+
+    if (currentUserRowRef.current) {
+      currentUserRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      currentUserRowRef.current.focus({ preventScroll: true })
+      setPendingCurrentUserScroll(false)
+      return
+    }
+
+    if (hasMorePlayers && !isLoadingMorePlayers) onLoadMorePlayers?.()
+  }, [hasMorePlayers, isLoadingMorePlayers, onLoadMorePlayers, pendingCurrentUserScroll, visibleLeaderboardRows])
+
+  useEffect(() => {
     if (activeGalleryIndex === null) return
     galleryCloseButtonRef.current?.focus()
   }, [activeGalleryIndex])
@@ -457,6 +472,21 @@ export default function LeaderboardPanel({
     setActiveGalleryIndex((current) => current === null ? current : (current + 1) % galleryPreviewImages.length)
   }
 
+  function scrollToCurrentUser() {
+    if (!userId) return
+
+    if (leaderboardSearch) {
+      setLeaderboardSearch('')
+      onLeaderboardSearchChange?.('')
+    }
+    if (!fixedClubId && leaderboardClubId) {
+      setLeaderboardClubId('')
+      setLeaderboardClubPinStatus('')
+      onLeaderboardClubChange?.('')
+    }
+    setPendingCurrentUserScroll(true)
+  }
+
   function unlockLeaderboardClub(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!selectedLeaderboardClub) return
@@ -475,6 +505,46 @@ export default function LeaderboardPanel({
 
   return (
     <section className="section leaderboard-section" data-tour="leaderboard-panel">
+      {!fixedClubId && (
+        <section className="hall-gallery-card" aria-labelledby="hall-gallery-title">
+          <div className="hall-gallery-copy">
+            <span className="hall-gallery-kicker">
+              <Images aria-hidden="true" size={16} />
+              <span>{text.galleryLink}</span>
+            </span>
+            <div>
+              <h3 id="hall-gallery-title">{text.galleryTitle}</h3>
+              <p>{text.galleryBody}</p>
+            </div>
+            <a className="hall-gallery-link" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
+              <span>{text.galleryOpenFull}</span>
+              <ExternalLink aria-hidden="true" size={15} />
+            </a>
+          </div>
+          <div className="hall-gallery-strip" aria-label={text.galleryTitle}>
+            {galleryPreviewImages.map((image, index) => (
+              <button
+                aria-label={`${text.galleryOpenPhoto}: ${text[image.altKey]}`}
+                className="hall-gallery-photo-button"
+                key={image.src}
+                onClick={() => setActiveGalleryIndex(index)}
+                type="button"
+              >
+                <NextImage
+                  alt={text[image.altKey]}
+                  decoding="async"
+                  height="1080"
+                  loading="lazy"
+                  sizes="(max-width: 700px) 68vw, 240px"
+                  src={image.src}
+                  width="1920"
+                />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className={hideIntro ? 'section-head leaderboard-head compact-leaderboard-head' : 'section-head leaderboard-head'}>
         <div className="leaderboard-controls">
           <label>
@@ -577,27 +647,34 @@ export default function LeaderboardPanel({
 
       {(currentUserLeaderboardRow || showCurrentUserShareButton) && !selectedLeaderboardClubLocked && (
         <div className="current-rank-card">
-          {currentUserLeaderboardRow ? (
-            <>
-              <span>{text.currentRank}</span>
-              <strong>#{currentUserLeaderboardRow.rank}</strong>
-              <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
-              <div className="rank-mini">
-                <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, text)}</span>
-                <span>
-                  {currentUserLeaderboardRow.rankInfo.nextTier
-                    ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
-                    : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <span>{text.currentRank}</span>
-              <strong>-</strong>
-              <small>{text.rankJesterMessage}</small>
-            </>
-          )}
+          <button
+            className="current-rank-link"
+            disabled={!currentUserLeaderboardRow || !userId}
+            type="button"
+            onClick={scrollToCurrentUser}
+          >
+            {currentUserLeaderboardRow ? (
+              <>
+                <span>{text.currentRank}</span>
+                <strong>#{currentUserLeaderboardRow.rank}</strong>
+                <small>{selectedLeaderboardCriterionLabel}: {formatLeaderboardValue(currentUserLeaderboardRow.player, leaderboardCriterion)}</small>
+                <div className="rank-mini">
+                  <span>{rankTierLabel(currentUserLeaderboardRow.rankInfo.tier, text)}</span>
+                  <span>
+                    {currentUserLeaderboardRow.rankInfo.nextTier
+                      ? `${currentUserLeaderboardRow.rankInfo.progress}% ${text.rankProgress}`
+                      : rankTierName(currentUserLeaderboardRow.rankInfo.tier, text)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span>{text.currentRank}</span>
+                <strong>-</strong>
+                <small>{text.rankJesterMessage}</small>
+              </>
+            )}
+          </button>
           {showCurrentUserShareButton && (
             <button className="secondary small-button leaderboard-share-button" type="button" onClick={() => onShareCurrentUserStats?.()}>
               <span className="button-icon-text">
@@ -607,46 +684,6 @@ export default function LeaderboardPanel({
             </button>
           )}
         </div>
-      )}
-
-      {!fixedClubId && (
-        <section className="hall-gallery-card" aria-labelledby="hall-gallery-title">
-          <div className="hall-gallery-copy">
-            <span className="hall-gallery-kicker">
-              <Images aria-hidden="true" size={16} />
-              <span>{text.galleryLink}</span>
-            </span>
-            <div>
-              <h3 id="hall-gallery-title">{text.galleryTitle}</h3>
-              <p>{text.galleryBody}</p>
-            </div>
-            <a className="hall-gallery-link" href={vrenaGalleryUrl} target="_blank" rel="noreferrer">
-              <span>{text.galleryOpenFull}</span>
-              <ExternalLink aria-hidden="true" size={15} />
-            </a>
-          </div>
-          <div className="hall-gallery-strip" aria-label={text.galleryTitle}>
-            {galleryPreviewImages.map((image, index) => (
-              <button
-                aria-label={`${text.galleryOpenPhoto}: ${text[image.altKey]}`}
-                className="hall-gallery-photo-button"
-                key={image.src}
-                onClick={() => setActiveGalleryIndex(index)}
-                type="button"
-              >
-                <NextImage
-                  alt={text[image.altKey]}
-                  decoding="async"
-                  height="1080"
-                  loading="lazy"
-                  sizes="(max-width: 700px) 68vw, 240px"
-                  src={image.src}
-                  width="1920"
-                />
-              </button>
-            ))}
-          </div>
-        </section>
       )}
 
       {activeGalleryImage && (
@@ -689,7 +726,12 @@ export default function LeaderboardPanel({
           const nextTierName = rankInfo.nextTier ? rankTierName(rankInfo.nextTier, text) : ''
 
           return (
-            <article className={isCurrentUser ? 'leaderboard-row current-user' : 'leaderboard-row'} key={player.profileId}>
+            <article
+              className={isCurrentUser ? 'leaderboard-row current-user' : 'leaderboard-row'}
+              key={player.profileId}
+              ref={isCurrentUser ? currentUserRowRef : undefined}
+              tabIndex={isCurrentUser ? -1 : undefined}
+            >
               <div className="leaderboard-rank">#{rank}</div>
               <button
                 aria-label={playerCardLabel(player, text.player)}
