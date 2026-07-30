@@ -54,7 +54,9 @@ export default function App() {
 
   async function handleContinue() {
     if (!status?.linked && !acceptedTerms) {
-      setError('Vui lòng đồng ý Chính sách quyền riêng tư và Điều khoản trước khi tiếp tục.')
+      setError(
+        'Vui lòng đồng ý cho VRena sử dụng số điện thoại Zalo của bạn và xác nhận Chính sách quyền riêng tư cùng Điều khoản sử dụng.',
+      )
       return
     }
 
@@ -134,8 +136,11 @@ export default function App() {
             <div className="benefit-row">
               <span className="benefit-icon"><PhoneIcon /></span>
               <div>
-                <strong>Xác minh một lần</strong>
-                <p>VRena chỉ xin số điện thoại Zalo để bảo vệ và nhận diện tài khoản.</p>
+                <strong>Dữ liệu được sử dụng</strong>
+                <p>
+                  VRena nhận số điện thoại Zalo để tạo, bảo vệ và nhận diện tài khoản.
+                  Email không bắt buộc.
+                </p>
               </div>
             </div>
 
@@ -146,13 +151,14 @@ export default function App() {
                 onChange={(event) => setAcceptedTerms(event.target.checked)}
               />
               <span>
-                Tôi đồng ý với{' '}
+                Tôi đồng ý cho VRena nhận và sử dụng số điện thoại Zalo của tôi cho
+                mục đích nêu trên. Tôi đã đọc và đồng ý với{' '}
                 <a href="https://www.vre-vietnam.com/privacy-policy" target="_blank" rel="noreferrer">
                   Chính sách quyền riêng tư
                 </a>{' '}
                 và{' '}
                 <a href="https://www.vre-vietnam.com/terms-and-conditions" target="_blank" rel="noreferrer">
-                  Điều khoản
+                  Điều khoản sử dụng
                 </a>
                 .
               </span>
