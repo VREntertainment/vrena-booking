@@ -406,6 +406,8 @@ export default function WidgetPage({
   const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
   const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
   const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
+  const [selectedPlayerGameStats, setSelectedPlayerGameStats] = useState<Record<string, LeaderboardPlayer>>({})
+  const [selectedPlayerGameStatsLoading, setSelectedPlayerGameStatsLoading] = useState(false)
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
   const [highlightedSessionId, setHighlightedSessionId] = useState('')
@@ -456,6 +458,8 @@ export default function WidgetPage({
   const selectedPlayerIdRef = useRef(initialSelectedPlayerId)
   const selectedPlayerStatsFetchedRef = useRef<Set<string>>(new Set())
   const selectedPlayerStatsLoadingRef = useRef<Set<string>>(new Set())
+  const selectedPlayerGameStatsFetchedRef = useRef<Set<string>>(new Set())
+  const selectedPlayerGameStatsLoadingRef = useRef<Set<string>>(new Set())
   const currentUserShareStatsLoadingRef = useRef(false)
   const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
@@ -621,13 +625,54 @@ export default function WidgetPage({
     }
   }, [text.player])
 
+  const loadSelectedPlayerGameStats = useCallback(async (profileId: string, force = false) => {
+    if (!profileId) return
+    if (!force && selectedPlayerGameStatsFetchedRef.current.has(profileId)) return
+    if (selectedPlayerGameStatsLoadingRef.current.has(profileId)) return
+
+    selectedPlayerGameStatsLoadingRef.current.add(profileId)
+    if (selectedPlayerIdRef.current === profileId) setSelectedPlayerGameStatsLoading(true)
+
+    try {
+      const supabase = await getSupabase()
+      const rows = await Promise.all(games.map(async (game) => {
+        const { data, error } = await supabase.rpc(
+          'get_leaderboard_players_page_v3',
+          leaderboardRpcArgs(
+            { ...initialLeaderboardQuery(), gameId: game.id },
+            0,
+            1,
+            profileId
+          )
+        )
+
+        if (error) return null
+        const player = ((data ?? []) as LeaderboardRpcRow[])
+          .map((row) => leaderboardPlayerFromRpcRow(row, text.player))[0]
+        return player ? [game.id, player] as const : null
+      }))
+
+      selectedPlayerGameStatsFetchedRef.current.add(profileId)
+      if (selectedPlayerIdRef.current === profileId) {
+        setSelectedPlayerGameStats(Object.fromEntries(rows.filter((row) => row !== null)))
+      }
+    } catch {
+      if (selectedPlayerIdRef.current === profileId) setSelectedPlayerGameStats({})
+    } finally {
+      selectedPlayerGameStatsLoadingRef.current.delete(profileId)
+      if (selectedPlayerIdRef.current === profileId) setSelectedPlayerGameStatsLoading(false)
+    }
+  }, [text.player])
+
   function openPlayerProfile(profileId: string, sessionId = '', seedStats?: LeaderboardPlayer) {
     selectedPlayerIdRef.current = profileId
     setSelectedPlayerId(profileId)
     setSelectedPlayerSessionId(sessionId)
     setSelectedPlayerStatsOverride((current) => seedStats ?? (current?.profileId === profileId ? current : null))
+    setSelectedPlayerGameStats({})
     if (sessionId) void loadSessionDetail(sessionId)
     else void loadSelectedPlayerStats(profileId, true)
+    void loadSelectedPlayerGameStats(profileId, true)
   }
 
   function openStaffPlayerProfile(staffProfile: StaffProfile) {
@@ -639,6 +684,8 @@ export default function WidgetPage({
     setSelectedPlayerId('')
     setSelectedPlayerSessionId('')
     setSelectedPlayerStatsOverride(null)
+    setSelectedPlayerGameStats({})
+    setSelectedPlayerGameStatsLoading(false)
     setChallengeTargetId('')
     setChallengeStatus('')
   }
@@ -5146,6 +5193,11 @@ function handleSessionDateChange(value: string) {
     void loadSelectedPlayerStats(selectedPlayerId)
   }, [loadSelectedPlayerStats, selectedPlayerId, selectedPlayerStatsFromLoadedData])
 
+  useEffect(() => {
+    if (!selectedPlayerId || selectedPlayerGameStatsFetchedRef.current.has(selectedPlayerId)) return
+    void loadSelectedPlayerGameStats(selectedPlayerId)
+  }, [loadSelectedPlayerGameStats, selectedPlayerId])
+
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
 
@@ -5373,6 +5425,59 @@ function handleSessionDateChange(value: string) {
 
     return undefined
   }, [clubs, profile, profileScoreAdjustments, selectedPlayerAverageAccuracyValue, selectedPlayerBestEscapeValue, selectedPlayerId, selectedPlayerProfileRecord, selectedPlayerStats, selectedPlayerTotalProjectilesValue, sessions, text.player, userId])
+
+  const selectedPlayerGameCards = useMemo(() => {
+    if (!selectedPlayerProfile) return []
+
+    const overallBestScores = new Map(
+      selectedPlayerProfile.bestByGame.map((item) => [item.game, item.score])
+    )
+
+    return games.flatMap((game) => {
+      const perGame = selectedPlayerGameStats[game.id]
+      const perGameBestScore = perGame?.bestByGame.find((item) => item.game === game.title)?.score
+      const bestScore = perGameBestScore ?? overallBestScores.get(game.title)
+      const hasActivity = Boolean(
+        bestScore !== undefined
+        || (perGame && (
+          perGame.gamesJoined > 0
+          || perGame.wins > 0
+          || perGame.bestPerformerCount > 0
+          || perGame.totalProjectiles > 0
+          || (perGame.totalMovementMeters ?? 0) > 0
+        ))
+      )
+
+      if (!hasActivity) return []
+
+      const stats = [
+        { key: 'sessions', label: text.sessions, value: perGame ? Math.floor(perGame.sessionsJoined) : '-' },
+        { key: 'games', label: text.gamesPlayedCriterion, value: perGame ? Math.floor(perGame.gamesJoined) : '-' },
+        { key: 'wins', label: text.winsCriterion, value: perGame ? Math.floor(perGame.wins) : '-' },
+        { key: 'best-performer', label: bestPerformerCountText, value: perGame ? Math.floor(perGame.bestPerformerCount) : '-' },
+        { key: 'total-score', label: text.totalScoreCriterion, value: perGame ? Math.round(perGame.baseTotalScore) : '-' },
+        { key: 'best-score', label: text.bestScores, value: bestScore === undefined ? '-' : Math.round(bestScore) },
+        { key: 'accuracy', label: text.accuracy, value: perGame ? formatCompactNumber(perGame.averageAccuracy, '%') : '-' },
+        { key: 'hits', label: text.projectiles, value: perGame ? formatCompactCount(perGame.totalProjectiles) : '-' },
+        { key: 'movement', label: text.movement, value: perGame ? formatCompactNumber(perGame.totalMovementMeters, ' m') : '-' },
+      ]
+
+      if (game.category === 'Escape') {
+        stats.push({
+          key: 'escape-time',
+          label: escapeBestTimeText,
+          value: perGame ? formatSpeedrunDuration(perGame.bestEscapeDurationSeconds) : '-',
+        })
+      }
+
+      return [{
+        id: game.id,
+        image: game.image,
+        title: game.title,
+        stats,
+      }]
+    })
+  }, [bestPerformerCountText, escapeBestTimeText, selectedPlayerGameStats, selectedPlayerProfile, text])
 
   const selectedSessionParticipant = selectedPlayerSessionContext?.participant ?? null
   const selectedPlayerMetricParticipant = selectedSessionParticipant
@@ -10165,8 +10270,11 @@ function handleSessionDateChange(value: string) {
           stats={playerProfileStats}
           scoreSummary={null}
           challengeControls={renderChallengeControls(selectedPlayerProfile)}
-          bestScoresTitle={text.bestScores}
-          bestScores={selectedPlayerProfile.bestByGame}
+          gameStatsTitle={text.bestScores}
+          gameStats={selectedPlayerGameCards}
+          gameStatsLoading={selectedPlayerGameStatsLoading}
+          previousGameText={text.onboardingPrevious}
+          nextGameText={text.next}
           adminControls={canEditStaffPlayerCards ? (
             <StaffPlayerStatsEditor
               key={selectedPlayerProfile.profileId}
@@ -10174,7 +10282,9 @@ function handleSessionDateChange(value: string) {
               player={selectedPlayerProfile}
               onSaved={() => {
                 selectedPlayerStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
+                selectedPlayerGameStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
                 void loadSelectedPlayerStats(selectedPlayerProfile.profileId, true)
+                void loadSelectedPlayerGameStats(selectedPlayerProfile.profileId, true)
                 void refreshLeaderboardIfLoaded()
               }}
             />
