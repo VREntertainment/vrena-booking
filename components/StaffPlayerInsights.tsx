@@ -7,9 +7,14 @@ import {
   Gamepad2,
   Gauge,
   MessageCircle,
+  MonitorSmartphone,
+  MousePointerClick,
   Repeat2,
+  Route,
+  Search,
   ShieldCheck,
   Target,
+  Timer,
   UsersRound,
 } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
@@ -34,6 +39,38 @@ export type StaffPlayerInsightsSummary = {
   clubJoins: number
   socialActions: number
   latestSourceAt: string | null
+}
+
+export type StaffProductAnalyticsSummary = {
+  sessions: number
+  visitors: number
+  signedInVisitors: number
+  pageViews: number
+  searches: number
+  engagementSeconds: number
+  averageSessionSeconds: number
+  pagesPerSession: number
+  searchRate: number
+  signedInShare: number
+  latestEventAt: string | null
+}
+
+export type StaffProductAnalyticsSnapshot = {
+  summary: StaffProductAnalyticsSummary
+  comparisonSummary: StaffProductAnalyticsSummary
+  activitySeries: Array<{ date: string; pageViews: number; sessions: number; searches: number }>
+  topPages: Array<{ path: string; pageViews: number; visitors: number; engagementSeconds: number }>
+  transitions: Array<{ fromPath: string; toPath: string; transitions: number }>
+  deviceMix: Array<{ deviceClass: 'mobile' | 'tablet' | 'desktop'; sessions: number }>
+  acquisitionMix: Array<{ source: string; medium: string; sessions: number }>
+  searchSurfaces: Array<{ surface: string; searches: number; averageQueryLength: number; averageResults: number | null }>
+  dataQuality: {
+    timezone: string
+    seriesCappedAtDays: number
+    collectionStartedAt: string | null
+    consentModel: string
+    privacyBoundaries: string[]
+  }
 }
 
 export type StaffPlayerInsightsSnapshot = {
@@ -76,6 +113,7 @@ export type StaffPlayerInsightsSnapshot = {
     trackedSignals: string[]
     untrackedSignals: string[]
   }
+  productAnalytics?: StaffProductAnalyticsSnapshot | null
 }
 
 type StaffPlayerInsightsProps = {
@@ -107,6 +145,20 @@ const emptySummary: StaffPlayerInsightsSummary = {
   clubJoins: 0,
   socialActions: 0,
   latestSourceAt: null,
+}
+
+const emptyProductSummary: StaffProductAnalyticsSummary = {
+  sessions: 0,
+  visitors: 0,
+  signedInVisitors: 0,
+  pageViews: 0,
+  searches: 0,
+  engagementSeconds: 0,
+  averageSessionSeconds: 0,
+  pagesPerSession: 0,
+  searchRate: 0,
+  signedInShare: 0,
+  latestEventAt: null,
 }
 
 const copy = {
@@ -163,11 +215,11 @@ const copy = {
     new: 'New',
     booked: 'Booked',
     scopeTitle: 'What this report knows',
-    scopeBody: 'It measures real records created by the app and venue team. It does not infer intent or silently track navigation.',
+    scopeBody: 'It combines real venue records with consented, aggregate product analytics. It does not infer player intent.',
     tracked: 'Tracked now',
-    trackedBody: 'reservations · check-ins · scores · accuracy · session messages · club joins',
-    missing: 'Not tracked yet',
-    missingBody: 'Page views, click paths, searches, time in app, device and acquisition source need a consent-aware product analytics layer.',
+    trackedBody: 'reservations · check-ins · results · page journeys · searches · engaged time · device · acquisition',
+    missing: 'Privacy boundaries',
+    missingBody: 'No raw IP, search text or query strings. Staff/admin routes are excluded and digital reporting stays aggregated.',
     empty: 'No player activity is recorded in this range. Try the last 30 or 90 days.',
     freshness: 'Updated',
   },
@@ -224,13 +276,90 @@ const copy = {
     new: 'Mới',
     booked: 'Đã đặt',
     scopeTitle: 'Báo cáo này biết gì',
-    scopeBody: 'Báo cáo dùng dữ liệu thật do app và đội ngũ cơ sở tạo ra. Không suy đoán ý định hoặc âm thầm theo dõi điều hướng.',
+    scopeBody: 'Báo cáo kết hợp dữ liệu cơ sở thực tế với phân tích sản phẩm tổng hợp đã được người dùng đồng ý. Không suy đoán ý định người chơi.',
     tracked: 'Đang theo dõi',
-    trackedBody: 'đặt chỗ · check-in · điểm số · độ chính xác · tin nhắn phiên · tham gia câu lạc bộ',
-    missing: 'Chưa theo dõi',
-    missingBody: 'Lượt xem trang, đường dẫn click, tìm kiếm, thời gian trong app, thiết bị và nguồn truy cập cần lớp phân tích có cơ chế đồng ý.',
+    trackedBody: 'đặt chỗ · check-in · kết quả · hành trình trang · tìm kiếm · thời gian tương tác · thiết bị · nguồn truy cập',
+    missing: 'Giới hạn quyền riêng tư',
+    missingBody: 'Không lưu IP thô, nội dung tìm kiếm hoặc chuỗi truy vấn. Loại trừ trang nhân viên/quản trị và chỉ báo cáo tổng hợp.',
     empty: 'Không có hoạt động người chơi trong khoảng này. Hãy thử 30 hoặc 90 ngày gần nhất.',
     freshness: 'Cập nhật',
+  },
+} as const
+
+const productCopy = {
+  en: {
+    eyebrow: 'Consented digital behavior',
+    title: 'Digital journey',
+    subtitle: 'How players discover, explore and search the app before and between venue visits.',
+    privacy: 'Aggregate only · 180-day retention',
+    sessions: 'App sessions',
+    sessionsHelp: 'Distinct consented browsing sessions.',
+    visitors: 'Visitors',
+    visitorsHelp: 'Consented browsers, not total website traffic.',
+    pagesPerSession: 'Pages / session',
+    pagesHelp: 'Average player-facing pages viewed per session.',
+    engagedTime: 'Avg engaged time',
+    timeHelp: 'Visible, active time per session.',
+    searches: 'Searches',
+    searchesHelp: 'Search actions without storing the typed text.',
+    searchRate: 'Search rate',
+    searchRateHelp: 'Search actions divided by app sessions.',
+    trendTitle: 'Digital engagement trend',
+    trendSubtitle: 'Daily page views and app sessions',
+    pageViews: 'Page views',
+    topPages: 'Top destinations',
+    topPagesSubtitle: 'Player-facing pages ranked by views',
+    journeys: 'Common journeys',
+    journeysSubtitle: 'Most frequent page-to-page transitions',
+    devices: 'Device mix',
+    devicesSubtitle: 'Sessions by device class',
+    acquisition: 'Acquisition',
+    acquisitionSubtitle: 'First-touch source for each session',
+    searchIntent: 'Search activity',
+    searchIntentSubtitle: 'Search surfaces; typed text is never stored',
+    views: 'views',
+    sessionUnit: 'sessions',
+    transitionUnit: 'journeys',
+    averageResults: 'avg results',
+    noData: 'Collection starts with this release. No historical clickstream can be reconstructed; this view will populate as players opt in.',
+    signedIn: 'signed-in visitor share',
+  },
+  vi: {
+    eyebrow: 'Hành vi số đã được đồng ý',
+    title: 'Hành trình số',
+    subtitle: 'Cách người chơi khám phá, duyệt và tìm kiếm trong app trước và giữa các lượt ghé cơ sở.',
+    privacy: 'Chỉ tổng hợp · lưu tối đa 180 ngày',
+    sessions: 'Phiên dùng app',
+    sessionsHelp: 'Số phiên duyệt đã đồng ý khác nhau.',
+    visitors: 'Khách truy cập',
+    visitorsHelp: 'Trình duyệt đã đồng ý, không phải toàn bộ lưu lượng website.',
+    pagesPerSession: 'Trang / phiên',
+    pagesHelp: 'Số trang dành cho người chơi trung bình mỗi phiên.',
+    engagedTime: 'TG tương tác TB',
+    timeHelp: 'Thời gian trang hiển thị và được sử dụng trong mỗi phiên.',
+    searches: 'Lượt tìm kiếm',
+    searchesHelp: 'Hành động tìm kiếm mà không lưu nội dung đã nhập.',
+    searchRate: 'Tỷ lệ tìm kiếm',
+    searchRateHelp: 'Lượt tìm kiếm chia cho số phiên dùng app.',
+    trendTitle: 'Xu hướng tương tác số',
+    trendSubtitle: 'Lượt xem trang và phiên dùng app theo ngày',
+    pageViews: 'Lượt xem trang',
+    topPages: 'Điểm đến hàng đầu',
+    topPagesSubtitle: 'Trang người chơi được xếp theo lượt xem',
+    journeys: 'Hành trình phổ biến',
+    journeysSubtitle: 'Chuyển tiếp trang-đến-trang thường gặp nhất',
+    devices: 'Thiết bị',
+    devicesSubtitle: 'Phiên theo loại thiết bị',
+    acquisition: 'Nguồn truy cập',
+    acquisitionSubtitle: 'Nguồn chạm đầu tiên của mỗi phiên',
+    searchIntent: 'Hoạt động tìm kiếm',
+    searchIntentSubtitle: 'Khu vực tìm kiếm; không bao giờ lưu nội dung đã nhập',
+    views: 'lượt xem',
+    sessionUnit: 'phiên',
+    transitionUnit: 'hành trình',
+    averageResults: 'kết quả TB',
+    noData: 'Việc thu thập bắt đầu từ bản phát hành này. Không thể tái tạo lịch sử clickstream; báo cáo sẽ có dữ liệu khi người chơi đồng ý.',
+    signedIn: 'tỷ lệ khách đã đăng nhập',
   },
 } as const
 
@@ -240,6 +369,14 @@ function numberValue(value: unknown) {
 
 function percent(value: number) {
   return `${Math.round(value)}%`
+}
+
+function durationLabel(value: number) {
+  const seconds = Math.max(0, Math.round(value))
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const remaining = seconds % 60
+  return remaining ? `${minutes}m ${remaining}s` : `${minutes}m`
 }
 
 function changeLabel(current: number, previous: number, newValue: string) {
@@ -301,14 +438,23 @@ export default function StaffPlayerInsights({
   rangeLabel,
 }: StaffPlayerInsightsProps) {
   const text = copy[language]
+  const digitalText = productCopy[language]
   const summary = { ...emptySummary, ...(data?.summary ?? {}) }
   const comparison = { ...emptySummary, ...(data?.comparisonSummary ?? {}) }
+  const productSummary = { ...emptyProductSummary, ...(data?.productAnalytics?.summary ?? {}) }
+  const productComparison = { ...emptyProductSummary, ...(data?.productAnalytics?.comparisonSummary ?? {}) }
   const maxActivity = Math.max(1, ...(data?.activitySeries ?? []).flatMap((point) => [point.reservations, point.checkIns]))
+  const maxDigitalActivity = Math.max(1, ...(data?.productAnalytics?.activitySeries ?? []).flatMap((point) => [point.pageViews, point.sessions]))
   const maxPeak = Math.max(1, ...(data?.peakTimes ?? []).map((point) => point.visits))
   const maxGame = Math.max(1, ...(data?.gameDemand ?? []).map((game) => game.reservations))
+  const maxTopPage = Math.max(1, ...(data?.productAnalytics?.topPages ?? []).map((page) => page.pageViews))
+  const maxTransition = Math.max(1, ...(data?.productAnalytics?.transitions ?? []).map((transition) => transition.transitions))
+  const maxSearchSurface = Math.max(1, ...(data?.productAnalytics?.searchSurfaces ?? []).map((surface) => surface.searches))
+  const totalDeviceSessions = (data?.productAnalytics?.deviceMix ?? []).reduce((sum, item) => sum + item.sessions, 0)
   const weekdayLabels = language === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayparts = ['morning', 'afternoon', 'evening'] as const
   const sourceFreshness = timeLabel(summary.latestSourceAt, language)
+  const productFreshness = timeLabel(productSummary.latestEventAt, language)
   const comparisonFor = (current: number, previous: number) => compareEnabled
     ? `${changeLabel(current, previous, text.newValue)} ${text.vs} ${compareLabel}`
     : text.noComparison
@@ -483,6 +629,179 @@ export default function StaffPlayerInsights({
           </div>
         </section>
       </div>
+
+      <section className="staff-digital-journey" aria-label={digitalText.title}>
+        <header className="staff-digital-journey-head">
+          <div>
+            <span className="staff-insights-eyebrow"><Route aria-hidden="true" size={15} /> {digitalText.eyebrow}</span>
+            <h4>{digitalText.title}</h4>
+            <p>{digitalText.subtitle}</p>
+          </div>
+          <div className="staff-digital-journey-meta">
+            <span><ShieldCheck aria-hidden="true" size={14} /> {digitalText.privacy}</span>
+            <small>{percent(productSummary.signedInShare)} {digitalText.signedIn}</small>
+            {productFreshness && <small>{text.freshness} {productFreshness}</small>}
+          </div>
+        </header>
+
+        <div className="staff-insight-kpi-grid staff-digital-kpi-grid">
+          <InsightCard
+            comparison={comparisonFor(productSummary.sessions, productComparison.sessions)}
+            help={digitalText.sessionsHelp}
+            icon={<Route aria-hidden="true" size={18} />}
+            label={digitalText.sessions}
+            value={productSummary.sessions}
+          />
+          <InsightCard
+            comparison={comparisonFor(productSummary.visitors, productComparison.visitors)}
+            help={digitalText.visitorsHelp}
+            icon={<UsersRound aria-hidden="true" size={18} />}
+            label={digitalText.visitors}
+            value={productSummary.visitors}
+          />
+          <InsightCard
+            comparison={comparisonFor(productSummary.pagesPerSession, productComparison.pagesPerSession)}
+            help={digitalText.pagesHelp}
+            icon={<MousePointerClick aria-hidden="true" size={18} />}
+            label={digitalText.pagesPerSession}
+            value={numberValue(productSummary.pagesPerSession).toFixed(1)}
+          />
+          <InsightCard
+            comparison={comparisonFor(productSummary.averageSessionSeconds, productComparison.averageSessionSeconds)}
+            help={digitalText.timeHelp}
+            icon={<Timer aria-hidden="true" size={18} />}
+            label={digitalText.engagedTime}
+            value={durationLabel(productSummary.averageSessionSeconds)}
+          />
+          <InsightCard
+            comparison={comparisonFor(productSummary.searches, productComparison.searches)}
+            help={digitalText.searchesHelp}
+            icon={<Search aria-hidden="true" size={18} />}
+            label={digitalText.searches}
+            value={productSummary.searches}
+          />
+          <InsightCard
+            comparison={comparisonFor(productSummary.searchRate, productComparison.searchRate)}
+            help={digitalText.searchRateHelp}
+            icon={<Target aria-hidden="true" size={18} />}
+            label={digitalText.searchRate}
+            value={percent(productSummary.searchRate)}
+          />
+        </div>
+
+        {productSummary.sessions === 0 ? <p className="staff-insights-empty">{digitalText.noData}</p> : null}
+
+        {productSummary.sessions > 0 ? (
+          <div className="staff-digital-grid">
+            <section className="staff-insight-panel staff-digital-trend-panel" aria-label={digitalText.trendTitle}>
+              <div className="staff-insight-panel-head">
+                <div><h5>{digitalText.trendTitle}</h5><span>{digitalText.trendSubtitle}</span></div>
+                <div className="staff-insight-legend" aria-hidden="true">
+                  <span><i className="digital-views" />{digitalText.pageViews}</span>
+                  <span><i className="digital-sessions" />{digitalText.sessions}</span>
+                </div>
+              </div>
+              <div className="staff-insight-activity-chart">
+                {(data?.productAnalytics?.activitySeries ?? []).map((point) => (
+                  <div className="staff-insight-activity-day" key={point.date} title={`${dateLabel(point.date, language)} · ${point.pageViews} ${digitalText.views} · ${point.sessions} ${digitalText.sessionUnit}`}>
+                    <div className="staff-insight-activity-track">
+                      <span className="digital-views" style={{ height: `${Math.max(3, (point.pageViews / maxDigitalActivity) * 100)}%` }} />
+                      <span className="digital-sessions" style={{ height: `${Math.max(3, (point.sessions / maxDigitalActivity) * 100)}%` }} />
+                    </div>
+                    <small>{dateLabel(point.date, language)}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="staff-insight-panel" aria-label={digitalText.topPages}>
+              <div className="staff-insight-panel-head">
+                <div><h5>{digitalText.topPages}</h5><span>{digitalText.topPagesSubtitle}</span></div>
+                <MousePointerClick aria-hidden="true" size={18} />
+              </div>
+              <div className="staff-insight-ranking">
+                {(data?.productAnalytics?.topPages ?? []).map((page, index) => (
+                  <div className="staff-insight-ranking-row" key={page.path}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{page.path}</strong>
+                      <small>{page.pageViews} {digitalText.views} · {page.visitors} {digitalText.visitors.toLowerCase()} · {durationLabel(page.engagementSeconds)}</small>
+                      <div><i style={{ width: `${Math.max(4, (page.pageViews / maxTopPage) * 100)}%` }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="staff-insight-panel" aria-label={digitalText.journeys}>
+              <div className="staff-insight-panel-head">
+                <div><h5>{digitalText.journeys}</h5><span>{digitalText.journeysSubtitle}</span></div>
+                <Route aria-hidden="true" size={18} />
+              </div>
+              <div className="staff-insight-ranking staff-digital-journeys">
+                {(data?.productAnalytics?.transitions ?? []).map((transition, index) => (
+                  <div className="staff-insight-ranking-row" key={`${transition.fromPath}-${transition.toPath}`}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{transition.fromPath} <b aria-hidden="true">→</b> {transition.toPath}</strong>
+                      <small>{transition.transitions} {digitalText.transitionUnit}</small>
+                      <div><i style={{ width: `${Math.max(4, (transition.transitions / maxTransition) * 100)}%` }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="staff-insight-panel staff-digital-audience" aria-label={digitalText.devices}>
+              <div className="staff-digital-breakdown">
+                <div>
+                  <div className="staff-insight-panel-head">
+                    <div><h5>{digitalText.devices}</h5><span>{digitalText.devicesSubtitle}</span></div>
+                    <MonitorSmartphone aria-hidden="true" size={18} />
+                  </div>
+                  <div className="staff-digital-mix-list">
+                    {(data?.productAnalytics?.deviceMix ?? []).map((device) => (
+                      <div key={device.deviceClass}>
+                        <span><strong>{device.deviceClass}</strong><small>{device.sessions} {digitalText.sessionUnit}</small></span>
+                        <i><b style={{ width: `${totalDeviceSessions ? (device.sessions / totalDeviceSessions) * 100 : 0}%` }} /></i>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="staff-insight-panel-head">
+                    <div><h5>{digitalText.acquisition}</h5><span>{digitalText.acquisitionSubtitle}</span></div>
+                  </div>
+                  <div className="staff-digital-source-list">
+                    {(data?.productAnalytics?.acquisitionMix ?? []).map((source) => (
+                      <div key={`${source.source}-${source.medium}`}><span><strong>{source.source}</strong><small>{source.medium}</small></span><b>{source.sessions}</b></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="staff-insight-panel staff-digital-search-panel" aria-label={digitalText.searchIntent}>
+              <div className="staff-insight-panel-head">
+                <div><h5>{digitalText.searchIntent}</h5><span>{digitalText.searchIntentSubtitle}</span></div>
+                <Search aria-hidden="true" size={18} />
+              </div>
+              <div className="staff-insight-ranking">
+                {(data?.productAnalytics?.searchSurfaces ?? []).map((surface, index) => (
+                  <div className="staff-insight-ranking-row" key={surface.surface}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{surface.surface}</strong>
+                      <small>{surface.searches} {digitalText.searches.toLowerCase()}{surface.averageResults === null ? '' : ` · ${surface.averageResults} ${digitalText.averageResults}`}</small>
+                      <div><i style={{ width: `${Math.max(4, (surface.searches / maxSearchSurface) * 100)}%` }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </section>
 
       <section className="staff-insight-panel staff-insight-player-panel" aria-label={text.playersTitle}>
         <div className="staff-insight-panel-head">

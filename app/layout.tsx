@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Suspense } from "react";
 import ContentStudioPreviewBridge from "../components/ContentStudioPreviewBridge";
+import ProductAnalytics from "../components/ProductAnalytics";
 import { siteUrl } from "../lib/siteMetadata";
 import "./globals.css";
 
@@ -46,6 +48,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <ContentStudioPreviewBridge />
+        <Suspense fallback={null}>
+          <ProductAnalytics />
+        </Suspense>
         <Analytics />
         <SpeedInsights />
       </body>
