@@ -9136,3 +9136,424 @@
   box-shadow: none;
   padding: 0;
 }
+
+/* HR calendar command center: one weekly planner, switchable by employee or shift. */
+.app .staff-hr-week-controls {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-week-navigation,
+.app .staff-hr-week-date-fields,
+.app .staff-schedule-view-toggle,
+.app .staff-schedule-summary {
+  display: flex;
+  align-items: center;
+}
+
+.app .staff-hr-week-navigation {
+  gap: 8px;
+}
+
+.app .staff-hr-week-navigation > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--vrena-cta-secondary-border);
+  border-radius: 10px;
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
+  padding: 8px;
+  box-shadow: none;
+}
+
+.app .staff-hr-week-navigation > .staff-hr-today-button {
+  min-width: auto;
+  padding-inline: 13px;
+}
+
+.app .staff-hr-week-label {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+  padding-inline: 4px;
+}
+
+.app .staff-hr-week-label span,
+.app .staff-schedule-summary span,
+.app .staff-hr-shift-template-field,
+.app .staff-hr-week-date-fields .staff-field-label {
+  color: var(--staff-modern-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-week-label strong {
+  color: var(--staff-modern-ink);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.app .staff-hr-week-date-fields {
+  gap: 8px;
+}
+
+.app .staff-hr-week-date-fields label,
+.app .staff-hr-shift-template-field {
+  display: grid;
+  gap: 4px;
+}
+
+.app .staff-hr-week-date-fields label {
+  min-width: 128px;
+}
+
+.app .staff-hr-week-date-fields :is(input, button),
+.app .staff-hr-shift-template-field select {
+  min-height: 42px;
+  border-radius: 10px;
+}
+
+.app .staff-hr-planning-panel {
+  gap: 0;
+}
+
+.app .staff-hr-planner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 0 12px;
+}
+
+.app .staff-hr-planner-head .staff-planning-title strong {
+  color: var(--staff-modern-ink);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.app .staff-hr-planner-head .staff-planning-title span {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.app .staff-schedule-summary {
+  align-self: stretch;
+}
+
+.app .staff-schedule-summary span {
+  display: grid;
+  gap: 1px;
+  min-width: 92px;
+  padding: 0 12px;
+  border-left: 1px solid var(--staff-modern-border);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.app .staff-schedule-summary strong {
+  color: var(--staff-modern-ink);
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.app .staff-hr-planner-commandbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(150px, 0.38fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 11px 0;
+  border-block: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-schedule-view-toggle,
+.app .staff-hr-planner-commandbar .staff-planning-scope {
+  gap: 3px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
+  padding: 3px;
+}
+
+.app .staff-schedule-view-toggle button,
+.app .staff-hr-planner-commandbar .staff-planning-scope button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--staff-modern-muted);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.app .staff-schedule-view-toggle button.active,
+.app .staff-hr-planner-commandbar .staff-planning-scope button.active {
+  background: var(--vrena-white);
+  color: var(--vrena-selection-ink);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent), inset 0 -2px 0 var(--vrena-selection-indicator);
+}
+
+.app .staff-hr-planner-commandbar .staff-planning-scope {
+  justify-self: start;
+}
+
+.app .staff-hr-shift-template-field select {
+  padding-inline: 10px 30px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.app .staff-hr-planner-commandbar .staff-planning-actions {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.app .staff-hr-planner-commandbar .staff-planning-actions button {
+  min-height: 42px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.app .staff-hr-planning-panel .staff-planning-grid-shell {
+  margin-top: 12px;
+  overflow: auto hidden;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 12px;
+  background: var(--staff-modern-surface);
+  scrollbar-color: color-mix(in srgb, var(--staff-modern-muted) 45%, transparent) transparent;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+
+.app .staff-hr-planning-panel .staff-planning-grid {
+  gap: 0;
+}
+
+.app .staff-hr-planning-panel :is(.staff-planning-corner, .staff-planning-day, .staff-planning-staff, .staff-planning-cell) {
+  border: 0;
+  border-right: 1px solid var(--staff-modern-border);
+  border-bottom: 1px solid var(--staff-modern-border);
+  border-radius: 0;
+  background: var(--staff-modern-surface);
+  padding: 9px;
+}
+
+.app .staff-hr-planning-panel :is(.staff-planning-corner, .staff-planning-day) {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  min-height: 58px;
+  background: color-mix(in srgb, var(--vrena-neutral-100) 82%, var(--vrena-white));
+}
+
+.app .staff-hr-planning-panel .staff-planning-corner,
+.app .staff-hr-planning-panel .staff-planning-staff {
+  position: sticky;
+  z-index: 2;
+  left: 0;
+  box-shadow: 7px 0 12px -12px color-mix(in srgb, var(--vrena-neutral-950) 55%, transparent);
+}
+
+.app .staff-hr-planning-panel .staff-planning-corner {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  color: var(--staff-modern-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-planning-panel .staff-planning-day.is-weekend {
+  background: color-mix(in srgb, var(--vrena-blue-100) 52%, var(--vrena-white));
+}
+
+.app .staff-hr-planning-panel .staff-planning-cell {
+  min-height: 76px;
+  background: color-mix(in srgb, var(--vrena-white) 93%, var(--vrena-neutral-100));
+}
+
+.app .staff-hr-planning-panel .staff-planning-cell-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 32px;
+  border: 1px dashed color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+  color: var(--vrena-selection-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-planning-shift-row-head {
+  gap: 8px;
+}
+
+.app .staff-planning-shift-icon {
+  display: inline-flex;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 10%, transparent);
+  color: var(--vrena-selection-ink);
+}
+
+.app .staff-planning-grid-shift .staff-shift-chip strong {
+  font-size: 11px;
+}
+
+.app .staff-planning-grid-shift .staff-shift-chip small {
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.app .staff-hr-shift-editor-head {
+  display: grid;
+  gap: 3px;
+}
+
+.app .staff-hr-shift-editor-head h4,
+.app .staff-hr-shift-editor-head p {
+  margin: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app .staff-hr-week-navigation > button:hover:not(:disabled) {
+    border-color: var(--vrena-cta-secondary-hover-border);
+    background: var(--vrena-cta-secondary-hover-bg);
+    color: var(--vrena-cta-secondary-hover-ink);
+  }
+
+  .app .staff-schedule-view-toggle button:not(.active):hover,
+  .app .staff-hr-planner-commandbar .staff-planning-scope button:not(.active):hover {
+    background: var(--vrena-cta-tertiary-hover-bg);
+    color: var(--staff-modern-ink);
+  }
+
+  .app .staff-hr-planning-panel .staff-planning-cell-button:hover:not(:disabled) {
+    border-style: solid;
+    border-color: var(--vrena-selection-border);
+    background: var(--vrena-selection-bg);
+  }
+}
+
+@media (max-width: 1080px) {
+  .app .staff-hr-planner-commandbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-planner-commandbar .staff-planning-scope {
+    justify-self: stretch;
+  }
+
+  .app .staff-hr-planner-commandbar .staff-planning-actions {
+    justify-content: stretch;
+  }
+
+  .app .staff-hr-planner-commandbar .staff-planning-actions button {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .staff-hr-week-controls,
+  .app .staff-hr-planner-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-hr-week-navigation {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .app .staff-hr-week-label {
+    min-width: 0;
+  }
+
+  .app .staff-hr-week-date-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-week-date-fields label {
+    min-width: 0;
+  }
+
+  .app .staff-schedule-summary span {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 9px;
+  }
+
+  .app .staff-schedule-summary span:first-child {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .app .staff-hr-planner-commandbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-schedule-view-toggle,
+  .app .staff-hr-planner-commandbar .staff-planning-scope,
+  .app .staff-hr-planner-commandbar .staff-planning-actions {
+    width: 100%;
+  }
+
+  .app .staff-schedule-view-toggle button,
+  .app .staff-hr-planner-commandbar .staff-planning-scope button {
+    flex: 1 1 0;
+  }
+
+  .app .staff-hr-planning-panel .staff-planning-grid-shell {
+    margin-inline: -1px;
+    border-radius: 10px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-schedule-view-toggle,
+  .app .staff-hr-planner-commandbar .staff-planning-scope {
+    background: color-mix(in srgb, var(--vrena-neutral-800) 76%, transparent);
+  }
+
+  .app .staff-schedule-view-toggle button.active,
+  .app .staff-hr-planner-commandbar .staff-planning-scope button.active {
+    background: var(--vrena-neutral-800);
+  }
+
+  .app .staff-hr-planning-panel :is(.staff-planning-corner, .staff-planning-day) {
+    background: color-mix(in srgb, var(--vrena-neutral-800) 88%, var(--vrena-neutral-900));
+  }
+
+  .app .staff-hr-planning-panel .staff-planning-day.is-weekend {
+    background: color-mix(in srgb, var(--vrena-blue-900) 34%, var(--vrena-neutral-900));
+  }
+
+  .app .staff-hr-planning-panel .staff-planning-cell {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 92%, var(--vrena-neutral-800));
+  }
+}
