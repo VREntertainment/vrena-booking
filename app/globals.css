@@ -185,7 +185,7 @@ body {
   display: block;
 }
 
-.app .brand-logo-mark {
+.app .brand-logo .brand-logo-mark {
   display: none;
 }
 
@@ -9269,11 +9269,11 @@ body {
     gap: 8px;
   }
 
-  .app aside > div:first-child, .app .app-title-row {
+  .app aside > div:first-of-type, .app .app-title-row {
     display: contents;
   }
 
-  .app aside > div:first-child > .muted {
+  .app aside > div:first-of-type > .muted {
     display: none;
   }
 
