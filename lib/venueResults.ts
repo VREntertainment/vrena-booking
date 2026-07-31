@@ -36,6 +36,7 @@ const gameAliases: Record<string, VenueGameSlug> = {
   castleunspunnen: 'castle-unspunnen',
   jollerhouse: 'joller-house',
   lasertag: 'laser-tag',
+  mbtowers: 'mini-block-towers',
   miniblocktowers: 'mini-block-towers',
   officewar: 'office-war',
   paintball: 'paintball',
