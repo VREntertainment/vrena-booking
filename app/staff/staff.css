@@ -8902,3 +8902,165 @@
     padding: 7px 11px;
   }
 }
+
+/* Report range and comparison toolbar */
+.app .staff-report-filters {
+  width: min(100%, 660px);
+}
+
+.app .staff-report-filter-row {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.app .staff-report-control-group {
+  display: grid;
+  grid-template-columns: minmax(118px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px 9px 12px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 14px;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--vrena-blue-50) 48%, transparent), transparent 56%),
+    var(--staff-modern-surface);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.app .staff-report-comparison-group.active {
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 34%, var(--staff-modern-border));
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--vrena-blue-50) 78%, transparent), transparent 64%),
+    var(--staff-modern-surface);
+  box-shadow: 0 9px 24px color-mix(in srgb, var(--vrena-blue-600) 9%, transparent);
+}
+
+.app .staff-report-control-head {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-report-control-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--staff-modern-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.app .staff-report-control-title svg {
+  color: var(--vrena-blue-600);
+  flex: 0 0 auto;
+}
+
+.app .staff-report-control-head > strong {
+  overflow: hidden;
+  color: var(--vrena-neutral-950);
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-report-control-group .staff-report-date-actions,
+.app .staff-report-control-group .staff-report-compare-actions {
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.app .staff-console .staff-report-control-group :is(.staff-report-date-actions, .staff-report-compare-actions) > button,
+.app .staff-console .staff-report-control-group .staff-compare-toggle {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+.app .staff-console .staff-report-control-group :is(.staff-report-date-actions, .staff-report-compare-actions) > button.active {
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
+}
+
+.app .staff-console .staff-report-control-group .staff-report-range-button {
+  min-height: 40px;
+  min-width: 166px;
+  padding: 6px 10px;
+}
+
+.app .staff-console .staff-report-control-group .staff-report-range-button.active span,
+.app .staff-console .staff-report-control-group .staff-report-range-button.active strong {
+  color: var(--vrena-selection-ink);
+}
+
+.app .staff-report-filter-row > .staff-report-export-actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+  padding-left: 0;
+  border-left: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-report-control-group {
+    background:
+      linear-gradient(115deg, color-mix(in srgb, var(--vrena-blue-900) 20%, transparent), transparent 58%),
+      var(--staff-modern-surface);
+  }
+
+  .app .staff-report-comparison-group.active {
+    background:
+      linear-gradient(115deg, color-mix(in srgb, var(--vrena-blue-600) 16%, transparent), transparent 64%),
+      var(--staff-modern-surface);
+  }
+
+  .app .staff-report-control-head > strong {
+    color: var(--vrena-neutral-100);
+  }
+}
+
+@media (max-width: 620px) {
+  .app .staff-report-control-group {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .app .staff-report-control-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .app .staff-report-control-head > strong {
+    max-width: 160px;
+    text-align: right;
+  }
+
+  .app .staff-report-control-group .staff-report-date-actions,
+  .app .staff-report-control-group .staff-report-compare-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    width: 100%;
+  }
+
+  .app .staff-report-control-group .staff-report-date-actions > button,
+  .app .staff-report-control-group .staff-report-compare-actions > button,
+  .app .staff-report-control-group .staff-compare-toggle {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .app .staff-report-control-group .staff-report-range-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

@@ -1523,7 +1523,7 @@ const staffConsoleText = {
       new: 'New Booking',
       orders: 'Orders',
       prices: 'Prices',
-      report: 'Daily Report',
+      report: 'Report',
       restore: 'Restore',
       roles: 'Roles',
       today: 'Today',
@@ -5071,6 +5071,18 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }, [profiles, roleFilter, roleSearch, roleSort, text])
 
   const emptyReport = useMemo(() => emptyStaffReport(text), [text])
+  const [todayReportStart, todayReportEnd] = reportPresetRange('today')
+  const secondaryReportPreset: StaffReportRangePreset = reportView === 'players' ? 'last_30' : 'yesterday'
+  const [secondaryReportStart, secondaryReportEnd] = reportPresetRange(secondaryReportPreset)
+  const activeReportPreset = reportStart === todayReportStart && reportEnd === todayReportEnd
+    ? 'today'
+    : reportStart === secondaryReportStart && reportEnd === secondaryReportEnd
+      ? secondaryReportPreset
+      : 'custom'
+  const [previousReportStart, previousReportEnd] = previousPeriodRange(reportStart, reportEnd)
+  const isPreviousPeriodComparison = compareEnabled
+    && compareStart === previousReportStart
+    && compareEnd === previousReportEnd
   const reportOrders = reportSnapshot?.orders ?? emptyStaffOrders
   const comparisonOrders = compareEnabled ? reportSnapshot?.comparisonOrders ?? emptyStaffOrders : emptyStaffOrders
   const reportPayments = reportSnapshot?.payments ?? emptyStaffPayments
@@ -9734,41 +9746,77 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             </div>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
-                <div className="staff-report-date-actions" aria-label={text.labels.reportRange}>
-                  <button type="button" onClick={() => {
-                    const [from, to] = reportPresetRange('today')
-                    setReportStart(from)
-                    setReportEnd(to)
-                  }}>
-                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-                  </button>
-                  <button type="button" onClick={() => {
-                    const [from, to] = reportPresetRange(reportView === 'players' ? 'last_30' : 'yesterday')
-                    setReportStart(from)
-                    setReportEnd(to)
-                  }}>
-                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>
-                      {reportView === 'players' ? text.reportRangePresets.last_30 : text.actions.yesterday}
-                    </ButtonIconText>
-                  </button>
-                  <button className="staff-report-range-button" type="button" onClick={() => {
-                    setReportDatePickerTarget('report')
-                    setReportDatePickerOpen(true)
-                  }}>
-                    <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
+                <section className="staff-report-control-group staff-report-range-group" aria-label={text.labels.reportRange}>
+                  <header className="staff-report-control-head">
+                    <span className="staff-report-control-title">
+                      <CalendarRange aria-hidden="true" size={15} />
+                      {text.labels.reportRange}
+                    </span>
                     <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-                  </button>
-                </div>
-                <div className="staff-report-compare-actions" aria-label={text.labels.compareRange}>
-                  <button type="button" onClick={applyPreviousPeriodComparison}>
-                    <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
-                  </button>
-                  <label className={compareEnabled ? 'staff-compare-toggle active' : 'staff-compare-toggle'}>
-                    <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                    <span className="staff-compare-switch" aria-hidden="true" />
-                    <span>{text.labels.compare}</span>
-                  </label>
-                </div>
+                  </header>
+                  <div className="staff-report-date-actions">
+                    <button
+                      aria-pressed={activeReportPreset === 'today'}
+                      className={activeReportPreset === 'today' ? 'active' : ''}
+                      type="button"
+                      onClick={() => {
+                        setReportStart(todayReportStart)
+                        setReportEnd(todayReportEnd)
+                      }}
+                    >
+                      <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
+                    </button>
+                    <button
+                      aria-pressed={activeReportPreset === secondaryReportPreset}
+                      className={activeReportPreset === secondaryReportPreset ? 'active' : ''}
+                      type="button"
+                      onClick={() => {
+                        setReportStart(secondaryReportStart)
+                        setReportEnd(secondaryReportEnd)
+                      }}
+                    >
+                      <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>
+                        {reportView === 'players' ? text.reportRangePresets.last_30 : text.actions.yesterday}
+                      </ButtonIconText>
+                    </button>
+                    <button
+                      aria-pressed={activeReportPreset === 'custom'}
+                      className={activeReportPreset === 'custom' ? 'staff-report-range-button active' : 'staff-report-range-button'}
+                      type="button"
+                      onClick={() => {
+                        setReportDatePickerTarget('report')
+                        setReportDatePickerOpen(true)
+                      }}
+                    >
+                      <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
+                      <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+                    </button>
+                  </div>
+                </section>
+                <section className={compareEnabled ? 'staff-report-control-group staff-report-comparison-group active' : 'staff-report-control-group staff-report-comparison-group'} aria-label={text.labels.compareRange}>
+                  <header className="staff-report-control-head">
+                    <span className="staff-report-control-title">
+                      <RotateCcw aria-hidden="true" size={15} />
+                      {text.labels.compare}
+                    </span>
+                    <strong>{compareEnabled ? rangeLabel(compareStart, compareEnd) : text.compareOff}</strong>
+                  </header>
+                  <div className="staff-report-compare-actions">
+                    <button
+                      aria-pressed={isPreviousPeriodComparison}
+                      className={isPreviousPeriodComparison ? 'active' : ''}
+                      type="button"
+                      onClick={applyPreviousPeriodComparison}
+                    >
+                      <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
+                    </button>
+                    <label className={compareEnabled ? 'staff-compare-toggle active' : 'staff-compare-toggle'}>
+                      <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
+                      <span className="staff-compare-switch" aria-hidden="true" />
+                      <span>{text.labels.compare}</span>
+                    </label>
+                  </div>
+                </section>
                 {reportView === 'business' && <div className="staff-report-export-actions">
                   <button type="button" onClick={exportExcelReport}>
                     <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
