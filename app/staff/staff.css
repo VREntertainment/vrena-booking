@@ -9008,6 +9008,69 @@
   border-left: 0;
 }
 
+.app .staff-report-filter-row {
+  position: relative;
+}
+
+.app .staff-report-filter-row .staff-accountant-export {
+  position: static;
+}
+
+.app .staff-report-filter-row .staff-accountant-export-panel {
+  width: min(820px, calc(100vw - 344px));
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+
+.app .staff-accountant-export-check > span {
+  display: grid;
+  gap: 2px;
+}
+
+.app .staff-accountant-export-check small {
+  color: var(--staff-modern-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.app .staff-accountant-export-check:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.app .staff-accountant-download.primary {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+}
+
+.app .staff-report-export-feedback {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-report-export-feedback.success {
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+}
+
+.app .staff-report-export-feedback.error {
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
+}
+
+@media (max-width: 960px) {
+  .app .staff-report-filter-row .staff-accountant-export-panel {
+    width: 100%;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .app .staff-report-control-group {
     background:
