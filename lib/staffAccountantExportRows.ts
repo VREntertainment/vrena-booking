@@ -14,6 +14,8 @@ type AccountantOrder = {
   id: string
   internal_note: string | null
   invoice_address: string | null
+  invoice_email: string | null
+  invoice_required: boolean
   invoice_status: string
   order_number: string
   order_status: 'draft' | 'confirmed' | 'paid' | 'partially_paid' | 'cancelled' | 'refunded' | 'no_show' | 'completed'
@@ -205,6 +207,37 @@ export function accountantExportInfoRows(reportTitle: string, context: Accountan
     { Field: 'Attachments list included', Value: context.includeAttachments ? context.text.labels.yes : context.text.labels.no },
     { Field: 'Exported at', Value: accountantDateTime(new Date().toISOString()) },
   ]
+}
+
+export function accountantAttachmentRows(context: AccountantExportContext): Array<Record<string, unknown>> {
+  const labels = context.language === 'vi'
+    ? {
+        date: 'Ngày',
+        order: 'Mã đơn hàng',
+        type: 'Loại chứng từ',
+        reference: 'Mã tham chiếu',
+        status: 'Trạng thái',
+        recipient: 'Người nhận',
+      }
+    : {
+        date: 'Date',
+        order: 'Order number',
+        type: 'Attachment type',
+        reference: 'Reference',
+        status: 'Status',
+        recipient: 'Recipient',
+      }
+
+  return context.orders
+    .filter((order) => order.invoice_required || Boolean(order.external_invoice_id))
+    .map((order) => ({
+      [labels.date]: order.booking_date,
+      [labels.order]: order.order_number,
+      [labels.type]: context.language === 'vi' ? 'Hóa đơn điện tử' : 'E-invoice',
+      [labels.reference]: order.external_invoice_id || '',
+      [labels.status]: order.invoice_status,
+      [labels.recipient]: order.invoice_email || order.customer_email || '',
+    }))
 }
 
 export function buildAccountantExportRows(reportId: string, context: AccountantExportContext): Array<Record<string, unknown>> {
@@ -474,15 +507,15 @@ export function buildAccountantExportRows(reportId: string, context: AccountantE
   }
 
   if (reportId === 'vat_input_output') {
-    return [accountantBlankRow(vatInputColumns)]
+    return [accountantSourcePendingRow(vatInputColumns, context)]
   }
 
   if (reportId === 'payroll_staff') {
-    return [accountantBlankRow(payrollColumns)]
+    return [accountantSourcePendingRow(payrollColumns, context)]
   }
 
   if (reportId === 'inventory_movement') {
-    return [accountantBlankRow(inventoryColumns)]
+    return [accountantSourcePendingRow(inventoryColumns, context)]
   }
 
   if (reportId === 'deferred_revenue_bookings') {

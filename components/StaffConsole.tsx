@@ -824,6 +824,7 @@ const staffConsoleText = {
       deleteSession: 'Delete',
       confirmDeleteSession: 'Delete',
       download: 'Download',
+      preparingDownload: 'Preparing...',
       approvePayroll: 'Approve payroll',
       createEmployee: 'Create employee',
       generatePayroll: 'Generate payroll',
@@ -1367,6 +1368,9 @@ const staffConsoleText = {
       accountDeleteConfirmationHelp: 'Write DELETE exactly to unlock this action.',
       accountantExportHelp: 'Choose filters, report type, and format, then download.',
       accountantExportSourcePending: 'Detailed source table is not configured yet. This export includes the available report summary for the selected range.',
+      accountantAttachmentsExcelOnly: 'Attachment lists are available in Excel files.',
+      reportDownloadFailed: 'The report could not be downloaded. Please try again.',
+      reportDownloadStarted: 'Download started.',
       attendanceIntro: 'Plan shifts, clock-ins, leave, overtime, and Vietnam labor-rule checks in one place.',
       attendanceReadOnly: 'Read-only view. Viewer can inspect attendance, but cannot save changes.',
       attendanceRulesSaved: 'Attendance rules saved.',
@@ -1610,6 +1614,7 @@ const staffConsoleText = {
       deleteSession: 'Xóa',
       confirmDeleteSession: 'Xóa',
       download: 'Tải xuống',
+      preparingDownload: 'Đang chuẩn bị...',
       approvePayroll: 'Duyệt bảng lương',
       createEmployee: 'Tạo nhân viên',
       generatePayroll: 'Tạo bảng lương',
@@ -2153,6 +2158,9 @@ const staffConsoleText = {
       accountDeleteConfirmationHelp: 'Nhập chính xác DELETE để mở khóa thao tác này.',
       accountantExportHelp: 'Chọn bộ lọc, loại báo cáo và định dạng, rồi tải xuống.',
       accountantExportSourcePending: 'Bảng dữ liệu chi tiết chưa được cấu hình. File này gồm phần tóm tắt báo cáo đang có cho khoảng đã chọn.',
+      accountantAttachmentsExcelOnly: 'Danh sách chứng từ chỉ có trong file Excel.',
+      reportDownloadFailed: 'Không thể tải báo cáo. Vui lòng thử lại.',
+      reportDownloadStarted: 'Đã bắt đầu tải xuống.',
       attendanceIntro: 'Xếp ca, chấm công, nghỉ phép, tăng ca và kiểm tra quy định lao động Việt Nam trong một nơi.',
       attendanceReadOnly: 'Chế độ chỉ xem. Viewer có thể xem chấm công nhưng không thể lưu thay đổi.',
       attendanceRulesSaved: 'Đã lưu quy định chấm công.',
@@ -4622,6 +4630,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [accountantExportStore, setAccountantExportStore] = useState(accountantExportStores[0].id)
   const [accountantIncludeAttachments, setAccountantIncludeAttachments] = useState(false)
   const [accountantReportId, setAccountantReportId] = useState<AccountantExportReportId>('sales_revenue')
+  const [reportExporting, setReportExporting] = useState<'excel' | 'pdf' | 'accountant' | null>(null)
+  const [reportExportFeedback, setReportExportFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
   const [status, setStatus] = useState('')
   const [loadingData, setLoadingData] = useState<Partial<Record<StaffDataKey, boolean>>>({})
   const loadedDataRef = useRef<Partial<Record<StaffDataKey, boolean>>>({})
@@ -7646,6 +7656,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     )
   }
 
+  async function runReportExport(kind: 'excel' | 'pdf' | 'accountant', task: () => Promise<void>) {
+    if (reportExporting) return
+    setReportExporting(kind)
+    setReportExportFeedback(null)
+    try {
+      await task()
+      setReportExportFeedback({ message: text.messages.reportDownloadStarted, tone: 'success' })
+    } catch (error) {
+      console.error('Staff report export failed', error)
+      setReportExportFeedback({ message: text.messages.reportDownloadFailed, tone: 'error' })
+    } finally {
+      setReportExporting(null)
+    }
+  }
+
   async function downloadAccountantExport() {
     const reportDefinition = accountantExportReports.find((item) => item.id === accountantReportId) || accountantExportReports[0]
     const storeDefinition = accountantExportStores.find((item) => item.id === accountantExportStore) || accountantExportStores[0]
@@ -7655,8 +7680,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       try {
         exportAuditLogs = await fetchAuditLogs(250)
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : String(error))
-        return
+        throw error
       }
     }
     const exportContext = {
@@ -7675,20 +7699,27 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       includeAttachments: accountantIncludeAttachments,
     }
     const reportTitle = reportDefinition.label[accountantExportLanguage]
-    const { accountantExportInfoRows, buildAccountantExportRows } = await import('../lib/staffAccountantExportRows')
+    const { accountantAttachmentRows, accountantExportInfoRows, buildAccountantExportRows } = await import('../lib/staffAccountantExportRows')
     const rows = buildAccountantExportRows(reportDefinition.id, exportContext)
     const suffix = `${reportStart}_${reportEnd}`
     if (accountantExportFormat === 'csv') {
       await downloadCsv(`${reportDefinition.fileBase}_${suffix}.csv`, rows, exportText)
       return
     }
-    await downloadExcel(`${reportDefinition.fileBase}_${suffix}.xlsx`, [
+    const workbookSections = [
       { title: reportTitle, rows },
       {
         title: accountantExportLanguage === 'vi' ? 'Thông tin xuất file' : 'Export info',
         rows: accountantExportInfoRows(reportTitle, exportContext),
       },
-    ], exportText)
+    ]
+    if (accountantIncludeAttachments) {
+      workbookSections.push({
+        title: exportText.labels.attachmentList,
+        rows: accountantAttachmentRows(exportContext),
+      })
+    }
+    await downloadExcel(`${reportDefinition.fileBase}_${suffix}.xlsx`, workbookSections, exportText)
   }
 
   function updateBookingPaymentSplit(splitId: string, patch: Partial<PaymentSplitDraft>) {
@@ -9818,11 +9849,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   </div>
                 </section>
                 {reportView === 'business' && <div className="staff-report-export-actions">
-                  <button type="button" onClick={exportExcelReport}>
-                    <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
+                  <button
+                    aria-busy={reportExporting === 'excel'}
+                    disabled={reportExporting !== null}
+                    type="button"
+                    onClick={() => { void runReportExport('excel', exportExcelReport) }}
+                  >
+                    <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{reportExporting === 'excel' ? text.actions.preparingDownload : text.actions.excel}</ButtonIconText>
                   </button>
-                  <button type="button" onClick={exportPdfReport}>
-                    <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{text.actions.pdf}</ButtonIconText>
+                  <button
+                    aria-busy={reportExporting === 'pdf'}
+                    disabled={reportExporting !== null}
+                    type="button"
+                    onClick={() => { void runReportExport('pdf', exportPdfReport) }}
+                  >
+                    <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{reportExporting === 'pdf' ? text.actions.preparingDownload : text.actions.pdf}</ButtonIconText>
                   </button>
                   <div className="staff-accountant-export">
                     <button
@@ -9861,7 +9902,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                           </label>
                           <label>
                             {text.labels.exportFormat}
-                            <select value={accountantExportFormat} onChange={(event) => setAccountantExportFormat(event.target.value as AccountantExportFormat)}>
+                            <select value={accountantExportFormat} onChange={(event) => {
+                              const nextFormat = event.target.value as AccountantExportFormat
+                              setAccountantExportFormat(nextFormat)
+                              if (nextFormat === 'csv') setAccountantIncludeAttachments(false)
+                            }}>
                               {accountantExportFormats.map((format) => (
                                 <option key={format} value={format}>{format === 'excel' ? text.actions.excel : 'CSV'}</option>
                               ))}
@@ -9879,9 +9924,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                             <input
                               type="checkbox"
                               checked={accountantIncludeAttachments}
+                              disabled={accountantExportFormat === 'csv'}
                               onChange={(event) => setAccountantIncludeAttachments(event.target.checked)}
                             />
-                            {text.labels.includeAttachments}
+                            <span>
+                              {text.labels.includeAttachments}
+                              {accountantExportFormat === 'csv' && <small>{text.messages.accountantAttachmentsExcelOnly}</small>}
+                            </span>
                           </label>
                         </div>
                         <div className="staff-accountant-report-heading">
@@ -9903,12 +9952,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                             </button>
                           ))}
                         </div>
-                        <button className="primary staff-accountant-download" type="button" onClick={() => { void downloadAccountantExport() }}>
-                          <ButtonIconText icon={<Download aria-hidden="true" size={15} />}>{text.actions.download}</ButtonIconText>
+                        <button
+                          aria-busy={reportExporting === 'accountant'}
+                          className="primary staff-accountant-download"
+                          disabled={reportExporting !== null}
+                          type="button"
+                          onClick={() => { void runReportExport('accountant', downloadAccountantExport) }}
+                        >
+                          <ButtonIconText icon={<Download aria-hidden="true" size={15} />}>{reportExporting === 'accountant' ? text.actions.preparingDownload : text.actions.download}</ButtonIconText>
                         </button>
                       </div>
                     )}
                   </div>
+                  {reportExportFeedback && (
+                    <span className={`staff-report-export-feedback ${reportExportFeedback.tone}`} role="status">
+                      {reportExportFeedback.message}
+                    </span>
+                  )}
                 </div>}
               </div>
               {compareEnabled && (
