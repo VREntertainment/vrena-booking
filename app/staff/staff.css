@@ -3474,7 +3474,7 @@
 }
 
 .app .staff-employee-row small,
-.app .staff-employee-selected span {
+.app .staff-employee-selected > div > span {
   color: var(--vrena-neutral-600);
   font-size: 11px;
   font-weight: 800;
@@ -6102,7 +6102,7 @@
   .app .staff-planning-staff small,
   .app .staff-employee-list > .staff-helper-text,
   .app .staff-employee-row small,
-  .app .staff-employee-selected span,
+  .app .staff-employee-selected > div > span,
   .app .staff-standard-shifts > strong,
   .app .staff-shift-chip small,
   .app .staff-report-bar-group small,
@@ -8024,6 +8024,109 @@
   .app .staff-hr-timesheet-search,
   .app .staff-hr-approve-attendance {
     width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-hr-timesheet-search {
+    border-color: var(--staff-modern-border-strong);
+    background: var(--staff-modern-soft);
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .staff-hr-timesheet-search input {
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-timesheet-search input::placeholder {
+    color: var(--vrena-neutral-500);
+    opacity: 1;
+  }
+
+  .app .staff-hr-table-panel .staff-attendance-table td > small {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .staff-hr-settings-shell,
+  .app button.staff-hr-reference-row {
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-settings-heading p,
+  .app .staff-hr-settings-nav > span,
+  .app .staff-hr-settings-panel-title p,
+  .app .staff-hr-reference-copy > span,
+  .app .staff-hr-reference-row > div > span,
+  .app .staff-hr-checklist-row span,
+  .app .staff-hr-settings-actions > span,
+  .app .staff-hr-option-row > div p,
+  .app .staff-hr-rule-toggle > small,
+  .app .staff-hr-range-control small {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .staff-hr-settings-workspace {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 88%, transparent);
+  }
+
+  .app .staff-hr-settings-nav,
+  .app .staff-hr-settings-panel {
+    border-color: var(--staff-modern-border);
+    background: var(--staff-modern-surface);
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-settings-nav button {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .staff-hr-settings-nav button:not(.active):hover {
+    background: color-mix(in srgb, var(--vrena-orange-400) 8%, transparent);
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-settings-panel-title,
+  .app .staff-hr-checklist-row,
+  .app .staff-hr-reference-row,
+  .app button.staff-hr-reference-row,
+  .app .staff-hr-reference-group,
+  .app .staff-hr-salary-rates,
+  .app .staff-hr-work-rest-grid,
+  .app .staff-hr-rest-days,
+  .app .staff-hr-option-row {
+    border-color: var(--staff-modern-border);
+  }
+
+  .app .staff-hr-range-control label,
+  .app .staff-hr-payday-select,
+  .app .staff-hr-rule-toggle,
+  .app .staff-hr-salary-rates label,
+  .app .staff-hr-work-rest-grid label {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .staff-hr-settings-panel :is(
+    input:not([type='checkbox']):not([type='radio']):not([role='switch']),
+    select,
+    textarea,
+    .staff-picker-shell
+  ) {
+    border-color: var(--staff-modern-border-strong);
+    background: var(--staff-modern-soft);
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-settings-panel :is(input, textarea)::placeholder {
+    color: var(--vrena-neutral-500);
+    opacity: 1;
+  }
+
+  .app .staff-hr-switch-row > input[role='switch'] {
+    background: var(--vrena-neutral-700);
+  }
+
+  .app .staff-hr-switch-row > input[role='switch']::after {
+    background: var(--vrena-neutral-200);
   }
 }
 
