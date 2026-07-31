@@ -649,6 +649,7 @@ export const it = {
   captchaHelp: 'Controllo rapido per proteggere account, ricompense e prenotazioni.',
   captchaRequired: 'Completa prima il check umano.',
   birthdaySignupHelp: 'Required once so we can apply the right consent flow.',
+  minorBirthdayLockedHelp: 'Per la tua sicurezza, solo il team VRena può correggere la data di nascita di un minore.',
   consentPrefix: 'I have read and agree to the ',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',

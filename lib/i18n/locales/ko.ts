@@ -649,6 +649,7 @@ export const ko = {
   captchaHelp: '계정, 보상, 예약을 보호하기 위한 빠른 확인입니다.',
   captchaRequired: '먼저 사람 확인을 완료하세요.',
   birthdaySignupHelp: 'Required once so we can apply the right consent flow.',
+  minorBirthdayLockedHelp: '안전을 위해 미성년자의 생년월일은 VRena 팀만 수정할 수 있습니다.',
   consentPrefix: 'I have read and agree to the ',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',

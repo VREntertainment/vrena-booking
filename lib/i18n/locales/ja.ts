@@ -649,6 +649,7 @@ export const ja = {
   captchaHelp: 'アカウント、リワード、予約を守るための簡単な確認です。',
   captchaRequired: '先に人間チェックを完了してください。',
   birthdaySignupHelp: 'Required once so we can apply the right consent flow.',
+  minorBirthdayLockedHelp: '安全のため、未成年者の生年月日を修正できるのはVRenaチームのみです。',
   consentPrefix: 'I have read and agree to the ',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',

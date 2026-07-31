@@ -649,6 +649,7 @@ export const de = {
   captchaHelp: 'Kurzer Check zum Schutz von Konto, Rewards und Buchungen.',
   captchaRequired: 'Bitte erst den Menschcheck erledigen.',
   birthdaySignupHelp: 'Required once so we can apply the right consent flow.',
+  minorBirthdayLockedHelp: 'Zu deinem Schutz kann nur das VRena-Team das Geburtsdatum eines Minderjährigen korrigieren.',
   consentPrefix: 'I have read and agree to the ',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',

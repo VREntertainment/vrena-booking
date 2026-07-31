@@ -649,6 +649,7 @@ export const vi = {
   captchaHelp: 'Một bước kiểm tra nhanh để bảo vệ tài khoản, phần thưởng và đặt chỗ của bạn.',
   captchaRequired: 'Vui lòng hoàn tất bước xác minh trước.',
   birthdaySignupHelp: 'Required once so we can apply the right consent flow.',
+  minorBirthdayLockedHelp: 'Để bảo vệ bạn, chỉ đội ngũ VRena mới có thể sửa ngày sinh của trẻ em.',
   consentPrefix: 'I have read and agree to the ',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',
