@@ -1,5 +1,12 @@
 import { getAccessToken, getPhoneNumber, openWebview } from 'zmp-sdk'
 
+export const legalDocumentUrls = {
+  privacyPolicy: 'https://www.vre-vietnam.com/privacy-policy',
+  termsAndConditions: 'https://www.vre-vietnam.com/terms-and-conditions',
+} as const
+
+export type LegalDocument = keyof typeof legalDocumentUrls
+
 export type PlayerStatus = {
   linked: boolean
   displayName: string
@@ -84,6 +91,23 @@ export async function openVrena(handoffUrl: string | undefined) {
 
   await openWebview({
     url: handoffUrl,
+    config: {
+      style: 'normal',
+      leftButton: 'back',
+    },
+  })
+}
+
+export async function openLegalDocument(document: LegalDocument) {
+  const url = legalDocumentUrls[document]
+
+  if (import.meta.env.DEV) {
+    window.location.assign(url)
+    return
+  }
+
+  await openWebview({
+    url,
     config: {
       style: 'normal',
       leftButton: 'back',

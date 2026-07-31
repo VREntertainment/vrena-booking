@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type MouseEvent } from 'react'
 import {
   continueWithZalo,
+  legalDocumentUrls,
   loadPlayerStatus,
+  openLegalDocument,
   openVrena,
+  type LegalDocument,
   type PlayerStatus,
 } from './api'
 
@@ -70,6 +73,21 @@ export default function App() {
       setError(errorMessage(continueError))
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function handleLegalLink(
+    event: MouseEvent<HTMLAnchorElement>,
+    document: LegalDocument,
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    setError('')
+
+    try {
+      await openLegalDocument(document)
+    } catch (linkError) {
+      setError(errorMessage(linkError))
     }
   }
 
@@ -153,11 +171,17 @@ export default function App() {
               <span>
                 Tôi đồng ý cho VRena nhận và sử dụng số điện thoại Zalo của tôi cho
                 mục đích nêu trên. Tôi đã đọc và đồng ý với{' '}
-                <a href="https://www.vre-vietnam.com/privacy-policy" target="_blank" rel="noreferrer">
+                <a
+                  href={legalDocumentUrls.privacyPolicy}
+                  onClick={(event) => void handleLegalLink(event, 'privacyPolicy')}
+                >
                   Chính sách quyền riêng tư
                 </a>{' '}
                 và{' '}
-                <a href="https://www.vre-vietnam.com/terms-and-conditions" target="_blank" rel="noreferrer">
+                <a
+                  href={legalDocumentUrls.termsAndConditions}
+                  onClick={(event) => void handleLegalLink(event, 'termsAndConditions')}
+                >
                   Điều khoản sử dụng
                 </a>
                 .

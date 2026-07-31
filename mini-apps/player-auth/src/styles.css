@@ -277,6 +277,7 @@ footer svg {
 
 .primary-button:focus-visible,
 .retry-button:focus-visible,
+.consent-row a:focus-visible,
 .consent-row input:focus-visible {
   outline: 3px solid rgb(10 136 148 / 0.35);
   outline-offset: 3px;
