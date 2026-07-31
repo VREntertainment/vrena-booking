@@ -5305,10 +5305,9 @@
 .app .staff-report-head {
   align-items: start;
   gap: 14px;
-  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr);
+  grid-template-columns: max-content minmax(0, 1fr);
 }
 
-.app .staff-report-title-block > span,
 .app .staff-insights-eyebrow {
   align-items: center;
   color: var(--vrena-orange-600);
@@ -5318,18 +5317,6 @@
   gap: 6px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.app .staff-report-title-block h3 {
-  margin: 3px 0 4px;
-}
-
-.app .staff-report-title-block p {
-  color: var(--staff-modern-muted);
-  font-size: 13px;
-  line-height: 1.45;
-  margin: 0;
-  max-width: 440px;
 }
 
 .app .staff-report-view-tabs {
@@ -5372,70 +5359,6 @@
 
 .app .staff-player-insights.loading {
   opacity: 0.72;
-}
-
-.app .staff-insights-hero {
-  align-items: start;
-  background:
-    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--vrena-cyan-500) 19%, transparent), transparent 36%),
-    linear-gradient(135deg, color-mix(in srgb, var(--vrena-blue-600) 10%, var(--staff-modern-soft)), var(--staff-modern-soft));
-  border: 1px solid color-mix(in srgb, var(--vrena-blue-600) 24%, var(--staff-modern-border));
-  border-radius: 14px;
-  display: flex;
-  gap: 18px;
-  justify-content: space-between;
-  overflow: hidden;
-  padding: 18px;
-}
-
-.app .staff-insights-hero h4 {
-  font-size: clamp(22px, 2.7vw, 30px);
-  line-height: 1.1;
-  margin: 7px 0 5px;
-}
-
-.app .staff-insights-hero p {
-  color: var(--staff-modern-muted);
-  line-height: 1.5;
-  margin: 0;
-  max-width: 620px;
-}
-
-.app .staff-insights-hero-meta {
-  align-items: flex-end;
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: 7px;
-  text-align: right;
-}
-
-.app .staff-insights-hero-meta > strong {
-  font-size: 15px;
-}
-
-.app .staff-insights-hero-meta > span {
-  align-items: center;
-  border-radius: 999px;
-  display: inline-flex;
-  font-size: 11px;
-  font-weight: 800;
-  gap: 5px;
-  padding: 5px 9px;
-}
-
-.app .staff-insights-hero-meta > span.good {
-  background: color-mix(in srgb, var(--vrena-green-700) 13%, transparent);
-  color: var(--vrena-green-700);
-}
-
-.app .staff-insights-hero-meta > span.caution {
-  background: color-mix(in srgb, var(--vrena-orange-500) 14%, transparent);
-  color: var(--vrena-orange-700);
-}
-
-.app .staff-insights-hero-meta small {
-  color: var(--staff-modern-muted);
 }
 
 .app .staff-insight-kpi-grid {
@@ -5575,6 +5498,21 @@
   min-height: 190px;
   overflow-x: auto;
   padding-bottom: 3px;
+  position: relative;
+  isolation: isolate;
+}
+
+.app .staff-insight-activity-chart::before {
+  background: repeating-linear-gradient(
+    to top,
+    color-mix(in srgb, var(--staff-modern-border-strong) 74%, transparent) 0 1px,
+    transparent 1px 36px
+  );
+  content: '';
+  inset: 18px 0 22px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
 }
 
 .app .staff-insight-activity-day {
@@ -5583,6 +5521,8 @@
   flex-direction: column;
   gap: 6px;
   min-width: 34px;
+  position: relative;
+  z-index: 1;
 }
 
 .app .staff-insight-activity-track {
@@ -6050,17 +5990,8 @@
     min-width: 0;
   }
 
-  .app .staff-insights-hero {
-    display: grid;
-  }
-
   .app .staff-digital-journey-head {
     display: grid;
-  }
-
-  .app .staff-insights-hero-meta {
-    align-items: flex-start;
-    text-align: left;
   }
 
   .app .staff-digital-journey-meta {
@@ -6091,7 +6022,6 @@
 @media (prefers-color-scheme: dark) {
   .app .staff-report-view-tabs,
   .app .staff-report-view-tabs button.active,
-  .app .staff-insights-hero,
   .app .staff-insight-kpi,
   .app .staff-insight-panel,
   .app .staff-insights-scope,
@@ -6108,7 +6038,6 @@
     color: var(--vrena-neutral-100);
   }
 
-  .app .staff-insights-hero-meta > span.good,
   .app .staff-digital-journey-meta > span,
   .app .staff-insight-kpi > small,
   .app .staff-insight-segment.loyal,
@@ -6120,7 +6049,6 @@
     color: var(--vrena-purple-300);
   }
 
-  .app .staff-insights-hero-meta > span.caution,
   .app .staff-insight-segment.new,
   .app .staff-insight-segment.booked {
     color: var(--vrena-orange-400);

@@ -3,7 +3,6 @@
 import {
   Activity,
   CalendarCheck2,
-  CircleAlert,
   Gamepad2,
   Gauge,
   MessageCircle,
@@ -291,7 +290,7 @@ const productCopy = {
     eyebrow: 'Consented digital behavior',
     title: 'Digital journey',
     subtitle: 'How players discover, explore and search the app before and between venue visits.',
-    privacy: 'Aggregate only · 180-day retention',
+    privacy: 'Aggregate only · No retention limit',
     sessions: 'App sessions',
     sessionsHelp: 'Distinct consented browsing sessions.',
     visitors: 'Visitors',
@@ -321,14 +320,13 @@ const productCopy = {
     sessionUnit: 'sessions',
     transitionUnit: 'journeys',
     averageResults: 'avg results',
-    noData: 'Collection starts with this release. No historical clickstream can be reconstructed; this view will populate as players opt in.',
     signedIn: 'signed-in visitor share',
   },
   vi: {
     eyebrow: 'Hành vi số đã được đồng ý',
     title: 'Hành trình số',
     subtitle: 'Cách người chơi khám phá, duyệt và tìm kiếm trong app trước và giữa các lượt ghé cơ sở.',
-    privacy: 'Chỉ tổng hợp · lưu tối đa 180 ngày',
+    privacy: 'Chỉ tổng hợp · Không giới hạn lưu trữ',
     sessions: 'Phiên dùng app',
     sessionsHelp: 'Số phiên duyệt đã đồng ý khác nhau.',
     visitors: 'Khách truy cập',
@@ -358,7 +356,6 @@ const productCopy = {
     sessionUnit: 'phiên',
     transitionUnit: 'hành trình',
     averageResults: 'kết quả TB',
-    noData: 'Việc thu thập bắt đầu từ bản phát hành này. Không thể tái tạo lịch sử clickstream; báo cáo sẽ có dữ liệu khi người chơi đồng ý.',
     signedIn: 'tỷ lệ khách đã đăng nhập',
   },
 } as const
@@ -453,7 +450,6 @@ export default function StaffPlayerInsights({
   const totalDeviceSessions = (data?.productAnalytics?.deviceMix ?? []).reduce((sum, item) => sum + item.sessions, 0)
   const weekdayLabels = language === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayparts = ['morning', 'afternoon', 'evening'] as const
-  const sourceFreshness = timeLabel(summary.latestSourceAt, language)
   const productFreshness = timeLabel(productSummary.latestEventAt, language)
   const comparisonFor = (current: number, previous: number) => compareEnabled
     ? `${changeLabel(current, previous, text.newValue)} ${text.vs} ${compareLabel}`
@@ -461,22 +457,6 @@ export default function StaffPlayerInsights({
 
   return (
     <div className={loading ? 'staff-player-insights loading' : 'staff-player-insights'}>
-      <header className="staff-insights-hero">
-        <div>
-          <span className="staff-insights-eyebrow"><Activity aria-hidden="true" size={15} /> {text.liveSources}</span>
-          <h4>{text.title}</h4>
-          <p>{text.subtitle}</p>
-        </div>
-        <div className="staff-insights-hero-meta">
-          <strong>{rangeLabel}</strong>
-          <span className={summary.resultCoverage >= 75 ? 'good' : 'caution'}>
-            {summary.resultCoverage >= 75 ? <ShieldCheck aria-hidden="true" size={14} /> : <CircleAlert aria-hidden="true" size={14} />}
-            {summary.resultCoverage >= 75 ? text.strongCoverage : text.lowCoverage} · {percent(summary.resultCoverage)}
-          </span>
-          {sourceFreshness && <small>{text.freshness} {sourceFreshness}</small>}
-        </div>
-      </header>
-
       <div className="staff-insight-kpi-grid">
         <InsightCard
           comparison={comparisonFor(summary.engagedPlayers, comparison.engagedPlayers)}
@@ -688,8 +668,6 @@ export default function StaffPlayerInsights({
             value={percent(productSummary.searchRate)}
           />
         </div>
-
-        {productSummary.sessions === 0 ? <p className="staff-insights-empty">{digitalText.noData}</p> : null}
 
         {productSummary.sessions > 0 ? (
           <div className="staff-digital-grid">
