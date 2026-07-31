@@ -301,8 +301,8 @@ export default function StaffPlayerInsights({
   rangeLabel,
 }: StaffPlayerInsightsProps) {
   const text = copy[language]
-  const summary = data?.summary ?? emptySummary
-  const comparison = data?.comparisonSummary ?? emptySummary
+  const summary = { ...emptySummary, ...(data?.summary ?? {}) }
+  const comparison = { ...emptySummary, ...(data?.comparisonSummary ?? {}) }
   const maxActivity = Math.max(1, ...(data?.activitySeries ?? []).flatMap((point) => [point.reservations, point.checkIns]))
   const maxPeak = Math.max(1, ...(data?.peakTimes ?? []).map((point) => point.visits))
   const maxGame = Math.max(1, ...(data?.gameDemand ?? []).map((game) => game.reservations))
