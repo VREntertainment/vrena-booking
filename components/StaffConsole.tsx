@@ -34,6 +34,7 @@ import { supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
+import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
@@ -43,6 +44,10 @@ const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeMo
 })
 
 const StaffHrHub = dynamic(() => import('./StaffHrHub'), {
+  ssr: false,
+})
+
+const StaffPlayerInsights = dynamic(() => import('./StaffPlayerInsights'), {
   ssr: false,
 })
 
@@ -56,6 +61,7 @@ type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
+type StaffReportView = 'business' | 'players'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
 type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
@@ -4609,6 +4615,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [reportDatePickerOpen, setReportDatePickerOpen] = useState(false)
   const [reportDatePickerTarget, setReportDatePickerTarget] = useState<'report' | 'compare'>('report')
   const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
+  const [reportView, setReportView] = useState<StaffReportView>('business')
   const [accountantExportOpen, setAccountantExportOpen] = useState(false)
   const [accountantExportFormat, setAccountantExportFormat] = useState<AccountantExportFormat>('excel')
   const [accountantExportLanguage, setAccountantExportLanguage] = useState<StaffConsoleLanguage>(() => resolveStaffConsoleLanguage(language))
@@ -4630,6 +4637,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [roleSaveFeedback, setRoleSaveFeedback] = useState<Record<string, RoleSaveFeedback>>({})
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
+  const [playerInsightsSnapshot, setPlayerInsightsSnapshot] = useState<StaffPlayerInsightsSnapshot | null>(null)
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
@@ -5829,6 +5837,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   async function loadReportData(force = false) {
     await runStaffLoader('report', async () => {
+      const playerInsightsPromise = supabase.rpc('staff_player_behavior_report', {
+        p_start_date: reportStart,
+        p_end_date: reportEnd,
+        p_compare_start: compareEnabled ? compareStart : null,
+        p_compare_end: compareEnabled ? compareEnd : null,
+        p_player_limit: 16,
+      })
+      const updatePlayerInsights = async () => {
+        const result = await playerInsightsPromise
+        if (!result.error) {
+          setPlayerInsightsSnapshot(result.data as StaffPlayerInsightsSnapshot)
+        } else if (!rpcFunctionMissing(result.error)) {
+          setPlayerInsightsSnapshot(null)
+        }
+      }
       const withComparisonOrders = async (snapshot: StaffReportSnapshot) => {
         if (!compareEnabled || snapshot.comparisonOrders.length > 0) return snapshot
 
@@ -5857,21 +5880,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       if (!error) {
         const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(data, text))
         setReportSnapshot(snapshot)
+        await updatePlayerInsights()
         return
       }
 
       if (!rpcFunctionMissing(error)) {
-        await loadReportFallback()
+        await Promise.all([loadReportFallback(), updatePlayerInsights()])
         return
       }
 
       const legacyResult = await supabase.rpc('get_staff_daily_report', reportArgs)
       if (legacyResult.error) {
-        await loadReportFallback()
+        await Promise.all([loadReportFallback(), updatePlayerInsights()])
         return
       }
       const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(legacyResult.data, text))
       setReportSnapshot(snapshot)
+      await updatePlayerInsights()
     }, force)
   }
 
@@ -7528,6 +7553,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setCompareStart(previousStart)
     setCompareEnd(previousEnd)
     setCompareEnabled(true)
+  }
+
+  function selectReportView(nextView: StaffReportView) {
+    setReportView(nextView)
+    if (nextView === 'players' && reportStart === todayString() && reportEnd === todayString()) {
+      setReportStart(addDays(todayString(), -29))
+      setReportEnd(todayString())
+    }
   }
 
   function applyReportDateRange(nextStart: string, nextEnd: string, nextCompareEnabled: boolean, nextCompareStart: string, nextCompareEnd: string) {
@@ -9623,7 +9656,33 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {currentTab === 'report' && (
         <div className="staff-card">
           <div className="staff-report-head">
-            <h3>{text.tabs.report}</h3>
+            <div className="staff-report-title-block">
+              <span>{text.tabGroups.reports}</span>
+              <h3>{text.tabs.report}</h3>
+              <p>{resolvedLanguage === 'vi'
+                ? 'Theo dõi hiệu quả kinh doanh và mức độ tương tác thực tế của người chơi.'
+                : 'Track business performance and real player engagement from one trusted view.'}</p>
+            </div>
+            <div className="staff-report-view-tabs" role="tablist" aria-label={resolvedLanguage === 'vi' ? 'Chế độ báo cáo' : 'Report view'}>
+              <button
+                aria-selected={reportView === 'business'}
+                className={reportView === 'business' ? 'active' : ''}
+                role="tab"
+                type="button"
+                onClick={() => selectReportView('business')}
+              >
+                {resolvedLanguage === 'vi' ? 'Kinh doanh' : 'Business performance'}
+              </button>
+              <button
+                aria-selected={reportView === 'players'}
+                className={reportView === 'players' ? 'active' : ''}
+                role="tab"
+                type="button"
+                onClick={() => selectReportView('players')}
+              >
+                {resolvedLanguage === 'vi' ? 'Hành vi người chơi' : 'Player behavior'}
+              </button>
+            </div>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
                 <div className="staff-report-date-actions" aria-label={text.labels.reportRange}>
@@ -9635,11 +9694,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
                   </button>
                   <button type="button" onClick={() => {
-                    const [from, to] = reportPresetRange('yesterday')
+                    const [from, to] = reportPresetRange(reportView === 'players' ? 'last_30' : 'yesterday')
                     setReportStart(from)
                     setReportEnd(to)
                   }}>
-                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.yesterday}</ButtonIconText>
+                    <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>
+                      {reportView === 'players' ? text.reportRangePresets.last_30 : text.actions.yesterday}
+                    </ButtonIconText>
                   </button>
                   <button className="staff-report-range-button" type="button" onClick={() => {
                     setReportDatePickerTarget('report')
@@ -9659,7 +9720,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <span>{text.labels.compare}</span>
                   </label>
                 </div>
-                <div className="staff-report-export-actions">
+                {reportView === 'business' && <div className="staff-report-export-actions">
                   <button type="button" onClick={exportExcelReport}>
                     <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
                   </button>
@@ -9751,7 +9812,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
               </div>
               {compareEnabled && (
                 <div className="staff-report-compare-row">
@@ -9767,6 +9828,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               )}
             </div>
           </div>
+          {reportView === 'business' ? (
+          <>
           <div className="staff-summary-grid">
             <div><span>{text.labels.totalSales}</span><strong>{formatVnd(report.totalSales)}</strong></div>
             <div><span>{text.labels.totalPaid}</span><strong>{formatVnd(report.totalPaid)}</strong></div>
@@ -10010,6 +10073,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             </section>
           </div>
           {orderRows(reportOrders, reportPaymentsByOrderId)}
+          </>
+          ) : (
+            <StaffPlayerInsights
+              compareEnabled={compareEnabled}
+              compareLabel={rangeLabel(compareStart, compareEnd)}
+              data={playerInsightsSnapshot}
+              language={resolvedLanguage}
+              loading={Boolean(loadingData.report)}
+              rangeLabel={rangeLabel(reportStart, reportEnd)}
+            />
+          )}
         </div>
       )}
 
