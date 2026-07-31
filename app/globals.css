@@ -12415,7 +12415,10 @@ body {
   }
 
   .app .console-sidebar-collapsed .app-title-row {
+    align-items: center;
+    flex-direction: column;
     justify-content: center;
+    gap: 10px;
   }
 
   .app .console-sidebar-collapsed .brand-logo {
@@ -12424,7 +12427,6 @@ body {
   }
 
   .app .console-sidebar-collapsed .brand-logo-full,
-  .app .console-sidebar-collapsed .language-picker,
   .app .console-sidebar-collapsed .app-share,
   .app .console-sidebar-collapsed > div:first-of-type > .muted,
   .app .console-sidebar-collapsed .profile-chip > div:not(.avatar),
@@ -12435,6 +12437,21 @@ body {
 
   .app .console-sidebar-collapsed .brand-logo-mark {
     display: block;
+  }
+
+  .app .console-sidebar-collapsed .language-picker {
+    display: block;
+  }
+
+  .app .console-sidebar-collapsed .language-picker > button {
+    min-width: 44px;
+    padding-inline: 8px;
+  }
+
+  .app .console-sidebar-collapsed .language-menu {
+    top: 0;
+    left: calc(100% + 10px);
+    --language-menu-x: 0px;
   }
 
   .app .console-sidebar-collapsed .profile-chip {
