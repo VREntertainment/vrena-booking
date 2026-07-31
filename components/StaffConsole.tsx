@@ -5880,11 +5880,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         p_compare_end: compareEnabled ? compareEnd : null,
         p_player_limit: 16,
       })
+      const productAnalyticsPromise = supabase.rpc('staff_product_analytics_report', {
+        p_start_date: reportStart,
+        p_end_date: reportEnd,
+        p_compare_start: compareEnabled ? compareStart : null,
+        p_compare_end: compareEnabled ? compareEnd : null,
+      })
       const updatePlayerInsights = async () => {
-        const result = await playerInsightsPromise
-        if (!result.error) {
-          setPlayerInsightsSnapshot(result.data as StaffPlayerInsightsSnapshot)
-        } else if (!rpcFunctionMissing(result.error)) {
+        const [playerResult, productResult] = await Promise.all([playerInsightsPromise, productAnalyticsPromise])
+        if (!playerResult.error) {
+          setPlayerInsightsSnapshot({
+            ...(playerResult.data as StaffPlayerInsightsSnapshot),
+            productAnalytics: productResult.error ? null : productResult.data,
+          } as StaffPlayerInsightsSnapshot)
+        } else if (!rpcFunctionMissing(playerResult.error)) {
           setPlayerInsightsSnapshot(null)
         }
       }

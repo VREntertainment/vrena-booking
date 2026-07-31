@@ -635,6 +635,8 @@ export default function LeaderboardPanel({
 
       <input
         className="search leaderboard-search"
+        data-analytics-search-results={visibleLeaderboardRows.length}
+        data-analytics-search-surface="hall-of-fame"
         type="search"
         placeholder={text.leaderboardSearchPlaceholder}
         value={leaderboardSearch}

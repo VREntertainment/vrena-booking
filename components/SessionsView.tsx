@@ -85,6 +85,8 @@ export default function SessionsView({
           </button>
           <input
             className="search"
+            data-analytics-search-results={filteredSessionCount}
+            data-analytics-search-surface="sessions"
             type="search"
             placeholder={text.searchPlaceholder}
             value={search}

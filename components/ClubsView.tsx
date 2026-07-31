@@ -78,6 +78,8 @@ export default function ClubsView({
           </button>
           <input
             className="search"
+            data-analytics-search-results={clubListCount}
+            data-analytics-search-surface="clubs"
             type="search"
             placeholder={text.clubSearchPlaceholder}
             value={clubSearch}
