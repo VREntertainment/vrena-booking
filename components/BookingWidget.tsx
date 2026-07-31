@@ -5433,22 +5433,10 @@ function handleSessionDateChange(value: string) {
       selectedPlayerProfile.bestByGame.map((item) => [item.game, item.score])
     )
 
-    return games.flatMap((game) => {
+    return games.map((game) => {
       const perGame = selectedPlayerGameStats[game.id]
       const perGameBestScore = perGame?.bestByGame.find((item) => item.game === game.title)?.score
       const bestScore = perGameBestScore ?? overallBestScores.get(game.title)
-      const hasActivity = Boolean(
-        bestScore !== undefined
-        || (perGame && (
-          perGame.gamesJoined > 0
-          || perGame.wins > 0
-          || perGame.bestPerformerCount > 0
-          || perGame.totalProjectiles > 0
-          || (perGame.totalMovementMeters ?? 0) > 0
-        ))
-      )
-
-      if (!hasActivity) return []
 
       const stats = [
         { key: 'sessions', label: text.sessions, value: perGame ? Math.floor(perGame.sessionsJoined) : '-' },
@@ -5470,12 +5458,12 @@ function handleSessionDateChange(value: string) {
         })
       }
 
-      return [{
+      return {
         id: game.id,
         image: game.image,
         title: game.title,
         stats,
-      }]
+      }
     })
   }, [bestPerformerCountText, escapeBestTimeText, selectedPlayerGameStats, selectedPlayerProfile, text])
 
