@@ -29,7 +29,6 @@ import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
 import type { StaffProfile } from './StaffConsole'
-import StaffPlayerStatsEditor from './StaffPlayerStatsEditor'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
@@ -5155,7 +5154,6 @@ function handleSessionDateChange(value: string) {
     && hasVerifiedTotpFactor
     && mfaAssuranceLevel === 'aal2'
   )
-  const canEditStaffPlayerCards = canAccessStaffConsole && staffAccessRank >= 50
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -10277,20 +10275,6 @@ function handleSessionDateChange(value: string) {
           gameStatsLoading={selectedPlayerGameStatsLoading}
           previousGameText={text.onboardingPrevious}
           nextGameText={text.next}
-          adminControls={canEditStaffPlayerCards ? (
-            <StaffPlayerStatsEditor
-              key={selectedPlayerProfile.profileId}
-              language={language}
-              player={selectedPlayerProfile}
-              onSaved={() => {
-                selectedPlayerStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
-                selectedPlayerGameStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
-                void loadSelectedPlayerStats(selectedPlayerProfile.profileId, true)
-                void loadSelectedPlayerGameStats(selectedPlayerProfile.profileId, true)
-                void refreshLeaderboardIfLoaded()
-              }}
-            />
-          ) : null}
         />
       )}
 

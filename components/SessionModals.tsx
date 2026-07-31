@@ -378,7 +378,6 @@ export type PlayerProfileModalProps = {
   gameStatsLoading?: boolean
   previousGameText: string
   nextGameText: string
-  adminControls?: ReactNode
 }
 
 export function PlayerProfileModal({
@@ -401,7 +400,6 @@ export function PlayerProfileModal({
   gameStatsLoading = false,
   previousGameText,
   nextGameText,
-  adminControls,
 }: PlayerProfileModalProps) {
   const gameCarouselRef = useRef<HTMLDivElement | null>(null)
 
@@ -494,7 +492,6 @@ export function PlayerProfileModal({
             </div>
           </section>
         )}
-        {adminControls}
       </div>
     </div>
   )

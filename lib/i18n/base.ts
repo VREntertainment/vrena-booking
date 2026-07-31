@@ -497,6 +497,7 @@ export const en = {
   averageAccuracy: 'Average',
   totalShots: 'Total Hits',
   totalMovement: 'Total Movement',
+  bestPerformerCount: 'Best Performer count',
   place: 'Place',
   noPlace: 'No place',
   firstPlace: '🥇 1st',

@@ -2250,6 +2250,17 @@ body {
   outline-offset: 2px;
 }
 
+@media (max-width: 960px) {
+  .app .player-game-carousel-section {
+    display: grid;
+    width: 100%;
+  }
+
+  .app .player-game-carousel {
+    grid-auto-columns: minmax(250px, 72%);
+  }
+}
+
 .app .player-game-stat-card {
   display: grid;
   align-content: start;
