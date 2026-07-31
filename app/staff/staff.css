@@ -9459,7 +9459,7 @@
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1240px) {
   .app .staff-hr-planner-commandbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
