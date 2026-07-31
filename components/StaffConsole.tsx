@@ -9712,13 +9712,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {currentTab === 'report' && (
         <div className="staff-card">
           <div className="staff-report-head">
-            <div className="staff-report-title-block">
-              <span>{text.tabGroups.reports}</span>
-              <h3>{text.tabs.report}</h3>
-              <p>{resolvedLanguage === 'vi'
-                ? 'Theo dõi hiệu quả kinh doanh và mức độ tương tác thực tế của người chơi.'
-                : 'Track business performance and real player engagement from one trusted view.'}</p>
-            </div>
             <div className="staff-report-view-tabs" role="tablist" aria-label={resolvedLanguage === 'vi' ? 'Chế độ báo cáo' : 'Report view'}>
               <button
                 aria-selected={reportView === 'business'}

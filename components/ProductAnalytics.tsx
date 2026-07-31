@@ -33,7 +33,7 @@ const messages = {
   en: {
     eyebrow: 'Privacy-first analytics',
     title: 'Help improve VRena',
-    body: 'With your permission, VRena measures page journeys, searches, time in app, device type and visit source for 180 days. Search text and raw IP addresses are never stored, and staff only see aggregate reporting.',
+    body: 'With your permission, VRena measures page journeys, searches, time in app, device type and visit source without a fixed retention period. Search text and raw IP addresses are never stored, and staff only see aggregate reporting.',
     allow: 'Allow analytics',
     decline: 'Not now',
     settings: 'Analytics privacy settings',
@@ -41,7 +41,7 @@ const messages = {
   vi: {
     eyebrow: 'Phân tích ưu tiên quyền riêng tư',
     title: 'Giúp VRena cải thiện',
-    body: 'Khi bạn đồng ý, VRena đo lường hành trình trang, lượt tìm kiếm, thời gian dùng app, loại thiết bị và nguồn truy cập trong 180 ngày. Nội dung tìm kiếm và địa chỉ IP thô không bao giờ được lưu; nhân viên chỉ xem báo cáo tổng hợp.',
+    body: 'Khi bạn đồng ý, VRena đo lường hành trình trang, lượt tìm kiếm, thời gian dùng app, loại thiết bị và nguồn truy cập mà không có thời hạn lưu trữ cố định. Nội dung tìm kiếm và địa chỉ IP thô không bao giờ được lưu; nhân viên chỉ xem báo cáo tổng hợp.',
     allow: 'Cho phép phân tích',
     decline: 'Để sau',
     settings: 'Cài đặt quyền riêng tư phân tích',
