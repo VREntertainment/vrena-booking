@@ -1,4 +1,4 @@
--- BookingWidget already listens for profile changes so an open session can
+-- BookingWidget listens for profile changes so an open session can
 -- immediately pick up promotions and demotions. Publish the table that backs
 -- those changes; Realtime continues to apply the table's existing RLS policies.
 do $$
