@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-booking/releases/download/v2.1.4/VRenaResultsCapture-Setup.exe',
-      publishedAt: '2026-07-31T09:14:56Z',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-booking/releases/download/v2.1.5/VRenaResultsCapture-Setup.exe',
+      publishedAt: '2026-07-31T10:33:14Z',
       releaseNotes:
-        'Read up to four player rows, privately upload unresolved screenshots for review, and highlight available updates with an animated button.',
-      sha256: '4cf540015c93f279f0b5e6b02d62f4339c3d45856d7e00ce5e8dbc368a4f9e4e',
-      version: '2.1.4',
+        'Recognize MBTowers as Mini Block Towers and sync its Hits and Total results to player profiles.',
+      sha256: '4c1cc47aa0627b89680e06ca5c72c9bcbf766458cf93f453c21374c73acc9a3f',
+      version: '2.1.5',
     },
     {
       headers: {
