@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
 import { Ban, CalendarCheck2, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserRound, WalletCards, X } from 'lucide-react'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
@@ -12,6 +12,44 @@ type StaffHrHubProps = {
 }
 
 type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' | 'categories' | 'organization'
+type StaffScheduleViewMode = 'employee' | 'shift'
+
+const staffScheduleCopy = {
+  en: {
+    add: 'Add',
+    addShift: 'Add shift',
+    byEmployee: 'By employee',
+    byEmployeeHelp: 'Scan each person’s week and fill open days.',
+    byShift: 'By shift',
+    byShiftHelp: 'Compare coverage for each saved shift template.',
+    customShift: 'Custom shift',
+    customShiftHelp: 'Assignments outside saved shift templates',
+    drafts: 'Drafts',
+    scheduledEmployees: 'Scheduled employees',
+    scheduledShifts: 'Scheduled shifts',
+    shiftEditor: 'Shift editor',
+    shiftEditorHelp: 'Choose a calendar cell to prefill the employee, date, and shift times.',
+    viewScheduleBy: 'View schedule by',
+    week: 'Week',
+  },
+  vi: {
+    add: 'Thêm',
+    addShift: 'Thêm ca',
+    byEmployee: 'Theo nhân viên',
+    byEmployeeHelp: 'Xem nhanh tuần của từng người và bổ sung ngày còn trống.',
+    byShift: 'Theo ca',
+    byShiftHelp: 'So sánh mức độ phủ của từng mẫu ca đã lưu.',
+    customShift: 'Ca tùy chỉnh',
+    customShiftHelp: 'Lịch ngoài các mẫu ca đã lưu',
+    drafts: 'Bản nháp',
+    scheduledEmployees: 'Nhân viên có lịch',
+    scheduledShifts: 'Ca đã xếp',
+    shiftEditor: 'Chỉnh sửa ca',
+    shiftEditorHelp: 'Chọn một ô lịch để điền sẵn nhân viên, ngày và giờ làm.',
+    viewScheduleBy: 'Xem lịch theo',
+    week: 'Tuần',
+  },
+} as const
 
 const hrCompletionCopy = {
   en: {
@@ -209,7 +247,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     approveAttendancePeriod,
     approvePayrollRun,
     applyShiftTemplate,
-    attendanceGridStyle,
     attendanceLogs,
     attendanceScheduleScopeOptions,
     attendanceSettings,
@@ -340,8 +377,92 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   } = model
 
   const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const [settingsSection, setSettingsSection] = useState<HrSettingsSection>('initialization')
+  const [scheduleViewMode, setScheduleViewMode] = useState<StaffScheduleViewMode>('employee')
   const [timesheetSearch, setTimesheetSearch] = useState('')
+
+  const weekScheduleShifts = useMemo(() => (
+    visibleScheduleAttendanceShifts.filter((shift: any) => (
+      shift.shift_date >= attendanceWeekStart && shift.shift_date <= attendanceWeekEnd
+    ))
+  ), [attendanceWeekEnd, attendanceWeekStart, visibleScheduleAttendanceShifts])
+  const scheduledEmployeeIds = useMemo(() => new Set(
+    weekScheduleShifts
+      .filter((shift: any) => shift.status !== 'cancelled')
+      .map((shift: any) => shift.staff_profile_id),
+  ), [weekScheduleShifts])
+  const weekDraftCount = weekScheduleShifts.filter((shift: any) => shift.status === 'draft').length
+  const scheduleGridStyle = useMemo(() => ({
+    gridTemplateColumns: `minmax(168px, 0.85fr) repeat(${attendanceWeekDates.length}, minmax(92px, 1fr))`,
+    minWidth: `${168 + attendanceWeekDates.length * 96}px`,
+  }), [attendanceWeekDates.length])
+  const scheduleShiftRows = useMemo(() => {
+    const rowByTemplateId = new Map<string, { id: string; label: string; template: any; shiftsByDate: Map<string, any[]>; subtitle: string }>()
+    effectiveShiftTemplates.forEach((template: any) => {
+      rowByTemplateId.set(template.id, {
+        id: template.id,
+        label: text.shiftTemplates[template.id],
+        template,
+        shiftsByDate: new Map<string, any[]>(),
+        subtitle: `${normalizeTime(template.start_time)}–${normalizeTime(template.end_time)}`,
+      })
+    })
+
+    const customRow = {
+      id: 'custom',
+      label: scheduleCopy.customShift,
+      template: null,
+      shiftsByDate: new Map<string, any[]>(),
+      subtitle: scheduleCopy.customShiftHelp,
+    }
+
+    weekScheduleShifts.forEach((shift: any) => {
+      const matchingTemplate = effectiveShiftTemplates.find((template: any) => (
+        normalizeTime(template.start_time) === normalizeTime(shift.start_time)
+        && normalizeTime(template.end_time) === normalizeTime(shift.end_time)
+      ))
+      const row = matchingTemplate ? rowByTemplateId.get(matchingTemplate.id) : customRow
+      if (!row) return
+      const shifts = row.shiftsByDate.get(shift.shift_date) || []
+      shifts.push(shift)
+      row.shiftsByDate.set(shift.shift_date, shifts)
+    })
+
+    rowByTemplateId.forEach((row) => {
+      row.shiftsByDate.forEach((shifts) => shifts.sort((left: any, right: any) => {
+        const leftProfile = profileById.get(left.staff_profile_id)
+        const rightProfile = profileById.get(right.staff_profile_id)
+        const leftName = leftProfile ? customerName(leftProfile, text) : text.customerFallback
+        const rightName = rightProfile ? customerName(rightProfile, text) : text.customerFallback
+        return leftName.localeCompare(rightName)
+      }))
+    })
+    customRow.shiftsByDate.forEach((shifts) => shifts.sort((left: any, right: any) => (
+      left.start_time.localeCompare(right.start_time)
+    )))
+
+    const rows = Array.from(rowByTemplateId.values())
+    if (customRow.shiftsByDate.size > 0) rows.push(customRow)
+    return rows
+  }, [customerName, effectiveShiftTemplates, normalizeTime, profileById, scheduleCopy.customShift, scheduleCopy.customShiftHelp, text, weekScheduleShifts])
+
+  function prepareShiftEditor(template: any, shiftDate: string) {
+    if (!canManageAttendance || !template) return
+    applyShiftTemplate(template.id)
+    setShiftForm((current: any) => ({
+      ...current,
+      staff_profile_id: current.staff_profile_id || firstScheduleStaffProfileId,
+      shift_date: shiftDate,
+      start_time: normalizeTime(template.start_time),
+      end_time: normalizeTime(template.end_time),
+      break_minutes: String(template.break_minutes || 0),
+      status: 'draft',
+    }))
+    window.requestAnimationFrame(() => {
+      document.getElementById('staff-hr-shift-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   const activeEmployeeCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => (
     employeeProfileById.get(staffProfile.id)?.active !== false
@@ -629,42 +750,68 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
               {hrTab === 'schedule' && (
                 <div className="staff-hr-schedule-stack">
-                  <div className="staff-operations-actions staff-attendance-actions staff-hr-week-controls">
-                    <button type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>
-                      <ButtonIconText icon={<ChevronLeft aria-hidden="true" size={14} />}>{text.actions.previousWeek}</ButtonIconText>
-                    </button>
-                    <label>
-                      <span className="staff-field-label">{text.labels.startDate}</span>
-                      <StaffPickerField
-                        ariaLabel={text.labels.startDate}
-                        placeholder={text.chooseDate}
-                        type="date"
-                        value={attendanceWeekStart}
-                        onChange={(value: string) => setAttendanceRange(value, attendanceWeekEnd)}
-                      />
-                    </label>
-                    <label>
-                      <span className="staff-field-label">{text.labels.endDate}</span>
-                      <StaffPickerField
-                        ariaLabel={text.labels.endDate}
-                        placeholder={text.chooseDate}
-                        type="date"
-                        value={attendanceWeekEnd}
-                        onChange={(value: string) => setAttendanceRange(attendanceWeekStart, value)}
-                      />
-                    </label>
-                    <button type="button" onClick={resetAttendanceRangeToThisWeek}>
-                      <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-                    </button>
-                    <button type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>
-                      <ButtonIconText icon={<ChevronRight aria-hidden="true" size={14} />}>{text.actions.nextWeek}</ButtonIconText>
-                    </button>
+                  <div className="staff-hr-week-controls">
+                    <div className="staff-hr-week-navigation">
+                      <button aria-label={text.actions.previousWeek} title={text.actions.previousWeek} type="button" onClick={() => shiftAttendanceRange(-attendanceWeekDates.length)}>
+                        <ChevronLeft aria-hidden="true" size={18} />
+                      </button>
+                      <div className="staff-hr-week-label">
+                        <span>{scheduleCopy.week}</span>
+                        <strong>{shortDateLabel(attendanceWeekStart)} – {shortDateLabel(attendanceWeekEnd)}</strong>
+                      </div>
+                      <button aria-label={text.actions.nextWeek} title={text.actions.nextWeek} type="button" onClick={() => shiftAttendanceRange(attendanceWeekDates.length)}>
+                        <ChevronRight aria-hidden="true" size={18} />
+                      </button>
+                      <button className="staff-hr-today-button" type="button" onClick={resetAttendanceRangeToThisWeek}>
+                        <ButtonIconText icon={<CalendarDays aria-hidden="true" size={15} />}>{text.actions.today}</ButtonIconText>
+                      </button>
+                    </div>
+                    <div className="staff-hr-week-date-fields">
+                      <label>
+                        <span className="staff-field-label">{text.labels.startDate}</span>
+                        <StaffPickerField
+                          ariaLabel={text.labels.startDate}
+                          placeholder={text.chooseDate}
+                          type="date"
+                          value={attendanceWeekStart}
+                          onChange={(value: string) => setAttendanceRange(value, attendanceWeekEnd)}
+                        />
+                      </label>
+                      <label>
+                        <span className="staff-field-label">{text.labels.endDate}</span>
+                        <StaffPickerField
+                          ariaLabel={text.labels.endDate}
+                          placeholder={text.chooseDate}
+                          type="date"
+                          value={attendanceWeekEnd}
+                          onChange={(value: string) => setAttendanceRange(attendanceWeekStart, value)}
+                        />
+                      </label>
+                    </div>
                   </div>
                   <section className="staff-planning-panel staff-hr-planning-panel" aria-label={text.labels.weeklySchedule}>
-                    <div className="staff-planning-toolbar">
+                    <header className="staff-hr-planner-head">
                       <div className="staff-planning-title">
                         <strong>{text.labels.weeklySchedule}</strong>
-                        <span>{text.messages.planningGridHelp}</span>
+                        <span>{scheduleViewMode === 'employee' ? scheduleCopy.byEmployeeHelp : scheduleCopy.byShiftHelp}</span>
+                      </div>
+                      <div className="staff-schedule-summary" aria-label={text.labels.weeklySchedule}>
+                        <span><strong>{weekScheduleShifts.length}</strong>{scheduleCopy.scheduledShifts}</span>
+                        <span><strong>{scheduledEmployeeIds.size}/{visibleScheduleStaffProfileOptions.length}</strong>{scheduleCopy.scheduledEmployees}</span>
+                        <span><strong>{weekDraftCount}</strong>{scheduleCopy.drafts}</span>
+                      </div>
+                    </header>
+
+                    <div className="staff-hr-planner-commandbar">
+                      <div className="staff-schedule-view-toggle" role="group" aria-label={scheduleCopy.viewScheduleBy}>
+                        <button className={scheduleViewMode === 'employee' ? 'active' : ''} type="button" aria-pressed={scheduleViewMode === 'employee'} onClick={() => setScheduleViewMode('employee')}>
+                          <UserRound aria-hidden="true" size={16} />
+                          {scheduleCopy.byEmployee}
+                        </button>
+                        <button className={scheduleViewMode === 'shift' ? 'active' : ''} type="button" aria-pressed={scheduleViewMode === 'shift'} onClick={() => setScheduleViewMode('shift')}>
+                          <CalendarCheck2 aria-hidden="true" size={16} />
+                          {scheduleCopy.byShift}
+                        </button>
                       </div>
                       <div className="staff-planning-scope" role="group" aria-label={text.labels.scheduleScope}>
                         {attendanceScheduleScopeOptions.map((scope: any) => (
@@ -678,7 +825,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           </button>
                         ))}
                       </div>
-                      <label>
+                      <label className="staff-hr-shift-template-field">
                         {text.labels.shiftTemplate}
                         <select value={selectedShiftTemplate} onChange={(event) => applyShiftTemplate(event.target.value)} disabled={!canManageAttendance}>
                           {effectiveShiftTemplates.map((template: any) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
@@ -702,15 +849,15 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                     {visibleScheduleStaffProfileOptions.length > 0 ? (
                       <div className="staff-planning-grid-shell">
-                        <div className="staff-planning-grid" role="grid" aria-label={text.labels.weeklySchedule} style={attendanceGridStyle}>
-                          <div className="staff-planning-corner" role="columnheader">{text.labels.staffMember}</div>
+                        <div className={`staff-planning-grid staff-planning-grid-${scheduleViewMode}`} role="grid" aria-label={text.labels.weeklySchedule} style={scheduleGridStyle}>
+                          <div className="staff-planning-corner" role="columnheader">{scheduleViewMode === 'employee' ? text.labels.staffMember : text.labels.shiftTemplate}</div>
                           {attendanceWeekDates.map((dateValue: string) => (
-                            <div className="staff-planning-day" role="columnheader" key={dateValue}>
+                            <div className={`staff-planning-day ${[0, 6].includes(dateFromInput(dateValue).getDay()) ? 'is-weekend' : ''}`} role="columnheader" key={dateValue}>
                               <strong>{shortDateLabel(dateValue)}</strong>
                               <span>{text.reportWeekdays[(dateFromInput(dateValue).getDay() + 6) % 7]}</span>
                             </div>
                           ))}
-                          {visibleScheduleStaffProfileOptions.map((staffProfile: any) => {
+                          {scheduleViewMode === 'employee' && visibleScheduleStaffProfileOptions.map((staffProfile: any) => {
                             const employee = employeeProfileById.get(staffProfile.id)
                             const isInactiveEmployee = employee?.active === false
                             return (
@@ -749,7 +896,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                           type="button"
                                           onClick={() => void startShiftForCell(staffProfile.id, dateValue)}
                                         >
-                                          +
+                                          <Plus aria-hidden="true" size={14} />
+                                          <span>{scheduleCopy.add}</span>
                                         </button>
                                       )}
                                       {cellShifts.map((shift: any) => {
@@ -779,6 +927,55 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               </Fragment>
                             )
                           })}
+                          {scheduleViewMode === 'shift' && scheduleShiftRows.map((row) => (
+                            <Fragment key={row.id}>
+                              <div className="staff-planning-staff staff-planning-shift-row-head" role="rowheader">
+                                <span className="staff-planning-shift-icon"><CalendarCheck2 aria-hidden="true" size={17} /></span>
+                                <span>
+                                  <strong>{row.label}</strong>
+                                  <small>{row.subtitle}</small>
+                                </span>
+                              </div>
+                              {attendanceWeekDates.map((dateValue: string) => {
+                                const cellShifts = row.shiftsByDate.get(dateValue) || []
+                                return (
+                                  <div className="staff-planning-cell staff-planning-shift-cell" key={`${row.id}:${dateValue}`} role="gridcell">
+                                    {canManageAttendance && row.template && (
+                                      <button
+                                        aria-label={`${scheduleCopy.addShift}: ${row.label} ${shortDateLabel(dateValue)}`}
+                                        className="staff-planning-cell-button"
+                                        disabled={saving}
+                                        type="button"
+                                        onClick={() => prepareShiftEditor(row.template, dateValue)}
+                                      >
+                                        <Plus aria-hidden="true" size={14} />
+                                        <span>{scheduleCopy.add}</span>
+                                      </button>
+                                    )}
+                                    {cellShifts.map((shift: any) => {
+                                      const staffProfile = profileById.get(shift.staff_profile_id)
+                                      const warnings = shiftWarningsById.get(shift.id) || []
+                                      return (
+                                        <button
+                                          className={`staff-shift-chip ${warnings.length > 0 ? 'has-warning' : ''}`}
+                                          disabled={!canManageAttendance}
+                                          key={shift.id}
+                                          type="button"
+                                          onClick={() => {
+                                            if (canManageAttendance) editShift(shift)
+                                          }}
+                                        >
+                                          <strong>{staffProfile ? customerName(staffProfile, text) : text.customerFallback}</strong>
+                                          <small>{row.template ? text.shiftStatuses[shift.status] : `${normalizeTime(shift.start_time)}–${normalizeTime(shift.end_time)}`}</small>
+                                          {warnings.length > 0 && <em>{warnings[0]}</em>}
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )
+                              })}
+                            </Fragment>
+                          ))}
                         </div>
                       </div>
                     ) : (
@@ -843,8 +1040,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </div>
 
                     {canManageAttendance && (
-                      <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
-                        <h4>{text.labels.weeklySchedule}</h4>
+                      <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance} id="staff-hr-shift-editor">
+                        <div className="staff-hr-shift-editor-head">
+                          <h4>{scheduleCopy.shiftEditor}</h4>
+                          <p className="staff-helper-text">{scheduleCopy.shiftEditorHelp}</p>
+                        </div>
                         <div className="form-grid compact-form-grid">
                           <label>
                             {text.labels.staffMember}
