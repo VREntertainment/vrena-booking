@@ -114,6 +114,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     isAdultProfile,
     isDeletingAccount,
     isMfaLoading,
+    isMinorBirthdayLocked,
     isOAuthLoading,
     isProfileAuthLoading,
     isProfileSaveSuccessful,
@@ -780,12 +781,22 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <label>{text.birthday} {!profile && <span className="required">*</span>}</label>
                   <ShortDateInput
                     ariaLabel={text.birthday}
+                    disabled={isMinorBirthdayLocked}
                     language={language}
                     onChange={setProfileBirthday}
                     placeholder={text.chooseDate}
                     value={profileBirthday}
                   />
                   {!profile && <p className="field-help">{text.birthdaySignupHelp}</p>}
+                  {isMinorBirthdayLocked && (
+                    <p className="field-help minor-birthday-lock-note">
+                      <LockKeyhole aria-hidden="true" size={14} />
+                      <span>
+                        {text.minorBirthdayLockedHelp}{' '}
+                        <a href="mailto:contact@vre-vietnam.com">{text.contactUs}</a>
+                      </span>
+                    </p>
+                  )}
                 </div>
               )}
               {showProfileFields && (

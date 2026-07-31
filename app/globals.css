@@ -510,6 +510,35 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent);
 }
 
+.app .date-input-shell.disabled {
+  border-color: var(--player-border);
+  background: color-mix(in srgb, var(--player-field-bg) 78%, var(--player-surface));
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
+.app .date-input-shell.disabled .date-input-native {
+  cursor: not-allowed;
+}
+
+.app .minor-birthday-lock-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--player-text-muted);
+}
+
+.app .minor-birthday-lock-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--vrena-accent-text);
+}
+
+.app .minor-birthday-lock-note a {
+  color: var(--vrena-accent-text);
+  font-weight: 800;
+}
+
 .app .link-button {
   display: inline-flex;
   width: fit-content;
@@ -2219,6 +2248,17 @@ body {
   border-radius: 10px;
   outline: 3px solid color-mix(in srgb, var(--vrena-blue-500) 34%, transparent);
   outline-offset: 2px;
+}
+
+@media (max-width: 960px) {
+  .app .player-game-carousel-section {
+    display: grid;
+    width: 100%;
+  }
+
+  .app .player-game-carousel {
+    grid-auto-columns: minmax(250px, 72%);
+  }
 }
 
 .app .player-game-stat-card {

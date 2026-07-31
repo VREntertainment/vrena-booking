@@ -23,6 +23,11 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import {
+  localizeGameAchievement,
+  localizeMilestoneReward,
+  localizeRetentionAchievement,
+} from '../lib/profileAchievementTranslations'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import {
   achievementMilestoneRewards,
@@ -1033,6 +1038,14 @@ export default function ProfileAchievementsPanel({
     () => applyManualRetentionAwards(automaticRetentionAchievements, manualAwards),
     [automaticRetentionAchievements, manualAwards],
   )
+  const displayAchievements = useMemo(
+    () => achievements.map((achievement) => localizeGameAchievement(achievement, language)),
+    [achievements, language],
+  )
+  const displayRetentionAchievements = useMemo(
+    () => retentionAchievements.map((achievement) => localizeRetentionAchievement(achievement, language)),
+    [language, retentionAchievements],
+  )
   const sessionsPlayed = useMemo(
     () => achievementSessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [achievementSessions, userId],
@@ -1045,13 +1058,24 @@ export default function ProfileAchievementsPanel({
   const levelProgress = useMemo(() => profileLevelProgress(playerStats), [playerStats])
   const playerDisplayName = useMemo(() => profileAchievementName(profile), [profile])
   const graphPoints = useMemo(() => sessionsByRecentWeek(achievementSessions, userId, language), [achievementSessions, language, userId])
-  const spotlight = useMemo(() => weeklyAchievementSpotlight(achievementSessions, userId, retentionAchievements), [achievementSessions, retentionAchievements, userId])
-  const closestUnlock = useMemo(() => closestAchievement(achievements, retentionAchievements), [achievements, retentionAchievements])
+  const spotlight = useMemo(() => weeklyAchievementSpotlight(achievementSessions, userId, displayRetentionAchievements), [achievementSessions, displayRetentionAchievements, userId])
+  const closestUnlock = useMemo(() => closestAchievement(displayAchievements, displayRetentionAchievements), [displayAchievements, displayRetentionAchievements])
   const recentUnlocks = useMemo(
-    () => mergeRecentAchievements(recentUnlockedAchievements(achievementSessions, userId, achievements, retentionAchievements), manualAwards),
-    [achievementSessions, achievements, manualAwards, retentionAchievements, userId],
+    () => mergeRecentAchievements(
+      recentUnlockedAchievements(achievementSessions, userId, displayAchievements, displayRetentionAchievements),
+      manualAwards,
+    ).map((recent) => {
+      const localized = recent.kind === 'game'
+        ? displayAchievements.find((achievement) => achievement.game.id === recent.id)
+        : displayRetentionAchievements.find((achievement) => achievement.id === recent.id)
+      return localized ? { ...recent, title: localized.title } : recent
+    }),
+    [achievementSessions, displayAchievements, displayRetentionAchievements, manualAwards, userId],
   )
-  const milestoneRewards = useMemo(() => achievementMilestoneRewards(summary), [summary])
+  const milestoneRewards = useMemo(
+    () => achievementMilestoneRewards(summary).map((reward) => localizeMilestoneReward(reward, language)),
+    [language, summary],
+  )
   const graphPathPoints = useMemo(() => progressPath(graphPoints), [graphPoints])
   const graphLine = graphPathPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
   const graphArea = graphPathPoints.length > 0
@@ -1068,14 +1092,14 @@ export default function ProfileAchievementsPanel({
   ]
   const showGameAchievements = achievementFilter === 'all' || achievementFilter === 'games'
   const showSecretAchievement = achievementFilter === 'all' || achievementFilter === 'hidden'
-  const filteredRetentionAchievements = retentionAchievements.filter((achievement) => {
+  const filteredRetentionAchievements = displayRetentionAchievements.filter((achievement) => {
     if (achievementFilter === 'all') return true
     if (achievementFilter === 'trickster') return ['comeback', 'explore', 'special'].includes(achievement.category)
     if (achievementFilter === 'hidden') return achievement.id === 'secret-hunter' || achievement.id === 'mask-mode'
     return achievement.category === achievementFilter
   })
   const achievementCelebrations = useMemo(() => {
-    const gameCelebrations: AchievementCelebration[] = achievements
+    const gameCelebrations: AchievementCelebration[] = displayAchievements
       .filter((achievement) => achievement.state !== 'locked' && achievement.tier !== 'none')
       .map((achievement) => {
         const tierLabel = copy[tierLabels[achievement.tier]]
@@ -1096,7 +1120,7 @@ export default function ProfileAchievementsPanel({
         }
       })
 
-    const retentionCelebrations: AchievementCelebration[] = retentionAchievements
+    const retentionCelebrations: AchievementCelebration[] = displayRetentionAchievements
       .filter((achievement) => achievement.state !== 'locked')
       .map((achievement) => {
         const rarityLabel = copy[rarityLabels[achievementRarityForRetention(achievement)]]
@@ -1115,7 +1139,7 @@ export default function ProfileAchievementsPanel({
       })
 
     return [...gameCelebrations, ...retentionCelebrations]
-  }, [achievements, copy, retentionAchievements])
+  }, [copy, displayAchievements, displayRetentionAchievements])
   const celebrationByKey = useMemo(() => new Map(achievementCelebrations.map((celebration) => [celebration.key, celebration])), [achievementCelebrations])
   const pendingCelebrations = useMemo(
     () => !editor && unlockViewsLoaded
@@ -1202,12 +1226,13 @@ export default function ProfileAchievementsPanel({
   function openRetentionAchievement(achievement: RetentionAchievement) {
     if (editor) {
       const manualAward = manualAwards.find((award) => award.achievement_kind === 'retention' && award.achievement_id === achievement.id)
+      const canonicalAchievement = retentionAchievements.find((candidate) => candidate.id === achievement.id) ?? achievement
       editor.onToggleAchievement({
-        description: achievement.description,
+        description: canonicalAchievement.description,
         id: achievement.id,
         kind: 'retention',
         manuallyUnlocked: Boolean(manualAward),
-        title: achievement.title,
+        title: canonicalAchievement.title,
       })
       return
     }
@@ -1624,7 +1649,7 @@ export default function ProfileAchievementsPanel({
           ))}
         </div>
         <div className="achievement-grid">
-          {showGameAchievements && achievements.map((achievement) => {
+          {showGameAchievements && displayAchievements.map((achievement) => {
             const rarity = achievementRarityForGame(achievement)
             return (
             <button
@@ -1684,7 +1709,7 @@ export default function ProfileAchievementsPanel({
             <p className="muted">{copy.retentionHint}</p>
           </div>
           <div className="achievement-collection-counts">
-            <span><Flame size={14} />{retentionAchievements.filter((achievement) => achievement.state !== 'locked').length}</span>
+            <span><Flame size={14} />{displayRetentionAchievements.filter((achievement) => achievement.state !== 'locked').length}</span>
           </div>
         </div>
         <div className="retention-achievement-grid">

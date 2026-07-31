@@ -19,6 +19,7 @@ export default function ShortDateInput({
   placeholder,
   ariaLabel,
   displayValueOverride,
+  disabled = false,
 }: {
   value: string
   onChange: (value: string) => void
@@ -26,11 +27,14 @@ export default function ShortDateInput({
   placeholder: string
   ariaLabel: string
   displayValueOverride?: string
+  disabled?: boolean
 }) {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const displayValue = displayValueOverride || (value ? formatShortDate(value, language) : placeholder)
   const openPicker = () => {
+    if (disabled) return
+
     const input = inputRef.current
     if (!input) return
 
@@ -44,13 +48,14 @@ export default function ShortDateInput({
 
   return (
     <label
-      className="date-input-shell"
+      className={disabled ? 'date-input-shell disabled' : 'date-input-shell'}
       htmlFor={inputId}
       onClick={openPicker}
     >
       <input
         aria-label={ariaLabel}
         className="date-input-native"
+        disabled={disabled}
         id={inputId}
         ref={inputRef}
         type="date"

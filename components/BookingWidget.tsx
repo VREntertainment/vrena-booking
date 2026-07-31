@@ -10,7 +10,7 @@ import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
-import { ageBandFromBirthday, isUnder13Birthday } from '../lib/agePolicy'
+import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
@@ -29,7 +29,6 @@ import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
 import type { StaffProfile } from './StaffConsole'
-import StaffPlayerStatsEditor from './StaffPlayerStatsEditor'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
@@ -578,7 +577,9 @@ export default function WidgetPage({
     { value: 'escapeTime', label: text.escapeSpeedrunCriterion },
   ]
   const showProfileFields = Boolean(profile)
-  const activeAgeBand = ageBandFromBirthday(profileBirthday || profile?.birthday || null)
+  const isMinorBirthdayLocked = Boolean(profile?.birthday && isMinorBirthday(profile.birthday))
+  const effectiveProfileBirthday = isMinorBirthdayLocked ? profile?.birthday || '' : profileBirthday
+  const activeAgeBand = ageBandFromBirthday(effectiveProfileBirthday || profile?.birthday || null)
   const isUnder13Profile = activeAgeBand === 'under13'
   const isTeenMinorProfile = activeAgeBand === 'minor'
   const isAdultProfile = activeAgeBand === 'adult'
@@ -5153,7 +5154,6 @@ function handleSessionDateChange(value: string) {
     && hasVerifiedTotpFactor
     && mfaAssuranceLevel === 'aal2'
   )
-  const canEditStaffPlayerCards = canAccessStaffConsole && staffAccessRank >= 50
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -6940,8 +6940,8 @@ function handleSessionDateChange(value: string) {
         phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
         profile_motto: cleanMotto || null,
         nickname: nickname || null,
-        birthday: profileBirthday || null,
-        gender: isUnder13Birthday(profileBirthday) ? null : profileGender || null,
+        birthday: effectiveProfileBirthday || null,
+        gender: isUnder13Birthday(effectiveProfileBirthday) ? null : profileGender || null,
         ...marketingConsentValues(marketingConsent, profile),
         ...avatarPayload,
         updated_at: new Date().toISOString(),
@@ -8642,7 +8642,7 @@ function handleSessionDateChange(value: string) {
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
 
-  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isProfileSaveSuccessful, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 
@@ -10275,20 +10275,6 @@ function handleSessionDateChange(value: string) {
           gameStatsLoading={selectedPlayerGameStatsLoading}
           previousGameText={text.onboardingPrevious}
           nextGameText={text.next}
-          adminControls={canEditStaffPlayerCards ? (
-            <StaffPlayerStatsEditor
-              key={selectedPlayerProfile.profileId}
-              language={language}
-              player={selectedPlayerProfile}
-              onSaved={() => {
-                selectedPlayerStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
-                selectedPlayerGameStatsFetchedRef.current.delete(selectedPlayerProfile.profileId)
-                void loadSelectedPlayerStats(selectedPlayerProfile.profileId, true)
-                void loadSelectedPlayerGameStats(selectedPlayerProfile.profileId, true)
-                void refreshLeaderboardIfLoaded()
-              }}
-            />
-          ) : null}
         />
       )}
 
