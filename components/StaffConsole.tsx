@@ -4639,6 +4639,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
   const [playerInsightsSnapshot, setPlayerInsightsSnapshot] = useState<StaffPlayerInsightsSnapshot | null>(null)
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
+  const staffTabsRef = useRef<HTMLDivElement | null>(null)
+  const [canScrollStaffTabsBack, setCanScrollStaffTabsBack] = useState(false)
+  const [canScrollStaffTabsForward, setCanScrollStaffTabsForward] = useState(false)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
     if (isHrConsole) {
@@ -4665,6 +4668,39 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     tabs: group.tabs.filter((tab) => allowedTabs.includes(tab)),
   })).filter((group) => group.tabs.length > 0), [allowedTabs])
   const currentTabGroup = visibleTabGroups.find((group) => group.tabs.includes(currentTab))?.id || visibleTabGroups[0]?.id || 'reports'
+
+  useEffect(() => {
+    const rail = staffTabsRef.current
+    if (!rail) return
+
+    const updateScrollControls = () => {
+      const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth)
+      setCanScrollStaffTabsBack(rail.scrollLeft > 4)
+      setCanScrollStaffTabsForward(rail.scrollLeft < maxScrollLeft - 4)
+    }
+
+    updateScrollControls()
+    rail.addEventListener('scroll', updateScrollControls, { passive: true })
+    const resizeObserver = new ResizeObserver(updateScrollControls)
+    resizeObserver.observe(rail)
+
+    return () => {
+      rail.removeEventListener('scroll', updateScrollControls)
+      resizeObserver.disconnect()
+    }
+  }, [visibleTabGroups])
+
+  useEffect(() => {
+    const rail = staffTabsRef.current
+    const activeButton = rail?.querySelector<HTMLElement>(`[data-staff-tab="${currentTab}"]`)
+    if (!rail || !activeButton) return
+
+    activeButton.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [currentTab])
   const canEditCommerceTab = commerceTab === 'loyalty' ? canManageConfig : canCreateOrders
   const visibleAttendanceTabs = useMemo(() => staffAttendanceTabs.filter((item) => {
     if (item === 'clock' && !canViewAttendanceClock) return false
@@ -7680,12 +7716,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setActiveTab(tab)
   }
 
+  function scrollStaffTabs(direction: -1 | 1) {
+    const rail = staffTabsRef.current
+    if (!rail) return
+    rail.scrollBy({
+      left: direction * Math.max(240, rail.clientWidth * 0.72),
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
+  }
+
   const tabButton = (tab: StaffTab, label: string) => (
     allowedTabs.includes(tab) && (
       <button
         aria-selected={currentTab === tab}
         className={currentTab === tab ? 'active' : ''}
+        data-staff-tab={tab}
         role="tab"
+        tabIndex={currentTab === tab ? 0 : -1}
         type="button"
         onClick={() => openStaffTab(tab)}
       >
@@ -7693,12 +7740,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       </button>
     )
   )
-
-  const openTabGroup = (groupId: StaffTabGroupId) => {
-    const group = visibleTabGroups.find((item) => item.id === groupId)
-    const firstTab = group?.tabs[0]
-    if (firstTab) openStaffTab(firstTab)
-  }
 
   const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
     <div className="staff-table-wrap">
@@ -7867,31 +7908,37 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
       {!isHrConsole && (
         <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
-          <div className="staff-tab-categories" role="tablist" aria-label={text.aria.staffConsole}>
-            {visibleTabGroups.map((group) => (
-              <button
-                aria-selected={currentTabGroup === group.id}
-                className={currentTabGroup === group.id ? 'active' : ''}
-                key={group.id}
-                role="tab"
-                type="button"
-                onClick={() => openTabGroup(group.id)}
-              >
-                {text.tabGroups[group.id]}
-              </button>
-            ))}
-          </div>
-          <div className="staff-tabs" role="tablist" aria-label={text.aria.staffConsole}>
-            {visibleTabGroups.map((group) => (
-              <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id}>
-                <span className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
-                <div className="staff-tab-group-buttons">
-                  {group.tabs.map((tab) => (
-                    <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
-                  ))}
+          <div className="staff-tabs-shell">
+            <button
+              aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang trái' : 'Scroll menu left'}
+              className="staff-tabs-scroll-button"
+              disabled={!canScrollStaffTabsBack}
+              type="button"
+              onClick={() => scrollStaffTabs(-1)}
+            >
+              <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
+            </button>
+            <div className="staff-tabs" ref={staffTabsRef} role="tablist" aria-label={text.aria.staffConsole}>
+              {visibleTabGroups.map((group) => (
+                <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id} role="presentation">
+                  <span aria-hidden="true" className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
+                  <div className="staff-tab-group-buttons" role="presentation">
+                    {group.tabs.map((tab) => (
+                      <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <button
+              aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang phải' : 'Scroll menu right'}
+              className="staff-tabs-scroll-button"
+              disabled={!canScrollStaffTabsForward}
+              type="button"
+              onClick={() => scrollStaffTabs(1)}
+            >
+              <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
+            </button>
           </div>
         </div>
       )}

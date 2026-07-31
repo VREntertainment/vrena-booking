@@ -8571,3 +8571,209 @@
     width: 100%;
   }
 }
+
+/* Staff console navigation carousel */
+.app .staff-console-nav {
+  min-width: 0;
+  gap: 0;
+  padding-bottom: 12px;
+}
+
+.app .staff-tab-categories {
+  display: none;
+}
+
+.app .staff-tabs-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--staff-modern-surface) 90%, transparent);
+  box-shadow: var(--staff-modern-shadow);
+}
+
+.app .staff-tabs-scroll-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 11px;
+  background: var(--staff-modern-surface);
+  color: var(--staff-modern-text);
+  box-shadow: none;
+}
+
+.app .staff-tabs-scroll-button:hover:not(:disabled) {
+  border-color: var(--vrena-selection-border);
+  background: var(--staff-modern-soft);
+  color: var(--vrena-selection-ink);
+}
+
+.app .staff-tabs-scroll-button:focus-visible {
+  outline: 2px solid var(--vrena-focus-halo);
+  outline-offset: 2px;
+}
+
+.app .staff-tabs-scroll-button:disabled {
+  border-color: transparent;
+  background: transparent;
+  color: var(--staff-modern-muted);
+  opacity: 0.36;
+}
+
+.app .staff-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  padding: 0;
+  scroll-padding-inline: 6px;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.app .staff-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.app .staff-tab-group,
+.app .staff-tab-group.active {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  min-width: max-content;
+  padding: 4px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 11px;
+  background: var(--staff-modern-soft);
+  scroll-snap-align: start;
+}
+
+.app .staff-tab-group.active {
+  border-color: color-mix(in srgb, var(--vrena-selection-border) 70%, var(--staff-modern-border));
+  background: color-mix(in srgb, var(--vrena-selection-bg) 38%, var(--staff-modern-soft));
+}
+
+.app .staff-tab-group:last-child {
+  padding-right: 4px;
+  border-right: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-tab-group-label {
+  display: block;
+  padding: 0 3px 0 5px;
+  color: var(--staff-modern-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.app .staff-tab-group-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  min-width: max-content;
+}
+
+.app .staff-tab-group-buttons button,
+.app .staff-tab-group-buttons button.active {
+  width: auto;
+  min-height: 40px;
+  justify-content: center;
+  padding: 8px 13px;
+  border-radius: 8px;
+  scroll-snap-align: center;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .staff-tabs-shell {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 92%, transparent);
+  }
+
+  .app .staff-tabs-scroll-button {
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-200);
+  }
+
+  .app .staff-tabs-scroll-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vrena-selection-bg) 22%, var(--vrena-neutral-800));
+  }
+
+  .app .staff-tabs-scroll-button:disabled {
+    background: transparent;
+    color: var(--vrena-neutral-500);
+  }
+
+  .app .staff-tab-group,
+  .app .staff-tab-group.active {
+    background: color-mix(in srgb, var(--vrena-neutral-800) 72%, transparent);
+  }
+
+  .app .staff-tab-group.active {
+    background: color-mix(in srgb, var(--vrena-selection-bg) 24%, var(--vrena-neutral-800));
+  }
+}
+
+@media (max-width: 760px) {
+  .app .staff-tabs-shell {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 13px;
+  }
+
+  .app .staff-tabs-scroll-button {
+    width: 40px;
+    height: 44px;
+    min-height: 44px;
+    border-radius: 9px;
+  }
+
+  .app .staff-tabs {
+    gap: 5px;
+  }
+
+  .app .staff-tab-group,
+  .app .staff-tab-group.active {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 9px;
+  }
+
+  .app .staff-tab-group:last-child {
+    padding-right: 3px;
+  }
+
+  .app .staff-tab-group-label {
+    padding-inline: 4px 2px;
+    font-size: 9px;
+  }
+
+  .app .staff-tab-group-buttons {
+    grid-template-columns: none;
+    gap: 2px;
+  }
+
+  .app .staff-tab-group-buttons button,
+  .app .staff-tab-group-buttons button.active {
+    width: auto;
+    min-height: 40px;
+    padding: 7px 11px;
+  }
+}
