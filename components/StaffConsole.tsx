@@ -9753,7 +9753,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       )}
 
       {currentTab === 'report' && (
-        <div className="staff-card">
+        <div className="staff-card staff-report-workspace">
           <div className="staff-report-head">
             <div className="staff-report-view-tabs" role="tablist" aria-label={resolvedLanguage === 'vi' ? 'Chế độ báo cáo' : 'Report view'}>
               <button

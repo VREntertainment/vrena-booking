@@ -9127,3 +9127,12 @@
     width: 100%;
   }
 }
+
+/* The report uses its own cards and controls; avoid wrapping them in another surface. */
+.app .staff-card.staff-report-workspace {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
