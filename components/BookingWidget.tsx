@@ -3822,9 +3822,6 @@ export default function WidgetPage({
         .on('postgres_changes', { event: '*', schema: 'public', table: 'session_waitlist' }, () => {
           queueRealtimeRefreshRef.current(['sessions', 'expandedDetails'])
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          queueRealtimeRefreshRef.current(['profile', 'sessions', 'leaderboard', 'clubs', 'tournament'])
-        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clubs' }, () => {
           queueRealtimeRefreshRef.current(['clubs'])
         })
@@ -3872,6 +3869,37 @@ export default function WidgetPage({
       cleanup?.()
     }
   }, [])
+
+  useEffect(() => {
+    if (!userId) return undefined
+
+    let active = true
+    let cleanup: (() => void) | null = null
+
+    void getSupabase().then((client) => {
+      if (!active) return
+
+      const channel = client
+        .channel(`vrena-profile-refresh:${userId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+          () => {
+            queueRealtimeRefreshRef.current(['profile', 'sessions', 'leaderboard', 'clubs', 'tournament'])
+          }
+        )
+        .subscribe()
+
+      cleanup = () => {
+        client.removeChannel(channel)
+      }
+    })
+
+    return () => {
+      active = false
+      cleanup?.()
+    }
+  }, [userId])
 
   useEffect(() => {
     const shouldShowCaptcha = authMode === 'reset' || ((authMode === 'create' || authMode === 'login') && authStep === 'credentials')
