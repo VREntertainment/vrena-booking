@@ -34,6 +34,7 @@ const gameAliases: Record<string, VenueGameSlug> = {
   arccovenant: 'arc-of-the-covenant',
   arcofthecovenant: 'arc-of-the-covenant',
   castleunspunnen: 'castle-unspunnen',
+  unspunnen: 'castle-unspunnen',
   jollerhouse: 'joller-house',
   lasertag: 'laser-tag',
   mbtowers: 'mini-block-towers',

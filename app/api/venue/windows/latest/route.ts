@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.6/VRenaResultsCapture-Setup.exe',
-      publishedAt: '2026-07-31T14:54:59Z',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.7/VRenaResultsCapture-Setup.exe',
+      publishedAt: '2026-08-01T12:18:00Z',
       releaseNotes:
-        'Correct Windows OCR percent-sign artifacts and restore dropped trailing zeros in shooter scores.',
-      sha256: 'e628be1d4785ecdf9c97fa49e907bdb33cbb6ff61f1fd1312399dc3dae6788db',
-      version: '2.1.6',
+        'Recognize the Unspunnen venue label and prevent repeated result-screen captures from inflating player statistics.',
+      sha256: 'bcb943e845848facc442186db3c706da124534ae051b0e16f7e00f59232f2cf0',
+      version: '2.1.7',
     },
     {
       headers: {
