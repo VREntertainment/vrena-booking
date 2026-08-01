@@ -3,6 +3,8 @@
 import { ShieldCheck } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { getInitialLanguage, LANGUAGE_CHANGE_EVENT } from '@/lib/i18n/detectLanguage'
+import type { LanguageCode } from '@/lib/i18n/languages'
 import { supabase } from '@/lib/supabase/client'
 
 type Consent = 'granted' | 'denied' | null
@@ -29,24 +31,82 @@ const SESSION_KEY = 'vrena_product_analytics_session_id'
 const ATTRIBUTION_KEY = 'vrena_product_analytics_attribution'
 const INTERNAL_PATH = /^\/(staff|hr|admin)(\/|$)/
 
+type ConsentMessage = {
+  eyebrow: string
+  title: string
+  body: string
+  allow: string
+  decline: string
+  settings: string
+}
+
 const messages = {
   en: {
-    eyebrow: 'Privacy-first analytics',
-    title: 'Help improve VRena',
-    body: 'With your permission, VRena measures page journeys, searches, time in app, device type and visit source without a fixed retention period. Search text and raw IP addresses are never stored, and staff only see aggregate reporting.',
-    allow: 'Allow analytics',
-    decline: 'Not now',
+    eyebrow: 'Your privacy comes first',
+    title: 'Help make VRena better',
+    body: 'With your permission, we’ll use a few simple usage details—such as pages visited, time spent, device type, and how you found us—to improve VRena. We never save what you type into search or your raw IP address. Our team only sees combined reports, and you can change your choice anytime.',
+    allow: 'Yes, help improve VRena',
+    decline: 'No thanks',
     settings: 'Analytics privacy settings',
   },
   vi: {
-    eyebrow: 'Phân tích ưu tiên quyền riêng tư',
-    title: 'Giúp VRena cải thiện',
-    body: 'Khi bạn đồng ý, VRena đo lường hành trình trang, lượt tìm kiếm, thời gian dùng app, loại thiết bị và nguồn truy cập mà không có thời hạn lưu trữ cố định. Nội dung tìm kiếm và địa chỉ IP thô không bao giờ được lưu; nhân viên chỉ xem báo cáo tổng hợp.',
-    allow: 'Cho phép phân tích',
-    decline: 'Để sau',
+    eyebrow: 'Quyền riêng tư của bạn là ưu tiên',
+    title: 'Cùng chúng tôi cải thiện VRena',
+    body: 'Nếu bạn đồng ý, chúng tôi sẽ dùng một số thông tin sử dụng cơ bản—như các trang đã xem, thời gian sử dụng, loại thiết bị và cách bạn tìm thấy VRena—để cải thiện trải nghiệm. Chúng tôi không bao giờ lưu nội dung bạn nhập khi tìm kiếm hoặc địa chỉ IP gốc. Đội ngũ chỉ xem báo cáo tổng hợp và bạn có thể đổi lựa chọn bất cứ lúc nào.',
+    allow: 'Đồng ý giúp cải thiện',
+    decline: 'Không, cảm ơn',
     settings: 'Cài đặt quyền riêng tư phân tích',
   },
-} as const
+  ko: {
+    eyebrow: '개인정보를 최우선으로',
+    title: '더 나은 VRena를 만드는 데 도움을 주세요',
+    body: '동의하시면 방문한 페이지, 이용 시간, 기기 유형, 유입 경로와 같은 간단한 이용 정보를 바탕으로 VRena를 개선합니다. 검색창에 입력한 내용과 원본 IP 주소는 저장하지 않습니다. 담당자는 종합된 보고서만 확인하며, 언제든지 선택을 변경할 수 있습니다.',
+    allow: '네, 개선에 참여할게요',
+    decline: '괜찮아요',
+    settings: '분석 개인정보 설정',
+  },
+  ja: {
+    eyebrow: 'プライバシーを最優先に',
+    title: 'VRenaの改善にご協力ください',
+    body: '同意いただくと、閲覧したページ、利用時間、端末の種類、アクセス元などの基本的な利用情報をVRenaの改善に役立てます。検索欄に入力した内容や元のIPアドレスは保存しません。スタッフが確認するのは集計レポートのみで、設定はいつでも変更できます。',
+    allow: '改善に協力する',
+    decline: '今回はしない',
+    settings: '分析プライバシー設定',
+  },
+  fr: {
+    eyebrow: 'Votre vie privée avant tout',
+    title: 'Aidez-nous à améliorer VRena',
+    body: 'Avec votre accord, nous utiliserons quelques informations simples — pages consultées, temps passé, type d’appareil et origine de la visite — pour améliorer VRena. Nous n’enregistrons jamais ce que vous saisissez dans la recherche ni votre adresse IP brute. Notre équipe ne voit que des rapports regroupés, et vous pouvez changer d’avis à tout moment.',
+    allow: 'Oui, améliorer VRena',
+    decline: 'Non merci',
+    settings: 'Paramètres de confidentialité des analyses',
+  },
+  de: {
+    eyebrow: 'Ihre Privatsphäre steht an erster Stelle',
+    title: 'Helfen Sie uns, VRena zu verbessern',
+    body: 'Mit Ihrer Zustimmung nutzen wir einige einfache Nutzungsdaten – etwa besuchte Seiten, Nutzungsdauer, Gerätetyp und Zugriffsquelle –, um VRena zu verbessern. Ihre Sucheingaben und Ihre vollständige IP-Adresse speichern wir niemals. Unser Team sieht nur zusammengefasste Berichte, und Sie können Ihre Auswahl jederzeit ändern.',
+    allow: 'Ja, VRena verbessern',
+    decline: 'Nein, danke',
+    settings: 'Datenschutzeinstellungen für Analysen',
+  },
+  it: {
+    eyebrow: 'La tua privacy prima di tutto',
+    title: 'Aiutaci a migliorare VRena',
+    body: 'Con il tuo consenso, useremo alcuni semplici dati di utilizzo — come pagine visitate, tempo trascorso, tipo di dispositivo e provenienza della visita — per migliorare VRena. Non salviamo mai ciò che digiti nella ricerca né il tuo indirizzo IP completo. Il nostro team vede solo report aggregati e puoi cambiare scelta in qualsiasi momento.',
+    allow: 'Sì, migliora VRena',
+    decline: 'No, grazie',
+    settings: 'Impostazioni privacy per le analisi',
+  },
+} as const satisfies Record<LanguageCode, ConsentMessage>
+
+function subscribeToLanguage(onLanguageChange: () => void) {
+  window.addEventListener('storage', onLanguageChange)
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, onLanguageChange)
+  return () => {
+    window.removeEventListener('storage', onLanguageChange)
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, onLanguageChange)
+  }
+}
 
 function randomId() {
   return crypto.randomUUID()
@@ -131,8 +191,8 @@ export default function ProductAnalytics() {
   const pageRef = useRef<PageEngagement | null>(null)
   const sendEventRef = useRef<(event: AnalyticsEvent, beacon?: boolean) => void>(() => undefined)
   const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false)
+  const language = useSyncExternalStore<LanguageCode>(subscribeToLanguage, getInitialLanguage, () => 'en')
   const excluded = INTERNAL_PATH.test(pathname)
-  const language = mounted && navigator.language.toLowerCase().startsWith('vi') ? 'vi' : 'en'
   const text = messages[language]
 
   useEffect(() => {
