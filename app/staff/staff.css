@@ -6946,6 +6946,15 @@
   padding: 0 0 0 20px;
 }
 
+.app .staff-hr-payroll-actions {
+  margin-top: 14px;
+}
+
+.app .staff-hr-payroll-actions > button {
+  flex: 1 1 180px;
+  justify-content: center;
+}
+
 .app .staff-hr-panel-head,
 .app .staff-hr-workspace-head {
   padding: 0 0 12px;

@@ -260,6 +260,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     dateFromInput,
     dongDigits,
     downloadEmployeePayslip,
+    downloadPayrollExcel,
     draggingShiftId,
     draftShiftCount,
     effectiveAttendanceScheduleScope,
@@ -1168,9 +1169,14 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <div><span>{text.labels.totalNet}</span><strong>{formatVnd(hrPayrollTotals.net)}</strong></div>
                       <div><span>{text.labels.totalCompanyCost}</span><strong>{formatVnd(hrPayrollTotals.companyCost)}</strong></div>
                     </div>
-                    <button className="primary" type="button" disabled={saving} onClick={generatePayrollRun}>
-                      <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.generatePayroll}</ButtonIconText>
-                    </button>
+                    <div className="staff-row-actions staff-hr-payroll-actions">
+                      <button className="primary" type="button" disabled={saving} onClick={generatePayrollRun}>
+                        <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.generatePayroll}</ButtonIconText>
+                      </button>
+                      <button type="button" disabled={saving} onClick={() => void downloadPayrollExcel()}>
+                        <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={15} />}>{text.actions.downloadPayrollExcel}</ButtonIconText>
+                      </button>
+                    </div>
                   </fieldset>
                   <div className="staff-attendance-list">
                     <h4>{text.labels.payslipPreview}</h4>
@@ -1178,6 +1184,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <strong>{selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback}</strong>
                       <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
                       <dl>
+                        <div><dt>{text.labels.paidLeave}</dt><dd>{Number(employeePayrollSummary.paidLeaveDays.toFixed(2))} {text.days}</dd></div>
+                        <div><dt>{text.labels.mealAllowance}</dt><dd>{formatVnd(employeePayrollSummary.mealAllowance)}</dd></div>
+                        <div><dt>{text.labels.overtimePay}</dt><dd>{formatVnd(employeePayrollSummary.overtimePay)}</dd></div>
                         <div><dt>{text.labels.grossIncome}</dt><dd>{formatVnd(employeePayrollSummary.grossIncome)}</dd></div>
                         <div><dt>{text.labels.employeeContributions}</dt><dd>{formatVnd(employeePayrollSummary.employeeContributions)}</dd></div>
                         <div><dt>{text.labels.pitWithheld}</dt><dd>{formatVnd(employeePayrollSummary.pitWithheld)}</dd></div>
