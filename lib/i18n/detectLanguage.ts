@@ -1,6 +1,7 @@
 import { isLanguageCode, type LanguageCode } from './languages'
 
 export const LANGUAGE_STORAGE_KEY = 'vrena-language'
+export const LANGUAGE_CHANGE_EVENT = 'vrena-language-change'
 
 export function detectLanguageFromLocale(locale: string | null | undefined): LanguageCode {
   const value = (locale || '').toLowerCase()
@@ -38,6 +39,7 @@ export function getStoredLanguage(): LanguageCode | null {
 export function storeLanguage(language: LanguageCode) {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+  window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT))
 }
 
 export function getInitialLanguage(): LanguageCode {
