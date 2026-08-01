@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Repository boundaries
+
+This repository contains the VRena booking web application, its server APIs,
+Supabase schema, and the Windows venue-results client that is distributed from
+this repository's GitHub releases.
+
+The independent Zalo clients live in
+[`VREntertainment/vrena-zalo-mini-apps`](https://github.com/VREntertainment/vrena-zalo-mini-apps).
+They call this web application's deployed Zalo API routes over HTTPS and are not
+part of the Next.js or Vercel build.
+
 ## Getting Started
 
 First, run the development server:
