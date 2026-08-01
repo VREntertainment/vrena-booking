@@ -9402,6 +9402,10 @@
   color: var(--vrena-selection-ink);
   font-size: 11px;
   font-weight: 800;
+  transition:
+    opacity 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
 }
 
 .app .staff-planning-shift-row-head {
@@ -9440,6 +9444,17 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .app .staff-hr-planning-panel .staff-planning-cell-button {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app .staff-hr-planning-panel .staff-planning-cell:hover > .staff-planning-cell-button,
+  .app .staff-hr-planning-panel .staff-planning-cell-button:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .app .staff-hr-week-navigation > button:hover:not(:disabled) {
     border-color: var(--vrena-cta-secondary-hover-border);
     background: var(--vrena-cta-secondary-hover-bg);
