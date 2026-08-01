@@ -3,8 +3,13 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Repository boundaries
 
 This repository contains the VRena booking web application, its server APIs,
-Supabase schema, and the Windows venue-results client that is distributed from
-this repository's GitHub releases.
+and Supabase schema.
+
+The Windows venue-results client and its GitHub releases live in
+[`VREntertainment/vrena-results-capture`](https://github.com/VREntertainment/vrena-results-capture).
+It calls this web application's deployed venue API routes over HTTPS. The
+authenticated update manifest remains in this web application so installed
+clients can continue checking for verified releases without reconfiguration.
 
 The independent Zalo clients live in
 [`VREntertainment/vrena-zalo-mini-apps`](https://github.com/VREntertainment/vrena-zalo-mini-apps).

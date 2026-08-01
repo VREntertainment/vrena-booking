@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-booking/releases/download/v2.1.6/VRenaResultsCapture-Setup.exe',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.6/VRenaResultsCapture-Setup.exe',
       publishedAt: '2026-07-31T14:54:59Z',
       releaseNotes:
         'Correct Windows OCR percent-sign artifacts and restore dropped trailing zeros in shooter scores.',
