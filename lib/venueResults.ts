@@ -8,6 +8,7 @@ export const venueGameSlugs = [
   'wild-west',
   'arc-of-the-covenant',
   'joller-house',
+  'zg-marbles',
 ] as const
 
 export type VenueGameSlug = typeof venueGameSlugs[number]
@@ -34,7 +35,9 @@ const gameAliases: Record<string, VenueGameSlug> = {
   arccovenant: 'arc-of-the-covenant',
   arcofthecovenant: 'arc-of-the-covenant',
   castleunspunnen: 'castle-unspunnen',
+  dgb: 'arc-of-the-covenant',
   unspunnen: 'castle-unspunnen',
+  joller: 'joller-house',
   jollerhouse: 'joller-house',
   lasertag: 'laser-tag',
   mbtowers: 'mini-block-towers',
@@ -42,8 +45,10 @@ const gameAliases: Record<string, VenueGameSlug> = {
   officewar: 'office-war',
   paintball: 'paintball',
   secretarc: 'arc-of-the-covenant',
+  showbattle: 'snow-battle',
   snowbattle: 'snow-battle',
   wildwest: 'wild-west',
+  zgmarbles: 'zg-marbles',
 }
 
 function normalizedAlias(value: string) {
