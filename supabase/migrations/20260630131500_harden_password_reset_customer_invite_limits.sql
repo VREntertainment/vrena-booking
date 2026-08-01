@@ -64,10 +64,6 @@ begin
     execute 'select encode(extensions.digest($1, $2), ''hex'')'
     into v_hash
     using v_hash_material, 'sha256';
-  elsif to_regprocedure('public.digest(text, text)') is not null then
-    execute 'select encode(public.digest($1, $2), ''hex'')'
-    into v_hash
-    using v_hash_material, 'sha256';
   else
     v_hash := md5(v_hash_material);
   end if;

@@ -30,7 +30,16 @@ begin
   end if;
 
   if v_owner_id is null then
-    raise exception 'contact@vre-vietnam.com was not found in auth.users or public.profiles. Create/log in that user before seeding official sessions.';
+    v_result := jsonb_build_object(
+      'skipped', true,
+      'reason', 'contact@vre-vietnam.com was not found in auth.users or public.profiles',
+      'seed_batch', p_seed_batch,
+      'official_sessions_updated', 0,
+      'official_sessions_inserted', 0
+    );
+
+    raise notice 'VRena official weekly sessions seed skipped: %', v_result;
+    return v_result;
   end if;
 
   v_fallback_phone := '+84' || substring(regexp_replace(v_owner_id::text, '[^0-9]', '', 'g') || '0000000000' from 1 for 10);

@@ -22,6 +22,49 @@ select public.vrena_e2e_prepare_admin(
 
 The helper lives in `supabase/e2e/create-admin-user.sql`. It is intentionally not a migration.
 
+## Direct REST Security Probes
+
+These tests simulate the browser-console attacks we want to block. They sign in
+as a normal player, try direct REST writes against staff-only and trusted tables,
+then verify with the staging service role that the fake fixture rows did not
+change.
+
+Use staging or local fake data only. Do not run this against production.
+
+Prepare deterministic fake users and rows on staging/local:
+
+```sql
+select public.vrena_e2e_prepare_security_fixtures(
+  'security-player@vrena.local',
+  'replace-with-a-long-test-only-password',
+  'security-staff@vrena.local',
+  'replace-with-a-long-test-only-password',
+  true
+);
+```
+
+The helper lives in `supabase/e2e/create-security-fixtures.sql`. It is
+intentionally not a migration.
+
+Set matching env vars:
+
+```bash
+SECURITY_REST_TESTS=1
+SECURITY_STAGING_CONFIRMATION=I_AM_USING_STAGING_OR_LOCAL_FAKE_DATA
+SECURITY_BASE_URL=https://your-preview-or-staging-app.example
+SECURITY_SUPABASE_URL=https://your-staging-project.supabase.co
+SECURITY_SUPABASE_ANON_KEY=your-staging-anon-key
+SECURITY_SUPABASE_SERVICE_ROLE_KEY=your-staging-service-role-key
+SECURITY_PLAYER_EMAIL=security-player@vrena.local
+SECURITY_PLAYER_PASSWORD=replace-with-a-long-test-only-password
+```
+
+Run:
+
+```bash
+npm run test:security
+```
+
 Run locally:
 
 ```bash
