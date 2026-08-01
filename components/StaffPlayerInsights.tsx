@@ -180,17 +180,16 @@ const copy = {
     visitFrequency: 'Visit frequency',
     frequencyHelp: 'Average completed visits per checked-in player.',
     vs: 'vs',
-    noComparison: 'Comparison off',
     newValue: 'New',
     activityTitle: 'Engagement trend',
     activitySubtitle: 'Daily reservations and completed visits',
     reservations: 'Reservations',
     checkIns: 'Check-ins',
     peakTitle: 'When players visit',
-    peakSubtitle: 'Check-ins by weekday and daypart',
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
+    peakSubtitle: 'Check-ins by weekday and time range',
+    morning: '00:00–11:59',
+    afternoon: '12:00–16:59',
+    evening: '17:00–23:59',
     gameTitle: 'Game demand',
     gameSubtitle: 'Sessions selected by booked players',
     visits: 'visits',
@@ -241,17 +240,16 @@ const copy = {
     visitFrequency: 'Tần suất ghé chơi',
     frequencyHelp: 'Số lượt hoàn tất trung bình trên mỗi người đã check-in.',
     vs: 'so với',
-    noComparison: 'Chưa bật so sánh',
     newValue: 'Mới',
     activityTitle: 'Xu hướng tương tác',
     activitySubtitle: 'Đặt chỗ và lượt chơi hoàn tất theo ngày',
     reservations: 'Đặt chỗ',
     checkIns: 'Check-in',
     peakTitle: 'Thời điểm người chơi ghé',
-    peakSubtitle: 'Check-in theo ngày và buổi',
-    morning: 'Sáng',
-    afternoon: 'Chiều',
-    evening: 'Tối',
+    peakSubtitle: 'Check-in theo ngày và khung giờ',
+    morning: '00:00–11:59',
+    afternoon: '12:00–16:59',
+    evening: '17:00–23:59',
     gameTitle: 'Nhu cầu trò chơi',
     gameSubtitle: 'Trò chơi được chọn trong phiên có đặt chỗ',
     visits: 'lượt chơi',
@@ -407,7 +405,7 @@ function InsightCard({
   label,
   value,
 }: {
-  comparison: string
+  comparison: string | null
   help: string
   icon: ReactNode
   label: string
@@ -420,7 +418,7 @@ function InsightCard({
         <span>{label}</span>
       </div>
       <strong>{value}</strong>
-      <small>{comparison}</small>
+      {comparison ? <small>{comparison}</small> : null}
       <p>{help}</p>
     </article>
   )
@@ -453,7 +451,7 @@ export default function StaffPlayerInsights({
   const productFreshness = timeLabel(productSummary.latestEventAt, language)
   const comparisonFor = (current: number, previous: number) => compareEnabled
     ? `${changeLabel(current, previous, text.newValue)} ${text.vs} ${compareLabel}`
-    : text.noComparison
+    : null
 
   return (
     <div className={loading ? 'staff-player-insights loading' : 'staff-player-insights'}>
