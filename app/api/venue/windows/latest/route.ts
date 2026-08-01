@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.8/VRenaResultsCapture-Setup.exe',
-      publishedAt: '2026-08-01T13:37:03Z',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.9/VRenaResultsCapture-Setup.exe',
+      publishedAt: '2026-08-01T23:53:49Z',
       releaseNotes:
-        'Open VRena Results Capture maximized by default and restore it maximized from the notification area.',
-      sha256: '5de1ba01fe3b1a5e16742017f8d63d66bbac5a47147d0ff58080c2e2a969dad5',
-      version: '2.1.8',
+        'Use game-specific OCR for up to four players, improve faint escape-game names, and exclude ZG Marbles from player records and review uploads.',
+      sha256: 'a40e18df86afc21d76f39a88b5d8bd3cf53ba44d72775be87fdd90e178d61cf7',
+      version: '2.1.9',
     },
     {
       headers: {
