@@ -468,6 +468,45 @@ type StaffPayrollItem = {
   updated_at: string
 }
 
+type StaffPayrollSourceSnapshot = {
+  id: string
+  source_key: string
+  source_name: string
+  source_url: string | null
+  period_start: string
+  period_end: string
+  employee_code: string
+  employee_name: string
+  division: string | null
+  employment_status: string | null
+  bank_name: string | null
+  bank_account_number: string | null
+  contract_rate_vnd: number
+  worked_minutes: number | null
+  worked_days: number | null
+  basic_days: number | null
+  paid_leave_days: number
+  salary_paid_minutes: number
+  overtime_minutes: number
+  meal_days: number
+  base_pay_vnd: number
+  meal_allowance_vnd: number
+  overtime_pay_vnd: number
+  gross_income_vnd: number
+  taxable_income_vnd: number
+  pit_withheld_vnd: number
+  employee_insurance_vnd: number
+  net_payable_vnd: number
+  leave_opening: number | null
+  leave_accrual: number | null
+  leave_used: number | null
+  leave_closing: number | null
+  leave_payout_vnd: number | null
+  details: string | null
+  source_payload: Record<string, unknown>
+  imported_at: string
+}
+
 type StaffHrDocument = {
   id: string
   profile_id: string
@@ -484,20 +523,28 @@ type StaffHrDocument = {
 type StaffPayrollCalculation = {
   profileId: string
   scheduledMinutes: number
+  periodStandardMinutes: number
   workedMinutes: number
+  workedDays: number
   regularMinutes: number
+  salaryPaidMinutes: number
   overtimeMinutes: number
   nightMinutes: number
   holidayMinutes: number
   paidLeaveHours: number
+  paidLeaveDays: number
   leaveBalanceDays: number
   restWarningCount: number
+  hourlyRate: number
   basePay: number
   overtimePay: number
+  mealAllowance: number
+  otherAllowances: number
   allowances: number
   bonuses: number
   advances: number
   deductions: number
+  contributionBase: number
   employeeContributions: number
   employerContributions: number
   pitWithheld: number
@@ -827,6 +874,7 @@ const staffConsoleText = {
       preparingDownload: 'Preparing...',
       approvePayroll: 'Approve payroll',
       createEmployee: 'Create employee',
+      downloadPayrollExcel: 'Download payroll Excel',
       generatePayroll: 'Generate payroll',
       saveAttendance: 'Save attendance',
       saveAdjustment: 'Save adjustment',
@@ -1324,12 +1372,14 @@ const staffConsoleText = {
       allTicketTypes: 'All ticket types',
       overtimeHours: 'Overtime hours',
       overtimePay: 'Overtime pay',
+      paidLeave: 'Paid leave',
       overtimeMonthlyCap: 'Monthly overtime cap',
       overtimeYearlyCap: 'Yearly overtime cap',
       normalOvertimeMultiplier: 'Normal OT multiplier',
       nightOvertimeMultiplier: 'Night OT multiplier',
       holidayOvertimeMultiplier: 'Holiday OT multiplier',
       lunchAllowance: 'Lunch allowance / day',
+      mealAllowance: 'Meal allowance',
       restPeriodHours: 'Minimum rest (hours)',
       restWarnings: 'Rest alerts',
       employeeContributionRate: 'Employee contribution %',
@@ -1617,6 +1667,7 @@ const staffConsoleText = {
       preparingDownload: 'Đang chuẩn bị...',
       approvePayroll: 'Duyệt bảng lương',
       createEmployee: 'Tạo nhân viên',
+      downloadPayrollExcel: 'Tải Excel bảng lương',
       generatePayroll: 'Tạo bảng lương',
       saveAttendance: 'Lưu chấm công',
       saveAdjustment: 'Lưu khoản điều chỉnh',
@@ -2114,12 +2165,14 @@ const staffConsoleText = {
       allTicketTypes: 'Tất cả loại vé',
       overtimeHours: 'Giờ tăng ca',
       overtimePay: 'Tiền tăng ca',
+      paidLeave: 'Nghỉ phép hưởng lương',
       overtimeMonthlyCap: 'Giới hạn tăng ca / tháng',
       overtimeYearlyCap: 'Giới hạn tăng ca / năm',
       normalOvertimeMultiplier: 'Hệ số tăng ca thường',
       nightOvertimeMultiplier: 'Hệ số tăng ca đêm',
       holidayOvertimeMultiplier: 'Hệ số ngày lễ',
       lunchAllowance: 'Phụ cấp ăn trưa / ngày',
+      mealAllowance: 'Phụ cấp bữa ăn',
       restPeriodHours: 'Nghỉ tối thiểu (giờ)',
       restWarnings: 'Cảnh báo nghỉ',
       employeeContributionRate: 'Tỷ lệ NLĐ đóng %',
@@ -2712,6 +2765,33 @@ function countRestPeriodWarnings(shifts: StaffScheduleShift[], restPeriodMinutes
   }, 0)
 }
 
+function proratedMonthlyMinutes(periodStart: string, periodEnd: string, standardMonthlyHours: number) {
+  const [from, to] = orderedRange(periodStart, periodEnd)
+  let cursor = from
+  let minutes = 0
+  while (cursor <= to) {
+    const date = dateFromInput(cursor)
+    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    minutes += (Math.max(0, standardMonthlyHours) * 60) / Math.max(1, daysInMonth)
+    cursor = addDays(cursor, 1)
+  }
+  return Math.round(minutes)
+}
+
+function leaveHoursInsidePeriod(leave: StaffLeaveRequest, periodStart: string, periodEnd: string) {
+  const overlapStart = leave.start_date > periodStart ? leave.start_date : periodStart
+  const overlapEnd = leave.end_date < periodEnd ? leave.end_date : periodEnd
+  if (overlapStart > overlapEnd) return 0
+  const requestDays = Math.max(1, daysBetween(leave.start_date, leave.end_date) + 1)
+  const overlapDays = Math.max(1, daysBetween(overlapStart, overlapEnd) + 1)
+  return Math.max(0, Number(leave.hours) || 0) * overlapDays / requestDays
+}
+
+function isPaidLeaveForEmployee(leave: StaffLeaveRequest, employee: StaffEmployeeProfile | undefined) {
+  if (!isMonthlyGrossEmployment(employee?.employment_type)) return false
+  return leave.leave_type === 'annual' || leave.leave_type === 'public_holiday'
+}
+
 function calculateStaffPayroll(
   staffProfileId: string,
   employee: StaffEmployeeProfile | undefined,
@@ -2725,7 +2805,13 @@ function calculateStaffPayroll(
 ): StaffPayrollCalculation {
   const employeeShifts = shifts.filter((shift) => shift.staff_profile_id === staffProfileId && shift.shift_date >= periodStart && shift.shift_date <= periodEnd && activeShift(shift))
   const employeeLogs = logs.filter((log) => log.staff_profile_id === staffProfileId && log.work_date >= periodStart && log.work_date <= periodEnd)
-  const employeeLeaves = leaves.filter((leave) => leave.staff_profile_id === staffProfileId && leave.status === 'approved' && leave.end_date >= periodStart && leave.start_date <= periodEnd)
+  const employeeLeaves = leaves.filter((leave) => (
+    leave.staff_profile_id === staffProfileId &&
+    leave.status === 'approved' &&
+    leave.end_date >= periodStart &&
+    leave.start_date <= periodEnd &&
+    isPaidLeaveForEmployee(leave, employee)
+  ))
   const employeeAdjustments = adjustments.filter((adjustment) => (
     adjustment.profile_id === staffProfileId &&
     ['approved', 'paid'].includes(adjustment.status) &&
@@ -2735,17 +2821,27 @@ function calculateStaffPayroll(
   const scheduledMinutes = employeeShifts.reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
   const workedMinutes = employeeLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
   const regularMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.regular_minutes) || 0), 0)
-  const computedOvertimeMinutes = Math.max(0, workedMinutes - (regularMinutes || Math.min(workedMinutes, scheduledMinutes)))
+  const computedOvertimeMinutes = scheduledMinutes > 0
+    ? Math.max(0, workedMinutes - (regularMinutes || Math.min(workedMinutes, scheduledMinutes)))
+    : 0
   const overtimeMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.overtime_minutes) || 0), 0) || computedOvertimeMinutes
   const nightMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.night_minutes) || 0), 0)
   const holidayMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.holiday_minutes) || 0), 0)
-  const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + Math.max(0, Number(leave.hours) || 0), 0)
+  const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + leaveHoursInsidePeriod(leave, periodStart, periodEnd), 0)
   const workedDays = new Set(employeeLogs.filter((log) => minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes) > 0).map((log) => log.work_date)).size
+  const standardDailyHours = Math.max(1, settings.standard_monthly_hours / Math.max(1, settings.standard_monthly_days))
+  const paidLeaveDays = paidLeaveHours / standardDailyHours
   const annualEntitlement = Math.max(0, Number(employee?.contract_status === 'ended' ? 0 : settings.annual_leave_days) || 0)
-  const leaveBalanceDays = Math.max(0, annualEntitlement - (paidLeaveHours / Math.max(1, settings.standard_monthly_hours / settings.standard_monthly_days)))
-  const hourlyRate = employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, settings.standard_monthly_hours) : 0)
+  const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
+  const configuredPeriodMinutes = proratedMonthlyMinutes(periodStart, periodEnd, settings.standard_monthly_hours)
+  const periodStandardMinutes = Math.max(1, configuredPeriodMinutes, scheduledMinutes)
+  const hourlyRate = employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)
   const monthlyBasePay = isMonthlyGrossEmployment(employee?.employment_type) ? Math.max(0, Number(employee?.base_salary_vnd) || 0) : 0
-  const hourlyBasePay = monthlyBasePay > 0 ? monthlyBasePay : Math.round((workedMinutes / 60) * Math.max(0, hourlyRate))
+  const baseWorkedMinutes = regularMinutes > 0 ? regularMinutes : Math.max(0, workedMinutes - overtimeMinutes)
+  const salaryPaidMinutes = baseWorkedMinutes + Math.round(paidLeaveHours * 60)
+  const hourlyBasePay = monthlyBasePay > 0
+    ? Math.round(monthlyBasePay * Math.min(1, salaryPaidMinutes / periodStandardMinutes))
+    : Math.round((baseWorkedMinutes / 60) * Math.max(0, hourlyRate))
   const overtimeMultiplier = employeeRate(employee?.overtime_rate_multiplier, settings.normal_overtime_multiplier)
   const nightMultiplier = employeeRate(employee?.night_rate_multiplier, settings.night_overtime_multiplier)
   const holidayMultiplier = employeeRate(employee?.holiday_rate_multiplier, settings.holiday_overtime_multiplier)
@@ -2754,11 +2850,14 @@ function calculateStaffPayroll(
     (nightMinutes / 60) * hourlyRate * Math.max(0, nightMultiplier - 1) +
     (holidayMinutes / 60) * hourlyRate * Math.max(0, holidayMultiplier - 1)
   )
-  const lunchAllowance = employee?.lunch_allowance_vnd ?? settings.lunch_allowance_vnd
+  const lunchAllowance = Number(employee?.lunch_allowance_vnd) > 0
+    ? Number(employee?.lunch_allowance_vnd)
+    : settings.lunch_allowance_vnd
   const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * workedDays)
-  const allowances = autoLunchAllowance + employeeAdjustments
+  const otherAllowances = employeeAdjustments
     .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + item.amount_vnd, 0)
+  const allowances = autoLunchAllowance + otherAllowances
   const bonuses = employeeAdjustments
     .filter((item) => ['bonus', 'commission'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + item.amount_vnd, 0)
@@ -2773,8 +2872,11 @@ function calculateStaffPayroll(
   const employeeContributionRate = employeeRate(employee?.employee_contribution_rate, settings.employee_contribution_rate)
   const employerContributionRate = employeeRate(employee?.employer_contribution_rate, settings.employer_contribution_rate)
   const pitRate = employeeRate(employee?.pit_withholding_rate, settings.pit_withholding_rate)
-  const employeeContributions = settings.social_insurance_enabled ? Math.round(grossIncome * employeeContributionRate / 100) : 0
-  const employerContributions = settings.social_insurance_enabled ? Math.round(grossIncome * employerContributionRate / 100) : 0
+  const contributionBase = settings.social_insurance_enabled && normalizeStaffEmploymentType(employee?.employment_type) === 'full_time' && normalizeStaffContractStatus(employee?.contract_status) === 'active'
+    ? Math.max(0, Number(employee?.base_salary_vnd) || 0)
+    : 0
+  const employeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
+  const employerContributions = Math.round(contributionBase * employerContributionRate / 100)
   const taxableIncome = Math.max(0, grossIncome - employeeContributions - deductions - advances)
   const pitWithheld = settings.personal_income_tax_enabled ? Math.round(taxableIncome * pitRate / 100) : 0
   const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
@@ -2783,20 +2885,28 @@ function calculateStaffPayroll(
   return {
     profileId: staffProfileId,
     scheduledMinutes,
+    periodStandardMinutes,
     workedMinutes,
+    workedDays,
     regularMinutes,
+    salaryPaidMinutes,
     overtimeMinutes,
     nightMinutes,
     holidayMinutes,
     paidLeaveHours,
+    paidLeaveDays,
     leaveBalanceDays,
     restWarningCount: countRestPeriodWarnings(employeeShifts, employeeRestPeriodMinutes(employee, settings)),
+    hourlyRate,
     basePay,
     overtimePay,
+    mealAllowance: autoLunchAllowance,
+    otherAllowances,
     allowances,
     bonuses,
     advances,
     deductions,
+    contributionBase,
     employeeContributions,
     employerContributions,
     pitWithheld,
@@ -2810,20 +2920,28 @@ function emptyStaffPayrollCalculation(profileId = ''): StaffPayrollCalculation {
   return {
     profileId,
     scheduledMinutes: 0,
+    periodStandardMinutes: 0,
     workedMinutes: 0,
+    workedDays: 0,
     regularMinutes: 0,
+    salaryPaidMinutes: 0,
     overtimeMinutes: 0,
     nightMinutes: 0,
     holidayMinutes: 0,
     paidLeaveHours: 0,
+    paidLeaveDays: 0,
     leaveBalanceDays: 0,
     restWarningCount: 0,
+    hourlyRate: 0,
     basePay: 0,
     overtimePay: 0,
+    mealAllowance: 0,
+    otherAllowances: 0,
     allowances: 0,
     bonuses: 0,
     advances: 0,
     deductions: 0,
+    contributionBase: 0,
     employeeContributions: 0,
     employerContributions: 0,
     pitWithheld: 0,
@@ -3183,12 +3301,12 @@ const defaultHrSettings = (): StaffHrSettings => ({
   id: 'default',
   currency: 'VND',
   standard_monthly_days: 26,
-  standard_monthly_hours: 208,
+  standard_monthly_hours: 169,
   rest_period_minutes: 660,
   normal_overtime_multiplier: 1.5,
   night_overtime_multiplier: 2,
   holiday_overtime_multiplier: 3,
-  lunch_allowance_vnd: 0,
+  lunch_allowance_vnd: 35000,
   annual_leave_days: 12,
   employee_contribution_rate: 10.5,
   employer_contribution_rate: 21.5,
@@ -4571,6 +4689,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [hrAdjustments, setHrAdjustments] = useState<StaffHrAdjustment[]>([])
   const [payrollRuns, setPayrollRuns] = useState<StaffPayrollRun[]>([])
   const [payrollItems, setPayrollItems] = useState<StaffPayrollItem[]>([])
+  const [payrollSourceSnapshots, setPayrollSourceSnapshots] = useState<StaffPayrollSourceSnapshot[]>([])
   const [hrDocuments, setHrDocuments] = useState<StaffHrDocument[]>([])
   const [selectedShiftTemplate, setSelectedShiftTemplate] = useState<StaffShiftTemplateId>('opening')
   const [attendanceScheduleScope, setAttendanceScheduleScope] = useState<StaffScheduleScope>(() => canViewAllEmployeeProfiles ? 'all' : 'department')
@@ -5780,7 +5899,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   async function loadHrData(force = false) {
     await runStaffLoader('hr', async () => {
-      const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult] = await Promise.all([
+      const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult] = await Promise.all([
         supabase
           .from('staff_hr_settings')
           .select('*')
@@ -5812,6 +5931,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           .order('created_at', { ascending: false })
           .limit(500),
         supabase
+          .from('staff_payroll_source_snapshots')
+          .select('*')
+          .order('period_start', { ascending: false })
+          .order('employee_code', { ascending: true })
+          .limit(500),
+        supabase
           .from('staff_hr_documents')
           .select('*')
           .is('deleted_at', null)
@@ -5819,7 +5944,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           .limit(500),
       ])
 
-      const results = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult]
+      const results = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult]
       const blockingError = results.find((result) => result.error && !isStaffHrSchemaUnavailable(result.error))?.error
       if (blockingError) throw new Error(blockingError.message)
 
@@ -5830,6 +5955,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setHrAdjustments([])
         setPayrollRuns([])
         setPayrollItems([])
+        setPayrollSourceSnapshots([])
         setHrDocuments([])
         return
       }
@@ -5839,6 +5965,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setHrAdjustments((adjustmentsResult.data ?? []) as StaffHrAdjustment[])
       setPayrollRuns((payrollRunsResult.data ?? []) as StaffPayrollRun[])
       setPayrollItems((payrollItemsResult.data ?? []) as StaffPayrollItem[])
+      setPayrollSourceSnapshots((sourceSnapshotsResult.data ?? []) as StaffPayrollSourceSnapshot[])
       setHrDocuments((documentsResult.data ?? []) as StaffHrDocument[])
     }, force)
   }
@@ -6763,6 +6890,15 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           periodEnd,
           currency: hrSettings.currency,
           note: hrSettings.payslip_note || null,
+          workedDays: item.workedDays,
+          periodStandardMinutes: item.periodStandardMinutes,
+          salaryPaidMinutes: item.salaryPaidMinutes,
+          paidLeaveDays: item.paidLeaveDays,
+          payrollHourlyRateVnd: item.hourlyRate,
+          mealAllowanceVnd: item.mealAllowance,
+          otherAllowancesVnd: item.otherAllowances,
+          contributionBaseVnd: item.contributionBase,
+          policyReference: 'VR_Payroll_July_2026_QA',
         },
       }
     })
@@ -6870,12 +7006,15 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       `Contract: ${employee?.contract_type || '-'} / ${text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)]}`,
       '',
       `${text.labels.workedHours}: ${hoursLabel(calculation.workedMinutes)}`,
+      `Paid leave: ${Number(calculation.paidLeaveDays.toFixed(2))} ${text.days} / ${Number(calculation.paidLeaveHours.toFixed(2))}h`,
+      `Salary-paid hours: ${hoursLabel(calculation.salaryPaidMinutes)}`,
       `${text.labels.overtimeHours}: ${hoursLabel(calculation.overtimeMinutes)}`,
       `${text.labels.leaveBalance}: ${Number(calculation.leaveBalanceDays.toFixed(2))} ${text.days}`,
       '',
       `${text.labels.baseSalary}: ${formatVnd(calculation.basePay)}`,
       `${text.labels.overtimePay}: ${formatVnd(calculation.overtimePay)}`,
-      `${text.labels.allowances}: ${formatVnd(calculation.allowances)}`,
+      `Meal allowance: ${formatVnd(calculation.mealAllowance)}`,
+      `${text.labels.allowances}: ${formatVnd(calculation.otherAllowances)}`,
       `${text.labels.bonuses}: ${formatVnd(calculation.bonuses)}`,
       `${text.labels.grossIncome}: ${formatVnd(calculation.grossIncome)}`,
       `${text.labels.employeeContributions}: ${formatVnd(calculation.employeeContributions)}`,
@@ -6888,6 +7027,198 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       hrSettings.payslip_note || '',
     ].filter((line) => line !== '')
     await downloadPdf(`payslip-${employee?.employee_code || staffProfileId.slice(0, 8)}-${payrollPeriodStart}.pdf`, lines, text)
+  }
+
+  async function downloadPayrollExcel() {
+    const [periodStart, periodEnd] = orderedRange(payrollPeriodStart, payrollPeriodEnd)
+    const historicalSnapshots = payrollSourceSnapshots.filter((snapshot) => (
+      snapshot.period_start === periodStart && snapshot.period_end === periodEnd
+    ))
+    const calculatedPayrollRows: Array<Record<string, unknown>> = visibleStaffProfileOptions.map((staffProfile) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
+      return {
+        'Employee code': employee?.employee_code || '',
+        Employee: employee?.legal_name || customerName(staffProfile, text),
+        Department: employee?.department || '',
+        'Employment type': text.employmentTypes[normalizeStaffEmploymentType(employee?.employment_type)],
+        'Contract status': text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)],
+        'Bank name': employee?.bank_name || '',
+        'Bank account': employee?.bank_account_number || '',
+        'Contract salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
+        'Configured hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
+        'Payroll hourly rate (VND)': Math.round(calculation.hourlyRate),
+        'Period standard hours': Number((calculation.periodStandardMinutes / 60).toFixed(2)),
+        'Scheduled hours': Number((calculation.scheduledMinutes / 60).toFixed(2)),
+        'Worked hours': Number((calculation.workedMinutes / 60).toFixed(2)),
+        'Worked days': calculation.workedDays,
+        'Meal days': calculation.workedDays,
+        'Paid leave hours': Number(calculation.paidLeaveHours.toFixed(2)),
+        'Paid leave days': Number(calculation.paidLeaveDays.toFixed(2)),
+        'Salary-paid hours': Number((calculation.salaryPaidMinutes / 60).toFixed(2)),
+        'Overtime hours': Number((calculation.overtimeMinutes / 60).toFixed(2)),
+        'Night hours': Number((calculation.nightMinutes / 60).toFixed(2)),
+        'Holiday hours': Number((calculation.holidayMinutes / 60).toFixed(2)),
+        'Base pay (VND)': calculation.basePay,
+        'Meal allowance (VND)': calculation.mealAllowance,
+        'Other allowances (VND)': calculation.otherAllowances,
+        'Overtime pay (VND)': calculation.overtimePay,
+        'Bonuses (VND)': calculation.bonuses,
+        'Gross income (VND)': calculation.grossIncome,
+        'Insurance base (VND)': calculation.contributionBase,
+        'Employee insurance (VND)': calculation.employeeContributions,
+        'PIT withheld (VND)': calculation.pitWithheld,
+        'Advances (VND)': calculation.advances,
+        'Deductions (VND)': calculation.deductions,
+        'Net payable (VND)': calculation.netIncome,
+        'Employer insurance (VND)': calculation.employerContributions,
+        'Company cost (VND)': calculation.companyCost,
+        'Rest alerts': calculation.restWarningCount,
+        Notes: employee?.payroll_note || '',
+      }
+    })
+    const historicalPayrollRows: Array<Record<string, unknown>> = historicalSnapshots.map((snapshot) => ({
+      'Employee code': snapshot.employee_code,
+      Employee: snapshot.employee_name,
+      Department: snapshot.division || '',
+      'Employment type': snapshot.employment_status || '',
+      'Contract status': snapshot.employment_status || '',
+      'Bank name': snapshot.bank_name || '',
+      'Bank account': snapshot.bank_account_number || '',
+      'Contract salary (VND)': snapshot.contract_rate_vnd,
+      'Configured hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : 0,
+      'Payroll hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : '',
+      'Period standard hours': snapshot.basic_days || '',
+      'Scheduled hours': '',
+      'Worked hours': snapshot.worked_minutes === null ? '' : Number((snapshot.worked_minutes / 60).toFixed(2)),
+      'Worked days': snapshot.worked_days ?? '',
+      'Meal days': snapshot.meal_days,
+      'Paid leave hours': snapshot.worked_minutes === null ? '' : Number(((snapshot.salary_paid_minutes - snapshot.worked_minutes) / 60).toFixed(2)),
+      'Paid leave days': snapshot.paid_leave_days,
+      'Salary-paid hours': Number((snapshot.salary_paid_minutes / 60).toFixed(2)),
+      'Overtime hours': Number((snapshot.overtime_minutes / 60).toFixed(2)),
+      'Night hours': 0,
+      'Holiday hours': 0,
+      'Base pay (VND)': snapshot.base_pay_vnd,
+      'Meal allowance (VND)': snapshot.meal_allowance_vnd,
+      'Other allowances (VND)': 0,
+      'Overtime pay (VND)': snapshot.overtime_pay_vnd,
+      'Bonuses (VND)': 0,
+      'Gross income (VND)': snapshot.gross_income_vnd,
+      'Insurance base (VND)': snapshot.employee_insurance_vnd > 0 ? snapshot.contract_rate_vnd : 0,
+      'Employee insurance (VND)': snapshot.employee_insurance_vnd,
+      'PIT withheld (VND)': snapshot.pit_withheld_vnd,
+      'Advances (VND)': 0,
+      'Deductions (VND)': 0,
+      'Net payable (VND)': snapshot.net_payable_vnd,
+      'Employer insurance (VND)': '',
+      'Company cost (VND)': '',
+      'Rest alerts': '',
+      Notes: snapshot.details || '',
+    }))
+    const payrollRows = historicalPayrollRows.length > 0 ? historicalPayrollRows : calculatedPayrollRows
+    const totalColumns = [
+      'Scheduled hours', 'Worked hours', 'Worked days', 'Meal days', 'Paid leave hours', 'Paid leave days', 'Salary-paid hours',
+      'Overtime hours', 'Night hours', 'Holiday hours', 'Base pay (VND)', 'Meal allowance (VND)',
+      'Other allowances (VND)', 'Overtime pay (VND)', 'Bonuses (VND)', 'Gross income (VND)',
+      'Insurance base (VND)', 'Employee insurance (VND)', 'PIT withheld (VND)', 'Advances (VND)',
+      'Deductions (VND)', 'Net payable (VND)', 'Employer insurance (VND)', 'Company cost (VND)', 'Rest alerts',
+    ].filter((key) => historicalPayrollRows.length === 0 || !['Employer insurance (VND)', 'Company cost (VND)', 'Rest alerts', 'Scheduled hours'].includes(key))
+    const totalRow = payrollRows.reduce<Record<string, unknown>>((total, row) => {
+      totalColumns.forEach((key) => {
+        total[key] = Number(total[key] || 0) + Number(row[key] || 0)
+      })
+      return total
+    }, { 'Employee code': '', Employee: 'TOTAL' })
+
+    const attendanceRows = attendanceLogs
+      .filter((log) => log.work_date >= periodStart && log.work_date <= periodEnd)
+      .sort((left, right) => left.work_date.localeCompare(right.work_date))
+      .map((log) => {
+        const staffProfile = profileById.get(log.staff_profile_id)
+        const employee = employeeProfileById.get(log.staff_profile_id)
+        return {
+          'Employee code': employee?.employee_code || '',
+          Employee: employee?.legal_name || (staffProfile ? customerName(staffProfile, text) : log.staff_profile_id),
+          Date: log.work_date,
+          'Clock in': log.clock_in_at || '',
+          'Clock out': log.clock_out_at || '',
+          'Break minutes': Math.max(0, Number(log.break_minutes) || 0),
+          'Worked hours': Number((minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes) / 60).toFixed(2)),
+          'Regular hours': Number((Math.max(0, Number(log.regular_minutes) || 0) / 60).toFixed(2)),
+          'Overtime hours': Number((Math.max(0, Number(log.overtime_minutes) || 0) / 60).toFixed(2)),
+          'Night hours': Number((Math.max(0, Number(log.night_minutes) || 0) / 60).toFixed(2)),
+          'Holiday hours': Number((Math.max(0, Number(log.holiday_minutes) || 0) / 60).toFixed(2)),
+          Status: log.status,
+          Approval: log.approval_status,
+          'Manager note': log.manager_note || '',
+        }
+      })
+
+    const paidLeaveRows = leaveRequests
+      .filter((leave) => leave.end_date >= periodStart && leave.start_date <= periodEnd)
+      .map((leave) => {
+        const staffProfile = profileById.get(leave.staff_profile_id)
+        const employee = employeeProfileById.get(leave.staff_profile_id)
+        const paidInPayroll = leave.status === 'approved' && isPaidLeaveForEmployee(leave, employee)
+        return {
+          'Employee code': employee?.employee_code || '',
+          Employee: employee?.legal_name || (staffProfile ? customerName(staffProfile, text) : leave.staff_profile_id),
+          'Leave type': leave.leave_type,
+          'Request start': leave.start_date,
+          'Request end': leave.end_date,
+          'Requested hours': Math.max(0, Number(leave.hours) || 0),
+          'Hours inside selected period': Number(leaveHoursInsidePeriod(leave, periodStart, periodEnd).toFixed(2)),
+          Status: leave.status,
+          'Paid in payroll': paidInPayroll ? 'Yes' : 'No',
+          Reason: leave.reason || '',
+        }
+      })
+
+    const adjustmentRows = hrAdjustments
+      .filter((adjustment) => adjustmentAppliesToPeriod(adjustment, periodStart, periodEnd))
+      .map((adjustment) => {
+        const staffProfile = profileById.get(adjustment.profile_id)
+        const employee = employeeProfileById.get(adjustment.profile_id)
+        return {
+          'Employee code': employee?.employee_code || '',
+          Employee: employee?.legal_name || (staffProfile ? customerName(staffProfile, text) : adjustment.profile_id),
+          Type: adjustment.adjustment_type,
+          Title: adjustment.title,
+          'Amount (VND)': adjustment.amount_vnd,
+          'Effective date': adjustment.effective_date,
+          'Period start': adjustment.period_start || '',
+          'Period end': adjustment.period_end || '',
+          Status: adjustment.status,
+          Notes: adjustment.notes || '',
+        }
+      })
+
+    const calculationBasisRows = [
+      { Setting: 'Report period', Value: `${periodStart} to ${periodEnd}`, Notes: 'Selected in the Payroll tab' },
+      { Setting: 'Payroll data source', Value: historicalPayrollRows.length > 0 ? 'Protected historical snapshot' : 'Live HR attendance and payroll data', Notes: historicalPayrollRows.length > 0 ? 'Exact reconciled period imported from the source workbook' : 'Calculated when the Excel file is generated' },
+      { Setting: 'Reference workbook', Value: 'VR_Payroll_July_2026_QA', Notes: 'Reconcile tab is authoritative for the July historical snapshot; workbook also supplies the live calculation policy' },
+      { Setting: 'Reference workbook URL', Value: 'https://docs.google.com/spreadsheets/d/1UbmITiVHdogTU8zOhHRFS4NmZn6unL_XsZms16zIZfA', Notes: '' },
+      { Setting: 'Standard monthly days', Value: hrSettings.standard_monthly_days, Notes: 'July reference: 26 days for venue staff' },
+      { Setting: 'Standard monthly hours', Value: hrSettings.standard_monthly_hours, Notes: 'July reference: 169 hours for 6.5-hour venue days; a larger published schedule is used when applicable' },
+      { Setting: 'Meal allowance per worked day (VND)', Value: hrSettings.lunch_allowance_vnd, Notes: 'July reference: 35,000 VND per worked day' },
+      { Setting: 'Normal overtime multiplier', Value: hrSettings.normal_overtime_multiplier, Notes: 'July reference: 150%' },
+      { Setting: 'Night overtime multiplier', Value: hrSettings.night_overtime_multiplier, Notes: 'Configured premium' },
+      { Setting: 'Holiday overtime multiplier', Value: hrSettings.holiday_overtime_multiplier, Notes: 'July reference: up to 300%' },
+      { Setting: 'Paid leave policy', Value: 'Approved annual/public-holiday leave for monthly full-time payroll', Notes: 'Part-time staff do not receive paid annual leave under the July policy' },
+      { Setting: 'Social insurance', Value: hrSettings.social_insurance_enabled ? 'Enabled' : 'Disabled', Notes: 'Applied to active full-time contract salary, excluding meal allowance and overtime' },
+      { Setting: 'Employee insurance rate', Value: hrSettings.employee_contribution_rate, Notes: 'Percent' },
+      { Setting: 'Employer insurance rate', Value: hrSettings.employer_contribution_rate, Notes: 'Percent' },
+      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Configured withholding rate: ${hrSettings.pit_withholding_rate}%` },
+    ]
+
+    await downloadExcel(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, [
+      { title: 'Payroll', rows: [...payrollRows, totalRow] },
+      { title: 'Attendance Detail', rows: attendanceRows },
+      { title: 'Paid Leave', rows: paidLeaveRows },
+      { title: 'Adjustments', rows: adjustmentRows },
+      { title: 'Calculation Basis', rows: calculationBasisRows },
+    ], text)
   }
 
   function setAttendanceRange(start: string, end: string) {
@@ -9018,6 +9349,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             dateFromInput,
             dongDigits,
             downloadEmployeePayslip,
+            downloadPayrollExcel,
             draggingShiftId,
             draftShiftCount,
             effectiveAttendanceScheduleScope,
