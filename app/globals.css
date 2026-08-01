@@ -9343,7 +9343,7 @@ body {
   .app .achievement-filter-bar button.active {
     border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
     background: var(--vrena-bg);
-    color: var(--vrena-neutral-950);
+    color: var(--player-text);
   }
 
   .app .achievement-rank-list-button {
