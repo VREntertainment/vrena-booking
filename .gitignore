@@ -2,10 +2,6 @@
 
 # dependencies
 /node_modules
-/mini-apps/employee-attendance/node_modules/
-/mini-apps/employee-attendance/dist/
-/mini-apps/player-auth/node_modules/
-/mini-apps/player-auth/dist/
 /.pnp
 .pnp.*
 .yarn/*
