@@ -669,6 +669,8 @@ export const vi = {
   under13MessageBlocked: 'Players under 13 cannot send messages in the app.',
   marketingConsent: 'Đồng ý marketing',
   marketingConsentHint: 'Giữ tôi trong danh sách tin tức và ưu đãi VRena.',
+  analyticsConsent: 'Giúp VRena tốt hơn',
+  analyticsConsentHint: 'Chia sẻ cách bạn sử dụng ứng dụng. Bạn có thể đổi lựa chọn bất cứ lúc nào.',
   marketingConsentSaved: 'Đã lưu đồng ý marketing.',
   marketingConsentRemoved: 'Bạn đã được xóa khỏi danh sách marketing.',
   anonymousMode: 'Chế độ ẩn danh',

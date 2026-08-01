@@ -5,9 +5,15 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getInitialLanguage, LANGUAGE_CHANGE_EVENT } from '@/lib/i18n/detectLanguage'
 import type { LanguageCode } from '@/lib/i18n/languages'
+import {
+  readProductAnalyticsConsent,
+  subscribeToProductAnalyticsConsent,
+  writeProductAnalyticsConsent,
+  type ProductAnalyticsConsent,
+} from '@/lib/productAnalyticsConsent'
 import { supabase } from '@/lib/supabase/client'
 
-type Consent = 'granted' | 'denied' | null
+type Consent = ProductAnalyticsConsent
 type AnalyticsEventName = 'page_view' | 'engagement' | 'search'
 
 type AnalyticsEvent = {
@@ -25,7 +31,6 @@ type PageEngagement = {
   activeSince: number | null
 }
 
-const CONSENT_KEY = 'vrena_product_analytics_consent'
 const CLIENT_KEY = 'vrena_product_analytics_client_id'
 const SESSION_KEY = 'vrena_product_analytics_session_id'
 const ATTRIBUTION_KEY = 'vrena_product_analytics_attribution'
@@ -44,57 +49,57 @@ const messages = {
   en: {
     eyebrow: 'Your privacy matters',
     title: 'Help improve VRena',
-    body: 'Share basic app usage to help us improve VRena. We never save what you type in search, and you can change your choice anytime.',
+    body: 'Share basic app usage to help us improve VRena. You can change your choice anytime.',
     allow: 'Yes, happy to help',
-    decline: 'No thanks',
+    decline: 'I don\'t want to help',
     settings: 'Analytics privacy settings',
   },
   vi: {
     eyebrow: 'Quyền riêng tư của bạn',
     title: 'Giúp VRena tốt hơn',
-    body: 'Chia sẻ cách bạn sử dụng ứng dụng để giúp chúng tôi cải thiện VRena. Nội dung bạn nhập khi tìm kiếm không được lưu và bạn có thể đổi lựa chọn bất cứ lúc nào.',
+    body: 'Chia sẻ cách bạn sử dụng ứng dụng để giúp chúng tôi cải thiện VRena. Bạn có thể đổi lựa chọn bất cứ lúc nào.',
     allow: 'Có, rất sẵn lòng',
-    decline: 'Không, cảm ơn',
+    decline: 'Tôi không muốn giúp',
     settings: 'Cài đặt quyền riêng tư phân tích',
   },
   ko: {
     eyebrow: '개인정보 보호',
     title: 'VRena를 더 좋게 만들기',
-    body: 'VRena를 더 좋게 만들 수 있도록 간단한 앱 이용 정보를 공유해 주세요. 검색창에 입력한 내용은 저장하지 않으며, 언제든지 선택을 변경할 수 있습니다.',
+    body: 'VRena를 더 좋게 만들 수 있도록 간단한 앱 이용 정보를 공유해 주세요. 언제든지 선택을 변경할 수 있습니다.',
     allow: '네, 기꺼이 도울게요',
-    decline: '괜찮아요',
+    decline: '돕고 싶지 않아요',
     settings: '분석 개인정보 설정',
   },
   ja: {
     eyebrow: 'プライバシーについて',
     title: 'VRenaの改善にご協力ください',
-    body: 'VRenaをより良くするため、基本的なアプリの利用情報を共有してください。検索欄に入力した内容は保存されず、設定はいつでも変更できます。',
+    body: 'VRenaをより良くするため、基本的なアプリの利用情報を共有してください。設定はいつでも変更できます。',
     allow: 'はい、喜んで協力します',
-    decline: '今回はしない',
+    decline: '協力したくありません',
     settings: '分析プライバシー設定',
   },
   fr: {
     eyebrow: 'Votre vie privée',
     title: 'Aidez-nous à améliorer VRena',
-    body: 'Partagez quelques informations sur votre utilisation de l’application pour nous aider à améliorer VRena. Nous ne conservons jamais ce que vous saisissez dans la recherche, et vous pouvez changer d’avis à tout moment.',
+    body: 'Partagez quelques informations sur votre utilisation de l’application pour nous aider à améliorer VRena. Vous pouvez changer d’avis à tout moment.',
     allow: 'Oui, avec plaisir',
-    decline: 'Non merci',
+    decline: 'Je ne veux pas aider',
     settings: 'Paramètres de confidentialité des analyses',
   },
   de: {
     eyebrow: 'Ihre Privatsphäre',
     title: 'Helfen Sie uns, VRena zu verbessern',
-    body: 'Teilen Sie einige Informationen zur App-Nutzung, damit wir VRena verbessern können. Ihre Sucheingaben werden nie gespeichert, und Sie können Ihre Auswahl jederzeit ändern.',
+    body: 'Teilen Sie einige Informationen zur App-Nutzung, damit wir VRena verbessern können. Sie können Ihre Auswahl jederzeit ändern.',
     allow: 'Ja, sehr gerne',
-    decline: 'Nein, danke',
+    decline: 'Ich möchte nicht helfen',
     settings: 'Datenschutzeinstellungen für Analysen',
   },
   it: {
     eyebrow: 'La tua privacy',
     title: 'Aiutaci a migliorare VRena',
-    body: 'Condividi alcune informazioni sull’uso dell’app per aiutarci a migliorare VRena. Non salviamo mai ciò che digiti nella ricerca e puoi cambiare scelta in qualsiasi momento.',
+    body: 'Condividi alcune informazioni sull’uso dell’app per aiutarci a migliorare VRena. Puoi cambiare scelta in qualsiasi momento.',
     allow: 'Sì, con piacere',
-    decline: 'No, grazie',
+    decline: 'Non voglio aiutare',
     settings: 'Impostazioni privacy per le analisi',
   },
 } as const satisfies Record<LanguageCode, ConsentMessage>
@@ -196,15 +201,13 @@ export default function ProductAnalytics() {
   const text = messages[language]
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const stored = localStorage.getItem(CONSENT_KEY)
-        setConsent(stored === 'granted' || stored === 'denied' ? stored : null)
-      } catch {
-        setConsent('denied')
-      }
-    }, 0)
-    return () => window.clearTimeout(timer)
+    const syncConsent = () => setConsent(readProductAnalyticsConsent())
+    const timer = window.setTimeout(syncConsent, 0)
+    const unsubscribe = subscribeToProductAnalyticsConsent(syncConsent)
+    return () => {
+      window.clearTimeout(timer)
+      unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -340,12 +343,7 @@ export default function ProductAnalytics() {
 
   function chooseConsent(nextConsent: Exclude<Consent, null>) {
     try {
-      localStorage.setItem(CONSENT_KEY, nextConsent)
-      if (nextConsent === 'denied') {
-        localStorage.removeItem(CLIENT_KEY)
-        sessionStorage.removeItem(SESSION_KEY)
-        sessionStorage.removeItem(ATTRIBUTION_KEY)
-      }
+      writeProductAnalyticsConsent(nextConsent)
     } catch {
       // State still updates so the privacy prompt remains usable.
     }

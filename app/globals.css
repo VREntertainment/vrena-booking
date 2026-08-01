@@ -6280,9 +6280,42 @@ body {
   gap: 10px;
 }
 
-.app .profile-consent-panel .marketing-consent-field {
-  padding: 0;
-  border: 0 !important;
+.app .profile-preference-consent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app .profile-consent-panel .profile-preference-consent-field {
+  grid-column: auto;
+  max-width: none;
+  padding: 12px;
+  border: 1px solid var(--player-border) !important;
+  border-radius: 10px;
+  background: var(--player-field-bg-soft);
+}
+
+.app .profile-preference-consent-field span {
+  display: grid;
+  gap: 2px;
+}
+
+.app .profile-preference-consent-field strong {
+  color: var(--player-text);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.app .profile-preference-consent-field small {
+  color: var(--player-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .app .profile-preference-consent-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .app .profile-legal-panel {
