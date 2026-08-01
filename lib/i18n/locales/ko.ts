@@ -669,6 +669,8 @@ export const ko = {
   under13MessageBlocked: 'Players under 13 cannot send messages in the app.',
   marketingConsent: '마케팅 동의',
   marketingConsentHint: 'VRena 소식과 혜택 목록에 남기.',
+  analyticsConsent: 'VRena 개선 돕기',
+  analyticsConsentHint: '간단한 앱 이용 정보를 공유합니다. 언제든지 선택을 변경할 수 있습니다.',
   marketingConsentSaved: '마케팅 동의가 저장되었습니다.',
   marketingConsentRemoved: '마케팅 목록에서 제거되었습니다.',
   anonymousMode: '익명 모드',
