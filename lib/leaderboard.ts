@@ -50,7 +50,6 @@ const gameTitles: Record<string, string> = {
   paintball: 'Paintball',
   'snow-battle': 'Snow Battle',
   'wild-west': 'Wild West',
-  'zg-marbles': 'ZG Marbles',
 }
 
 export function finiteLeaderboardNumber(value: unknown, fallback = 0) {
