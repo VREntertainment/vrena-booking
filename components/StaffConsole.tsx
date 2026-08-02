@@ -4944,7 +4944,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   )
   const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
   const awardableProfiles = useMemo(() => (
-    profiles.filter((item) => !isDemoProfile(item))
+    profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) === 'player')
   ), [profiles])
   const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
   const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])

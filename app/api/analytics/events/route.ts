@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { trustedClientIp, UNKNOWN_CLIENT_IP } from '@/lib/security/requestIp'
+import { staffRoleRank } from '@/lib/staffRoles'
 
 export const runtime = 'nodejs'
 
@@ -126,12 +127,28 @@ export async function POST(request: NextRequest) {
 
   const accessToken = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
   let profileId: string | null = null
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
   if (accessToken) {
     const authClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
     const { data } = await authClient.auth.getUser(accessToken)
     profileId = data.user?.id || null
+
+    if (profileId) {
+      const { data: analyticsProfile, error: profileError } = await adminClient
+        .from('profiles')
+        .select('role, email')
+        .eq('id', profileId)
+        .maybeSingle()
+      if (profileError) return NextResponse.json({ accepted: 0 }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
+      if (analyticsProfile && staffRoleRank(analyticsProfile.role, analyticsProfile.email) >= 20) {
+        return NextResponse.json({ accepted: 0 }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
+      }
+      if (!analyticsProfile) profileId = null
+    }
   }
 
   const rawEvents = Array.isArray(body) ? body.slice(0, 10) : [body]
@@ -140,9 +157,6 @@ export async function POST(request: NextRequest) {
     .filter((event): event is AnalyticsInsert => event !== null)
   if (events.length === 0 || events.length !== rawEvents.length) return jsonError('Invalid analytics event.', 400)
 
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
   const clientId = events[0].client_id
   const ip = trustedClientIp(request.headers)
   const limitChecks = [
