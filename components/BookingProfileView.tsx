@@ -370,6 +370,114 @@ export default function BookingProfileView({ context }: { context: any }) {
     )
   }
 
+  function renderPlayerStatsSection() {
+    if (!profile) return null
+
+    return (
+      <div className="player-stats achievement-progress-card achievement-player-stats-card">
+        <div className="profile-stats-head">
+          <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
+          {canShareCurrentUserStats && (
+            <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
+              <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
+            </button>
+          )}
+        </div>
+        {crownedTopPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
+        <div className="stats">
+          <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
+          <span>{playerStats.wins} {text.wins}</span>
+          <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
+          <span>{playerStats.totalScore} {text.totalScore}</span>
+          <span>{formatWholePercent(playerStats.averageAccuracy)} {text.accuracy}</span>
+          <span>{playerStats.totalProjectiles} {text.projectiles}</span>
+        </div>
+        {playerStats.bestByGame.length > 0 && (
+          <div className="best-score-list">
+            <strong>{text.bestScores}</strong>
+            {playerStats.bestByGame.map((item: { game: string; score: number }) => (
+              <span key={item.game}>{item.game}: {item.score}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function renderMySessionsSection() {
+    if (!profile) return null
+
+    return (
+      <div className="my-sessions achievement-progress-card achievement-my-sessions-card">
+        <div>
+          <h3>{text.mySessions}</h3>
+          <p className="muted">{text.mySessionsHint}</p>
+        </div>
+
+        {pendingSessionInvites.length > 0 && (
+          <div className="profile-session-group profile-invites">
+            <div className="profile-session-group-head">
+              <div>
+                <h4>{pendingInvitationsText}</h4>
+                <p className="muted">{pendingInvitationsHintText}</p>
+              </div>
+              {pendingSessionInvites.length > 1 && (
+                <button className="secondary small-button" type="button" onClick={() => setProfileInvitesExpanded((expanded: boolean) => !expanded)}>
+                  <ButtonIconText icon={profileInvitesExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileInvitesExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
+                </button>
+              )}
+            </div>
+            <div className="mini-session-list">
+              {(profileInvitesExpanded ? pendingSessionInvites : pendingSessionInvites.slice(0, 1)).map((invite: unknown) => renderPendingInvite(invite))}
+            </div>
+          </div>
+        )}
+
+        {mySessions.length === 0 ? (
+          <p className="notice">{text.noSessionsYet}</p>
+        ) : (
+          <>
+            <div className="profile-session-group">
+              <div className="profile-session-group-head">
+                <h4>{text.upcoming}</h4>
+                {profileUpcomingSessions.length > 1 && (
+                  <button className="secondary small-button" type="button" onClick={() => setProfileUpcomingExpanded((expanded: boolean) => !expanded)}>
+                    <ButtonIconText icon={profileUpcomingExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileUpcomingExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
+                  </button>
+                )}
+              </div>
+              {profileUpcomingSessions.length === 0 ? (
+                <p className="notice">{text.noMatchingSessions}</p>
+              ) : (
+                <div className="mini-session-list">
+                  {(profileUpcomingExpanded ? profileUpcomingSessions : profileUpcomingSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
+                </div>
+              )}
+            </div>
+
+            <div className="profile-session-group">
+              <div className="profile-session-group-head">
+                <h4>{text.past}</h4>
+                {profilePastSessions.length > 1 && (
+                  <button className="secondary small-button" type="button" onClick={() => setProfilePastExpanded((expanded: boolean) => !expanded)}>
+                    <ButtonIconText icon={profilePastExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profilePastExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
+                  </button>
+                )}
+              </div>
+              {profilePastSessions.length === 0 ? (
+                <p className="notice">{text.noMatchingSessions}</p>
+              ) : (
+                <div className="mini-session-list">
+                  {(profilePastExpanded ? profilePastSessions : profilePastSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
           <ProfileAuthView
             authMode={authMode}
@@ -461,6 +569,12 @@ export default function BookingProfileView({ context }: { context: any }) {
 
             {profile && profileSubTab === 'achievements' ? (
               <ProfileAchievementsPanel
+                accountActivity={(
+                  <>
+                    {renderPlayerStatsSection()}
+                    {renderMySessionsSection()}
+                  </>
+                )}
                 language={language}
                 mySessions={mySessions}
                 playerStats={playerStats}
@@ -1134,106 +1248,6 @@ export default function BookingProfileView({ context }: { context: any }) {
               <ContactChannels label={text.contactUs} />
               <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
             </div>
-
-            {profile && (
-              <div className="player-stats">
-                <div className="profile-stats-head">
-                  <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
-                  {canShareCurrentUserStats && (
-                    <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
-                      <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
-                    </button>
-                  )}
-                </div>
-                {crownedTopPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
-                <div className="stats">
-                  <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
-                  <span>{playerStats.wins} {text.wins}</span>
-                  <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
-                  <span>{playerStats.totalScore} {text.totalScore}</span>
-                  <span>{formatWholePercent(playerStats.averageAccuracy)} {text.accuracy}</span>
-                  <span>{playerStats.totalProjectiles} {text.projectiles}</span>
-                </div>
-                {playerStats.bestByGame.length > 0 && (
-                  <div className="best-score-list">
-                    <strong>{text.bestScores}</strong>
-                    {playerStats.bestByGame.map((item: { game: string; score: number }) => (
-                      <span key={item.game}>{item.game}: {item.score}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {profile && (
-              <div className="my-sessions">
-                <div>
-                  <h3>{text.mySessions}</h3>
-                  <p className="muted">{text.mySessionsHint}</p>
-                </div>
-
-                {pendingSessionInvites.length > 0 && (
-                  <div className="profile-session-group profile-invites">
-                    <div className="profile-session-group-head">
-                      <div>
-                        <h4>{pendingInvitationsText}</h4>
-                        <p className="muted">{pendingInvitationsHintText}</p>
-                      </div>
-                      {pendingSessionInvites.length > 1 && (
-                        <button className="secondary small-button" type="button" onClick={() => setProfileInvitesExpanded((expanded: boolean) => !expanded)}>
-                          <ButtonIconText icon={profileInvitesExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileInvitesExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                        </button>
-                      )}
-                    </div>
-                    <div className="mini-session-list">
-                      {(profileInvitesExpanded ? pendingSessionInvites : pendingSessionInvites.slice(0, 1)).map((invite: unknown) => renderPendingInvite(invite))}
-                    </div>
-                  </div>
-                )}
-
-                {mySessions.length === 0 ? (
-                  <p className="notice">{text.noSessionsYet}</p>
-                ) : (
-                  <>
-                    <div className="profile-session-group">
-                      <div className="profile-session-group-head">
-                        <h4>{text.upcoming}</h4>
-                        {profileUpcomingSessions.length > 1 && (
-                          <button className="secondary small-button" type="button" onClick={() => setProfileUpcomingExpanded((expanded: boolean) => !expanded)}>
-                            <ButtonIconText icon={profileUpcomingExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileUpcomingExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                          </button>
-                        )}
-                      </div>
-                      {profileUpcomingSessions.length === 0 ? (
-                        <p className="notice">{text.noMatchingSessions}</p>
-                      ) : (
-                        <div className="mini-session-list">
-                          {(profileUpcomingExpanded ? profileUpcomingSessions : profileUpcomingSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="profile-session-group">
-                      <div className="profile-session-group-head">
-                        <h4>{text.past}</h4>
-                        {profilePastSessions.length > 1 && (
-                          <button className="secondary small-button" type="button" onClick={() => setProfilePastExpanded((expanded: boolean) => !expanded)}>
-                            <ButtonIconText icon={profilePastExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profilePastExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                          </button>
-                        )}
-                      </div>
-                      {profilePastSessions.length === 0 ? (
-                        <p className="notice">{text.noMatchingSessions}</p>
-                      ) : (
-                        <div className="mini-session-list">
-                          {(profilePastExpanded ? profilePastSessions : profilePastSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
               </>
             )}
               </>

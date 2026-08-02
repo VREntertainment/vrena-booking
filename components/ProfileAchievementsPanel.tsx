@@ -70,6 +70,7 @@ import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
 
 type ProfileAchievementsPanelProps = {
+  accountActivity?: ReactNode
   editor?: {
     onToggleAchievement: (achievement: {
       description: string
@@ -918,6 +919,7 @@ function writeLocalSeenUnlockKeys(profileId: string, keys: Set<string>) {
 }
 
 export default function ProfileAchievementsPanel({
+  accountActivity,
   editor,
   editorRankAction,
   editorSessionsAction,
@@ -1516,6 +1518,8 @@ export default function ProfileAchievementsPanel({
           </div>
         )}
       </div>
+
+      {accountActivity}
 
       <div className="achievement-insights-grid">
         <div className="achievement-insight-card achievement-spotlight-card">

@@ -7666,6 +7666,10 @@ body {
   gap: 12px;
 }
 
+.app .profile-achievements-panel .achievement-my-sessions-card {
+  margin-top: 0;
+}
+
 .app .achievement-rank-card,
 .app .achievement-progress-card,
 .app .achievement-collection-card,
