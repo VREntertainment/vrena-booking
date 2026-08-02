@@ -1,19 +1,9 @@
 'use client'
 
-import { ShieldCheck } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { getInitialLanguage, LANGUAGE_CHANGE_EVENT } from '@/lib/i18n/detectLanguage'
-import type { LanguageCode } from '@/lib/i18n/languages'
-import {
-  readProductAnalyticsConsent,
-  subscribeToProductAnalyticsConsent,
-  writeProductAnalyticsConsent,
-  type ProductAnalyticsConsent,
-} from '@/lib/productAnalyticsConsent'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
-type Consent = ProductAnalyticsConsent
 type AnalyticsEventName = 'page_view' | 'engagement' | 'search'
 
 type AnalyticsEvent = {
@@ -35,83 +25,6 @@ const CLIENT_KEY = 'vrena_product_analytics_client_id'
 const SESSION_KEY = 'vrena_product_analytics_session_id'
 const ATTRIBUTION_KEY = 'vrena_product_analytics_attribution'
 const INTERNAL_PATH = /^\/(staff|hr|admin)(\/|$)/
-
-type ConsentMessage = {
-  eyebrow: string
-  title: string
-  body: string
-  allow: string
-  decline: string
-  settings: string
-}
-
-const messages = {
-  en: {
-    eyebrow: 'Your privacy matters',
-    title: 'Help improve VRena',
-    body: 'Share basic app usage to help us improve VRena. You can change your choice anytime.',
-    allow: 'Yes, happy to help',
-    decline: 'I don\'t want to help',
-    settings: 'Analytics privacy settings',
-  },
-  vi: {
-    eyebrow: 'Quyền riêng tư của bạn',
-    title: 'Giúp VRena tốt hơn',
-    body: 'Chia sẻ cách bạn sử dụng ứng dụng để giúp chúng tôi cải thiện VRena. Bạn có thể đổi lựa chọn bất cứ lúc nào.',
-    allow: 'Có, rất sẵn lòng',
-    decline: 'Tôi không muốn giúp',
-    settings: 'Cài đặt quyền riêng tư phân tích',
-  },
-  ko: {
-    eyebrow: '개인정보 보호',
-    title: 'VRena를 더 좋게 만들기',
-    body: 'VRena를 더 좋게 만들 수 있도록 간단한 앱 이용 정보를 공유해 주세요. 언제든지 선택을 변경할 수 있습니다.',
-    allow: '네, 기꺼이 도울게요',
-    decline: '돕고 싶지 않아요',
-    settings: '분석 개인정보 설정',
-  },
-  ja: {
-    eyebrow: 'プライバシーについて',
-    title: 'VRenaの改善にご協力ください',
-    body: 'VRenaをより良くするため、基本的なアプリの利用情報を共有してください。設定はいつでも変更できます。',
-    allow: 'はい、喜んで協力します',
-    decline: '協力したくありません',
-    settings: '分析プライバシー設定',
-  },
-  fr: {
-    eyebrow: 'Votre vie privée',
-    title: 'Aidez-nous à améliorer VRena',
-    body: 'Partagez quelques informations sur votre utilisation de l’application pour nous aider à améliorer VRena. Vous pouvez changer d’avis à tout moment.',
-    allow: 'Oui, avec plaisir',
-    decline: 'Je ne veux pas aider',
-    settings: 'Paramètres de confidentialité des analyses',
-  },
-  de: {
-    eyebrow: 'Ihre Privatsphäre',
-    title: 'Helfen Sie uns, VRena zu verbessern',
-    body: 'Teilen Sie einige Informationen zur App-Nutzung, damit wir VRena verbessern können. Sie können Ihre Auswahl jederzeit ändern.',
-    allow: 'Ja, sehr gerne',
-    decline: 'Ich möchte nicht helfen',
-    settings: 'Datenschutzeinstellungen für Analysen',
-  },
-  it: {
-    eyebrow: 'La tua privacy',
-    title: 'Aiutaci a migliorare VRena',
-    body: 'Condividi alcune informazioni sull’uso dell’app per aiutarci a migliorare VRena. Puoi cambiare scelta in qualsiasi momento.',
-    allow: 'Sì, con piacere',
-    decline: 'Non voglio aiutare',
-    settings: 'Impostazioni privacy per le analisi',
-  },
-} as const satisfies Record<LanguageCode, ConsentMessage>
-
-function subscribeToLanguage(onLanguageChange: () => void) {
-  window.addEventListener('storage', onLanguageChange)
-  window.addEventListener(LANGUAGE_CHANGE_EVENT, onLanguageChange)
-  return () => {
-    window.removeEventListener('storage', onLanguageChange)
-    window.removeEventListener(LANGUAGE_CHANGE_EVENT, onLanguageChange)
-  }
-}
 
 function randomId() {
   return crypto.randomUUID()
@@ -189,26 +102,11 @@ function firstTouchAttribution() {
 
 export default function ProductAnalytics() {
   const pathname = usePathname()
-  const [consent, setConsent] = useState<Consent>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [authReady, setAuthReady] = useState(false)
   const accessTokenRef = useRef('')
   const pageRef = useRef<PageEngagement | null>(null)
   const sendEventRef = useRef<(event: AnalyticsEvent, beacon?: boolean) => void>(() => undefined)
-  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false)
-  const language = useSyncExternalStore<LanguageCode>(subscribeToLanguage, getInitialLanguage, () => 'en')
   const excluded = INTERNAL_PATH.test(pathname)
-  const text = messages[language]
-
-  useEffect(() => {
-    const syncConsent = () => setConsent(readProductAnalyticsConsent())
-    const timer = window.setTimeout(syncConsent, 0)
-    const unsubscribe = subscribeToProductAnalyticsConsent(syncConsent)
-    return () => {
-      window.clearTimeout(timer)
-      unsubscribe()
-    }
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -229,7 +127,7 @@ export default function ProductAnalytics() {
 
   useEffect(() => {
     sendEventRef.current = (event, beacon = false) => {
-      if (consent !== 'granted' || INTERNAL_PATH.test(event.path)) return
+      if (INTERNAL_PATH.test(event.path)) return
       try {
         const clientId = storageValue(localStorage, CLIENT_KEY, true)
         const sessionId = storageValue(sessionStorage, SESSION_KEY, true)
@@ -259,7 +157,7 @@ export default function ProductAnalytics() {
         // Analytics must never interrupt the booking experience.
       }
     }
-  }, [consent])
+  }, [])
 
   function flushEngagement(beacon = false) {
     const page = pageRef.current
@@ -273,7 +171,7 @@ export default function ProductAnalytics() {
   }
 
   useEffect(() => {
-    if (consent !== 'granted' || !authReady) {
+    if (!authReady) {
       pageRef.current = null
       return
     }
@@ -290,10 +188,10 @@ export default function ProductAnalytics() {
       activeSince: document.visibilityState === 'visible' ? performance.now() : null,
     }
     sendEventRef.current({ eventName: 'page_view', path: pathname })
-  }, [authReady, consent, excluded, pathname])
+  }, [authReady, excluded, pathname])
 
   useEffect(() => {
-    if (consent !== 'granted' || !authReady || excluded) return
+    if (!authReady || excluded) return
 
     const searchTimers = new WeakMap<HTMLInputElement, number>()
     const lastSearches = new WeakMap<HTMLInputElement, string>()
@@ -339,42 +237,7 @@ export default function ProductAnalytics() {
       document.removeEventListener('visibilitychange', handleVisibility)
       window.removeEventListener('pagehide', handlePageExit)
     }
-  }, [authReady, consent, excluded, pathname])
+  }, [authReady, excluded, pathname])
 
-  function chooseConsent(nextConsent: Exclude<Consent, null>) {
-    try {
-      writeProductAnalyticsConsent(nextConsent)
-    } catch {
-      // State still updates so the privacy prompt remains usable.
-    }
-    setConsent(nextConsent)
-    setSettingsOpen(false)
-  }
-
-  if (!mounted || excluded) return null
-  const showPrompt = consent === null || settingsOpen
-
-  return (
-    <>
-      {showPrompt ? (
-        <aside className="product-analytics-consent" aria-labelledby="product-analytics-consent-title">
-          <span className="product-analytics-consent-icon"><ShieldCheck aria-hidden="true" size={20} /></span>
-          <div className="product-analytics-consent-copy">
-            <span>{text.eyebrow}</span>
-            <strong id="product-analytics-consent-title">{text.title}</strong>
-            <p>{text.body}</p>
-          </div>
-          <div className="product-analytics-consent-actions">
-            <button className="product-analytics-consent-allow" type="button" onClick={() => chooseConsent('granted')}>{text.allow}</button>
-            <button className="product-analytics-consent-decline" type="button" onClick={() => chooseConsent('denied')}>{text.decline}</button>
-          </div>
-        </aside>
-      ) : (
-        <button className="product-analytics-settings" type="button" aria-label={text.settings} title={text.settings} onClick={() => setSettingsOpen(true)}>
-          <ShieldCheck aria-hidden="true" size={17} />
-          <span>{text.settings}</span>
-        </button>
-      )}
-    </>
-  )
+  return null
 }
