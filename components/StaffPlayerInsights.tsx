@@ -213,11 +213,11 @@ const copy = {
     new: 'New',
     booked: 'Booked',
     scopeTitle: 'What this report knows',
-    scopeBody: 'It combines real venue records with consented, aggregate product analytics. It does not infer player intent.',
+    scopeBody: 'It combines real venue records with aggregate product analytics from public player routes. It does not infer player intent.',
     tracked: 'Tracked now',
     trackedBody: 'reservations · check-ins · results · page journeys · searches · engaged time · device · acquisition',
     missing: 'Privacy boundaries',
-    missingBody: 'No raw IP, search text or query strings. Staff/admin routes are excluded and digital reporting stays aggregated.',
+    missingBody: 'No raw IP, search text or query strings. Staff profiles and internal routes are excluded, and digital reporting stays aggregated.',
     empty: 'No player activity is recorded in this range. Try the last 30 or 90 days.',
     freshness: 'Updated',
   },
@@ -273,11 +273,11 @@ const copy = {
     new: 'Mới',
     booked: 'Đã đặt',
     scopeTitle: 'Báo cáo này biết gì',
-    scopeBody: 'Báo cáo kết hợp dữ liệu cơ sở thực tế với phân tích sản phẩm tổng hợp đã được người dùng đồng ý. Không suy đoán ý định người chơi.',
+    scopeBody: 'Báo cáo kết hợp dữ liệu cơ sở thực tế với phân tích sản phẩm tổng hợp từ các trang công khai dành cho người chơi. Không suy đoán ý định người chơi.',
     tracked: 'Đang theo dõi',
     trackedBody: 'đặt chỗ · check-in · kết quả · hành trình trang · tìm kiếm · thời gian tương tác · thiết bị · nguồn truy cập',
     missing: 'Giới hạn quyền riêng tư',
-    missingBody: 'Không lưu IP thô, nội dung tìm kiếm hoặc chuỗi truy vấn. Loại trừ trang nhân viên/quản trị và chỉ báo cáo tổng hợp.',
+    missingBody: 'Không lưu IP thô, nội dung tìm kiếm hoặc chuỗi truy vấn. Loại trừ hồ sơ nhân viên và các trang nội bộ; chỉ báo cáo tổng hợp.',
     empty: 'Không có hoạt động người chơi trong khoảng này. Hãy thử 30 hoặc 90 ngày gần nhất.',
     freshness: 'Cập nhật',
   },
@@ -285,14 +285,15 @@ const copy = {
 
 const productCopy = {
   en: {
-    eyebrow: 'Consented digital behavior',
+    eyebrow: 'Player digital behavior',
     title: 'Digital journey',
     subtitle: 'How players discover, explore and search the app before and between venue visits.',
-    privacy: 'Aggregate only · No retention limit',
+    privacy: 'Aggregate only · Staff excluded',
+    coverage: 'All public visitors included',
     sessions: 'App sessions',
-    sessionsHelp: 'Distinct consented browsing sessions.',
+    sessionsHelp: 'Distinct player browsing sessions.',
     visitors: 'Visitors',
-    visitorsHelp: 'Consented browsers, not total website traffic.',
+    visitorsHelp: 'Player browsers across public app routes.',
     pagesPerSession: 'Pages / session',
     pagesHelp: 'Average player-facing pages viewed per session.',
     engagedTime: 'Avg engaged time',
@@ -318,17 +319,17 @@ const productCopy = {
     sessionUnit: 'sessions',
     transitionUnit: 'journeys',
     averageResults: 'avg results',
-    signedIn: 'signed-in visitor share',
   },
   vi: {
-    eyebrow: 'Hành vi số đã được đồng ý',
+    eyebrow: 'Hành vi số của người chơi',
     title: 'Hành trình số',
     subtitle: 'Cách người chơi khám phá, duyệt và tìm kiếm trong app trước và giữa các lượt ghé cơ sở.',
-    privacy: 'Chỉ tổng hợp · Không giới hạn lưu trữ',
+    privacy: 'Chỉ tổng hợp · Loại trừ nhân viên',
+    coverage: 'Bao gồm mọi khách truy cập trang công khai',
     sessions: 'Phiên dùng app',
-    sessionsHelp: 'Số phiên duyệt đã đồng ý khác nhau.',
+    sessionsHelp: 'Số phiên duyệt khác nhau của người chơi.',
     visitors: 'Khách truy cập',
-    visitorsHelp: 'Trình duyệt đã đồng ý, không phải toàn bộ lưu lượng website.',
+    visitorsHelp: 'Trình duyệt người chơi trên các trang công khai của app.',
     pagesPerSession: 'Trang / phiên',
     pagesHelp: 'Số trang dành cho người chơi trung bình mỗi phiên.',
     engagedTime: 'TG tương tác TB',
@@ -354,7 +355,6 @@ const productCopy = {
     sessionUnit: 'phiên',
     transitionUnit: 'hành trình',
     averageResults: 'kết quả TB',
-    signedIn: 'tỷ lệ khách đã đăng nhập',
   },
 } as const
 
@@ -378,6 +378,73 @@ function changeLabel(current: number, previous: number, newValue: string) {
   if (previous <= 0) return current > 0 ? newValue : '0%'
   const change = Math.round(((current - previous) / previous) * 100)
   return `${change >= 0 ? '+' : ''}${change}%`
+}
+
+function activityChartScale(values: number[]) {
+  const rawMax = Math.max(0, ...values)
+  if (rawMax === 0) return { height: 112, max: 1, ticks: [1, 0] }
+
+  const roughStep = Math.max(1, rawMax / 4)
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
+  const normalizedStep = roughStep / magnitude
+  const stepFactor = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10
+  const step = Math.max(1, stepFactor * magnitude)
+  const max = Math.ceil(rawMax / step) * step
+  const ticks: number[] = []
+  for (let value = max; value >= 0; value -= step) ticks.push(value)
+  const height = Math.min(238, 112 + Math.ceil(Math.log2(max + 1)) * 14)
+  return { height, max, ticks }
+}
+
+type ActivityChartPoint = {
+  first: number
+  key: string
+  label: string | null
+  second: number
+  title: string
+}
+
+function ActivityChart({
+  firstClass,
+  points,
+  secondClass,
+}: {
+  firstClass: string
+  points: ActivityChartPoint[]
+  secondClass: string
+}) {
+  const scale = activityChartScale(points.flatMap((point) => [point.first, point.second]))
+  const chartStyle = {
+    '--activity-chart-height': `${scale.height}px`,
+    '--activity-point-count': points.length,
+  } as CSSProperties
+  const barHeight = (value: number) => value > 0 ? `${Math.max(3, (value / scale.max) * 100)}%` : '0%'
+
+  return (
+    <div className="staff-insight-activity-chart" style={chartStyle}>
+      {scale.ticks.map((tick) => (
+        <span
+          aria-hidden="true"
+          className="staff-insight-activity-gridline"
+          key={tick}
+          style={{ top: `${(1 - (tick / scale.max)) * scale.height}px` }}
+        >
+          <small>{tick.toLocaleString()}</small>
+        </span>
+      ))}
+      <div className="staff-insight-activity-days">
+        {points.map((point) => (
+          <div className="staff-insight-activity-day" key={point.key} title={point.title}>
+            <div className="staff-insight-activity-track">
+              <span className={firstClass} style={{ height: barHeight(point.first) }} />
+              <span className={secondClass} style={{ height: barHeight(point.second) }} />
+            </div>
+            <small>{point.label}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function dateLabel(value: string | null, language: 'en' | 'vi') {
@@ -438,8 +505,6 @@ export default function StaffPlayerInsights({
   const comparison = { ...emptySummary, ...(data?.comparisonSummary ?? {}) }
   const productSummary = { ...emptyProductSummary, ...(data?.productAnalytics?.summary ?? {}) }
   const productComparison = { ...emptyProductSummary, ...(data?.productAnalytics?.comparisonSummary ?? {}) }
-  const maxActivity = Math.max(1, ...(data?.activitySeries ?? []).flatMap((point) => [point.reservations, point.checkIns]))
-  const maxDigitalActivity = Math.max(1, ...(data?.productAnalytics?.activitySeries ?? []).flatMap((point) => [point.pageViews, point.sessions]))
   const maxPeak = Math.max(1, ...(data?.peakTimes ?? []).map((point) => point.visits))
   const maxGame = Math.max(1, ...(data?.gameDemand ?? []).map((game) => game.reservations))
   const maxTopPage = Math.max(1, ...(data?.productAnalytics?.topPages ?? []).map((page) => page.pageViews))
@@ -514,17 +579,17 @@ export default function StaffPlayerInsights({
               <span><i className="check-ins" />{text.checkIns}</span>
             </div>
           </div>
-          <div className="staff-insight-activity-chart">
-            {(data?.activitySeries ?? []).map((point) => (
-              <div className="staff-insight-activity-day" key={point.date} title={`${dateLabel(point.date, language)} · ${text.reservations} ${point.reservations} · ${text.checkIns} ${point.checkIns}`}>
-                <div className="staff-insight-activity-track">
-                  <span className="reservations" style={{ height: `${Math.max(3, (point.reservations / maxActivity) * 100)}%` }} />
-                  <span className="check-ins" style={{ height: `${Math.max(3, (point.checkIns / maxActivity) * 100)}%` }} />
-                </div>
-                <small>{dateLabel(point.date, language)}</small>
-              </div>
-            ))}
-          </div>
+          <ActivityChart
+            firstClass="reservations"
+            points={(data?.activitySeries ?? []).map((point) => ({
+              first: point.reservations,
+              key: point.date,
+              label: dateLabel(point.date, language),
+              second: point.checkIns,
+              title: `${dateLabel(point.date, language)} · ${text.reservations} ${point.reservations} · ${text.checkIns} ${point.checkIns}`,
+            }))}
+            secondClass="check-ins"
+          />
         </section>
 
         <section className="staff-insight-panel" aria-label={text.peakTitle}>
@@ -617,7 +682,7 @@ export default function StaffPlayerInsights({
           </div>
           <div className="staff-digital-journey-meta">
             <span><ShieldCheck aria-hidden="true" size={14} /> {digitalText.privacy}</span>
-            <small>{percent(productSummary.signedInShare)} {digitalText.signedIn}</small>
+            <small>{digitalText.coverage}</small>
             {productFreshness && <small>{text.freshness} {productFreshness}</small>}
           </div>
         </header>
@@ -677,17 +742,17 @@ export default function StaffPlayerInsights({
                   <span><i className="digital-sessions" />{digitalText.sessions}</span>
                 </div>
               </div>
-              <div className="staff-insight-activity-chart">
-                {(data?.productAnalytics?.activitySeries ?? []).map((point) => (
-                  <div className="staff-insight-activity-day" key={point.date} title={`${dateLabel(point.date, language)} · ${point.pageViews} ${digitalText.views} · ${point.sessions} ${digitalText.sessionUnit}`}>
-                    <div className="staff-insight-activity-track">
-                      <span className="digital-views" style={{ height: `${Math.max(3, (point.pageViews / maxDigitalActivity) * 100)}%` }} />
-                      <span className="digital-sessions" style={{ height: `${Math.max(3, (point.sessions / maxDigitalActivity) * 100)}%` }} />
-                    </div>
-                    <small>{dateLabel(point.date, language)}</small>
-                  </div>
-                ))}
-              </div>
+              <ActivityChart
+                firstClass="digital-views"
+                points={(data?.productAnalytics?.activitySeries ?? []).map((point) => ({
+                  first: point.pageViews,
+                  key: point.date,
+                  label: dateLabel(point.date, language),
+                  second: point.sessions,
+                  title: `${dateLabel(point.date, language)} · ${point.pageViews} ${digitalText.views} · ${point.sessions} ${digitalText.sessionUnit}`,
+                }))}
+                secondClass="digital-sessions"
+              />
             </section>
 
             <section className="staff-insight-panel" aria-label={digitalText.topPages}>

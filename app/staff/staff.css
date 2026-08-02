@@ -5489,30 +5489,53 @@
 }
 
 .app .staff-insight-activity-chart {
-  align-items: end;
-  display: grid;
-  gap: 7px;
-  grid-auto-columns: minmax(34px, 1fr);
-  grid-auto-flow: column;
+  height: calc(var(--activity-chart-height) + 24px);
   margin-top: 18px;
-  min-height: 190px;
   overflow-x: auto;
-  padding-bottom: 3px;
   position: relative;
   isolation: isolate;
 }
 
-.app .staff-insight-activity-chart::before {
-  background: repeating-linear-gradient(
-    to top,
-    color-mix(in srgb, var(--staff-modern-border-strong) 74%, transparent) 0 1px,
-    transparent 1px 36px
-  );
-  content: '';
-  inset: 18px 0 22px;
+.app .staff-insight-activity-gridline {
+  color: var(--staff-modern-muted);
+  font-size: 9px;
+  left: 0;
+  line-height: 1;
   pointer-events: none;
   position: absolute;
+  width: max(100%, calc(var(--activity-point-count) * 41px + 30px));
   z-index: 0;
+}
+
+.app .staff-insight-activity-gridline::after {
+  border-top: 1px solid color-mix(in srgb, var(--staff-modern-border-strong) 74%, transparent);
+  content: '';
+  left: 30px;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.app .staff-insight-activity-gridline > small {
+  display: block;
+  font-size: 9px;
+  padding-right: 5px;
+  text-align: right;
+  transform: translateY(-50%);
+  width: 28px;
+}
+
+.app .staff-insight-activity-days {
+  align-items: start;
+  display: grid;
+  gap: 7px;
+  grid-auto-columns: minmax(34px, 1fr);
+  grid-auto-flow: column;
+  min-width: max(100%, calc(var(--activity-point-count) * 41px + 30px));
+  padding-left: 30px;
+  position: relative;
+  width: max-content;
+  z-index: 1;
 }
 
 .app .staff-insight-activity-day {
@@ -5530,14 +5553,14 @@
   border-bottom: 1px solid var(--staff-modern-border-strong);
   display: flex;
   gap: 3px;
-  height: 145px;
+  height: var(--activity-chart-height);
   justify-content: center;
   width: 100%;
 }
 
 .app .staff-insight-activity-track span {
   border-radius: 5px 5px 2px 2px;
-  min-height: 3px;
+  min-height: 0;
   transition: height 180ms ease;
   width: min(13px, 38%);
 }
