@@ -24,15 +24,9 @@ import {
   Trophy,
   UserRound,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { avatarColors, avatarEmojis, avatarTextColors } from '../lib/bookingStaticData'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import {
-  readProductAnalyticsConsent,
-  subscribeToProductAnalyticsConsent,
-  writeProductAnalyticsConsent,
-  type ProductAnalyticsConsent,
-} from '../lib/productAnalyticsConsent'
 import {
   ANONYMOUS_MASK_COLOR,
   ANONYMOUS_MASK_EMOJI,
@@ -81,7 +75,6 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
 
 export default function BookingProfileView({ context }: { context: any }) {
   const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
-  const [productAnalyticsConsent, setProductAnalyticsConsent] = useState<ProductAnalyticsConsent>(null)
   const {
     activeTotpFactor,
     activeAgeBand,
@@ -230,12 +223,6 @@ export default function BookingProfileView({ context }: { context: any }) {
   } = context
 
   const profileTabs = profileTabCopy[language as keyof typeof profileTabCopy] ?? profileTabCopy.en
-
-  useEffect(() => {
-    const syncConsent = () => setProductAnalyticsConsent(readProductAnalyticsConsent())
-    syncConsent()
-    return subscribeToProductAnalyticsConsent(syncConsent)
-  }, [])
 
   const profileCompletionSteps = [
     { done: Boolean(profile), label: text.profileStepAccount },
@@ -843,37 +830,20 @@ export default function BookingProfileView({ context }: { context: any }) {
                     <Bell aria-hidden="true" size={17} />
                     <span>{text.profilePreferences}</span>
                   </div>
-                  <div className="profile-preference-consent-grid">
-                    <label className="consent-field profile-preference-consent-field marketing-consent-field">
-                      <input
-                        checked={marketingConsent}
-                        onChange={(event) => {
-                          const nextConsent = event.target.checked
-                          updateMarketingConsent(nextConsent)
-                        }}
-                        type="checkbox"
-                      />
-                      <span>
-                        <strong>{text.marketingConsent}</strong>
-                        <small>{text.marketingConsentHint}</small>
-                      </span>
-                    </label>
-                    <label className="consent-field profile-preference-consent-field analytics-consent-field">
-                      <input
-                        checked={productAnalyticsConsent === 'granted'}
-                        onChange={(event) => {
-                          const nextConsent = event.target.checked ? 'granted' : 'denied'
-                          writeProductAnalyticsConsent(nextConsent)
-                          setProductAnalyticsConsent(nextConsent)
-                        }}
-                        type="checkbox"
-                      />
-                      <span>
-                        <strong>{text.analyticsConsent}</strong>
-                        <small>{text.analyticsConsentHint}</small>
-                      </span>
-                    </label>
-                  </div>
+                  <label className="consent-field profile-preference-consent-field marketing-consent-field">
+                    <input
+                      checked={marketingConsent}
+                      onChange={(event) => {
+                        const nextConsent = event.target.checked
+                        updateMarketingConsent(nextConsent)
+                      }}
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>{text.marketingConsent}</strong>
+                      <small>{text.marketingConsentHint}</small>
+                    </span>
+                  </label>
                   <div className="profile-legal-panel">
                     <div className="account-links legal-links">
                       <a className="link-button" href={termsConditionsUrl} rel="noreferrer" target="_blank">{text.termsConditions}</a>
