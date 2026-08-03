@@ -72,7 +72,6 @@ import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
 
 type ProfileAchievementsPanelProps = {
-  accountActivity?: ReactNode
   editor?: {
     onToggleAchievement: (achievement: {
       description: string
@@ -92,6 +91,7 @@ type ProfileAchievementsPanelProps = {
   playerGameCountOverrides?: Record<string, number>
   playerStats: {
     averageAccuracy?: number | null
+    bestByGame?: Array<{ game: string; score: number }>
     gamesJoined?: number | null
     reliabilityScore?: number | null
     totalScore?: number | null
@@ -1041,7 +1041,6 @@ function writeLocalSeenUnlockKeys(profileId: string, keys: Set<string>) {
 }
 
 export default function ProfileAchievementsPanel({
-  accountActivity,
   editor,
   editorRankAction,
   editorSessionsAction,
@@ -1172,11 +1171,32 @@ export default function ProfileAchievementsPanel({
     () => buildGameAchievements(achievementSessions, userId, gameCountOverrides),
     [achievementSessions, gameCountOverrides, userId],
   )
+  const playerBestScoreByGame = useMemo(
+    () => new Map(
+      (playerStats.bestByGame ?? []).flatMap(({ game, score }) => (
+        typeof game === 'string' && Number.isFinite(score) ? [[game, score] as const] : []
+      )),
+    ),
+    [playerStats.bestByGame],
+  )
+  const scoredAutomaticAchievements = useMemo(
+    () => automaticAchievements.map((achievement) => {
+      const recordedBest = playerBestScoreByGame.get(achievement.game.title)
+      if (recordedBest === undefined || (achievement.bestScore !== null && achievement.bestScore >= recordedBest)) {
+        return achievement
+      }
+      return { ...achievement, bestScore: recordedBest }
+    }),
+    [automaticAchievements, playerBestScoreByGame],
+  )
   const automaticRetentionAchievements = useMemo(
     () => buildRetentionAchievements(achievementSessions, userId, profile, gameCountOverrides),
     [achievementSessions, gameCountOverrides, profile, userId],
   )
-  const achievements = useMemo(() => applyManualGameAwards(automaticAchievements, manualAwards), [automaticAchievements, manualAwards])
+  const achievements = useMemo(
+    () => applyManualGameAwards(scoredAutomaticAchievements, manualAwards),
+    [manualAwards, scoredAutomaticAchievements],
+  )
   const retentionAchievements = useMemo(
     () => applyManualRetentionAwards(automaticRetentionAchievements, manualAwards),
     [automaticRetentionAchievements, manualAwards],
@@ -1827,8 +1847,6 @@ export default function ProfileAchievementsPanel({
         </div>
       )}
 
-      {accountActivity}
-
       <div className="achievement-insights-grid">
         <div className="achievement-insight-card achievement-spotlight-card">
           <span className="achievement-insight-label"><Sparkles aria-hidden="true" size={15} />{copy.featuredBadge}</span>
@@ -2108,8 +2126,11 @@ export default function ProfileAchievementsPanel({
                   <dt>{copy.nextRequirement}</dt>
                   <dd>{selectedAchievement.nextRequirement ? `${selectedAchievement.nextRequirement} ${copy.sessionsPlayed.toLowerCase()}` : copy.mastered}</dd>
                 </div>
+                <div>
+                  <dt>{copy.bestScore}</dt>
+                  <dd>{selectedAchievement.bestScore === null ? '—' : selectedAchievement.bestScore.toLocaleString(language)}</dd>
+                </div>
               </dl>
-              {selectedAchievement.bestScore !== null && <p className="notice compact-notice">{text.bestScores}: {selectedAchievement.bestScore}</p>}
               {selectedAchievementCelebration && (
                 <div className="achievement-share-actions">
                   <button
@@ -2125,8 +2146,8 @@ export default function ProfileAchievementsPanel({
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
                   </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('zalo', selectedAchievementCelebration)} type="button">
-                    <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
+                  <button className="secondary small-button achievement-zalo-button" onClick={() => openDirectShare('zalo', selectedAchievementCelebration)} type="button">
+                    <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
                   </button>
                   <button className="secondary small-button" onClick={() => openDirectShare('email', selectedAchievementCelebration)} type="button">
@@ -2193,8 +2214,8 @@ export default function ProfileAchievementsPanel({
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
                   </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('zalo', selectedRetentionCelebration)} type="button">
-                    <NextImage aria-hidden="true" alt="" height={15} src="/brand/zalo.svg" width={15} />
+                  <button className="secondary small-button achievement-zalo-button" onClick={() => openDirectShare('zalo', selectedRetentionCelebration)} type="button">
+                    <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
                   </button>
                   <button className="secondary small-button" onClick={() => openDirectShare('email', selectedRetentionCelebration)} type="button">
@@ -2326,13 +2347,13 @@ export default function ProfileAchievementsPanel({
                     {copy.shareToWhatsApp}
                   </button>
                   <button
-                    className="secondary small-button"
+                    className="secondary small-button achievement-zalo-button"
                     onClick={() => isCelebrationBatch
                       ? openDirectBatchShare('zalo', pendingCelebrations)
                       : openDirectShare('zalo', featuredCelebration)}
                     type="button"
                   >
-                    <NextImage aria-hidden="true" alt="" height={17} src="/brand/zalo.svg" width={17} />
+                    <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
                   </button>
                   <button
