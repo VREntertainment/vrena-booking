@@ -3,6 +3,7 @@
 import { ArrowLeftRight, Delete, KeyRound, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
+import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
 import {
   getStaffKioskOperatorToken,
   setStaffKioskOperatorToken,
@@ -140,6 +141,7 @@ async function revokeOperatorToken(activeToken: string, reason: string) {
 }
 
 export default function StaffKioskGate({ authEmail, language, children }: StaffKioskGateProps) {
+  const requiresPin = requiresStaffKioskPin(authEmail)
   const resolvedLanguage: LanguageCode = isLanguageCode(language) ? language : 'en'
   const text = copy[resolvedLanguage]
   const [directory, setDirectory] = useState<DirectoryOperator[]>([])
@@ -179,10 +181,15 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
   }, [text.incorrect])
 
   useEffect(() => {
-    if (authEmail?.toLowerCase() !== 'contact@vre-vietnam.com') return
+    if (!requiresPin) return
     const loadTimer = window.setTimeout(() => void loadDirectory(), 0)
     return () => window.clearTimeout(loadTimer)
-  }, [authEmail, loadDirectory])
+  }, [loadDirectory, requiresPin])
+
+  useEffect(() => {
+    if (requiresPin) return
+    setStaffKioskOperatorToken('')
+  }, [requiresPin])
 
   const lockOperator = useCallback((reason = 'locked') => {
     const activeToken = getStaffKioskOperatorToken()
@@ -237,21 +244,27 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
       scheduleLock()
       if (Date.now() - lastHeartbeatRef.current >= HEARTBEAT_MS) void heartbeat()
     }
-    const handleVisibility = () => {
-      if (document.visibilityState !== 'visible') return
+    const verifyActivityWindow = () => {
       if (Date.now() - lastActivityRef.current >= INACTIVITY_MS) lockOperator('inactivity')
       else recordActivity()
+    }
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') verifyActivityWindow()
     }
 
     recordActivity()
     window.addEventListener('pointerdown', recordActivity, { passive: true })
     window.addEventListener('keydown', recordActivity)
     window.addEventListener('touchstart', recordActivity, { passive: true })
+    window.addEventListener('focus', verifyActivityWindow)
+    window.addEventListener('pageshow', verifyActivityWindow)
     document.addEventListener('visibilitychange', handleVisibility)
     return () => {
       window.removeEventListener('pointerdown', recordActivity)
       window.removeEventListener('keydown', recordActivity)
       window.removeEventListener('touchstart', recordActivity)
+      window.removeEventListener('focus', verifyActivityWindow)
+      window.removeEventListener('pageshow', verifyActivityWindow)
       document.removeEventListener('visibilitychange', handleVisibility)
       if (inactivityTimerRef.current) window.clearTimeout(inactivityTimerRef.current)
     }
@@ -337,7 +350,7 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
     }
   }
 
-  if (authEmail?.toLowerCase() !== 'contact@vre-vietnam.com') return <>{children({
+  if (!requiresPin) return <>{children({
     profileId: '', employeeCode: null, name: '', jobTitle: null, accessRole: 'manager',
     avatarEmoji: null, avatarInitials: null, avatarColor: null, avatarTextColor: null,
   }, () => {})}</>

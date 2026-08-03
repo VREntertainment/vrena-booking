@@ -16,7 +16,9 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
+import { requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
+import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
 import AppLoadingState from './AppLoadingState'
@@ -3754,6 +3756,8 @@ export default function WidgetPage({
       if (!active) return
 
       const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
+        if (!requiresStaffKioskPin(session?.user.email)) setStaffKioskOperatorToken('')
+
         authDebug('authStateChange', {
           event,
           hasSession: Boolean(session),
@@ -8995,7 +8999,7 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            authEmail.toLowerCase() === 'contact@vre-vietnam.com' ? (
+            requiresStaffKioskPin(authEmail) ? (
               <StaffKioskGate authEmail={authEmail} language={language}>
                 {(operator, lock) => (
                   <StaffConsole
@@ -9032,7 +9036,7 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'hr' && (
           canAccessStaffConsole ? (
-            authEmail.toLowerCase() === 'contact@vre-vietnam.com' ? (
+            requiresStaffKioskPin(authEmail) ? (
               <StaffKioskGate authEmail={authEmail} language={language}>
                 {(operator, lock) => (
                   <StaffConsole

@@ -2,10 +2,10 @@ import type { NextRequest } from 'next/server'
 import {
   authenticateStaffKioskRequest,
   loadStaffKioskOperatorDirectory,
-  STAFF_KIOSK_EMAIL,
   staffKioskCurrentRank,
   staffKioskJsonError,
 } from '@/lib/security/staffKioskServer'
+import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
 
 export const runtime = 'nodejs'
 
@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateStaffKioskRequest(request)
   if (auth instanceof Response) return auth
 
-  const email = auth.user.email?.toLowerCase() || ''
-  if (email !== STAFF_KIOSK_EMAIL) {
+  if (!requiresStaffKioskPin(auth.user.email)) {
     try {
       if (await staffKioskCurrentRank(auth) < 100) return staffKioskJsonError('Administrator access required.', 403)
     } catch (error) {

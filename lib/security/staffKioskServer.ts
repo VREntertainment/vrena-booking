@@ -3,7 +3,6 @@ import { createClient, type SupabaseClient, type User } from '@supabase/supabase
 import type { NextRequest } from 'next/server'
 import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from './staffMfa'
 
-export const STAFF_KIOSK_EMAIL = 'contact@vre-vietnam.com'
 export const STAFF_KIOSK_HEADER = 'x-vrena-operator-session'
 
 type StaffKioskAuth = {
