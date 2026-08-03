@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // @ts-expect-error Node's native TypeScript runner requires the explicit extension.
-import { canConfigureStaffKioskPin, canEnterStaffConsole, requiresStaffKioskPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
+import { canConfigureStaffKioskPin, canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {
   assert.equal(requiresStaffKioskPin(STAFF_KIOSK_EMAIL), true)
   assert.equal(requiresStaffKioskPin('  CONTACT@VRE-VIETNAM.COM  '), true)
+})
+
+test('the shared store login lands on the PIN gate instead of player views', () => {
+  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'leaderboard'), true)
+  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'profile'), true)
+  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'staff'), false)
+  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'hr'), false)
+  assert.equal(shouldRedirectStaffKioskToPin('manager@vre-vietnam.com', 'leaderboard'), false)
 })
 
 test('privileged and individually named staff accounts bypass the employee PIN', () => {
