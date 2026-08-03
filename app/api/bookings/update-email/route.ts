@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendBookingUpdateEmail } from '@/lib/bookingUpdateEmail'
 import type { BookingUpdateEmailPayload } from '@/lib/bookingUpdateEmailTypes'
+import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
 import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
-import { STAFF_KIOSK_EMAIL, STAFF_KIOSK_HEADER } from '@/lib/security/staffKioskServer'
+import { STAFF_KIOSK_HEADER } from '@/lib/security/staffKioskServer'
 import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from '@/lib/security/staffMfa'
 import { ageBandFromBirthday } from '@/lib/agePolicy'
 
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
   )
   const { data: databaseRank, error: databaseRankError } = await authClient.rpc('current_staff_role_rank')
   if (databaseRankError) return jsonError(databaseRankError.message, 500)
-  const actorRank = userData.user.email?.toLowerCase() === STAFF_KIOSK_EMAIL
+  const actorRank = requiresStaffKioskPin(userData.user.email)
     ? Number(databaseRank) || 0
     : Math.max(staticActorRank, Number(databaseRank) || 0)
   if (actorRank >= 20) {

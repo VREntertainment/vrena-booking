@@ -2,10 +2,10 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 import {
   authenticateStaffKioskRequest,
-  STAFF_KIOSK_EMAIL,
   staffKioskJsonError,
   staffKioskTokenHash,
 } from '@/lib/security/staffKioskServer'
+import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +16,7 @@ function cleanString(value: unknown) {
 export async function POST(request: NextRequest) {
   const auth = await authenticateStaffKioskRequest(request)
   if (auth instanceof Response) return auth
-  if (auth.user.email?.toLowerCase() !== STAFF_KIOSK_EMAIL) {
+  if (!requiresStaffKioskPin(auth.user.email)) {
     return staffKioskJsonError('The shared store login is required.', 403)
   }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const auth = await authenticateStaffKioskRequest(request)
   if (auth instanceof Response) return auth
-  if (auth.user.email?.toLowerCase() !== STAFF_KIOSK_EMAIL || !auth.operatorTokenHash) {
+  if (!requiresStaffKioskPin(auth.user.email) || !auth.operatorTokenHash) {
     return staffKioskJsonError('Employee PIN required.', 401)
   }
 
@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const auth = await authenticateStaffKioskRequest(request)
   if (auth instanceof Response) return auth
-  if (auth.user.email?.toLowerCase() !== STAFF_KIOSK_EMAIL || !auth.operatorTokenHash) {
+  if (!requiresStaffKioskPin(auth.user.email) || !auth.operatorTokenHash) {
     return Response.json({ locked: true }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
