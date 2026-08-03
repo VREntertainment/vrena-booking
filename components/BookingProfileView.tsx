@@ -5,11 +5,8 @@
 import NextImage from 'next/image'
 import {
   Bell,
-  CalendarPlus,
   CalendarDays,
   Check,
-  ChevronDown,
-  ChevronUp,
   Eye,
   EyeOff,
   KeyRound,
@@ -17,7 +14,6 @@ import {
   Mail,
   Phone,
   ScanLine,
-  Share,
   ShieldCheck,
   Settings,
   Trash2,
@@ -32,18 +28,13 @@ import {
   ANONYMOUS_MASK_EMOJI,
   ANONYMOUS_MASK_TEXT_COLOR,
   MAX_DISPLAY_NAME_LENGTH,
-  arenasUsedBySession,
   compactInitials,
   displayName,
   formatShortDate,
-  isChallengeSession,
-  isTicketSession,
   limitDisplayName,
   limitMotto,
   normalizeProfileGender,
-  sessionCoverGame,
 } from '../lib/bookingWidgetDomain'
-import { formatWholePercent } from '../lib/playerStatsShare'
 import AppLoadingState from './AppLoadingState'
 import CountryCodePicker from './CountryCodePicker'
 import ContactChannels from './ContactChannels'
@@ -78,7 +69,6 @@ export default function BookingProfileView({ context }: { context: any }) {
   const {
     activeTotpFactor,
     activeAgeBand,
-    addToCalendarText,
     authMode,
     authStep,
     avatarColor,
@@ -90,23 +80,13 @@ export default function BookingProfileView({ context }: { context: any }) {
     avatarTextColor,
     avatarTextColorDraft,
     beginTotpEnrollment,
-    bestPerformerCountText,
-    busySessionId,
-    canManageSession,
-    cancelSession,
-    copiedInviteId,
-    copyInviteCode,
     canAccessStaffConsole,
-    canShareCurrentUserStats,
     captchaContainerRef,
     consentWaiverUrl,
     chooseAvatarMode,
     confirmTotpEnrollment,
     continueAuthFromEmail,
-    crownedTopPlayer,
-    currentUserStatsShared,
     deleteMyAccount,
-    downloadSessionCalendar,
     editAuthEmail,
     failedAvatarUrls,
     handleAuth,
@@ -126,7 +106,6 @@ export default function BookingProfileView({ context }: { context: any }) {
     isTeenMinorProfile,
     isUnder13Profile,
     language,
-    leaveSession,
     logout,
     marketingConsent,
     mfaChallengeCode,
@@ -137,12 +116,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     mfaVerifyCode,
     mySessions,
     newPassword,
-    openInvitationText,
-    openSessionFromProfile,
     passkeyButtonRef,
-    pendingInvitationsHintText,
-    pendingInvitationsText,
-    pendingSessionInvites,
     personalDataConsent,
     playerStats,
     privacyPolicyUrl,
@@ -151,16 +125,13 @@ export default function BookingProfileView({ context }: { context: any }) {
     profileCountryCode,
     profileEmail,
     profileGender,
-    profileInvitesExpanded,
     profileMotto,
     profileName,
     profileNickname,
     profilePassword,
-    profilePastExpanded,
     profilePastSessions,
     profilePhone,
     profileStatus,
-    profileUpcomingExpanded,
     profileUpcomingSessions,
     registerPasskey,
     rememberFailedAvatarUrl,
@@ -170,7 +141,6 @@ export default function BookingProfileView({ context }: { context: any }) {
     resetCaptcha,
     saveProfile,
     sendPasswordReset,
-    sessionForInvite,
     setActiveView,
     setAnonymousConfirmOpen,
     setAuthMode,
@@ -190,19 +160,14 @@ export default function BookingProfileView({ context }: { context: any }) {
     setProfileCountryCode,
     setProfileEmail,
     setProfileGender,
-    setProfileInvitesExpanded,
     setProfileMotto,
     setProfileName,
     setProfileNickname,
     setProfilePassword,
-    setProfilePastExpanded,
     setProfilePhone,
     setProfileStatus,
-    setProfileUpcomingExpanded,
     setRememberLogin,
     setShowPassword,
-    startEditingSession,
-    shareCurrentUserStats,
     showPassword,
     showProfileFields,
     signInWithGoogle,
@@ -238,245 +203,6 @@ export default function BookingProfileView({ context }: { context: any }) {
   const completedProfileSteps = profileCompletionSteps.filter((step) => step.done).length
   const profileCompletionPercent = Math.round((completedProfileSteps / profileCompletionSteps.length) * 100)
   const nextProfileStep = profileCompletionSteps.find((step) => !step.done)
-
-  function renderProfileSessionCard(session: any) {
-    const participants = session.session_participants ?? []
-    const createdByMe = session.owner_id === userId
-    const canManage = canManageSession(session)
-    const joinedByMe = participants.some((participant: any) => participant.profile_id === userId)
-    const isChallenge = isChallengeSession(session)
-    const canSeeInviteCode = !isTicketSession(session) && !isChallenge && session.visibility === 'private' && session.invite_code && (canManage || joinedByMe)
-    const coverGame = sessionCoverGame(session)
-
-    return (
-      <article
-        className="mini-session clickable"
-        key={session.id}
-        onClick={() => openSessionFromProfile(session.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            openSessionFromProfile(session.id)
-          }
-        }}
-      >
-        <div className="mini-session-title mini-session-title-with-image">
-          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} />
-          <strong>{session.name}</strong>
-          {isTicketSession(session) && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
-          {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
-          <span className={createdByMe ? 'pill ok' : 'pill'}>
-            {createdByMe ? text.createdByYou : text.joined}
-          </span>
-        </div>
-        <div className="row-meta">
-          <span>{formatShortDate(session.date, language)}</span>
-          <span>{session.start_time.slice(0, 5)}</span>
-          <span>{session.duration_minutes} min</span>
-          <span>{participants.length}/{session.max_players} {text.players}</span>
-          <span>{arenasUsedBySession(session)} arena{arenasUsedBySession(session) === 1 ? '' : 's'}</span>
-        </div>
-        {canSeeInviteCode && (
-          <div className="invite-code compact">
-            <span>{text.privateCode}</span>
-            <strong>{session.invite_code}</strong>
-            <button
-              className={copiedInviteId === session.id ? 'copied' : ''}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                copyInviteCode(session.id, session.invite_code)
-              }}
-            >
-              {copiedInviteId === session.id ? text.copied : text.copy}
-            </button>
-          </div>
-        )}
-        {canManage ? (
-          <div className="mini-session-actions">
-            <button
-              className="secondary small-button"
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                startEditingSession(session)
-                openSessionFromProfile(session.id)
-              }}
-            >
-              {text.editSession}
-            </button>
-            <button
-              className={busySessionId === session.id ? 'danger small-button loading' : 'danger small-button'}
-              disabled={busySessionId === session.id}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                cancelSession(session)
-              }}
-            >
-              {text.cancelSession}
-            </button>
-          </div>
-        ) : joinedByMe ? (
-          <div className="mini-session-actions">
-            <button
-              className={busySessionId === session.id ? 'secondary small-button loading' : 'secondary small-button'}
-              disabled={busySessionId === session.id}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                leaveSession(session)
-              }}
-            >
-              {text.leaveSession}
-            </button>
-          </div>
-        ) : null}
-      </article>
-    )
-  }
-
-  function renderPendingInvite(invite: any) {
-    const session = sessionForInvite(invite)
-    if (!session) return null
-
-    const coverGame = sessionCoverGame(session)
-    const isChallenge = isChallengeSession(session)
-
-    return (
-      <article className="mini-session invite-session" key={invite.id}>
-        <div className="mini-session-title mini-session-title-with-image">
-          <NextImage className="mini-session-image" src={coverGame.image} alt="" width={84} height={84} />
-          <strong>{session.name}</strong>
-          <span className="pill ok">{isChallenge ? text.challengeInviteLabel : text.invited}</span>
-        </div>
-        <div className="row-meta">
-          <span>{formatShortDate(session.date, language)}</span>
-          <span>{session.start_time.slice(0, 5)}</span>
-          <span>{session.duration_minutes} min</span>
-          <span>{(session.session_participants ?? []).length}/{session.max_players} {text.players}</span>
-        </div>
-        <div className="mini-session-actions">
-          <button className="primary small-button" type="button" onClick={() => openSessionFromProfile(session.id)}>
-            {openInvitationText}
-          </button>
-          <button className="secondary small-button" type="button" onClick={() => downloadSessionCalendar(session)}>
-            <ButtonIconText icon={<CalendarPlus aria-hidden="true" size={15} />}>{addToCalendarText}</ButtonIconText>
-          </button>
-        </div>
-      </article>
-    )
-  }
-
-  function renderPlayerStatsSection() {
-    if (!profile) return null
-
-    return (
-      <div className="player-stats achievement-progress-card achievement-player-stats-card">
-        <div className="profile-stats-head">
-          <h3>{text.stats} {crownedTopPlayer?.profileId === userId ? '🏆' : ''}</h3>
-          {canShareCurrentUserStats && (
-            <button className="secondary small-button" type="button" onClick={() => shareCurrentUserStats()}>
-              <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{currentUserStatsShared ? text.shared : text.shareStats}</ButtonIconText>
-            </button>
-          )}
-        </div>
-        {crownedTopPlayer?.profileId === userId && <p className="notice">{text.bestPlayer}</p>}
-        <div className="stats">
-          <span>{playerStats.gamesJoined} {text.gamesCheckedIn}</span>
-          <span>{playerStats.wins} {text.wins}</span>
-          <span>{playerStats.bestPerformerCount} {bestPerformerCountText}</span>
-          <span>{playerStats.totalScore} {text.totalScore}</span>
-          <span>{formatWholePercent(playerStats.averageAccuracy)} {text.accuracy}</span>
-          <span>{playerStats.totalProjectiles} {text.projectiles}</span>
-        </div>
-        {playerStats.bestByGame.length > 0 && (
-          <div className="best-score-list">
-            <strong>{text.bestScores}</strong>
-            {playerStats.bestByGame.map((item: { game: string; score: number }) => (
-              <span key={item.game}>{item.game}: {item.score}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  function renderMySessionsSection() {
-    if (!profile) return null
-
-    return (
-      <div className="my-sessions achievement-progress-card achievement-my-sessions-card">
-        <div>
-          <h3>{text.mySessions}</h3>
-          <p className="muted">{text.mySessionsHint}</p>
-        </div>
-
-        {pendingSessionInvites.length > 0 && (
-          <div className="profile-session-group profile-invites">
-            <div className="profile-session-group-head">
-              <div>
-                <h4>{pendingInvitationsText}</h4>
-                <p className="muted">{pendingInvitationsHintText}</p>
-              </div>
-              {pendingSessionInvites.length > 1 && (
-                <button className="secondary small-button" type="button" onClick={() => setProfileInvitesExpanded((expanded: boolean) => !expanded)}>
-                  <ButtonIconText icon={profileInvitesExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileInvitesExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                </button>
-              )}
-            </div>
-            <div className="mini-session-list">
-              {(profileInvitesExpanded ? pendingSessionInvites : pendingSessionInvites.slice(0, 1)).map((invite: unknown) => renderPendingInvite(invite))}
-            </div>
-          </div>
-        )}
-
-        {mySessions.length === 0 ? (
-          <p className="notice">{text.noSessionsYet}</p>
-        ) : (
-          <>
-            <div className="profile-session-group">
-              <div className="profile-session-group-head">
-                <h4>{text.upcoming}</h4>
-                {profileUpcomingSessions.length > 1 && (
-                  <button className="secondary small-button" type="button" onClick={() => setProfileUpcomingExpanded((expanded: boolean) => !expanded)}>
-                    <ButtonIconText icon={profileUpcomingExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profileUpcomingExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                  </button>
-                )}
-              </div>
-              {profileUpcomingSessions.length === 0 ? (
-                <p className="notice">{text.noMatchingSessions}</p>
-              ) : (
-                <div className="mini-session-list">
-                  {(profileUpcomingExpanded ? profileUpcomingSessions : profileUpcomingSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
-                </div>
-              )}
-            </div>
-
-            <div className="profile-session-group">
-              <div className="profile-session-group-head">
-                <h4>{text.past}</h4>
-                {profilePastSessions.length > 1 && (
-                  <button className="secondary small-button" type="button" onClick={() => setProfilePastExpanded((expanded: boolean) => !expanded)}>
-                    <ButtonIconText icon={profilePastExpanded ? <ChevronUp aria-hidden="true" size={15} /> : <ChevronDown aria-hidden="true" size={15} />}>{profilePastExpanded ? text.hideDetails : text.expandDetails}</ButtonIconText>
-                  </button>
-                )}
-              </div>
-              {profilePastSessions.length === 0 ? (
-                <p className="notice">{text.noMatchingSessions}</p>
-              ) : (
-                <div className="mini-session-list">
-                  {(profilePastExpanded ? profilePastSessions : profilePastSessions.slice(0, 1)).map((session: unknown) => renderProfileSessionCard(session))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    )
-  }
 
   return (
           <ProfileAuthView
@@ -569,12 +295,6 @@ export default function BookingProfileView({ context }: { context: any }) {
 
             {profile && profileSubTab === 'achievements' ? (
               <ProfileAchievementsPanel
-                accountActivity={(
-                  <>
-                    {renderPlayerStatsSection()}
-                    {renderMySessionsSection()}
-                  </>
-                )}
                 language={language}
                 mySessions={mySessions}
                 playerStats={playerStats}

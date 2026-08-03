@@ -8744,6 +8744,32 @@ body {
   min-width: 0;
 }
 
+.app .achievement-share-actions .achievement-zalo-button {
+  --achievement-zalo-blue: #0068ff;
+  border-color: color-mix(in srgb, var(--achievement-zalo-blue) 42%, transparent);
+  background: color-mix(in srgb, var(--achievement-zalo-blue) 7%, var(--vrena-white));
+  color: var(--achievement-zalo-blue);
+}
+
+.app .achievement-share-actions .achievement-zalo-button:hover,
+.app .achievement-share-actions .achievement-zalo-button:focus-visible {
+  border-color: color-mix(in srgb, var(--achievement-zalo-blue) 68%, transparent);
+  background: color-mix(in srgb, var(--achievement-zalo-blue) 13%, var(--vrena-white));
+}
+
+.app .achievement-zalo-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 720px) {
+  .app .achievement-detail-copy > .achievement-share-actions .small-button {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+}
+
 .app .achievement-unlock-sheet {
   --unlock-accent: var(--vrena-yellow-500);
   grid-template-rows: auto minmax(0, 1fr);
@@ -9444,6 +9470,18 @@ body {
 
   .app .achievement-summary-game-art {
     background: var(--vrena-neutral-900);
+  }
+
+  .app .achievement-share-actions .achievement-zalo-button {
+    border-color: color-mix(in srgb, #0068ff 62%, var(--vrena-white));
+    background: color-mix(in srgb, #0068ff 18%, var(--vrena-neutral-900));
+    color: var(--vrena-blue-300);
+  }
+
+  .app .achievement-share-actions .achievement-zalo-button:hover,
+  .app .achievement-share-actions .achievement-zalo-button:focus-visible {
+    border-color: color-mix(in srgb, #0068ff 76%, var(--vrena-white));
+    background: color-mix(in srgb, #0068ff 28%, var(--vrena-neutral-900));
   }
 
   .app .achievement-unlock-copy h3 {
