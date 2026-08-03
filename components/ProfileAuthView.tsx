@@ -50,6 +50,7 @@ export default function ProfileAuthView({
           <div className="auth-benefit-strip">
             <strong>{text.authWelcomeBody}</strong>
             <div>
+              <span>{text.authBenefitPoints}</span>
               <span>{text.authBenefitBookings}</span>
               <span>{text.authBenefitLoyalty}</span>
               <span>{text.authBenefitBirthday}</span>

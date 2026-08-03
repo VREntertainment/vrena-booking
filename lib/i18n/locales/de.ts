@@ -585,6 +585,7 @@ export const de = {
   takeTourAgain: 'Geführte Tour erneut ansehen',
   authWelcomeTitle: 'Behalte deinen VRena-Fortschritt',
   authWelcomeBody: 'Melde dich an oder erstelle dein kostenloses Konto, um Treuepunkte zu sammeln, in die Hall of Fame zu kommen, Freunde herauszufordern und Geburtstagsvorteile freizuschalten.',
+  authBenefitPoints: 'Treuepunkte',
   authBenefitBookings: 'Hall of Fame',
   authBenefitLoyalty: 'Freunde herausfordern',
   authBenefitBirthday: 'Geburtstagsvorteile',

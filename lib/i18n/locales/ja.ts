@@ -585,6 +585,7 @@ export const ja = {
   takeTourAgain: 'ガイドツアーをもう一度見る',
   authWelcomeTitle: 'VRenaの進行状況を保存',
   authWelcomeBody: 'ログインまたは無料アカウント作成で、ロイヤルティポイント獲得、Hall of Fame参加、友達への挑戦、誕生日特典の利用ができます。',
+  authBenefitPoints: 'ロイヤルティポイント',
   authBenefitBookings: 'Hall of Fame',
   authBenefitLoyalty: '友達に挑戦',
   authBenefitBirthday: '誕生日特典',
