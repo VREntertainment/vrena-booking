@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 import { trustedClientIp } from '@/lib/security/requestIp'
-import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
-import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from '@/lib/security/staffMfa'
+import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
 
 export const runtime = 'nodejs'
 
@@ -26,47 +24,13 @@ function errorMessage(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return jsonError('Staff invite is not configured on this environment.', 500)
-  }
-
-  const authorization = request.headers.get('authorization') || ''
-  const accessToken = authorization.replace(/^Bearer\s+/i, '').trim()
-  if (!accessToken) return jsonError('Staff session required.', 401)
-
-  const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-  })
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
-
-  const { data: userData, error: userError } = await authClient.auth.getUser(accessToken)
-  if (userError || !userData.user) return jsonError(userError?.message || 'Staff session required.', 401)
-
-  const { data: actorProfile, error: actorError } = await adminClient
-    .from('profiles')
-    .select('id, email, role, deleted_at')
-    .eq('id', userData.user.id)
-    .is('deleted_at', null)
-    .maybeSingle()
-
-  if (actorError) return jsonError(actorError.message, 500)
-
-  const actorRank = Math.max(
-    staffRank(actorProfile?.role, actorProfile?.email),
-    staffRank(userData.user.app_metadata?.role as string | undefined, userData.user.email),
-  )
+  const auth = await authenticateStaffKioskRequest(request)
+  if (auth instanceof Response) return auth
+  const actorRank = await staffKioskCurrentRank(auth)
   if (actorRank < 50) return jsonError('Staff access required.', 403)
-  const [hasAal2, hasMfaFactor] = await Promise.all([
-    hasVerifiedAal2Session(authClient, accessToken),
-    hasVerifiedMfaFactor(adminClient, userData.user.id),
-  ])
-  if (!hasAal2 || !hasMfaFactor) return jsonError('Staff two-step verification required.', 403)
+  const adminClient = auth.adminClient
+  const actorProfileId = await staffKioskCurrentActorProfileId(auth) || auth.user.id
+  const operatorSessionId = await staffKioskCurrentSessionId(auth)
 
   let body: Record<string, unknown>
   try {
@@ -88,7 +52,7 @@ export async function POST(request: NextRequest) {
     p_action: 'customer_invite_actor',
     p_limit: 10,
     p_window_seconds: 10 * 60,
-    p_subject: `staff:${userData.user.id}:ip:${ip}`,
+    p_subject: `staff:${auth.user.id}:ip:${ip}`,
   })
 
   if (actorRateLimitError) {
@@ -99,7 +63,7 @@ export async function POST(request: NextRequest) {
     p_action: 'customer_invite',
     p_limit: 5,
     p_window_seconds: 10 * 60,
-    p_subject: `staff:${userData.user.id}:email:${email}:ip:${ip}`,
+    p_subject: `staff:${auth.user.id}:email:${email}:ip:${ip}`,
   })
 
   if (rateLimitError) {
@@ -120,7 +84,7 @@ export async function POST(request: NextRequest) {
       nickname: nickname || null,
       phone: phone || null,
       staff_created: true,
-      created_by_staff_id: userData.user.id,
+      created_by_staff_id: actorProfileId,
     },
   })
 
@@ -144,6 +108,18 @@ export async function POST(request: NextRequest) {
     .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) return jsonError(profileError.message, 500)
+
+  const { error: auditError } = await adminClient.from('audit_logs').insert({
+    actor_user_id: actorProfileId,
+    auth_user_id: auth.user.id,
+    operator_session_id: operatorSessionId,
+    operator_role: operatorSessionId ? (actorRank >= 80 ? 'manager' : 'staff') : null,
+    action: 'customer_invited',
+    entity_type: 'profiles',
+    entity_id: invited.user.id,
+    new_value: { email, full_name: fullName },
+  })
+  if (auditError) return jsonError(auditError.message, 500)
 
   return NextResponse.json({
     profile: profilePayload,

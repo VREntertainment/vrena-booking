@@ -29,6 +29,7 @@ import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
 import type { StaffProfile } from './StaffConsole'
+import StaffKioskGate from './StaffKioskGate'
 
 const REALTIME_REFRESH_DEBOUNCE_MS = 650
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
@@ -8993,15 +8994,33 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            <StaffConsole
-              authEmail={authEmail}
-              key="staff-console"
-              language={language}
-              mode="staff"
-              profile={profile}
-              onOpenPlayerProfile={openStaffPlayerProfile}
-              onOpenSessionCalendar={openCreateSessionCalendar}
-            />
+            authEmail.toLowerCase() === 'contact@vre-vietnam.com' ? (
+              <StaffKioskGate authEmail={authEmail} language={language}>
+                {(operator, lock) => (
+                  <StaffConsole
+                    authEmail=""
+                    key={`staff-console-${operator.profileId}`}
+                    kioskOperator={operator}
+                    language={language}
+                    mode="staff"
+                    onKioskLock={lock}
+                    profile={profile ? { ...profile, id: operator.profileId, email: null, full_name: operator.name, role: operator.accessRole } : null}
+                    onOpenPlayerProfile={openStaffPlayerProfile}
+                    onOpenSessionCalendar={openCreateSessionCalendar}
+                  />
+                )}
+              </StaffKioskGate>
+            ) : (
+              <StaffConsole
+                authEmail={authEmail}
+                key="staff-console"
+                language={language}
+                mode="staff"
+                profile={profile}
+                onOpenPlayerProfile={openStaffPlayerProfile}
+                onOpenSessionCalendar={openCreateSessionCalendar}
+              />
+            )
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
@@ -9012,15 +9031,33 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'hr' && (
           canAccessStaffConsole ? (
-            <StaffConsole
-              authEmail={authEmail}
-              key="hr-console"
-              language={language}
-              mode="hr"
-              profile={profile}
-              onOpenPlayerProfile={openStaffPlayerProfile}
-              onOpenSessionCalendar={openCreateSessionCalendar}
-            />
+            authEmail.toLowerCase() === 'contact@vre-vietnam.com' ? (
+              <StaffKioskGate authEmail={authEmail} language={language}>
+                {(operator, lock) => (
+                  <StaffConsole
+                    authEmail=""
+                    key={`hr-console-${operator.profileId}`}
+                    kioskOperator={operator}
+                    language={language}
+                    mode="hr"
+                    onKioskLock={lock}
+                    profile={profile ? { ...profile, id: operator.profileId, email: null, full_name: operator.name, role: operator.accessRole } : null}
+                    onOpenPlayerProfile={openStaffPlayerProfile}
+                    onOpenSessionCalendar={openCreateSessionCalendar}
+                  />
+                )}
+              </StaffKioskGate>
+            ) : (
+              <StaffConsole
+                authEmail={authEmail}
+                key="hr-console"
+                language={language}
+                mode="hr"
+                profile={profile}
+                onOpenPlayerProfile={openStaffPlayerProfile}
+                onOpenSessionCalendar={openCreateSessionCalendar}
+              />
+            )
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
