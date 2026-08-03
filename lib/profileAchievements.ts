@@ -66,11 +66,40 @@ export type AchievementSummary = {
   totalGames: number
 }
 
+export type RetentionAchievementId =
+  | 'accuracy-upgrade'
+  | 'arena-regular'
+  | 'back-for-more'
+  | 'birthday-hero'
+  | 'bring-the-crew'
+  | 'challenge-accepted'
+  | 'club-loyalist'
+  | 'clutch-player'
+  | 'completionist'
+  | 'double-session-day'
+  | 'escape-breakthrough'
+  | 'first-blood'
+  | 'friendly-rivalry'
+  | 'genre-explorer'
+  | 'mask-mode'
+  | 'night-owl'
+  | 'off-peak-explorer'
+  | 'perfect-rotation'
+  | 'personal-best'
+  | 'secret-hunter'
+  | 'specialist'
+  | 'squad-starter'
+  | 'streak-builder'
+  | 'team-builder'
+  | 'top-ten-moment'
+  | 'weekly-warrior'
+  | 'weekend-raider'
+
 export type RetentionAchievement = {
   category: 'comeback' | 'explore' | 'social' | 'performance' | 'special'
   current: number
   description: string
-  id: string
+  id: RetentionAchievementId
   progressPercent: number
   state: AchievementState
   target: number
@@ -443,7 +472,7 @@ function latestSessionDate(sessions: AchievementSession[]) {
 }
 
 function retentionAchievement(
-  id: string,
+  id: RetentionAchievementId,
   title: string,
   description: string,
   category: RetentionAchievement['category'],

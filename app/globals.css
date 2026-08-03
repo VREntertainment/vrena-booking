@@ -8550,34 +8550,14 @@ body {
   width: 26px;
   height: 26px;
   display: block;
-  background: currentColor;
-  mask: var(--game-icon-url) center / contain no-repeat;
-  -webkit-mask: var(--game-icon-url) center / contain no-repeat;
+  flex: 0 0 auto;
+  color: currentColor;
 }
 
 .app .retention-detail-badge .retention-game-icon {
   width: 58px;
   height: 58px;
 }
-
-.app .retention-game-icon-backup { --game-icon-url: url('/game-icons/backup.svg'); }
-.app .retention-game-icon-briefcase { --game-icon-url: url('/game-icons/briefcase.svg'); }
-.app .retention-game-icon-crowned-heart { --game-icon-url: url('/game-icons/crowned-heart.svg'); }
-.app .retention-game-icon-dagger-rose { --game-icon-url: url('/game-icons/dagger-rose.svg'); }
-.app .retention-game-icon-dice { --game-icon-url: url('/game-icons/dice.svg'); }
-.app .retention-game-icon-domino-mask { --game-icon-url: url('/game-icons/domino-mask.svg'); }
-.app .retention-game-icon-footprint { --game-icon-url: url('/game-icons/footprint.svg'); }
-.app .retention-game-icon-gamepad { --game-icon-url: url('/game-icons/gamepad.svg'); }
-.app .retention-game-icon-hourglass { --game-icon-url: url('/game-icons/hourglass.svg'); }
-.app .retention-game-icon-magnifying-glass { --game-icon-url: url('/game-icons/magnifying-glass.svg'); }
-.app .retention-game-icon-medallist { --game-icon-url: url('/game-icons/medallist.svg'); }
-.app .retention-game-icon-riot-shield { --game-icon-url: url('/game-icons/riot-shield.svg'); }
-.app .retention-game-icon-sprint { --game-icon-url: url('/game-icons/sprint.svg'); }
-.app .retention-game-icon-sunrise { --game-icon-url: url('/game-icons/sunrise.svg'); }
-.app .retention-game-icon-targeting { --game-icon-url: url('/game-icons/targeting.svg'); }
-.app .retention-game-icon-tarot-moon { --game-icon-url: url('/game-icons/tarot-moon.svg'); }
-.app .retention-game-icon-tarot-wheel { --game-icon-url: url('/game-icons/tarot-wheel.svg'); }
-.app .retention-game-icon-team-idea { --game-icon-url: url('/game-icons/team-idea.svg'); }
 
 .app .retention-achievement-copy {
   display: grid;
