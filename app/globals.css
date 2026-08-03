@@ -957,6 +957,47 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
+.app .mfa-same-device-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  color: var(--vrena-neutral-600);
+  line-height: 1.35;
+}
+
+.app .mfa-app-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid var(--vrena-cta-secondary-border);
+  border-radius: 8px;
+  background: var(--vrena-cta-secondary-bg);
+  color: var(--vrena-cta-secondary-ink);
+  font-weight: 800;
+  padding: 9px 12px;
+  text-decoration: none;
+}
+
+.app .mfa-app-link:hover,
+.app .mfa-app-link:focus-visible {
+  border-color: var(--vrena-cta-secondary-hover-border);
+  background: var(--vrena-cta-secondary-hover-bg);
+  color: var(--vrena-cta-secondary-hover-ink);
+}
+
+.app .mfa-secret-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.app .mfa-secret-control input {
+  min-width: 0;
+}
+
 .app .mfa-code-row,
 .app .mfa-enroll-actions {
   display: grid;
@@ -1148,7 +1189,9 @@ body {
 
   .app .mfa-security-card,
   .app .mfa-code-row,
-  .app .mfa-enroll-actions {
+  .app .mfa-enroll-actions,
+  .app .mfa-same-device-actions,
+  .app .mfa-secret-control {
     grid-template-columns: 1fr;
   }
 
@@ -12089,7 +12132,8 @@ body {
   .app .profile-toggle-field small,
   .app .marketing-consent-field small,
   .app .mfa-security-copy small,
-  .app .mfa-panel-copy span {
+  .app .mfa-panel-copy span,
+  .app .mfa-same-device-actions {
     color: var(--player-text-muted);
   }
 

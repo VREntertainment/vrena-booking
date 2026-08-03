@@ -7,8 +7,10 @@ import {
   Bell,
   CalendarDays,
   Check,
+  Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   KeyRound,
   LockKeyhole,
   Mail,
@@ -20,7 +22,7 @@ import {
   Trophy,
   UserRound,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { avatarColors, avatarEmojis, avatarTextColors } from '../lib/bookingStaticData'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import {
@@ -64,8 +66,17 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
   )
 }
 
+function scrollToMfaElement(element: HTMLElement | null) {
+  if (!element) return
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+  element.focus({ preventScroll: true })
+}
+
 export default function BookingProfileView({ context }: { context: any }) {
   const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
+  const mfaSecurityRef = useRef<HTMLDivElement>(null)
+  const mfaEnrollmentRef = useRef<HTMLDivElement>(null)
   const {
     activeTotpFactor,
     activeAgeBand,
@@ -189,6 +200,27 @@ export default function BookingProfileView({ context }: { context: any }) {
 
   const profileTabs = profileTabCopy[language as keyof typeof profileTabCopy] ?? profileTabCopy.en
 
+  function openMfaSettings() {
+    setProfileSubTab('settings')
+    window.setTimeout(() => scrollToMfaElement(mfaSecurityRef.current), 0)
+  }
+
+  async function copyMfaSetupKey() {
+    if (!mfaEnrollment?.secret) return
+    try {
+      await navigator.clipboard.writeText(mfaEnrollment.secret)
+      setMfaStatus(text.mfaSetupKeyCopied)
+    } catch {
+      setMfaStatus(text.mfaCopySetupKeyError)
+    }
+  }
+
+  useEffect(() => {
+    if (!mfaEnrollment) return
+    const frameId = window.requestAnimationFrame(() => scrollToMfaElement(mfaEnrollmentRef.current))
+    return () => window.cancelAnimationFrame(frameId)
+  }, [mfaEnrollment])
+
   const profileCompletionSteps = [
     { done: Boolean(profile), label: text.profileStepAccount },
     { done: Boolean(profileName.trim()), label: text.profileStepName },
@@ -268,7 +300,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <strong>{text.staffMfaRequiredTitle}</strong>
                   <span>{text.staffMfaRequiredHint}</span>
                 </div>
-                <button className="secondary small-button" onClick={() => setProfileSubTab('settings')} type="button">
+                <button className="secondary small-button" onClick={openMfaSettings} type="button">
                   {text.mfaSetupTitle}
                 </button>
               </div>
@@ -879,7 +911,7 @@ export default function BookingProfileView({ context }: { context: any }) {
               </div>
             )}
             {profile && (
-              <div className="profile-security-panel">
+              <div className="profile-security-panel" ref={mfaSecurityRef} tabIndex={-1}>
                 <div className="profile-card-section-title">
                   <ShieldCheck aria-hidden="true" size={17} />
                   <span>{text.profileSecurity}</span>
@@ -922,16 +954,29 @@ export default function BookingProfileView({ context }: { context: any }) {
                   )}
                 </div>
                 {mfaEnrollment && (
-                  <div className="mfa-enroll-panel">
+                  <div className="mfa-enroll-panel" ref={mfaEnrollmentRef} tabIndex={-1}>
                     <div className="mfa-panel-copy">
                       <strong>{text.mfaSetupTitle}</strong>
                       <span>{text.mfaSetupHint}</span>
                     </div>
                     {mfaQrCodeSrc && <NextImage alt="" className="mfa-qr" height={148} src={mfaQrCodeSrc} unoptimized width={148} />}
-                    <label className="mfa-secret-field">
-                      <span>{text.mfaSecretLabel}</span>
-                      <input readOnly type="text" value={mfaEnrollment.secret} />
-                    </label>
+                    {mfaEnrollment.uri?.startsWith('otpauth://') && (
+                      <div className="mfa-same-device-actions">
+                        <span>{text.mfaSameDeviceHint}</span>
+                        <a className="secondary small-button mfa-app-link" href={mfaEnrollment.uri}>
+                          <ButtonIconText icon={<ExternalLink aria-hidden="true" size={16} />}>{text.mfaOpenAuthenticator}</ButtonIconText>
+                        </a>
+                      </div>
+                    )}
+                    <div className="mfa-secret-field">
+                      <label htmlFor="mfa-manual-setup-key">{text.mfaSecretLabel}</label>
+                      <span className="mfa-secret-control">
+                        <input id="mfa-manual-setup-key" readOnly type="text" value={mfaEnrollment.secret} />
+                        <button className="secondary small-button" onClick={copyMfaSetupKey} type="button">
+                          <ButtonIconText icon={<Copy aria-hidden="true" size={16} />}>{text.mfaCopySetupKey}</ButtonIconText>
+                        </button>
+                      </span>
+                    </div>
                     <label className="mfa-code-field">
                       <span>{text.mfaCodeLabel}</span>
                       <input

@@ -2321,6 +2321,7 @@ export default function WidgetPage({
       id: data.id,
       qrCode: data.totp.qr_code,
       secret: data.totp.secret,
+      uri: data.totp.uri,
     })
     setIsMfaLoading(false)
   }
