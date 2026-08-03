@@ -33,3 +33,7 @@ export function canEnterStaffConsole({
 export function canConfigureStaffKioskPin(email: string | null | undefined, roleRank: number) {
   return !requiresStaffKioskPin(email) && roleRank >= 100
 }
+
+export function canRevealStaffKioskPin(email: string | null | undefined, role: string | null | undefined, roleRank: number) {
+  return !requiresStaffKioskPin(email) && (roleRank >= 100 || role?.trim().toLowerCase() === 'cashier')
+}

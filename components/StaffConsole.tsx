@@ -4678,6 +4678,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const canViewAllEmployeeProfiles = canManageAttendance || role === 'viewer'
   const canEditEmployeeProfiles = canManageAttendance
   const canManageEmployeeKioskPins = isOwnerOrAdmin && !kioskOperator
+  const canRevealEmployeeKioskPin = (isOwnerOrAdmin || isOfficeStaff) && !kioskOperator
   const canViewAttendanceClock = !isStaffOnly
   const canViewAttendanceSettings = !isStaffOnly
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
@@ -4738,6 +4739,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [employeeKioskAccessRole, setEmployeeKioskAccessRole] = useState<'manager' | 'staff'>('staff')
   const [employeeKioskPinSaveConfirmation, setEmployeeKioskPinSaveConfirmation] = useState<'' | 'created' | 'replaced'>('')
   const [employeeKioskPinVisibleValue, setEmployeeKioskPinVisibleValue] = useState('')
+  const [employeeKioskPinLoading, setEmployeeKioskPinLoading] = useState(false)
+  const employeeKioskPinProfileRef = useRef('')
   const employeeKioskPinConfirmationTimerRef = useRef<number | null>(null)
   const [hrAdjustmentForm, setHrAdjustmentForm] = useState(() => defaultHrAdjustmentForm())
   const [payrollRunForm, setPayrollRunForm] = useState(() => defaultPayrollRunForm())
@@ -6642,6 +6645,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setEmployeeKioskPinConfirm('')
     setEmployeeKioskPinSaveConfirmation('')
     setEmployeeKioskPinVisibleValue('')
+    employeeKioskPinProfileRef.current = staffProfile.id
     if (employeeKioskPinConfirmationTimerRef.current !== null) {
       window.clearTimeout(employeeKioskPinConfirmationTimerRef.current)
       employeeKioskPinConfirmationTimerRef.current = null
@@ -6649,13 +6653,40 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setEmployeeKioskAccessRole(employee?.kiosk_access_role === 'manager' ? 'manager' : 'staff')
     setHrTab('employees')
     setActiveTab('hr')
+    if (canRevealEmployeeKioskPin) void revealEmployeeKioskPin(staffProfile.id)
+  }
+
+  async function revealEmployeeKioskPin(staffProfileId: string) {
+    if (!canRevealEmployeeKioskPin || !staffProfileId) return
+    setEmployeeKioskPinLoading(true)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
+      const response = await fetch(`/api/staff/kiosk/pin?profileId=${encodeURIComponent(staffProfileId)}`, {
+        headers: { authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      })
+      const payload = await response.json().catch(() => ({})) as { error?: string; pin?: string | null }
+      if (!response.ok) throw new Error(payload.error || 'Could not load employee PIN.')
+      if (employeeKioskPinProfileRef.current === staffProfileId) {
+        setEmployeeKioskPinVisibleValue(typeof payload.pin === 'string' ? payload.pin : '')
+      }
+    } catch (pinError) {
+      if (employeeKioskPinProfileRef.current === staffProfileId) {
+        setEmployeeKioskPinVisibleValue('')
+        setStatus(pinError instanceof Error ? pinError.message : String(pinError))
+      }
+    } finally {
+      if (employeeKioskPinProfileRef.current === staffProfileId) setEmployeeKioskPinLoading(false)
+    }
   }
 
   async function configureEmployeeKioskPin() {
     if (!canManageEmployeeKioskPins) return
     const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
     if (!staffProfileId) return
-    if (!/^\d{4}$/.test(employeeKioskPin) || employeeKioskPin !== employeeKioskPinConfirm) {
+    if (!/^\d{6}$/.test(employeeKioskPin) || employeeKioskPin !== employeeKioskPinConfirm) {
       setStatus(kioskText.mismatch)
       return
     }
@@ -6699,7 +6730,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       }
       employeeKioskPinConfirmationTimerRef.current = window.setTimeout(() => {
         setEmployeeKioskPinSaveConfirmation('')
-        setEmployeeKioskPinVisibleValue('')
         employeeKioskPinConfirmationTimerRef.current = null
       }, 5000)
       setStatus(resolvedLanguage === 'vi' ? 'Đã lưu PIN nhân viên.' : 'Employee PIN saved.')
@@ -9476,6 +9506,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             employeeKioskPin,
             employeeKioskPinConfirm,
             employeeKioskPinSaveConfirmation,
+            employeeKioskPinLoading,
             employeeKioskPinVisibleValue,
             employeeFormForProfile,
             employeePayrollSummary,
@@ -9506,7 +9537,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             hrStatusFilter,
             hrTab,
             isOwnerOrAdmin,
-            canRevealEmployeeKioskPin: canManageEmployeeKioskPins,
+            canRevealEmployeeKioskPin,
             leaveRequests,
             normalizeHrAdjustmentStatus,
             normalizeHrAdjustmentType,

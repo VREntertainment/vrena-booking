@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import type { Config, DriveStep, Driver, DriverHook, Side } from 'driver.js'
 import { shouldStartFirstLoginTour } from '../lib/firstLoginTour'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import { supabase } from '../lib/supabase/client'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { AppView } from './AppSidebar'
 import 'driver.js/dist/driver.css'
@@ -57,12 +58,17 @@ function hasCompletedTour(key: string) {
   }
 }
 
-function saveTourCompletion(key: string) {
+function saveTourCompletion(key: string, userId: string) {
   try {
     window.localStorage.setItem(key, new Date().toISOString())
   } catch {
     // The player can still finish or replay the tour if browser storage is unavailable.
   }
+
+  void supabase
+    .from('profiles')
+    .update({ onboarding_tour_completed_at: new Date().toISOString() })
+    .eq('id', userId)
 }
 
 function clearResumeStep(key: string) {
@@ -108,14 +114,29 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
     const resumeKey = resumeStorageKey(userId)
     const isManualReplay = replayNonce > 0
     const resumeStep = readResumeStep(resumeKey)
-    if (!shouldStartFirstLoginTour({ completed: hasCompletedTour(key), isManualReplay, resumeStep })) return
 
     let cancelled = false
     let timer: number | undefined
 
     async function startTour() {
+      const localCompletion = hasCompletedTour(key)
+      const { data: accountProfile } = await supabase
+        .from('profiles')
+        .select('onboarding_tour_completed_at')
+        .eq('id', userId)
+        .maybeSingle()
+      const accountCompletion = Boolean(accountProfile?.onboarding_tour_completed_at)
+      if (localCompletion && !accountCompletion) {
+        void supabase
+          .from('profiles')
+          .update({ onboarding_tour_completed_at: new Date().toISOString() })
+          .eq('id', userId)
+      }
+      const completed = localCompletion || accountCompletion
+      if (!shouldStartFirstLoginTour({ completed, isManualReplay, resumeStep })) return
+
       const { driver } = await import('driver.js')
-      if (cancelled || startedRef.current || !shouldStartFirstLoginTour({ completed: hasCompletedTour(key), isManualReplay, resumeStep })) return
+      if (cancelled || startedRef.current) return
 
       startedRef.current = true
 
@@ -161,14 +182,14 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
         }
 
         const finishTour: DriverHook = (_element, _step, { driver: tour }) => {
-          saveTourCompletion(key)
+          saveTourCompletion(key, userId)
           clearResumeStep(resumeKey)
           onViewChange('sessions')
           tour.destroy()
         }
 
         const dismissTour: DriverHook = (_element, _step, { driver: tour }) => {
-          saveTourCompletion(key)
+          saveTourCompletion(key, userId)
           clearResumeStep(resumeKey)
           tour.destroy()
         }

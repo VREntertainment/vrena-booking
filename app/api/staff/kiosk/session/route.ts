@@ -27,10 +27,9 @@ export async function POST(request: NextRequest) {
     return staffKioskJsonError('Invalid employee PIN.', 400)
   }
 
-  const profileId = cleanString(body.profileId)
   const pin = cleanString(body.pin)
-  if (!/^[0-9a-f-]{36}$/i.test(profileId) || !/^\d{4}$/.test(pin)) {
-    return staffKioskJsonError('Enter your four-digit PIN.', 400)
+  if (!/^\d{6}$/.test(pin)) {
+    return staffKioskJsonError('Enter your six-digit PIN.', 400)
   }
 
   const operatorToken = randomBytes(32).toString('base64url')
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
   const { data, error } = await auth.adminClient.rpc('staff_kiosk_verify_pin', {
     p_actor_user_id: auth.user.id,
     p_pin: pin,
-    p_profile_id: profileId,
     p_token_hash: staffKioskTokenHash(operatorToken),
     p_user_agent_hash: userAgentHash,
   })

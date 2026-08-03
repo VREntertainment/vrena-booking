@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // @ts-expect-error Node's native TypeScript runner requires the explicit extension.
-import { canConfigureStaffKioskPin, canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
+import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, requiresStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {
   assert.equal(requiresStaffKioskPin(STAFF_KIOSK_EMAIL), true)
@@ -70,4 +70,13 @@ test('only individually authenticated owners and admins can configure employee P
   assert.equal(canConfigureStaffKioskPin('manager@vre-vietnam.com', 80), false)
   assert.equal(canConfigureStaffKioskPin('admin@vre-vietnam.com', 100), true)
   assert.equal(canConfigureStaffKioskPin('owner@vre-vietnam.com', 120), true)
+})
+
+test('owners, admins, and office staff can reveal employee PINs', () => {
+  assert.equal(canRevealStaffKioskPin(STAFF_KIOSK_EMAIL, 'owner', 120), false)
+  assert.equal(canRevealStaffKioskPin('owner@vre-vietnam.com', 'owner', 120), true)
+  assert.equal(canRevealStaffKioskPin('admin@vre-vietnam.com', 'admin', 100), true)
+  assert.equal(canRevealStaffKioskPin('office@vre-vietnam.com', 'cashier', 20), true)
+  assert.equal(canRevealStaffKioskPin('manager@vre-vietnam.com', 'manager', 80), false)
+  assert.equal(canRevealStaffKioskPin('viewer@vre-vietnam.com', 'viewer', 20), false)
 })

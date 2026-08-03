@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const operators = await loadStaffKioskOperatorDirectory(auth.adminClient)
-    return Response.json({ operators }, { headers: { 'Cache-Control': 'no-store' } })
+    return Response.json({
+      available: operators.some((operator) => operator.pinConfigured && operator.accessRole),
+    }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     return staffKioskJsonError(error instanceof Error ? error.message : 'Could not load employee access.', 500)
   }
