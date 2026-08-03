@@ -272,6 +272,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeKioskAccessRole,
     employeeKioskPin,
     employeeKioskPinConfirm,
+    employeeKioskPinSaveConfirmation,
+    employeeKioskPinVisibleValue,
     employeeFormForProfile,
     employeePayrollSummary,
     employeeProfileById,
@@ -301,6 +303,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrStatusFilter,
     hrTab,
     isOwnerOrAdmin,
+    canRevealEmployeeKioskPin,
     leaveRequests,
     normalizeHrAdjustmentStatus,
     normalizeHrAdjustmentType,
@@ -737,7 +740,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           </span>
                         </div>
                         <div className="form-grid compact-form-grid staff-hr-kiosk-fields">
-                          <label>
+                          <label className={canRevealEmployeeKioskPin ? '' : 'full'}>
                             {resolvedLanguage === 'vi' ? 'Cấp quyền' : 'Access level'}
                             <select value={employeeKioskAccessRole} onChange={(event) => setEmployeeKioskAccessRole(event.target.value as 'manager' | 'staff')}>
                               <option value="staff">{resolvedLanguage === 'vi' ? 'Nhân viên' : 'Staff'}</option>
@@ -747,19 +750,34 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               ? (resolvedLanguage === 'vi' ? 'Có thể quản lý HR, chấm công và PIN nhân viên.' : 'Can manage HR, attendance, and employee PINs.')
                               : (resolvedLanguage === 'vi' ? 'Dành cho hoạt động hàng ngày tại cửa hàng.' : 'For daily store operations.')}</small>
                           </label>
-                          <label>
-                            {resolvedLanguage === 'vi' ? 'PIN 4 số mới' : 'New 4-digit PIN'}
-                            <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 4))} />
-                          </label>
-                          <label>
-                            {resolvedLanguage === 'vi' ? 'Xác nhận PIN' : 'Confirm PIN'}
-                            <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPinConfirm} onChange={(event) => setEmployeeKioskPinConfirm(event.target.value.replace(/\D/g, '').slice(0, 4))} />
-                          </label>
-                          <button className="primary staff-hr-kiosk-save" disabled={saving || employeeKioskPin.length !== 4 || employeeKioskPinConfirm.length !== 4} type="button" onClick={() => void configureEmployeeKioskPin()}>
-                            <KeyRound aria-hidden="true" size={17} />
-                            {employeeForm.kiosk_pin_configured_at
-                              ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
-                              : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
+                          {canRevealEmployeeKioskPin && (
+                            <label className="staff-hr-kiosk-current-pin">
+                              {resolvedLanguage === 'vi' ? 'PIN hiện tại' : 'Current PIN'}
+                              <output aria-live="polite">{employeeKioskPinVisibleValue || '••••'}</output>
+                              <small>{employeeKioskPinVisibleValue
+                                ? (resolvedLanguage === 'vi' ? 'PIN mới chỉ hiển thị trong 5 giây.' : 'The new PIN is visible for 5 seconds only.')
+                                : (resolvedLanguage === 'vi' ? 'PIN hiện có được mã hóa một chiều và không thể hiển thị.' : 'Existing PINs are one-way encrypted and cannot be revealed.')}</small>
+                            </label>
+                          )}
+                          <div className="staff-hr-kiosk-pin-entry">
+                            <label>
+                              {resolvedLanguage === 'vi' ? 'PIN 4 số mới' : 'New 4-digit PIN'}
+                              <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 4))} />
+                            </label>
+                            <label>
+                              {resolvedLanguage === 'vi' ? 'Xác nhận PIN' : 'Confirm PIN'}
+                              <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPinConfirm} onChange={(event) => setEmployeeKioskPinConfirm(event.target.value.replace(/\D/g, '').slice(0, 4))} />
+                            </label>
+                          </div>
+                          <button aria-live="polite" className={`primary staff-hr-kiosk-save ${employeeKioskPinSaveConfirmation ? 'is-confirmed' : ''}`} disabled={saving || Boolean(employeeKioskPinSaveConfirmation) || employeeKioskPin.length !== 4 || employeeKioskPinConfirm.length !== 4} type="button" onClick={() => void configureEmployeeKioskPin()}>
+                            {employeeKioskPinSaveConfirmation ? <CircleCheckBig aria-hidden="true" size={18} /> : <KeyRound aria-hidden="true" size={17} />}
+                            {employeeKioskPinSaveConfirmation === 'created'
+                              ? (resolvedLanguage === 'vi' ? 'Đã tạo PIN' : 'PIN created')
+                              : employeeKioskPinSaveConfirmation === 'replaced'
+                                ? (resolvedLanguage === 'vi' ? 'Đã đổi PIN' : 'PIN replaced')
+                                : employeeForm.kiosk_pin_configured_at
+                                  ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
+                                  : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
                           </button>
                         </div>
                       </section>
