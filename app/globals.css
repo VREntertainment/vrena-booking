@@ -209,7 +209,20 @@
 .staff-hr-kiosk-status.configured { background: var(--vrena-status-success-bg); color: var(--vrena-status-success-ink); }
 .staff-hr-kiosk-fields { align-items: end; margin-top: 16px; }
 .staff-hr-kiosk-fields label small { color: var(--vrena-neutral-600); font-size: 11px; font-weight: 600; }
-.staff-hr-kiosk-save { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.staff-hr-kiosk-pin-entry { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.staff-hr-kiosk-current-pin output { display: flex; min-height: 44px; align-items: center; padding: 0 13px; border: 1px solid var(--vrena-line-warm); border-radius: 12px; background: var(--vrena-surface); color: var(--vrena-neutral-950); font-size: 18px; font-weight: 900; letter-spacing: 0.22em; }
+.staff-hr-kiosk-save { grid-column: 1 / -1; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease; }
+.staff-hr-kiosk-save.is-confirmed { border-color: var(--vrena-status-success-ink); background: var(--vrena-status-success-bg); color: var(--vrena-status-success-ink); animation: staff-pin-confirm 520ms cubic-bezier(0.2, 0.8, 0.2, 1); opacity: 1; }
+
+@keyframes staff-pin-confirm {
+  0% { transform: scale(0.98); }
+  55% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staff-hr-kiosk-save.is-confirmed { animation: none; }
+}
 
 @media (max-width: 760px) {
   .app .staff-kiosk-lock { padding: 18px 14px; border-radius: 18px; }
@@ -223,6 +236,7 @@
   .staff-kiosk-operator-bar strong { max-width: 48vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .staff-hr-kiosk-access-head { align-items: flex-start; flex-wrap: wrap; }
   .staff-hr-kiosk-status { margin-left: 62px; }
+  .staff-hr-kiosk-pin-entry { grid-template-columns: 1fr; }
   .staff-hr-kiosk-fields { grid-template-columns: 1fr; }
 }
 
