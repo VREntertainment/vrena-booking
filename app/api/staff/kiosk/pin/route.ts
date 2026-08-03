@@ -1,12 +1,10 @@
 import type { NextRequest } from 'next/server'
 import {
   authenticateStaffKioskRequest,
-  loadStaffKioskOperatorDirectory,
-  staffKioskCurrentActorProfileId,
   staffKioskCurrentRank,
   staffKioskJsonError,
 } from '@/lib/security/staffKioskServer'
-import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
+import { canConfigureStaffKioskPin } from '@/lib/staffKioskScope'
 
 export const runtime = 'nodejs'
 
@@ -33,27 +31,16 @@ export async function PATCH(request: NextRequest) {
   if (accessRole !== 'manager' && accessRole !== 'staff') return staffKioskJsonError('Choose Manager or Staff access.', 400)
 
   try {
-    const directory = await loadStaffKioskOperatorDirectory(auth.adminClient)
-    const hasConfiguredPin = directory.some((operator) => operator.pinConfigured)
-    let actorProfileId: string | null = auth.user.id
-
-    if (requiresStaffKioskPin(auth.user.email)) {
-      if (hasConfiguredPin) {
-        const rank = await staffKioskCurrentRank(auth)
-        if (rank < 80) return staffKioskJsonError('Manager PIN required.', 403)
-        actorProfileId = await staffKioskCurrentActorProfileId(auth)
-      } else {
-        actorProfileId = null
-      }
-    } else if (await staffKioskCurrentRank(auth) < 100) {
-      return staffKioskJsonError('Administrator access required.', 403)
+    const rank = await staffKioskCurrentRank(auth)
+    if (!canConfigureStaffKioskPin(auth.user.email, rank)) {
+      return staffKioskJsonError('Sign in with an individual Owner or Admin account to manage employee PINs.', 403)
     }
 
     const { data, error } = await auth.adminClient.rpc('staff_kiosk_configure_pin', {
       p_access_role: accessRole,
-      p_actor_profile_id: actorProfileId,
+      p_actor_profile_id: auth.user.id,
       p_actor_user_id: auth.user.id,
-      p_operator_token_hash: auth.operatorTokenHash || null,
+      p_operator_token_hash: null,
       p_pin: pin,
       p_profile_id: profileId,
     })
