@@ -55,6 +55,8 @@ const profileTabCopy = {
   it: { achievements: 'Obiettivi', settings: 'Impostazioni' },
 }
 
+const MFA_CHALLENGE_CODE_LENGTH = 6
+
 function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNode }) {
 
 
@@ -841,12 +843,16 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <input
                     autoComplete="one-time-code"
                     inputMode="numeric"
-                    maxLength={8}
-                    onChange={(event) => setMfaChallengeCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+                    maxLength={MFA_CHALLENGE_CODE_LENGTH}
+                    onChange={(event) => {
+                      const code = event.target.value.replace(/\D/g, '').slice(0, MFA_CHALLENGE_CODE_LENGTH)
+                      setMfaChallengeCode(code)
+                      if (code.length === MFA_CHALLENGE_CODE_LENGTH) void verifyMfaChallenge(code)
+                    }}
                     placeholder={text.mfaCodePlaceholder}
                     value={mfaChallengeCode}
                   />
-                  <button className={isMfaLoading ? 'primary loading' : 'primary'} disabled={isMfaLoading} onClick={verifyMfaChallenge} type="button">
+                  <button className={isMfaLoading ? 'primary loading' : 'primary'} disabled={isMfaLoading} onClick={() => void verifyMfaChallenge()} type="button">
                     {isMfaLoading ? text.saving : text.mfaVerify}
                   </button>
                 </div>
