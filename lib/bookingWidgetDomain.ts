@@ -129,6 +129,7 @@ export type TotpEnrollment = {
   id: string
   qrCode: string
   secret: string
+  uri: string
 }
 
 export type TicketLoyaltyRedemption = {

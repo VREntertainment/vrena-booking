@@ -1869,6 +1869,10 @@
   padding: 6px 9px;
 }
 
+.app .staff-role-row .staff-role-actions button.primary span {
+  color: inherit;
+}
+
 .app .staff-role-delete-button {
   width: auto;
   min-width: 132px;
