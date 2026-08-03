@@ -21,6 +21,8 @@ export type AchievementSession = {
   confirmed_game_id?: GameId | string | null
   date?: string | null
   game_options?: Array<GameId | string> | null
+  id?: string | null
+  name?: string | null
   owner_id?: string | null
   session_participants?: AchievementSessionParticipant[] | null
   start_time?: string | null

@@ -5,6 +5,7 @@ import {
   Award,
   CalendarPlus,
   Check,
+  ChevronRight,
   Crown,
   Flame,
   Gamepad2,
@@ -20,7 +21,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import {
@@ -37,6 +38,7 @@ import {
   buildGameAchievements,
   buildRetentionAchievements,
   closestAchievement,
+  completedAchievementSessions,
   profileLevelProgress,
   recentUnlockedAchievements,
   sessionsByRecentWeek,
@@ -115,6 +117,7 @@ type ProfileAchievementsPanelProps = {
 }
 
 type AchievementCopy = {
+  accuracy: string
   achievements: string
   achievementsEmpty: string
   achievementsHint: string
@@ -122,15 +125,18 @@ type AchievementCopy = {
   achievementsUnlockedTotal: string
   all: string
   badgePath: string
+  bestScore: string
   bronze: string
   collection: string
   closestUnlock: string
   common: string
   currentState: string
+  dateUnavailable: string
   epic: string
   featuredBadge: string
   filters: string
   gamesTried: string
+  gamesTriedDetailHint: string
   gold: string
   hiddenBadge: string
   hiddenHints: string
@@ -140,7 +146,10 @@ type AchievementCopy = {
   mastered: string
   nextLevel: string
   nextRequirement: string
+  noGamesTried: string
   noRecentUnlocks: string
+  noSessionsCreated: string
+  noSessionsPlayed: string
   playToUnlock: string
   playerRank: string
   progress: string
@@ -155,10 +164,14 @@ type AchievementCopy = {
   retentionHint: string
   rewards: string
   rewardsHint: string
+  score: string
   secret: string
   secretHint: string
   sessionsPlayed: string
   sessionsCreated: string
+  sessionsCreatedDetailHint: string
+  sessionsPlayedDetailHint: string
+  timesPlayed: string
   shareAchievement: string
   shareAchievements: string
   shareAllAchievements: string
@@ -181,6 +194,7 @@ type AchievementCopy = {
   unlockCelebrationTitle: string
   unlockJesterMessage: string
   unlockCondition: string
+  viewDetails: string
   xp: string
 }
 
@@ -195,6 +209,7 @@ export type ManualProfileAchievementAward = {
 }
 
 type AchievementFilter = 'all' | 'games' | 'trickster' | 'social' | 'performance' | 'hidden'
+type AchievementSummaryDetail = 'sessions-played' | 'games-tried' | 'sessions-created'
 
 type AchievementUnlockView = {
   achievement_id: string
@@ -219,6 +234,18 @@ type AchievementCelebration = {
 
 const achievementCopy: Record<LanguageCode, AchievementCopy> = {
   en: {
+    accuracy: 'Accuracy',
+    bestScore: 'Best score',
+    dateUnavailable: 'Date unavailable',
+    gamesTriedDetailHint: 'Games that count toward your achievement progress.',
+    noGamesTried: 'No checked-in games yet. Your first played game will appear here.',
+    noSessionsCreated: 'You have not created a session yet.',
+    noSessionsPlayed: 'No checked-in sessions yet. Completed visits will appear here.',
+    score: 'Score',
+    sessionsCreatedDetailHint: 'Sessions you organized, with their date and selected game.',
+    sessionsPlayedDetailHint: 'Your checked-in session history and recorded results.',
+    timesPlayed: '{count} plays',
+    viewDetails: 'View details',
     achievements: 'Achievements',
     achievementsEmpty: 'Check in to a session and your first badge will light up here.',
     achievementsHint: 'Game badges are powered by your checked-in sessions.',
@@ -288,6 +315,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   vi: {
+    accuracy: 'Độ chính xác',
+    bestScore: 'Điểm cao nhất',
+    dateUnavailable: 'Chưa có ngày',
+    gamesTriedDetailHint: 'Các game được tính vào tiến độ thành tựu của bạn.',
+    noGamesTried: 'Chưa có game đã check-in. Game đầu tiên bạn chơi sẽ xuất hiện tại đây.',
+    noSessionsCreated: 'Bạn chưa tạo phiên chơi nào.',
+    noSessionsPlayed: 'Chưa có phiên đã check-in. Các lượt chơi hoàn tất sẽ xuất hiện tại đây.',
+    score: 'Điểm',
+    sessionsCreatedDetailHint: 'Các phiên bạn tổ chức, kèm ngày và game đã chọn.',
+    sessionsPlayedDetailHint: 'Lịch sử phiên đã check-in và kết quả được ghi nhận.',
+    timesPlayed: '{count} lượt chơi',
+    viewDetails: 'Xem chi tiết',
     achievements: 'Thành tựu',
     achievementsEmpty: 'Check-in một phiên chơi và huy hiệu đầu tiên sẽ sáng lên tại đây.',
     achievementsHint: 'Huy hiệu game được tính từ các phiên bạn đã check-in.',
@@ -357,6 +396,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   ko: {
+    accuracy: '정확도',
+    bestScore: '최고 점수',
+    dateUnavailable: '날짜 없음',
+    gamesTriedDetailHint: '업적 진행도에 반영되는 게임입니다.',
+    noGamesTried: '체크인한 게임이 아직 없습니다. 첫 플레이 게임이 여기에 표시됩니다.',
+    noSessionsCreated: '아직 생성한 세션이 없습니다.',
+    noSessionsPlayed: '체크인한 세션이 아직 없습니다. 완료한 방문이 여기에 표시됩니다.',
+    score: '점수',
+    sessionsCreatedDetailHint: '직접 만든 세션의 날짜와 선택한 게임입니다.',
+    sessionsPlayedDetailHint: '체크인한 세션 기록과 저장된 결과입니다.',
+    timesPlayed: '{count}회 플레이',
+    viewDetails: '세부 정보 보기',
     achievements: '업적',
     achievementsEmpty: '세션에 체크인하면 첫 배지가 여기에 켜집니다.',
     achievementsHint: '게임 배지는 체크인한 세션을 기준으로 계산됩니다.',
@@ -426,6 +477,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   ja: {
+    accuracy: '精度',
+    bestScore: 'ベストスコア',
+    dateUnavailable: '日付なし',
+    gamesTriedDetailHint: '実績の進行に反映されるゲームです。',
+    noGamesTried: 'チェックイン済みのゲームはまだありません。最初に遊んだゲームがここに表示されます。',
+    noSessionsCreated: '作成したセッションはまだありません。',
+    noSessionsPlayed: 'チェックイン済みセッションはまだありません。完了した来店がここに表示されます。',
+    score: 'スコア',
+    sessionsCreatedDetailHint: 'あなたが作成したセッションの日付と選択ゲームです。',
+    sessionsPlayedDetailHint: 'チェックイン済みセッションの履歴と記録結果です。',
+    timesPlayed: '{count}回プレイ',
+    viewDetails: '詳細を見る',
     achievements: '実績',
     achievementsEmpty: 'セッションにチェックインすると、最初のバッジがここで点灯します。',
     achievementsHint: 'ゲームバッジはチェックイン済みセッションから計算されます。',
@@ -495,6 +558,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   fr: {
+    accuracy: 'Précision',
+    bestScore: 'Meilleur score',
+    dateUnavailable: 'Date indisponible',
+    gamesTriedDetailHint: 'Les jeux pris en compte dans ta progression de succès.',
+    noGamesTried: 'Aucun jeu validé pour le moment. Ton premier jeu apparaîtra ici.',
+    noSessionsCreated: "Tu n'as pas encore créé de session.",
+    noSessionsPlayed: 'Aucune session validée pour le moment. Tes visites terminées apparaîtront ici.',
+    score: 'Score',
+    sessionsCreatedDetailHint: 'Les sessions que tu as organisées, avec leur date et le jeu choisi.',
+    sessionsPlayedDetailHint: 'Ton historique de sessions validées et les résultats enregistrés.',
+    timesPlayed: '{count} parties',
+    viewDetails: 'Voir les détails',
     achievements: 'Succès',
     achievementsEmpty: 'Check-in à une session et ton premier badge s’allumera ici.',
     achievementsHint: 'Les badges de jeu utilisent tes sessions validées.',
@@ -564,6 +639,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   de: {
+    accuracy: 'Genauigkeit',
+    bestScore: 'Bestpunktzahl',
+    dateUnavailable: 'Datum nicht verfügbar',
+    gamesTriedDetailHint: 'Games, die für deinen Erfolgsfortschritt zählen.',
+    noGamesTried: 'Noch keine eingecheckten Games. Dein erstes Game erscheint hier.',
+    noSessionsCreated: 'Du hast noch keine Session erstellt.',
+    noSessionsPlayed: 'Noch keine eingecheckten Sessions. Abgeschlossene Besuche erscheinen hier.',
+    score: 'Punktzahl',
+    sessionsCreatedDetailHint: 'Von dir organisierte Sessions mit Datum und ausgewähltem Game.',
+    sessionsPlayedDetailHint: 'Deine eingecheckten Sessions und gespeicherten Ergebnisse.',
+    timesPlayed: '{count} Spiele',
+    viewDetails: 'Details ansehen',
     achievements: 'Erfolge',
     achievementsEmpty: 'Checke in eine Session ein, dann leuchtet dein erstes Abzeichen hier auf.',
     achievementsHint: 'Spielabzeichen basieren auf deinen eingecheckten Sessions.',
@@ -633,6 +720,18 @@ const achievementCopy: Record<LanguageCode, AchievementCopy> = {
     xp: 'XP',
   },
   it: {
+    accuracy: 'Precisione',
+    bestScore: 'Miglior punteggio',
+    dateUnavailable: 'Data non disponibile',
+    gamesTriedDetailHint: 'I giochi che contano per i progressi dei tuoi obiettivi.',
+    noGamesTried: 'Nessun gioco con check-in. Il primo gioco apparirà qui.',
+    noSessionsCreated: 'Non hai ancora creato una sessione.',
+    noSessionsPlayed: 'Nessuna sessione con check-in. Le visite completate appariranno qui.',
+    score: 'Punteggio',
+    sessionsCreatedDetailHint: 'Le sessioni organizzate da te, con data e gioco selezionato.',
+    sessionsPlayedDetailHint: 'La cronologia delle sessioni con check-in e i risultati registrati.',
+    timesPlayed: '{count} partite',
+    viewDetails: 'Vedi dettagli',
     achievements: 'Obiettivi',
     achievementsEmpty: 'Fai check-in a una sessione e il primo badge si illuminerà qui.',
     achievementsHint: 'I badge dei giochi usano le sessioni con check-in.',
@@ -796,6 +895,29 @@ function progressPath(points: AchievementProgressPoint[]) {
   })
 }
 
+function achievementSessionSortValue(session: AchievementSession) {
+  return `${session.date ?? ''}T${session.start_time ?? ''}`
+}
+
+function achievementSessionDateLabel(session: AchievementSession, language: LanguageCode, unavailable: string) {
+  if (!session.date) return unavailable
+  const date = new Date(`${session.date}T${session.start_time || '00:00:00'}`)
+  if (Number.isNaN(date.getTime())) return unavailable
+
+  const formattedDate = new Intl.DateTimeFormat(language, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+  const time = session.start_time?.slice(0, 5)
+  return time ? `${formattedDate} · ${time}` : formattedDate
+}
+
+function achievementNumericValue(value: number | string | null | undefined) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function AchievementAvatar({ profile }: { profile: ProfileAchievementsPanelProps['profile'] }) {
   const isAnonymous = Boolean(profile.anonymous_mode)
   const background = isAnonymous ? ANONYMOUS_MASK_COLOR : profile.avatar_color || vrenaPalette.purple[500]
@@ -937,6 +1059,7 @@ export default function ProfileAchievementsPanel({
   const copy = achievementCopy[language] ?? achievementCopy.en
   const [selectedAchievement, setSelectedAchievement] = useState<GameAchievement | null>(null)
   const [selectedRetentionAchievement, setSelectedRetentionAchievement] = useState<RetentionAchievement | null>(null)
+  const [selectedSummaryDetail, setSelectedSummaryDetail] = useState<AchievementSummaryDetail | null>(null)
   const [achievementFilter, setAchievementFilter] = useState<AchievementFilter>('all')
   const [showRankList, setShowRankList] = useState(false)
   const [shareStatus, setShareStatus] = useState('')
@@ -949,6 +1072,24 @@ export default function ProfileAchievementsPanel({
   const [sharingAchievementKey, setSharingAchievementKey] = useState('')
   const [featuredCelebrationKey, setFeaturedCelebrationKey] = useState('')
   const [, setTapCounts] = useState<Record<string, number>>({})
+  const summaryTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  function closeSummaryDetail() {
+    setSelectedSummaryDetail(null)
+    window.requestAnimationFrame(() => summaryTriggerRef.current?.focus())
+  }
+
+  useEffect(() => {
+    if (!selectedSummaryDetail) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedSummaryDetail(null)
+        window.requestAnimationFrame(() => summaryTriggerRef.current?.focus())
+      }
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [selectedSummaryDetail])
 
   useEffect(() => {
     if (manualAwardsOverride) return
@@ -1048,6 +1189,29 @@ export default function ProfileAchievementsPanel({
     () => retentionAchievements.map((achievement) => localizeRetentionAchievement(achievement, language)),
     [language, retentionAchievements],
   )
+  const gameTitleById = useMemo(
+    () => new Map<string, string>(displayAchievements.map((achievement) => [achievement.game.id, achievement.game.title])),
+    [displayAchievements],
+  )
+  const playedSessionDetails = useMemo(
+    () => [...completedAchievementSessions(achievementSessions, userId)]
+      .sort((left, right) => achievementSessionSortValue(right).localeCompare(achievementSessionSortValue(left))),
+    [achievementSessions, userId],
+  )
+  const createdSessionDetails = useMemo(
+    () => mySessions
+      .filter((session) => session.owner_id === userId)
+      .slice()
+      .sort((left, right) => achievementSessionSortValue(right).localeCompare(achievementSessionSortValue(left))),
+    [mySessions, userId],
+  )
+  const triedGameDetails = useMemo(
+    () => displayAchievements
+      .filter((achievement) => achievement.playedCount > 0)
+      .slice()
+      .sort((left, right) => right.playedCount - left.playedCount || left.game.title.localeCompare(right.game.title, language)),
+    [displayAchievements, language],
+  )
   const sessionsPlayed = useMemo(
     () => achievementSessions.filter((session) => session.session_participants?.some((participant) => participant.profile_id === userId && participant.checked_in)).length,
     [achievementSessions, userId],
@@ -1084,6 +1248,16 @@ export default function ProfileAchievementsPanel({
     ? `${graphLine} L ${graphPathPoints[graphPathPoints.length - 1].x} 112 L ${graphPathPoints[0].x} 112 Z`
     : ''
   const hasProgress = summary.sessionsPlayed > 0
+
+  function gameTitleForSession(session: AchievementSession) {
+    const gameId = session.confirmed_game_id || session.game_options?.[0]
+    return (gameId && gameTitleById.get(gameId)) || session.name || copy.gamesTried
+  }
+
+  function playerResultForSession(session: AchievementSession) {
+    return session.session_participants?.find((participant) => participant.profile_id === userId) ?? null
+  }
+
   const filterOptions: Array<{ label: string; value: AchievementFilter }> = [
     { label: copy.all, value: 'all' },
     { label: copy.gamesTried, value: 'games' },
@@ -1487,21 +1661,51 @@ export default function ProfileAchievementsPanel({
       )}
 
       <div className="achievement-summary-grid" aria-label={copy.achievementsHint}>
-        <div className="achievement-summary-card">
+        <button
+          aria-haspopup="dialog"
+          aria-label={`${copy.viewDetails}: ${copy.sessionsPlayed}`}
+          className="achievement-summary-card achievement-summary-action"
+          onClick={(event) => {
+            summaryTriggerRef.current = event.currentTarget
+            setSelectedSummaryDetail('sessions-played')
+          }}
+          type="button"
+        >
           <Gamepad2 aria-hidden="true" size={18} />
           <strong>{summary.sessionsPlayed}</strong>
           <span>{copy.sessionsPlayed}</span>
-        </div>
-        <div className="achievement-summary-card">
+          <ChevronRight aria-hidden="true" className="achievement-summary-action-icon" size={17} />
+        </button>
+        <button
+          aria-haspopup="dialog"
+          aria-label={`${copy.viewDetails}: ${copy.gamesTried}`}
+          className="achievement-summary-card achievement-summary-action"
+          onClick={(event) => {
+            summaryTriggerRef.current = event.currentTarget
+            setSelectedSummaryDetail('games-tried')
+          }}
+          type="button"
+        >
           <Target aria-hidden="true" size={18} />
           <strong>{summary.gamesTried}/{summary.totalGames}</strong>
           <span>{copy.gamesTried}</span>
-        </div>
-        <div className="achievement-summary-card">
+          <ChevronRight aria-hidden="true" className="achievement-summary-action-icon" size={17} />
+        </button>
+        <button
+          aria-haspopup="dialog"
+          aria-label={`${copy.viewDetails}: ${copy.sessionsCreated}`}
+          className="achievement-summary-card achievement-summary-action"
+          onClick={(event) => {
+            summaryTriggerRef.current = event.currentTarget
+            setSelectedSummaryDetail('sessions-created')
+          }}
+          type="button"
+        >
           <CalendarPlus aria-hidden="true" size={18} />
           <strong>{sessionsCreated}</strong>
           <span>{copy.sessionsCreated}</span>
-        </div>
+          <ChevronRight aria-hidden="true" className="achievement-summary-action-icon" size={17} />
+        </button>
         <div className="achievement-summary-card achievement-summary-progress-card">
           <Award aria-hidden="true" size={18} />
           <strong>{summary.totalUnlocked}/{summary.availableAchievements}</strong>
@@ -1518,6 +1722,110 @@ export default function ProfileAchievementsPanel({
           </div>
         )}
       </div>
+
+      {selectedSummaryDetail && (
+        <div className="modal-backdrop" onClick={closeSummaryDetail}>
+          <div
+            aria-labelledby="achievement-summary-detail-title"
+            aria-modal="true"
+            className="achievement-detail-sheet achievement-summary-detail-sheet"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <button
+              aria-label={text.close}
+              autoFocus
+              className="modal-close"
+              onClick={closeSummaryDetail}
+              type="button"
+            >
+              <X aria-hidden="true" size={18} />
+            </button>
+            <div className="achievement-summary-detail-head">
+              <span className="achievement-summary-detail-icon" aria-hidden="true">
+                {selectedSummaryDetail === 'sessions-played' ? <Gamepad2 size={24} /> : selectedSummaryDetail === 'games-tried' ? <Target size={24} /> : <CalendarPlus size={24} />}
+              </span>
+              <div>
+                <span className="achievement-tier-pill">{copy.viewDetails}</span>
+                <h3 id="achievement-summary-detail-title">
+                  {selectedSummaryDetail === 'sessions-played' ? copy.sessionsPlayed : selectedSummaryDetail === 'games-tried' ? copy.gamesTried : copy.sessionsCreated}
+                </h3>
+                <p className="muted">
+                  {selectedSummaryDetail === 'sessions-played' ? copy.sessionsPlayedDetailHint : selectedSummaryDetail === 'games-tried' ? copy.gamesTriedDetailHint : copy.sessionsCreatedDetailHint}
+                </p>
+              </div>
+            </div>
+
+            {selectedSummaryDetail === 'sessions-played' && (
+              <div className="achievement-summary-detail-list">
+                {playedSessionDetails.length > 0 ? playedSessionDetails.map((session, index) => {
+                  const result = playerResultForSession(session)
+                  const score = achievementNumericValue(result?.score)
+                  const accuracy = achievementNumericValue(result?.accuracy_percent)
+                  return (
+                    <article className="achievement-summary-detail-row" key={session.id || `${achievementSessionSortValue(session)}-${index}`}>
+                      <span className="achievement-summary-row-icon" aria-hidden="true"><Gamepad2 size={18} /></span>
+                      <div>
+                        <strong>{session.name || gameTitleForSession(session)}</strong>
+                        <small>{achievementSessionDateLabel(session, language, copy.dateUnavailable)}</small>
+                        <span className="achievement-summary-row-meta">
+                          {score !== null && <span>{copy.score}: {score.toLocaleString(language)}</span>}
+                          {accuracy !== null && <span>{copy.accuracy}: {formatWholePercent(accuracy)}</span>}
+                        </span>
+                      </div>
+                    </article>
+                  )
+                }) : (
+                  <p className="notice compact-notice achievement-summary-detail-empty">{copy.noSessionsPlayed}</p>
+                )}
+              </div>
+            )}
+
+            {selectedSummaryDetail === 'games-tried' && (
+              <div className="achievement-summary-detail-list">
+                {triedGameDetails.length > 0 ? triedGameDetails.map((achievement) => (
+                  <article className="achievement-summary-detail-row" key={achievement.game.id}>
+                    <span className="achievement-summary-game-art">
+                      <NextImage alt="" fill sizes="52px" src={achievement.game.image} />
+                    </span>
+                    <div>
+                      <strong>{achievement.game.title}</strong>
+                      <small>{copy.timesPlayed.replace('{count}', String(achievement.playedCount))}</small>
+                      {achievement.bestScore !== null && (
+                        <span className="achievement-summary-row-meta">
+                          <span>{copy.bestScore}: {achievement.bestScore.toLocaleString(language)}</span>
+                        </span>
+                      )}
+                    </div>
+                    <span className="achievement-tier-pill">{copy[tierLabels[achievement.tier]]}</span>
+                  </article>
+                )) : (
+                  <p className="notice compact-notice achievement-summary-detail-empty">{copy.noGamesTried}</p>
+                )}
+              </div>
+            )}
+
+            {selectedSummaryDetail === 'sessions-created' && (
+              <div className="achievement-summary-detail-list">
+                {createdSessionDetails.length > 0 ? createdSessionDetails.map((session, index) => (
+                  <article className="achievement-summary-detail-row" key={session.id || `${achievementSessionSortValue(session)}-${index}`}>
+                    <span className="achievement-summary-row-icon" aria-hidden="true"><CalendarPlus size={18} /></span>
+                    <div>
+                      <strong>{session.name || gameTitleForSession(session)}</strong>
+                      <small>{achievementSessionDateLabel(session, language, copy.dateUnavailable)}</small>
+                      {session.name && (
+                        <span className="achievement-summary-row-meta"><span>{gameTitleForSession(session)}</span></span>
+                      )}
+                    </div>
+                  </article>
+                )) : (
+                  <p className="notice compact-notice achievement-summary-detail-empty">{copy.noSessionsCreated}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {accountActivity}
 
