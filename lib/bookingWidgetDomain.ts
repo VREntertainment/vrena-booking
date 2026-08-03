@@ -22,7 +22,7 @@ export const CLOSE_MINUTES = 22 * 60
 export const TIME_STEP_MINUTES = 20
 export const SESSION_LOAD_BATCH_DAYS = 7
 export const LEADERBOARD_PAGE_SIZE = 20
-export const DEFAULT_APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vrena-booking.vercel.app'
+export const DEFAULT_APP_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://booking.vre-vietnam.com'
 export const MAX_DISPLAY_NAME_LENGTH = 10
 
 export type TicketStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
