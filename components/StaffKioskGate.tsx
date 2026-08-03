@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeftRight, Delete, KeyRound, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react'
+import { ArrowLeftRight, Delete, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
 import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
@@ -41,63 +41,63 @@ const copy = {
   en: {
     title: 'Who is operating this station?', subtitle: 'Choose your employee profile and enter your personal 4-digit PIN.',
     manager: 'Manager', staff: 'Staff', pin: '4-digit PIN', unlock: 'Unlock station', switch: 'Switch employee',
-    lock: 'Lock station', noAccess: 'No employee PIN has been configured yet.', setupTitle: 'Set up the first manager PIN',
-    setupHelp: 'Select an active HR employee file. This first PIN will become the manager who can configure the remaining staff PINs.',
-    employee: 'Employee', confirmPin: 'Confirm PIN', savePin: 'Save manager PIN', mismatch: 'The two PINs do not match.',
+    lock: 'Lock station', noAccess: 'No employee PIN has been configured yet.', setupTitle: 'Employee PIN required',
+    setupHelp: 'An Owner or Admin must sign in with their individual account and create employee PINs from HR → Employees → Store access.',
+    employee: 'Employee', mismatch: 'The two PINs do not match.',
     loading: 'Loading employee access…', secured: 'Store device secured', inactivity: 'Locks automatically after 5 minutes of inactivity.',
     chooseEmployee: 'Choose employee', incorrect: 'Could not unlock the station.', back: 'Choose another employee', clear: 'Clear PIN',
   },
   vi: {
     title: 'Ai đang vận hành máy này?', subtitle: 'Chọn hồ sơ nhân viên và nhập mã PIN cá nhân gồm 4 chữ số.',
     manager: 'Quản lý', staff: 'Nhân viên', pin: 'Mã PIN 4 số', unlock: 'Mở khóa máy', switch: 'Đổi nhân viên',
-    lock: 'Khóa máy', noAccess: 'Chưa có mã PIN nhân viên nào được thiết lập.', setupTitle: 'Thiết lập PIN quản lý đầu tiên',
-    setupHelp: 'Chọn hồ sơ nhân viên HR đang hoạt động. PIN đầu tiên sẽ là quản lý có thể thiết lập các PIN còn lại.',
-    employee: 'Nhân viên', confirmPin: 'Xác nhận PIN', savePin: 'Lưu PIN quản lý', mismatch: 'Hai mã PIN không khớp.',
+    lock: 'Khóa máy', noAccess: 'Chưa có mã PIN nhân viên nào được thiết lập.', setupTitle: 'Cần mã PIN nhân viên',
+    setupHelp: 'Chủ sở hữu hoặc Quản trị viên phải đăng nhập bằng tài khoản cá nhân và tạo PIN tại HR → Nhân viên → Quyền truy cập tại cửa hàng.',
+    employee: 'Nhân viên', mismatch: 'Hai mã PIN không khớp.',
     loading: 'Đang tải quyền nhân viên…', secured: 'Thiết bị cửa hàng đã được bảo vệ', inactivity: 'Tự động khóa sau 5 phút không hoạt động.',
     chooseEmployee: 'Chọn nhân viên', incorrect: 'Không thể mở khóa máy.', back: 'Chọn nhân viên khác', clear: 'Xóa PIN',
   },
   ko: {
     title: '현재 이 기기를 사용하는 직원은 누구인가요?', subtitle: '직원 프로필을 선택하고 개인 4자리 PIN을 입력하세요.',
     manager: '관리자', staff: '직원', pin: '4자리 PIN', unlock: '기기 잠금 해제', switch: '직원 전환', lock: '기기 잠금',
-    noAccess: '아직 직원 PIN이 설정되지 않았습니다.', setupTitle: '첫 관리자 PIN 설정',
-    setupHelp: '활성 HR 직원 파일을 선택하세요. 첫 PIN은 다른 직원 PIN을 관리할 수 있는 관리자 PIN이 됩니다.',
-    employee: '직원', confirmPin: 'PIN 확인', savePin: '관리자 PIN 저장', mismatch: '두 PIN이 일치하지 않습니다.',
+    noAccess: '아직 직원 PIN이 설정되지 않았습니다.', setupTitle: '직원 PIN 필요',
+    setupHelp: '소유자 또는 관리자가 개인 계정으로 로그인하여 HR → 직원 → 매장 액세스에서 PIN을 만들어야 합니다.',
+    employee: '직원', mismatch: '두 PIN이 일치하지 않습니다.',
     loading: '직원 권한 불러오는 중…', secured: '매장 기기 보안 적용됨', inactivity: '5분 동안 활동이 없으면 자동으로 잠깁니다.',
     chooseEmployee: '직원 선택', incorrect: '기기 잠금을 해제할 수 없습니다.', back: '다른 직원 선택', clear: 'PIN 지우기',
   },
   ja: {
     title: 'この端末を操作するスタッフは誰ですか？', subtitle: '従業員プロフィールを選び、個人の4桁PINを入力してください。',
     manager: 'マネージャー', staff: 'スタッフ', pin: '4桁PIN', unlock: '端末を解除', switch: 'スタッフ切替', lock: '端末をロック',
-    noAccess: '従業員PINはまだ設定されていません。', setupTitle: '最初のマネージャーPINを設定',
-    setupHelp: '有効なHR従業員ファイルを選択してください。最初のPINは他のスタッフPINを設定できるマネージャーになります。',
-    employee: '従業員', confirmPin: 'PIN確認', savePin: 'マネージャーPINを保存', mismatch: '2つのPINが一致しません。',
+    noAccess: '従業員PINはまだ設定されていません。', setupTitle: '従業員PINが必要です',
+    setupHelp: 'オーナーまたは管理者が個人アカウントでログインし、HR → 従業員 → 店舗アクセスからPINを作成してください。',
+    employee: '従業員', mismatch: '2つのPINが一致しません。',
     loading: '従業員アクセスを読み込み中…', secured: '店舗端末は保護されています', inactivity: '5分間操作がないと自動的にロックされます。',
     chooseEmployee: '従業員を選択', incorrect: '端末を解除できませんでした。', back: '別の従業員を選択', clear: 'PINを消去',
   },
   fr: {
     title: 'Qui utilise ce poste ?', subtitle: 'Choisissez votre profil employé et saisissez votre PIN personnel à 4 chiffres.',
     manager: 'Manager', staff: 'Personnel', pin: 'PIN à 4 chiffres', unlock: 'Déverrouiller le poste', switch: 'Changer d’employé', lock: 'Verrouiller le poste',
-    noAccess: 'Aucun PIN employé n’est encore configuré.', setupTitle: 'Configurer le premier PIN manager',
-    setupHelp: 'Sélectionnez une fiche RH active. Ce premier PIN identifiera le manager autorisé à configurer les autres PIN.',
-    employee: 'Employé', confirmPin: 'Confirmer le PIN', savePin: 'Enregistrer le PIN manager', mismatch: 'Les deux PIN ne correspondent pas.',
+    noAccess: 'Aucun PIN employé n’est encore configuré.', setupTitle: 'PIN employé requis',
+    setupHelp: 'Un propriétaire ou administrateur doit se connecter avec son compte individuel et créer les PIN dans RH → Employés → Accès magasin.',
+    employee: 'Employé', mismatch: 'Les deux PIN ne correspondent pas.',
     loading: 'Chargement des accès employés…', secured: 'Poste du magasin sécurisé', inactivity: 'Verrouillage automatique après 5 minutes d’inactivité.',
     chooseEmployee: 'Choisir un employé', incorrect: 'Impossible de déverrouiller le poste.', back: 'Choisir un autre employé', clear: 'Effacer le PIN',
   },
   de: {
     title: 'Wer bedient diese Station?', subtitle: 'Mitarbeiterprofil auswählen und persönliche 4-stellige PIN eingeben.',
     manager: 'Manager', staff: 'Personal', pin: '4-stellige PIN', unlock: 'Station entsperren', switch: 'Mitarbeiter wechseln', lock: 'Station sperren',
-    noAccess: 'Es wurde noch keine Mitarbeiter-PIN eingerichtet.', setupTitle: 'Erste Manager-PIN einrichten',
-    setupHelp: 'Wählen Sie eine aktive HR-Mitarbeiterakte. Die erste PIN gehört dem Manager, der weitere PINs einrichten kann.',
-    employee: 'Mitarbeiter', confirmPin: 'PIN bestätigen', savePin: 'Manager-PIN speichern', mismatch: 'Die beiden PINs stimmen nicht überein.',
+    noAccess: 'Es wurde noch keine Mitarbeiter-PIN eingerichtet.', setupTitle: 'Mitarbeiter-PIN erforderlich',
+    setupHelp: 'Ein Inhaber oder Administrator muss sich mit seinem persönlichen Konto anmelden und PINs unter HR → Mitarbeiter → Store-Zugriff erstellen.',
+    employee: 'Mitarbeiter', mismatch: 'Die beiden PINs stimmen nicht überein.',
     loading: 'Mitarbeiterzugriff wird geladen…', secured: 'Store-Gerät geschützt', inactivity: 'Automatische Sperre nach 5 Minuten Inaktivität.',
     chooseEmployee: 'Mitarbeiter auswählen', incorrect: 'Die Station konnte nicht entsperrt werden.', back: 'Anderen Mitarbeiter wählen', clear: 'PIN löschen',
   },
   it: {
     title: 'Chi sta usando questa postazione?', subtitle: 'Scegli il profilo dipendente e inserisci il PIN personale di 4 cifre.',
     manager: 'Manager', staff: 'Staff', pin: 'PIN di 4 cifre', unlock: 'Sblocca postazione', switch: 'Cambia dipendente', lock: 'Blocca postazione',
-    noAccess: 'Nessun PIN dipendente è ancora configurato.', setupTitle: 'Configura il primo PIN manager',
-    setupHelp: 'Seleziona una scheda HR attiva. Il primo PIN sarà del manager che potrà configurare gli altri PIN.',
-    employee: 'Dipendente', confirmPin: 'Conferma PIN', savePin: 'Salva PIN manager', mismatch: 'I due PIN non corrispondono.',
+    noAccess: 'Nessun PIN dipendente è ancora configurato.', setupTitle: 'PIN dipendente richiesto',
+    setupHelp: 'Un proprietario o amministratore deve accedere con il proprio account individuale e creare i PIN in HR → Dipendenti → Accesso negozio.',
+    employee: 'Dipendente', mismatch: 'I due PIN non corrispondono.',
     loading: 'Caricamento accessi dipendenti…', secured: 'Dispositivo del negozio protetto', inactivity: 'Blocco automatico dopo 5 minuti di inattività.',
     chooseEmployee: 'Scegli dipendente', incorrect: 'Impossibile sbloccare la postazione.', back: 'Scegli un altro dipendente', clear: 'Cancella PIN',
   },
@@ -147,7 +147,6 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
   const [directory, setDirectory] = useState<DirectoryOperator[]>([])
   const [selectedProfileId, setSelectedProfileId] = useState('')
   const [pin, setPin] = useState('')
-  const [confirmPin, setConfirmPin] = useState('')
   const [operator, setOperator] = useState<StaffKioskOperator | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -195,7 +194,6 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
     const activeToken = getStaffKioskOperatorToken()
     setOperator(null)
     setPin('')
-    setConfirmPin('')
     setError('')
     setStaffKioskOperatorToken('')
     if (inactivityTimerRef.current) window.clearTimeout(inactivityTimerRef.current)
@@ -225,7 +223,6 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
     const activeToken = getStaffKioskOperatorToken()
     setOperator(null)
     setPin('')
-    setConfirmPin('')
     setError('')
     setStaffKioskOperatorToken('')
     if (activeToken) void revokeOperatorToken(activeToken, 'manual')
@@ -323,33 +320,6 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
     if (nextPin.length === 4 && configuredOperators.length > 0) void unlock(nextPin)
   }
 
-  async function configureFirstManagerPin() {
-    if (!selectedOperator || submitting) return
-    if (!/^\d{4}$/.test(pin) || pin !== confirmPin) {
-      setError(text.mismatch)
-      return
-    }
-    setSubmitting(true)
-    setError('')
-    try {
-      const headers = await staffKioskHeaders()
-      const response = await fetch('/api/staff/kiosk/pin', {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ profileId: selectedOperator.profileId, pin, accessRole: 'manager' }),
-      })
-      const payload = await response.json().catch(() => ({})) as { error?: string }
-      if (!response.ok) throw new Error(payload.error || text.incorrect)
-      setPin('')
-      setConfirmPin('')
-      await loadDirectory()
-    } catch (setupError) {
-      setError(setupError instanceof Error ? setupError.message : text.incorrect)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   if (!requiresPin) return <>{children({
     profileId: '', employeeCode: null, name: '', jobTitle: null, accessRole: 'manager',
     avatarEmoji: null, avatarInitials: null, avatarColor: null, avatarTextColor: null,
@@ -369,21 +339,7 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
 
       {loading ? <p className="staff-kiosk-loading">{text.loading}</p> : (
         <>
-          {directory.length === 0 ? <p className="notice">{text.noAccess}</p> : configuredOperators.length === 0 ? (
-            <div className="staff-kiosk-bootstrap">
-              <label>
-                <span>{text.employee}</span>
-                <select value={selectedProfileId} onChange={(event) => setSelectedProfileId(event.target.value)}>
-                  {directory.map((item) => <option key={item.profileId} value={item.profileId}>{item.name}</option>)}
-                </select>
-              </label>
-              <label><span>{text.pin}</span><input autoComplete="new-password" inputMode="numeric" maxLength={4} type="password" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label>
-              <label><span>{text.confirmPin}</span><input autoComplete="new-password" inputMode="numeric" maxLength={4} type="password" value={confirmPin} onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label>
-              <button className="primary" disabled={submitting || pin.length !== 4 || confirmPin.length !== 4} type="button" onClick={() => void configureFirstManagerPin()}>
-                <KeyRound aria-hidden="true" size={18} /> {text.savePin}
-              </button>
-            </div>
-          ) : (
+          {configuredOperators.length === 0 ? <p className="notice">{text.noAccess}</p> : (
             <div className="staff-kiosk-unlock-layout">
               <div className="staff-kiosk-operator-grid" aria-label={text.chooseEmployee}>
                 {configuredOperators.map((item) => {

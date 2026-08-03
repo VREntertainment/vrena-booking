@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
 import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from './staffMfa'
+import { requiresStaffKioskPin } from '../staffKioskScope'
 
 export const STAFF_KIOSK_HEADER = 'x-vrena-operator-session'
 
@@ -69,7 +70,7 @@ export async function authenticateStaffKioskRequest(request: NextRequest): Promi
     hasVerifiedAal2Session(authClient, accessToken),
     hasVerifiedMfaFactor(adminClient, userData.user.id),
   ])
-  if (!hasAal2 || !hasMfaFactor) {
+  if (!requiresStaffKioskPin(userData.user.email) && (!hasAal2 || !hasMfaFactor)) {
     return staffKioskJsonError('Staff two-step verification required.', 403)
   }
 

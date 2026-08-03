@@ -16,7 +16,7 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import { requiresStaffKioskPin } from '../lib/staffKioskScope'
+import { canEnterStaffConsole, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
@@ -5190,13 +5190,19 @@ function handleSessionDateChange(value: string) {
     ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
     : 0
   const hasVerifiedTotpFactor = mfaFactors.some((factor) => factor.status === 'verified')
-  const staffMfaEnrollmentRequired = Boolean(profile && staffAccessRank >= 20 && !hasVerifiedTotpFactor)
-  const canAccessStaffConsole = Boolean(
+  const staffAccountEmail = authEmail || profile?.email || ''
+  const staffMfaEnrollmentRequired = Boolean(
     profile
     && staffAccessRank >= 20
-    && hasVerifiedTotpFactor
-    && mfaAssuranceLevel === 'aal2'
+    && !requiresStaffKioskPin(staffAccountEmail)
+    && !hasVerifiedTotpFactor
   )
+  const canAccessStaffConsole = Boolean(profile && canEnterStaffConsole({
+    authEmail: staffAccountEmail,
+    hasVerifiedMfaFactor: hasVerifiedTotpFactor,
+    mfaAssuranceLevel,
+    profileRank: staffAccessRank,
+  }))
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null

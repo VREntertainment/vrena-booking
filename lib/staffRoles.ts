@@ -1,7 +1,5 @@
-import { STAFF_KIOSK_EMAIL } from './staffKioskScope'
-
 export const STAFF_OWNER_EMAILS: readonly string[] = ['emilejacquet@icloud.com']
-export const STAFF_ADMIN_ONLY_EMAILS: readonly string[] = ['emile@vre-vietnam.com', STAFF_KIOSK_EMAIL]
+export const STAFF_ADMIN_ONLY_EMAILS: readonly string[] = ['emile@vre-vietnam.com']
 export const STAFF_ADMIN_EMAILS: readonly string[] = [...STAFF_OWNER_EMAILS, ...STAFF_ADMIN_ONLY_EMAILS]
 
 export function isStaffAdminEmail(email?: string | null) {

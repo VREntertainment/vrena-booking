@@ -254,6 +254,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     attendanceWeekDates,
     attendanceWeekStart,
     canEditEmployeeProfiles,
+    canManageEmployeeKioskPins,
     canManageAttendance,
     customerName,
     dateFromInput,
@@ -669,7 +670,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </div>
                       </section>
 
-                      <section className="staff-hr-form-section staff-hr-kiosk-access">
+                      {canManageEmployeeKioskPins && <section className="staff-hr-form-section staff-hr-kiosk-access">
                         <div className="staff-hr-kiosk-access-head">
                           <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>
                           <div>
@@ -725,7 +726,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                   : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
                           </button>
                         </div>
-                      </section>
+                      </section>}
                     </div>
                     <div className="staff-hr-document-section">
                       <div className="staff-hr-panel-head compact">
