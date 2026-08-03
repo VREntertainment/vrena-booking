@@ -8486,7 +8486,12 @@ body {
 .app .achievement-secret-mark {
   display: grid;
   place-items: center;
-  aspect-ratio: 1.08;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+  box-sizing: border-box;
   border-radius: 10px;
   background: color-mix(in srgb, var(--vrena-neutral-950) 90%, transparent);
   color: var(--vrena-white);
