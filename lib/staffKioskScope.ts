@@ -8,6 +8,10 @@ export function requiresStaffKioskPin(email?: string | null) {
   return normalizedStaffKioskEmail(email) === STAFF_KIOSK_EMAIL
 }
 
+export function shouldRedirectStaffKioskToPin(email: string | null | undefined, activeView: string) {
+  return requiresStaffKioskPin(email) && activeView !== 'staff' && activeView !== 'hr'
+}
+
 type StaffConsoleEntry = {
   authEmail?: string | null
   hasVerifiedMfaFactor: boolean

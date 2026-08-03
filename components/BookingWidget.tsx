@@ -16,7 +16,7 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import { canEnterStaffConsole, requiresStaffKioskPin } from '../lib/staffKioskScope'
+import { canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
@@ -2090,7 +2090,7 @@ export default function WidgetPage({
       const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
       if (!completedTicketAuth) {
         setProfileStatus('')
-        setActiveView('leaderboard')
+        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
       }
       setIsSavingProfile(false)
     } catch (error) {
@@ -2171,7 +2171,8 @@ export default function WidgetPage({
       const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
       if (!completedTicketAuth) {
         setProfileStatus('')
-        setActiveView('leaderboard')
+        const loginEmail = data.user?.email || data.session?.user.email || ''
+        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
       }
       setIsPasskeyLoading(false)
     } catch (error) {
@@ -3587,6 +3588,11 @@ export default function WidgetPage({
   useEffect(() => {
     onProfileChange?.(profile)
   }, [profile, onProfileChange])
+
+  useEffect(() => {
+    if (!profile || !shouldRedirectStaffKioskToPin(authEmail, activeView)) return
+    return schedulePostEffectStateUpdate(() => setActiveView('staff'))
+  }, [activeView, authEmail, profile])
 
   useEffect(() => {
     if (!profile || !userId) return
