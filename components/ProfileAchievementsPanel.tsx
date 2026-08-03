@@ -3,23 +3,44 @@
 import NextImage from 'next/image'
 import {
   Award,
+  BadgeCheck,
+  BriefcaseBusiness,
+  CakeSlice,
+  CalendarCheck,
   CalendarPlus,
+  CalendarRange,
   Check,
   ChevronRight,
+  Compass,
+  Crosshair,
   Crown,
   Flame,
   Gamepad2,
+  Handshake,
   Lock,
   Mail,
   Medal,
   MessageCircle,
+  MoonStar,
+  Orbit,
+  PartyPopper,
+  RotateCcw,
+  SearchCheck,
   Share2,
   ShieldCheck,
   Sparkles,
   Star,
+  Sun,
+  Swords,
   Target,
+  TimerReset,
+  TrendingUp,
   Trophy,
+  UserRoundPlus,
+  UsersRound,
+  VenetianMask,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
@@ -839,43 +860,54 @@ function tierIcon(tier: GameAchievement['tier']) {
   return <Lock aria-hidden="true" size={15} />
 }
 
-const gameIconByAchievementId: Record<string, string> = {
-  'accuracy-upgrade': 'targeting',
-  'arena-regular': 'tarot-wheel',
-  'back-for-more': 'footprint',
-  'birthday-hero': 'crowned-heart',
-  'bring-the-crew': 'backup',
-  'challenge-accepted': 'dagger-rose',
-  'club-loyalist': 'riot-shield',
-  'clutch-player': 'sprint',
-  completionist: 'crowned-heart',
-  'double-session-day': 'tarot-wheel',
-  'escape-breakthrough': 'hourglass',
-  'first-blood': 'medallist',
-  'friendly-rivalry': 'dagger-rose',
-  'genre-explorer': 'dice',
-  'mask-mode': 'domino-mask',
-  'night-owl': 'tarot-moon',
-  'off-peak-explorer': 'sunrise',
-  'perfect-rotation': 'dice',
-  'personal-best': 'medallist',
-  'secret-hunter': 'magnifying-glass',
-  specialist: 'targeting',
-  'squad-starter': 'team-idea',
-  'streak-builder': 'sprint',
-  'team-builder': 'briefcase',
-  'top-ten-moment': 'medallist',
-  'weekly-warrior': 'gamepad',
-  'weekend-raider': 'gamepad',
+type RetentionIconDefinition = {
+  icon: LucideIcon
+  name: string
 }
 
-function retentionIcon(achievement: Pick<RetentionAchievement, 'id' | 'title'>) {
-  const iconId = gameIconByAchievementId[achievement.id] ?? 'gamepad'
+const retentionIconByAchievementId: Record<RetentionAchievement['id'], RetentionIconDefinition> = {
+  'accuracy-upgrade': { icon: Target, name: 'target' },
+  'arena-regular': { icon: CalendarRange, name: 'calendar-range' },
+  'back-for-more': { icon: RotateCcw, name: 'rotate-ccw' },
+  'birthday-hero': { icon: CakeSlice, name: 'cake-slice' },
+  'bring-the-crew': { icon: UserRoundPlus, name: 'user-round-plus' },
+  'challenge-accepted': { icon: Swords, name: 'swords' },
+  'club-loyalist': { icon: ShieldCheck, name: 'shield-check' },
+  'clutch-player': { icon: Trophy, name: 'trophy' },
+  completionist: { icon: Crown, name: 'crown' },
+  'double-session-day': { icon: CalendarPlus, name: 'calendar-plus' },
+  'escape-breakthrough': { icon: TimerReset, name: 'timer-reset' },
+  'first-blood': { icon: BadgeCheck, name: 'badge-check' },
+  'friendly-rivalry': { icon: Handshake, name: 'handshake' },
+  'genre-explorer': { icon: Compass, name: 'compass' },
+  'mask-mode': { icon: VenetianMask, name: 'venetian-mask' },
+  'night-owl': { icon: MoonStar, name: 'moon-star' },
+  'off-peak-explorer': { icon: Sun, name: 'sun' },
+  'perfect-rotation': { icon: Orbit, name: 'orbit' },
+  'personal-best': { icon: TrendingUp, name: 'trending-up' },
+  'secret-hunter': { icon: SearchCheck, name: 'search-check' },
+  specialist: { icon: Crosshair, name: 'crosshair' },
+  'squad-starter': { icon: UsersRound, name: 'users-round' },
+  'streak-builder': { icon: Flame, name: 'flame' },
+  'team-builder': { icon: BriefcaseBusiness, name: 'briefcase-business' },
+  'top-ten-moment': { icon: Medal, name: 'medal' },
+  'weekly-warrior': { icon: CalendarCheck, name: 'calendar-check' },
+  'weekend-raider': { icon: PartyPopper, name: 'party-popper' },
+}
+
+const retentionIconNames = Object.values(retentionIconByAchievementId).map(({ name }) => name)
+if (new Set(retentionIconNames).size !== retentionIconNames.length) {
+  throw new Error('Every retention achievement must use a unique icon.')
+}
+
+function retentionIcon(achievement: Pick<RetentionAchievement, 'id'>) {
+  const { icon: Icon, name } = retentionIconByAchievementId[achievement.id]
   return (
-    <span
+    <Icon
       aria-hidden="true"
-      className={`retention-game-icon retention-game-icon-${iconId}`}
-      title={achievement.title}
+      className="retention-game-icon"
+      data-achievement-icon={name}
+      strokeWidth={1.9}
     />
   )
 }
