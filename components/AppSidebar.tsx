@@ -138,7 +138,7 @@ export default function AppSidebar({
           <CalendarDays aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.sessions}</span>
         </Link>
-        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
+        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} data-tour="tickets-tab" href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
           <Ticket aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.tickets}</span>
         </Link>
@@ -146,7 +146,7 @@ export default function AppSidebar({
           <Trophy aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.hallOfFame}</span>
         </Link>
-        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} href={publicAppRoutes.clubs} title={text.clubs} onClick={() => onViewChange('clubs')}>
+        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} data-tour="clubs-tab" href={publicAppRoutes.clubs} title={text.clubs} onClick={() => onViewChange('clubs')}>
           <UsersRound aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.clubs}</span>
         </Link>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { Config, DriveStep, Driver, DriverHook, Side } from 'driver.js'
+import { shouldStartFirstLoginTour } from '../lib/firstLoginTour'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { AppView } from './AppSidebar'
@@ -10,7 +11,7 @@ import './FirstLoginTour.css'
 
 const TOUR_VERSION = 'v1'
 const TOUR_STORAGE_PREFIX = 'vrena:first-login-tour'
-const TOUR_STEP_COUNT = 8
+const TOUR_STEP_COUNT = 10
 
 export type FirstLoginTourProps = {
   enabled: boolean
@@ -45,6 +46,22 @@ function saveResumeStep(key: string, step: number) {
     window.localStorage.setItem(key, String(step))
   } catch {
     // The tour can still start over if browser storage is unavailable.
+  }
+}
+
+function hasCompletedTour(key: string) {
+  try {
+    return Boolean(window.localStorage.getItem(key))
+  } catch {
+    return false
+  }
+}
+
+function saveTourCompletion(key: string) {
+  try {
+    window.localStorage.setItem(key, new Date().toISOString())
+  } catch {
+    // The player can still finish or replay the tour if browser storage is unavailable.
   }
 }
 
@@ -91,14 +108,14 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
     const resumeKey = resumeStorageKey(userId)
     const isManualReplay = replayNonce > 0
     const resumeStep = readResumeStep(resumeKey)
-    if (!isManualReplay && resumeStep === null && window.localStorage.getItem(key)) return
+    if (!shouldStartFirstLoginTour({ completed: hasCompletedTour(key), isManualReplay, resumeStep })) return
 
     let cancelled = false
     let timer: number | undefined
 
     async function startTour() {
       const { driver } = await import('driver.js')
-      if (cancelled || startedRef.current || (!isManualReplay && resumeStep === null && window.localStorage.getItem(key))) return
+      if (cancelled || startedRef.current || !shouldStartFirstLoginTour({ completed: hasCompletedTour(key), isManualReplay, resumeStep })) return
 
       startedRef.current = true
 
@@ -140,24 +157,28 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
         }
 
         const moveToLeaderboard: DriverHook = (_element, _step, { driver: tour }) => {
-          moveTourToView(tour, 'leaderboard', 5, '[data-tour="leaderboard-panel"]', () => tour.moveNext())
+          moveTourToView(tour, 'leaderboard', 6, '[data-tour="leaderboard-panel"]', () => tour.moveNext())
         }
 
         const finishTour: DriverHook = (_element, _step, { driver: tour }) => {
-          window.localStorage.setItem(key, new Date().toISOString())
+          saveTourCompletion(key)
           clearResumeStep(resumeKey)
+          onViewChange('sessions')
           tour.destroy()
         }
 
         const dismissTour: DriverHook = (_element, _step, { driver: tour }) => {
-          window.localStorage.setItem(key, new Date().toISOString())
+          saveTourCompletion(key)
           clearResumeStep(resumeKey)
           tour.destroy()
         }
 
         const steps: DriveStep[] = [
           {
-            popover: popover(text.onboardingWelcomeTitle, text.onboardingWelcomeBody),
+            popover: {
+              ...popover(text.onboardingWelcomeTitle, text.onboardingWelcomeBody),
+              popoverClass: 'vrena-tour-popover vrena-tour-welcome',
+            },
           },
           {
             element: stepElement('[data-tour="profile-card"]'),
@@ -182,6 +203,10 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
             },
           },
           {
+            element: stepElement('[data-tour="tickets-tab"]'),
+            popover: popover(text.onboardingTicketsTitle, text.onboardingTicketsBody, 'right'),
+          },
+          {
             element: stepElement('[data-tour="hall-of-fame-tab"]', '[data-tour="leaderboard-panel"]'),
             popover: {
               ...popover(text.onboardingHallTitle, text.onboardingHallBody, 'right'),
@@ -193,9 +218,15 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
             popover: popover(text.onboardingPlayersTitle, text.onboardingPlayersBody, 'left'),
           },
           {
+            element: stepElement('[data-tour="clubs-tab"]'),
+            popover: popover(text.onboardingClubsTitle, text.onboardingClubsBody, 'right'),
+          },
+          {
             popover: {
               ...popover(text.onboardingFinishTitle, text.onboardingFinishBody),
+              doneBtnText: text.onboardingDone,
               onDoneClick: finishTour,
+              popoverClass: 'vrena-tour-popover vrena-tour-finale',
             },
           },
         ]
@@ -205,7 +236,7 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           allowKeyboardControl: true,
           allowScroll: false,
           animate: true,
-          disableActiveInteraction: false,
+          disableActiveInteraction: true,
           doneBtnText: text.onboardingDone,
           nextBtnText: text.onboardingNext,
           overlayColor: vrenaPalette.neutral[950],
