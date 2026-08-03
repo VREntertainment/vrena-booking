@@ -22,7 +22,7 @@ import {
   Trophy,
   UserRound,
 } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { avatarColors, avatarEmojis, avatarTextColors } from '../lib/bookingStaticData'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import {
@@ -215,6 +215,20 @@ export default function BookingProfileView({ context }: { context: any }) {
     } catch {
       setMfaStatus(text.mfaCopySetupKeyError)
     }
+  }
+
+  function handleAuthInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing || isSavingProfile) return
+    if (profile || isRecoveryMode || authMode === 'reset') return
+
+    event.preventDefault()
+
+    if (authStep === 'email') {
+      continueAuthFromEmail()
+      return
+    }
+
+    void handleAuth()
   }
 
   useEffect(() => {
@@ -597,6 +611,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                     type="email"
                     value={profileEmail}
                     onChange={(event) => setProfileEmail(event.target.value)}
+                    onKeyDown={handleAuthInputKeyDown}
                     placeholder="contact@vre-vietnam.com"
                   />
                 </div>
@@ -768,6 +783,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                       type={showPassword ? 'text' : 'password'}
                       value={profilePassword}
                       onChange={(event) => setProfilePassword(event.target.value)}
+                      onKeyDown={handleAuthInputKeyDown}
                       placeholder={text.passwordPlaceholder}
                     />
                     <button type="button" aria-label={showPassword ? text.hidePassword : text.showPassword} title={showPassword ? text.hidePassword : text.showPassword} onClick={() => setShowPassword((visible: boolean) => !visible)}>

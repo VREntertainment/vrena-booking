@@ -115,17 +115,16 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           saveResumeStep(resumeKey, resumeStep)
           onViewChange(view)
 
-          let frames = 0
+          const fallbackDeadline = Date.now() + 10_000
           const continueTour = () => {
             if (cancelled || driverRef.current !== tour || !tour.isActive()) return
 
-            if (document.querySelector(targetSelector) || frames >= 30) {
-              clearResumeStep(resumeKey)
+            const targetIsReady = Boolean(document.querySelector(targetSelector))
+            if (targetIsReady || Date.now() >= fallbackDeadline) {
               move()
               return
             }
 
-            frames += 1
             window.requestAnimationFrame(continueTour)
           }
 
@@ -146,6 +145,13 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
 
         const finishTour: DriverHook = (_element, _step, { driver: tour }) => {
           window.localStorage.setItem(key, new Date().toISOString())
+          clearResumeStep(resumeKey)
+          tour.destroy()
+        }
+
+        const dismissTour: DriverHook = (_element, _step, { driver: tour }) => {
+          window.localStorage.setItem(key, new Date().toISOString())
+          clearResumeStep(resumeKey)
           tour.destroy()
         }
 
@@ -204,6 +210,7 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           nextBtnText: text.onboardingNext,
           overlayColor: vrenaPalette.neutral[950],
           overlayOpacity: 0.72,
+          onDestroyStarted: dismissTour,
           popoverClass: 'vrena-tour-popover',
           popoverOffset: 12,
           prevBtnText: text.onboardingPrevious,
@@ -213,9 +220,6 @@ export default function FirstLoginTour({ enabled, onViewChange, replayNonce = 0,
           stageRadius: 14,
           steps,
           onDestroyed: () => {
-            if (readResumeStep(resumeKey) === null) {
-              window.localStorage.setItem(key, new Date().toISOString())
-            }
             startedRef.current = false
             driverRef.current = null
           },
