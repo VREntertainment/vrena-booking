@@ -6960,6 +6960,14 @@
   padding: 0 0 0 20px;
 }
 
+.app .staff-hr-employee-layout.staff-hr-employee-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app .staff-hr-content .staff-hr-employee-layout-single > .staff-hr-workspace {
+  padding-left: 0;
+}
+
 .app .staff-hr-payroll-layout > :first-child,
 .app .staff-hr-settings-layout > :first-child,
 .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :first-child {
@@ -7178,6 +7186,10 @@
   .app .staff-hr-settings-layout > :last-child,
   .app .staff-hr-content > .staff-attendance-layout:not(.staff-hr-employee-layout):not(.staff-hr-schedule-layout) > :last-child {
     padding: 18px 0 0;
+  }
+
+  .app .staff-hr-content .staff-hr-employee-layout-single > .staff-hr-workspace {
+    padding-top: 0;
   }
 }
 
