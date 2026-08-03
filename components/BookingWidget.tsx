@@ -275,6 +275,7 @@ export default function WidgetPage({
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaAssuranceLevel, setMfaAssuranceLevel] = useState<'aal1' | 'aal2' | null>(null)
   const [isMfaLoading, setIsMfaLoading] = useState(false)
+  const mfaVerificationInFlightRef = useRef(false)
   const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const [tourReplayNonce, setTourReplayNonce] = useState(0)
@@ -2268,38 +2269,46 @@ export default function WidgetPage({
     return false
   }
 
-  async function verifyMfaChallenge() {
-    if (!mfaChallenge || !mfaChallengeCode.trim()) {
+  async function verifyMfaChallenge(codeOverride?: string) {
+    const code = typeof codeOverride === 'string' ? codeOverride.trim() : mfaChallengeCode.trim()
+
+    if (!mfaChallenge || !code) {
       setProfileStatus(text.mfaCodeRequired)
       return
     }
 
+    if (mfaVerificationInFlightRef.current) return
+
+    mfaVerificationInFlightRef.current = true
     setIsMfaLoading(true)
-    const { data, error } = await (await getSupabase()).auth.mfa.verify({
-      factorId: mfaChallenge.factorId,
-      challengeId: mfaChallenge.challengeId,
-      code: mfaChallengeCode.trim(),
-    })
+    try {
+      const { data, error } = await (await getSupabase()).auth.mfa.verify({
+        factorId: mfaChallenge.factorId,
+        challengeId: mfaChallenge.challengeId,
+        code,
+      })
 
-    if (error) {
-      setProfileStatus(error.message)
+      if (error) {
+        setProfileStatus(error.message)
+        return
+      }
+
+      setMfaChallenge(null)
+      setMfaChallengeCode('')
+      setMfaRequired(false)
+      setMfaAssuranceLevel('aal2')
+      if (data?.user) {
+        setUserId(data.user.id)
+        setAuthEmail(data.user.email?.toLowerCase() || '')
+      }
+      setProfileStatus('')
+      await refreshMfaFactors()
+      await loadProfile({ skipMfaChallenge: true })
+      setActiveView('leaderboard')
+    } finally {
+      mfaVerificationInFlightRef.current = false
       setIsMfaLoading(false)
-      return
     }
-
-    setMfaChallenge(null)
-    setMfaChallengeCode('')
-    setMfaRequired(false)
-    setMfaAssuranceLevel('aal2')
-    if (data?.user) {
-      setUserId(data.user.id)
-      setAuthEmail(data.user.email?.toLowerCase() || '')
-    }
-    setProfileStatus('')
-    await refreshMfaFactors()
-    await loadProfile({ skipMfaChallenge: true })
-    setActiveView('leaderboard')
-    setIsMfaLoading(false)
   }
 
   async function beginTotpEnrollment() {
