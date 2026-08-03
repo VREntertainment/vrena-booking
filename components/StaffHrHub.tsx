@@ -6,7 +6,6 @@ import { Fragment, useMemo, useState } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
-type StaffContractStatus = string
 type StaffHrHubProps = {
   model: any
 }
@@ -265,7 +264,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     draftShiftCount,
     effectiveAttendanceScheduleScope,
     effectiveShiftTemplates,
-    editEmployeeProfile,
     editShift,
     configureEmployeeKioskPin,
     employeeForm,
@@ -279,7 +277,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeProfileById,
     employeeUsesMonthlyGross,
     emptyStaffPayrollCalculation,
-    filteredHrStaffProfiles,
     firstEmployeeStaffProfileId,
     firstScheduleStaffProfileId,
     formatDongInput,
@@ -290,17 +287,14 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hoursLabel,
     hrAdjustmentForm,
     hrContractTypeOptions,
-    hrDepartmentFilter,
     hrDepartmentOptions,
     hrDocumentUploading,
     hrJobTitleOptions,
     hrLocationOptions,
     hrOptionsByType,
     hrPayrollTotals,
-    hrSearch,
     hrSettings,
     hrSetupForm,
-    hrStatusFilter,
     hrTab,
     isOwnerOrAdmin,
     canRevealEmployeeKioskPin,
@@ -322,7 +316,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     profileById,
     rangeLabel,
     resolvedLanguage,
-    roleLabel,
     saveEmployeeProfile,
     saveHrAdjustment,
     saveHrSettings,
@@ -344,11 +337,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     setEmployeeKioskPin,
     setEmployeeKioskPinConfirm,
     setHrAdjustmentForm,
-    setHrDepartmentFilter,
-    setHrSearch,
     setHrSettings,
     setHrSetupForm,
-    setHrStatusFilter,
     setHrTab,
     setStatus,
     setPayrollRunForm,
@@ -371,7 +361,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     staffPayrollPayCycles,
     staffProfilePhotoTypes,
     staffShiftStatuses,
-    staffRoleName,
     startShiftForCell,
     syncPayrollDraft,
     text,
@@ -560,51 +549,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                 <div className="staff-hr-content">
 
               {hrTab === 'employees' && (
-                <div className="staff-attendance-layout staff-employee-layout staff-hr-employee-layout">
-                  <div className="staff-attendance-list staff-employee-list staff-hr-roster-panel">
-                    <div className="staff-hr-filter-grid">
-                      <label>{text.labels.searchUsers}<input value={hrSearch} onChange={(event) => setHrSearch(event.target.value)} /></label>
-                      <label>
-                        {text.labels.contractStatus}
-                        <select value={hrStatusFilter} onChange={(event) => setHrStatusFilter(event.target.value as StaffContractStatus | 'all')}>
-                          <option value="all">{text.any}</option>
-                          {staffContractStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
-                        </select>
-                      </label>
-                      <label>
-                        {text.labels.department}
-                        <select value={hrDepartmentFilter} onChange={(event) => setHrDepartmentFilter(event.target.value)}>
-                          <option value="all">{text.any}</option>
-                          {hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    {filteredHrStaffProfiles.map((staffProfile: any) => {
-                      const employee = employeeProfileById.get(staffProfile.id)
-                      const isInactiveEmployee = employee?.active === false
-                      const isSelected = (employeeForm.profile_id || firstEmployeeStaffProfileId) === staffProfile.id
-                      return (
-                        <button
-                          className={`staff-employee-row ${isSelected ? 'active' : ''} ${isInactiveEmployee ? 'inactive' : ''}`}
-                          key={staffProfile.id}
-                          type="button"
-                          onClick={() => editEmployeeProfile(staffProfile)}
-                        >
-                          <StaffRoleAvatar profile={staffProfile} text={text} />
-                          <span>
-                            <strong>{customerName(staffProfile, text)}</strong>
-                            <small>
-                              {employee?.employee_code || employee?.attendance_number || staffRoleName(roleLabel(staffProfile.role, staffProfile.email), text)} · {employee?.job_title || text.labels.staffMember}
-                              {employee?.main_work_location ? ` · ${employee.main_work_location}` : ''}
-                              {isInactiveEmployee ? ` · ${text.labels.inactiveEmployee}` : ''}
-                            </small>
-                          </span>
-                          <span className="staff-hr-row-status">{employee?.contract_status ? text.contractStatuses[normalizeStaffContractStatus(employee.contract_status)] : text.noneYet}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-
+                <div className="staff-attendance-layout staff-employee-layout staff-hr-employee-layout staff-hr-employee-layout-single">
                   <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
