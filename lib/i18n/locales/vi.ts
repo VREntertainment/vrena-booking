@@ -585,6 +585,7 @@ export const vi = {
   takeTourAgain: 'Xem lại hướng dẫn',
   authWelcomeTitle: 'Giữ tiến trình VRena của bạn',
   authWelcomeBody: 'Đăng nhập hoặc tạo tài khoản miễn phí của bạn để nhận điểm thưởng, vào Hall of Fame, thách đấu bạn bè và mở ưu đãi sinh nhật.',
+  authBenefitPoints: 'Điểm thưởng',
   authBenefitBookings: 'Hall of Fame',
   authBenefitLoyalty: 'Thách đấu bạn bè',
   authBenefitBirthday: 'Ưu đãi sinh nhật',

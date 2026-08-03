@@ -585,6 +585,7 @@ export const ko = {
   takeTourAgain: '가이드 투어 다시 보기',
   authWelcomeTitle: 'VRena 진행 상황 저장',
   authWelcomeBody: '로그인하거나 무료 계정을 만들면 리워드 포인트를 모으고, Hall of Fame에 오르고, 친구에게 도전하고, 생일 리워드를 받을 수 있어요.',
+  authBenefitPoints: '리워드 포인트',
   authBenefitBookings: 'Hall of Fame',
   authBenefitLoyalty: '친구에게 도전',
   authBenefitBirthday: '생일 리워드',

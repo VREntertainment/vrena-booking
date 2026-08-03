@@ -583,6 +583,7 @@ export const en = {
   takeTourAgain: 'Take guided tour again',
   authWelcomeTitle: 'Keep your VRena progress',
   authWelcomeBody: 'Log in or create your free account to earn loyalty points, join the Hall of Fame, challenge friends, and unlock birthday rewards.',
+  authBenefitPoints: 'Loyalty points',
   authBenefitBookings: 'Hall of Fame',
   authBenefitLoyalty: 'Challenge friends',
   authBenefitBirthday: 'Birthday rewards',
