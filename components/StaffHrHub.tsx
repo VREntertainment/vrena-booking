@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useMemo, useState } from 'react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
@@ -267,7 +267,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     effectiveShiftTemplates,
     editEmployeeProfile,
     editShift,
+    configureEmployeeKioskPin,
     employeeForm,
+    employeeKioskAccessRole,
+    employeeKioskPin,
+    employeeKioskPinConfirm,
     employeeFormForProfile,
     employeePayrollSummary,
     employeeProfileById,
@@ -333,6 +337,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     setDraggingShiftId,
     setAttendanceRange,
     setEmployeeForm,
+    setEmployeeKioskAccessRole,
+    setEmployeeKioskPin,
+    setEmployeeKioskPinConfirm,
     setHrAdjustmentForm,
     setHrDepartmentFilter,
     setHrSearch,
@@ -711,6 +718,49 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label className="full">{text.labels.address}<input value={employeeForm.address} onChange={(event) => setEmployeeForm({ ...employeeForm, address: event.target.value })} /></label>
                           <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
                           <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
+                        </div>
+                      </section>
+
+                      <section className="staff-hr-form-section staff-hr-kiosk-access">
+                        <div className="staff-hr-kiosk-access-head">
+                          <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>
+                          <div>
+                            <h5>{resolvedLanguage === 'vi' ? 'Quyền truy cập tại cửa hàng' : 'Store access'}</h5>
+                            <p>{resolvedLanguage === 'vi'
+                              ? 'PIN cá nhân liên kết mọi thao tác trên thiết bị dùng chung với hồ sơ HR này.'
+                              : 'A personal PIN links every action on the shared store device to this HR file.'}</p>
+                          </div>
+                          <span className={`staff-hr-kiosk-status ${employeeForm.kiosk_pin_configured_at ? 'configured' : ''}`}>
+                            {employeeForm.kiosk_pin_configured_at
+                              ? (resolvedLanguage === 'vi' ? 'Đã cấu hình' : 'Configured')
+                              : (resolvedLanguage === 'vi' ? 'Chưa có PIN' : 'No PIN')}
+                          </span>
+                        </div>
+                        <div className="form-grid compact-form-grid staff-hr-kiosk-fields">
+                          <label>
+                            {resolvedLanguage === 'vi' ? 'Cấp quyền' : 'Access level'}
+                            <select value={employeeKioskAccessRole} onChange={(event) => setEmployeeKioskAccessRole(event.target.value as 'manager' | 'staff')}>
+                              <option value="staff">{resolvedLanguage === 'vi' ? 'Nhân viên' : 'Staff'}</option>
+                              <option value="manager">{resolvedLanguage === 'vi' ? 'Quản lý' : 'Manager'}</option>
+                            </select>
+                            <small>{employeeKioskAccessRole === 'manager'
+                              ? (resolvedLanguage === 'vi' ? 'Có thể quản lý HR, chấm công và PIN nhân viên.' : 'Can manage HR, attendance, and employee PINs.')
+                              : (resolvedLanguage === 'vi' ? 'Dành cho hoạt động hàng ngày tại cửa hàng.' : 'For daily store operations.')}</small>
+                          </label>
+                          <label>
+                            {resolvedLanguage === 'vi' ? 'PIN 4 số mới' : 'New 4-digit PIN'}
+                            <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 4))} />
+                          </label>
+                          <label>
+                            {resolvedLanguage === 'vi' ? 'Xác nhận PIN' : 'Confirm PIN'}
+                            <input autoComplete="new-password" inputMode="numeric" maxLength={4} placeholder="••••" type="password" value={employeeKioskPinConfirm} onChange={(event) => setEmployeeKioskPinConfirm(event.target.value.replace(/\D/g, '').slice(0, 4))} />
+                          </label>
+                          <button className="primary staff-hr-kiosk-save" disabled={saving || employeeKioskPin.length !== 4 || employeeKioskPinConfirm.length !== 4} type="button" onClick={() => void configureEmployeeKioskPin()}>
+                            <KeyRound aria-hidden="true" size={17} />
+                            {employeeForm.kiosk_pin_configured_at
+                              ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
+                              : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
+                          </button>
                         </div>
                       </section>
                     </div>

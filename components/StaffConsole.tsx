@@ -15,12 +15,14 @@ import {
   FileSpreadsheet,
   FileText,
   Info,
+  LockKeyhole,
   Pencil,
   Plus,
   RotateCcw,
   Save,
   Send,
   Trash2,
+  UserRound,
   UserX,
   X,
 } from 'lucide-react'
@@ -30,7 +32,7 @@ import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
-import { supabase } from '../lib/supabase/client'
+import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -38,6 +40,7 @@ import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
+import { staffKioskCopy, type StaffKioskOperator } from './StaffKioskGate'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
   ssr: false,
@@ -326,6 +329,8 @@ type StaffEmployeeProfile = {
   profile_photo_path: string | null
   cv_document_path: string | null
   active: boolean
+  kiosk_access_role: 'manager' | 'staff' | null
+  kiosk_pin_configured_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -782,6 +787,8 @@ type StaffConsoleProps = {
   authEmail?: string
   language?: string
   mode?: 'staff' | 'hr'
+  kioskOperator?: StaffKioskOperator | null
+  onKioskLock?: () => void
   onOpenPlayerProfile?: (profile: StaffProfile) => void
   onOpenSessionCalendar?: (dateValue: string) => void
 }
@@ -3432,6 +3439,8 @@ const defaultEmployeeForm = () => ({
   profile_photo_path: '',
   cv_document_path: '',
   active: true,
+  kiosk_access_role: '' as '' | 'manager' | 'staff',
+  kiosk_pin_configured_at: '',
 })
 
 const defaultHrAdjustmentForm = (profileId = '', type: StaffHrAdjustmentType = 'bonus') => ({
@@ -4646,10 +4655,11 @@ function percentChange(current: number, previous: number, text: StaffConsoleCopy
   return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
-export default function StaffConsole({ profile, authEmail, language, mode = 'staff', onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, mode = 'staff', kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
   const resolvedLanguage = resolveStaffConsoleLanguage(language)
   const text = staffConsoleText[resolvedLanguage]
   const sharedText = uiText[resolvedLanguage]
+  const kioskText = staffKioskCopy(language)
   const isHrConsole = mode === 'hr'
   const consoleTitle = isHrConsole ? (resolvedLanguage === 'vi' ? 'HR' : 'HR Console') : text.title
   const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
@@ -4663,9 +4673,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const isOwnerOrAdmin = role === 'owner' || role === 'admin'
   const isOfficeStaff = role === 'cashier'
   const isStaffOnly = role === 'staff'
-  const canManageAttendance = isOwnerOrAdmin || isOfficeStaff
+  const canManageAttendance = isOwnerOrAdmin || role === 'manager' || isOfficeStaff
   const canEditAttendance = canManageAttendance
-  const canViewAllEmployeeProfiles = canManageAttendance || role === 'manager' || role === 'viewer'
+  const canViewAllEmployeeProfiles = canManageAttendance || role === 'viewer'
   const canEditEmployeeProfiles = canManageAttendance
   const canViewAttendanceClock = !isStaffOnly
   const canViewAttendanceSettings = !isStaffOnly
@@ -4722,6 +4732,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [attendanceLogForm, setAttendanceLogForm] = useState(() => defaultAttendanceLogForm())
   const [leaveForm, setLeaveForm] = useState(() => defaultLeaveForm())
   const [employeeForm, setEmployeeForm] = useState(() => defaultEmployeeForm())
+  const [employeeKioskPin, setEmployeeKioskPin] = useState('')
+  const [employeeKioskPinConfirm, setEmployeeKioskPinConfirm] = useState('')
+  const [employeeKioskAccessRole, setEmployeeKioskAccessRole] = useState<'manager' | 'staff'>('staff')
   const [hrAdjustmentForm, setHrAdjustmentForm] = useState(() => defaultHrAdjustmentForm())
   const [payrollRunForm, setPayrollRunForm] = useState(() => defaultPayrollRunForm())
   const [hrSetupForm, setHrSetupForm] = useState<Record<StaffHrSetupOptionType, string>>(() => defaultHrSetupForm())
@@ -5692,6 +5705,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             headers: {
               authorization: `Bearer ${accessToken}`,
               'content-type': 'application/json',
+              ...(getStaffKioskOperatorToken() ? { [STAFF_KIOSK_HEADER]: getStaffKioskOperatorToken() } : {}),
             },
             body: JSON.stringify({
               sessionId: draft.session.id,
@@ -6604,13 +6618,67 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       profile_photo_path: employee?.profile_photo_path || '',
       cv_document_path: employee?.cv_document_path || '',
       active: employee?.active ?? true,
+      kiosk_access_role: employee?.kiosk_access_role === 'manager'
+        ? 'manager' as const
+        : employee?.kiosk_access_role === 'staff' ? 'staff' as const : '' as const,
+      kiosk_pin_configured_at: employee?.kiosk_pin_configured_at || '',
     }
   }
 
   function editEmployeeProfile(staffProfile: StaffProfile) {
-    setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
+    const employee = employeeProfileById.get(staffProfile.id)
+    setEmployeeForm(employeeFormForProfile(staffProfile, employee))
+    setEmployeeKioskPin('')
+    setEmployeeKioskPinConfirm('')
+    setEmployeeKioskAccessRole(employee?.kiosk_access_role === 'manager' ? 'manager' : 'staff')
     setHrTab('employees')
     setActiveTab('hr')
+  }
+
+  async function configureEmployeeKioskPin() {
+    if (!canEditEmployeeProfiles) return
+    const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
+    if (!staffProfileId) return
+    if (!/^\d{4}$/.test(employeeKioskPin) || employeeKioskPin !== employeeKioskPinConfirm) {
+      setStatus(kioskText.mismatch)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
+      const operatorToken = getStaffKioskOperatorToken()
+      const response = await fetch('/api/staff/kiosk/pin', {
+        method: 'PATCH',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+          ...(operatorToken ? { [STAFF_KIOSK_HEADER]: operatorToken } : {}),
+        },
+        body: JSON.stringify({
+          profileId: staffProfileId,
+          pin: employeeKioskPin,
+          accessRole: employeeKioskAccessRole,
+        }),
+      })
+      const payload = await response.json().catch(() => ({})) as { error?: string }
+      if (!response.ok) throw new Error(payload.error || 'Could not save employee PIN.')
+      setEmployeeKioskPin('')
+      setEmployeeKioskPinConfirm('')
+      setStatus(resolvedLanguage === 'vi' ? 'Đã lưu PIN nhân viên.' : 'Employee PIN saved.')
+      if (kioskOperator?.profileId === staffProfileId) {
+        onKioskLock?.()
+        return
+      }
+      markStaffDataStale('attendance', 'hr')
+      await loadAttendanceData(true)
+    } catch (pinError) {
+      setStatus(pinError instanceof Error ? pinError.message : String(pinError))
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function saveEmployeeProfile() {
@@ -7659,6 +7727,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         headers: {
           authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
+          ...(getStaffKioskOperatorToken() ? { [STAFF_KIOSK_HEADER]: getStaffKioskOperatorToken() } : {}),
         },
         body: JSON.stringify({
           fullName,
@@ -8289,6 +8358,19 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   return (
     <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
+      {kioskOperator && onKioskLock && (
+        <div className="staff-kiosk-operator-bar">
+          <div>
+            <span className="staff-kiosk-operator-bar-avatar" style={{ background: kioskOperator.avatarColor || undefined, color: kioskOperator.avatarTextColor || undefined }}>
+              {kioskOperator.avatarEmoji || kioskOperator.avatarInitials || <UserRound aria-hidden="true" size={18} />}
+            </span>
+            <span><small>{kioskText.secured}</small><strong>{kioskOperator.name} · {kioskOperator.accessRole === 'manager' ? kioskText.manager : kioskText.staff}</strong></span>
+          </div>
+          <button className="secondary" type="button" onClick={onKioskLock}>
+            <LockKeyhole aria-hidden="true" size={17} /> {kioskText.lock}
+          </button>
+        </div>
+      )}
       {!isHrConsole && (
         <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
           <div className="staff-tabs-shell">
@@ -9356,7 +9438,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             effectiveShiftTemplates,
             editEmployeeProfile,
             editShift,
+            configureEmployeeKioskPin,
             employeeForm,
+            employeeKioskAccessRole,
+            employeeKioskPin,
+            employeeKioskPinConfirm,
             employeeFormForProfile,
             employeePayrollSummary,
             employeeProfileById,
@@ -9418,6 +9504,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             selectedEmployeeStaffProfile,
             selectedShiftTemplate,
             setEmployeeForm,
+            setEmployeeKioskAccessRole,
+            setEmployeeKioskPin,
+            setEmployeeKioskPinConfirm,
             setAttendanceScheduleScope,
             setAttendanceSettings,
             setAttendanceRange,

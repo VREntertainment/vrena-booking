@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendBookingUpdateEmail } from '@/lib/bookingUpdateEmail'
 import type { BookingUpdateEmailPayload } from '@/lib/bookingUpdateEmailTypes'
 import { staffConsoleRoleRank as staffRank } from '@/lib/staffRoles'
+import { STAFF_KIOSK_EMAIL, STAFF_KIOSK_HEADER } from '@/lib/security/staffKioskServer'
 import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from '@/lib/security/staffMfa'
 import { ageBandFromBirthday } from '@/lib/agePolicy'
 
@@ -123,10 +124,17 @@ export async function POST(request: NextRequest) {
 
   const authorization = request.headers.get('authorization') || ''
   const accessToken = authorization.replace(/^Bearer\s+/i, '').trim()
+  const operatorToken = (request.headers.get(STAFF_KIOSK_HEADER) || '').trim()
   if (!accessToken) return jsonError('Login required.', 401)
 
   const authClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(operatorToken ? { [STAFF_KIOSK_HEADER]: operatorToken } : {}),
+      },
+    },
   })
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -155,10 +163,15 @@ export async function POST(request: NextRequest) {
 
   if (actorError) return jsonError(actorError.message, 500)
 
-  const actorRank = Math.max(
+  const staticActorRank = Math.max(
     staffRank(actorProfile?.role, actorProfile?.email),
     staffRank(userData.user.app_metadata?.role as string | undefined, userData.user.email),
   )
+  const { data: databaseRank, error: databaseRankError } = await authClient.rpc('current_staff_role_rank')
+  if (databaseRankError) return jsonError(databaseRankError.message, 500)
+  const actorRank = userData.user.email?.toLowerCase() === STAFF_KIOSK_EMAIL
+    ? Number(databaseRank) || 0
+    : Math.max(staticActorRank, Number(databaseRank) || 0)
   if (actorRank >= 20) {
     const [hasAal2, hasMfaFactor] = await Promise.all([
       hasVerifiedAal2Session(authClient, accessToken),

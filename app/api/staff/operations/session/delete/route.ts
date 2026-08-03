@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { hasVerifiedAal2Session } from '@/lib/security/staffMfa'
+import { STAFF_KIOSK_HEADER } from '@/lib/security/staffKioskServer'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
 
   const authorization = request.headers.get('authorization') || ''
   const accessToken = authorization.replace(/^Bearer\s+/i, '').trim()
+  const operatorToken = (request.headers.get(STAFF_KIOSK_HEADER) || '').trim()
   if (!accessToken) return jsonError('Staff session required.', 401)
 
   const authClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
     global: {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        ...(operatorToken ? { [STAFF_KIOSK_HEADER]: operatorToken } : {}),
       },
     },
   })
