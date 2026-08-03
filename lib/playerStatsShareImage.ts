@@ -330,7 +330,7 @@ export async function sharePlayerStatsImage({
   }
 
   if (!templateImage) {
-    fitText('vrena-booking.vercel.app', canvas.width / 2, canvas.height - 94, 700, 24, vrenaPalette.neutral[600], 800)
+    fitText('booking.vre-vietnam.com', canvas.width / 2, canvas.height - 94, 700, 24, vrenaPalette.neutral[600], 800)
   }
 
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)
