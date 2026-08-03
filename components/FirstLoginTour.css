@@ -22,6 +22,40 @@
   line-height: 1.45;
 }
 
+.driver-popover.vrena-tour-popover.vrena-tour-welcome,
+.driver-popover.vrena-tour-popover.vrena-tour-finale {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--vrena-cyan-600) 44%, var(--player-border));
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), transparent 42%),
+    var(--player-surface-raised);
+}
+
+.driver-popover.vrena-tour-popover.vrena-tour-welcome::before,
+.driver-popover.vrena-tour-popover.vrena-tour-finale::before {
+  display: block;
+  width: fit-content;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent);
+  color: var(--vrena-cyan-700);
+  content: 'VRena ✦';
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.driver-popover.vrena-tour-popover.vrena-tour-finale .driver-popover-title {
+  font-size: 1.15rem;
+}
+
+.driver-popover.vrena-tour-popover.vrena-tour-finale .driver-popover-done-btn {
+  min-height: 42px;
+  padding-inline: 20px;
+}
+
 .driver-popover.vrena-tour-popover .driver-popover-footer {
   gap: 10px;
 }
