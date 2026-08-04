@@ -4077,7 +4077,7 @@ function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConso
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
-function staffProfileFromEmployee(employee: StaffEmployeeProfile): StaffProfile {
+function staffProfileFromEmployee(employee: StaffEmployeeProfile, profilePhotoUrl = ''): StaffProfile {
   const fullName = employee.legal_name?.trim() || employee.employee_code?.trim() || 'Employee'
   const initials = fullName
     .split(/\s+/)
@@ -4092,6 +4092,7 @@ function staffProfileFromEmployee(employee: StaffEmployeeProfile): StaffProfile 
     full_name: fullName,
     email: employee.personal_email,
     phone: employee.personal_phone,
+    avatar_url: profilePhotoUrl || null,
     avatar_initials: initials || 'E',
     avatar_color: employee.kiosk_access_role === 'manager' ? '#e0e7ff' : '#ecfeff',
     avatar_text_color: employee.kiosk_access_role === 'manager' ? '#3730a3' : '#0e7490',
@@ -4215,7 +4216,7 @@ function staffRoleAvatarInitials(value: string) {
 
 function shouldSkipStaffImageOptimization(source: string | null | undefined) {
   const normalizedSource = source?.trim().toLowerCase() || ''
-  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || /\.gif($|\?)/.test(normalizedSource)
+  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || normalizedSource.includes('/storage/v1/object/sign/') || /\.gif($|\?)/.test(normalizedSource)
 }
 
 function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: StaffConsoleCopy }) {
@@ -4727,6 +4728,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [attendanceLogs, setAttendanceLogs] = useState<StaffAttendanceLog[]>([])
   const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([])
   const [employeeProfiles, setEmployeeProfiles] = useState<StaffEmployeeProfile[]>([])
+  const [employeePhotoUrls, setEmployeePhotoUrls] = useState<Record<string, string>>({})
   const [attendanceSettings, setAttendanceSettings] = useState<StaffAttendanceSettings>(() => defaultAttendanceSettings())
   const [hrSettings, setHrSettings] = useState<StaffHrSettings>(() => defaultHrSettings())
   const [hrSetupOptions, setHrSetupOptions] = useState<StaffHrSetupOption[]>([])
@@ -5000,7 +5002,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     () => attendanceDateRange(attendanceRangeStart, attendanceRangeEnd),
     [attendanceRangeEnd, attendanceRangeStart]
   )
-  const employeeStaffProfiles = useMemo(() => employeeProfiles.map(staffProfileFromEmployee), [employeeProfiles])
+  const employeeStaffProfiles = useMemo(() => (
+    employeeProfiles.map((employee) => staffProfileFromEmployee(employee, employeePhotoUrls[employee.profile_id]))
+  ), [employeePhotoUrls, employeeProfiles])
   const profileById = useMemo(() => new Map(
     [...profiles, ...employeeStaffProfiles].map((item) => [item.id, item])
   ), [employeeStaffProfiles, profiles])
@@ -5955,6 +5959,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : normalizeAttendanceSettings(settingsResult.data as Partial<StaffAttendanceSettings> | null))
       const nextEmployeeProfiles = employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[]
       setEmployeeProfiles(nextEmployeeProfiles)
+      const employeePhotoEntries = await Promise.all(
+        nextEmployeeProfiles
+          .filter((employee) => Boolean(employee.profile_photo_path))
+          .map(async (employee) => {
+            const { data, error } = await supabase.storage
+              .from(staffHrDocumentBucket)
+              .createSignedUrl(employee.profile_photo_path as string, 60 * 60)
+            return [employee.profile_id, error ? '' : data?.signedUrl || ''] as const
+          })
+      )
+      setEmployeePhotoUrls(Object.fromEntries(employeePhotoEntries.filter((entry) => Boolean(entry[1]))))
 
       if (nextEmployeeProfiles.length > 0 && !nextEmployeeProfiles.some((employee) => employee.profile_id === employeeForm.profile_id)) {
         const employee = nextEmployeeProfiles[0]

@@ -7052,6 +7052,83 @@
   padding: 0;
 }
 
+.app .staff-employee-photo-upload {
+  position: relative;
+  display: grid;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  place-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.app .staff-employee-photo-upload .staff-role-avatar {
+  --avatar-size: 50px;
+  --avatar-emoji-size: 27px;
+  --avatar-text-size: 16px;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+}
+
+.app .staff-employee-photo-upload > input {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.app .staff-employee-photo-upload:focus-within .staff-role-avatar {
+  outline: 3px solid color-mix(in srgb, var(--staff-hr-accent) 28%, transparent);
+  outline-offset: 3px;
+}
+
+.app .staff-employee-photo-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  z-index: 2;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid var(--staff-modern-surface);
+  border-radius: 999px;
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent);
+}
+
+.app .staff-employee-selected-picker {
+  display: grid;
+  flex: 1 1 280px;
+  gap: 3px;
+  min-width: 210px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-employee-selected-picker select {
+  min-height: 42px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.app .staff-employee-selected-picker small {
+  overflow: hidden;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .app .staff-console button.staff-employee-selected-save.primary {
   flex: 0 0 auto;
   width: auto;
@@ -7590,6 +7667,19 @@
     overflow: visible;
     text-overflow: clip;
     white-space: normal;
+  }
+
+  .app .staff-employee-selected {
+    flex-wrap: wrap;
+  }
+
+  .app .staff-employee-selected-picker {
+    flex: 1 1 calc(100% - 66px);
+  }
+
+  .app .staff-console button.staff-employee-selected-save.primary {
+    width: 100%;
+    margin-left: 0;
   }
 }
 
