@@ -923,62 +923,86 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       {canRevealEmployeeKioskPin && <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.store} id="store" onToggle={toggleEmployeeSection} open={openEmployeeSections.store} title={employeeCopy.sectionTitles.store}>
                         <div className="staff-hr-kiosk-access">
-                        <div className="staff-hr-kiosk-access-head">
-                          <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>
-                          <strong>{resolvedLanguage === 'vi' ? 'PIN nhân viên' : 'Employee PIN'}</strong>
-                          <span className={`staff-hr-kiosk-status ${employeeForm.kiosk_pin_configured_at ? 'configured' : ''}`}>
-                            {employeeForm.kiosk_pin_configured_at
-                              ? (resolvedLanguage === 'vi' ? 'Đã cấu hình' : 'Configured')
-                              : (resolvedLanguage === 'vi' ? 'Chưa có PIN' : 'No PIN')}
-                          </span>
-                        </div>
-                        <div className="form-grid compact-form-grid staff-hr-kiosk-fields">
-                          <label className={canRevealEmployeeKioskPin ? '' : 'full'}>
-                            {resolvedLanguage === 'vi' ? 'Cấp quyền' : 'Access level'}
-                            <select disabled={!canManageEmployeeKioskPins} value={employeeKioskAccessRole} onChange={(event) => setEmployeeKioskAccessRole(event.target.value as 'manager' | 'staff')}>
-                              <option value="staff">{resolvedLanguage === 'vi' ? 'Nhân viên' : 'Staff'}</option>
-                              <option value="manager">{resolvedLanguage === 'vi' ? 'Quản lý' : 'Manager'}</option>
-                            </select>
-                            <small>{employeeKioskAccessRole === 'manager'
-                              ? (resolvedLanguage === 'vi' ? 'Mở các công cụ quản lý cửa hàng và HR được cấp quyền.' : 'Unlocks the permitted store-management and HR tools.')
-                              : (resolvedLanguage === 'vi' ? 'Dành cho hoạt động hàng ngày tại cửa hàng.' : 'For daily store operations.')}</small>
-                          </label>
-                          {canRevealEmployeeKioskPin && (
-                            <label className="staff-hr-kiosk-current-pin">
-                              {resolvedLanguage === 'vi' ? 'PIN hiện tại' : 'Current PIN'}
-                              <output aria-live="polite">{employeeKioskPinLoading ? '••••••' : employeeKioskPinVisibleValue || '—'}</output>
-                              <small>{employeeKioskPinLoading
-                                ? (resolvedLanguage === 'vi' ? 'Đang giải mã PIN an toàn…' : 'Securely revealing PIN…')
-                                : employeeKioskPinVisibleValue
-                                  ? (resolvedLanguage === 'vi' ? 'Chỉ Chủ sở hữu, Quản trị viên và Nhân viên văn phòng mới thấy PIN này.' : 'Visible only to Owner, Admin, and Office Staff.')
-                                  : (resolvedLanguage === 'vi' ? 'Chưa có PIN cho nhân viên này.' : 'No PIN is configured for this employee.')}</small>
-                            </label>
-                          )}
-                          {canManageEmployeeKioskPins && <div className="staff-hr-kiosk-pin-entry">
-                            <button className="staff-hr-kiosk-generate" type="button" onClick={generateEmployeeKioskPin}>
-                              <RefreshCw aria-hidden="true" size={16} />
-                              {resolvedLanguage === 'vi' ? 'Tạo PIN ngẫu nhiên 6 số' : 'Generate random 6-digit PIN'}
-                            </button>
-                            <label>
-                              {resolvedLanguage === 'vi' ? 'PIN 6 số mới' : 'New 6-digit PIN'}
-                              <input autoComplete="new-password" inputMode="numeric" maxLength={6} placeholder="••••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 6))} />
-                            </label>
-                            <label>
-                              {resolvedLanguage === 'vi' ? 'Xác nhận PIN' : 'Confirm PIN'}
-                              <input autoComplete="new-password" inputMode="numeric" maxLength={6} placeholder="••••••" type="password" value={employeeKioskPinConfirm} onChange={(event) => setEmployeeKioskPinConfirm(event.target.value.replace(/\D/g, '').slice(0, 6))} />
-                            </label>
-                          </div>}
-                          {canManageEmployeeKioskPins && <button aria-live="polite" className={`primary staff-hr-kiosk-save ${employeeKioskPinSaveConfirmation ? 'is-confirmed' : ''}`} disabled={saving || Boolean(employeeKioskPinSaveConfirmation) || employeeKioskPin.length !== 6 || employeeKioskPinConfirm.length !== 6} type="button" onClick={() => void configureEmployeeKioskPin()}>
-                            {employeeKioskPinSaveConfirmation ? <CircleCheckBig aria-hidden="true" size={18} /> : <KeyRound aria-hidden="true" size={17} />}
-                            {employeeKioskPinSaveConfirmation === 'created'
-                              ? (resolvedLanguage === 'vi' ? 'Đã tạo PIN' : 'PIN created')
-                              : employeeKioskPinSaveConfirmation === 'replaced'
-                                ? (resolvedLanguage === 'vi' ? 'Đã đổi PIN' : 'PIN replaced')
-                                : employeeForm.kiosk_pin_configured_at
-                                  ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
-                                  : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
-                          </button>}
-                        </div>
+                          <div className="staff-hr-kiosk-access-head">
+                            <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>
+                            <div className="staff-hr-kiosk-access-copy">
+                              <small>{resolvedLanguage === 'vi' ? 'Thông tin đăng nhập thiết bị dùng chung' : 'Shared-device credential'}</small>
+                              <strong>{resolvedLanguage === 'vi' ? 'PIN nhân viên' : 'Employee PIN'}</strong>
+                              <p>{resolvedLanguage === 'vi' ? 'Mã cá nhân 6 số xác định nhân viên trên thiết bị cửa hàng.' : 'A personal six-digit code identifies this employee on store devices.'}</p>
+                            </div>
+                            <span className={`staff-hr-kiosk-status ${employeeForm.kiosk_pin_configured_at ? 'configured' : ''}`}>
+                              {employeeForm.kiosk_pin_configured_at ? <CircleCheckBig aria-hidden="true" size={14} /> : <KeyRound aria-hidden="true" size={14} />}
+                              {employeeForm.kiosk_pin_configured_at
+                                ? (resolvedLanguage === 'vi' ? 'Đã cấu hình' : 'Configured')
+                                : (resolvedLanguage === 'vi' ? 'Chưa có PIN' : 'No PIN')}
+                            </span>
+                          </div>
+
+                          <div className="staff-hr-kiosk-fields">
+                            <div className="staff-hr-kiosk-overview">
+                              <label className="staff-hr-kiosk-role">
+                                <span>{resolvedLanguage === 'vi' ? 'Cấp quyền' : 'Access level'}</span>
+                                <select disabled={!canManageEmployeeKioskPins} value={employeeKioskAccessRole} onChange={(event) => setEmployeeKioskAccessRole(event.target.value as 'manager' | 'staff')}>
+                                  <option value="staff">{resolvedLanguage === 'vi' ? 'Nhân viên' : 'Staff'}</option>
+                                  <option value="manager">{resolvedLanguage === 'vi' ? 'Quản lý' : 'Manager'}</option>
+                                </select>
+                                <small>{employeeKioskAccessRole === 'manager'
+                                  ? (resolvedLanguage === 'vi' ? 'Mở các công cụ quản lý cửa hàng và HR được cấp quyền.' : 'Unlocks the permitted store-management and HR tools.')
+                                  : (resolvedLanguage === 'vi' ? 'Dành cho hoạt động hàng ngày tại cửa hàng.' : 'For daily store operations.')}</small>
+                              </label>
+
+                              <div className="staff-hr-kiosk-current-pin">
+                                <div>
+                                  <span id="staff-hr-current-pin-label">{resolvedLanguage === 'vi' ? 'PIN hiện tại' : 'Current PIN'}</span>
+                                  <small>{resolvedLanguage === 'vi' ? 'Thông tin bảo mật' : 'Protected credential'}</small>
+                                </div>
+                                <output aria-labelledby="staff-hr-current-pin-label" aria-live="polite">{employeeKioskPinLoading ? '••••••' : employeeKioskPinVisibleValue || '—'}</output>
+                                <small>{employeeKioskPinLoading
+                                  ? (resolvedLanguage === 'vi' ? 'Đang giải mã PIN an toàn…' : 'Securely revealing PIN…')
+                                  : employeeKioskPinVisibleValue
+                                    ? (resolvedLanguage === 'vi' ? 'Chỉ Chủ sở hữu, Quản trị viên và Nhân viên văn phòng mới thấy PIN này.' : 'Visible only to Owner, Admin, and Office Staff.')
+                                    : (resolvedLanguage === 'vi' ? 'Chưa có PIN cho nhân viên này.' : 'No PIN is configured for this employee.')}</small>
+                              </div>
+                            </div>
+
+                            {canManageEmployeeKioskPins && <div className="staff-hr-kiosk-editor">
+                              <div className="staff-hr-kiosk-editor-head">
+                                <div>
+                                  <strong>{employeeForm.kiosk_pin_configured_at
+                                    ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
+                                    : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}</strong>
+                                  <small>{resolvedLanguage === 'vi' ? 'Nhập mã riêng hoặc tạo một mã bảo mật ngẫu nhiên.' : 'Enter a private code or generate a secure random one.'}</small>
+                                </div>
+                                <button className="secondary staff-hr-kiosk-generate" type="button" onClick={generateEmployeeKioskPin}>
+                                  <RefreshCw aria-hidden="true" size={16} />
+                                  {resolvedLanguage === 'vi' ? 'Tạo PIN ngẫu nhiên' : 'Generate random PIN'}
+                                </button>
+                              </div>
+                              <div className="staff-hr-kiosk-pin-entry">
+                                <label>
+                                  {resolvedLanguage === 'vi' ? 'PIN 6 số mới' : 'New 6-digit PIN'}
+                                  <input autoComplete="new-password" inputMode="numeric" maxLength={6} placeholder="••••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+                                </label>
+                                <label>
+                                  {resolvedLanguage === 'vi' ? 'Xác nhận PIN' : 'Confirm PIN'}
+                                  <input autoComplete="new-password" inputMode="numeric" maxLength={6} placeholder="••••••" type="password" value={employeeKioskPinConfirm} onChange={(event) => setEmployeeKioskPinConfirm(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+                                </label>
+                              </div>
+                              <div className="staff-hr-kiosk-actions">
+                                <small>{resolvedLanguage === 'vi' ? 'Cả hai ô phải chứa cùng một mã gồm 6 số.' : 'Both fields must contain the same six-digit code.'}</small>
+                                <button aria-live="polite" className={`primary staff-hr-kiosk-save ${employeeKioskPinSaveConfirmation ? 'is-confirmed' : ''}`} disabled={saving || Boolean(employeeKioskPinSaveConfirmation) || employeeKioskPin.length !== 6 || employeeKioskPinConfirm.length !== 6} type="button" onClick={() => void configureEmployeeKioskPin()}>
+                                  {employeeKioskPinSaveConfirmation ? <CircleCheckBig aria-hidden="true" size={18} /> : <KeyRound aria-hidden="true" size={17} />}
+                                  {employeeKioskPinSaveConfirmation === 'created'
+                                    ? (resolvedLanguage === 'vi' ? 'Đã tạo PIN' : 'PIN created')
+                                    : employeeKioskPinSaveConfirmation === 'replaced'
+                                      ? (resolvedLanguage === 'vi' ? 'Đã đổi PIN' : 'PIN replaced')
+                                      : employeeForm.kiosk_pin_configured_at
+                                        ? (resolvedLanguage === 'vi' ? 'Đổi PIN' : 'Replace PIN')
+                                        : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
+                                </button>
+                              </div>
+                            </div>}
+                          </div>
                         </div>
                       </CollapsibleEmployeeSection>}
                     </div>
