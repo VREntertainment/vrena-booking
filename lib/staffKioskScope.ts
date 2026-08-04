@@ -43,8 +43,8 @@ export function canEnterStaffConsole({
   mfaAssuranceLevel,
   profileRank,
 }: StaffConsoleEntry) {
-  if (profileRank < 20) return false
   if (requiresStaffKioskPin(authEmail)) return true
+  if (profileRank < 20) return false
   return hasVerifiedMfaFactor && mfaAssuranceLevel === 'aal2'
 }
 

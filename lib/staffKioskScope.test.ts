@@ -56,21 +56,21 @@ test('the shared store login can reach the PIN gate without account MFA', () => 
     hasVerifiedMfaFactor: false,
     mfaAssuranceLevel: 'aal1',
     profileRank: 0,
-  }), false)
+  }), true)
 })
 
-test('individually authenticated staff still require MFA to enter the console', () => {
+test('named accounts need a current web-app role and MFA to enter the console', () => {
   assert.equal(canEnterStaffConsole({
     authEmail: 'manager@vre-vietnam.com',
     hasVerifiedMfaFactor: false,
     mfaAssuranceLevel: 'aal1',
-    profileRank: 80,
+    profileRank: 0,
   }), false)
   assert.equal(canEnterStaffConsole({
-    authEmail: 'manager@vre-vietnam.com',
+    authEmail: 'office@vre-vietnam.com',
     hasVerifiedMfaFactor: true,
     mfaAssuranceLevel: 'aal2',
-    profileRank: 80,
+    profileRank: 20,
   }), true)
 })
 

@@ -63,7 +63,7 @@ type StaffAttendanceTab = 'schedule' | 'clock' | 'timesheet' | 'leave' | 'settin
 type StaffHrTab = 'employees' | 'schedule' | 'timesheet' | 'payroll' | 'adjustments' | 'advances' | 'zalo' | 'settings'
 type StaffScheduleScope = 'all' | 'department' | 'mine'
 type StaffOperationScope = 'today' | 'past'
-type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player'
+type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player' | 'employee'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 type StaffReportView = 'business' | 'players'
@@ -1542,6 +1542,7 @@ const staffConsoleText = {
     roles: {
       admin: 'Admin',
       cashier: 'Office Staff',
+      employee: 'Employee (PIN only)',
       manager: 'Manager',
       owner: 'Owner',
       player: 'Player',
@@ -1571,10 +1572,9 @@ const staffConsoleText = {
     roleHelp: [
       { title: 'Owner', body: 'Full Staff Console access, role management, restore tools, and every client app feature.' },
       { title: 'Admin', body: 'Full daily operations access and role management below Owner. Restore stays Owner only.' },
-      { title: 'Manager', body: 'Can manage games, prices, discounts, vouchers, loyalty rules, bookings, orders, and reports.' },
-      { title: 'Staff', body: 'Can create counter bookings, check today, use discounts or vouchers, manage orders, and view reports. In HR, Staff only sees their own employee profile.' },
       { title: 'Office Staff', body: 'Viewer access plus editable reports and full Attendance edit access.' },
       { title: 'Viewer', body: 'Can use the normal player app, view the whole Staff Console, and adjust or download reports. All other staff data is read-only.' },
+      { title: 'Employee (PIN only)', body: 'No personal web-app access. The employee enters their PIN on the shared store account and receives the Manager or Staff permissions configured in HR.' },
       { title: 'Player', body: 'Client app only. No Staff Console access.' },
     ],
     tabs: {
@@ -2335,6 +2335,7 @@ const staffConsoleText = {
     roles: {
       admin: 'Admin',
       cashier: 'Nhân viên văn phòng',
+      employee: 'Nhân viên (chỉ dùng PIN)',
       manager: 'Quản lý',
       owner: 'Owner',
       player: 'Player',
@@ -2364,10 +2365,9 @@ const staffConsoleText = {
     roleHelp: [
       { title: 'Owner', body: 'Toàn quyền Staff Console, quản lý vai trò, công cụ khôi phục và mọi tính năng khách hàng.' },
       { title: 'Admin', body: 'Toàn quyền vận hành hằng ngày và quản lý vai trò dưới Owner. Khôi phục chỉ dành cho Owner.' },
-      { title: 'Manager', body: 'Quản lý trò chơi, giá, ưu đãi, voucher, điểm thưởng, đặt chỗ, đơn hàng và báo cáo.' },
-      { title: 'Staff', body: 'Tạo đặt chỗ tại quầy, xem hôm nay, dùng ưu đãi hoặc voucher, quản lý đơn và xem báo cáo. Trong HR, Staff chỉ thấy hồ sơ nhân viên của chính mình.' },
       { title: 'Office Staff', body: 'Quyền xem như Viewer, được chỉnh báo cáo và toàn quyền chỉnh Chấm công.' },
       { title: 'Viewer', body: 'Dùng app như người chơi, xem toàn bộ Staff Console, chỉnh hoặc tải báo cáo. Dữ liệu staff còn lại chỉ xem.' },
+      { title: 'Nhân viên (chỉ dùng PIN)', body: 'Không có quyền truy cập web app cá nhân. Nhân viên nhập PIN trên tài khoản cửa hàng dùng chung và nhận quyền Quản lý hoặc Nhân viên đã cấu hình trong HR.' },
       { title: 'Player', body: 'Chỉ có app khách hàng. Không có quyền Staff Console.' },
     ],
     tabs: {
@@ -3500,8 +3500,8 @@ const staffHrAdjustmentTypes: StaffHrAdjustmentType[] = ['bonus', 'commission', 
 const staffHrAdjustmentStatuses: StaffHrAdjustmentStatus[] = ['draft', 'pending', 'approved', 'rejected', 'paid', 'cancelled']
 const staffPayrollStatuses: StaffPayrollStatus[] = ['draft', 'pending', 'approved', 'paid', 'cancelled']
 const staffPayrollPayCycles: StaffPayrollPayCycle[] = ['monthly', 'semi_monthly', 'weekly', 'custom']
-const staffRoleOptions: StaffRole[] = ['owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
-const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'manager', 'staff', 'cashier', 'viewer', 'player']
+const assignableWebAppRoleOptions: StaffRole[] = ['owner', 'admin', 'cashier', 'viewer', 'player']
+const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'cashier', 'viewer', 'employee', 'player']
 const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
 const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, birthday, is_seed_demo, seed_batch'
 const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
@@ -3706,12 +3706,11 @@ function parseStaffArenaIds(value?: string | null) {
 
 function roleLabel(role?: string | null, email?: string | null): StaffRole {
   const normalizedRole = role?.toLowerCase()
+  if (normalizedRole === 'employee' || normalizedRole === 'manager' || normalizedRole === 'staff') return 'employee'
   const rank = staffRank(role, email)
   if (rank >= 120) return 'owner'
   if (rank >= 100) return 'admin'
-  if (rank >= 80) return 'manager'
   if (normalizedRole === 'cashier') return 'cashier'
-  if (rank >= 50) return 'staff'
   if (rank >= 20) return 'viewer'
   return 'player'
 }
@@ -3721,7 +3720,9 @@ function storedRoleValue(role?: string | null, email?: string | null): StaffRole
   if (isOwnerEmail(email)) return 'owner'
   if (isAdminOnlyEmail(email) && (normalized === 'super_admin' || normalized === 'owner')) return 'admin'
   if (normalized === 'super_admin') return 'owner'
-  return staffRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
+  if (normalized === 'manager' || normalized === 'staff') return 'employee'
+  if (normalized === 'employee') return 'employee'
+  return assignableWebAppRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
 }
 
 function isDemoProfile(profile: StaffProfile) {
@@ -4664,8 +4665,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const kioskText = staffKioskCopy(language)
   const isHrConsole = mode === 'hr'
   const consoleTitle = isHrConsole ? (resolvedLanguage === 'vi' ? 'HR' : 'HR Console') : text.title
-  const rank = Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
-  const role = roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
+  const kioskRoleRank = kioskOperator?.accessRole === 'manager' ? 80 : kioskOperator?.accessRole === 'staff' ? 50 : 0
+  const rank = kioskOperator
+    ? kioskRoleRank
+    : Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
+  const role = kioskOperator?.accessRole
+    || roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
   const canCreateCustomerAccounts = rank >= 50
@@ -10206,14 +10211,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <div className="staff-role-primary-actions">
                       <select
                         aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
-                        disabled={!canManageRoles || saving}
+                        disabled={!canManageRoles || saving || storedRole === 'employee'}
                         value={selectedRole}
                         onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
                       >
-                        {staffRoleOptions.filter((option) => (
+                        {([
+                          ...(storedRole === 'employee' ? ['employee' as StaffRole] : []),
+                          ...assignableWebAppRoleOptions,
+                        ]).filter((option) => (
                           canRestoreDeleted || option !== 'owner' || option === storedRole
                         )).map((option) => (
-                          <option key={option} value={option}>{staffRoleName(option, text)}</option>
+                          <option disabled={option === 'employee'} key={option} value={option}>{staffRoleName(option, text)}</option>
                         ))}
                       </select>
                       {canDeleteProfileAccount(item) && (
