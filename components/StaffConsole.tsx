@@ -5953,7 +5953,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setAttendanceLogs((logsResult.data ?? []) as StaffAttendanceLog[])
       setLeaveRequests((leaveResult.data ?? []) as StaffLeaveRequest[])
       setAttendanceSettings(settingsUnavailable ? defaultAttendanceSettings() : normalizeAttendanceSettings(settingsResult.data as Partial<StaffAttendanceSettings> | null))
-      setEmployeeProfiles(employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[])
+      const nextEmployeeProfiles = employeeUnavailable ? [] : (employeeResult.data ?? []) as StaffEmployeeProfile[]
+      setEmployeeProfiles(nextEmployeeProfiles)
+
+      if (nextEmployeeProfiles.length > 0 && !nextEmployeeProfiles.some((employee) => employee.profile_id === employeeForm.profile_id)) {
+        const employee = nextEmployeeProfiles[0]
+        const staffProfile = staffProfileFromEmployee(employee)
+        setEmployeeForm(employeeFormForProfile(staffProfile, employee))
+        setEmployeeKioskPin('')
+        setEmployeeKioskPinConfirm('')
+        setEmployeeKioskPinSaveConfirmation('')
+        setEmployeeKioskPinVisibleValue('')
+        setEmployeeKioskAccessRole(employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
+        employeeKioskPinProfileRef.current = employee.profile_id
+        if (canRevealEmployeeKioskPin) void revealEmployeeKioskPin(employee.profile_id)
+      }
     }, force)
   }
 
