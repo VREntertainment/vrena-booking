@@ -34,6 +34,7 @@ import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
+import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '../lib/staffEmployeeInvite'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
@@ -6803,6 +6804,55 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setSaving(false)
   }
 
+  async function createEmployeeAccount(input: {
+    email: string
+    employmentType: StaffEmployeeInviteEmploymentType
+    fullName: string
+    phone: string
+    role: StaffEmployeeInviteRole
+  }) {
+    if (!isOwnerOrAdmin || saving) throw new Error(text.accessRequired)
+
+    setSaving(true)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
+
+      const response = await fetch('/api/staff/employees/invite', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      })
+      const payload = await response.json().catch(() => ({})) as {
+        employee?: StaffEmployeeProfile
+        error?: string
+        profile?: StaffProfile
+        warning?: string
+      }
+      if (!response.ok || !payload.employee || !payload.profile) {
+        throw new Error(payload.error || 'Could not create employee account.')
+      }
+
+      setEmployeeForm(employeeFormForProfile(payload.profile, payload.employee))
+      setEmployeeKioskPin('')
+      setEmployeeKioskPinConfirm('')
+      setEmployeeKioskPinSaveConfirmation('')
+      setEmployeeKioskPinVisibleValue('')
+      setEmployeeKioskAccessRole(payload.employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
+      employeeKioskPinProfileRef.current = payload.profile.id
+      setStatus(payload.warning || (resolvedLanguage === 'vi' ? 'Đã tạo hồ sơ nhân viên.' : 'Employee profile created.'))
+      markStaffDataStale('profiles', 'attendance', 'hr')
+      await Promise.all([loadProfiles(true), loadAttendanceData(true), loadHrData(true)])
+      return { warning: payload.warning || '' }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function saveHrSettings() {
     if (!canManageAttendance) return
     setSaving(true)
@@ -9501,6 +9551,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             editEmployeeProfile,
             editShift,
             configureEmployeeKioskPin,
+            createEmployeeAccount,
             employeeForm,
             employeeKioskAccessRole,
             employeeKioskPin,
