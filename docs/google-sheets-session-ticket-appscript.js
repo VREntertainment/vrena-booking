@@ -19,7 +19,7 @@
 const CONFIG = {
   SPREADSHEET_ID: '', // Leave blank when this script is bound to the Google Sheet.
   WEBHOOK_SECRET: 'CHANGE_ME_TO_A_LONG_RANDOM_SECRET',
-  EMAIL_RECIPIENTS: ['contact@vre-vietnam.com', 'emile@vre-vietnam.com'],
+  EMAIL_RECIPIENTS: ['contact@vre-vietnam.com'],
   SHEETS: {
     ticket_booked: 'Tickets',
     session_created: 'Sessions',
@@ -193,6 +193,9 @@ function buildEmailHtml(payload, receivedAt) {
   const session = getSession(payload)
   const owner = payload.owner || {}
   const customer = payload.customer || {}
+  const gameOptions = Array.isArray(session.game_options)
+    ? session.game_options.filter(Boolean).join(', ')
+    : stringifyCell(session.game_options)
   const rows = [
     ['Received', formatDateTime(receivedAt)],
     ['Event', payload.event_type || ''],
@@ -210,7 +213,7 @@ function buildEmailHtml(payload, receivedAt) {
     ['Total price', formatVnd(session.ticket_total_price)],
     ['Visibility', session.visibility || ''],
     ['Invite code', session.invite_code || ''],
-    ['Game options', Array.isArray(session.game_options) ? session.game_options.join(', ') : stringifyCell(session.game_options)],
+    ...(gameOptions ? [['Game options', gameOptions]] : []),
     ['Owner', compactContact(owner)],
     ['Customer', compactContact(customer)],
     ['Notes', session.notes || ''],
