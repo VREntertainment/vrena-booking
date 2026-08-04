@@ -371,6 +371,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     draftShiftCount,
     effectiveAttendanceScheduleScope,
     effectiveShiftTemplates,
+    editEmployeeProfile,
     editShift,
     configureEmployeeKioskPin,
     createEmployeeRecord,
@@ -381,7 +382,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeKioskPinSaveConfirmation,
     employeeKioskPinLoading,
     employeeKioskPinVisibleValue,
-    employeeFormForProfile,
     employeePayrollSummary,
     employeeProfileById,
     employeeUsesMonthlyGross,
@@ -790,11 +790,40 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                   <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
-                        <StaffRoleAvatar profile={selectedEmployeeStaffProfile} text={text} />
-                        <div>
-                          <strong>{customerName(selectedEmployeeStaffProfile, text)}</strong>
-                          <span>{selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone || text.noContact}</span>
-                        </div>
+                        <label className="staff-employee-photo-upload" title={text.actions.uploadPhoto}>
+                          <StaffRoleAvatar profile={selectedEmployeeStaffProfile} text={text} />
+                          <span className="staff-employee-photo-edit" aria-hidden="true">
+                            {hrDocumentUploading === 'profile_photo'
+                              ? <RefreshCw className="staff-spin" size={13} />
+                              : <Pencil size={13} />}
+                          </span>
+                          <input
+                            accept={staffProfilePhotoTypes.join(',')}
+                            aria-label={text.actions.uploadPhoto}
+                            disabled={Boolean(hrDocumentUploading) || !canEditEmployeeProfiles}
+                            type="file"
+                            onChange={(event) => void handleHrDocumentUpload(event, 'profile_photo')}
+                          />
+                        </label>
+                        <label className="staff-employee-selected-picker" htmlFor="staff-employee-profile-picker">
+                          <span>{text.labels.staffMember}</span>
+                          <select
+                            id="staff-employee-profile-picker"
+                            value={selectedEmployeeStaffId}
+                            onChange={(event) => {
+                              const staffProfile = visibleAllStaffProfileOptions.find((item: any) => item.id === event.target.value)
+                              if (staffProfile) editEmployeeProfile(staffProfile)
+                            }}
+                          >
+                            {visibleAllStaffProfileOptions.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                          </select>
+                          <small>
+                            {[
+                              employeeProfileById.get(selectedEmployeeStaffId)?.job_title,
+                              selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone,
+                            ].filter(Boolean).join(' · ') || text.noContact}
+                          </small>
+                        </label>
                         <button className="primary staff-employee-selected-save" type="button" disabled={saving || !canEditEmployeeProfiles} onClick={saveEmployeeProfile}>
                           <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
                         </button>
@@ -813,15 +842,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     <div className="staff-hr-profile-form">
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.identity} id="identity" onToggle={toggleEmployeeSection} open={openEmployeeSections.identity} title={employeeCopy.sectionTitles.identity}>
                         <div className="form-grid compact-form-grid">
-                          <label>
-                            {text.labels.staffMember}
-                            <select value={employeeForm.profile_id || firstEmployeeStaffProfileId} onChange={(event) => {
-                              const staffProfile = visibleAllStaffProfileOptions.find((item: any) => item.id === event.target.value)
-                              if (staffProfile) setEmployeeForm(employeeFormForProfile(staffProfile, employeeProfileById.get(staffProfile.id)))
-                            }}>
-                              {visibleAllStaffProfileOptions.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
-                            </select>
-                          </label>
                           <label>{text.labels.employeeCode}<input value={employeeForm.employee_code} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_code: event.target.value })} /></label>
                           <label>{text.labels.attendanceNumber}<input value={employeeForm.attendance_number} onChange={(event) => setEmployeeForm({ ...employeeForm, attendance_number: event.target.value })} /></label>
                           <label>{text.labels.legalName}<input value={employeeForm.legal_name} onChange={(event) => setEmployeeForm({ ...employeeForm, legal_name: event.target.value })} /></label>
