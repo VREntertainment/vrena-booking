@@ -34,7 +34,7 @@ import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
-import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '../lib/staffEmployeeInvite'
+import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -6808,12 +6808,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setSaving(false)
   }
 
-  async function createEmployeeAccount(input: {
+  async function createEmployeeRecord(input: {
     email: string
-    employmentType: StaffEmployeeInviteEmploymentType
+    employmentType: StaffEmployeeRecordEmploymentType
     fullName: string
     phone: string
-    role: StaffEmployeeInviteRole
   }) {
     if (!isOwnerOrAdmin || saving) throw new Error(text.accessRequired)
 
@@ -6823,7 +6822,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const accessToken = sessionData.session?.access_token
       if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
 
-      const response = await fetch('/api/staff/employees/invite', {
+      const response = await fetch('/api/staff/employees/record', {
         method: 'POST',
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -6838,7 +6837,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         warning?: string
       }
       if (!response.ok || !payload.employee || !payload.profile) {
-        throw new Error(payload.error || 'Could not create employee account.')
+        throw new Error(payload.error || 'Could not create the employee HR record.')
       }
 
       setEmployeeForm(employeeFormForProfile(payload.profile, payload.employee))
@@ -6848,7 +6847,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setEmployeeKioskPinVisibleValue('')
       setEmployeeKioskAccessRole(payload.employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
       employeeKioskPinProfileRef.current = payload.profile.id
-      setStatus(payload.warning || (resolvedLanguage === 'vi' ? 'Đã tạo hồ sơ nhân viên.' : 'Employee profile created.'))
+      setStatus(payload.warning || (resolvedLanguage === 'vi' ? 'Đã tạo hồ sơ HR. Hãy cấp PIN 6 số.' : 'HR record created. Assign the six-digit PIN.'))
       markStaffDataStale('profiles', 'attendance', 'hr')
       await Promise.all([loadProfiles(true), loadAttendanceData(true), loadHrData(true)])
       return { warning: payload.warning || '' }
@@ -9557,7 +9556,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             editEmployeeProfile,
             editShift,
             configureEmployeeKioskPin,
-            createEmployeeAccount,
+            createEmployeeRecord,
             employeeForm,
             employeeKioskAccessRole,
             employeeKioskPin,

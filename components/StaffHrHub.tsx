@@ -1,9 +1,9 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Mail, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
-import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '@/lib/staffEmployeeInvite'
+import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
@@ -20,19 +20,17 @@ const employeeExperienceCopy = {
   en: {
     collapseAll: 'Collapse all',
     createEmployee: 'Create employee',
-    createHelp: 'Invite a staff login and create its private HR file in one step.',
-    createIntro: 'They receive a secure account invitation. You can complete payroll details and create their store PIN immediately after.',
-    created: 'Employee created and selected.',
+    createHelp: 'Create a private HR record, then assign the employee a store PIN.',
+    createIntro: 'This creates an internal HR record only—no player profile, login, or account invitation. After saving, Store access opens so you can assign the employee’s six-digit PIN.',
+    created: 'HR record created. Assign the employee’s six-digit PIN in Store access.',
     creating: 'Creating employee…',
     employeeProfiles: 'Employee profiles',
     employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
     employmentType: 'Employment type',
     expandAll: 'Expand all',
     fullName: 'Full name',
-    invite: 'Send invite & create profile',
+    saveRecord: 'Create HR record',
     phone: 'Phone (optional)',
-    role: 'App role',
-    roles: { manager: 'Manager', staff: 'Staff', cashier: 'Office Staff' } satisfies Record<StaffEmployeeInviteRole, string>,
     sectionHelp: {
       identity: 'Identity, attendance, and legal information',
       contract: 'Role, workplace, employment, and dates',
@@ -51,24 +49,22 @@ const employeeExperienceCopy = {
       store: 'Store access',
       documents: 'Documents',
     } satisfies Record<EmployeeProfileSectionId, string>,
-    workEmail: 'Work email',
+    workEmail: 'Email (optional)',
   },
   vi: {
     collapseAll: 'Thu gọn tất cả',
     createEmployee: 'Tạo nhân viên',
-    createHelp: 'Mời tài khoản nhân viên và tạo hồ sơ HR riêng trong một bước.',
-    createIntro: 'Nhân viên sẽ nhận lời mời tài khoản an toàn. Bạn có thể hoàn tất lương và tạo PIN cửa hàng ngay sau đó.',
-    created: 'Đã tạo và chọn nhân viên.',
+    createHelp: 'Tạo hồ sơ HR riêng tư, sau đó cấp PIN cửa hàng cho nhân viên.',
+    createIntro: 'Thao tác này chỉ tạo hồ sơ HR nội bộ—không tạo hồ sơ người chơi, tài khoản đăng nhập hoặc gửi lời mời. Sau khi lưu, mục Quyền truy cập cửa hàng sẽ mở để bạn cấp PIN 6 số.',
+    created: 'Đã tạo hồ sơ HR. Hãy cấp PIN 6 số trong mục Quyền truy cập cửa hàng.',
     creating: 'Đang tạo nhân viên…',
     employeeProfiles: 'Hồ sơ nhân viên',
     employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
     employmentType: 'Hình thức làm việc',
     expandAll: 'Mở tất cả',
     fullName: 'Họ và tên',
-    invite: 'Gửi lời mời & tạo hồ sơ',
+    saveRecord: 'Tạo hồ sơ HR',
     phone: 'Điện thoại (không bắt buộc)',
-    role: 'Vai trò ứng dụng',
-    roles: { manager: 'Quản lý', staff: 'Nhân viên', cashier: 'Nhân viên văn phòng' } satisfies Record<StaffEmployeeInviteRole, string>,
     sectionHelp: {
       identity: 'Danh tính, chấm công và thông tin pháp lý',
       contract: 'Vai trò, nơi làm việc, hình thức và ngày hợp đồng',
@@ -87,7 +83,7 @@ const employeeExperienceCopy = {
       store: 'Quyền truy cập cửa hàng',
       documents: 'Tài liệu',
     } satisfies Record<EmployeeProfileSectionId, string>,
-    workEmail: 'Email công việc',
+    workEmail: 'Email (không bắt buộc)',
   },
 } as const
 
@@ -377,7 +373,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     effectiveShiftTemplates,
     editShift,
     configureEmployeeKioskPin,
-    createEmployeeAccount,
+    createEmployeeRecord,
     employeeForm,
     employeeKioskAccessRole,
     employeeKioskPin,
@@ -501,11 +497,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [createEmployeeSaving, setCreateEmployeeSaving] = useState(false)
   const [newEmployee, setNewEmployee] = useState<{
     email: string
-    employmentType: StaffEmployeeInviteEmploymentType
+    employmentType: StaffEmployeeRecordEmploymentType
     fullName: string
     phone: string
-    role: StaffEmployeeInviteRole
-  }>({ email: '', employmentType: 'part_time', fullName: '', phone: '', role: 'staff' })
+  }>({ email: '', employmentType: 'part_time', fullName: '', phone: '' })
   const [openEmployeeSections, setOpenEmployeeSections] = useState<Record<EmployeeProfileSectionId, boolean>>({
     identity: true,
     contract: false,
@@ -536,16 +531,19 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }
 
   async function submitNewEmployee() {
-    if (createEmployeeSaving || !newEmployee.fullName.trim() || !newEmployee.email.trim()) return
+    if (createEmployeeSaving || !newEmployee.fullName.trim()) return
     setCreateEmployeeSaving(true)
     setCreateEmployeeStatus('')
     try {
-      const result = await createEmployeeAccount(newEmployee)
+      const result = await createEmployeeRecord(newEmployee)
       setCreateEmployeeStatusTone('success')
       setCreateEmployeeStatus(result?.warning || employeeCopy.created)
       setCreateEmployeeOpen(false)
-      setNewEmployee({ email: '', employmentType: 'part_time', fullName: '', phone: '', role: 'staff' })
-      setOpenEmployeeSections((current) => ({ ...current, identity: true, contract: true }))
+      setNewEmployee({ email: '', employmentType: 'part_time', fullName: '', phone: '' })
+      setOpenEmployeeSections((current) => ({ ...current, identity: true, contract: true, store: true }))
+      window.requestAnimationFrame(() => {
+        document.getElementById('staff-employee-section-store')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
     } catch (error) {
       setCreateEmployeeStatusTone('error')
       setCreateEmployeeStatus(error instanceof Error ? error.message : String(error))
@@ -773,25 +771,16 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </label>
                         <label>
                           {employeeCopy.employmentType}
-                          <select value={newEmployee.employmentType} onChange={(event) => setNewEmployee((current) => ({ ...current, employmentType: event.target.value as StaffEmployeeInviteEmploymentType }))}>
+                          <select value={newEmployee.employmentType} onChange={(event) => setNewEmployee((current) => ({ ...current, employmentType: event.target.value as StaffEmployeeRecordEmploymentType }))}>
                             {staffEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                           </select>
                         </label>
                       </div>
-                      <fieldset className="staff-hr-employee-role-picker">
-                        <legend>{employeeCopy.role}</legend>
-                        {(['staff', 'manager', 'cashier'] as const).map((role) => (
-                          <label className={newEmployee.role === role ? 'active' : ''} key={role}>
-                            <input checked={newEmployee.role === role} name="new-employee-role" type="radio" value={role} onChange={() => setNewEmployee((current) => ({ ...current, role }))} />
-                            <span>{employeeCopy.roles[role]}</span>
-                          </label>
-                        ))}
-                      </fieldset>
                       <footer>
                         <button className="secondary" type="button" onClick={() => setCreateEmployeeOpen(false)}>{text.actions.cancel}</button>
-                        <button className="primary" disabled={createEmployeeSaving || !newEmployee.fullName.trim() || !newEmployee.email.trim()} type="button" onClick={() => void submitNewEmployee()}>
-                          {createEmployeeSaving ? <RefreshCw aria-hidden="true" className="staff-spin" size={17} /> : <Mail aria-hidden="true" size={17} />}
-                          {createEmployeeSaving ? employeeCopy.creating : employeeCopy.invite}
+                        <button className="primary" disabled={createEmployeeSaving || !newEmployee.fullName.trim()} type="button" onClick={() => void submitNewEmployee()}>
+                          {createEmployeeSaving ? <RefreshCw aria-hidden="true" className="staff-spin" size={17} /> : <Save aria-hidden="true" size={17} />}
+                          {createEmployeeSaving ? employeeCopy.creating : employeeCopy.saveRecord}
                         </button>
                       </footer>
                     </section>
