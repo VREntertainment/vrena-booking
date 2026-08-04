@@ -6804,7 +6804,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setEmployeeKioskPin(pin)
     setEmployeeKioskPinConfirm(pin)
     setEmployeeKioskPinSaveConfirmation('')
-    setEmployeeKioskPinVisibleValue(pin)
   }
 
   async function saveEmployeeProfile() {
