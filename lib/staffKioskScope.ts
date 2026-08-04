@@ -8,6 +8,18 @@ export function requiresStaffKioskPin(email?: string | null) {
   return normalizedStaffKioskEmail(email) === STAFF_KIOSK_EMAIL
 }
 
+export function normalizedStaffKioskPin(value: string) {
+  return value.replace(/\D/g, '').slice(0, 6)
+}
+
+export function isCompleteStaffKioskPin(value: string) {
+  return /^\d{6}$/.test(value)
+}
+
+export function shouldAutoUnlockStaffKioskPin(value: string, pinAvailable: boolean) {
+  return pinAvailable && isCompleteStaffKioskPin(value)
+}
+
 export function shouldRedirectStaffKioskToPin(email: string | null | undefined, activeView: string) {
   return requiresStaffKioskPin(email) && activeView !== 'staff' && activeView !== 'hr'
 }

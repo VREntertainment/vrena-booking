@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // @ts-expect-error Node's native TypeScript runner requires the explicit extension.
-import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, requiresStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
+import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {
   assert.equal(requiresStaffKioskPin(STAFF_KIOSK_EMAIL), true)
   assert.equal(requiresStaffKioskPin('  CONTACT@VRE-VIETNAM.COM  '), true)
+})
+
+test('the sixth PIN digit completes the automatic unlock value', () => {
+  assert.equal(normalizedStaffKioskPin('12 34-56'), '123456')
+  assert.equal(normalizedStaffKioskPin('1234567'), '123456')
+  assert.equal(isCompleteStaffKioskPin('12345'), false)
+  assert.equal(isCompleteStaffKioskPin('123456'), true)
+  assert.equal(shouldAutoUnlockStaffKioskPin('123456', false), false)
+  assert.equal(shouldAutoUnlockStaffKioskPin('123456', true), true)
 })
 
 test('the shared store login lands on the PIN gate instead of player views', () => {

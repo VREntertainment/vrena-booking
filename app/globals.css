@@ -35,6 +35,19 @@
   margin-bottom: 24px;
 }
 
+.staff-kiosk-lock-head > div { min-width: 0; }
+
+.staff-kiosk-logout {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-left: auto;
+  padding-inline: 15px;
+}
+
 .staff-kiosk-lock-head h2,
 .staff-kiosk-lock-head p,
 .staff-hr-kiosk-access-head h5,
@@ -236,7 +249,8 @@
 
 @media (max-width: 760px) {
   .app .staff-kiosk-lock { padding: 18px 14px; border-radius: 18px; }
-  .staff-kiosk-lock-head { align-items: flex-start; }
+  .staff-kiosk-lock-head { align-items: flex-start; flex-wrap: wrap; }
+  .staff-kiosk-logout { width: calc(100% - 60px); margin-left: 60px; }
   .staff-kiosk-lock-icon { width: 44px; height: 44px; border-radius: 14px; }
   .staff-kiosk-unlock-layout { grid-template-columns: 1fr; }
   .staff-kiosk-operator-grid { display: flex; max-height: none; overflow-x: auto; padding: 3px 3px 10px; scroll-snap-type: x mandatory; }

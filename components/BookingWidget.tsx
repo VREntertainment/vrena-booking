@@ -2121,6 +2121,11 @@ export default function WidgetPage({
     setProfileStatus(text.loggedOut)
   }
 
+  async function logoutStaffKiosk() {
+    await logout()
+    setActiveView('profile')
+  }
+
   function isDocumentFocusPasskeyError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || '')
     return message.toLowerCase().includes('document is not focused')
@@ -9042,7 +9047,7 @@ function handleSessionDateChange(value: string) {
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
             requiresStaffKioskPin(authEmail) ? (
-              <StaffKioskGate authEmail={authEmail} language={language}>
+              <StaffKioskGate authEmail={authEmail} language={language} onLogout={logoutStaffKiosk}>
                 {(operator, lock) => (
                   <StaffConsole
                     authEmail=""
@@ -9079,7 +9084,7 @@ function handleSessionDateChange(value: string) {
         {activeView === 'hr' && (
           canAccessStaffConsole ? (
             requiresStaffKioskPin(authEmail) ? (
-              <StaffKioskGate authEmail={authEmail} language={language}>
+              <StaffKioskGate authEmail={authEmail} language={language} onLogout={logoutStaffKiosk}>
                 {(operator, lock) => (
                   <StaffConsole
                     authEmail=""

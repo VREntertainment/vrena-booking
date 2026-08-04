@@ -1,9 +1,9 @@
 'use client'
 
-import { ArrowLeftRight, Delete, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { ArrowLeftRight, Delete, LockKeyhole, LogOut, ShieldCheck } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
-import { requiresStaffKioskPin } from '@/lib/staffKioskScope'
+import { normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin } from '@/lib/staffKioskScope'
 import {
   getStaffKioskOperatorToken,
   setStaffKioskOperatorToken,
@@ -29,6 +29,7 @@ export type StaffKioskOperator = {
 type StaffKioskGateProps = {
   authEmail?: string
   language?: string
+  onLogout: () => Promise<void>
   children: (operator: StaffKioskOperator, lock: () => void) => ReactNode
 }
 
@@ -40,7 +41,7 @@ const copy = {
     setupHelp: 'An Owner or Admin must sign in with their individual account and create employee PINs from HR → Employees → Store access.',
     employee: 'Employee', mismatch: 'The two PINs do not match.',
     loading: 'Loading employee access…', secured: 'Store device secured', inactivity: 'Locks automatically after 5 minutes of inactivity.',
-    chooseEmployee: 'Choose employee', incorrect: 'Could not unlock the station.', back: 'Delete last digit', clear: 'Clear PIN',
+    chooseEmployee: 'Choose employee', incorrect: 'Could not unlock the station.', back: 'Delete last digit', clear: 'Clear PIN', logout: 'Log out',
   },
   vi: {
     title: 'Nhập mã PIN nhân viên', subtitle: 'Mã PIN 6 số duy nhất sẽ nhận diện bạn và mở khóa máy ngay lập tức.',
@@ -49,7 +50,7 @@ const copy = {
     setupHelp: 'Chủ sở hữu hoặc Quản trị viên phải đăng nhập bằng tài khoản cá nhân và tạo PIN tại HR → Nhân viên → Quyền truy cập tại cửa hàng.',
     employee: 'Nhân viên', mismatch: 'Hai mã PIN không khớp.',
     loading: 'Đang tải quyền nhân viên…', secured: 'Thiết bị cửa hàng đã được bảo vệ', inactivity: 'Tự động khóa sau 5 phút không hoạt động.',
-    chooseEmployee: 'Chọn nhân viên', incorrect: 'Không thể mở khóa máy.', back: 'Xóa số cuối', clear: 'Xóa PIN',
+    chooseEmployee: 'Chọn nhân viên', incorrect: 'Không thể mở khóa máy.', back: 'Xóa số cuối', clear: 'Xóa PIN', logout: 'Đăng xuất',
   },
   ko: {
     title: '직원 PIN을 입력하세요', subtitle: '고유한 6자리 PIN으로 직원을 확인하고 기기를 즉시 잠금 해제합니다.',
@@ -58,7 +59,7 @@ const copy = {
     setupHelp: '소유자 또는 관리자가 개인 계정으로 로그인하여 HR → 직원 → 매장 액세스에서 PIN을 만들어야 합니다.',
     employee: '직원', mismatch: '두 PIN이 일치하지 않습니다.',
     loading: '직원 권한 불러오는 중…', secured: '매장 기기 보안 적용됨', inactivity: '5분 동안 활동이 없으면 자동으로 잠깁니다.',
-    chooseEmployee: '직원 선택', incorrect: '기기 잠금을 해제할 수 없습니다.', back: '마지막 숫자 삭제', clear: 'PIN 지우기',
+    chooseEmployee: '직원 선택', incorrect: '기기 잠금을 해제할 수 없습니다.', back: '마지막 숫자 삭제', clear: 'PIN 지우기', logout: '로그아웃',
   },
   ja: {
     title: '従業員PINを入力', subtitle: '固有の6桁PINであなたを識別し、端末をすぐに解除します。',
@@ -67,7 +68,7 @@ const copy = {
     setupHelp: 'オーナーまたは管理者が個人アカウントでログインし、HR → 従業員 → 店舗アクセスからPINを作成してください。',
     employee: '従業員', mismatch: '2つのPINが一致しません。',
     loading: '従業員アクセスを読み込み中…', secured: '店舗端末は保護されています', inactivity: '5分間操作がないと自動的にロックされます。',
-    chooseEmployee: '従業員を選択', incorrect: '端末を解除できませんでした。', back: '最後の数字を削除', clear: 'PINを消去',
+    chooseEmployee: '従業員を選択', incorrect: '端末を解除できませんでした。', back: '最後の数字を削除', clear: 'PINを消去', logout: 'ログアウト',
   },
   fr: {
     title: 'Saisissez votre PIN employé', subtitle: 'Votre PIN unique à 6 chiffres vous identifie et déverrouille le poste instantanément.',
@@ -76,7 +77,7 @@ const copy = {
     setupHelp: 'Un propriétaire ou administrateur doit se connecter avec son compte individuel et créer les PIN dans RH → Employés → Accès magasin.',
     employee: 'Employé', mismatch: 'Les deux PIN ne correspondent pas.',
     loading: 'Chargement des accès employés…', secured: 'Poste du magasin sécurisé', inactivity: 'Verrouillage automatique après 5 minutes d’inactivité.',
-    chooseEmployee: 'Choisir un employé', incorrect: 'Impossible de déverrouiller le poste.', back: 'Effacer le dernier chiffre', clear: 'Effacer le PIN',
+    chooseEmployee: 'Choisir un employé', incorrect: 'Impossible de déverrouiller le poste.', back: 'Effacer le dernier chiffre', clear: 'Effacer le PIN', logout: 'Se déconnecter',
   },
   de: {
     title: 'Mitarbeiter-PIN eingeben', subtitle: 'Ihre eindeutige 6-stellige PIN erkennt Sie und entsperrt die Station sofort.',
@@ -85,7 +86,7 @@ const copy = {
     setupHelp: 'Ein Inhaber oder Administrator muss sich mit seinem persönlichen Konto anmelden und PINs unter HR → Mitarbeiter → Store-Zugriff erstellen.',
     employee: 'Mitarbeiter', mismatch: 'Die beiden PINs stimmen nicht überein.',
     loading: 'Mitarbeiterzugriff wird geladen…', secured: 'Store-Gerät geschützt', inactivity: 'Automatische Sperre nach 5 Minuten Inaktivität.',
-    chooseEmployee: 'Mitarbeiter auswählen', incorrect: 'Die Station konnte nicht entsperrt werden.', back: 'Letzte Ziffer löschen', clear: 'PIN löschen',
+    chooseEmployee: 'Mitarbeiter auswählen', incorrect: 'Die Station konnte nicht entsperrt werden.', back: 'Letzte Ziffer löschen', clear: 'PIN löschen', logout: 'Abmelden',
   },
   it: {
     title: 'Inserisci il PIN dipendente', subtitle: 'Il PIN univoco di 6 cifre ti identifica e sblocca subito la postazione.',
@@ -94,7 +95,7 @@ const copy = {
     setupHelp: 'Un proprietario o amministratore deve accedere con il proprio account individuale e creare i PIN in HR → Dipendenti → Accesso negozio.',
     employee: 'Dipendente', mismatch: 'I due PIN non corrispondono.',
     loading: 'Caricamento accessi dipendenti…', secured: 'Dispositivo del negozio protetto', inactivity: 'Blocco automatico dopo 5 minuti di inattività.',
-    chooseEmployee: 'Scegli dipendente', incorrect: 'Impossibile sbloccare la postazione.', back: 'Cancella ultima cifra', clear: 'Cancella PIN',
+    chooseEmployee: 'Scegli dipendente', incorrect: 'Impossibile sbloccare la postazione.', back: 'Cancella ultima cifra', clear: 'Cancella PIN', logout: 'Esci',
   },
 } satisfies Record<LanguageCode, Record<string, string>>
 
@@ -130,7 +131,7 @@ async function revokeOperatorToken(activeToken: string, reason: string) {
   }
 }
 
-export default function StaffKioskGate({ authEmail, language, children }: StaffKioskGateProps) {
+export default function StaffKioskGate({ authEmail, language, onLogout, children }: StaffKioskGateProps) {
   const requiresPin = requiresStaffKioskPin(authEmail)
   const resolvedLanguage: LanguageCode = isLanguageCode(language) ? language : 'en'
   const text = copy[resolvedLanguage]
@@ -139,6 +140,7 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
   const [operator, setOperator] = useState<StaffKioskOperator | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const [error, setError] = useState('')
   const lastActivityRef = useRef(0)
   const lastHeartbeatRef = useRef(0)
@@ -297,9 +299,21 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
   }, [submitting, text.incorrect])
 
   const updatePin = (value: string) => {
-    const nextPin = value.replace(/\D/g, '').slice(0, 6)
+    const nextPin = normalizedStaffKioskPin(value)
     setPin(nextPin)
-    if (nextPin.length === 6 && pinAvailable) void unlock(nextPin)
+    if (shouldAutoUnlockStaffKioskPin(nextPin, pinAvailable)) void unlock(nextPin)
+  }
+
+  const logoutSharedAccount = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    setPin('')
+    setStaffKioskOperatorToken('')
+    try {
+      await onLogout()
+    } finally {
+      setLoggingOut(false)
+    }
   }
 
   if (!requiresPin) return <>{children({
@@ -317,6 +331,9 @@ export default function StaffKioskGate({ authEmail, language, children }: StaffK
           <h2 id="staff-kiosk-title">{pinAvailable ? text.title : text.setupTitle}</h2>
           <p>{pinAvailable ? text.subtitle : text.setupHelp}</p>
         </div>
+        <button className="secondary staff-kiosk-logout" disabled={loggingOut} type="button" onClick={() => void logoutSharedAccount()}>
+          <LogOut aria-hidden="true" size={17} /> {text.logout}
+        </button>
       </header>
 
       {loading ? <p className="staff-kiosk-loading">{text.loading}</p> : (
