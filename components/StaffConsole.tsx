@@ -35,6 +35,7 @@ import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnly
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '../lib/staffEmployeeInvite'
+import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
@@ -4680,6 +4681,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const canEditEmployeeProfiles = canManageAttendance
   const canManageEmployeeKioskPins = isOwnerOrAdmin && !kioskOperator
   const canRevealEmployeeKioskPin = (isOwnerOrAdmin || isOfficeStaff) && !kioskOperator
+  const hrAccessContext = { authEmail: authEmail || profile?.email, role, roleRank: rank }
+  const canAccessHrSettings = canAccessCoreHrSettings(hrAccessContext)
+  const canAccessZaloSettings = canAccessZaloHrSettings(hrAccessContext)
   const canViewAttendanceClock = !isStaffOnly
   const canViewAttendanceSettings = !isStaffOnly
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
@@ -9537,6 +9541,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             attendanceWeekDates,
             attendanceWeekStart,
             canEditEmployeeProfiles,
+            canAccessHrSettings,
+            canAccessZaloSettings,
             canManageEmployeeKioskPins,
             canManageAttendance,
             customerName,

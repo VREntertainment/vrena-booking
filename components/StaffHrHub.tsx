@@ -4,6 +4,7 @@
 import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Mail, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '@/lib/staffEmployeeInvite'
+import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
@@ -361,6 +362,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     attendanceWeekDates,
     attendanceWeekStart,
     canEditEmployeeProfiles,
+    canAccessHrSettings,
+    canAccessZaloSettings,
     canManageEmployeeKioskPins,
     canManageAttendance,
     customerName,
@@ -643,7 +646,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const pendingAdjustmentCount = periodHrAdjustments.filter((item: any) => normalizeHrAdjustmentStatus(item.status) === 'pending').length
   const periodAdvanceCount = periodHrAdjustments.filter((item: any) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
   const selectedEmployeeLabel = selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback
-  const visibleHrTabs = isOwnerOrAdmin ? staffHrTabs : staffHrTabs.filter((tab: string) => tab !== 'zalo')
+  const visibleHrTabs = accessibleStaffHrTabs(staffHrTabs, { canAccessHrSettings, canAccessZaloSettings })
   const periodAttendanceLogs = attendanceLogs.filter((log: any) => log.work_date >= payrollPeriodStart && log.work_date <= payrollPeriodEnd)
   const pendingAttendanceCount = periodAttendanceLogs.filter((log: any) => log.approval_status !== 'approved').length
   const timesheetProfiles = visibleStaffProfileOptions.filter((staffProfile: any) => {
@@ -1528,11 +1531,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                 </div>
               )}
 
-              {hrTab === 'zalo' && isOwnerOrAdmin && (
+              {hrTab === 'zalo' && canAccessZaloSettings && (
                 <StaffZaloMiniAppSettings language={resolvedLanguage} onStatus={setStatus} />
               )}
 
-              {hrTab === 'settings' && (
+              {hrTab === 'settings' && canAccessHrSettings && (
                 <div className="staff-hr-settings-shell">
                   <header className="staff-hr-settings-heading">
                     <h3>{completionText.settingsTitle}</h3>

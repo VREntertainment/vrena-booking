@@ -31,6 +31,12 @@ type StaffConsoleEntry = {
   profileRank: number
 }
 
+type StaffHrAccessContext = {
+  authEmail?: string | null
+  role?: string | null
+  roleRank: number
+}
+
 export function canEnterStaffConsole({
   authEmail,
   hasVerifiedMfaFactor,
@@ -40,6 +46,29 @@ export function canEnterStaffConsole({
   if (profileRank < 20) return false
   if (requiresStaffKioskPin(authEmail)) return true
   return hasVerifiedMfaFactor && mfaAssuranceLevel === 'aal2'
+}
+
+export function canAccessHrConsole({ authEmail, roleRank }: StaffHrAccessContext) {
+  return !requiresStaffKioskPin(authEmail) && roleRank >= 20
+}
+
+export function canAccessZaloHrSettings(context: StaffHrAccessContext) {
+  return canAccessHrConsole(context) && context.roleRank >= 100
+}
+
+export function canAccessCoreHrSettings(context: StaffHrAccessContext) {
+  return canAccessHrConsole(context)
+    && (context.roleRank >= 100 || context.role?.trim().toLowerCase() === 'cashier')
+}
+
+export function accessibleStaffHrTabs<T extends string>(
+  tabs: readonly T[],
+  access: { canAccessHrSettings: boolean; canAccessZaloSettings: boolean },
+) {
+  return tabs.filter((tab) => (
+    (tab !== 'zalo' || access.canAccessZaloSettings)
+    && (tab !== 'settings' || access.canAccessHrSettings)
+  ))
 }
 
 export function canConfigureStaffKioskPin(email: string | null | undefined, roleRank: number) {
