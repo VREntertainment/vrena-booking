@@ -16,7 +16,7 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import { canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin } from '../lib/staffKioskScope'
+import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
@@ -5235,6 +5235,11 @@ function handleSessionDateChange(value: string) {
     mfaAssuranceLevel,
     profileRank: staffAccessRank,
   }))
+  const canAccessHrConsole = Boolean(profile && canAccessStaffConsole && canAccessHrConsoleForActor({
+    authEmail: staffAccountEmail,
+    role: profile.role,
+    roleRank: staffAccessRank,
+  }))
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -8675,6 +8680,7 @@ function handleSessionDateChange(value: string) {
   const appAside = (
     <AppSidebar
       activeView={activeView}
+      canAccessHrConsole={canAccessHrConsole}
       canAccessStaffConsole={canAccessStaffConsole}
       isChampion={crownedTopPlayer?.profileId === userId}
       language={language}
@@ -9082,7 +9088,7 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'hr' && (
-          canAccessStaffConsole ? (
+          canAccessHrConsole ? (
             requiresStaffKioskPin(authEmail) ? (
               <StaffKioskGate authEmail={authEmail} language={language} onLogout={logoutStaffKiosk}>
                 {(operator, lock) => (
@@ -9113,7 +9119,7 @@ function handleSessionDateChange(value: string) {
           ) : (
             <section className="section staff-console">
               <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
-              <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
+              <p className="notice">{language === 'vi' ? 'Cần quyền truy cập HR.' : 'HR access required.'}</p>
             </section>
           )
         )}
