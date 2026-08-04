@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     })
     if (error) return staffKioskJsonError(error.message, 400)
 
-    const result = data as { employee?: unknown; profile?: unknown } | null
-    if (!result?.employee || !result.profile) {
+    const result = data as { employee?: unknown } | null
+    if (!result?.employee) {
       return staffKioskJsonError('Could not create the employee HR record.', 500)
     }
 
