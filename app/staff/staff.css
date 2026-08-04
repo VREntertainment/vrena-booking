@@ -7353,6 +7353,23 @@
   font-weight: 900;
 }
 
+.app .staff-hr-kiosk-generate {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--vrena-mode-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--vrena-mode-accent) 8%, transparent);
+  color: var(--vrena-mode-accent);
+  font-weight: 800;
+}
+
+.app .staff-hr-kiosk-generate:hover {
+  background: color-mix(in srgb, var(--vrena-mode-accent) 14%, transparent);
+}
+
 .app .staff-hr-document-count {
   margin: 0;
   color: var(--vrena-neutral-600);

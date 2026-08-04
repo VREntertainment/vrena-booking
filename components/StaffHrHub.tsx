@@ -391,6 +391,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     formatDongInput,
     formatVnd,
     formatVndCompact,
+    generateEmployeeKioskPin,
     generatePayrollRun,
     handleHrDocumentUpload,
     hoursLabel,
@@ -934,6 +935,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             </label>
                           )}
                           {canManageEmployeeKioskPins && <div className="staff-hr-kiosk-pin-entry">
+                            <button className="staff-hr-kiosk-generate" type="button" onClick={generateEmployeeKioskPin}>
+                              <RefreshCw aria-hidden="true" size={16} />
+                              {resolvedLanguage === 'vi' ? 'Tạo PIN ngẫu nhiên 6 số' : 'Generate random 6-digit PIN'}
+                            </button>
                             <label>
                               {resolvedLanguage === 'vi' ? 'PIN 6 số mới' : 'New 6-digit PIN'}
                               <input autoComplete="new-password" inputMode="numeric" maxLength={6} placeholder="••••••" type="password" value={employeeKioskPin} onChange={(event) => setEmployeeKioskPin(event.target.value.replace(/\D/g, '').slice(0, 6))} />

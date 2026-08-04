@@ -4077,6 +4077,28 @@ function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConso
   return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
 }
 
+function staffProfileFromEmployee(employee: StaffEmployeeProfile): StaffProfile {
+  const fullName = employee.legal_name?.trim() || employee.employee_code?.trim() || 'Employee'
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('')
+
+  return {
+    id: employee.profile_id,
+    created_at: employee.created_at,
+    full_name: fullName,
+    email: employee.personal_email,
+    phone: employee.personal_phone,
+    avatar_initials: initials || 'E',
+    avatar_color: employee.kiosk_access_role === 'manager' ? '#e0e7ff' : '#ecfeff',
+    avatar_text_color: employee.kiosk_access_role === 'manager' ? '#3730a3' : '#0e7490',
+    role: employee.kiosk_access_role === 'manager' ? 'manager' : 'staff',
+  }
+}
+
 function deletedRecordActorLabel(record: SoftDeletedRecord) {
   const name = record.deleted_by_name?.trim() || ''
   const contact = record.deleted_by_email?.trim() || record.deleted_by_phone?.trim() || ''
@@ -4978,16 +5000,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     () => attendanceDateRange(attendanceRangeStart, attendanceRangeEnd),
     [attendanceRangeEnd, attendanceRangeStart]
   )
-  const profileById = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles])
+  const employeeStaffProfiles = useMemo(() => employeeProfiles.map(staffProfileFromEmployee), [employeeProfiles])
+  const profileById = useMemo(() => new Map(
+    [...profiles, ...employeeStaffProfiles].map((item) => [item.id, item])
+  ), [employeeStaffProfiles, profiles])
   const awardableProfiles = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) === 'player')
   ), [profiles])
   const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
   const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
-  const allStaffProfileOptions = useMemo(() => (
-    profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) !== 'player')
-  ), [profiles])
+  const allStaffProfileOptions = employeeStaffProfiles
   const attendanceWeekStaffIds = useMemo(() => {
     const ids = new Set<string>()
     attendanceShifts.forEach((shift) => ids.add(shift.staff_profile_id))
@@ -6752,6 +6775,24 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
   }
 
+  function generateEmployeeKioskPin() {
+    const randomValue = new Uint32Array(1)
+    const range = 900000
+    const unbiasedLimit = Math.floor(0x100000000 / range) * range
+    let value = unbiasedLimit
+
+    while (value >= unbiasedLimit) {
+      window.crypto.getRandomValues(randomValue)
+      value = randomValue[0]
+    }
+
+    const pin = String(100000 + (value % range))
+    setEmployeeKioskPin(pin)
+    setEmployeeKioskPinConfirm(pin)
+    setEmployeeKioskPinSaveConfirmation('')
+    setEmployeeKioskPinVisibleValue(pin)
+  }
+
   async function saveEmployeeProfile() {
     if (!canEditEmployeeProfiles) return
     const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
@@ -6838,23 +6879,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const payload = await response.json().catch(() => ({})) as {
         employee?: StaffEmployeeProfile
         error?: string
-        profile?: StaffProfile
         warning?: string
       }
-      if (!response.ok || !payload.employee || !payload.profile) {
+      if (!response.ok || !payload.employee) {
         throw new Error(payload.error || 'Could not create the employee HR record.')
       }
 
-      setEmployeeForm(employeeFormForProfile(payload.profile, payload.employee))
+      const employeeStaffProfile = staffProfileFromEmployee(payload.employee)
+      setEmployeeForm(employeeFormForProfile(employeeStaffProfile, payload.employee))
       setEmployeeKioskPin('')
       setEmployeeKioskPinConfirm('')
       setEmployeeKioskPinSaveConfirmation('')
       setEmployeeKioskPinVisibleValue('')
       setEmployeeKioskAccessRole(payload.employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
-      employeeKioskPinProfileRef.current = payload.profile.id
+      employeeKioskPinProfileRef.current = payload.employee.profile_id
       setStatus(payload.warning || (resolvedLanguage === 'vi' ? 'Đã tạo hồ sơ HR. Hãy cấp PIN 6 số.' : 'HR record created. Assign the six-digit PIN.'))
-      markStaffDataStale('profiles', 'attendance', 'hr')
-      await Promise.all([loadProfiles(true), loadAttendanceData(true), loadHrData(true)])
+      markStaffDataStale('attendance', 'hr')
+      await Promise.all([loadAttendanceData(true), loadHrData(true)])
       return { warning: payload.warning || '' }
     } finally {
       setSaving(false)
@@ -9580,6 +9621,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             formatDongInput,
             formatVnd,
             formatVndCompact,
+            generateEmployeeKioskPin,
             generatePayrollRun,
             handleHrDocumentUpload,
             hoursLabel,
