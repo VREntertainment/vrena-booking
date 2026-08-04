@@ -1,8 +1,9 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserRound, WalletCards, X } from 'lucide-react'
-import { Fragment, useMemo, useState } from 'react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Mail, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import type { StaffEmployeeInviteEmploymentType, StaffEmployeeInviteRole } from '@/lib/staffEmployeeInvite'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
@@ -12,6 +13,112 @@ type StaffHrHubProps = {
 
 type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' | 'categories' | 'organization'
 type StaffScheduleViewMode = 'employee' | 'shift'
+type EmployeeProfileSectionId = 'identity' | 'contract' | 'payroll' | 'bank' | 'contact' | 'store' | 'documents'
+
+const employeeExperienceCopy = {
+  en: {
+    collapseAll: 'Collapse all',
+    createEmployee: 'Create employee',
+    createHelp: 'Invite a staff login and create its private HR file in one step.',
+    createIntro: 'They receive a secure account invitation. You can complete payroll details and create their store PIN immediately after.',
+    created: 'Employee created and selected.',
+    creating: 'Creating employee…',
+    employeeProfiles: 'Employee profiles',
+    employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
+    employmentType: 'Employment type',
+    expandAll: 'Expand all',
+    fullName: 'Full name',
+    invite: 'Send invite & create profile',
+    phone: 'Phone (optional)',
+    role: 'App role',
+    roles: { manager: 'Manager', staff: 'Staff', cashier: 'Office Staff' } satisfies Record<StaffEmployeeInviteRole, string>,
+    sectionHelp: {
+      identity: 'Identity, attendance, and legal information',
+      contract: 'Role, workplace, employment, and dates',
+      payroll: 'Pay rate, allowances, rest, and overtime',
+      bank: 'Contributions, tax, insurance, and bank details',
+      contact: 'Personal contact and internal payroll notes',
+      store: 'Shared-device role and personal six-digit PIN',
+      documents: 'Profile photo, CV, and HR attachments',
+    } satisfies Record<EmployeeProfileSectionId, string>,
+    sectionTitles: {
+      identity: 'Private employee profile',
+      contract: 'Employment & contract',
+      payroll: 'Pay & overtime',
+      bank: 'Tax, insurance & bank',
+      contact: 'Contact & notes',
+      store: 'Store access',
+      documents: 'Documents',
+    } satisfies Record<EmployeeProfileSectionId, string>,
+    workEmail: 'Work email',
+  },
+  vi: {
+    collapseAll: 'Thu gọn tất cả',
+    createEmployee: 'Tạo nhân viên',
+    createHelp: 'Mời tài khoản nhân viên và tạo hồ sơ HR riêng trong một bước.',
+    createIntro: 'Nhân viên sẽ nhận lời mời tài khoản an toàn. Bạn có thể hoàn tất lương và tạo PIN cửa hàng ngay sau đó.',
+    created: 'Đã tạo và chọn nhân viên.',
+    creating: 'Đang tạo nhân viên…',
+    employeeProfiles: 'Hồ sơ nhân viên',
+    employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
+    employmentType: 'Hình thức làm việc',
+    expandAll: 'Mở tất cả',
+    fullName: 'Họ và tên',
+    invite: 'Gửi lời mời & tạo hồ sơ',
+    phone: 'Điện thoại (không bắt buộc)',
+    role: 'Vai trò ứng dụng',
+    roles: { manager: 'Quản lý', staff: 'Nhân viên', cashier: 'Nhân viên văn phòng' } satisfies Record<StaffEmployeeInviteRole, string>,
+    sectionHelp: {
+      identity: 'Danh tính, chấm công và thông tin pháp lý',
+      contract: 'Vai trò, nơi làm việc, hình thức và ngày hợp đồng',
+      payroll: 'Mức lương, phụ cấp, nghỉ và tăng ca',
+      bank: 'Đóng góp, thuế, bảo hiểm và ngân hàng',
+      contact: 'Liên hệ cá nhân và ghi chú nội bộ',
+      store: 'Vai trò thiết bị dùng chung và PIN 6 số',
+      documents: 'Ảnh hồ sơ, CV và tài liệu HR',
+    } satisfies Record<EmployeeProfileSectionId, string>,
+    sectionTitles: {
+      identity: 'Hồ sơ nhân viên riêng tư',
+      contract: 'Việc làm & hợp đồng',
+      payroll: 'Lương & tăng ca',
+      bank: 'Thuế, bảo hiểm & ngân hàng',
+      contact: 'Liên hệ & ghi chú',
+      store: 'Quyền truy cập cửa hàng',
+      documents: 'Tài liệu',
+    } satisfies Record<EmployeeProfileSectionId, string>,
+    workEmail: 'Email công việc',
+  },
+} as const
+
+function CollapsibleEmployeeSection({
+  children,
+  description,
+  id,
+  onToggle,
+  open,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  id: EmployeeProfileSectionId
+  onToggle: (id: EmployeeProfileSectionId) => void
+  open: boolean
+  title: string
+}) {
+  const contentId = `staff-employee-section-${id}`
+  return (
+    <section className={`staff-hr-form-section staff-hr-collapsible-section ${open ? 'is-open' : ''}`}>
+      <button aria-controls={contentId} aria-expanded={open} className="staff-hr-section-toggle" type="button" onClick={() => onToggle(id)}>
+        <span>
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+        <ChevronDown aria-hidden="true" size={19} />
+      </button>
+      <div className="staff-hr-section-content" hidden={!open} id={contentId}>{children}</div>
+    </section>
+  )
+}
 
 const staffScheduleCopy = {
   en: {
@@ -267,6 +374,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     effectiveShiftTemplates,
     editShift,
     configureEmployeeKioskPin,
+    createEmployeeAccount,
     employeeForm,
     employeeKioskAccessRole,
     employeeKioskPin,
@@ -380,9 +488,68 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
   const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const employeeCopy = employeeExperienceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const [settingsSection, setSettingsSection] = useState<HrSettingsSection>('initialization')
   const [scheduleViewMode, setScheduleViewMode] = useState<StaffScheduleViewMode>('employee')
   const [timesheetSearch, setTimesheetSearch] = useState('')
+  const [createEmployeeOpen, setCreateEmployeeOpen] = useState(false)
+  const [createEmployeeStatus, setCreateEmployeeStatus] = useState('')
+  const [createEmployeeStatusTone, setCreateEmployeeStatusTone] = useState<'error' | 'success'>('success')
+  const [createEmployeeSaving, setCreateEmployeeSaving] = useState(false)
+  const [newEmployee, setNewEmployee] = useState<{
+    email: string
+    employmentType: StaffEmployeeInviteEmploymentType
+    fullName: string
+    phone: string
+    role: StaffEmployeeInviteRole
+  }>({ email: '', employmentType: 'part_time', fullName: '', phone: '', role: 'staff' })
+  const [openEmployeeSections, setOpenEmployeeSections] = useState<Record<EmployeeProfileSectionId, boolean>>({
+    identity: true,
+    contract: false,
+    payroll: false,
+    bank: false,
+    contact: false,
+    store: false,
+    documents: false,
+  })
+
+  const allEmployeeSectionsOpen = Object.values(openEmployeeSections).every(Boolean)
+
+  function toggleEmployeeSection(section: EmployeeProfileSectionId) {
+    setOpenEmployeeSections((current) => ({ ...current, [section]: !current[section] }))
+  }
+
+  function toggleAllEmployeeSections() {
+    const nextOpen = !allEmployeeSectionsOpen
+    setOpenEmployeeSections({
+      identity: nextOpen,
+      contract: nextOpen,
+      payroll: nextOpen,
+      bank: nextOpen,
+      contact: nextOpen,
+      store: nextOpen,
+      documents: nextOpen,
+    })
+  }
+
+  async function submitNewEmployee() {
+    if (createEmployeeSaving || !newEmployee.fullName.trim() || !newEmployee.email.trim()) return
+    setCreateEmployeeSaving(true)
+    setCreateEmployeeStatus('')
+    try {
+      const result = await createEmployeeAccount(newEmployee)
+      setCreateEmployeeStatusTone('success')
+      setCreateEmployeeStatus(result?.warning || employeeCopy.created)
+      setCreateEmployeeOpen(false)
+      setNewEmployee({ email: '', employmentType: 'part_time', fullName: '', phone: '', role: 'staff' })
+      setOpenEmployeeSections((current) => ({ ...current, identity: true, contract: true }))
+    } catch (error) {
+      setCreateEmployeeStatusTone('error')
+      setCreateEmployeeStatus(error instanceof Error ? error.message : String(error))
+    } finally {
+      setCreateEmployeeSaving(false)
+    }
+  }
 
   const weekScheduleShifts = useMemo(() => (
     visibleScheduleAttendanceShifts.filter((shift: any) => (
@@ -552,6 +719,81 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
               {hrTab === 'employees' && (
                 <div className="staff-attendance-layout staff-employee-layout staff-hr-employee-layout staff-hr-employee-layout-single">
+                  <div className="staff-hr-employee-commandbar">
+                    <div>
+                      <h3>{employeeCopy.employeeProfiles}</h3>
+                      <p>{employeeCopy.employeeProfilesHelp}</p>
+                    </div>
+                    <div className="staff-hr-employee-command-actions">
+                      <button className="secondary" type="button" onClick={toggleAllEmployeeSections}>
+                        <ChevronDown aria-hidden="true" className={allEmployeeSectionsOpen ? 'is-expanded' : ''} size={17} />
+                        {allEmployeeSectionsOpen ? employeeCopy.collapseAll : employeeCopy.expandAll}
+                      </button>
+                      {isOwnerOrAdmin && <button className="primary" type="button" onClick={() => {
+                        setCreateEmployeeStatus('')
+                        setCreateEmployeeStatusTone('success')
+                        setCreateEmployeeOpen(true)
+                      }}>
+                        <UserPlus aria-hidden="true" size={17} />
+                        {employeeCopy.createEmployee}
+                      </button>}
+                    </div>
+                  </div>
+
+                  {createEmployeeStatus && <p className={`staff-hr-employee-create-status ${createEmployeeStatusTone}`} role="status">{createEmployeeStatus}</p>}
+
+                  {createEmployeeOpen && (
+                    <section className="staff-hr-employee-create-panel" aria-labelledby="staff-create-employee-title">
+                      <header>
+                        <span className="staff-hr-employee-create-icon"><UserPlus aria-hidden="true" size={22} /></span>
+                        <div>
+                          <h4 id="staff-create-employee-title">{employeeCopy.createEmployee}</h4>
+                          <p>{employeeCopy.createHelp}</p>
+                        </div>
+                        <button aria-label={text.actions.cancel} className="staff-icon-button" type="button" onClick={() => setCreateEmployeeOpen(false)}>
+                          <X aria-hidden="true" size={18} />
+                        </button>
+                      </header>
+                      <p className="staff-hr-employee-create-intro">{employeeCopy.createIntro}</p>
+                      <div className="form-grid compact-form-grid staff-hr-employee-create-fields">
+                        <label>
+                          {employeeCopy.fullName}
+                          <input autoComplete="name" placeholder="Nguyen Van A" value={newEmployee.fullName} onChange={(event) => setNewEmployee((current) => ({ ...current, fullName: event.target.value }))} />
+                        </label>
+                        <label>
+                          {employeeCopy.workEmail}
+                          <input autoComplete="email" placeholder="employee@example.com" type="email" value={newEmployee.email} onChange={(event) => setNewEmployee((current) => ({ ...current, email: event.target.value }))} />
+                        </label>
+                        <label>
+                          {employeeCopy.phone}
+                          <PhoneNumberInput buttonLabel={sharedText.countryCode} className="staff-phone-control" inputLabel={employeeCopy.phone} onChange={(phone) => setNewEmployee((current) => ({ ...current, phone }))} searchPlaceholder={sharedText.searchCountry} value={newEmployee.phone} />
+                        </label>
+                        <label>
+                          {employeeCopy.employmentType}
+                          <select value={newEmployee.employmentType} onChange={(event) => setNewEmployee((current) => ({ ...current, employmentType: event.target.value as StaffEmployeeInviteEmploymentType }))}>
+                            {staffEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                      <fieldset className="staff-hr-employee-role-picker">
+                        <legend>{employeeCopy.role}</legend>
+                        {(['staff', 'manager', 'cashier'] as const).map((role) => (
+                          <label className={newEmployee.role === role ? 'active' : ''} key={role}>
+                            <input checked={newEmployee.role === role} name="new-employee-role" type="radio" value={role} onChange={() => setNewEmployee((current) => ({ ...current, role }))} />
+                            <span>{employeeCopy.roles[role]}</span>
+                          </label>
+                        ))}
+                      </fieldset>
+                      <footer>
+                        <button className="secondary" type="button" onClick={() => setCreateEmployeeOpen(false)}>{text.actions.cancel}</button>
+                        <button className="primary" disabled={createEmployeeSaving || !newEmployee.fullName.trim() || !newEmployee.email.trim()} type="button" onClick={() => void submitNewEmployee()}>
+                          {createEmployeeSaving ? <RefreshCw aria-hidden="true" className="staff-spin" size={17} /> : <Mail aria-hidden="true" size={17} />}
+                          {createEmployeeSaving ? employeeCopy.creating : employeeCopy.invite}
+                        </button>
+                      </footer>
+                    </section>
+                  )}
+
                   <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
@@ -576,8 +818,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     <datalist id="staff-hr-job-title-options">{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
                     <datalist id="staff-hr-contract-type-options">{hrContractTypeOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
                     <div className="staff-hr-profile-form">
-                      <section className="staff-hr-form-section">
-                        <h5>{text.labels.privateEmployeeProfile}</h5>
+                      <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.identity} id="identity" onToggle={toggleEmployeeSection} open={openEmployeeSections.identity} title={employeeCopy.sectionTitles.identity}>
                         <div className="form-grid compact-form-grid">
                           <label>
                             {text.labels.staffMember}
@@ -601,10 +842,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             </select>
                           </label>
                         </div>
-                      </section>
+                      </CollapsibleEmployeeSection>
 
-                      <section className="staff-hr-form-section">
-                        <h5>{text.labels.contractStatus}</h5>
+                      <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contract} id="contract" onToggle={toggleEmployeeSection} open={openEmployeeSections.contract} title={employeeCopy.sectionTitles.contract}>
                         <div className="form-grid compact-form-grid">
                           <label>{text.labels.department}<input list="staff-hr-department-options" value={employeeForm.department} onChange={(event) => setEmployeeForm({ ...employeeForm, department: event.target.value })} /></label>
                           <label>{text.labels.jobTitle}<input list="staff-hr-job-title-options" value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
@@ -628,10 +868,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{text.labels.startDate}<StaffPickerField ariaLabel={text.labels.startDate} placeholder={text.chooseDate} type="date" value={employeeForm.start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, start_date: value })} /></label>
                           <label>{text.labels.endDate}<StaffPickerField ariaLabel={text.labels.endDate} placeholder={text.chooseDate} type="date" value={employeeForm.end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, end_date: value })} /></label>
                         </div>
-                      </section>
+                      </CollapsibleEmployeeSection>
 
-                      <section className="staff-hr-form-section">
-                        <h5>{text.labels.payrollLink}</h5>
+                      <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.payroll} id="payroll" onToggle={toggleEmployeeSection} open={openEmployeeSections.payroll} title={employeeCopy.sectionTitles.payroll}>
                         <div className="form-grid compact-form-grid">
                           {employeeUsesMonthlyGross ? (
                             <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
@@ -644,10 +883,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{text.labels.nightOvertimeMultiplier}<input min={0} step="0.05" type="number" value={employeeForm.night_rate_multiplier} onChange={(event) => setEmployeeForm({ ...employeeForm, night_rate_multiplier: event.target.value })} /></label>
                           <label>{text.labels.holidayOvertimeMultiplier}<input min={0} step="0.05" type="number" value={employeeForm.holiday_rate_multiplier} onChange={(event) => setEmployeeForm({ ...employeeForm, holiday_rate_multiplier: event.target.value })} /></label>
                         </div>
-                      </section>
+                      </CollapsibleEmployeeSection>
 
-                      <section className="staff-hr-form-section">
-                        <h5>{text.labels.bankTransfer}</h5>
+                      <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.bank} id="bank" onToggle={toggleEmployeeSection} open={openEmployeeSections.bank} title={employeeCopy.sectionTitles.bank}>
                         <div className="form-grid compact-form-grid">
                           <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={employeeForm.employee_contribution_rate} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_contribution_rate: event.target.value })} /></label>
                           <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={employeeForm.employer_contribution_rate} onChange={(event) => setEmployeeForm({ ...employeeForm, employer_contribution_rate: event.target.value })} /></label>
@@ -658,10 +896,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{text.labels.taxCodeEmployee}<input value={employeeForm.tax_code} onChange={(event) => setEmployeeForm({ ...employeeForm, tax_code: event.target.value })} /></label>
                           <label>{text.labels.socialInsurance}<input value={employeeForm.social_insurance_number} onChange={(event) => setEmployeeForm({ ...employeeForm, social_insurance_number: event.target.value })} /></label>
                         </div>
-                      </section>
+                      </CollapsibleEmployeeSection>
 
-                      <section className="staff-hr-form-section">
-                        <h5>{text.labels.personalPhone}</h5>
+                      <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contact} id="contact" onToggle={toggleEmployeeSection} open={openEmployeeSections.contact} title={employeeCopy.sectionTitles.contact}>
                         <div className="form-grid compact-form-grid">
                           <label>{text.labels.personalPhone}<PhoneNumberInput buttonLabel={sharedText.countryCode} className="staff-phone-control" inputLabel={text.labels.personalPhone} onChange={(phone) => setEmployeeForm({ ...employeeForm, personal_phone: phone })} searchPlaceholder={sharedText.searchCountry} value={employeeForm.personal_phone} /></label>
                           <label>{text.labels.personalEmail}<input value={employeeForm.personal_email} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_email: event.target.value })} /></label>
@@ -669,17 +906,13 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
                           <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
                         </div>
-                      </section>
+                      </CollapsibleEmployeeSection>
 
-                      {canRevealEmployeeKioskPin && <section className="staff-hr-form-section staff-hr-kiosk-access">
+                      {canRevealEmployeeKioskPin && <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.store} id="store" onToggle={toggleEmployeeSection} open={openEmployeeSections.store} title={employeeCopy.sectionTitles.store}>
+                        <div className="staff-hr-kiosk-access">
                         <div className="staff-hr-kiosk-access-head">
                           <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>
-                          <div>
-                            <h5>{resolvedLanguage === 'vi' ? 'Quyền truy cập tại cửa hàng' : 'Store access'}</h5>
-                            <p>{resolvedLanguage === 'vi'
-                              ? 'PIN cá nhân liên kết mọi thao tác trên thiết bị dùng chung với hồ sơ HR này.'
-                              : 'A personal PIN links every action on the shared store device to this HR file.'}</p>
-                          </div>
+                          <strong>{resolvedLanguage === 'vi' ? 'PIN nhân viên' : 'Employee PIN'}</strong>
                           <span className={`staff-hr-kiosk-status ${employeeForm.kiosk_pin_configured_at ? 'configured' : ''}`}>
                             {employeeForm.kiosk_pin_configured_at
                               ? (resolvedLanguage === 'vi' ? 'Đã cấu hình' : 'Configured')
@@ -729,15 +962,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                   : (resolvedLanguage === 'vi' ? 'Tạo PIN' : 'Create PIN')}
                           </button>}
                         </div>
-                      </section>}
-                    </div>
-                    <div className="staff-hr-document-section">
-                      <div className="staff-hr-panel-head compact">
-                        <div>
-                          <h5>{text.labels.attachmentList}</h5>
                         </div>
-                        <strong>{selectedEmployeeDocuments.length}</strong>
-                      </div>
+                      </CollapsibleEmployeeSection>}
+                    </div>
+                    <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.documents} id="documents" onToggle={toggleEmployeeSection} open={openEmployeeSections.documents} title={employeeCopy.sectionTitles.documents}>
+                    <div className="staff-hr-document-section">
+                      <p className="staff-hr-document-count"><strong>{selectedEmployeeDocuments.length}</strong> {text.labels.attachmentList}</p>
                       <div className="staff-hr-document-actions">
                         <label className="staff-file-action">
                           <FileText aria-hidden="true" size={15} />
@@ -758,6 +988,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </div>
                       </div>
                     </div>
+                    </CollapsibleEmployeeSection>
                     <label className="staff-checkbox-row staff-employee-active-row">
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
                       <span>{text.labels.activeEmployee}</span>

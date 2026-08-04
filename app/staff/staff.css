@@ -7093,6 +7093,278 @@
   padding: 18px 0;
 }
 
+.app .staff-hr-employee-commandbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--staff-modern-border);
+  padding: 18px 0;
+}
+
+.app .staff-hr-employee-commandbar h3,
+.app .staff-hr-employee-commandbar p,
+.app .staff-hr-employee-create-panel h4,
+.app .staff-hr-employee-create-panel p {
+  margin: 0;
+}
+
+.app .staff-hr-employee-commandbar h3 {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.app .staff-hr-employee-commandbar p {
+  max-width: 620px;
+  margin-top: 4px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.app .staff-hr-employee-command-actions,
+.app .staff-hr-employee-create-panel footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.app .staff-hr-employee-command-actions button,
+.app .staff-hr-employee-create-panel footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto;
+  white-space: nowrap;
+}
+
+.app .staff-hr-employee-command-actions .is-expanded {
+  transform: rotate(180deg);
+}
+
+.app .staff-hr-employee-create-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--vrena-status-success-ink) 28%, transparent);
+  border-radius: 7px;
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.app .staff-hr-employee-create-status.error {
+  border-color: var(--vrena-status-danger-border);
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
+}
+
+.app .staff-spin {
+  animation: staff-employee-spin 800ms linear infinite;
+}
+
+@keyframes staff-employee-spin {
+  to { transform: rotate(360deg); }
+}
+
+.app .staff-hr-employee-create-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-600) 28%, var(--staff-modern-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, var(--vrena-white));
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding: 18px;
+}
+
+.app .staff-hr-employee-create-panel header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+}
+
+.app .staff-hr-employee-create-panel h4 {
+  font-size: 18px;
+  letter-spacing: -0.015em;
+}
+
+.app .staff-hr-employee-create-panel header p,
+.app .staff-hr-employee-create-intro {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.app .staff-hr-employee-create-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 12%, var(--vrena-white));
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-hr-employee-create-panel .staff-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 0;
+  box-shadow: none;
+}
+
+.app .staff-hr-employee-create-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app .staff-hr-employee-role-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.app .staff-hr-employee-role-picker legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-hr-employee-role-picker label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  border: 1px solid var(--staff-modern-border);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 10px 12px;
+  color: var(--vrena-neutral-800);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app .staff-hr-employee-role-picker label.active {
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+  box-shadow: inset 3px 0 0 var(--vrena-selection-indicator);
+}
+
+.app .staff-hr-employee-role-picker input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.app .staff-hr-collapsible-section {
+  display: block;
+  padding: 0;
+}
+
+.app .staff-hr-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 66px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  padding: 13px 2px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .staff-hr-section-toggle:hover {
+  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+}
+
+.app .staff-hr-section-toggle > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-hr-section-toggle strong {
+  color: var(--vrena-mode-accent);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.app .staff-hr-section-toggle small {
+  overflow: hidden;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-hr-section-toggle svg {
+  flex: 0 0 auto;
+  color: var(--vrena-neutral-600);
+  transition: transform 160ms ease;
+}
+
+.app .staff-hr-collapsible-section.is-open .staff-hr-section-toggle svg {
+  transform: rotate(180deg);
+}
+
+.app .staff-hr-section-content {
+  padding: 2px 2px 18px;
+}
+
+.app .staff-hr-section-content[hidden] {
+  display: none;
+}
+
+.app .staff-hr-kiosk-access-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.app .staff-hr-kiosk-access-head > strong {
+  color: var(--vrena-neutral-800);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-hr-document-count {
+  margin: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-hr-document-count strong {
+  color: var(--vrena-mode-accent);
+  font-size: 13px;
+}
+
 .app .staff-hr-form-section h5 {
   font-size: 14px;
 }
@@ -7271,6 +7543,37 @@
     text-overflow: clip;
     white-space: normal;
   }
+
+  .app .staff-hr-employee-commandbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-hr-employee-command-actions,
+  .app .staff-hr-employee-create-panel footer {
+    width: 100%;
+  }
+
+  .app .staff-hr-employee-command-actions button,
+  .app .staff-hr-employee-create-panel footer button {
+    flex: 1 1 0;
+    white-space: normal;
+  }
+
+  .app .staff-hr-employee-create-panel {
+    padding: 14px;
+  }
+
+  .app .staff-hr-employee-create-fields,
+  .app .staff-hr-employee-role-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-section-toggle small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -7307,6 +7610,13 @@
   .app .staff-hr-row-status,
   .app .staff-hr-table-panel .staff-table-wrap {
     background: transparent;
+  }
+
+  .app .staff-hr-employee-create-panel,
+  .app .staff-hr-employee-role-picker label,
+  .app .staff-hr-employee-create-panel .staff-icon-button,
+  .app .staff-hr-employee-create-icon {
+    background: color-mix(in srgb, var(--vrena-neutral-900) 92%, var(--vrena-cyan-700));
   }
 
   .app .staff-hr-table-panel .staff-table th {
