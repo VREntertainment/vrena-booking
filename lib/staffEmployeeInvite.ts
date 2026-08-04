@@ -32,10 +32,10 @@ export function validateStaffEmployeeInvite(input: StaffEmployeeInviteInput) {
 
   if (!fullName) return { ok: false as const, error: 'Enter the employee name.' }
   if (fullName.length > 120) return { ok: false as const, error: 'Employee name is too long.' }
+  if (email.length > 254) return { ok: false as const, error: 'Work email is too long.' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false as const, error: 'Enter a valid work email.' }
   }
-  if (email.length > 254) return { ok: false as const, error: 'Work email is too long.' }
   if (phone.length > 40) return { ok: false as const, error: 'Phone number is too long.' }
   if (!staffEmployeeInviteRoles.includes(role)) {
     return { ok: false as const, error: 'Choose Staff, Manager, or Office Staff.' }

@@ -26,6 +26,7 @@ test('normalizes a valid employee invitation', () => {
 test('rejects invalid employee invitation fields', () => {
   assert.equal(validateStaffEmployeeInvite({}).ok, false)
   assert.equal(validateStaffEmployeeInvite({ fullName: 'Employee', email: 'invalid', role: 'staff', employmentType: 'part_time' }).ok, false)
+  assert.equal(validateStaffEmployeeInvite({ fullName: 'Employee', email: `${'a'.repeat(250)}@example.com`, role: 'staff', employmentType: 'part_time' }).ok, false)
   assert.equal(validateStaffEmployeeInvite({ fullName: 'Employee', email: 'staff@example.com', role: 'owner', employmentType: 'part_time' }).ok, false)
   assert.equal(validateStaffEmployeeInvite({ fullName: 'Employee', email: 'staff@example.com', role: 'staff', employmentType: 'temporary' }).ok, false)
 })
