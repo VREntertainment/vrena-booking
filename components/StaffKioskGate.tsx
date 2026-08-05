@@ -5,31 +5,26 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
 import { normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin } from '@/lib/staffKioskScope'
 import {
+  getStaffKioskOperator,
   getStaffKioskOperatorToken,
+  setStaffKioskOperator,
   setStaffKioskOperatorToken,
   STAFF_KIOSK_HEADER,
   supabase,
+  type StaffKioskOperator,
 } from '@/lib/supabase/client'
 
 const INACTIVITY_MS = 5 * 60 * 1000
 const HEARTBEAT_MS = 30 * 1000
 
-export type StaffKioskOperator = {
-  profileId: string
-  employeeCode: string | null
-  name: string
-  jobTitle: string | null
-  accessRole: 'manager' | 'staff'
-  avatarEmoji: string | null
-  avatarInitials: string | null
-  avatarColor: string | null
-  avatarTextColor: string | null
-}
+export type { StaffKioskOperator } from '@/lib/supabase/client'
 
 type StaffKioskGateProps = {
   authEmail?: string
   language?: string
   onLogout: () => Promise<void>
+  onLockChange?: (lock: (() => void) | null) => void
+  onOperatorChange?: (operator: StaffKioskOperator | null) => void
   children: (operator: StaffKioskOperator, lock: () => void) => ReactNode
 }
 
@@ -131,13 +126,13 @@ async function revokeOperatorToken(activeToken: string, reason: string) {
   }
 }
 
-export default function StaffKioskGate({ authEmail, language, onLogout, children }: StaffKioskGateProps) {
+export default function StaffKioskGate({ authEmail, language, onLogout, onLockChange, onOperatorChange, children }: StaffKioskGateProps) {
   const requiresPin = requiresStaffKioskPin(authEmail)
   const resolvedLanguage: LanguageCode = isLanguageCode(language) ? language : 'en'
   const text = copy[resolvedLanguage]
   const [pinAvailable, setPinAvailable] = useState(false)
   const [pin, setPin] = useState('')
-  const [operator, setOperator] = useState<StaffKioskOperator | null>(null)
+  const [operator, setOperator] = useState<StaffKioskOperator | null>(() => requiresPin ? getStaffKioskOperator() : null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
@@ -180,11 +175,12 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
     setPin('')
     setError('')
     setStaffKioskOperatorToken('')
+    onOperatorChange?.(null)
     if (inactivityTimerRef.current) window.clearTimeout(inactivityTimerRef.current)
     inactivityTimerRef.current = null
     if (!activeToken) return
     void revokeOperatorToken(activeToken, reason)
-  }, [])
+  }, [onOperatorChange])
 
   const heartbeat = useCallback(async () => {
     if (!getStaffKioskOperatorToken()) return false
@@ -209,8 +205,19 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
     setPin('')
     setError('')
     setStaffKioskOperatorToken('')
+    onOperatorChange?.(null)
     if (activeToken) void revokeOperatorToken(activeToken, 'manual')
-  }, [])
+  }, [onOperatorChange])
+
+  useEffect(() => {
+    if (!operator) {
+      onLockChange?.(null)
+      return
+    }
+
+    onLockChange?.(manualLock)
+    return () => onLockChange?.(null)
+  }, [manualLock, onLockChange, operator])
 
   useEffect(() => {
     if (!operator) return
@@ -251,10 +258,6 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
     }
   }, [heartbeat, lockOperator, operator])
 
-  useEffect(() => () => {
-    setStaffKioskOperatorToken('')
-  }, [])
-
   const unlock = useCallback(async (pinValue: string) => {
     if (submitting || !/^\d{6}$/.test(pinValue)) return
     setSubmitting(true)
@@ -286,9 +289,11 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
         avatarTextColor: typeof result.avatar_text_color === 'string' ? result.avatar_text_color : null,
       }
       setStaffKioskOperatorToken(payload.operatorToken)
+      setStaffKioskOperator(nextOperator)
       lastActivityRef.current = Date.now()
       lastHeartbeatRef.current = Date.now()
       setOperator(nextOperator)
+      onOperatorChange?.(nextOperator)
       setPin('')
     } catch (unlockError) {
       setPin('')
@@ -296,7 +301,7 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
     } finally {
       setSubmitting(false)
     }
-  }, [submitting, text.incorrect])
+  }, [onOperatorChange, submitting, text.incorrect])
 
   const updatePin = (value: string) => {
     const nextPin = normalizedStaffKioskPin(value)
@@ -309,6 +314,7 @@ export default function StaffKioskGate({ authEmail, language, onLogout, children
     setLoggingOut(true)
     setPin('')
     setStaffKioskOperatorToken('')
+    onOperatorChange?.(null)
     try {
       await onLogout()
     } finally {
