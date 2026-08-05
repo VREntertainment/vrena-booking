@@ -57,6 +57,7 @@ const employeeExperienceCopy = {
     monthly: 'Monthly',
     manager: 'Manager',
     probationSalaryPercentage: 'Probation salary',
+    probationBonusPercentage: 'Probation bonus',
     probationStart: 'Probation start',
     probationEnd: 'Probation end',
     laborStart: 'Labor start',
@@ -125,6 +126,7 @@ const employeeExperienceCopy = {
     monthly: 'Theo tháng',
     manager: 'Quản lý',
     probationSalaryPercentage: 'Tỷ lệ lương thử việc',
+    probationBonusPercentage: 'Tỷ lệ thưởng thử việc',
     probationStart: 'Bắt đầu thử việc',
     probationEnd: 'Kết thúc thử việc',
     laborStart: 'Bắt đầu hợp đồng lao động',
@@ -1241,6 +1243,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{employeeCopy.probationPayrollType}<select value={employeeForm.probation_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
                           <label>{employeeCopy.laborPayrollType}<select value={employeeForm.labor_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, labor_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
                           <label>{employeeCopy.probationSalaryPercentage}<select value={employeeForm.probation_salary_percentage} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_salary_percentage: event.target.value })}><option value="85">85%</option><option value="100">100%</option></select></label>
+                          <label>{employeeCopy.probationBonusPercentage}<select value={employeeForm.probation_bonus_percentage} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_bonus_percentage: event.target.value })}><option value="85">85%</option><option value="100">100%</option></select></label>
                           <label>{employeeCopy.probationStart}<StaffPickerField ariaLabel={employeeCopy.probationStart} placeholder={text.chooseDate} type="date" value={employeeForm.probation_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, probation_start_date: value })} /></label>
                           <label>{employeeCopy.probationEnd}<StaffPickerField ariaLabel={employeeCopy.probationEnd} placeholder={text.chooseDate} type="date" value={employeeForm.probation_end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, probation_end_date: value })} /></label>
                           <label>{employeeCopy.laborStart}<StaffPickerField ariaLabel={employeeCopy.laborStart} placeholder={text.chooseDate} type="date" value={employeeForm.labor_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, labor_start_date: value })} /></label>
