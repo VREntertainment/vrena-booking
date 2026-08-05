@@ -443,7 +443,11 @@
   background: color-mix(in srgb, var(--vrena-brand-soft) 42%, var(--vrena-surface));
 }
 
-.staff-hr-kiosk-editor-head,
+.staff-hr-kiosk-editor-head {
+  display: grid;
+  gap: 12px;
+}
+
 .staff-hr-kiosk-actions {
   display: flex;
   align-items: center;
@@ -464,13 +468,13 @@
 
 .staff-hr-kiosk-generate {
   display: inline-flex;
-  flex: 0 0 auto;
+  width: 100%;
   min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 7px;
   padding-inline: 13px;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .staff-hr-kiosk-pin-entry {
@@ -518,19 +522,7 @@
 }
 
 @media (max-width: 960px) {
-  .app .staff-hr-kiosk-editor-head {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .app .staff-hr-kiosk-editor-head > div {
-    min-width: 0;
-  }
-
-  .app .staff-hr-kiosk-editor-head > .staff-hr-kiosk-generate {
-    width: 100%;
-    white-space: normal;
-  }
+  .app .staff-hr-kiosk-editor-head > div { min-width: 0; }
 }
 
 @media (max-width: 760px) {

@@ -9291,7 +9291,7 @@
 
 .app .staff-hr-option-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.65fr);
+  grid-template-columns: minmax(180px, 0.55fr) minmax(360px, 1fr);
   gap: 20px;
   align-items: center;
   min-height: 102px;
@@ -9349,6 +9349,39 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.app .staff-hr-option-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app .staff-hr-option-editor > label {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-hr-option-editor > label > span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-hr-option-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.app .staff-hr-option-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
 }
 
 @media (max-width: 980px) {
@@ -9463,6 +9496,18 @@
     grid-template-columns: 1fr;
   }
 
+  .app .staff-hr-option-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-hr-option-actions {
+    grid-column: 1;
+  }
+
+  .app .staff-hr-option-actions button {
+    flex: 1 1 130px;
+  }
+
   .app .staff-hr-timesheet-search,
   .app .staff-hr-approve-attendance {
     width: 100%;
@@ -9537,6 +9582,21 @@
     color: var(--vrena-neutral-100);
   }
 
+  .app .staff-hr-policy-summary {
+    border-color: var(--staff-modern-border-strong);
+    background: color-mix(in srgb, var(--vrena-mode-accent) 7%, var(--staff-modern-surface));
+  }
+
+  .app .staff-hr-policy-summary > div strong,
+  .app .staff-hr-policy-summary dd {
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-policy-summary > div span,
+  .app .staff-hr-policy-summary dt {
+    color: var(--vrena-neutral-400);
+  }
+
   .app .staff-hr-option-chips > span {
     border-color: var(--staff-modern-border-strong);
     background: var(--staff-modern-soft);
@@ -9551,6 +9611,10 @@
   .app .staff-hr-option-chips > span > button {
     background: color-mix(in srgb, currentColor 8%, transparent);
     color: inherit;
+  }
+
+  .app .staff-hr-option-editor > label > span {
+    color: var(--vrena-neutral-400);
   }
 
   .app .staff-hr-settings-nav button {
