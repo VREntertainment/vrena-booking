@@ -16,9 +16,9 @@ import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/pl
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, requiresStaffKioskPin, shouldRedirectStaffKioskToPin } from '../lib/staffKioskScope'
+import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
-import { setStaffKioskOperatorToken } from '../lib/supabase/client'
+import { getStaffKioskOperator, setStaffKioskOperatorToken, type StaffKioskOperator } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
 import AppLoadingState from './AppLoadingState'
@@ -220,6 +220,8 @@ export default function WidgetPage({
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState('')
   const [authEmail, setAuthEmail] = useState('')
+  const [kioskOperator, setKioskOperator] = useState<StaffKioskOperator | null>(() => getStaffKioskOperator())
+  const [kioskLock, setKioskLock] = useState<(() => void) | null>(null)
   const [search, setSearch] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [selectedSessionDate, setSelectedSessionDate] = useState('')
@@ -3591,11 +3593,6 @@ export default function WidgetPage({
   }, [profile, onProfileChange])
 
   useEffect(() => {
-    if (!profile || !shouldRedirectStaffKioskToPin(authEmail, activeView)) return
-    return schedulePostEffectStateUpdate(() => setActiveView('staff'))
-  }, [activeView, authEmail, profile])
-
-  useEffect(() => {
     if (!profile || !userId) return
     if (currentUserShareStats?.profileId === userId) return
 
@@ -3776,7 +3773,10 @@ export default function WidgetPage({
       if (!active) return
 
       const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
-        if (!requiresStaffKioskPin(session?.user.email)) setStaffKioskOperatorToken('')
+        if (!requiresStaffKioskPin(session?.user.email)) {
+          setStaffKioskOperatorToken('')
+          setKioskOperator(null)
+        }
 
         authDebug('authStateChange', {
           event,
@@ -5210,17 +5210,29 @@ function handleSessionDateChange(value: string) {
     && !requiresStaffKioskPin(staffAccountEmail)
     && !hasVerifiedTotpFactor
   )
-  const canAccessStaffConsole = Boolean(profile && canEnterStaffConsole({
-    authEmail: staffAccountEmail,
-    hasVerifiedMfaFactor: hasVerifiedTotpFactor,
-    mfaAssuranceLevel,
-    profileRank: staffAccessRank,
-  }))
-  const canAccessHrConsole = Boolean(profile && canAccessStaffConsole && canAccessHrConsoleForActor({
-    authEmail: staffAccountEmail,
-    role: profile.role,
-    roleRank: staffAccessRank,
-  }))
+  const sharedKioskAccount = requiresStaffKioskPin(staffAccountEmail)
+  const handleKioskLockChange = useCallback((lock: (() => void) | null) => {
+    setKioskLock(() => lock)
+  }, [])
+  const canAccessStaffConsole = Boolean(profile && (
+    sharedKioskAccount
+      ? canStaffKioskOperatorAccessStaff(kioskOperator?.accessRole)
+      : canEnterStaffConsole({
+        authEmail: staffAccountEmail,
+        hasVerifiedMfaFactor: hasVerifiedTotpFactor,
+        mfaAssuranceLevel,
+        profileRank: staffAccessRank,
+      })
+  ))
+  const canAccessHrConsole = Boolean(profile && canAccessStaffConsole && (
+    sharedKioskAccount
+      ? canStaffKioskOperatorAccessHr(kioskOperator?.accessRole)
+      : canAccessHrConsoleForActor({
+        authEmail: staffAccountEmail,
+        role: profile.role,
+        roleRank: staffAccessRank,
+      })
+  ))
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -9033,22 +9045,18 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'staff' && (
           canAccessStaffConsole ? (
-            requiresStaffKioskPin(authEmail) ? (
-              <StaffKioskGate authEmail={authEmail} language={language} onLogout={logoutStaffKiosk}>
-                {(operator, lock) => (
-                  <StaffConsole
-                    authEmail=""
-                    key={`staff-console-${operator.profileId}`}
-                    kioskOperator={operator}
-                    language={language}
-                    mode="staff"
-                    onKioskLock={lock}
-                    profile={profile ? { ...profile, id: operator.profileId, email: null, full_name: operator.name, role: operator.accessRole } : null}
-                    onOpenPlayerProfile={openStaffPlayerProfile}
-                    onOpenSessionCalendar={openCreateSessionCalendar}
-                  />
-                )}
-              </StaffKioskGate>
+            sharedKioskAccount && kioskOperator ? (
+              <StaffConsole
+                authEmail=""
+                key={`staff-console-${kioskOperator.profileId}`}
+                kioskOperator={kioskOperator}
+                language={language}
+                mode="staff"
+                onKioskLock={kioskLock || undefined}
+                profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
+                onOpenPlayerProfile={openStaffPlayerProfile}
+                onOpenSessionCalendar={openCreateSessionCalendar}
+              />
             ) : (
               <StaffConsole
                 authEmail={authEmail}
@@ -9070,22 +9078,18 @@ function handleSessionDateChange(value: string) {
 
         {activeView === 'hr' && (
           canAccessHrConsole ? (
-            requiresStaffKioskPin(authEmail) ? (
-              <StaffKioskGate authEmail={authEmail} language={language} onLogout={logoutStaffKiosk}>
-                {(operator, lock) => (
-                  <StaffConsole
-                    authEmail=""
-                    key={`hr-console-${operator.profileId}`}
-                    kioskOperator={operator}
-                    language={language}
-                    mode="hr"
-                    onKioskLock={lock}
-                    profile={profile ? { ...profile, id: operator.profileId, email: null, full_name: operator.name, role: operator.accessRole } : null}
-                    onOpenPlayerProfile={openStaffPlayerProfile}
-                    onOpenSessionCalendar={openCreateSessionCalendar}
-                  />
-                )}
-              </StaffKioskGate>
+            sharedKioskAccount && kioskOperator ? (
+              <StaffConsole
+                authEmail=""
+                key={`hr-console-${kioskOperator.profileId}`}
+                kioskOperator={kioskOperator}
+                language={language}
+                mode="hr"
+                onKioskLock={kioskLock || undefined}
+                profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
+                onOpenPlayerProfile={openStaffPlayerProfile}
+                onOpenSessionCalendar={openCreateSessionCalendar}
+              />
             ) : (
               <StaffConsole
                 authEmail={authEmail}
@@ -10417,7 +10421,7 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  return (
+  const appShell = (
     <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? 'console-workspace' : 'player-workspace'}${navigationCollapsed ? ' navigation-collapsed' : ''}`} data-tour="app-shell">
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
@@ -10426,5 +10430,19 @@ function handleSessionDateChange(value: string) {
       {appMain}
       {appOverlays}
     </div>
+  )
+
+  if (!sharedKioskAccount) return appShell
+
+  return (
+    <StaffKioskGate
+      authEmail={authEmail}
+      language={language}
+      onLockChange={handleKioskLockChange}
+      onLogout={logoutStaffKiosk}
+      onOperatorChange={setKioskOperator}
+    >
+      {() => appShell}
+    </StaffKioskGate>
   )
 }

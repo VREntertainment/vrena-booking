@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // @ts-expect-error Node's native TypeScript runner requires the explicit extension.
-import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, shouldRedirectStaffKioskToPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
+import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {
   assert.equal(requiresStaffKioskPin(STAFF_KIOSK_EMAIL), true)
@@ -17,12 +17,13 @@ test('the sixth PIN digit completes the automatic unlock value', () => {
   assert.equal(shouldAutoUnlockStaffKioskPin('123456', true), true)
 })
 
-test('the shared store login lands on the PIN gate instead of player views', () => {
-  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'leaderboard'), true)
-  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'profile'), true)
-  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'staff'), false)
-  assert.equal(shouldRedirectStaffKioskToPin(STAFF_KIOSK_EMAIL, 'hr'), false)
-  assert.equal(shouldRedirectStaffKioskToPin('manager@vre-vietnam.com', 'leaderboard'), false)
+test('Staff and HR navigation follow the unlocked employee role', () => {
+  assert.equal(canStaffKioskOperatorAccessStaff('staff'), true)
+  assert.equal(canStaffKioskOperatorAccessStaff('manager'), true)
+  assert.equal(canStaffKioskOperatorAccessStaff(null), false)
+  assert.equal(canStaffKioskOperatorAccessHr('staff'), false)
+  assert.equal(canStaffKioskOperatorAccessHr('manager'), true)
+  assert.equal(canStaffKioskOperatorAccessHr(null), false)
 })
 
 test('privileged and individually named staff accounts bypass the employee PIN', () => {

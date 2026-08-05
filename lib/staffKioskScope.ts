@@ -20,8 +20,14 @@ export function shouldAutoUnlockStaffKioskPin(value: string, pinAvailable: boole
   return pinAvailable && isCompleteStaffKioskPin(value)
 }
 
-export function shouldRedirectStaffKioskToPin(email: string | null | undefined, activeView: string) {
-  return requiresStaffKioskPin(email) && activeView !== 'staff' && activeView !== 'hr'
+export type StaffKioskAccessRole = 'manager' | 'staff'
+
+export function canStaffKioskOperatorAccessStaff(role?: StaffKioskAccessRole | null) {
+  return role === 'manager' || role === 'staff'
+}
+
+export function canStaffKioskOperatorAccessHr(role?: StaffKioskAccessRole | null) {
+  return role === 'manager'
 }
 
 type StaffConsoleEntry = {
