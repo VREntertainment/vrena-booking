@@ -4,6 +4,7 @@
 import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
+import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
@@ -28,9 +29,9 @@ const employeeExperienceCopy = {
   en: {
     collapseAll: 'Collapse all',
     createEmployee: 'Create employee',
-    createHelp: 'Create a private HR record, then assign the employee a store PIN.',
-    createIntro: 'This creates an internal HR record only—no player profile, login, or account invitation. After saving, Store access opens so you can assign the employee’s six-digit PIN.',
-    created: 'HR record created. Assign the employee’s six-digit PIN in Store access.',
+    createHelp: 'Create a private HR record, then complete the employee details.',
+    createIntro: 'This creates an internal HR record only—no player profile, login, or account invitation. Store PIN access is available only to employees in the VRena or Manager group.',
+    created: 'HR record created. Complete the employee’s identity and employment details.',
     creating: 'Creating employee…',
     employeeProfiles: 'Employee profiles',
     employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
@@ -96,9 +97,9 @@ const employeeExperienceCopy = {
   vi: {
     collapseAll: 'Thu gọn tất cả',
     createEmployee: 'Tạo nhân viên',
-    createHelp: 'Tạo hồ sơ HR riêng tư, sau đó cấp PIN cửa hàng cho nhân viên.',
-    createIntro: 'Thao tác này chỉ tạo hồ sơ HR nội bộ—không tạo hồ sơ người chơi, tài khoản đăng nhập hoặc gửi lời mời. Sau khi lưu, mục Quyền truy cập cửa hàng sẽ mở để bạn cấp PIN 6 số.',
-    created: 'Đã tạo hồ sơ HR. Hãy cấp PIN 6 số trong mục Quyền truy cập cửa hàng.',
+    createHelp: 'Tạo hồ sơ HR riêng tư, sau đó hoàn thiện thông tin nhân viên.',
+    createIntro: 'Thao tác này chỉ tạo hồ sơ HR nội bộ—không tạo hồ sơ người chơi, tài khoản đăng nhập hoặc gửi lời mời. PIN thiết bị cửa hàng chỉ dành cho nhân viên thuộc nhóm VRena hoặc Manager.',
+    created: 'Đã tạo hồ sơ HR. Hãy hoàn thiện thông tin danh tính và việc làm.',
     creating: 'Đang tạo nhân viên…',
     employeeProfiles: 'Hồ sơ nhân viên',
     employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
@@ -766,7 +767,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     return filtered.length > 0 ? filtered : staffContractStatuses
   }, [hrOptionsByType, staffContractStatuses])
 
-  const allEmployeeSectionsOpen = Object.values(openEmployeeSections).every(Boolean)
+  const employeeKioskEligible = isStaffKioskEligibleDepartment(employeeForm.department)
+  const visibleEmployeeSectionIds: EmployeeProfileSectionId[] = employeeKioskEligible
+    ? ['identity', 'contract', 'payroll', 'bank', 'contact', 'store', 'documents']
+    : ['identity', 'contract', 'payroll', 'bank', 'contact', 'documents']
+  const allEmployeeSectionsOpen = visibleEmployeeSectionIds.every((section) => openEmployeeSections[section])
   const savedEmployeeEmail = String(employeeProfileById.get(selectedEmployeeStaffId)?.personal_email || '').trim()
 
   function toggleEmployeeSection(section: EmployeeProfileSectionId) {
@@ -781,7 +786,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       payroll: nextOpen,
       bank: nextOpen,
       contact: nextOpen,
-      store: nextOpen,
+      store: employeeKioskEligible ? nextOpen : false,
       documents: nextOpen,
     })
   }
@@ -796,10 +801,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       setCreateEmployeeStatus(result?.warning || employeeCopy.created)
       setCreateEmployeeOpen(false)
       setNewEmployee({ email: '', employmentType: 'part_time', fullName: '', phone: '' })
-      setOpenEmployeeSections((current) => ({ ...current, identity: true, contract: true, store: true }))
-      window.requestAnimationFrame(() => {
-        document.getElementById('staff-employee-section-store')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
+      setOpenEmployeeSections((current) => ({ ...current, identity: true, contract: true, store: false }))
     } catch (error) {
       setCreateEmployeeStatusTone('error')
       setCreateEmployeeStatus(error instanceof Error ? error.message : String(error))
@@ -1282,7 +1284,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </div>
                       </CollapsibleEmployeeSection>
 
-                      {canRevealEmployeeKioskPin && <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.store} id="store" onToggle={toggleEmployeeSection} open={openEmployeeSections.store} title={employeeCopy.sectionTitles.store}>
+                      {canRevealEmployeeKioskPin && employeeKioskEligible && <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.store} id="store" onToggle={toggleEmployeeSection} open={openEmployeeSections.store} title={employeeCopy.sectionTitles.store}>
                         <div className="staff-hr-kiosk-access">
                           <div className="staff-hr-kiosk-access-head">
                             <span className="staff-hr-kiosk-access-icon"><Smartphone aria-hidden="true" size={20} /></span>

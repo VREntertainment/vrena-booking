@@ -1,3 +1,19 @@
+const STAFF_KIOSK_ELIGIBLE_DEPARTMENTS = new Set(['vrena', 'manager'])
+
+export const STAFF_KIOSK_ELIGIBILITY_MESSAGE = 'Store PIN access is limited to VRena and Manager employees.'
+
+function normalizeStaffKioskDepartment(value: unknown) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim()
+    .toLowerCase()
+}
+
+export function isStaffKioskEligibleDepartment(department: unknown) {
+  return STAFF_KIOSK_ELIGIBLE_DEPARTMENTS.has(normalizeStaffKioskDepartment(department))
+}
+
 export type StaffKioskOperatorDirectoryItem = {
   profileId: string
   employeeCode: string | null
@@ -12,6 +28,7 @@ export type StaffKioskOperatorDirectoryItem = {
 }
 
 export type StaffKioskEmployeeDirectoryRow = {
+  department: string | null
   profile_id: string
   employee_code: string | null
   legal_name: string | null
@@ -41,7 +58,11 @@ export function staffKioskOperatorFromEmployee(
     name,
     jobTitle: employee.job_title,
     accessRole,
-    pinConfigured: Boolean(employee.kiosk_pin_configured_at && accessRole),
+    pinConfigured: Boolean(
+      isStaffKioskEligibleDepartment(employee.department)
+      && employee.kiosk_pin_configured_at
+      && accessRole,
+    ),
     avatarEmoji: null,
     avatarInitials: employeeInitials(name),
     avatarColor: '#f3f4f6',

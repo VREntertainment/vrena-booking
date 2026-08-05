@@ -35,6 +35,7 @@ import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnly
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
+import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
 import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
@@ -6156,7 +6157,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setEmployeeKioskPinEmailRecipient('')
         setEmployeeKioskAccessRole(employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
         employeeKioskPinProfileRef.current = employee.profile_id
-        if (canRevealEmployeeKioskPin) void revealEmployeeKioskPin(employee.profile_id)
+        if (canRevealEmployeeKioskPin && isStaffKioskEligibleDepartment(employee.department)) {
+          void revealEmployeeKioskPin(employee.profile_id)
+        }
       }
     }, force)
   }
@@ -6909,7 +6912,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setEmployeeKioskAccessRole(employee?.kiosk_access_role === 'manager' ? 'manager' : 'staff')
     setHrTab('employees')
     setActiveTab('hr')
-    if (canRevealEmployeeKioskPin) void revealEmployeeKioskPin(staffProfile.id)
+    if (canRevealEmployeeKioskPin && isStaffKioskEligibleDepartment(employee?.department)) {
+      void revealEmployeeKioskPin(staffProfile.id)
+    }
   }
 
   async function revealEmployeeKioskPin(staffProfileId: string) {
