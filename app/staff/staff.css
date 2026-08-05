@@ -3913,6 +3913,12 @@
   box-shadow: 0 18px 52px rgba(43, 51, 79, 0.08);
 }
 
+.app .staff-hr-accountant-workspace > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .app .staff-hr-accountant-head,
 .app .staff-hr-accountant-period,
 .app .staff-hr-accountant-eyebrow,
@@ -3925,6 +3931,7 @@
 .app .staff-hr-accountant-head {
   justify-content: space-between;
   gap: 20px;
+  width: 100%;
 }
 
 .app .staff-hr-accountant-head > div {
