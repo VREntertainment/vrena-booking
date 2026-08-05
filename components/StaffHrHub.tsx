@@ -489,6 +489,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeKioskAccessRole,
     employeeKioskPin,
     employeeKioskPinConfirm,
+    employeeKioskPinEmailRecipient,
+    employeeKioskPinEmailState,
     employeeKioskPinSaveConfirmation,
     employeeKioskPinLoading,
     employeeKioskPinVisibleValue,
@@ -542,6 +544,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     saveAttendanceSettings,
     saveShift,
     saving,
+    sendEmployeeKioskPinEmail,
     selectedEmployeeDocuments,
     selectedEmployeeOutstandingDebt,
     selectedEmployeeStaffId,
@@ -653,6 +656,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }, [customerName, employeeProfileById, text, visibleAllStaffProfileOptions])
 
   const allEmployeeSectionsOpen = Object.values(openEmployeeSections).every(Boolean)
+  const savedEmployeeEmail = String(employeeProfileById.get(selectedEmployeeStaffId)?.personal_email || '').trim()
 
   function toggleEmployeeSection(section: EmployeeProfileSectionId) {
     setOpenEmployeeSections((current) => ({ ...current, [section]: !current[section] }))
@@ -1132,7 +1136,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               </label>
 
                               <div className="staff-hr-kiosk-current-pin">
-                                <div>
+                                <div className="staff-hr-kiosk-pin-heading">
                                   <span id="staff-hr-current-pin-label">{resolvedLanguage === 'vi' ? 'PIN hiện tại' : 'Current PIN'}</span>
                                   <small>{resolvedLanguage === 'vi' ? 'Thông tin bảo mật' : 'Protected credential'}</small>
                                 </div>
@@ -1142,6 +1146,34 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                   : employeeKioskPinVisibleValue
                                     ? (resolvedLanguage === 'vi' ? 'Chỉ Chủ sở hữu, Quản trị viên và Nhân viên văn phòng mới thấy PIN này.' : 'Visible only to Owner, Admin, and Office Staff.')
                                     : (resolvedLanguage === 'vi' ? 'Chưa có PIN cho nhân viên này.' : 'No PIN is configured for this employee.')}</small>
+                                <div className="staff-hr-kiosk-pin-delivery">
+                                  <div>
+                                    <strong>{resolvedLanguage === 'vi' ? 'Gửi PIN an toàn' : 'Secure PIN delivery'}</strong>
+                                    <small>{savedEmployeeEmail
+                                      ? (resolvedLanguage === 'vi' ? `Gửi tới email HR đã lưu: ${savedEmployeeEmail}` : `Send to the saved HR email: ${savedEmployeeEmail}`)
+                                      : (resolvedLanguage === 'vi' ? 'Lưu email cá nhân trong mục Liên hệ & ghi chú trước.' : 'Save a personal email in Contact & notes first.')}</small>
+                                    {employeeKioskPinEmailState === 'sent' && employeeKioskPinEmailRecipient && <small className="staff-hr-kiosk-email-recipient">
+                                      {resolvedLanguage === 'vi' ? `Đã gửi tới ${employeeKioskPinEmailRecipient}` : `Sent to ${employeeKioskPinEmailRecipient}`}
+                                    </small>}
+                                  </div>
+                                  <button
+                                    aria-live="polite"
+                                    className={`secondary staff-hr-kiosk-email ${employeeKioskPinEmailState === 'sent' ? 'is-confirmed' : ''}`}
+                                    disabled={employeeKioskPinEmailState !== 'idle' || employeeKioskPinLoading || !employeeForm.kiosk_pin_configured_at || !savedEmployeeEmail}
+                                    title={savedEmployeeEmail
+                                      ? (resolvedLanguage === 'vi' ? `Gửi PIN tới ${savedEmployeeEmail}` : `Send PIN to ${savedEmployeeEmail}`)
+                                      : (resolvedLanguage === 'vi' ? 'Lưu email cá nhân trước' : 'Save a personal email first')}
+                                    type="button"
+                                    onClick={() => void sendEmployeeKioskPinEmail(selectedEmployeeStaffId)}
+                                  >
+                                    {employeeKioskPinEmailState === 'sent' ? <CircleCheckBig aria-hidden="true" size={16} /> : <Send aria-hidden="true" size={16} />}
+                                    {employeeKioskPinEmailState === 'sending'
+                                      ? (resolvedLanguage === 'vi' ? 'Đang gửi…' : 'Sending…')
+                                      : employeeKioskPinEmailState === 'sent'
+                                        ? (resolvedLanguage === 'vi' ? 'Đã gửi email' : 'Email sent')
+                                        : (resolvedLanguage === 'vi' ? 'Gửi qua email' : 'Send by email')}
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
