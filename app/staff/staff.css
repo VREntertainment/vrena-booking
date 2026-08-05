@@ -3927,6 +3927,10 @@
   gap: 20px;
 }
 
+.app .staff-hr-accountant-head > div {
+  min-width: 0;
+}
+
 .app .staff-hr-accountant-head h3 {
   margin: 5px 0 4px;
   font-size: clamp(1.55rem, 2vw, 2.1rem);
@@ -3941,6 +3945,7 @@
 
 .app .staff-hr-accountant-head p {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .app .staff-hr-accountant-eyebrow {
@@ -4169,7 +4174,9 @@
 
   .app .staff-hr-accountant-period,
   .app .staff-hr-accountant-period button {
+    box-sizing: border-box;
     justify-content: center;
+    max-width: 100%;
     width: 100%;
   }
 
