@@ -38,7 +38,7 @@ import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeReco
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
 import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
 import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
-import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
+import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
@@ -877,6 +877,7 @@ const staffConsoleText = {
     noUniqueDiscount: 'No unique discount',
     days: 'days',
     emailOverrideKeepsAdmin: 'Email override keeps this account in its protected role.',
+    sharedKioskRoleProtected: 'Shared store account. Employee PIN access stays enabled for this account only.',
     noExpiry: 'no expiry',
     noneYet: 'None yet',
     newValue: 'New',
@@ -1670,6 +1671,7 @@ const staffConsoleText = {
     noUniqueDiscount: 'Không có ưu đãi riêng',
     days: 'ngày',
     emailOverrideKeepsAdmin: 'Email cố định vẫn giữ tài khoản này trong vai trò được bảo vệ.',
+    sharedKioskRoleProtected: 'Tài khoản dùng chung tại cửa hàng. Chỉ tài khoản này được giữ quyền truy cập bằng PIN nhân viên.',
     noExpiry: 'không hết hạn',
     noneYet: 'Chưa có',
     newValue: 'Mới',
@@ -10789,6 +10791,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               const selectedRole = pendingRoleChanges[item.id] || storedRole
               const hasPendingRoleChange = selectedRole !== storedRole
               const protectedEmail = isAdminEmail(item.email)
+              const sharedKioskAccount = requiresStaffKioskPin(item.email)
               const rowFeedback = roleSaveFeedback[item.id]
               const rolePersonContent = (
                 <>
@@ -10797,6 +10800,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <strong>{customerName(item, text)}</strong>
                     <span>{item.email || item.phone || text.noContact} · {text.labels.current} {staffRoleName(effectiveRole, text)}</span>
                     {protectedEmail && <small>{text.emailOverrideKeepsAdmin}</small>}
+                    {sharedKioskAccount && <small>{text.sharedKioskRoleProtected}</small>}
                   </span>
                 </>
               )
@@ -10820,7 +10824,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <div className="staff-role-primary-actions">
                       <select
                         aria-label={`${text.labels.roleFor} ${customerName(item, text)}`}
-                        disabled={!canManageRoles || saving || storedRole === 'employee'}
+                        disabled={!canManageRoles || saving || sharedKioskAccount}
                         value={selectedRole}
                         onChange={(event) => stageProfileRole(item.id, storedRole, event.target.value as StaffRole)}
                       >
