@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
@@ -72,13 +72,14 @@ const employeeExperienceCopy = {
     laborEnd: 'Labor end',
     companyPolicy: 'Company payroll policy',
     companyPolicyHelp: 'Meal allowance, minimum rest, overtime and insurance rates come from HR Settings. Insurance applies only when this employee is enrolled.',
+    monthlyBonus: 'Recurring monthly bonus',
     insuranceEnrolled: 'Social insurance enrolled',
     insuranceSalary: 'Insurance salary base',
     emergencyName: 'Emergency contact name',
     emergencyRelationship: 'Relationship',
     emergencyPhone: 'Emergency phone',
     driveFolder: 'Google Drive employee folder',
-    driveFolderHelp: 'Open the verified HR folder or replace the link for this employee.',
+    driveFolderHelp: 'Open',
     expandAll: 'Expand all',
     fullName: 'Full name',
     saveRecord: 'Create HR record',
@@ -90,7 +91,7 @@ const employeeExperienceCopy = {
       bank: 'Contributions, tax, insurance, and bank details',
       contact: 'Personal contact and internal payroll notes',
       store: 'Shared-device role and personal six-digit PIN',
-      documents: 'Profile photo, CV, and HR attachments',
+      documents: 'Google Drive folder and HR attachments',
     } satisfies Record<EmployeeProfileSectionId, string>,
     sectionTitles: {
       identity: 'Private employee profile',
@@ -140,13 +141,14 @@ const employeeExperienceCopy = {
     laborEnd: 'Kết thúc hợp đồng lao động',
     companyPolicy: 'Chính sách lương công ty',
     companyPolicyHelp: 'Phụ cấp ăn, nghỉ tối thiểu, tăng ca và tỷ lệ bảo hiểm được lấy từ Cài đặt HR. Bảo hiểm chỉ áp dụng khi nhân viên được đăng ký.',
+    monthlyBonus: 'Thưởng hàng tháng cố định',
     insuranceEnrolled: 'Đã tham gia bảo hiểm xã hội',
     insuranceSalary: 'Mức lương đóng bảo hiểm',
     emergencyName: 'Tên người liên hệ khẩn cấp',
     emergencyRelationship: 'Mối quan hệ',
     emergencyPhone: 'Điện thoại khẩn cấp',
     driveFolder: 'Thư mục nhân viên Google Drive',
-    driveFolderHelp: 'Mở thư mục HR đã xác minh hoặc thay đổi liên kết cho nhân viên này.',
+    driveFolderHelp: 'Mở',
     expandAll: 'Mở tất cả',
     fullName: 'Họ và tên',
     saveRecord: 'Tạo hồ sơ HR',
@@ -158,7 +160,7 @@ const employeeExperienceCopy = {
       bank: 'Đóng góp, thuế, bảo hiểm và ngân hàng',
       contact: 'Liên hệ cá nhân và ghi chú nội bộ',
       store: 'Vai trò thiết bị dùng chung và PIN 6 số',
-      documents: 'Ảnh hồ sơ, CV và tài liệu HR',
+      documents: 'Thư mục Google Drive và tài liệu HR',
     } satisfies Record<EmployeeProfileSectionId, string>,
     sectionTitles: {
       identity: 'Hồ sơ nhân viên riêng tư',
@@ -590,6 +592,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     saveHrAdjustment,
     saveHrSettings,
     saveHrSetupOption,
+    updateHrSetupOption,
     setHrSetupOptionActive,
     saveAttendanceSettings,
     saveShift,
@@ -621,7 +624,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     shiftAttendanceRange,
     shiftWarningsById,
     staffContractStatuses,
-    staffCvTypes,
     staffDateLabel,
     staffEmploymentTypes,
     staffGenderOptions,
@@ -663,6 +665,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [employeeDirectoryGroup, setEmployeeDirectoryGroup] = useState('all')
   const [employeeDirectoryLocation, setEmployeeDirectoryLocation] = useState('all')
   const [employeeDirectoryStatus, setEmployeeDirectoryStatus] = useState<EmployeeDirectoryStatus>('active')
+  const [selectedHrSetupOptionIds, setSelectedHrSetupOptionIds] = useState<Record<string, string>>({})
   const [payslipDepartmentFilter, setPayslipDepartmentFilter] = useState('all')
   const [payslipLocationFilter, setPayslipLocationFilter] = useState('all')
   const [payslipSelectedEmployeeId, setPayslipSelectedEmployeeId] = useState(selectedEmployeeStaffId)
@@ -805,6 +808,27 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       store: employeeKioskEligible ? nextOpen : false,
       documents: nextOpen,
     })
+  }
+
+  function selectHrSetupOption(optionType: string, optionId: string) {
+    const selectedOption = hrSetupOptions.find((option: any) => option.id === optionId)
+    setSelectedHrSetupOptionIds((current) => ({ ...current, [optionType]: optionId }))
+    setHrSetupForm((current: any) => ({
+      ...current,
+      [optionType]: selectedOption?.name || '',
+    }))
+  }
+
+  function cancelHrSetupOptionEdit(optionType: string) {
+    setSelectedHrSetupOptionIds((current) => ({ ...current, [optionType]: '' }))
+    setHrSetupForm((current: any) => ({ ...current, [optionType]: '' }))
+  }
+
+  async function modifyHrSetupOption(optionType: string) {
+    const optionId = selectedHrSetupOptionIds[optionType]
+    if (!optionId) return
+    const updated = await updateHrSetupOption(optionId, hrSetupForm[optionType])
+    if (updated) cancelHrSetupOptionEdit(optionType)
   }
 
   async function submitNewEmployee() {
@@ -1253,6 +1277,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         <div className="form-grid compact-form-grid">
                           <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
                           <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
+                          <label className="full">{employeeCopy.monthlyBonus}<input inputMode="numeric" value={formatDongInput(employeeForm.monthly_bonus_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, monthly_bonus_vnd: dongDigits(event.target.value) })} /></label>
                           <div className="staff-hr-policy-summary full">
                             <div><strong>{employeeCopy.companyPolicy}</strong><span>{employeeCopy.companyPolicyHelp}</span></div>
                             <dl><div><dt>{text.labels.lunchAllowance}</dt><dd>{formatVnd(hrSettings.lunch_allowance_vnd)}</dd></div><div><dt>{text.labels.restPeriodHours}</dt><dd>{Number((hrSettings.rest_period_minutes / 60).toFixed(2))}h</dd></div><div><dt>{text.labels.normalOvertimeMultiplier}</dt><dd>{hrSettings.normal_overtime_multiplier}×</dd></div><div><dt>{text.labels.nightOvertimeMultiplier}</dt><dd>{hrSettings.night_overtime_multiplier}×</dd></div><div><dt>{text.labels.holidayOvertimeMultiplier}</dt><dd>{hrSettings.holiday_overtime_multiplier}×</dd></div></dl>
@@ -1405,24 +1430,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         {employeeForm.google_drive_folder_url && <a href={employeeForm.google_drive_folder_url} rel="noreferrer" target="_blank"><ExternalLink aria-hidden="true" size={15} />{employeeCopy.driveFolderHelp}</a>}
                       </div>
                       <p className="staff-hr-document-count"><strong>{selectedEmployeeDocuments.length}</strong> {text.labels.attachmentList}</p>
-                      <div className="staff-hr-document-actions">
-                        <label className="staff-file-action">
-                          <FileText aria-hidden="true" size={15} />
-                          <span>{hrDocumentUploading === 'profile_photo' ? text.loading : text.actions.uploadPhoto}</span>
-                          <small>{text.messages.profilePhotoHelp}</small>
-                          <input accept={staffProfilePhotoTypes.join(',')} disabled={Boolean(hrDocumentUploading)} type="file" onChange={(event) => void handleHrDocumentUpload(event, 'profile_photo')} />
-                        </label>
-                        <label className="staff-file-action">
-                          <FileCheck2 aria-hidden="true" size={15} />
-                          <span>{hrDocumentUploading === 'cv' ? text.loading : text.actions.uploadCv}</span>
-                          <small>{text.messages.cvHelp}</small>
-                          <input accept={staffCvTypes.join(',')} disabled={Boolean(hrDocumentUploading)} type="file" onChange={(event) => void handleHrDocumentUpload(event, 'cv')} />
-                        </label>
-                        <div className="staff-hr-document-list">
-                          {selectedEmployeeDocuments.length > 0 ? selectedEmployeeDocuments.slice(0, 4).map((document: any) => (
-                            <span key={document.id}>{text.hrTabs.employees}: {document.file_name}</span>
-                          )) : <span>{text.messages.noHrDocuments}</span>}
-                        </div>
+                      <div className="staff-hr-document-list">
+                        {selectedEmployeeDocuments.length > 0 ? selectedEmployeeDocuments.slice(0, 4).map((document: any) => (
+                          <span key={document.id}>{text.hrTabs.employees}: {document.file_name}</span>
+                        )) : <span>{text.messages.noHrDocuments}</span>}
                       </div>
                     </div>
                     </CollapsibleEmployeeSection>
@@ -2213,12 +2224,46 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       {(settingsSection === 'categories' || settingsSection === 'organization') && (
                         <div className="staff-hr-option-settings">
                           <div className="staff-hr-settings-panel-title"><div><h4>{settingsSection === 'categories' ? completionText.categoriesTitle : completionText.organizationTitle}</h4><p>{settingsSection === 'categories' ? completionText.categoriesHelp : completionText.organizationHelp}</p></div></div>
-                          {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => (
-                            <div className="staff-hr-option-row" key={optionType}>
-                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><div className="staff-hr-option-chips">{hrSetupOptions.filter((option: any) => option.option_type === optionType).map((option: any) => <span className={option.active ? 'active' : 'inactive'} key={option.id}>{option.name}<button aria-label={`${option.active ? 'Archive' : 'Restore'} ${option.name}`} disabled={saving || !canManageAttendance} type="button" onClick={() => void setHrSetupOptionActive(option.id, !option.active)}>{option.active ? <X aria-hidden="true" size={12} /> : <Check aria-hidden="true" size={12} />}</button></span>)}{!hrSetupOptions.some((option: any) => option.option_type === optionType) && <em>{completionText.noOptions}</em>}</div><p>{resolvedLanguage === 'vi' ? 'Dùng trong hồ sơ nhân viên, bộ lọc lịch, bảng lương và Excel.' : 'Used in employee profiles, schedule filters, payroll, and Excel export.'}</p></div>
-                              <label><input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} /><button disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} type="button" onClick={() => void saveHrSetupOption(optionType)}><Plus aria-hidden="true" size={15} />{completionText.add}</button></label>
-                            </div>
-                          ))}
+                          {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => {
+                            const options = hrSetupOptions.filter((option: any) => option.option_type === optionType)
+                            const selectedId = selectedHrSetupOptionIds[optionType] || ''
+                            const selectedOption = options.find((option: any) => option.id === selectedId)
+                            const modifying = Boolean(selectedOption)
+                            return (
+                              <div className="staff-hr-option-row" key={optionType}>
+                                <div>
+                                  <strong>{text.hrSetupOptionTypes[optionType]}</strong>
+                                  <p>{resolvedLanguage === 'vi' ? 'Dùng trong hồ sơ nhân viên, bộ lọc lịch, bảng lương và Excel.' : 'Used in employee profiles, schedule filters, payroll, and Excel export.'}</p>
+                                </div>
+                                <div className="staff-hr-option-editor">
+                                  <label>
+                                    <span>{resolvedLanguage === 'vi' ? 'Tùy chọn hiện có' : 'Existing option'}</span>
+                                    <select value={selectedId} onChange={(event) => selectHrSetupOption(optionType, event.target.value)}>
+                                      <option value="">{options.length > 0 ? (resolvedLanguage === 'vi' ? 'Tạo tùy chọn mới' : 'Create new option') : completionText.noOptions}</option>
+                                      {options.map((option: any) => <option key={option.id} value={option.id}>{option.name}{option.active ? '' : (resolvedLanguage === 'vi' ? ' (đã lưu trữ)' : ' (archived)')}</option>)}
+                                    </select>
+                                  </label>
+                                  <label>
+                                    <span>{modifying ? (resolvedLanguage === 'vi' ? 'Tên mới' : 'Updated name') : (resolvedLanguage === 'vi' ? 'Tên tùy chọn' : 'Option name')}</span>
+                                    <input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} />
+                                  </label>
+                                  <div className="staff-hr-option-actions">
+                                    <button disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} type="button" onClick={() => void (modifying ? modifyHrSetupOption(optionType) : saveHrSetupOption(optionType))}>
+                                      {modifying ? <Pencil aria-hidden="true" size={15} /> : <Plus aria-hidden="true" size={15} />}
+                                      {modifying ? (resolvedLanguage === 'vi' ? 'Sửa' : 'Modify') : completionText.add}
+                                    </button>
+                                    {modifying && <button className="secondary" disabled={saving} type="button" onClick={() => cancelHrSetupOptionEdit(optionType)}>
+                                      <X aria-hidden="true" size={15} />{resolvedLanguage === 'vi' ? 'Hủy' : 'Cancel'}
+                                    </button>}
+                                    {modifying && <button className="secondary" disabled={saving || !canManageAttendance} type="button" onClick={() => void setHrSetupOptionActive(selectedOption.id, !selectedOption.active)}>
+                                      {selectedOption.active ? <X aria-hidden="true" size={15} /> : <Check aria-hidden="true" size={15} />}
+                                      {selectedOption.active ? (resolvedLanguage === 'vi' ? 'Lưu trữ' : 'Archive') : (resolvedLanguage === 'vi' ? 'Khôi phục' : 'Restore')}
+                                    </button>}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       )}
                     </section>

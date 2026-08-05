@@ -324,6 +324,7 @@ type StaffEmployeeProfile = {
   end_date: string | null
   base_salary_vnd: number
   hourly_rate_vnd: number
+  monthly_bonus_vnd: number
   lunch_allowance_vnd: number
   rest_period_minutes: number | null
   overtime_rate_multiplier: number | null
@@ -2931,7 +2932,8 @@ function calculateStaffPayroll(
     .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + item.amount_vnd, 0)
   const allowances = autoLunchAllowance + otherAllowances
-  const bonuses = employeeAdjustments
+  const recurringBonus = Math.round(Math.max(0, Number(employee?.monthly_bonus_vnd) || 0) * bonusPercentage)
+  const bonuses = recurringBonus + employeeAdjustments
     .filter((item) => ['bonus', 'commission'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + Math.round(item.amount_vnd * bonusPercentage), 0)
   const advances = employeeAdjustments
@@ -3567,6 +3569,7 @@ const defaultEmployeeForm = () => ({
   end_date: '',
   base_salary_vnd: '',
   hourly_rate_vnd: '',
+  monthly_bonus_vnd: '',
   lunch_allowance_vnd: '',
   rest_period_hours: '',
   overtime_rate_multiplier: '',
@@ -6856,6 +6859,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       end_date: employee?.end_date || '',
       base_salary_vnd: employee?.base_salary_vnd ? String(employee.base_salary_vnd) : '',
       hourly_rate_vnd: employee?.hourly_rate_vnd ? String(employee.hourly_rate_vnd) : '',
+      monthly_bonus_vnd: employee?.monthly_bonus_vnd ? String(employee.monthly_bonus_vnd) : '',
       lunch_allowance_vnd: employee?.lunch_allowance_vnd ? String(employee.lunch_allowance_vnd) : '',
       rest_period_hours: employee?.rest_period_minutes ? String(Number((employee.rest_period_minutes / 60).toFixed(2))) : '',
       overtime_rate_multiplier: employee?.overtime_rate_multiplier ? String(employee.overtime_rate_multiplier) : '',
@@ -7097,6 +7101,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       end_date: employeeForm.active ? null : (employeeForm.labor_end_date || employeeForm.probation_end_date || null),
       base_salary_vnd: parseDong(employeeForm.base_salary_vnd),
       hourly_rate_vnd: parseDong(employeeForm.hourly_rate_vnd),
+      monthly_bonus_vnd: parseDong(employeeForm.monthly_bonus_vnd),
       lunch_allowance_vnd: 0,
       rest_period_minutes: null,
       overtime_rate_multiplier: null,
@@ -7297,6 +7302,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       await loadHrData(true)
     }
     setSaving(false)
+  }
+
+  async function updateHrSetupOption(optionId: string, name: string) {
+    if (!canManageAttendance || !optionId || !name.trim()) return false
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_update_hr_setup_option', {
+      p_option_id: optionId,
+      p_name: name.trim(),
+    })
+    setStatus(error ? error.message : text.messages.hrSetupOptionSaved)
+    if (!error) {
+      markStaffDataStale('attendance', 'hr')
+      await Promise.all([loadAttendanceData(true), loadHrData(true)])
+    }
+    setSaving(false)
+    return !error
   }
 
   async function setHrSetupOptionActive(optionId: string, active: boolean) {
@@ -7596,6 +7617,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Bank account': employee?.bank_account_number || '',
         'Contract salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
         'Configured hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
+        'Recurring monthly bonus (VND)': Math.max(0, Number(employee?.monthly_bonus_vnd) || 0),
         'Payroll hourly rate (VND)': Math.round(calculation.hourlyRate),
         'Period standard hours': Number((calculation.periodStandardMinutes / 60).toFixed(2)),
         'Scheduled hours': Number((calculation.scheduledMinutes / 60).toFixed(2)),
@@ -7778,6 +7800,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Contract end': employee?.contract_end_date || '',
         'Monthly salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
         'Hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
+        'Recurring monthly bonus (VND)': Math.max(0, Number(employee?.monthly_bonus_vnd) || 0),
         'Meal / worked day (VND)': hrSettings.lunch_allowance_vnd,
         'OT multiplier': hrSettings.normal_overtime_multiplier,
         'Night multiplier': hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100,
@@ -10205,6 +10228,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             saveHrAdjustment,
             saveHrSettings,
             saveHrSetupOption,
+            updateHrSetupOption,
             setHrSetupOptionActive,
             saveAttendanceSettings,
             saveShift,
