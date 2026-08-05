@@ -7616,6 +7616,100 @@
   line-height: 1.45;
 }
 
+.app .staff-hr-employee-navigator {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 9px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--staff-modern-border);
+}
+
+.app .staff-hr-employee-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(138px, 0.75fr));
+  gap: 9px;
+  align-items: end;
+}
+
+.app .staff-hr-employee-filter-grid > label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-hr-employee-filter-grid select,
+.app .staff-hr-employee-filter-grid input {
+  width: 100%;
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--staff-modern-border) 84%, var(--vrena-neutral-500));
+  background: color-mix(in srgb, var(--staff-modern-surface) 97%, var(--vrena-cyan-600));
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-hr-employee-filter-grid select:focus,
+.app .staff-hr-employee-filter-grid input:focus {
+  border-color: var(--staff-hr-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--staff-hr-accent) 14%, transparent);
+}
+
+.app .staff-hr-employee-search-control {
+  position: relative;
+  display: block;
+}
+
+.app .staff-hr-employee-search-control > svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  z-index: 1;
+  color: var(--vrena-neutral-500);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.app .staff-hr-employee-search-control > input {
+  padding-left: 38px;
+}
+
+.app .staff-hr-employee-filter-summary {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 10px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.app .staff-hr-employee-filter-summary > strong {
+  color: var(--vrena-orange-700);
+  font-size: inherit;
+}
+
+.app .staff-hr-employee-filter-summary > button {
+  display: inline-flex;
+  width: auto;
+  min-height: 28px;
+  margin-left: auto;
+  padding: 4px 9px;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--staff-hr-accent);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-hr-employee-filter-summary > button:hover {
+  background: color-mix(in srgb, var(--staff-hr-accent) 8%, transparent);
+}
+
 .app .staff-hr-employee-command-actions,
 .app .staff-hr-employee-create-panel footer {
   display: flex;
@@ -8154,6 +8248,14 @@
     flex-direction: column;
   }
 
+  .app .staff-hr-employee-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-employee-search-filter {
+    grid-column: 1 / -1;
+  }
+
   .app .staff-hr-employee-command-actions,
   .app .staff-hr-employee-create-panel footer {
     width: 100%;
@@ -8190,6 +8292,25 @@
 
   .app .staff-console button.staff-employee-selected-save.primary {
     width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .app .staff-hr-employee-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-employee-search-filter {
+    grid-column: auto;
+  }
+
+  .app .staff-hr-employee-filter-summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .app .staff-hr-employee-filter-summary > button {
     margin-left: 0;
   }
 }

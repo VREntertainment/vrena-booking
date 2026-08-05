@@ -16,6 +16,14 @@ type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' 
 type StaffScheduleViewMode = 'employee' | 'shift'
 type EmployeeProfileSectionId = 'identity' | 'contract' | 'payroll' | 'bank' | 'contact' | 'store' | 'documents'
 
+function normalizeEmployeeDirectoryText(value: unknown) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
 const employeeExperienceCopy = {
   en: {
     collapseAll: 'Collapse all',
@@ -26,6 +34,21 @@ const employeeExperienceCopy = {
     creating: 'Creating employee…',
     employeeProfiles: 'Employee profiles',
     employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
+    employeeSearch: 'Search employees',
+    employeeSearchPlaceholder: 'Name, code, email, or phone',
+    groupFilter: 'Group',
+    locationFilter: 'Location',
+    statusFilter: 'Employment status',
+    allGroups: 'All groups',
+    allLocations: 'All locations',
+    allStatuses: 'All statuses',
+    activeStatus: 'Active',
+    terminatedStatus: 'Terminated / inactive',
+    resetFilters: 'Reset filters',
+    unassigned: 'Unassigned',
+    currentOutsideFilters: 'Current employee · outside filters',
+    noEmployeeMatches: 'No employees match these filters.',
+    showingEmployees: (shown: number, total: number) => `${shown} of ${total} employees`,
     employmentType: 'Employment type',
     laborPayrollType: 'Labor payroll type',
     probationPayrollType: 'Probation payroll type',
@@ -79,6 +102,21 @@ const employeeExperienceCopy = {
     creating: 'Đang tạo nhân viên…',
     employeeProfiles: 'Hồ sơ nhân viên',
     employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
+    employeeSearch: 'Tìm nhân viên',
+    employeeSearchPlaceholder: 'Tên, mã, email hoặc số điện thoại',
+    groupFilter: 'Nhóm',
+    locationFilter: 'Địa điểm',
+    statusFilter: 'Tình trạng làm việc',
+    allGroups: 'Tất cả nhóm',
+    allLocations: 'Tất cả địa điểm',
+    allStatuses: 'Tất cả trạng thái',
+    activeStatus: 'Đang làm việc',
+    terminatedStatus: 'Đã nghỉ / không hoạt động',
+    resetFilters: 'Đặt lại bộ lọc',
+    unassigned: 'Chưa phân loại',
+    currentOutsideFilters: 'Nhân viên hiện tại · ngoài bộ lọc',
+    noEmployeeMatches: 'Không có nhân viên phù hợp với bộ lọc.',
+    showingEmployees: (shown: number, total: number) => `${shown} / ${total} nhân viên`,
     employmentType: 'Hình thức làm việc',
     laborPayrollType: 'Hình thức lương chính thức',
     probationPayrollType: 'Hình thức lương thử việc',
@@ -612,6 +650,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState('')
   const [createEmployeeStatusTone, setCreateEmployeeStatusTone] = useState<'error' | 'success'>('success')
   const [createEmployeeSaving, setCreateEmployeeSaving] = useState(false)
+  const [employeeDirectorySearch, setEmployeeDirectorySearch] = useState('')
+  const [employeeDirectoryGroup, setEmployeeDirectoryGroup] = useState('all')
+  const [employeeDirectoryLocation, setEmployeeDirectoryLocation] = useState('all')
+  const [employeeDirectoryStatus, setEmployeeDirectoryStatus] = useState<'all' | 'active' | 'terminated'>('active')
   const [payslipDepartmentFilter, setPayslipDepartmentFilter] = useState('all')
   const [payslipLocationFilter, setPayslipLocationFilter] = useState('all')
   const [payslipSelectedEmployeeId, setPayslipSelectedEmployeeId] = useState(selectedEmployeeStaffId)
@@ -630,14 +672,65 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     store: false,
     documents: false,
   })
+  const employeeDirectoryGroups = useMemo(() => {
+    const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
+    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile: any) => (
+      String(employeeProfileById.get(staffProfile.id)?.department || '').trim() || employeeCopy.unassigned
+    )))).sort((left, right) => {
+      const leftIndex = groupOrder.indexOf(left)
+      const rightIndex = groupOrder.indexOf(right)
+      if (leftIndex >= 0 || rightIndex >= 0) return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex)
+      return left.localeCompare(right)
+    })
+  }, [employeeCopy.unassigned, employeeProfileById, visibleAllStaffProfileOptions])
+  const employeeDirectoryLocations = useMemo(() => {
+    const locationOrder = ['HaDo', 'CS']
+    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile: any) => (
+      String(employeeProfileById.get(staffProfile.id)?.main_work_location || '').trim() || employeeCopy.unassigned
+    )))).sort((left, right) => {
+      const leftIndex = locationOrder.indexOf(left)
+      const rightIndex = locationOrder.indexOf(right)
+      if (leftIndex >= 0 || rightIndex >= 0) return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex)
+      return left.localeCompare(right)
+    })
+  }, [employeeCopy.unassigned, employeeProfileById, visibleAllStaffProfileOptions])
+  const employeeDirectoryCounts = useMemo(() => visibleAllStaffProfileOptions.reduce((counts: { active: number; terminated: number }, staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    const terminated = employee?.active === false || employee?.contract_status === 'ended'
+    counts[terminated ? 'terminated' : 'active'] += 1
+    return counts
+  }, { active: 0, terminated: 0 }), [employeeProfileById, visibleAllStaffProfileOptions])
+  const filteredEmployeeProfileOptions = useMemo(() => {
+    const search = normalizeEmployeeDirectoryText(employeeDirectorySearch)
+    return visibleAllStaffProfileOptions.filter((staffProfile: any) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      const group = String(employee?.department || '').trim() || employeeCopy.unassigned
+      const location = String(employee?.main_work_location || '').trim() || employeeCopy.unassigned
+      const terminated = employee?.active === false || employee?.contract_status === 'ended'
+      const matchesStatus = employeeDirectoryStatus === 'all' || (employeeDirectoryStatus === 'terminated' ? terminated : !terminated)
+      const matchesSearch = !search || normalizeEmployeeDirectoryText([
+        employee?.legal_name,
+        employee?.employee_code,
+        employee?.personal_email,
+        employee?.personal_phone,
+        staffProfile.email,
+        staffProfile.phone,
+        customerName(staffProfile, text),
+      ].filter(Boolean).join(' ')).includes(search)
+      return matchesStatus
+        && (employeeDirectoryGroup === 'all' || group === employeeDirectoryGroup)
+        && (employeeDirectoryLocation === 'all' || location === employeeDirectoryLocation)
+        && matchesSearch
+    })
+  }, [customerName, employeeCopy.unassigned, employeeDirectoryGroup, employeeDirectoryLocation, employeeDirectorySearch, employeeDirectoryStatus, employeeProfileById, text, visibleAllStaffProfileOptions])
   const groupedEmployeeOptions = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
     const locationOrder = ['HaDo', 'CS']
     const groups = new Map<string, any[]>()
-    visibleAllStaffProfileOptions.forEach((staffProfile: any) => {
+    filteredEmployeeProfileOptions.forEach((staffProfile: any) => {
       const employee = employeeProfileById.get(staffProfile.id)
-      const group = employee?.department || 'VRena'
-      const location = employee?.main_work_location || 'HaDo'
+      const group = String(employee?.department || '').trim() || employeeCopy.unassigned
+      const location = String(employee?.main_work_location || '').trim() || employeeCopy.unassigned
       const key = `${group} · ${location}`
       const current = groups.get(key) || []
       current.push(staffProfile)
@@ -655,7 +748,13 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
         label,
         employees: employees.sort((left: any, right: any) => customerName(left, text).localeCompare(customerName(right, text))),
       }))
-  }, [customerName, employeeProfileById, text, visibleAllStaffProfileOptions])
+  }, [customerName, employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
+  const selectedEmployeeOutsideFilters = Boolean(selectedEmployeeStaffProfile)
+    && !filteredEmployeeProfileOptions.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)
+  const employeeDirectoryFiltersActive = Boolean(employeeDirectorySearch.trim())
+    || employeeDirectoryGroup !== 'all'
+    || employeeDirectoryLocation !== 'all'
+    || employeeDirectoryStatus !== 'active'
   const enabledEmploymentTypes = useMemo(() => {
     const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffEmploymentTypes.filter((value: string) => activeTokens.has(value))
@@ -981,6 +1080,61 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </section>
                   )}
 
+                  <section className="staff-hr-employee-navigator" aria-label={employeeCopy.employeeSearch}>
+                    <div className="staff-hr-employee-filter-grid">
+                      <label className="staff-hr-employee-search-filter">
+                        <span>{employeeCopy.employeeSearch}</span>
+                        <span className="staff-hr-employee-search-control">
+                          <Search aria-hidden="true" size={16} />
+                          <input
+                            autoComplete="off"
+                            placeholder={employeeCopy.employeeSearchPlaceholder}
+                            type="search"
+                            value={employeeDirectorySearch}
+                            onChange={(event) => setEmployeeDirectorySearch(event.target.value)}
+                          />
+                        </span>
+                      </label>
+                      <label>
+                        <span>{employeeCopy.groupFilter}</span>
+                        <select value={employeeDirectoryGroup} onChange={(event) => setEmployeeDirectoryGroup(event.target.value)}>
+                          <option value="all">{employeeCopy.allGroups}</option>
+                          {employeeDirectoryGroups.map((group) => <option key={group} value={group}>{group}</option>)}
+                        </select>
+                      </label>
+                      <label>
+                        <span>{employeeCopy.locationFilter}</span>
+                        <select value={employeeDirectoryLocation} onChange={(event) => setEmployeeDirectoryLocation(event.target.value)}>
+                          <option value="all">{employeeCopy.allLocations}</option>
+                          {employeeDirectoryLocations.map((location) => <option key={location} value={location}>{location}</option>)}
+                        </select>
+                      </label>
+                      <label>
+                        <span>{employeeCopy.statusFilter}</span>
+                        <select value={employeeDirectoryStatus} onChange={(event) => setEmployeeDirectoryStatus(event.target.value as 'all' | 'active' | 'terminated')}>
+                          <option value="active">{employeeCopy.activeStatus} ({employeeDirectoryCounts.active})</option>
+                          <option value="terminated">{employeeCopy.terminatedStatus} ({employeeDirectoryCounts.terminated})</option>
+                          <option value="all">{employeeCopy.allStatuses} ({visibleAllStaffProfileOptions.length})</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="staff-hr-employee-filter-summary" aria-live="polite">
+                      <span>{employeeCopy.showingEmployees(filteredEmployeeProfileOptions.length, visibleAllStaffProfileOptions.length)}</span>
+                      {filteredEmployeeProfileOptions.length === 0 && <strong>{employeeCopy.noEmployeeMatches}</strong>}
+                      {employeeDirectoryFiltersActive && (
+                        <button type="button" onClick={() => {
+                          setEmployeeDirectorySearch('')
+                          setEmployeeDirectoryGroup('all')
+                          setEmployeeDirectoryLocation('all')
+                          setEmployeeDirectoryStatus('active')
+                        }}>
+                          <RefreshCw aria-hidden="true" size={14} />
+                          {employeeCopy.resetFilters}
+                        </button>
+                      )}
+                    </div>
+                  </section>
+
                   <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
@@ -1009,15 +1163,26 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               if (staffProfile) editEmployeeProfile(staffProfile)
                             }}
                           >
+                            {selectedEmployeeOutsideFilters && selectedEmployeeStaffProfile && (
+                              <optgroup label={employeeCopy.currentOutsideFilters}>
+                                <option value={selectedEmployeeStaffId}>{employeeProfileById.get(selectedEmployeeStaffId)?.legal_name || customerName(selectedEmployeeStaffProfile, text)}</option>
+                              </optgroup>
+                            )}
                             {groupedEmployeeOptions.map((group) => (
                               <optgroup key={group.label} label={group.label}>
-                                {group.employees.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                                {group.employees.map((item: any) => {
+                                  const employee = employeeProfileById.get(item.id)
+                                  const name = employee?.legal_name || customerName(item, text)
+                                  return <option key={item.id} value={item.id}>{name}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option>
+                                })}
                               </optgroup>
                             ))}
                           </select>
                           <small>
                             {[
                               employeeProfileById.get(selectedEmployeeStaffId)?.job_title,
+                              employeeProfileById.get(selectedEmployeeStaffId)?.department,
+                              employeeProfileById.get(selectedEmployeeStaffId)?.main_work_location,
                               selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone,
                             ].filter(Boolean).join(' · ') || text.noContact}
                           </small>
