@@ -516,6 +516,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrPayrollTotals,
     hrSettings,
     hrSetupForm,
+    hrSetupOptions,
     hrTab,
     isOwnerOrAdmin,
     canRevealEmployeeKioskPin,
@@ -541,6 +542,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     saveHrAdjustment,
     saveHrSettings,
     saveHrSetupOption,
+    setHrSetupOptionActive,
     saveAttendanceSettings,
     saveShift,
     saving,
@@ -654,6 +656,16 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
         employees: employees.sort((left: any, right: any) => customerName(left, text).localeCompare(customerName(right, text))),
       }))
   }, [customerName, employeeProfileById, text, visibleAllStaffProfileOptions])
+  const enabledEmploymentTypes = useMemo(() => {
+    const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
+    const filtered = staffEmploymentTypes.filter((value: string) => activeTokens.has(value))
+    return filtered.length > 0 ? filtered : staffEmploymentTypes
+  }, [hrOptionsByType, staffEmploymentTypes])
+  const enabledContractStatuses = useMemo(() => {
+    const activeTokens = new Set((hrOptionsByType.get('contract_status') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
+    const filtered = staffContractStatuses.filter((value: string) => activeTokens.has(value))
+    return filtered.length > 0 ? filtered : staffContractStatuses
+  }, [hrOptionsByType, staffContractStatuses])
 
   const allEmployeeSectionsOpen = Object.values(openEmployeeSections).every(Boolean)
   const savedEmployeeEmail = String(employeeProfileById.get(selectedEmployeeStaffId)?.personal_email || '').trim()
@@ -1043,19 +1055,19 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contract} id="contract" onToggle={toggleEmployeeSection} open={openEmployeeSections.contract} title={employeeCopy.sectionTitles.contract}>
                         <div className="form-grid compact-form-grid">
                           <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => setEmployeeForm({ ...employeeForm, department: event.target.value })}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option: any) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.jobTitle}<input list="staff-hr-job-title-options" value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
+                          <label>{text.labels.jobTitle}<select value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })}><option value="">{text.any}</option>{employeeForm.job_title && !hrJobTitleOptions.some((option: any) => option.name === employeeForm.job_title) && <option value={employeeForm.job_title}>{employeeForm.job_title}</option>}{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.mainWorkLocation}<select value={employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.payrollLocation}<select value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.payroll_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.payroll_location) && <option value={employeeForm.payroll_location}>{employeeForm.payroll_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>
                             {text.labels.employmentType}
                             <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: normalizeStaffEmploymentType(event.target.value) })}>
-                              {staffEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
+                              {enabledEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                             </select>
                           </label>
                           <label>
                             {text.labels.contractStatus}
                             <select value={employeeForm.contract_status} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_status: normalizeStaffContractStatus(event.target.value) })}>
-                              {staffContractStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
+                              {enabledContractStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
                             </select>
                           </label>
                           <label>{text.labels.contractType}<select value={employeeForm.contract_type} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_type: event.target.value })}><option value="">{text.any}</option>{employeeForm.contract_type && !hrContractTypeOptions.some((option: any) => option.name === employeeForm.contract_type) && <option value={employeeForm.contract_type}>{employeeForm.contract_type}</option>}{hrContractTypeOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
@@ -1571,7 +1583,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             <StaffPickerField ariaLabel={text.labels.end} placeholder={text.chooseTime} type="time" value={shiftForm.end_time} onChange={(value: string) => setShiftForm({ ...shiftForm, end_time: value })} />
                           </label>
                           <label>{text.labels.breakMinutes}<input min={0} type="number" value={shiftForm.break_minutes} onChange={(event) => setShiftForm({ ...shiftForm, break_minutes: event.target.value })} /></label>
-                          <label>{text.labels.location}<input value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })} /></label>
+                          <label>{text.labels.location}<select value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })}>{shiftForm.location && !hrLocationOptions.some((option: any) => option.name === shiftForm.location) && <option value={shiftForm.location}>{shiftForm.location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value })}>{staffShiftStatuses.map((status: any) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
                           <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
                         </div>
@@ -1877,6 +1889,21 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </nav>
 
                     <section className="staff-hr-settings-panel">
+                      {settingsSection !== 'initialization' && (
+                        <div className="staff-hr-policy-banner">
+                          <div className="staff-hr-policy-status">
+                            <span><FileCheck2 aria-hidden="true" size={18} />{resolvedLanguage === 'vi' ? 'CHÍNH SÁCH TÍNH LƯƠNG' : 'PAYROLL POLICY'}</span>
+                            <strong>{hrSettings.policy_version}</strong>
+                            <small className={hrSettings.policy_status}>{hrSettings.policy_status}</small>
+                          </div>
+                          <dl>
+                            <div><dt>{resolvedLanguage === 'vi' ? 'Hiệu lực từ' : 'Effective from'}</dt><dd>{hrSettings.effective_from}</dd></div>
+                            <div><dt>{resolvedLanguage === 'vi' ? 'Rà soát pháp lý' : 'Legal review'}</dt><dd>{hrSettings.legal_reviewed_on || '—'}</dd></div>
+                            <div><dt>{resolvedLanguage === 'vi' ? 'Phạm vi áp dụng' : 'Used across'}</dt><dd>{resolvedLanguage === 'vi' ? 'Hồ sơ · chấm công · lương · Excel' : 'Profiles · attendance · payroll · Excel'}</dd></div>
+                          </dl>
+                          {hrSettings.legal_source_url && <a href={hrSettings.legal_source_url} rel="noreferrer" target="_blank">{resolvedLanguage === 'vi' ? 'Mở nguồn pháp lý' : 'Open legal source'}<ExternalLink aria-hidden="true" size={14} /></a>}
+                        </div>
+                      )}
                       {settingsSection === 'initialization' && (
                         <div className="staff-hr-setup-checklist">
                           <div className="staff-hr-settings-panel-title">
@@ -1957,9 +1984,25 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.insurance}</strong><span>{completionText.insuranceHelp}</span></div><input checked={hrSettings.social_insurance_enabled} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, social_insurance_enabled: event.target.checked })} /></label>
                           <div className="staff-hr-salary-rates">
                             <label>{text.labels.lunchAllowance}<input inputMode="numeric" value={formatDongInput(String(hrSettings.lunch_allowance_vnd || ''))} onChange={(event) => setHrSettings({ ...hrSettings, lunch_allowance_vnd: parseDong(dongDigits(event.target.value)) })} /></label>
-                            <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employee_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_contribution_rate: Number(event.target.value) || 0 })} /></label>
-                            <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employer_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_contribution_rate: Number(event.target.value) || 0 })} /></label>
-                            <label>{text.labels.pitWithholdingRate}<input min={0} step="0.1" type="number" value={hrSettings.pit_withholding_rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_withholding_rate: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Giảm trừ bản thân' : 'Personal deduction'}<input inputMode="numeric" value={formatDongInput(String(hrSettings.personal_deduction_vnd || ''))} onChange={(event) => setHrSettings({ ...hrSettings, personal_deduction_vnd: parseDong(dongDigits(event.target.value)) })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Giảm trừ mỗi người phụ thuộc' : 'Deduction per dependent'}<input inputMode="numeric" value={formatDongInput(String(hrSettings.dependent_deduction_vnd || ''))} onChange={(event) => setHrSettings({ ...hrSettings, dependent_deduction_vnd: parseDong(dongDigits(event.target.value)) })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Khấu trừ ngắn hạn' : 'Short-term withholding'}<input min={0} step="0.1" type="number" value={hrSettings.short_term_pit_rate} onChange={(event) => setHrSettings({ ...hrSettings, short_term_pit_rate: Number(event.target.value) || 0 })} /></label>
+                          </div>
+                          <div className="staff-hr-rate-groups">
+                            <section><header><strong>{resolvedLanguage === 'vi' ? 'Nhân viên đóng' : 'Employee contributions'}</strong><span>{(hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate).toFixed(1)}%</span></header><div><label>SI %<input min={0} step="0.1" type="number" value={hrSettings.employee_social_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_social_insurance_rate: Number(event.target.value) || 0 })} /></label><label>HI %<input min={0} step="0.1" type="number" value={hrSettings.employee_health_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_health_insurance_rate: Number(event.target.value) || 0 })} /></label><label>UI %<input min={0} step="0.1" type="number" value={hrSettings.employee_unemployment_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_unemployment_insurance_rate: Number(event.target.value) || 0 })} /></label></div></section>
+                            <section><header><strong>{resolvedLanguage === 'vi' ? 'Công ty đóng' : 'Employer contributions'}</strong><span>{(hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate).toFixed(1)}%</span></header><div><label>SI %<input min={0} step="0.1" type="number" value={hrSettings.employer_social_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_social_insurance_rate: Number(event.target.value) || 0 })} /></label><label>HI %<input min={0} step="0.1" type="number" value={hrSettings.employer_health_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_health_insurance_rate: Number(event.target.value) || 0 })} /></label><label>UI %<input min={0} step="0.1" type="number" value={hrSettings.employer_unemployment_insurance_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_unemployment_insurance_rate: Number(event.target.value) || 0 })} /></label><label>{resolvedLanguage === 'vi' ? 'Công đoàn %' : 'Union %'}<input min={0} step="0.1" type="number" value={hrSettings.employer_trade_union_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_trade_union_rate: Number(event.target.value) || 0 })} /></label></div></section>
+                          </div>
+                          <div className="staff-hr-pit-brackets">
+                            <strong>{resolvedLanguage === 'vi' ? 'Biểu thuế lũy tiến tháng' : 'Monthly progressive PIT brackets'}</strong>
+                            <p>{resolvedLanguage === 'vi' ? 'Các bậc được áp dụng theo thứ tự. Để trống giới hạn của bậc cuối.' : 'Brackets apply in order. Leave the final upper limit empty.'}</p>
+                            <div>{hrSettings.pit_brackets.map((bracket: any, index: number) => <label key={`${index}-${bracket.up_to}`}><span>{resolvedLanguage === 'vi' ? `Bậc ${index + 1}` : `Bracket ${index + 1}`}</span><input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder="∞" value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} /><input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} /><small>%</small></label>)}</div>
+                          </div>
+                          <div className="staff-hr-policy-editor">
+                            <label>{resolvedLanguage === 'vi' ? 'Phiên bản' : 'Policy version'}<input value={hrSettings.policy_version} onChange={(event) => setHrSettings({ ...hrSettings, policy_version: event.target.value })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Hiệu lực từ' : 'Effective from'}<input type="date" value={hrSettings.effective_from} onChange={(event) => setHrSettings({ ...hrSettings, effective_from: event.target.value })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Trạng thái' : 'Policy status'}<select value={hrSettings.policy_status} onChange={(event) => setHrSettings({ ...hrSettings, policy_status: event.target.value as 'draft' | 'active' | 'retired' })}><option value="draft">{resolvedLanguage === 'vi' ? 'Bản nháp' : 'Draft'}</option><option value="active">{resolvedLanguage === 'vi' ? 'Đang áp dụng' : 'Active'}</option><option value="retired">{resolvedLanguage === 'vi' ? 'Ngừng áp dụng' : 'Retired'}</option></select></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Ngày rà soát' : 'Legal review date'}<input type="date" value={hrSettings.legal_reviewed_on || ''} onChange={(event) => setHrSettings({ ...hrSettings, legal_reviewed_on: event.target.value || null })} /></label>
+                            <label className="full">{resolvedLanguage === 'vi' ? 'Nguồn pháp lý' : 'Legal source URL'}<input type="url" value={hrSettings.legal_source_url || ''} onChange={(event) => setHrSettings({ ...hrSettings, legal_source_url: event.target.value || null })} /></label>
                           </div>
                           <div className="staff-hr-settings-actions">
                             <span>{completionText.lastSync}: {hrSettings.last_auto_payroll_sync_on || completionText.never}</span>
@@ -1983,8 +2026,16 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             <label>{completionText.overtimeMonth}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_monthly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_monthly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                             <label>{completionText.overtimeYear}<input min={0} step="0.25" type="number" value={attendanceSettings.overtime_yearly_cap_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, overtime_yearly_cap_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
                             <label>{text.labels.normalOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.normal_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, normal_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
-                            <label>{text.labels.nightOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.night_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, night_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Hệ số tăng ca đêm (tự tính)' : 'Night OT multiplier (calculated)'}<input readOnly type="number" value={Number((hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100).toFixed(2))} /></label>
                             <label>{text.labels.holidayOvertimeMultiplier}<input min={0} step="0.05" type="number" value={hrSettings.holiday_overtime_multiplier} onChange={(event) => setHrSettings({ ...hrSettings, holiday_overtime_multiplier: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Phụ cấp làm đêm %' : 'Night work bonus %'}<input min={0} step="0.1" type="number" value={hrSettings.night_work_bonus_rate} onChange={(event) => setHrSettings({ ...hrSettings, night_work_bonus_rate: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Phụ cấp tăng ca đêm %' : 'Night OT extra %'}<input min={0} step="0.1" type="number" value={hrSettings.night_overtime_extra_rate} onChange={(event) => setHrSettings({ ...hrSettings, night_overtime_extra_rate: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Phép tích lũy / tháng' : 'Leave accrued / month'}<input min={0} step="0.1" type="number" value={hrSettings.leave_accrual_days_per_month} onChange={(event) => setHrSettings({ ...hrSettings, leave_accrual_days_per_month: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Ngày công để đủ điều kiện' : 'Worked days to qualify'}<input min={0} max={31} type="number" value={hrSettings.leave_qualifying_worked_days} onChange={(event) => setHrSettings({ ...hrSettings, leave_qualifying_worked_days: Number(event.target.value) || 0 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Ngày chốt nhân viên mới' : 'Join-month cutoff day'}<input min={1} max={31} type="number" value={hrSettings.leave_join_cutoff_day} onChange={(event) => setHrSettings({ ...hrSettings, leave_join_cutoff_day: Number(event.target.value) || 1 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Ngày chốt nghỉ việc' : 'Exit-month cutoff day'}<input min={1} max={31} type="number" value={hrSettings.leave_exit_cutoff_day} onChange={(event) => setHrSettings({ ...hrSettings, leave_exit_cutoff_day: Number(event.target.value) || 1 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Hạn chuyển phép (tháng)' : 'Carry-forward expiry month'}<input min={1} max={12} type="number" value={hrSettings.leave_carry_forward_month} onChange={(event) => setHrSettings({ ...hrSettings, leave_carry_forward_month: Number(event.target.value) || 1 })} /></label>
+                            <label>{resolvedLanguage === 'vi' ? 'Hạn chuyển phép (ngày)' : 'Carry-forward expiry day'}<input min={1} max={31} type="number" value={hrSettings.leave_carry_forward_day} onChange={(event) => setHrSettings({ ...hrSettings, leave_carry_forward_day: Number(event.target.value) || 1 })} /></label>
                           </div>
                           <div className="staff-hr-rest-days"><strong>{completionText.restDays}</strong>{completionText.days.map((day, index) => <label key={day}><input checked={attendanceSettings.weekly_rest_days.includes(index)} type="checkbox" onChange={(event) => setAttendanceSettings({ ...attendanceSettings, weekly_rest_days: event.target.checked ? [...new Set([...attendanceSettings.weekly_rest_days, index])].sort() : attendanceSettings.weekly_rest_days.filter((value: number) => value !== index) })} />{day}</label>)}</div>
                           <div className="staff-hr-settings-actions"><button disabled={saving} type="button" onClick={() => void saveAttendanceSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveRules}</button><button className="primary" disabled={saving} type="button" onClick={() => void saveHrSettings()}><Save aria-hidden="true" size={16} />{text.actions.saveHrSettings}</button></div>
@@ -1996,7 +2047,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <div className="staff-hr-settings-panel-title"><div><h4>{settingsSection === 'categories' ? completionText.categoriesTitle : completionText.organizationTitle}</h4><p>{settingsSection === 'categories' ? completionText.categoriesHelp : completionText.organizationHelp}</p></div></div>
                           {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => (
                             <div className="staff-hr-option-row" key={optionType}>
-                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><p>{(hrOptionsByType.get(optionType) || []).map((option: any) => option.name).join(' · ') || completionText.noOptions}</p></div>
+                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><div className="staff-hr-option-chips">{hrSetupOptions.filter((option: any) => option.option_type === optionType).map((option: any) => <span className={option.active ? 'active' : 'inactive'} key={option.id}>{option.name}<button aria-label={`${option.active ? 'Archive' : 'Restore'} ${option.name}`} disabled={saving || !canManageAttendance} type="button" onClick={() => void setHrSetupOptionActive(option.id, !option.active)}>{option.active ? <X aria-hidden="true" size={12} /> : <Check aria-hidden="true" size={12} />}</button></span>)}{!hrSetupOptions.some((option: any) => option.option_type === optionType) && <em>{completionText.noOptions}</em>}</div><p>{resolvedLanguage === 'vi' ? 'Dùng trong hồ sơ nhân viên, bộ lọc lịch, bảng lương và Excel.' : 'Used in employee profiles, schedule filters, payroll, and Excel export.'}</p></div>
                               <label><input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} /><button disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} type="button" onClick={() => void saveHrSetupOption(optionType)}><Plus aria-hidden="true" size={15} />{completionText.add}</button></label>
                             </div>
                           ))}

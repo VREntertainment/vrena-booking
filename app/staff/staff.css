@@ -8749,6 +8749,90 @@
   border-bottom: 1px solid var(--vrena-neutral-200);
 }
 
+.app .staff-hr-policy-banner {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--vrena-neutral-200);
+  background: color-mix(in srgb, var(--vrena-selection-bg) 55%, var(--vrena-white));
+  padding: 18px 24px;
+}
+
+.app .staff-hr-policy-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app .staff-hr-policy-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  color: var(--vrena-cyan-700);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.app .staff-hr-policy-status > strong {
+  font-size: 17px;
+}
+
+.app .staff-hr-policy-status > small {
+  border-radius: 999px;
+  background: var(--vrena-neutral-200);
+  padding: 4px 8px;
+  color: var(--vrena-neutral-700);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-policy-status > small.active {
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+}
+
+.app .staff-hr-policy-banner dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.app .staff-hr-policy-banner dl > div {
+  min-width: 0;
+}
+
+.app .staff-hr-policy-banner dt {
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-policy-banner dd {
+  overflow: hidden;
+  margin: 3px 0 0;
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-hr-policy-banner > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vrena-selection-ink);
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .app .staff-hr-settings-panel-title h4 {
   font-size: 20px;
 }
@@ -8962,6 +9046,90 @@
   padding: 20px 24px;
 }
 
+.app .staff-hr-rate-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border-bottom: 1px solid var(--vrena-neutral-200);
+  padding: 20px 24px;
+}
+
+.app .staff-hr-rate-groups > section {
+  border: 1px solid var(--vrena-neutral-200);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.app .staff-hr-rate-groups header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.app .staff-hr-rate-groups header > span {
+  color: var(--vrena-selection-ink);
+  font-weight: 950;
+}
+
+.app .staff-hr-rate-groups section > div,
+.app .staff-hr-policy-editor {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.app .staff-hr-rate-groups label,
+.app .staff-hr-policy-editor label {
+  display: grid;
+  gap: 6px;
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.app .staff-hr-pit-brackets,
+.app .staff-hr-policy-editor {
+  border-bottom: 1px solid var(--vrena-neutral-200);
+  padding: 16px 24px;
+}
+
+.app .staff-hr-pit-brackets p {
+  margin: 6px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.app .staff-hr-pit-brackets > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app .staff-hr-pit-brackets label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 66px auto;
+  gap: 5px;
+  align-items: center;
+}
+
+.app .staff-hr-pit-brackets label > span {
+  grid-column: 1 / -1;
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.app .staff-hr-pit-brackets input {
+  min-width: 0;
+}
+
+.app .staff-hr-policy-editor .full {
+  grid-column: 1 / -1;
+}
+
 .app .staff-hr-salary-rates label,
 .app .staff-hr-work-rest-grid label {
   display: grid;
@@ -9024,6 +9192,44 @@
   line-height: 1.45;
 }
 
+.app .staff-hr-option-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.app .staff-hr-option-chips > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--vrena-neutral-200);
+  border-radius: 999px;
+  background: var(--vrena-neutral-50);
+  padding: 5px 5px 5px 10px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.app .staff-hr-option-chips > span.inactive {
+  color: var(--vrena-neutral-500);
+  text-decoration: line-through;
+}
+
+.app .staff-hr-option-chips > span > button {
+  min-height: 22px;
+  width: 22px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  color: inherit;
+}
+
+.app .staff-hr-option-chips > em {
+  color: var(--vrena-neutral-500);
+  font-size: 12px;
+}
+
 .app .staff-hr-option-row > label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -9045,7 +9251,8 @@
   }
 
   .app .staff-hr-salary-rates,
-  .app .staff-hr-work-rest-grid {
+  .app .staff-hr-work-rest-grid,
+  .app .staff-hr-rate-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -9099,7 +9306,19 @@
   }
 
   .app .staff-hr-salary-rates,
-  .app .staff-hr-work-rest-grid {
+  .app .staff-hr-work-rest-grid,
+  .app .staff-hr-rate-groups,
+  .app .staff-hr-policy-banner,
+  .app .staff-hr-policy-banner dl {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-hr-rate-groups section > div,
+  .app .staff-hr-policy-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-pit-brackets > div {
     grid-template-columns: 1fr;
   }
 
