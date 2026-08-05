@@ -2766,12 +2766,13 @@ function isStaffHrSchemaUnavailable(error?: { code?: string; message?: string } 
   return (
     error.code === '42P01' ||
     error.code === '42703' ||
-    error.code === '42501' ||
-    message.includes('permission denied') ||
-    message.includes('schema cache') ||
-    message.includes('staff_hr_') ||
-    message.includes('staff_payroll_')
+    message.includes('schema cache')
   )
+}
+
+function isStaffHrPermissionDenied(error?: { code?: string; message?: string } | null) {
+  if (!error) return false
+  return error.code === '42501' || (error.message || '').toLowerCase().includes('permission denied')
 }
 
 function dateWithinRange(value: string | null | undefined, start: string, end: string) {
@@ -6202,11 +6203,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           .limit(500),
       ])
 
-      const results = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult]
-      const blockingError = results.find((result) => result.error && !isStaffHrSchemaUnavailable(result.error))?.error
+      const coreResults = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult]
+      const blockingError = coreResults.find((result) => result.error && !isStaffHrSchemaUnavailable(result.error))?.error
+        ?? (sourceSnapshotsResult.error && !isStaffHrSchemaUnavailable(sourceSnapshotsResult.error) && !isStaffHrPermissionDenied(sourceSnapshotsResult.error)
+          ? sourceSnapshotsResult.error
+          : null)
       if (blockingError) throw new Error(blockingError.message)
 
-      const hrUnavailable = results.some((result) => result.error && isStaffHrSchemaUnavailable(result.error))
+      const hrUnavailable = coreResults.some((result) => result.error && isStaffHrSchemaUnavailable(result.error))
       if (hrUnavailable) {
         setHrSettings(defaultHrSettings())
         setHrSetupOptions([])
@@ -6223,7 +6227,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setHrAdjustments((adjustmentsResult.data ?? []) as StaffHrAdjustment[])
       setPayrollRuns((payrollRunsResult.data ?? []) as StaffPayrollRun[])
       setPayrollItems((payrollItemsResult.data ?? []) as StaffPayrollItem[])
-      setPayrollSourceSnapshots((sourceSnapshotsResult.data ?? []) as StaffPayrollSourceSnapshot[])
+      setPayrollSourceSnapshots(sourceSnapshotsResult.error ? [] : (sourceSnapshotsResult.data ?? []) as StaffPayrollSourceSnapshot[])
       setHrDocuments((documentsResult.data ?? []) as StaffHrDocument[])
     }, force)
   }
