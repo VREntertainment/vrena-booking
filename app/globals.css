@@ -464,6 +464,22 @@
   .staff-hr-kiosk-save.is-confirmed { animation: none; }
 }
 
+@media (max-width: 960px) {
+  .app .staff-hr-kiosk-editor-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-hr-kiosk-editor-head > div {
+    min-width: 0;
+  }
+
+  .app .staff-hr-kiosk-editor-head > .staff-hr-kiosk-generate {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
 @media (max-width: 760px) {
   .app .staff-kiosk-lock { padding: 18px 14px; border-radius: 18px; }
   .staff-kiosk-lock-head { align-items: flex-start; flex-wrap: wrap; }
@@ -481,9 +497,7 @@
   .staff-hr-kiosk-fields { padding: 15px; }
   .staff-hr-kiosk-overview { grid-template-columns: 1fr; }
   .staff-hr-kiosk-current-pin { grid-template-columns: minmax(0, 1fr) auto; }
-  .staff-hr-kiosk-editor-head,
   .staff-hr-kiosk-actions { align-items: stretch; flex-direction: column; }
-  .staff-hr-kiosk-generate,
   .staff-hr-kiosk-save { width: 100%; }
   .staff-hr-kiosk-pin-entry { grid-template-columns: 1fr; }
 }

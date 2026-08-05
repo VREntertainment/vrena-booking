@@ -79,13 +79,17 @@ test.describe('profile login interactions', () => {
     expect(passwordRequests[0]?.gotrue_meta_security).toEqual({ captcha_token: TEST_CAPTCHA_TOKEN })
   })
 
-  test('CAPTCHA completion submits when the password is already ready', async ({ page }) => {
+  test('CAPTCHA completion keeps the verified token ready for explicit login', async ({ page }) => {
     await stubDeferredHCaptcha(page)
     const passwordRequests = await capturePasswordRequests(page)
     await openPasswordStep(page)
 
     await page.locator('.login-profile-form input[type="password"]').fill(TEST_PASSWORD)
     await completeCaptcha(page)
+
+    await expect.poll(() => passwordRequests.length).toBe(0)
+
+    await page.locator('.profile-auth-section .action-row button.primary').click()
 
     await expect.poll(() => passwordRequests.length).toBe(1)
     expect(passwordRequests[0]?.gotrue_meta_security).toEqual({ captcha_token: TEST_CAPTCHA_TOKEN })
