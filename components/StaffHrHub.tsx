@@ -941,7 +941,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }).length
   const pendingAdjustmentCount = periodHrAdjustments.filter((item: any) => normalizeHrAdjustmentStatus(item.status) === 'pending').length
   const periodAdvanceCount = periodHrAdjustments.filter((item: any) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
-  const selectedEmployeeLabel = selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback
   const visibleHrTabs = accessibleStaffHrTabs(staffHrTabs, { canAccessHrSettings, canAccessZaloSettings })
   const periodAttendanceLogs = attendanceLogs.filter((log: any) => log.work_date >= payrollPeriodStart && log.work_date <= payrollPeriodEnd)
   const pendingAttendanceCount = periodAttendanceLogs.filter((log: any) => log.approval_status !== 'approved').length
@@ -1048,7 +1047,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                   <div><span>{text.labels.totalNet}</span><strong>{formatVndCompact(hrPayrollTotals.net)}</strong></div>
                   <div><span>{text.labels.totalCompanyCost}</span><strong>{formatVndCompact(hrPayrollTotals.companyCost)}</strong></div>
                   <div><span>{text.labels.restWarnings}</span><strong>{hrPayrollTotals.restWarnings}</strong></div>
-                  <div><span>{text.labels.outstandingDebt}</span><strong>{formatVndCompact(Math.max(0, selectedEmployeeOutstandingDebt))}</strong><small>{selectedEmployeeLabel}</small></div>
+                  <div><span>{text.labels.outstandingDebt}</span><strong>{formatVndCompact(Math.max(0, selectedEmployeeOutstandingDebt))}</strong></div>
                 </div>
               )}
               <div className="staff-hr-main staff-hr-main-full">
@@ -2068,21 +2067,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </nav>
 
                     <section className="staff-hr-settings-panel">
-                      {settingsSection !== 'initialization' && (
-                        <div className="staff-hr-policy-banner">
-                          <div className="staff-hr-policy-status">
-                            <span><FileCheck2 aria-hidden="true" size={18} />{resolvedLanguage === 'vi' ? 'CHÍNH SÁCH TÍNH LƯƠNG' : 'PAYROLL POLICY'}</span>
-                            <strong>{hrSettings.policy_version}</strong>
-                            <small className={hrSettings.policy_status}>{hrSettings.policy_status}</small>
-                          </div>
-                          <dl>
-                            <div><dt>{resolvedLanguage === 'vi' ? 'Hiệu lực từ' : 'Effective from'}</dt><dd>{hrSettings.effective_from}</dd></div>
-                            <div><dt>{resolvedLanguage === 'vi' ? 'Rà soát pháp lý' : 'Legal review'}</dt><dd>{hrSettings.legal_reviewed_on || '—'}</dd></div>
-                            <div><dt>{resolvedLanguage === 'vi' ? 'Phạm vi áp dụng' : 'Used across'}</dt><dd>{resolvedLanguage === 'vi' ? 'Hồ sơ · chấm công · lương · Excel' : 'Profiles · attendance · payroll · Excel'}</dd></div>
-                          </dl>
-                          {hrSettings.legal_source_url && <a href={hrSettings.legal_source_url} rel="noreferrer" target="_blank">{resolvedLanguage === 'vi' ? 'Mở nguồn pháp lý' : 'Open legal source'}<ExternalLink aria-hidden="true" size={14} /></a>}
-                        </div>
-                      )}
                       {settingsSection === 'initialization' && (
                         <div className="staff-hr-setup-checklist">
                           <div className="staff-hr-settings-panel-title">
@@ -2146,7 +2130,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       {settingsSection === 'salary' && (
                         <fieldset className="staff-readonly-fieldset staff-hr-reference-settings" disabled={!canManageAttendance}>
-                          <div className="staff-hr-settings-panel-title"><div><h4>{completionText.salaryTitle}</h4><p>{completionText.paydayHelp}</p></div></div>
                           <div className="staff-hr-reference-row">
                             <div><strong>{completionText.payday}</strong><span>{completionText.paydayHelp}</span></div>
                             <label className="staff-hr-payday-select">{completionText.day}<select value={hrSettings.pay_period_start_day} onChange={(event) => setHrSettings({ ...hrSettings, pay_period_start_day: Number(event.target.value) })}>{Array.from({ length: 28 }, (_, index) => index + 1).map((day) => <option key={day} value={day}>{day}</option>)}</select></label>
@@ -2173,7 +2156,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           </div>
                           <div className="staff-hr-pit-brackets">
                             <strong>{resolvedLanguage === 'vi' ? 'Biểu thuế lũy tiến tháng' : 'Monthly progressive PIT brackets'}</strong>
-                            <p>{resolvedLanguage === 'vi' ? 'Các bậc được áp dụng theo thứ tự. Để trống giới hạn của bậc cuối.' : 'Brackets apply in order. Leave the final upper limit empty.'}</p>
+                            <p>{resolvedLanguage === 'vi' ? 'Mỗi giới hạn là thu nhập tính thuế hàng tháng bằng VND; thuế suất chỉ áp dụng cho phần thu nhập trong bậc đó. Để trống giới hạn của bậc cuối.' : 'Each upper limit is monthly taxable income in VND; its rate applies only to the income inside that bracket. Leave the final upper limit empty.'}</p>
                             <div>{hrSettings.pit_brackets.map((bracket: any, index: number) => <label key={`${index}-${bracket.up_to}`}><span>{resolvedLanguage === 'vi' ? `Bậc ${index + 1}` : `Bracket ${index + 1}`}</span><input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder="∞" value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} /><input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} /><small>%</small></label>)}</div>
                           </div>
                           <div className="staff-hr-policy-editor">
@@ -2193,7 +2176,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       {settingsSection === 'work_rest' && (
                         <fieldset className="staff-readonly-fieldset staff-hr-reference-settings" disabled={!canManageAttendance}>
-                          <div className="staff-hr-settings-panel-title"><div><h4>{completionText.workRestTitle}</h4></div></div>
                           <div className="staff-hr-work-rest-grid">
                             <label>{completionText.weekStarts}<select value={attendanceSettings.work_week_start} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, work_week_start: Number(event.target.value) })}>{completionText.days.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>
                             <label>{completionText.standardWeek}<input min={0} step="0.25" type="number" value={attendanceSettings.standard_weekly_minutes / 60} onChange={(event) => setAttendanceSettings({ ...attendanceSettings, standard_weekly_minutes: Math.round((Number(event.target.value) || 0) * 60) })} /></label>
@@ -2223,7 +2205,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       {(settingsSection === 'categories' || settingsSection === 'organization') && (
                         <div className="staff-hr-option-settings">
-                          <div className="staff-hr-settings-panel-title"><div><h4>{settingsSection === 'categories' ? completionText.categoriesTitle : completionText.organizationTitle}</h4><p>{settingsSection === 'categories' ? completionText.categoriesHelp : completionText.organizationHelp}</p></div></div>
                           {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => {
                             const options = hrSetupOptions.filter((option: any) => option.option_type === optionType)
                             const selectedId = selectedHrSetupOptionIds[optionType] || ''

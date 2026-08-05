@@ -9118,11 +9118,15 @@
   appearance: none;
   position: relative;
   flex: 0 0 48px;
+  box-sizing: border-box;
   width: 48px;
   height: 28px;
+  min-height: 28px;
   border: 0;
   border-radius: 999px;
   background: var(--vrena-neutral-300);
+  margin: 0;
+  padding: 0;
   cursor: pointer;
   transition: background 160ms ease;
 }
@@ -9146,6 +9150,15 @@
 
 .app .staff-hr-switch-row > input[role='switch']:checked::after {
   transform: translateX(20px);
+}
+
+.app .staff-hr-switch-row > input[role='switch']:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-selection-indicator) 28%, transparent);
+}
+
+.app .staff-hr-switch-row > input[role='switch']:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .app .staff-hr-payday-select select {
@@ -9668,6 +9681,14 @@
 
   .app .staff-hr-switch-row > input[role='switch']::after {
     background: var(--vrena-neutral-200);
+  }
+
+  .app .staff-hr-switch-row > input[role='switch']:checked {
+    background: var(--vrena-selection-indicator);
+  }
+
+  .app .staff-hr-switch-row > input[role='switch']:checked::after {
+    background: var(--vrena-white);
   }
 }
 
