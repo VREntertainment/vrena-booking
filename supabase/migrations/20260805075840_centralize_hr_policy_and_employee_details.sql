@@ -77,6 +77,7 @@ values
   ('department', 'GC', 10, true),
   ('department', 'VRena', 20, true),
   ('department', 'Manager', 30, true),
+  ('department', 'Office', 40, true),
   ('location', 'HaDo', 10, true),
   ('location', 'CS', 20, true)
 on conflict (option_type, lower(name)) where deleted_at is null

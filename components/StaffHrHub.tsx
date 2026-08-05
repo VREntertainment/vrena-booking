@@ -626,7 +626,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     documents: false,
   })
   const groupedEmployeeOptions = useMemo(() => {
-    const groupOrder = ['GC', 'VRena', 'Manager']
+    const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
     const locationOrder = ['HaDo', 'CS']
     const groups = new Map<string, any[]>()
     visibleAllStaffProfileOptions.forEach((staffProfile: any) => {
