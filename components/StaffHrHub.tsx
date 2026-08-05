@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
+import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
@@ -27,6 +27,25 @@ const employeeExperienceCopy = {
     employeeProfiles: 'Employee profiles',
     employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
     employmentType: 'Employment type',
+    laborPayrollType: 'Labor payroll type',
+    probationPayrollType: 'Probation payroll type',
+    hourly: 'Hourly',
+    monthly: 'Monthly',
+    manager: 'Manager',
+    probationSalaryPercentage: 'Probation salary',
+    probationStart: 'Probation start',
+    probationEnd: 'Probation end',
+    laborStart: 'Labor start',
+    laborEnd: 'Labor end',
+    companyPolicy: 'Company payroll policy',
+    companyPolicyHelp: 'Meal allowance, minimum rest, overtime and insurance rates come from HR Settings. Insurance applies only when this employee is enrolled.',
+    insuranceEnrolled: 'Social insurance enrolled',
+    insuranceSalary: 'Insurance salary base',
+    emergencyName: 'Emergency contact name',
+    emergencyRelationship: 'Relationship',
+    emergencyPhone: 'Emergency phone',
+    driveFolder: 'Google Drive employee folder',
+    driveFolderHelp: 'Open the verified HR folder or replace the link for this employee.',
     expandAll: 'Expand all',
     fullName: 'Full name',
     saveRecord: 'Create HR record',
@@ -61,6 +80,25 @@ const employeeExperienceCopy = {
     employeeProfiles: 'Hồ sơ nhân viên',
     employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
     employmentType: 'Hình thức làm việc',
+    laborPayrollType: 'Hình thức lương chính thức',
+    probationPayrollType: 'Hình thức lương thử việc',
+    hourly: 'Theo giờ',
+    monthly: 'Theo tháng',
+    manager: 'Quản lý',
+    probationSalaryPercentage: 'Tỷ lệ lương thử việc',
+    probationStart: 'Bắt đầu thử việc',
+    probationEnd: 'Kết thúc thử việc',
+    laborStart: 'Bắt đầu hợp đồng lao động',
+    laborEnd: 'Kết thúc hợp đồng lao động',
+    companyPolicy: 'Chính sách lương công ty',
+    companyPolicyHelp: 'Phụ cấp ăn, nghỉ tối thiểu, tăng ca và tỷ lệ bảo hiểm được lấy từ Cài đặt HR. Bảo hiểm chỉ áp dụng khi nhân viên được đăng ký.',
+    insuranceEnrolled: 'Đã tham gia bảo hiểm xã hội',
+    insuranceSalary: 'Mức lương đóng bảo hiểm',
+    emergencyName: 'Tên người liên hệ khẩn cấp',
+    emergencyRelationship: 'Mối quan hệ',
+    emergencyPhone: 'Điện thoại khẩn cấp',
+    driveFolder: 'Thư mục nhân viên Google Drive',
+    driveFolderHelp: 'Mở thư mục HR đã xác minh hoặc thay đổi liên kết cho nhân viên này.',
     expandAll: 'Mở tất cả',
     fullName: 'Họ và tên',
     saveRecord: 'Tạo hồ sơ HR',
@@ -103,7 +141,7 @@ const accountantWorkspaceCopy = {
     steps: {
       employees: ['Employee records', 'Identity, contract, salary, tax, and bank data'],
       attendance: ['Attendance & leave', 'Approve time records and paid leave'],
-      policy: ['Payroll policy', 'Review company and employee overrides'],
+      policy: ['Payroll policy', 'Review company rules and employee eligibility'],
       reconcile: ['Reconcile & export', 'Resolve missing bank and payroll controls'],
     },
     checks: {
@@ -126,7 +164,7 @@ const accountantWorkspaceCopy = {
     steps: {
       employees: ['Hồ sơ nhân viên', 'Danh tính, hợp đồng, lương, thuế và ngân hàng'],
       attendance: ['Chấm công & nghỉ phép', 'Duyệt chấm công và nghỉ hưởng lương'],
-      policy: ['Chính sách lương', 'Kiểm tra quy định công ty và ngoại lệ'],
+      policy: ['Chính sách lương', 'Kiểm tra quy định công ty và điều kiện nhân viên'],
       reconcile: ['Đối chiếu & xuất file', 'Xử lý thiếu ngân hàng và kiểm soát lương'],
     },
     checks: {
@@ -456,7 +494,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeKioskPinVisibleValue,
     employeePayrollSummary,
     employeeProfileById,
-    employeeUsesMonthlyGross,
     emptyStaffPayrollCalculation,
     firstEmployeeStaffProfileId,
     firstScheduleStaffProfileId,
@@ -588,6 +625,32 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     store: false,
     documents: false,
   })
+  const groupedEmployeeOptions = useMemo(() => {
+    const groupOrder = ['GC', 'VRena', 'Manager']
+    const locationOrder = ['HaDo', 'CS']
+    const groups = new Map<string, any[]>()
+    visibleAllStaffProfileOptions.forEach((staffProfile: any) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      const group = employee?.department || 'VRena'
+      const location = employee?.main_work_location || 'HaDo'
+      const key = `${group} · ${location}`
+      const current = groups.get(key) || []
+      current.push(staffProfile)
+      groups.set(key, current)
+    })
+    return Array.from(groups.entries())
+      .sort(([left], [right]) => {
+        const [leftGroup, leftLocation] = left.split(' · ')
+        const [rightGroup, rightLocation] = right.split(' · ')
+        const groupDifference = (groupOrder.indexOf(leftGroup) < 0 ? 99 : groupOrder.indexOf(leftGroup)) - (groupOrder.indexOf(rightGroup) < 0 ? 99 : groupOrder.indexOf(rightGroup))
+        if (groupDifference) return groupDifference
+        return (locationOrder.indexOf(leftLocation) < 0 ? 99 : locationOrder.indexOf(leftLocation)) - (locationOrder.indexOf(rightLocation) < 0 ? 99 : locationOrder.indexOf(rightLocation))
+      })
+      .map(([label, employees]) => ({
+        label,
+        employees: employees.sort((left: any, right: any) => customerName(left, text).localeCompare(customerName(right, text))),
+      }))
+  }, [customerName, employeeProfileById, text, visibleAllStaffProfileOptions])
 
   const allEmployeeSectionsOpen = Object.values(openEmployeeSections).every(Boolean)
 
@@ -930,7 +993,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               if (staffProfile) editEmployeeProfile(staffProfile)
                             }}
                           >
-                            {visibleAllStaffProfileOptions.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                            {groupedEmployeeOptions.map((group) => (
+                              <optgroup key={group.label} label={group.label}>
+                                {group.employees.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                              </optgroup>
+                            ))}
                           </select>
                           <small>
                             {[
@@ -950,10 +1017,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <div><span>{text.labels.grossIncome}</span><strong>{formatVnd(employeePayrollSummary.grossIncome)}</strong></div>
                       <div><span>{text.labels.netIncome}</span><strong>{formatVnd(employeePayrollSummary.netIncome)}</strong></div>
                     </div>
-                    <datalist id="staff-hr-department-options">{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
-                    <datalist id="staff-hr-location-options">{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
                     <datalist id="staff-hr-job-title-options">{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
-                    <datalist id="staff-hr-contract-type-options">{hrContractTypeOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
                     <div className="staff-hr-profile-form">
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.identity} id="identity" onToggle={toggleEmployeeSection} open={openEmployeeSections.identity} title={employeeCopy.sectionTitles.identity}>
                         <div className="form-grid compact-form-grid">
@@ -974,10 +1038,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contract} id="contract" onToggle={toggleEmployeeSection} open={openEmployeeSections.contract} title={employeeCopy.sectionTitles.contract}>
                         <div className="form-grid compact-form-grid">
-                          <label>{text.labels.department}<input list="staff-hr-department-options" value={employeeForm.department} onChange={(event) => setEmployeeForm({ ...employeeForm, department: event.target.value })} /></label>
+                          <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => setEmployeeForm({ ...employeeForm, department: event.target.value })}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option: any) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.jobTitle}<input list="staff-hr-job-title-options" value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })} /></label>
-                          <label>{text.labels.mainWorkLocation}<input list="staff-hr-location-options" value={employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })} /></label>
-                          <label>{text.labels.payrollLocation}<input list="staff-hr-location-options" value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })} /></label>
+                          <label>{text.labels.mainWorkLocation}<select value={employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.payrollLocation}<select value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.payroll_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.payroll_location) && <option value={employeeForm.payroll_location}>{employeeForm.payroll_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>
                             {text.labels.employmentType}
                             <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: normalizeStaffEmploymentType(event.target.value) })}>
@@ -990,35 +1054,34 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               {staffContractStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
                             </select>
                           </label>
-                          <label>{text.labels.contractType}<input list="staff-hr-contract-type-options" value={employeeForm.contract_type} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_type: event.target.value })} /></label>
-                          <label>{text.labels.contractStartDate}<StaffPickerField ariaLabel={text.labels.contractStartDate} placeholder={text.chooseDate} type="date" value={employeeForm.contract_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, contract_start_date: value })} /></label>
-                          <label>{text.labels.contractEndDate}<StaffPickerField ariaLabel={text.labels.contractEndDate} placeholder={text.chooseDate} type="date" value={employeeForm.contract_end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, contract_end_date: value })} /></label>
-                          <label>{text.labels.startDate}<StaffPickerField ariaLabel={text.labels.startDate} placeholder={text.chooseDate} type="date" value={employeeForm.start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, start_date: value })} /></label>
-                          <label>{text.labels.endDate}<StaffPickerField ariaLabel={text.labels.endDate} placeholder={text.chooseDate} type="date" value={employeeForm.end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, end_date: value })} /></label>
+                          <label>{text.labels.contractType}<select value={employeeForm.contract_type} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_type: event.target.value })}><option value="">{text.any}</option>{employeeForm.contract_type && !hrContractTypeOptions.some((option: any) => option.name === employeeForm.contract_type) && <option value={employeeForm.contract_type}>{employeeForm.contract_type}</option>}{hrContractTypeOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{employeeCopy.probationPayrollType}<select value={employeeForm.probation_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
+                          <label>{employeeCopy.laborPayrollType}<select value={employeeForm.labor_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, labor_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
+                          <label>{employeeCopy.probationSalaryPercentage}<select value={employeeForm.probation_salary_percentage} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_salary_percentage: event.target.value })}><option value="85">85%</option><option value="100">100%</option></select></label>
+                          <label>{employeeCopy.probationStart}<StaffPickerField ariaLabel={employeeCopy.probationStart} placeholder={text.chooseDate} type="date" value={employeeForm.probation_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, probation_start_date: value })} /></label>
+                          <label>{employeeCopy.probationEnd}<StaffPickerField ariaLabel={employeeCopy.probationEnd} placeholder={text.chooseDate} type="date" value={employeeForm.probation_end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, probation_end_date: value })} /></label>
+                          <label>{employeeCopy.laborStart}<StaffPickerField ariaLabel={employeeCopy.laborStart} placeholder={text.chooseDate} type="date" value={employeeForm.labor_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, labor_start_date: value })} /></label>
+                          <label>{employeeCopy.laborEnd}<StaffPickerField ariaLabel={employeeCopy.laborEnd} placeholder={text.chooseDate} type="date" value={employeeForm.labor_end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, labor_end_date: value })} /></label>
                         </div>
                       </CollapsibleEmployeeSection>
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.payroll} id="payroll" onToggle={toggleEmployeeSection} open={openEmployeeSections.payroll} title={employeeCopy.sectionTitles.payroll}>
                         <div className="form-grid compact-form-grid">
-                          {employeeUsesMonthlyGross ? (
-                            <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
-                          ) : (
-                            <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
-                          )}
-                          <label>{text.labels.lunchAllowance}<input inputMode="numeric" value={formatDongInput(employeeForm.lunch_allowance_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, lunch_allowance_vnd: dongDigits(event.target.value) })} /></label>
-                          <label>{text.labels.restPeriodHours}<input min={0} step="0.25" type="number" value={employeeForm.rest_period_hours} onChange={(event) => setEmployeeForm({ ...employeeForm, rest_period_hours: event.target.value })} /></label>
-                          <label>{text.labels.normalOvertimeMultiplier}<input min={0} step="0.05" type="number" value={employeeForm.overtime_rate_multiplier} onChange={(event) => setEmployeeForm({ ...employeeForm, overtime_rate_multiplier: event.target.value })} /></label>
-                          <label>{text.labels.nightOvertimeMultiplier}<input min={0} step="0.05" type="number" value={employeeForm.night_rate_multiplier} onChange={(event) => setEmployeeForm({ ...employeeForm, night_rate_multiplier: event.target.value })} /></label>
-                          <label>{text.labels.holidayOvertimeMultiplier}<input min={0} step="0.05" type="number" value={employeeForm.holiday_rate_multiplier} onChange={(event) => setEmployeeForm({ ...employeeForm, holiday_rate_multiplier: event.target.value })} /></label>
+                          <label>{text.labels.monthlyGross}<input inputMode="numeric" value={formatDongInput(employeeForm.base_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, base_salary_vnd: dongDigits(event.target.value) })} /></label>
+                          <label>{text.labels.hourlyRate}<input inputMode="numeric" value={formatDongInput(employeeForm.hourly_rate_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, hourly_rate_vnd: dongDigits(event.target.value) })} /></label>
+                          <div className="staff-hr-policy-summary full">
+                            <div><strong>{employeeCopy.companyPolicy}</strong><span>{employeeCopy.companyPolicyHelp}</span></div>
+                            <dl><div><dt>{text.labels.lunchAllowance}</dt><dd>{formatVnd(hrSettings.lunch_allowance_vnd)}</dd></div><div><dt>{text.labels.restPeriodHours}</dt><dd>{Number((hrSettings.rest_period_minutes / 60).toFixed(2))}h</dd></div><div><dt>{text.labels.normalOvertimeMultiplier}</dt><dd>{hrSettings.normal_overtime_multiplier}×</dd></div><div><dt>{text.labels.nightOvertimeMultiplier}</dt><dd>{hrSettings.night_overtime_multiplier}×</dd></div><div><dt>{text.labels.holidayOvertimeMultiplier}</dt><dd>{hrSettings.holiday_overtime_multiplier}×</dd></div></dl>
+                          </div>
                         </div>
                       </CollapsibleEmployeeSection>
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.bank} id="bank" onToggle={toggleEmployeeSection} open={openEmployeeSections.bank} title={employeeCopy.sectionTitles.bank}>
                         <div className="form-grid compact-form-grid">
-                          <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={employeeForm.employee_contribution_rate} onChange={(event) => setEmployeeForm({ ...employeeForm, employee_contribution_rate: event.target.value })} /></label>
-                          <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={employeeForm.employer_contribution_rate} onChange={(event) => setEmployeeForm({ ...employeeForm, employer_contribution_rate: event.target.value })} /></label>
                           <label>{text.labels.pitWithholdingRate}<input min={0} step="0.1" type="number" value={employeeForm.pit_withholding_rate} onChange={(event) => setEmployeeForm({ ...employeeForm, pit_withholding_rate: event.target.value })} /></label>
                           <label>{text.labels.dependentsCount}<input min={0} step="1" type="number" value={employeeForm.dependents_count} onChange={(event) => setEmployeeForm({ ...employeeForm, dependents_count: event.target.value })} /></label>
+                          <label className="staff-checkbox-row"><input checked={employeeForm.social_insurance_enrolled} type="checkbox" onChange={(event) => setEmployeeForm({ ...employeeForm, social_insurance_enrolled: event.target.checked })} /><span>{employeeCopy.insuranceEnrolled}</span></label>
+                          <label>{employeeCopy.insuranceSalary}<input disabled={!employeeForm.social_insurance_enrolled} inputMode="numeric" value={formatDongInput(employeeForm.social_insurance_salary_vnd)} onChange={(event) => setEmployeeForm({ ...employeeForm, social_insurance_salary_vnd: dongDigits(event.target.value) })} /></label>
                           <label>{text.labels.bankName}<input value={employeeForm.bank_name} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_name: event.target.value })} /></label>
                           <label>{text.labels.bankAccount}<input value={employeeForm.bank_account_number} onChange={(event) => setEmployeeForm({ ...employeeForm, bank_account_number: event.target.value })} /></label>
                           <label>{text.labels.taxCodeEmployee}<input value={employeeForm.tax_code} onChange={(event) => setEmployeeForm({ ...employeeForm, tax_code: event.target.value })} /></label>
@@ -1031,7 +1094,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{text.labels.personalPhone}<PhoneNumberInput buttonLabel={sharedText.countryCode} className="staff-phone-control" inputLabel={text.labels.personalPhone} onChange={(phone) => setEmployeeForm({ ...employeeForm, personal_phone: phone })} searchPlaceholder={sharedText.searchCountry} value={employeeForm.personal_phone} /></label>
                           <label>{text.labels.personalEmail}<input value={employeeForm.personal_email} onChange={(event) => setEmployeeForm({ ...employeeForm, personal_email: event.target.value })} /></label>
                           <label className="full">{text.labels.address}<input value={employeeForm.address} onChange={(event) => setEmployeeForm({ ...employeeForm, address: event.target.value })} /></label>
-                          <label className="full">{text.labels.emergencyContact}<input value={employeeForm.emergency_contact} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact: event.target.value })} /></label>
+                          <label>{employeeCopy.emergencyName}<input value={employeeForm.emergency_contact_name} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact_name: event.target.value })} /></label>
+                          <label>{employeeCopy.emergencyRelationship}<input value={employeeForm.emergency_contact_relationship} onChange={(event) => setEmployeeForm({ ...employeeForm, emergency_contact_relationship: event.target.value })} /></label>
+                          <label>{employeeCopy.emergencyPhone}<PhoneNumberInput buttonLabel={sharedText.countryCode} className="staff-phone-control" inputLabel={employeeCopy.emergencyPhone} onChange={(phone) => setEmployeeForm({ ...employeeForm, emergency_contact_phone: phone })} searchPlaceholder={sharedText.searchCountry} value={employeeForm.emergency_contact_phone} /></label>
                           <label className="full">{text.labels.payrollNote}<textarea value={employeeForm.payroll_note} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_note: event.target.value })} /></label>
                         </div>
                       </CollapsibleEmployeeSection>
@@ -1123,6 +1188,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </div>
                     <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.documents} id="documents" onToggle={toggleEmployeeSection} open={openEmployeeSections.documents} title={employeeCopy.sectionTitles.documents}>
                     <div className="staff-hr-document-section">
+                      <div className="staff-hr-drive-folder">
+                        <label>{employeeCopy.driveFolder}<input inputMode="url" placeholder="https://drive.google.com/drive/folders/…" value={employeeForm.google_drive_folder_url} onChange={(event) => setEmployeeForm({ ...employeeForm, google_drive_folder_url: event.target.value })} /></label>
+                        {employeeForm.google_drive_folder_url && <a href={employeeForm.google_drive_folder_url} rel="noreferrer" target="_blank"><ExternalLink aria-hidden="true" size={15} />{employeeCopy.driveFolderHelp}</a>}
+                      </div>
                       <p className="staff-hr-document-count"><strong>{selectedEmployeeDocuments.length}</strong> {text.labels.attachmentList}</p>
                       <div className="staff-hr-document-actions">
                         <label className="staff-file-action">
@@ -1855,6 +1924,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.tax}</strong><span>{completionText.taxHelp}</span></div><input checked={hrSettings.personal_income_tax_enabled} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, personal_income_tax_enabled: event.target.checked })} /></label>
                           <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.insurance}</strong><span>{completionText.insuranceHelp}</span></div><input checked={hrSettings.social_insurance_enabled} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, social_insurance_enabled: event.target.checked })} /></label>
                           <div className="staff-hr-salary-rates">
+                            <label>{text.labels.lunchAllowance}<input inputMode="numeric" value={formatDongInput(String(hrSettings.lunch_allowance_vnd || ''))} onChange={(event) => setHrSettings({ ...hrSettings, lunch_allowance_vnd: parseDong(dongDigits(event.target.value)) })} /></label>
                             <label>{text.labels.employeeContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employee_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employee_contribution_rate: Number(event.target.value) || 0 })} /></label>
                             <label>{text.labels.employerContributionRate}<input min={0} step="0.1" type="number" value={hrSettings.employer_contribution_rate} onChange={(event) => setHrSettings({ ...hrSettings, employer_contribution_rate: Number(event.target.value) || 0 })} /></label>
                             <label>{text.labels.pitWithholdingRate}<input min={0} step="0.1" type="number" value={hrSettings.pit_withholding_rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_withholding_rate: Number(event.target.value) || 0 })} /></label>

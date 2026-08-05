@@ -309,6 +309,13 @@ type StaffEmployeeProfile = {
   contract_type: string | null
   contract_start_date: string | null
   contract_end_date: string | null
+  probation_payroll_type: 'hourly' | 'monthly' | 'manager'
+  labor_payroll_type: 'hourly' | 'monthly' | 'manager'
+  probation_salary_percentage: number
+  probation_start_date: string | null
+  probation_end_date: string | null
+  labor_start_date: string | null
+  labor_end_date: string | null
   start_date: string | null
   end_date: string | null
   base_salary_vnd: number
@@ -326,7 +333,13 @@ type StaffEmployeeProfile = {
   bank_account_number: string | null
   tax_code: string | null
   social_insurance_number: string | null
+  social_insurance_enrolled: boolean
+  social_insurance_salary_vnd: number
   emergency_contact: string | null
+  emergency_contact_name: string | null
+  emergency_contact_relationship: string | null
+  emergency_contact_phone: string | null
+  google_drive_folder_url: string | null
   payroll_note: string | null
   profile_photo_path: string | null
   cv_document_path: string | null
@@ -2750,7 +2763,37 @@ function employeeRate(value: number | null | undefined, fallback: number) {
 }
 
 function employeeRestPeriodMinutes(employee: StaffEmployeeProfile | undefined, settings: StaffHrSettings) {
-  return Math.max(0, Number(employee?.rest_period_minutes ?? settings.rest_period_minutes) || 0)
+  return Math.max(0, Number(settings.rest_period_minutes) || 0)
+}
+
+function normalizeEmployeePayrollType(value: string | null | undefined): 'hourly' | 'monthly' | 'manager' {
+  return value === 'monthly' || value === 'manager' ? value : 'hourly'
+}
+
+function employeePayrollTypeForPeriod(employee: StaffEmployeeProfile | undefined, periodEnd: string) {
+  const probationEnd = employee?.probation_end_date || ''
+  const laborStart = employee?.labor_start_date || ''
+  const probationApplies = Boolean(
+    (employee?.probation_start_date && periodEnd >= employee.probation_start_date) &&
+    (!probationEnd || periodEnd <= probationEnd) &&
+    (!laborStart || periodEnd < laborStart)
+  )
+  return probationApplies
+    ? normalizeEmployeePayrollType(employee?.probation_payroll_type)
+    : normalizeEmployeePayrollType(employee?.labor_payroll_type)
+}
+
+function employeePayPercentageForPeriod(employee: StaffEmployeeProfile | undefined, periodEnd: string) {
+  const probationEnd = employee?.probation_end_date || ''
+  const laborStart = employee?.labor_start_date || ''
+  const inProbation = Boolean(
+    employee?.probation_start_date &&
+    periodEnd >= employee.probation_start_date &&
+    (!probationEnd || periodEnd <= probationEnd) &&
+    (!laborStart || periodEnd < laborStart)
+  )
+  if (!inProbation) return 1
+  return Math.max(0, Number(employee?.probation_salary_percentage) || 85) / 100
 }
 
 function shiftStartDateTime(shift: StaffScheduleShift) {
@@ -2797,7 +2840,7 @@ function leaveHoursInsidePeriod(leave: StaffLeaveRequest, periodStart: string, p
 }
 
 function isPaidLeaveForEmployee(leave: StaffLeaveRequest, employee: StaffEmployeeProfile | undefined) {
-  if (!isMonthlyGrossEmployment(employee?.employment_type)) return false
+  if (employeePayrollTypeForPeriod(employee, leave.end_date) === 'hourly') return false
   return leave.leave_type === 'annual' || leave.leave_type === 'public_holiday'
 }
 
@@ -2844,24 +2887,24 @@ function calculateStaffPayroll(
   const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
   const configuredPeriodMinutes = proratedMonthlyMinutes(periodStart, periodEnd, settings.standard_monthly_hours)
   const periodStandardMinutes = Math.max(1, configuredPeriodMinutes, scheduledMinutes)
-  const hourlyRate = employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)
-  const monthlyBasePay = isMonthlyGrossEmployment(employee?.employment_type) ? Math.max(0, Number(employee?.base_salary_vnd) || 0) : 0
+  const payPercentage = employeePayPercentageForPeriod(employee, periodEnd)
+  const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
+  const hourlyRate = (employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)) * payPercentage
+  const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) * payPercentage : 0
   const baseWorkedMinutes = regularMinutes > 0 ? regularMinutes : Math.max(0, workedMinutes - overtimeMinutes)
   const salaryPaidMinutes = baseWorkedMinutes + Math.round(paidLeaveHours * 60)
   const hourlyBasePay = monthlyBasePay > 0
     ? Math.round(monthlyBasePay * Math.min(1, salaryPaidMinutes / periodStandardMinutes))
     : Math.round((baseWorkedMinutes / 60) * Math.max(0, hourlyRate))
-  const overtimeMultiplier = employeeRate(employee?.overtime_rate_multiplier, settings.normal_overtime_multiplier)
-  const nightMultiplier = employeeRate(employee?.night_rate_multiplier, settings.night_overtime_multiplier)
-  const holidayMultiplier = employeeRate(employee?.holiday_rate_multiplier, settings.holiday_overtime_multiplier)
+  const overtimeMultiplier = Math.max(0, Number(settings.normal_overtime_multiplier) || 0)
+  const nightMultiplier = Math.max(0, Number(settings.night_overtime_multiplier) || 0)
+  const holidayMultiplier = Math.max(0, Number(settings.holiday_overtime_multiplier) || 0)
   const overtimePay = Math.round(
     (overtimeMinutes / 60) * hourlyRate * overtimeMultiplier +
     (nightMinutes / 60) * hourlyRate * Math.max(0, nightMultiplier - 1) +
     (holidayMinutes / 60) * hourlyRate * Math.max(0, holidayMultiplier - 1)
   )
-  const lunchAllowance = Number(employee?.lunch_allowance_vnd) > 0
-    ? Number(employee?.lunch_allowance_vnd)
-    : settings.lunch_allowance_vnd
+  const lunchAllowance = settings.lunch_allowance_vnd
   const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * workedDays)
   const otherAllowances = employeeAdjustments
     .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
@@ -2878,11 +2921,11 @@ function calculateStaffPayroll(
     .reduce((sum, item) => sum + item.amount_vnd, 0)
   const basePay = Math.max(0, hourlyBasePay)
   const grossIncome = Math.max(0, basePay + overtimePay + allowances + bonuses)
-  const employeeContributionRate = employeeRate(employee?.employee_contribution_rate, settings.employee_contribution_rate)
-  const employerContributionRate = employeeRate(employee?.employer_contribution_rate, settings.employer_contribution_rate)
+  const employeeContributionRate = Math.max(0, Number(settings.employee_contribution_rate) || 0)
+  const employerContributionRate = Math.max(0, Number(settings.employer_contribution_rate) || 0)
   const pitRate = employeeRate(employee?.pit_withholding_rate, settings.pit_withholding_rate)
-  const contributionBase = settings.social_insurance_enabled && normalizeStaffEmploymentType(employee?.employment_type) === 'full_time' && normalizeStaffContractStatus(employee?.contract_status) === 'active'
-    ? Math.max(0, Number(employee?.base_salary_vnd) || 0)
+  const contributionBase = settings.social_insurance_enabled && employee?.social_insurance_enrolled && normalizeStaffContractStatus(employee?.contract_status) === 'active'
+    ? Math.max(0, Number(employee?.social_insurance_salary_vnd) || Number(employee?.base_salary_vnd) || 0)
     : 0
   const employeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
   const employerContributions = Math.round(contributionBase * employerContributionRate / 100)
@@ -3419,6 +3462,13 @@ const defaultEmployeeForm = () => ({
   contract_type: '',
   contract_start_date: '',
   contract_end_date: '',
+  probation_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
+  labor_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
+  probation_salary_percentage: '85',
+  probation_start_date: '',
+  probation_end_date: '',
+  labor_start_date: '',
+  labor_end_date: '',
   start_date: '',
   end_date: '',
   base_salary_vnd: '',
@@ -3436,7 +3486,13 @@ const defaultEmployeeForm = () => ({
   bank_account_number: '',
   tax_code: '',
   social_insurance_number: '',
+  social_insurance_enrolled: false,
+  social_insurance_salary_vnd: '',
   emergency_contact: '',
+  emergency_contact_name: '',
+  emergency_contact_relationship: '',
+  emergency_contact_phone: '',
+  google_drive_folder_url: '',
   payroll_note: '',
   profile_photo_path: '',
   cv_document_path: '',
@@ -3519,10 +3575,6 @@ function normalizeStaffEmploymentType(value: StaffEmploymentType | string | null
   return staffEmploymentTypes.includes(value as StaffEmploymentType) ? (value as StaffEmploymentType) : 'part_time'
 }
 
-function isMonthlyGrossEmployment(value: StaffEmploymentType | string | null | undefined) {
-  const normalizedType = normalizeStaffEmploymentType(value)
-  return normalizedType === 'full_time' || normalizedType === 'probation_full_time'
-}
 const staffAudienceOptions: StaffAudience[] = [
   'family_friendly',
   'scary',
@@ -5198,7 +5250,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       })
   }, [booking.customerName, profiles, text])
   const showCustomerNameSuggestions = customerNameFocused && customerNameSuggestions.length > 0
-  const employeeUsesMonthlyGross = isMonthlyGrossEmployment(employeeForm.employment_type)
   const employeePayrollSummary = selectedEmployeePayrollSummary
   const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
   const attendanceGridStyle = useMemo(() => ({
@@ -6686,6 +6737,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       contract_type: employee?.contract_type || '',
       contract_start_date: employee?.contract_start_date || '',
       contract_end_date: employee?.contract_end_date || '',
+      probation_payroll_type: normalizeEmployeePayrollType(employee?.probation_payroll_type),
+      labor_payroll_type: normalizeEmployeePayrollType(employee?.labor_payroll_type),
+      probation_salary_percentage: String(employee?.probation_salary_percentage || 85),
+      probation_start_date: employee?.probation_start_date || '',
+      probation_end_date: employee?.probation_end_date || '',
+      labor_start_date: employee?.labor_start_date || employee?.contract_start_date || '',
+      labor_end_date: employee?.labor_end_date || employee?.contract_end_date || '',
       start_date: employee?.start_date || '',
       end_date: employee?.end_date || '',
       base_salary_vnd: employee?.base_salary_vnd ? String(employee.base_salary_vnd) : '',
@@ -6703,7 +6761,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       bank_account_number: employee?.bank_account_number || '',
       tax_code: employee?.tax_code || '',
       social_insurance_number: employee?.social_insurance_number || '',
+      social_insurance_enrolled: employee?.social_insurance_enrolled ?? false,
+      social_insurance_salary_vnd: employee?.social_insurance_salary_vnd ? String(employee.social_insurance_salary_vnd) : '',
       emergency_contact: employee?.emergency_contact || '',
+      emergency_contact_name: employee?.emergency_contact_name || employee?.emergency_contact || '',
+      emergency_contact_relationship: employee?.emergency_contact_relationship || '',
+      emergency_contact_phone: employee?.emergency_contact_phone || '',
+      google_drive_folder_url: employee?.google_drive_folder_url || '',
       payroll_note: employee?.payroll_note || '',
       profile_photo_path: employee?.profile_photo_path || '',
       cv_document_path: employee?.cv_document_path || '',
@@ -6860,26 +6924,39 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       payroll_location: employeeForm.payroll_location.trim() || null,
       contract_status: normalizeStaffContractStatus(employeeForm.contract_status),
       contract_type: employeeForm.contract_type.trim() || null,
-      contract_start_date: employeeForm.contract_start_date || null,
-      contract_end_date: employeeForm.contract_end_date || null,
-      start_date: employeeForm.start_date || null,
-      end_date: employeeForm.end_date || null,
+      contract_start_date: employeeForm.labor_start_date || null,
+      contract_end_date: employeeForm.labor_end_date || null,
+      probation_payroll_type: normalizeEmployeePayrollType(employeeForm.probation_payroll_type),
+      labor_payroll_type: normalizeEmployeePayrollType(employeeForm.labor_payroll_type),
+      probation_salary_percentage: employeeForm.probation_salary_percentage === '100' ? 100 : 85,
+      probation_start_date: employeeForm.probation_start_date || null,
+      probation_end_date: employeeForm.probation_end_date || null,
+      labor_start_date: employeeForm.labor_start_date || null,
+      labor_end_date: employeeForm.labor_end_date || null,
+      start_date: employeeForm.probation_start_date || employeeForm.labor_start_date || null,
+      end_date: employeeForm.active ? null : (employeeForm.labor_end_date || employeeForm.probation_end_date || null),
       base_salary_vnd: parseDong(employeeForm.base_salary_vnd),
       hourly_rate_vnd: parseDong(employeeForm.hourly_rate_vnd),
-      lunch_allowance_vnd: parseDong(employeeForm.lunch_allowance_vnd),
-      rest_period_minutes: employeeForm.rest_period_hours ? Math.round(decimalInput(employeeForm.rest_period_hours) * 60) : null,
-      overtime_rate_multiplier: employeeForm.overtime_rate_multiplier ? decimalInput(employeeForm.overtime_rate_multiplier) : null,
-      night_rate_multiplier: employeeForm.night_rate_multiplier ? decimalInput(employeeForm.night_rate_multiplier) : null,
-      holiday_rate_multiplier: employeeForm.holiday_rate_multiplier ? decimalInput(employeeForm.holiday_rate_multiplier) : null,
-      employee_contribution_rate: employeeForm.employee_contribution_rate ? decimalInput(employeeForm.employee_contribution_rate) : null,
-      employer_contribution_rate: employeeForm.employer_contribution_rate ? decimalInput(employeeForm.employer_contribution_rate) : null,
+      lunch_allowance_vnd: 0,
+      rest_period_minutes: null,
+      overtime_rate_multiplier: null,
+      night_rate_multiplier: null,
+      holiday_rate_multiplier: null,
+      employee_contribution_rate: null,
+      employer_contribution_rate: null,
       pit_withholding_rate: employeeForm.pit_withholding_rate ? decimalInput(employeeForm.pit_withholding_rate) : null,
       dependents_count: Math.max(0, Math.round(Number(employeeForm.dependents_count) || 0)),
       bank_name: employeeForm.bank_name.trim() || null,
       bank_account_number: employeeForm.bank_account_number.trim() || null,
       tax_code: employeeForm.tax_code.trim() || null,
       social_insurance_number: employeeForm.social_insurance_number.trim() || null,
-      emergency_contact: employeeForm.emergency_contact.trim() || null,
+      social_insurance_enrolled: employeeForm.social_insurance_enrolled,
+      social_insurance_salary_vnd: parseDong(employeeForm.social_insurance_salary_vnd),
+      emergency_contact: employeeForm.emergency_contact_name.trim() || null,
+      emergency_contact_name: employeeForm.emergency_contact_name.trim() || null,
+      emergency_contact_relationship: employeeForm.emergency_contact_relationship.trim() || null,
+      emergency_contact_phone: employeeForm.emergency_contact_phone.trim() || null,
+      google_drive_folder_url: employeeForm.google_drive_folder_url.trim() || null,
       payroll_note: employeeForm.payroll_note.trim() || null,
       profile_photo_path: employeeForm.profile_photo_path || null,
       cv_document_path: employeeForm.cv_document_path || null,
@@ -7169,7 +7246,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           mealAllowanceVnd: item.mealAllowance,
           otherAllowancesVnd: item.otherAllowances,
           contributionBaseVnd: item.contributionBase,
-          policyReference: 'VR_Payroll_July_2026_QA',
+          policyReference: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master',
         },
       }
     })
@@ -7455,7 +7532,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const calculationBasisRows = [
       { Setting: 'Report period', Value: `${periodStart} to ${periodEnd}`, Notes: 'Selected in the Payroll tab' },
       { Setting: 'Payroll data source', Value: historicalPayrollRows.length > 0 ? 'Protected historical snapshot' : 'Live HR attendance and payroll data', Notes: historicalPayrollRows.length > 0 ? 'Exact reconciled period imported from the source workbook' : 'Calculated when the Excel file is generated' },
-      { Setting: 'Reference workbook', Value: 'VR_Payroll_July_2026_QA', Notes: 'Reconcile tab is authoritative for the July historical snapshot; workbook also supplies the live calculation policy' },
+      { Setting: 'Reference workbook', Value: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master', Notes: 'HR Employee Master is authoritative for employee status, contract periods, payroll type, salary, and insurance enrollment. Reconcile remains authoritative for the July historical snapshot.' },
       { Setting: 'Reference workbook URL', Value: 'https://docs.google.com/spreadsheets/d/1UbmITiVHdogTU8zOhHRFS4NmZn6unL_XsZms16zIZfA', Notes: '' },
       { Setting: 'Standard monthly days', Value: hrSettings.standard_monthly_days, Notes: 'July reference: 26 days for venue staff' },
       { Setting: 'Standard monthly hours', Value: hrSettings.standard_monthly_hours, Notes: 'July reference: 169 hours for 6.5-hour venue days; a larger published schedule is used when applicable' },
@@ -7467,7 +7544,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       { Setting: 'Social insurance', Value: hrSettings.social_insurance_enabled ? 'Enabled' : 'Disabled', Notes: 'Applied to active full-time contract salary, excluding meal allowance and overtime' },
       { Setting: 'Employee insurance rate', Value: hrSettings.employee_contribution_rate, Notes: 'Percent' },
       { Setting: 'Employer insurance rate', Value: hrSettings.employer_contribution_rate, Notes: 'Percent' },
-      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Employee-specific withholding defaults to ${hrSettings.pit_withholding_rate}% unless HR/accounting applies the 2026 progressive calculation.` },
+      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Configured withholding defaults to ${hrSettings.pit_withholding_rate}% unless HR/accounting applies the 2026 progressive calculation.` },
       { Setting: '2026 PIT self deduction (VND)', Value: 15_500_000, Notes: 'Effective for the 2026 tax period' },
       { Setting: '2026 PIT dependent deduction (VND)', Value: 6_200_000, Notes: 'Per registered dependent per month' },
       { Setting: '2026 progressive PIT bands', Value: '5% / 10% / 20% / 30% / 35%', Notes: 'Monthly taxable-income thresholds: 10M / 30M / 60M / 100M VND' },
@@ -7496,12 +7573,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Contract end': employee?.contract_end_date || '',
         'Monthly salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
         'Hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
-        'Meal / worked day (VND)': Number(employee?.lunch_allowance_vnd) > 0 ? Number(employee?.lunch_allowance_vnd) : hrSettings.lunch_allowance_vnd,
-        'OT multiplier': employeeRate(employee?.overtime_rate_multiplier, hrSettings.normal_overtime_multiplier),
-        'Night multiplier': employeeRate(employee?.night_rate_multiplier, hrSettings.night_overtime_multiplier),
-        'Holiday multiplier': employeeRate(employee?.holiday_rate_multiplier, hrSettings.holiday_overtime_multiplier),
-        'Employee insurance %': employeeRate(employee?.employee_contribution_rate, hrSettings.employee_contribution_rate),
-        'Employer insurance %': employeeRate(employee?.employer_contribution_rate, hrSettings.employer_contribution_rate),
+        'Meal / worked day (VND)': hrSettings.lunch_allowance_vnd,
+        'OT multiplier': hrSettings.normal_overtime_multiplier,
+        'Night multiplier': hrSettings.night_overtime_multiplier,
+        'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
+        'Employee insurance %': hrSettings.employee_contribution_rate,
+        'Employer insurance %': hrSettings.employer_contribution_rate,
         'Configured PIT %': employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate),
         Dependents: Math.max(0, Number(employee?.dependents_count) || 0),
         'Tax code': employee?.tax_code || '',
@@ -7511,6 +7588,19 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Profile photo': employee?.profile_photo_path ? 'Available' : 'Missing',
         CV: employee?.cv_document_path ? 'Available' : 'Missing',
         Notes: employee?.payroll_note || '',
+        'Probation payroll type': normalizeEmployeePayrollType(employee?.probation_payroll_type),
+        'Labor payroll type': normalizeEmployeePayrollType(employee?.labor_payroll_type),
+        'Probation salary %': Math.max(0, Number(employee?.probation_salary_percentage) || 85),
+        'Probation start': employee?.probation_start_date || '',
+        'Probation end': employee?.probation_end_date || '',
+        'Labor start': employee?.labor_start_date || '',
+        'Labor end': employee?.labor_end_date || '',
+        'Insurance enrolled': employee?.social_insurance_enrolled ? 'Yes' : 'No',
+        'Insurance salary base (VND)': Math.max(0, Number(employee?.social_insurance_salary_vnd) || 0),
+        'Emergency contact name': employee?.emergency_contact_name || '',
+        'Emergency contact relationship': employee?.emergency_contact_relationship || '',
+        'Emergency contact phone': employee?.emergency_contact_phone || '',
+        'Google Drive employee folder': employee?.google_drive_folder_url || '',
       }
     })
 
@@ -7539,8 +7629,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const mealPerDay = calculation && calculation.workedDays > 0
         ? Math.round(calculation.mealAllowance / calculation.workedDays)
         : hrSettings.lunch_allowance_vnd
-      const employeeRateValue = employeeRate(employee?.employee_contribution_rate, hrSettings.employee_contribution_rate)
-      const employerRateValue = employeeRate(employee?.employer_contribution_rate, hrSettings.employer_contribution_rate)
+      const employeeRateValue = hrSettings.employee_contribution_rate
+      const employerRateValue = hrSettings.employer_contribution_rate
       const pitRateValue = employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate)
       const basePay = Number(source['Base pay (VND)']) || 0
       const mealAllowance = Number(source['Meal allowance (VND)']) || 0
@@ -7564,8 +7654,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Meal / worked day (VND)': mealPerDay, 'Other allowances (VND)': source['Other allowances (VND)'], 'Bonuses (VND)': source['Bonuses (VND)'],
         'Advances (VND)': advances, 'Deductions (VND)': deductions, 'Employee insurance %': employeeRateValue,
         'Employer insurance %': employerRateValue, 'PIT method': 'Configured withholding', 'PIT rate %': pitRateValue,
-        Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': employeeRate(employee?.overtime_rate_multiplier, hrSettings.normal_overtime_multiplier),
-        'Night multiplier': employeeRate(employee?.night_rate_multiplier, hrSettings.night_overtime_multiplier), 'Holiday multiplier': employeeRate(employee?.holiday_rate_multiplier, hrSettings.holiday_overtime_multiplier),
+        Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': hrSettings.normal_overtime_multiplier,
+        'Night multiplier': hrSettings.night_overtime_multiplier, 'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
         'Base pay (VND)': accountantFormula(`IF(H${row}>0,ROUND(H${row}*MIN(1,P${row}/MAX(1,K${row})),0),ROUND(P${row}*J${row},0))`, basePay, 'currency'),
         'Meal allowance (VND)': accountantFormula(`ROUND(M${row}*T${row},0)`, mealAllowance, 'currency'),
         'Overtime pay (VND)': accountantFormula(`ROUND(Q${row}*J${row}*AD${row}+R${row}*J${row}*MAX(0,AE${row}-1)+S${row}*J${row}*MAX(0,AF${row}-1),0)`, overtimePay, 'currency'),
@@ -9856,7 +9946,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             employeeFormForProfile,
             employeePayrollSummary,
             employeeProfileById,
-            employeeUsesMonthlyGross,
             emptyStaffPayrollCalculation,
             filteredHrStaffProfiles,
             firstEmployeeStaffProfileId,
