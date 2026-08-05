@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
 import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, FileText, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
-import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
@@ -743,6 +743,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }, [customerName, employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
   const selectedEmployeeOutsideFilters = Boolean(selectedEmployeeStaffProfile)
     && !filteredEmployeeProfileOptions.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)
+  const firstFilteredEmployeeProfile = filteredEmployeeProfileOptions[0]
+  useEffect(() => {
+    if (selectedEmployeeOutsideFilters && firstFilteredEmployeeProfile) {
+      editEmployeeProfile(firstFilteredEmployeeProfile)
+    }
+  }, [editEmployeeProfile, firstFilteredEmployeeProfile, selectedEmployeeOutsideFilters])
   const employeeDirectoryFiltersActive = employeeDirectoryGroup !== 'all'
     || employeeDirectoryLocation !== 'all'
     || employeeDirectoryStatus !== 'active'
