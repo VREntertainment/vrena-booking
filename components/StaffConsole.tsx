@@ -35,6 +35,7 @@ import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnly
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
+import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -396,6 +397,30 @@ type StaffHrSettings = {
   employee_contribution_rate: number
   employer_contribution_rate: number
   pit_withholding_rate: number
+  policy_version: string
+  effective_from: string
+  policy_status: 'draft' | 'active' | 'retired'
+  legal_source_url: string | null
+  legal_reviewed_on: string | null
+  personal_deduction_vnd: number
+  dependent_deduction_vnd: number
+  short_term_pit_rate: number
+  pit_brackets: ProgressivePitBracket[]
+  employee_social_insurance_rate: number
+  employee_health_insurance_rate: number
+  employee_unemployment_insurance_rate: number
+  employer_social_insurance_rate: number
+  employer_health_insurance_rate: number
+  employer_unemployment_insurance_rate: number
+  employer_trade_union_rate: number
+  night_work_bonus_rate: number
+  night_overtime_extra_rate: number
+  leave_accrual_days_per_month: number
+  leave_qualifying_worked_days: number
+  leave_join_cutoff_day: number
+  leave_exit_cutoff_day: number
+  leave_carry_forward_month: number
+  leave_carry_forward_day: number
   pay_period_start_day: number
   auto_create_payroll_runs: boolean
   auto_update_payroll_daily: boolean
@@ -2899,10 +2924,14 @@ function calculateStaffPayroll(
   const overtimeMultiplier = Math.max(0, Number(settings.normal_overtime_multiplier) || 0)
   const nightMultiplier = Math.max(0, Number(settings.night_overtime_multiplier) || 0)
   const holidayMultiplier = Math.max(0, Number(settings.holiday_overtime_multiplier) || 0)
+  const categorizedHolidayMinutes = Math.min(holidayMinutes, overtimeMinutes)
+  const categorizedNightMinutes = Math.min(nightMinutes, Math.max(0, overtimeMinutes - categorizedHolidayMinutes))
+  const categorizedRegularOvertimeMinutes = Math.max(0, overtimeMinutes - categorizedHolidayMinutes - categorizedNightMinutes)
+  const legalNightOvertimeMultiplier = overtimeMultiplier + settings.night_work_bonus_rate / 100 + settings.night_overtime_extra_rate / 100
   const overtimePay = Math.round(
-    (overtimeMinutes / 60) * hourlyRate * overtimeMultiplier +
-    (nightMinutes / 60) * hourlyRate * Math.max(0, nightMultiplier - 1) +
-    (holidayMinutes / 60) * hourlyRate * Math.max(0, holidayMultiplier - 1)
+    (categorizedRegularOvertimeMinutes / 60) * hourlyRate * overtimeMultiplier +
+    (categorizedNightMinutes / 60) * hourlyRate * (legalNightOvertimeMultiplier || nightMultiplier) +
+    (categorizedHolidayMinutes / 60) * hourlyRate * holidayMultiplier
   )
   const lunchAllowance = settings.lunch_allowance_vnd
   const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * workedDays)
@@ -2921,16 +2950,32 @@ function calculateStaffPayroll(
     .reduce((sum, item) => sum + item.amount_vnd, 0)
   const basePay = Math.max(0, hourlyBasePay)
   const grossIncome = Math.max(0, basePay + overtimePay + allowances + bonuses)
-  const employeeContributionRate = Math.max(0, Number(settings.employee_contribution_rate) || 0)
-  const employerContributionRate = Math.max(0, Number(settings.employer_contribution_rate) || 0)
-  const pitRate = employeeRate(employee?.pit_withholding_rate, settings.pit_withholding_rate)
+  const employeeContributionRate = Math.max(0,
+    Number(settings.employee_social_insurance_rate) +
+    Number(settings.employee_health_insurance_rate) +
+    Number(settings.employee_unemployment_insurance_rate),
+  )
+  const employerContributionRate = Math.max(0,
+    Number(settings.employer_social_insurance_rate) +
+    Number(settings.employer_health_insurance_rate) +
+    Number(settings.employer_unemployment_insurance_rate) +
+    Number(settings.employer_trade_union_rate),
+  )
   const contributionBase = settings.social_insurance_enabled && employee?.social_insurance_enrolled && normalizeStaffContractStatus(employee?.contract_status) === 'active'
     ? Math.max(0, Number(employee?.social_insurance_salary_vnd) || Number(employee?.base_salary_vnd) || 0)
     : 0
   const employeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
   const employerContributions = Math.round(contributionBase * employerContributionRate / 100)
-  const taxableIncome = Math.max(0, grossIncome - employeeContributions - deductions - advances)
-  const pitWithheld = settings.personal_income_tax_enabled ? Math.round(taxableIncome * pitRate / 100) : 0
+  const taxableIncome = Math.max(
+    0,
+    grossIncome - employeeContributions - settings.personal_deduction_vnd - Math.max(0, Number(employee?.dependents_count) || 0) * settings.dependent_deduction_vnd,
+  )
+  const employeePitRate = Math.max(0, Number(employee?.pit_withholding_rate) || 0)
+  const pitWithheld = !settings.personal_income_tax_enabled
+    ? 0
+    : employeePitRate > 0
+      ? Math.round(Math.max(0, grossIncome - employeeContributions) * employeePitRate / 100)
+      : calculateProgressivePit(taxableIncome, settings.pit_brackets)
   const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
   const companyCost = Math.max(0, grossIncome + employerContributions)
 
@@ -3363,6 +3408,36 @@ const defaultHrSettings = (): StaffHrSettings => ({
   employee_contribution_rate: 10.5,
   employer_contribution_rate: 21.5,
   pit_withholding_rate: 10,
+  policy_version: 'VN-2026.1',
+  effective_from: '2026-01-01',
+  policy_status: 'active',
+  legal_source_url: 'https://vanban.chinhphu.vn/?classid=1&docid=198540&pageid=27160&typegroupid=3',
+  legal_reviewed_on: '2026-08-05',
+  personal_deduction_vnd: 15500000,
+  dependent_deduction_vnd: 6200000,
+  short_term_pit_rate: 10,
+  pit_brackets: [
+    { up_to: 10000000, rate: 5 },
+    { up_to: 30000000, rate: 10 },
+    { up_to: 60000000, rate: 20 },
+    { up_to: 100000000, rate: 30 },
+    { up_to: null, rate: 35 },
+  ],
+  employee_social_insurance_rate: 8,
+  employee_health_insurance_rate: 1.5,
+  employee_unemployment_insurance_rate: 1,
+  employer_social_insurance_rate: 17.5,
+  employer_health_insurance_rate: 3,
+  employer_unemployment_insurance_rate: 1,
+  employer_trade_union_rate: 2,
+  night_work_bonus_rate: 30,
+  night_overtime_extra_rate: 20,
+  leave_accrual_days_per_month: 1,
+  leave_qualifying_worked_days: 16,
+  leave_join_cutoff_day: 15,
+  leave_exit_cutoff_day: 17,
+  leave_carry_forward_month: 3,
+  leave_carry_forward_day: 31,
   pay_period_start_day: 1,
   auto_create_payroll_runs: false,
   auto_update_payroll_daily: false,
@@ -3391,6 +3466,32 @@ function normalizeHrSettings(value?: Partial<StaffHrSettings> | null): StaffHrSe
     employee_contribution_rate: Math.max(0, Number(value?.employee_contribution_rate ?? fallback.employee_contribution_rate) || 0),
     employer_contribution_rate: Math.max(0, Number(value?.employer_contribution_rate ?? fallback.employer_contribution_rate) || 0),
     pit_withholding_rate: Math.max(0, Number(value?.pit_withholding_rate ?? fallback.pit_withholding_rate) || 0),
+    policy_version: String(value?.policy_version || fallback.policy_version),
+    effective_from: String(value?.effective_from || fallback.effective_from),
+    policy_status: ['draft', 'active', 'retired'].includes(String(value?.policy_status)) ? value?.policy_status as StaffHrSettings['policy_status'] : fallback.policy_status,
+    legal_source_url: value?.legal_source_url ?? fallback.legal_source_url,
+    legal_reviewed_on: value?.legal_reviewed_on ?? fallback.legal_reviewed_on,
+    personal_deduction_vnd: Math.max(0, Number(value?.personal_deduction_vnd ?? fallback.personal_deduction_vnd) || 0),
+    dependent_deduction_vnd: Math.max(0, Number(value?.dependent_deduction_vnd ?? fallback.dependent_deduction_vnd) || 0),
+    short_term_pit_rate: Math.max(0, Number(value?.short_term_pit_rate ?? fallback.short_term_pit_rate) || 0),
+    pit_brackets: Array.isArray(value?.pit_brackets) && value.pit_brackets.length > 0
+      ? value.pit_brackets.map((bracket) => ({ up_to: bracket.up_to == null ? null : Math.max(0, Number(bracket.up_to) || 0), rate: Math.max(0, Number(bracket.rate) || 0) }))
+      : fallback.pit_brackets,
+    employee_social_insurance_rate: Math.max(0, Number(value?.employee_social_insurance_rate ?? fallback.employee_social_insurance_rate) || 0),
+    employee_health_insurance_rate: Math.max(0, Number(value?.employee_health_insurance_rate ?? fallback.employee_health_insurance_rate) || 0),
+    employee_unemployment_insurance_rate: Math.max(0, Number(value?.employee_unemployment_insurance_rate ?? fallback.employee_unemployment_insurance_rate) || 0),
+    employer_social_insurance_rate: Math.max(0, Number(value?.employer_social_insurance_rate ?? fallback.employer_social_insurance_rate) || 0),
+    employer_health_insurance_rate: Math.max(0, Number(value?.employer_health_insurance_rate ?? fallback.employer_health_insurance_rate) || 0),
+    employer_unemployment_insurance_rate: Math.max(0, Number(value?.employer_unemployment_insurance_rate ?? fallback.employer_unemployment_insurance_rate) || 0),
+    employer_trade_union_rate: Math.max(0, Number(value?.employer_trade_union_rate ?? fallback.employer_trade_union_rate) || 0),
+    night_work_bonus_rate: Math.max(0, Number(value?.night_work_bonus_rate ?? fallback.night_work_bonus_rate) || 0),
+    night_overtime_extra_rate: Math.max(0, Number(value?.night_overtime_extra_rate ?? fallback.night_overtime_extra_rate) || 0),
+    leave_accrual_days_per_month: Math.max(0, Number(value?.leave_accrual_days_per_month ?? fallback.leave_accrual_days_per_month) || 0),
+    leave_qualifying_worked_days: Math.max(0, Math.round(Number(value?.leave_qualifying_worked_days ?? fallback.leave_qualifying_worked_days) || 0)),
+    leave_join_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_join_cutoff_day ?? fallback.leave_join_cutoff_day) || 1))),
+    leave_exit_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_exit_cutoff_day ?? fallback.leave_exit_cutoff_day) || 1))),
+    leave_carry_forward_month: Math.min(12, Math.max(1, Math.round(Number(value?.leave_carry_forward_month ?? fallback.leave_carry_forward_month) || 1))),
+    leave_carry_forward_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_carry_forward_day ?? fallback.leave_carry_forward_day) || 1))),
     pay_period_start_day: Math.min(28, Math.max(1, Math.round(Number(value?.pay_period_start_day ?? fallback.pay_period_start_day) || 1))),
     auto_create_payroll_runs: value?.auto_create_payroll_runs ?? fallback.auto_create_payroll_runs,
     auto_update_payroll_daily: value?.auto_update_payroll_daily ?? fallback.auto_update_payroll_daily,
@@ -7098,6 +7199,30 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       employee_contribution_rate: Math.max(0, Number(hrSettings.employee_contribution_rate) || 0),
       employer_contribution_rate: Math.max(0, Number(hrSettings.employer_contribution_rate) || 0),
       pit_withholding_rate: Math.max(0, Number(hrSettings.pit_withholding_rate) || 0),
+      policy_version: hrSettings.policy_version.trim() || 'VN-2026.1',
+      effective_from: hrSettings.effective_from || todayString(),
+      policy_status: hrSettings.policy_status,
+      legal_source_url: hrSettings.legal_source_url?.trim() || null,
+      legal_reviewed_on: hrSettings.legal_reviewed_on || null,
+      personal_deduction_vnd: Math.max(0, Number(hrSettings.personal_deduction_vnd) || 0),
+      dependent_deduction_vnd: Math.max(0, Number(hrSettings.dependent_deduction_vnd) || 0),
+      short_term_pit_rate: Math.max(0, Number(hrSettings.short_term_pit_rate) || 0),
+      pit_brackets: hrSettings.pit_brackets,
+      employee_social_insurance_rate: Math.max(0, Number(hrSettings.employee_social_insurance_rate) || 0),
+      employee_health_insurance_rate: Math.max(0, Number(hrSettings.employee_health_insurance_rate) || 0),
+      employee_unemployment_insurance_rate: Math.max(0, Number(hrSettings.employee_unemployment_insurance_rate) || 0),
+      employer_social_insurance_rate: Math.max(0, Number(hrSettings.employer_social_insurance_rate) || 0),
+      employer_health_insurance_rate: Math.max(0, Number(hrSettings.employer_health_insurance_rate) || 0),
+      employer_unemployment_insurance_rate: Math.max(0, Number(hrSettings.employer_unemployment_insurance_rate) || 0),
+      employer_trade_union_rate: Math.max(0, Number(hrSettings.employer_trade_union_rate) || 0),
+      night_work_bonus_rate: Math.max(0, Number(hrSettings.night_work_bonus_rate) || 0),
+      night_overtime_extra_rate: Math.max(0, Number(hrSettings.night_overtime_extra_rate) || 0),
+      leave_accrual_days_per_month: Math.max(0, Number(hrSettings.leave_accrual_days_per_month) || 0),
+      leave_qualifying_worked_days: Math.max(0, Math.round(Number(hrSettings.leave_qualifying_worked_days) || 0)),
+      leave_join_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(hrSettings.leave_join_cutoff_day) || 1))),
+      leave_exit_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(hrSettings.leave_exit_cutoff_day) || 1))),
+      leave_carry_forward_month: Math.min(12, Math.max(1, Math.round(Number(hrSettings.leave_carry_forward_month) || 1))),
+      leave_carry_forward_day: Math.min(31, Math.max(1, Math.round(Number(hrSettings.leave_carry_forward_day) || 1))),
       pay_period_start_day: Math.min(28, Math.max(1, Math.round(Number(hrSettings.pay_period_start_day) || 1))),
       auto_create_payroll_runs: Boolean(hrSettings.auto_create_payroll_runs),
       auto_update_payroll_daily: Boolean(hrSettings.auto_update_payroll_daily),
@@ -7159,15 +7284,28 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const name = hrSetupForm[optionType].trim()
     if (!name) return
     setSaving(true)
-    const { error } = await supabase.from('staff_hr_setup_options').insert({
-      option_type: optionType,
-      name,
-      sort_order: (hrSetupOptions.filter((item) => item.option_type === optionType).length + 1) * 10,
-      created_by: profile?.id || null,
+    const { error } = await supabase.rpc('staff_upsert_hr_setup_option', {
+      p_option_type: optionType,
+      p_name: name,
     })
     setStatus(error ? error.message : text.messages.hrSetupOptionSaved)
     if (!error) {
       setHrSetupForm((current) => ({ ...current, [optionType]: '' }))
+      markStaffDataStale('hr')
+      await loadHrData(true)
+    }
+    setSaving(false)
+  }
+
+  async function setHrSetupOptionActive(optionId: string, active: boolean) {
+    if (!canManageAttendance) return
+    setSaving(true)
+    const { error } = await supabase.rpc('staff_set_hr_setup_option_active', {
+      p_option_id: optionId,
+      p_active: active,
+    })
+    setStatus(error ? error.message : text.messages.hrSetupOptionSaved)
+    if (!error) {
       markStaffDataStale('hr')
       await loadHrData(true)
     }
@@ -7597,16 +7735,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       { Setting: 'Standard monthly hours', Value: hrSettings.standard_monthly_hours, Notes: 'July reference: 169 hours for 6.5-hour venue days; a larger published schedule is used when applicable' },
       { Setting: 'Meal allowance per worked day (VND)', Value: hrSettings.lunch_allowance_vnd, Notes: 'July reference: 35,000 VND per worked day' },
       { Setting: 'Normal overtime multiplier', Value: hrSettings.normal_overtime_multiplier, Notes: 'July reference: 150%' },
-      { Setting: 'Night overtime multiplier', Value: hrSettings.night_overtime_multiplier, Notes: 'Configured premium' },
+      { Setting: 'Night overtime multiplier', Value: hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100, Notes: 'Ordinary OT multiplier plus night-work and night-OT premiums' },
       { Setting: 'Holiday overtime multiplier', Value: hrSettings.holiday_overtime_multiplier, Notes: 'July reference: up to 300%' },
       { Setting: 'Paid leave policy', Value: 'Approved annual/public-holiday leave for monthly full-time payroll', Notes: 'Part-time staff do not receive paid annual leave under the July policy' },
+      { Setting: 'Leave accrual per qualifying month', Value: hrSettings.leave_accrual_days_per_month, Notes: `Qualifies from ${hrSettings.leave_qualifying_worked_days} worked days` },
+      { Setting: 'Join / exit cutoff days', Value: `${hrSettings.leave_join_cutoff_day} / ${hrSettings.leave_exit_cutoff_day}`, Notes: 'July HR Employee Master leave-balance policy' },
+      { Setting: 'Carry-forward expiry', Value: `${String(hrSettings.leave_carry_forward_day).padStart(2, '0')}/${String(hrSettings.leave_carry_forward_month).padStart(2, '0')}`, Notes: 'Unused prior-year balance expiry' },
       { Setting: 'Social insurance', Value: hrSettings.social_insurance_enabled ? 'Enabled' : 'Disabled', Notes: 'Applied to active full-time contract salary, excluding meal allowance and overtime' },
-      { Setting: 'Employee insurance rate', Value: hrSettings.employee_contribution_rate, Notes: 'Percent' },
-      { Setting: 'Employer insurance rate', Value: hrSettings.employer_contribution_rate, Notes: 'Percent' },
-      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Configured withholding defaults to ${hrSettings.pit_withholding_rate}% unless HR/accounting applies the 2026 progressive calculation.` },
-      { Setting: '2026 PIT self deduction (VND)', Value: 15_500_000, Notes: 'Effective for the 2026 tax period' },
-      { Setting: '2026 PIT dependent deduction (VND)', Value: 6_200_000, Notes: 'Per registered dependent per month' },
-      { Setting: '2026 progressive PIT bands', Value: '5% / 10% / 20% / 30% / 35%', Notes: 'Monthly taxable-income thresholds: 10M / 30M / 60M / 100M VND' },
+      { Setting: 'Employee insurance rate', Value: hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate, Notes: `SI ${hrSettings.employee_social_insurance_rate}% · HI ${hrSettings.employee_health_insurance_rate}% · UI ${hrSettings.employee_unemployment_insurance_rate}%` },
+      { Setting: 'Employer insurance and union rate', Value: hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate, Notes: `SI ${hrSettings.employer_social_insurance_rate}% · HI ${hrSettings.employer_health_insurance_rate}% · UI ${hrSettings.employer_unemployment_insurance_rate}% · union ${hrSettings.employer_trade_union_rate}%` },
+      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Progressive calculation; employee-specific fixed withholding is used only when explicitly configured.` },
+      { Setting: 'PIT self deduction (VND)', Value: hrSettings.personal_deduction_vnd, Notes: `Policy ${hrSettings.policy_version}, effective ${hrSettings.effective_from}` },
+      { Setting: 'PIT dependent deduction (VND)', Value: hrSettings.dependent_deduction_vnd, Notes: 'Per registered dependent per month' },
+      { Setting: 'Progressive PIT bands', Value: hrSettings.pit_brackets.map((bracket) => `${bracket.rate}%`).join(' / '), Notes: hrSettings.pit_brackets.map((bracket) => bracket.up_to == null ? 'above final threshold' : formatVndCompact(bracket.up_to)).join(' / ') },
+      { Setting: 'Legal source', Value: hrSettings.legal_source_url || '', Notes: `Reviewed ${hrSettings.legal_reviewed_on || 'not recorded'}` },
     ]
 
     const employeeByCode = new Map(Array.from(employeeProfileById.values()).map((employee) => [employee.employee_code || '', employee]))
@@ -7634,10 +7776,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
         'Meal / worked day (VND)': hrSettings.lunch_allowance_vnd,
         'OT multiplier': hrSettings.normal_overtime_multiplier,
-        'Night multiplier': hrSettings.night_overtime_multiplier,
+        'Night multiplier': hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100,
         'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
-        'Employee insurance %': hrSettings.employee_contribution_rate,
-        'Employer insurance %': hrSettings.employer_contribution_rate,
+        'Employee insurance %': hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate,
+        'Employer insurance & union %': hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate,
         'Configured PIT %': employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate),
         Dependents: Math.max(0, Number(employee?.dependents_count) || 0),
         'Tax code': employee?.tax_code || '',
@@ -7688,9 +7830,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const mealPerDay = calculation && calculation.workedDays > 0
         ? Math.round(calculation.mealAllowance / calculation.workedDays)
         : hrSettings.lunch_allowance_vnd
-      const employeeRateValue = hrSettings.employee_contribution_rate
-      const employerRateValue = hrSettings.employer_contribution_rate
-      const pitRateValue = employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate)
+      const employeeRateValue = hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate
+      const employerRateValue = hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate
+      const pitRateValue = Math.max(0, Number(employee?.pit_withholding_rate) || 0)
       const basePay = Number(source['Base pay (VND)']) || 0
       const mealAllowance = Number(source['Meal allowance (VND)']) || 0
       const overtimePay = Number(source['Overtime pay (VND)']) || 0
@@ -7712,17 +7854,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Overtime hours': source['Overtime hours'], 'Night hours': source['Night hours'], 'Holiday hours': source['Holiday hours'],
         'Meal / worked day (VND)': mealPerDay, 'Other allowances (VND)': source['Other allowances (VND)'], 'Bonuses (VND)': source['Bonuses (VND)'],
         'Advances (VND)': advances, 'Deductions (VND)': deductions, 'Employee insurance %': employeeRateValue,
-        'Employer insurance %': employerRateValue, 'PIT method': 'Configured withholding', 'PIT rate %': pitRateValue,
+        'Employer insurance %': employerRateValue, 'PIT method': pitRateValue > 0 ? 'Employee fixed withholding' : 'Progressive PIT', 'PIT rate %': pitRateValue,
         Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': hrSettings.normal_overtime_multiplier,
-        'Night multiplier': hrSettings.night_overtime_multiplier, 'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
+        'Night multiplier': hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100, 'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
         'Base pay (VND)': accountantFormula(`IF(H${row}>0,ROUND(H${row}*MIN(1,P${row}/MAX(1,K${row})),0),ROUND(P${row}*J${row},0))`, basePay, 'currency'),
         'Meal allowance (VND)': accountantFormula(`ROUND(M${row}*T${row},0)`, mealAllowance, 'currency'),
-        'Overtime pay (VND)': accountantFormula(`ROUND(Q${row}*J${row}*AD${row}+R${row}*J${row}*MAX(0,AE${row}-1)+S${row}*J${row}*MAX(0,AF${row}-1),0)`, overtimePay, 'currency'),
+        'Overtime pay (VND)': accountantFormula(`ROUND(MAX(0,Q${row}-R${row}-S${row})*J${row}*AD${row}+R${row}*J${row}*(AD${row}+${hrSettings.night_work_bonus_rate / 100}+${hrSettings.night_overtime_extra_rate / 100})+S${row}*J${row}*AF${row},0)`, overtimePay, 'currency'),
         'Gross income (VND)': accountantFormula(`MAX(0,SUM(AG${row}:AI${row})+U${row}+V${row})`, gross, 'currency'),
         'Insurance base (VND)': source['Insurance base (VND)'],
         'Employee insurance (VND)': accountantFormula(`ROUND(AK${row}*Y${row}/100,0)`, employeeInsurance, 'currency'),
-        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-X${row}-W${row})`, Math.max(0, gross - employeeInsurance - deductions - advances), 'currency'),
-        'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'="yes",ROUND(AM${row}*AB${row}/100,0),0)`, pit, 'currency'),
+        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-${hrSettings.personal_deduction_vnd}-AC${row}*${hrSettings.dependent_deduction_vnd})`, Math.max(0, gross - employeeInsurance - hrSettings.personal_deduction_vnd - Math.max(0, Number(employee?.dependents_count) || 0) * hrSettings.dependent_deduction_vnd), 'currency'),
+        'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'<>"yes",0,IF(AB${row}>0,ROUND(MAX(0,AJ${row}-AL${row})*AB${row}/100,0),ROUND(${progressivePitExcelFormula(`AM${row}`, hrSettings.pit_brackets)},0)))`, pit, 'currency'),
         'Net payable (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AN${row}-X${row}-W${row})`, net, 'currency'),
         'Employer insurance (VND)': accountantFormula(`ROUND(AK${row}*Z${row}/100,0)`, employerInsurance, 'currency'),
         'Company cost (VND)': accountantFormula(`MAX(0,AJ${row}+AP${row})`, companyCost, 'currency'),
@@ -7817,7 +7959,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const instructionRows = [
       { Step: '1', Action: 'Complete employee records', Details: 'Legal identity, contract dates, salary/rate, tax, insurance, bank, and documents are maintained in HR > Employee profiles.' },
       { Step: '2', Action: 'Publish schedules and approve attendance', Details: 'Payroll uses the selected period. Review worked time, paid leave, overtime, and missing clock-outs before export.' },
-      { Step: '3', Action: 'Review payroll policy', Details: 'Company defaults live in HR settings; employee overrides remain visible in Employee Master and Payroll Formulas.' },
+      { Step: '3', Action: 'Review payroll policy', Details: `Company policy ${hrSettings.policy_version} is effective ${hrSettings.effective_from}. Confirm legal-source and review dates in Calculation Basis before approval.` },
       { Step: '4', Action: 'Reconcile', Details: 'Contract Checks, Bank Transfer, and Reconciliation must show OK before sending the workbook.' },
       { Step: '5', Action: 'Send to accountant', Details: 'Open in Microsoft Excel and allow recalculation. Blue headers are inputs/identifiers; calculated payroll values contain live formulas.' },
       { Step: 'Policy', Action: '2026 Vietnam PIT', Details: 'Progressive bands: 5% to 10M, 10% to 30M, 20% to 60M, 30% to 100M, 35% above 100M; self deduction 15.5M and dependent deduction 6.2M.' },
@@ -10030,6 +10172,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             hrSearch,
             hrSettings,
             hrSetupForm,
+            hrSetupOptions,
             hrStatusFilter,
             hrTab,
             isOwnerOrAdmin,
@@ -10057,6 +10200,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             saveHrAdjustment,
             saveHrSettings,
             saveHrSetupOption,
+            setHrSetupOptionActive,
             saveAttendanceSettings,
             saveShift,
             saving,
