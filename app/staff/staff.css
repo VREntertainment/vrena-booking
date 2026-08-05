@@ -7519,7 +7519,7 @@
   box-shadow: 0 4px 12px color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent);
 }
 
-.app .staff-employee-selected-picker {
+.app .staff-employee-selected-identity {
   display: grid;
   flex: 1 1 280px;
   gap: 3px;
@@ -7529,13 +7529,12 @@
   font-weight: 900;
 }
 
-.app .staff-employee-selected-picker select {
-  min-height: 42px;
+.app .staff-employee-selected-identity strong {
   font-size: 15px;
   font-weight: 900;
 }
 
-.app .staff-employee-selected-picker small {
+.app .staff-employee-selected-identity span {
   overflow: hidden;
   color: var(--vrena-neutral-600);
   font-size: 11px;
@@ -7654,25 +7653,6 @@
 .app .staff-hr-employee-filter-grid input:focus {
   border-color: var(--staff-hr-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--staff-hr-accent) 14%, transparent);
-}
-
-.app .staff-hr-employee-search-control {
-  position: relative;
-  display: block;
-}
-
-.app .staff-hr-employee-search-control > svg {
-  position: absolute;
-  top: 50%;
-  left: 13px;
-  z-index: 1;
-  color: var(--vrena-neutral-500);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.app .staff-hr-employee-search-control > input {
-  padding-left: 38px;
 }
 
 .app .staff-hr-employee-filter-summary {
@@ -8261,7 +8241,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .app .staff-hr-employee-search-filter {
+  .app .staff-hr-employee-picker-filter {
     grid-column: 1 / -1;
   }
 
@@ -8295,7 +8275,7 @@
     flex-wrap: wrap;
   }
 
-  .app .staff-employee-selected-picker {
+  .app .staff-employee-selected-identity {
     flex: 1 1 calc(100% - 66px);
   }
 
@@ -8310,7 +8290,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .app .staff-hr-employee-search-filter {
+  .app .staff-hr-employee-picker-filter {
     grid-column: auto;
   }
 
