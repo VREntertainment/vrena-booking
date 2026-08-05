@@ -235,9 +235,6 @@ export default function WidgetPage({
   const [rememberLogin, setRememberLogin] = useState(true)
   const [captchaToken, setCaptchaToken] = useState('')
   const captchaTokenRef = useRef('')
-  const autoSubmittedCaptchaTokenRef = useRef('')
-  const latestHandleAuthRef = useRef<() => Promise<void>>(async () => {})
-  const latestProfilePasswordRef = useRef('')
   const [newPassword, setNewPassword] = useState('')
   const [isRecoveryMode, setIsRecoveryMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -1196,7 +1193,6 @@ export default function WidgetPage({
 
   function updateCaptchaToken(token: string) {
     captchaTokenRef.current = token
-    if (!token) autoSubmittedCaptchaTokenRef.current = ''
     setCaptchaToken(token)
   }
 
@@ -3932,11 +3928,6 @@ export default function WidgetPage({
   }, [userId])
 
   useEffect(() => {
-    latestHandleAuthRef.current = handleAuth
-    latestProfilePasswordRef.current = profilePassword
-  })
-
-  useEffect(() => {
     const shouldShowCaptcha = authMode === 'reset' || ((authMode === 'create' || authMode === 'login') && authStep === 'credentials')
 
     if (typeof window === 'undefined' || profile || activeView !== 'profile' || !shouldShowCaptcha) return
@@ -3950,16 +3941,6 @@ export default function WidgetPage({
         sitekey: HCAPTCHA_SITE_KEY,
         callback: (token) => {
           updateCaptchaToken(token)
-
-          if (
-            authMode === 'login'
-            && authStep === 'credentials'
-            && latestProfilePasswordRef.current.length >= 6
-            && autoSubmittedCaptchaTokenRef.current !== token
-          ) {
-            autoSubmittedCaptchaTokenRef.current = token
-            window.queueMicrotask(() => void latestHandleAuthRef.current())
-          }
         },
         'expired-callback': () => updateCaptchaToken(''),
         'error-callback': () => updateCaptchaToken(''),
