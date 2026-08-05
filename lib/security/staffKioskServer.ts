@@ -1,8 +1,14 @@
 import { createHash } from 'node:crypto'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
+import {
+  staffKioskOperatorFromEmployee,
+  type StaffKioskEmployeeDirectoryRow,
+} from '../staffKioskDirectory'
 import { hasVerifiedAal2Session, hasVerifiedMfaFactor } from './staffMfa'
 import { requiresStaffKioskPin } from '../staffKioskScope'
+
+export type { StaffKioskOperatorDirectoryItem } from '../staffKioskDirectory'
 
 export const STAFF_KIOSK_HEADER = 'x-vrena-operator-session'
 
@@ -13,19 +19,6 @@ type StaffKioskAuth = {
   operatorToken: string
   operatorTokenHash: string
   user: User
-}
-
-export type StaffKioskOperatorDirectoryItem = {
-  profileId: string
-  employeeCode: string | null
-  name: string
-  jobTitle: string | null
-  accessRole: 'manager' | 'staff' | null
-  pinConfigured: boolean
-  avatarEmoji: string | null
-  avatarInitials: string | null
-  avatarColor: string | null
-  avatarTextColor: string | null
 }
 
 export function staffKioskJsonError(message: string, status: number) {
@@ -111,35 +104,5 @@ export async function loadStaffKioskOperatorDirectory(adminClient: SupabaseClien
     .order('legal_name', { ascending: true })
   if (employeeError) throw new Error(employeeError.message)
 
-  const profileIds = (employees ?? []).map((employee) => employee.profile_id).filter(Boolean)
-  const profilesById = new Map<string, Record<string, unknown>>()
-  if (profileIds.length > 0) {
-    const { data: profiles, error: profileError } = await adminClient
-      .from('profiles')
-      .select('id, full_name, nickname, avatar_emoji, avatar_initials, avatar_color, avatar_text_color')
-      .in('id', profileIds)
-      .is('deleted_at', null)
-    if (profileError) throw new Error(profileError.message)
-    for (const profile of profiles ?? []) profilesById.set(profile.id, profile)
-  }
-
-  return (employees ?? []).flatMap((employee): StaffKioskOperatorDirectoryItem[] => {
-    const profile = profilesById.get(employee.profile_id)
-    if (!profile) return []
-    const accessRole = employee.kiosk_access_role === 'manager' || employee.kiosk_access_role === 'staff'
-      ? employee.kiosk_access_role
-      : null
-    return [{
-      profileId: employee.profile_id,
-      employeeCode: employee.employee_code,
-      name: employee.legal_name || String(profile.full_name || profile.nickname || employee.employee_code || 'Employee'),
-      jobTitle: employee.job_title,
-      accessRole,
-      pinConfigured: Boolean(employee.kiosk_pin_configured_at && accessRole),
-      avatarEmoji: typeof profile.avatar_emoji === 'string' ? profile.avatar_emoji : null,
-      avatarInitials: typeof profile.avatar_initials === 'string' ? profile.avatar_initials : null,
-      avatarColor: typeof profile.avatar_color === 'string' ? profile.avatar_color : null,
-      avatarTextColor: typeof profile.avatar_text_color === 'string' ? profile.avatar_text_color : null,
-    }]
-  })
+  return ((employees ?? []) as StaffKioskEmployeeDirectoryRow[]).map(staffKioskOperatorFromEmployee)
 }
