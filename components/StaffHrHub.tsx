@@ -2157,7 +2157,41 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <div className="staff-hr-pit-brackets">
                             <strong>{resolvedLanguage === 'vi' ? 'Biểu thuế lũy tiến tháng' : 'Monthly progressive PIT brackets'}</strong>
                             <p>{resolvedLanguage === 'vi' ? 'Mỗi giới hạn là thu nhập tính thuế hàng tháng bằng VND; thuế suất chỉ áp dụng cho phần thu nhập trong bậc đó. Để trống giới hạn của bậc cuối.' : 'Each upper limit is monthly taxable income in VND; its rate applies only to the income inside that bracket. Leave the final upper limit empty.'}</p>
-                            <div>{hrSettings.pit_brackets.map((bracket: any, index: number) => <label key={`${index}-${bracket.up_to}`}><span>{resolvedLanguage === 'vi' ? `Bậc ${index + 1}` : `Bracket ${index + 1}`}</span><input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder="∞" value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} /><input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} /><small>%</small></label>)}</div>
+                            <div>{hrSettings.pit_brackets.map((bracket: any, index: number) => {
+                              const previousLimit = index > 0 ? hrSettings.pit_brackets[index - 1]?.up_to : null
+                              const rangeLabel = bracket.up_to == null
+                                ? previousLimit == null
+                                  ? (resolvedLanguage === 'vi' ? 'Không có giới hạn trên' : 'No upper limit')
+                                  : (resolvedLanguage === 'vi' ? `Trên ${formatDongInput(String(previousLimit))} ₫` : `Above ${formatDongInput(String(previousLimit))} ₫`)
+                                : previousLimit == null
+                                  ? (resolvedLanguage === 'vi' ? `Đến ${formatDongInput(String(bracket.up_to))} ₫` : `Up to ${formatDongInput(String(bracket.up_to))} ₫`)
+                                  : (resolvedLanguage === 'vi' ? `Trên ${formatDongInput(String(previousLimit))} ₫ đến ${formatDongInput(String(bracket.up_to))} ₫` : `Above ${formatDongInput(String(previousLimit))} ₫ up to ${formatDongInput(String(bracket.up_to))} ₫`)
+
+                              return (
+                                <section className="staff-hr-pit-bracket-card" key={`pit-bracket-${index}`}>
+                                  <header>
+                                    <span>{resolvedLanguage === 'vi' ? `Bậc ${index + 1}` : `Bracket ${index + 1}`}</span>
+                                    <strong>{rangeLabel}</strong>
+                                  </header>
+                                  <div className="staff-hr-pit-bracket-fields">
+                                    <label>
+                                      <span>{resolvedLanguage === 'vi' ? 'Giới hạn trên (VND)' : 'Upper limit (VND)'}</span>
+                                      <div className="staff-hr-pit-input-with-suffix">
+                                        <input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder={resolvedLanguage === 'vi' ? 'Không giới hạn' : 'No ceiling'} value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} />
+                                        <small>₫</small>
+                                      </div>
+                                    </label>
+                                    <label>
+                                      <span>{resolvedLanguage === 'vi' ? 'Thuế suất' : 'Tax rate'}</span>
+                                      <div className="staff-hr-pit-input-with-suffix staff-hr-pit-rate-input">
+                                        <input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} />
+                                        <small>%</small>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </section>
+                              )
+                            })}</div>
                           </div>
                           <div className="staff-hr-policy-editor">
                             <label>{resolvedLanguage === 'vi' ? 'Phiên bản' : 'Policy version'}<input value={hrSettings.policy_version} onChange={(event) => setHrSettings({ ...hrSettings, policy_version: event.target.value })} /></label>
