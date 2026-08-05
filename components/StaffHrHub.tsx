@@ -87,6 +87,55 @@ const employeeExperienceCopy = {
   },
 } as const
 
+const accountantWorkspaceCopy = {
+  en: {
+    title: 'Payroll & compliance',
+    subtitle: 'One guided workflow from employee records to an accountant-ready workbook.',
+    download: 'Download accountant Excel',
+    readiness: 'Payroll readiness',
+    ready: 'Ready',
+    review: 'Review',
+    formulaNote: 'Every calculated amount remains a live Excel formula so your accountant can trace and test it.',
+    includesTitle: 'Export includes',
+    includes: ['Instructions', 'Summary', 'Employee master', 'Contract checks', 'Attendance', 'Leave requests', 'Leave balance', 'Adjustments', 'Payroll formulas', 'Payslips', 'Bank transfer', 'Reconciliation', 'Calculation basis'],
+    policyTitle: '2026 Vietnam payroll policy',
+    policies: ['5-band PIT', '15.5M self deduction', '6.2M / dependent', '10.5% employee insurance', '21.5% employer insurance'],
+    steps: {
+      employees: ['Employee records', 'Identity, contract, salary, tax, and bank data'],
+      attendance: ['Attendance & leave', 'Approve time records and paid leave'],
+      policy: ['Payroll policy', 'Review company and employee overrides'],
+      reconcile: ['Reconcile & export', 'Resolve missing bank and payroll controls'],
+    },
+    checks: {
+      employees: 'Employee master', contracts: 'Contract checks', attendance: 'Attendance approval', bank: 'Bank details', payroll: 'Payroll reconciliation',
+    },
+    issueLabels: { employees: 'employee records incomplete', attendance: 'attendance rows pending', bank: 'bank details missing' },
+  },
+  vi: {
+    title: 'Bảng lương & tuân thủ',
+    subtitle: 'Một quy trình hướng dẫn từ hồ sơ nhân viên đến file Excel sẵn sàng cho kế toán.',
+    download: 'Tải Excel cho kế toán',
+    readiness: 'Mức độ sẵn sàng',
+    ready: 'Sẵn sàng',
+    review: 'Cần kiểm tra',
+    formulaNote: 'Mọi số tiền tính toán đều là công thức Excel để kế toán có thể truy vết và kiểm tra.',
+    includesTitle: 'Nội dung file xuất',
+    includes: ['Hướng dẫn', 'Tổng hợp', 'Hồ sơ nhân viên', 'Kiểm tra hợp đồng', 'Chấm công', 'Đơn nghỉ phép', 'Số dư phép', 'Điều chỉnh', 'Công thức lương', 'Phiếu lương', 'Chuyển khoản', 'Đối chiếu', 'Cơ sở tính'],
+    policyTitle: 'Chính sách lương Việt Nam 2026',
+    policies: ['PIT 5 bậc', 'Giảm trừ bản thân 15,5M', '6,2M / người phụ thuộc', 'BH người lao động 10,5%', 'BH doanh nghiệp 21,5%'],
+    steps: {
+      employees: ['Hồ sơ nhân viên', 'Danh tính, hợp đồng, lương, thuế và ngân hàng'],
+      attendance: ['Chấm công & nghỉ phép', 'Duyệt chấm công và nghỉ hưởng lương'],
+      policy: ['Chính sách lương', 'Kiểm tra quy định công ty và ngoại lệ'],
+      reconcile: ['Đối chiếu & xuất file', 'Xử lý thiếu ngân hàng và kiểm soát lương'],
+    },
+    checks: {
+      employees: 'Danh sách nhân viên', contracts: 'Kiểm tra hợp đồng', attendance: 'Duyệt chấm công', bank: 'Thông tin ngân hàng', payroll: 'Đối chiếu lương',
+    },
+    issueLabels: { employees: 'hồ sơ chưa hoàn tất', attendance: 'dòng chấm công chờ duyệt', bank: 'thiếu thông tin ngân hàng' },
+  },
+} as const
+
 function CollapsibleEmployeeSection({
   children,
   description,
@@ -489,6 +538,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const employeeCopy = employeeExperienceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const accountantCopy = accountantWorkspaceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const [settingsSection, setSettingsSection] = useState<HrSettingsSection>('initialization')
   const [scheduleViewMode, setScheduleViewMode] = useState<StaffScheduleViewMode>('employee')
   const [timesheetSearch, setTimesheetSearch] = useState('')
@@ -661,6 +711,18 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     const employee = employeeProfileById.get(staffProfile.id)
     return Number(employee?.base_salary_vnd) > 0 || Number(employee?.hourly_rate_vnd) > 0
   }).length
+  const incompleteEmployeeCount = visibleStaffProfileOptions.filter((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    return !employee?.employee_code
+      || !employee?.legal_name
+      || (!Number(employee?.base_salary_vnd) && !Number(employee?.hourly_rate_vnd))
+      || !employee?.start_date
+  }).length
+  const missingBankCount = visibleStaffProfileOptions.filter((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    return !employee?.bank_name || !employee?.bank_account_number
+  }).length
+  const accountantIssueCount = incompleteEmployeeCount + pendingAttendanceCount + missingBankCount
   const settingsSections: Array<{ id: HrSettingsSection; icon: typeof ListChecks }> = [
     { id: 'initialization', icon: ListChecks },
     { id: 'clocking', icon: TimerReset },
@@ -1442,6 +1504,63 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
               )}
 
               {hrTab === 'payroll' && (
+                <>
+                <section className="staff-hr-accountant-workspace">
+                  <header className="staff-hr-accountant-head">
+                    <div>
+                      <span className="staff-hr-accountant-eyebrow"><FileCheck2 aria-hidden="true" size={16} />{accountantCopy.readiness}</span>
+                      <h3>{accountantCopy.title}</h3>
+                      <p>{accountantCopy.subtitle}</p>
+                    </div>
+                    <div className="staff-hr-accountant-period">
+                      <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
+                      <button className="primary" type="button" disabled={saving} onClick={() => void downloadPayrollExcel()}>
+                        <Download aria-hidden="true" size={17} />{accountantCopy.download}
+                      </button>
+                    </div>
+                  </header>
+                  <div className="staff-hr-accountant-steps">
+                    {([
+                      ['employees', incompleteEmployeeCount, () => setHrTab('employees')],
+                      ['attendance', pendingAttendanceCount, () => setHrTab('timesheet')],
+                      ['policy', 0, () => setHrTab('settings')],
+                      ['reconcile', missingBankCount, () => setHrTab(missingBankCount ? 'employees' : 'payroll')],
+                    ] as const).map(([step, issueCount, open], index) => (
+                      <button className={issueCount > 0 ? 'needs-review' : 'is-ready'} key={step} type="button" onClick={open}>
+                        <span className="staff-hr-accountant-step-number">{index + 1}</span>
+                        <span><strong>{accountantCopy.steps[step][0]}</strong><small>{accountantCopy.steps[step][1]}</small></span>
+                        <em>{issueCount > 0 ? `${issueCount} ${accountantCopy.review}` : accountantCopy.ready}</em>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="staff-hr-accountant-grid">
+                    <div className="staff-hr-accountant-readiness">
+                      <h4>{accountantCopy.readiness}</h4>
+                      {([
+                        [accountantCopy.checks.employees, incompleteEmployeeCount, accountantCopy.issueLabels.employees],
+                        [accountantCopy.checks.contracts, incompleteEmployeeCount, accountantCopy.issueLabels.employees],
+                        [accountantCopy.checks.attendance, pendingAttendanceCount, accountantCopy.issueLabels.attendance],
+                        [accountantCopy.checks.bank, missingBankCount, accountantCopy.issueLabels.bank],
+                        [accountantCopy.checks.payroll, accountantIssueCount, accountantCopy.review],
+                      ] as const).map(([label, issueCount, issueLabel]) => (
+                        <div className={issueCount > 0 ? 'needs-review' : 'is-ready'} key={label}>
+                          <CircleCheckBig aria-hidden="true" size={19} />
+                          <span><strong>{label}</strong><small>{issueCount > 0 ? `${issueCount} ${issueLabel}` : accountantCopy.ready}</small></span>
+                          <em>{issueCount > 0 ? accountantCopy.review : 'OK'}</em>
+                        </div>
+                      ))}
+                      <p className="staff-hr-accountant-formula-note"><FileSpreadsheet aria-hidden="true" size={17} />{accountantCopy.formulaNote}</p>
+                    </div>
+                    <aside className="staff-hr-accountant-policy">
+                      <h4>{accountantCopy.policyTitle}</h4>
+                      <div>{accountantCopy.policies.map((policy) => <span key={policy}>{policy}</span>)}</div>
+                    </aside>
+                    <aside className="staff-hr-accountant-includes">
+                      <h4>{accountantCopy.includesTitle}</h4>
+                      <div>{accountantCopy.includes.map((item) => <span key={item}><Check aria-hidden="true" size={14} />{item}</span>)}</div>
+                    </aside>
+                  </div>
+                </section>
                 <div className="staff-attendance-layout staff-hr-payroll-layout">
                   <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
                     <h4>{text.labels.payrollRun}</h4>
@@ -1513,6 +1632,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     {payrollRuns.length === 0 && <p className="notice">{text.messages.noPayrollRuns}</p>}
                   </div>
                 </div>
+                </>
               )}
 
               {(hrTab === 'adjustments' || hrTab === 'advances') && (

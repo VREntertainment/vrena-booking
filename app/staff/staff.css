@@ -3902,6 +3902,296 @@
   padding: 10px;
 }
 
+.app .staff-hr-accountant-workspace {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--vrena-primary) 20%, var(--vrena-line-warm));
+  border-radius: 20px;
+  background: var(--vrena-surface);
+  box-shadow: 0 18px 52px rgba(43, 51, 79, 0.08);
+}
+
+.app .staff-hr-accountant-head,
+.app .staff-hr-accountant-period,
+.app .staff-hr-accountant-eyebrow,
+.app .staff-hr-accountant-formula-note,
+.app .staff-hr-accountant-includes span {
+  display: flex;
+  align-items: center;
+}
+
+.app .staff-hr-accountant-head {
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.app .staff-hr-accountant-head h3 {
+  margin: 5px 0 4px;
+  font-size: clamp(1.55rem, 2vw, 2.1rem);
+  line-height: 1.05;
+}
+
+.app .staff-hr-accountant-head p,
+.app .staff-hr-accountant-steps small,
+.app .staff-hr-accountant-readiness small {
+  color: var(--vrena-neutral-600);
+}
+
+.app .staff-hr-accountant-head p {
+  margin: 0;
+}
+
+.app .staff-hr-accountant-eyebrow {
+  gap: 7px;
+  color: #08758a;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-accountant-period {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.app .staff-hr-accountant-period > span {
+  padding: 11px 14px;
+  border: 1px solid var(--vrena-line-warm);
+  border-radius: 12px;
+  color: var(--vrena-neutral-700);
+  font-weight: 700;
+}
+
+.app .staff-hr-accountant-period button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.app .staff-hr-accountant-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--vrena-line-warm);
+  border-radius: 15px;
+}
+
+.app .staff-hr-accountant-steps button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 11px;
+  min-width: 0;
+  padding: 15px;
+  border: 0;
+  border-right: 1px solid var(--vrena-line-warm);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.app .staff-hr-accountant-steps button:last-child {
+  border-right: 0;
+}
+
+.app .staff-hr-accountant-steps button:hover {
+  background: color-mix(in srgb, var(--vrena-primary) 5%, var(--vrena-surface));
+}
+
+.app .staff-hr-accountant-step-number {
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #138a3d;
+  color: white;
+  font-weight: 850;
+}
+
+.app .staff-hr-accountant-steps button.needs-review .staff-hr-accountant-step-number {
+  background: #d98600;
+}
+
+.app .staff-hr-accountant-steps strong,
+.app .staff-hr-accountant-steps small {
+  display: block;
+}
+
+.app .staff-hr-accountant-steps small {
+  margin-top: 3px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.app .staff-hr-accountant-steps em {
+  grid-column: 2;
+  color: #138a3d;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.app .staff-hr-accountant-steps button.needs-review em {
+  color: #b86f00;
+}
+
+.app .staff-hr-accountant-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.75fr) minmax(210px, 0.65fr);
+  gap: 16px;
+}
+
+.app .staff-hr-accountant-readiness,
+.app .staff-hr-accountant-policy,
+.app .staff-hr-accountant-includes {
+  padding: 18px;
+  border: 1px solid var(--vrena-line-warm);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--vrena-surface) 94%, var(--vrena-bg-soft));
+}
+
+.app .staff-hr-accountant-grid h4 {
+  margin: 0 0 13px;
+  font-size: 1rem;
+}
+
+.app .staff-hr-accountant-readiness > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--vrena-line-warm);
+}
+
+.app .staff-hr-accountant-readiness > div > svg {
+  color: #138a3d;
+}
+
+.app .staff-hr-accountant-readiness > div.needs-review > svg,
+.app .staff-hr-accountant-readiness > div.needs-review > em {
+  color: #c27700;
+}
+
+.app .staff-hr-accountant-readiness strong,
+.app .staff-hr-accountant-readiness small {
+  display: block;
+}
+
+.app .staff-hr-accountant-readiness small {
+  margin-top: 2px;
+}
+
+.app .staff-hr-accountant-readiness em {
+  color: #138a3d;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.app .staff-hr-accountant-formula-note {
+  gap: 9px;
+  margin: 14px 0 0;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--vrena-primary) 9%, var(--vrena-surface));
+  color: var(--vrena-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.app .staff-hr-accountant-policy > div,
+.app .staff-hr-accountant-includes > div {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-hr-accountant-policy span {
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, #22c6df 12%, var(--vrena-surface));
+  color: #08758a;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.app .staff-hr-accountant-includes span {
+  gap: 7px;
+  color: var(--vrena-neutral-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.app .staff-hr-accountant-includes svg {
+  color: var(--vrena-primary);
+}
+
+@media (max-width: 1100px) {
+  .app .staff-hr-accountant-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-hr-accountant-steps button:nth-child(2) {
+    border-right: 0;
+  }
+
+  .app .staff-hr-accountant-steps button:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--vrena-line-warm);
+  }
+
+  .app .staff-hr-accountant-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .app .staff-hr-accountant-readiness {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .app .staff-hr-accountant-workspace {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .app .staff-hr-accountant-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app .staff-hr-accountant-period,
+  .app .staff-hr-accountant-period button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .app .staff-hr-accountant-steps,
+  .app .staff-hr-accountant-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-hr-accountant-steps button {
+    border-right: 0;
+    border-bottom: 1px solid var(--vrena-line-warm);
+  }
+
+  .app .staff-hr-accountant-steps button:last-child {
+    border-bottom: 0;
+  }
+
+  .app .staff-hr-accountant-readiness {
+    grid-column: auto;
+  }
+}
+
 .app .staff-hr-payslip > span {
   color: var(--vrena-neutral-600);
   font-size: 12px;

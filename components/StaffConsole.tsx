@@ -4324,9 +4324,24 @@ function sessionCheckedInCount(session: StaffOperationSession) {
   return (session.session_participants || []).filter((participant) => participant.checked_in).length
 }
 
-async function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>, text: StaffConsoleCopy = staffConsoleText.en) {
+async function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>>; description?: string }>, text: StaffConsoleCopy = staffConsoleText.en) {
   const { downloadExcelFile } = await import('../lib/staffDownloadFiles')
   downloadExcelFile(filename, sections, text.noData)
+}
+
+function accountantFormula(formula: string, result: string | number = '', numberFormat?: 'currency' | 'decimal' | 'integer' | 'percent') {
+  return { __xlsxFormula: true, formula: formula.replace(/^=/, ''), result, numberFormat }
+}
+
+function excelColumnName(index: number) {
+  let column = ''
+  let value = index
+  while (value > 0) {
+    const remainder = (value - 1) % 26
+    column = String.fromCharCode(65 + remainder) + column
+    value = Math.floor((value - 1) / 26)
+  }
+  return column
 }
 
 async function downloadCsv(filename: string, rows: Array<Record<string, unknown>>, text: StaffConsoleCopy = staffConsoleText.en) {
@@ -7373,19 +7388,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       Notes: snapshot.details || '',
     }))
     const payrollRows = historicalPayrollRows.length > 0 ? historicalPayrollRows : calculatedPayrollRows
-    const totalColumns = [
-      'Scheduled hours', 'Worked hours', 'Worked days', 'Meal days', 'Paid leave hours', 'Paid leave days', 'Salary-paid hours',
-      'Overtime hours', 'Night hours', 'Holiday hours', 'Base pay (VND)', 'Meal allowance (VND)',
-      'Other allowances (VND)', 'Overtime pay (VND)', 'Bonuses (VND)', 'Gross income (VND)',
-      'Insurance base (VND)', 'Employee insurance (VND)', 'PIT withheld (VND)', 'Advances (VND)',
-      'Deductions (VND)', 'Net payable (VND)', 'Employer insurance (VND)', 'Company cost (VND)', 'Rest alerts',
-    ].filter((key) => historicalPayrollRows.length === 0 || !['Employer insurance (VND)', 'Company cost (VND)', 'Rest alerts', 'Scheduled hours'].includes(key))
-    const totalRow = payrollRows.reduce<Record<string, unknown>>((total, row) => {
-      totalColumns.forEach((key) => {
-        total[key] = Number(total[key] || 0) + Number(row[key] || 0)
-      })
-      return total
-    }, { 'Employee code': '', Employee: 'TOTAL' })
 
     const attendanceRows = attendanceLogs
       .filter((log) => log.work_date >= periodStart && log.work_date <= periodEnd)
@@ -7465,15 +7467,228 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       { Setting: 'Social insurance', Value: hrSettings.social_insurance_enabled ? 'Enabled' : 'Disabled', Notes: 'Applied to active full-time contract salary, excluding meal allowance and overtime' },
       { Setting: 'Employee insurance rate', Value: hrSettings.employee_contribution_rate, Notes: 'Percent' },
       { Setting: 'Employer insurance rate', Value: hrSettings.employer_contribution_rate, Notes: 'Percent' },
-      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Configured withholding rate: ${hrSettings.pit_withholding_rate}%` },
+      { Setting: 'Personal income tax', Value: hrSettings.personal_income_tax_enabled ? 'Enabled' : 'Disabled', Notes: `Employee-specific withholding defaults to ${hrSettings.pit_withholding_rate}% unless HR/accounting applies the 2026 progressive calculation.` },
+      { Setting: '2026 PIT self deduction (VND)', Value: 15_500_000, Notes: 'Effective for the 2026 tax period' },
+      { Setting: '2026 PIT dependent deduction (VND)', Value: 6_200_000, Notes: 'Per registered dependent per month' },
+      { Setting: '2026 progressive PIT bands', Value: '5% / 10% / 20% / 30% / 35%', Notes: 'Monthly taxable-income thresholds: 10M / 30M / 60M / 100M VND' },
+    ]
+
+    const employeeByCode = new Map(Array.from(employeeProfileById.values()).map((employee) => [employee.employee_code || '', employee]))
+    const employeeMasterRows = visibleStaffProfileOptions.map((staffProfile) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      return {
+        'Employee code': employee?.employee_code || '',
+        'Legal name': employee?.legal_name || customerName(staffProfile, text),
+        'Employment status': employee?.active === false ? 'Inactive' : text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)],
+        'Employment type': text.employmentTypes[normalizeStaffEmploymentType(employee?.employment_type)],
+        Position: employee?.job_title || '',
+        Division: employee?.department || '',
+        Workplace: employee?.main_work_location || '',
+        Phone: employee?.personal_phone || '',
+        Email: employee?.personal_email || '',
+        'Date of birth': employee?.date_of_birth || '',
+        'National ID': employee?.national_id || '',
+        Address: employee?.address || '',
+        'Employment start': employee?.start_date || '',
+        'Employment end': employee?.end_date || '',
+        'Contract type': employee?.contract_type || '',
+        'Contract start': employee?.contract_start_date || '',
+        'Contract end': employee?.contract_end_date || '',
+        'Monthly salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
+        'Hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
+        'Meal / worked day (VND)': Number(employee?.lunch_allowance_vnd) > 0 ? Number(employee?.lunch_allowance_vnd) : hrSettings.lunch_allowance_vnd,
+        'OT multiplier': employeeRate(employee?.overtime_rate_multiplier, hrSettings.normal_overtime_multiplier),
+        'Night multiplier': employeeRate(employee?.night_rate_multiplier, hrSettings.night_overtime_multiplier),
+        'Holiday multiplier': employeeRate(employee?.holiday_rate_multiplier, hrSettings.holiday_overtime_multiplier),
+        'Employee insurance %': employeeRate(employee?.employee_contribution_rate, hrSettings.employee_contribution_rate),
+        'Employer insurance %': employeeRate(employee?.employer_contribution_rate, hrSettings.employer_contribution_rate),
+        'Configured PIT %': employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate),
+        Dependents: Math.max(0, Number(employee?.dependents_count) || 0),
+        'Tax code': employee?.tax_code || '',
+        'Social insurance number': employee?.social_insurance_number || '',
+        Bank: employee?.bank_name || '',
+        'Bank account': employee?.bank_account_number || '',
+        'Profile photo': employee?.profile_photo_path ? 'Available' : 'Missing',
+        CV: employee?.cv_document_path ? 'Available' : 'Missing',
+        Notes: employee?.payroll_note || '',
+      }
+    })
+
+    const contractCheckRows = employeeMasterRows.map((employee, index) => {
+      const row = index + 5
+      const employeeRow = row
+      const statusFormula = `IF(OR('Employee Master'!A${employeeRow}="",'Employee Master'!B${employeeRow}=""),"MISSING IDENTITY",IF(AND('Employee Master'!R${employeeRow}=0,'Employee Master'!S${employeeRow}=0),"MISSING PAY RATE",IF(OR('Employee Master'!AD${employeeRow}="",'Employee Master'!AE${employeeRow}=""),"MISSING BANK",IF(AND('Employee Master'!P${employeeRow}<>"",'Employee Master'!Q${employeeRow}<>"",'Employee Master'!Q${employeeRow}<'Employee Master'!P${employeeRow}),"CHECK CONTRACT DATES","OK"))))`
+      return {
+        'Employee code': accountantFormula(`'Employee Master'!A${employeeRow}`, String(employee['Employee code'] || '')),
+        Employee: accountantFormula(`'Employee Master'!B${employeeRow}`, String(employee['Legal name'] || '')),
+        Division: accountantFormula(`'Employee Master'!F${employeeRow}`, String(employee.Division || '')),
+        'Contract type': accountantFormula(`'Employee Master'!O${employeeRow}`, String(employee['Contract type'] || '')),
+        'Contract start': accountantFormula(`'Employee Master'!P${employeeRow}`, String(employee['Contract start'] || '')),
+        'Contract end': accountantFormula(`'Employee Master'!Q${employeeRow}`, String(employee['Contract end'] || '')),
+        'Monthly salary (VND)': accountantFormula(`'Employee Master'!R${employeeRow}`, Number(employee['Monthly salary (VND)']) || 0, 'currency'),
+        'Hourly rate (VND)': accountantFormula(`'Employee Master'!S${employeeRow}`, Number(employee['Hourly rate (VND)']) || 0, 'currency'),
+        'Bank status': accountantFormula(`IF(OR('Employee Master'!AD${employeeRow}="",'Employee Master'!AE${employeeRow}=""),"MISSING","OK")`, employee.Bank && employee['Bank account'] ? 'OK' : 'MISSING'),
+        Check: accountantFormula(statusFormula, employee['Employee code'] && employee['Legal name'] && (Number(employee['Monthly salary (VND)']) > 0 || Number(employee['Hourly rate (VND)']) > 0) && employee.Bank && employee['Bank account'] ? 'OK' : 'REVIEW'),
+      }
+    })
+
+    const payrollFormulaRows: Array<Record<string, unknown>> = payrollRows.map((source, index) => {
+      const row = index + 5
+      const employee = employeeByCode.get(String(source['Employee code'] || ''))
+      const calculation = employee ? staffPayrollCalculations.get(employee.profile_id) : undefined
+      const mealPerDay = calculation && calculation.workedDays > 0
+        ? Math.round(calculation.mealAllowance / calculation.workedDays)
+        : hrSettings.lunch_allowance_vnd
+      const employeeRateValue = employeeRate(employee?.employee_contribution_rate, hrSettings.employee_contribution_rate)
+      const employerRateValue = employeeRate(employee?.employer_contribution_rate, hrSettings.employer_contribution_rate)
+      const pitRateValue = employeeRate(employee?.pit_withholding_rate, hrSettings.pit_withholding_rate)
+      const basePay = Number(source['Base pay (VND)']) || 0
+      const mealAllowance = Number(source['Meal allowance (VND)']) || 0
+      const overtimePay = Number(source['Overtime pay (VND)']) || 0
+      const gross = Number(source['Gross income (VND)']) || 0
+      const employeeInsurance = Number(source['Employee insurance (VND)']) || 0
+      const pit = Number(source['PIT withheld (VND)']) || 0
+      const advances = Number(source['Advances (VND)']) || 0
+      const deductions = Number(source['Deductions (VND)']) || 0
+      const net = Number(source['Net payable (VND)']) || 0
+      const employerInsurance = Number(source['Employer insurance (VND)']) || 0
+      const companyCost = Number(source['Company cost (VND)']) || gross + employerInsurance
+      return {
+        'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
+        'Employment type': source['Employment type'], 'Contract status': source['Contract status'], Bank: source['Bank name'], 'Bank account': source['Bank account'],
+        'Contract salary (VND)': source['Contract salary (VND)'], 'Configured hourly rate (VND)': source['Configured hourly rate (VND)'],
+        'Payroll hourly rate (VND)': accountantFormula(`IF(I${row}>0,I${row},IF(H${row}>0,H${row}/MAX(1,K${row}),0))`, Number(source['Payroll hourly rate (VND)']) || 0, 'currency'),
+        'Period standard hours': source['Period standard hours'], 'Worked hours': source['Worked hours'], 'Worked days': source['Worked days'],
+        'Paid leave hours': source['Paid leave hours'], 'Paid leave days': source['Paid leave days'], 'Salary-paid hours': source['Salary-paid hours'],
+        'Overtime hours': source['Overtime hours'], 'Night hours': source['Night hours'], 'Holiday hours': source['Holiday hours'],
+        'Meal / worked day (VND)': mealPerDay, 'Other allowances (VND)': source['Other allowances (VND)'], 'Bonuses (VND)': source['Bonuses (VND)'],
+        'Advances (VND)': advances, 'Deductions (VND)': deductions, 'Employee insurance %': employeeRateValue,
+        'Employer insurance %': employerRateValue, 'PIT method': 'Configured withholding', 'PIT rate %': pitRateValue,
+        Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': employeeRate(employee?.overtime_rate_multiplier, hrSettings.normal_overtime_multiplier),
+        'Night multiplier': employeeRate(employee?.night_rate_multiplier, hrSettings.night_overtime_multiplier), 'Holiday multiplier': employeeRate(employee?.holiday_rate_multiplier, hrSettings.holiday_overtime_multiplier),
+        'Base pay (VND)': accountantFormula(`IF(H${row}>0,ROUND(H${row}*MIN(1,P${row}/MAX(1,K${row})),0),ROUND(P${row}*J${row},0))`, basePay, 'currency'),
+        'Meal allowance (VND)': accountantFormula(`ROUND(M${row}*T${row},0)`, mealAllowance, 'currency'),
+        'Overtime pay (VND)': accountantFormula(`ROUND(Q${row}*J${row}*AD${row}+R${row}*J${row}*MAX(0,AE${row}-1)+S${row}*J${row}*MAX(0,AF${row}-1),0)`, overtimePay, 'currency'),
+        'Gross income (VND)': accountantFormula(`MAX(0,SUM(AG${row}:AI${row})+U${row}+V${row})`, gross, 'currency'),
+        'Insurance base (VND)': source['Insurance base (VND)'],
+        'Employee insurance (VND)': accountantFormula(`ROUND(AK${row}*Y${row}/100,0)`, employeeInsurance, 'currency'),
+        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-X${row}-W${row})`, Math.max(0, gross - employeeInsurance - deductions - advances), 'currency'),
+        'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'="yes",ROUND(AM${row}*AB${row}/100,0),0)`, pit, 'currency'),
+        'Net payable (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AN${row}-X${row}-W${row})`, net, 'currency'),
+        'Employer insurance (VND)': accountantFormula(`ROUND(AK${row}*Z${row}/100,0)`, employerInsurance, 'currency'),
+        'Company cost (VND)': accountantFormula(`MAX(0,AJ${row}+AP${row})`, companyCost, 'currency'),
+        'Bank transfer (VND)': accountantFormula(`AO${row}`, net, 'currency'),
+        Check: accountantFormula(`IF(OR(A${row}="",B${row}=""),"MISSING EMPLOYEE",IF(OR(F${row}="",G${row}=""),"MISSING BANK",IF(ABS(AR${row}-AO${row})>1,"CHECK TRANSFER","OK")))`, source['Bank name'] && source['Bank account'] ? 'OK' : 'MISSING BANK'),
+        Notes: source.Notes,
+      }
+    })
+    const payrollFirstRow = 5
+    const payrollLastRow = payrollFirstRow + payrollFormulaRows.length - 1
+    const formulaHeaders = Object.keys(payrollFormulaRows[0] || {})
+    const payrollTotalRow = formulaHeaders.reduce<Record<string, unknown>>((row, header, index) => {
+      if (header === 'Employee') row[header] = 'TOTAL'
+      else if (header === 'Employee code') row[header] = ''
+      else if (/hours|days|VND|income|insurance|PIT|cost|transfer|allowance|pay/i.test(header) && payrollFormulaRows.length > 0) {
+        const column = excelColumnName(index + 1)
+        row[header] = accountantFormula(`SUM(${column}${payrollFirstRow}:${column}${payrollLastRow})`, payrollFormulaRows.reduce((sum, item) => sum + Number((item[header] as { result?: number })?.result ?? item[header] ?? 0), 0), /VND|income|insurance|PIT|cost|transfer|allowance|pay/i.test(header) ? 'currency' : 'decimal')
+      } else row[header] = ''
+      return row
+    }, { __xlsxRowStyle: 'total' })
+
+    const summaryRows = [
+      { Metric: 'Payroll period', Value: `${periodStart} to ${periodEnd}`, Status: historicalPayrollRows.length > 0 ? 'Protected historical snapshot' : 'Live HR data' },
+      { Metric: 'Headcount', Value: accountantFormula(`COUNTA('Payroll Formulas'!A${payrollFirstRow}:A${payrollLastRow})`, payrollFormulaRows.length, 'integer'), Status: 'Employees included' },
+      { Metric: 'Gross pay (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AJ${payrollFirstRow}:AJ${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Gross income (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+      { Metric: 'Employee insurance (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AL${payrollFirstRow}:AL${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Employee insurance (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+      { Metric: 'PIT withheld (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AN${payrollFirstRow}:AN${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['PIT withheld (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+      { Metric: 'Net payable (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AO${payrollFirstRow}:AO${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Net payable (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+      { Metric: 'Employer insurance (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AP${payrollFirstRow}:AP${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Employer insurance (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+      { Metric: 'Company cost (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AQ${payrollFirstRow}:AQ${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Company cost (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
+    ]
+
+    const leaveBalanceRows = payrollRows.map((source, index) => {
+      const row = index + 5
+      const employee = employeeByCode.get(String(source['Employee code'] || ''))
+      const entitlement = employee?.contract_status === 'ended' ? 0 : hrSettings.annual_leave_days
+      const used = Number(source['Paid leave days']) || 0
+      return {
+        'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
+        'Employment type': source['Employment type'], 'Employment start': employee?.start_date || '', 'Contract end': employee?.contract_end_date || employee?.end_date || '',
+        'Annual entitlement': entitlement, 'Paid leave used': used,
+        'Closing balance': accountantFormula(`MAX(0,G${row}-H${row})`, Math.max(0, entitlement - used), 'decimal'),
+        'Leave payout due (VND)': accountantFormula(`IF(F${row}<>"",ROUND(I${row}*IFERROR(VLOOKUP(A${row},'Employee Master'!A:R,18,FALSE)/${Math.max(1, Number(hrSettings.standard_monthly_days) || 26)},0),0),0)`, 0, 'currency'),
+        Check: accountantFormula(`IF(A${row}="","MISSING EMPLOYEE",IF(I${row}<0,"CHECK BALANCE","OK"))`, 'OK'),
+      }
+    })
+
+    const bankTransferRows = payrollFormulaRows.map((source, index) => {
+      const row = index + 5
+      return {
+        'Employee code': accountantFormula(`'Payroll Formulas'!A${row}`, String(source['Employee code'] || '')),
+        Employee: accountantFormula(`'Payroll Formulas'!B${row}`, String(source.Employee || '')),
+        Bank: accountantFormula(`'Payroll Formulas'!F${row}`, String(source.Bank || '')),
+        'Bank account': accountantFormula(`'Payroll Formulas'!G${row}`, String(source['Bank account'] || '')),
+        'Transfer amount (VND)': accountantFormula(`'Payroll Formulas'!AR${row}`, Number((source['Bank transfer (VND)'] as { result?: number }).result || 0), 'currency'),
+        Status: accountantFormula(`IF(OR(C${row}="",D${row}=""),"MISSING BANK",IF(E${row}<=0,"CHECK AMOUNT","READY"))`, source.Bank && source['Bank account'] ? 'READY' : 'MISSING BANK'),
+      }
+    })
+
+    const reconciliationRows = payrollFormulaRows.map((source, index) => {
+      const row = index + 5
+      const net = Number((source['Net payable (VND)'] as { result?: number }).result || 0)
+      return {
+        'Employee code': accountantFormula(`'Payroll Formulas'!A${row}`, String(source['Employee code'] || '')),
+        Employee: accountantFormula(`'Payroll Formulas'!B${row}`, String(source.Employee || '')),
+        'Gross income (VND)': accountantFormula(`'Payroll Formulas'!AJ${row}`, Number((source['Gross income (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Employee insurance (VND)': accountantFormula(`'Payroll Formulas'!AL${row}`, Number((source['Employee insurance (VND)'] as { result?: number }).result || 0), 'currency'),
+        'PIT withheld (VND)': accountantFormula(`'Payroll Formulas'!AN${row}`, Number((source['PIT withheld (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Net payable (VND)': accountantFormula(`'Payroll Formulas'!AO${row}`, net, 'currency'),
+        'Bank transfer (VND)': accountantFormula(`'Bank Transfer'!E${row}`, net, 'currency'),
+        'Difference (VND)': accountantFormula(`G${row}-F${row}`, 0, 'currency'),
+        Check: accountantFormula(`IF(ABS(H${row})>1,"CHECK",IF('Bank Transfer'!F${row}<>"READY","CHECK BANK","OK"))`, source.Bank && source['Bank account'] ? 'OK' : 'CHECK BANK'),
+      }
+    })
+
+    const payslipRows = payrollFormulaRows.map((source, index) => {
+      const row = index + 5
+      return {
+        'Employee code': accountantFormula(`'Payroll Formulas'!A${row}`, String(source['Employee code'] || '')),
+        Employee: accountantFormula(`'Payroll Formulas'!B${row}`, String(source.Employee || '')),
+        Period: `${periodStart} to ${periodEnd}`,
+        'Base pay (VND)': accountantFormula(`'Payroll Formulas'!AG${row}`, Number((source['Base pay (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Meal allowance (VND)': accountantFormula(`'Payroll Formulas'!AH${row}`, Number((source['Meal allowance (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Overtime pay (VND)': accountantFormula(`'Payroll Formulas'!AI${row}`, Number((source['Overtime pay (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Gross income (VND)': accountantFormula(`'Payroll Formulas'!AJ${row}`, Number((source['Gross income (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Employee insurance (VND)': accountantFormula(`'Payroll Formulas'!AL${row}`, Number((source['Employee insurance (VND)'] as { result?: number }).result || 0), 'currency'),
+        'PIT withheld (VND)': accountantFormula(`'Payroll Formulas'!AN${row}`, Number((source['PIT withheld (VND)'] as { result?: number }).result || 0), 'currency'),
+        'Net payable (VND)': accountantFormula(`'Payroll Formulas'!AO${row}`, Number((source['Net payable (VND)'] as { result?: number }).result || 0), 'currency'),
+      }
+    })
+
+    const instructionRows = [
+      { Step: '1', Action: 'Complete employee records', Details: 'Legal identity, contract dates, salary/rate, tax, insurance, bank, and documents are maintained in HR > Employee profiles.' },
+      { Step: '2', Action: 'Publish schedules and approve attendance', Details: 'Payroll uses the selected period. Review worked time, paid leave, overtime, and missing clock-outs before export.' },
+      { Step: '3', Action: 'Review payroll policy', Details: 'Company defaults live in HR settings; employee overrides remain visible in Employee Master and Payroll Formulas.' },
+      { Step: '4', Action: 'Reconcile', Details: 'Contract Checks, Bank Transfer, and Reconciliation must show OK before sending the workbook.' },
+      { Step: '5', Action: 'Send to accountant', Details: 'Open in Microsoft Excel and allow recalculation. Blue headers are inputs/identifiers; calculated payroll values contain live formulas.' },
+      { Step: 'Policy', Action: '2026 Vietnam PIT', Details: 'Progressive bands: 5% to 10M, 10% to 30M, 20% to 60M, 30% to 100M, 35% above 100M; self deduction 15.5M and dependent deduction 6.2M.' },
+      { Step: 'Control', Action: 'Source workbook', Details: 'Functional specification: VR_Payroll_July_2026_Emile_V2. The app export is normalized for human HR and accountant review.' },
     ]
 
     await downloadExcel(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, [
-      { title: 'Payroll', rows: [...payrollRows, totalRow] },
-      { title: 'Attendance Detail', rows: attendanceRows },
-      { title: 'Paid Leave', rows: paidLeaveRows },
-      { title: 'Adjustments', rows: adjustmentRows },
-      { title: 'Calculation Basis', rows: calculationBasisRows },
+      { title: 'Instructions', description: 'Use this workbook as the accountant-ready audit trail for the selected VRena payroll period.', rows: instructionRows },
+      { title: 'Summary', description: 'Formula-linked payroll totals and handoff status.', rows: summaryRows },
+      { title: 'Employee Master', description: 'Single source of truth exported from private HR employee records.', rows: employeeMasterRows },
+      { title: 'Contract Checks', description: 'Formula-driven validation of identity, pay rate, contract dates, and bank readiness.', rows: contractCheckRows },
+      { title: 'Attendance', description: 'Clock records inside the selected payroll period.', rows: attendanceRows },
+      { title: 'Leave Requests', description: 'Approved and pending leave requests overlapping the selected payroll period.', rows: paidLeaveRows },
+      { title: 'Leave Balance', description: 'Paid leave entitlement, use, closing balance, and termination payout control.', rows: leaveBalanceRows },
+      { title: 'Adjustments', description: 'Bonuses, allowances, deductions, advances, debts, and repayments affecting this period.', rows: adjustmentRows },
+      { title: 'Payroll Formulas', description: 'Every calculated payroll amount is a live Excel formula with the webapp result cached for immediate review.', rows: [...payrollFormulaRows, payrollTotalRow] },
+      { title: 'Payslips', description: 'Formula-linked payslip register for every employee in the selected period.', rows: payslipRows },
+      { title: 'Bank Transfer', description: 'Bank-ready net payment register with missing-detail controls.', rows: bankTransferRows },
+      { title: 'Reconciliation', description: 'Net payroll must equal the bank-transfer register employee by employee.', rows: reconciliationRows },
+      { title: 'Calculation Basis', description: 'Company payroll settings and 2026 policy references used by the workbook.', rows: calculationBasisRows },
     ], text)
   }
 
