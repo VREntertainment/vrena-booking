@@ -8930,12 +8930,11 @@
 }
 
 .app .staff-hr-policy-banner dd {
-  overflow: hidden;
   margin: 3px 0 0;
   font-size: 12px;
   font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .app .staff-hr-policy-banner > a {
@@ -9536,6 +9535,22 @@
 
   .app .staff-hr-policy-banner dd {
     color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-option-chips > span {
+    border-color: var(--staff-modern-border-strong);
+    background: var(--staff-modern-soft);
+    color: var(--vrena-neutral-200);
+  }
+
+  .app .staff-hr-option-chips > span.inactive {
+    background: transparent;
+    color: var(--vrena-neutral-500);
+  }
+
+  .app .staff-hr-option-chips > span > button {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    color: inherit;
   }
 
   .app .staff-hr-settings-nav button {
