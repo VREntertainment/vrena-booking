@@ -6,6 +6,10 @@ import {
 } from '@/lib/security/staffKioskServer'
 import { canRevealStaffKioskPin } from '@/lib/staffKioskScope'
 import { maskEmailAddress, sendStaffPinEmail } from '@/lib/staffPinEmail'
+import {
+  isStaffKioskEligibleDepartment,
+  STAFF_KIOSK_ELIGIBILITY_MESSAGE,
+} from '@/lib/staffKioskDirectory'
 
 export const runtime = 'nodejs'
 
@@ -46,13 +50,16 @@ export async function POST(request: NextRequest) {
 
     const { data: employee, error: employeeError } = await auth.adminClient
       .from('staff_employee_profiles')
-      .select('profile_id, legal_name, personal_email, kiosk_access_role, kiosk_pin_configured_at, active, deleted_at')
+      .select('profile_id, legal_name, personal_email, department, kiosk_access_role, kiosk_pin_configured_at, active, deleted_at')
       .eq('profile_id', profileId)
       .eq('active', true)
       .is('deleted_at', null)
       .maybeSingle()
     if (employeeError) throw new Error(employeeError.message)
     if (!employee) return staffKioskJsonError('Active employee HR file not found.', 404)
+    if (!isStaffKioskEligibleDepartment(employee.department)) {
+      return staffKioskJsonError(STAFF_KIOSK_ELIGIBILITY_MESSAGE, 409)
+    }
 
     const recipientEmail = cleanString(employee.personal_email).toLowerCase()
     if (!validEmail(recipientEmail)) {
