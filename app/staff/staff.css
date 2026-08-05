@@ -8861,8 +8861,11 @@
 
 .app .staff-hr-policy-banner {
   display: grid;
-  grid-template-columns: minmax(180px, auto) minmax(0, 1fr) auto;
-  gap: 18px;
+  grid-template-areas:
+    'status link'
+    'facts facts';
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 20px;
   align-items: center;
   border-bottom: 1px solid var(--vrena-neutral-200);
   background: color-mix(in srgb, var(--vrena-selection-bg) 55%, var(--vrena-white));
@@ -8870,6 +8873,7 @@
 }
 
 .app .staff-hr-policy-status {
+  grid-area: status;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -8907,6 +8911,7 @@
 }
 
 .app .staff-hr-policy-banner dl {
+  grid-area: facts;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -8934,6 +8939,7 @@
 }
 
 .app .staff-hr-policy-banner > a {
+  grid-area: link;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -9423,6 +9429,13 @@
     grid-template-columns: 1fr;
   }
 
+  .app .staff-hr-policy-banner {
+    grid-template-areas:
+      'status'
+      'facts'
+      'link';
+  }
+
   .app .staff-hr-rate-groups section > div,
   .app .staff-hr-policy-editor {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -9503,6 +9516,25 @@
   .app .staff-hr-settings-panel {
     border-color: var(--staff-modern-border);
     background: var(--staff-modern-surface);
+    color: var(--vrena-neutral-100);
+  }
+
+  .app .staff-hr-policy-banner {
+    border-color: var(--staff-modern-border);
+    background: color-mix(in srgb, var(--vrena-selection-bg) 18%, var(--staff-modern-surface));
+    box-shadow: inset 3px 0 0 var(--vrena-selection-indicator);
+  }
+
+  .app .staff-hr-policy-status > span,
+  .app .staff-hr-policy-banner > a {
+    color: var(--vrena-selection-indicator);
+  }
+
+  .app .staff-hr-policy-banner dt {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .staff-hr-policy-banner dd {
     color: var(--vrena-neutral-100);
   }
 
