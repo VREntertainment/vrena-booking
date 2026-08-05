@@ -37,6 +37,7 @@ import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
 import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
+import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -314,6 +315,7 @@ type StaffEmployeeProfile = {
   probation_payroll_type: 'hourly' | 'monthly' | 'manager'
   labor_payroll_type: 'hourly' | 'monthly' | 'manager'
   probation_salary_percentage: number
+  probation_bonus_percentage: number
   probation_start_date: string | null
   probation_end_date: string | null
   labor_start_date: string | null
@@ -2809,19 +2811,6 @@ function employeePayrollTypeForPeriod(employee: StaffEmployeeProfile | undefined
     : normalizeEmployeePayrollType(employee?.labor_payroll_type)
 }
 
-function employeePayPercentageForPeriod(employee: StaffEmployeeProfile | undefined, periodEnd: string) {
-  const probationEnd = employee?.probation_end_date || ''
-  const laborStart = employee?.labor_start_date || ''
-  const inProbation = Boolean(
-    employee?.probation_start_date &&
-    periodEnd >= employee.probation_start_date &&
-    (!probationEnd || periodEnd <= probationEnd) &&
-    (!laborStart || periodEnd < laborStart)
-  )
-  if (!inProbation) return 1
-  return Math.max(0, Number(employee?.probation_salary_percentage) || 85) / 100
-}
-
 function shiftStartDateTime(shift: StaffScheduleShift) {
   return new Date(`${shift.shift_date}T${normalizeTime(shift.start_time) || '00:00'}:00`).getTime()
 }
@@ -2913,7 +2902,8 @@ function calculateStaffPayroll(
   const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
   const configuredPeriodMinutes = proratedMonthlyMinutes(periodStart, periodEnd, settings.standard_monthly_hours)
   const periodStandardMinutes = Math.max(1, configuredPeriodMinutes, scheduledMinutes)
-  const payPercentage = employeePayPercentageForPeriod(employee, periodEnd)
+  const payPercentage = employeeSalaryPercentageForPeriod(employee, periodEnd)
+  const bonusPercentage = employeeBonusPercentageForPeriod(employee, periodEnd)
   const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
   const hourlyRate = (employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)) * payPercentage
   const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) * payPercentage : 0
@@ -2942,7 +2932,7 @@ function calculateStaffPayroll(
   const allowances = autoLunchAllowance + otherAllowances
   const bonuses = employeeAdjustments
     .filter((item) => ['bonus', 'commission'].includes(item.adjustment_type))
-    .reduce((sum, item) => sum + item.amount_vnd, 0)
+    .reduce((sum, item) => sum + Math.round(item.amount_vnd * bonusPercentage), 0)
   const advances = employeeAdjustments
     .filter((item) => ['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + item.amount_vnd, 0)
@@ -3567,6 +3557,7 @@ const defaultEmployeeForm = () => ({
   probation_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
   labor_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
   probation_salary_percentage: '85',
+  probation_bonus_percentage: '100',
   probation_start_date: '',
   probation_end_date: '',
   labor_start_date: '',
@@ -6852,6 +6843,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       probation_payroll_type: normalizeEmployeePayrollType(employee?.probation_payroll_type),
       labor_payroll_type: normalizeEmployeePayrollType(employee?.labor_payroll_type),
       probation_salary_percentage: String(employee?.probation_salary_percentage || 85),
+      probation_bonus_percentage: String(employee?.probation_bonus_percentage || 100),
       probation_start_date: employee?.probation_start_date || '',
       probation_end_date: employee?.probation_end_date || '',
       labor_start_date: employee?.labor_start_date || employee?.contract_start_date || '',
@@ -7092,6 +7084,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       probation_payroll_type: normalizeEmployeePayrollType(employeeForm.probation_payroll_type),
       labor_payroll_type: normalizeEmployeePayrollType(employeeForm.labor_payroll_type),
       probation_salary_percentage: employeeForm.probation_salary_percentage === '100' ? 100 : 85,
+      probation_bonus_percentage: employeeForm.probation_bonus_percentage === '85' ? 85 : 100,
       probation_start_date: employeeForm.probation_start_date || null,
       probation_end_date: employeeForm.probation_end_date || null,
       labor_start_date: employeeForm.labor_start_date || null,
@@ -7447,6 +7440,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           payrollHourlyRateVnd: item.hourlyRate,
           mealAllowanceVnd: item.mealAllowance,
           otherAllowancesVnd: item.otherAllowances,
+          probationBonusPercentage: Number(employee?.probation_bonus_percentage) === 85 ? 85 : 100,
+          probationBonusApplied: true,
           contributionBaseVnd: item.contributionBase,
           policyReference: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master',
         },
@@ -7797,6 +7792,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Probation payroll type': normalizeEmployeePayrollType(employee?.probation_payroll_type),
         'Labor payroll type': normalizeEmployeePayrollType(employee?.labor_payroll_type),
         'Probation salary %': Math.max(0, Number(employee?.probation_salary_percentage) || 85),
+        'Probation bonus %': Number(employee?.probation_bonus_percentage) === 85 ? 85 : 100,
         'Probation start': employee?.probation_start_date || '',
         'Probation end': employee?.probation_end_date || '',
         'Labor start': employee?.labor_start_date || '',

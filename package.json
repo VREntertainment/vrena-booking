@@ -17,6 +17,7 @@
     "test:staff-roles": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffRoles.test.ts",
     "test:staff-kiosk-scope": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffKioskScope.test.ts",
     "test:staff-pin-email": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffPinEmail.test.ts",
+    "test:staff-payroll-probation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffPayrollProbation.test.ts",
     "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
     "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs"
   },
