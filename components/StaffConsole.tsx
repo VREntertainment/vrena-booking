@@ -4841,8 +4841,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [employeeKioskPinSaveConfirmation, setEmployeeKioskPinSaveConfirmation] = useState<'' | 'created' | 'replaced'>('')
   const [employeeKioskPinVisibleValue, setEmployeeKioskPinVisibleValue] = useState('')
   const [employeeKioskPinLoading, setEmployeeKioskPinLoading] = useState(false)
+  const [employeeKioskPinEmailState, setEmployeeKioskPinEmailState] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [employeeKioskPinEmailRecipient, setEmployeeKioskPinEmailRecipient] = useState('')
   const employeeKioskPinProfileRef = useRef('')
   const employeeKioskPinConfirmationTimerRef = useRef<number | null>(null)
+  const employeeKioskPinEmailTimerRef = useRef<number | null>(null)
   const [hrAdjustmentForm, setHrAdjustmentForm] = useState(() => defaultHrAdjustmentForm())
   const [payrollRunForm, setPayrollRunForm] = useState(() => defaultPayrollRunForm())
   const [hrSetupForm, setHrSetupForm] = useState<Record<StaffHrSetupOptionType, string>>(() => defaultHrSetupForm())
@@ -4861,6 +4864,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   useEffect(() => () => {
     if (employeeKioskPinConfirmationTimerRef.current !== null) {
       window.clearTimeout(employeeKioskPinConfirmationTimerRef.current)
+    }
+    if (employeeKioskPinEmailTimerRef.current !== null) {
+      window.clearTimeout(employeeKioskPinEmailTimerRef.current)
     }
   }, [])
   const [compareEnabled, setCompareEnabled] = useState(false)
@@ -6045,6 +6051,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setEmployeeKioskPinConfirm('')
         setEmployeeKioskPinSaveConfirmation('')
         setEmployeeKioskPinVisibleValue('')
+        setEmployeeKioskPinEmailState('idle')
+        setEmployeeKioskPinEmailRecipient('')
         setEmployeeKioskAccessRole(employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
         employeeKioskPinProfileRef.current = employee.profile_id
         if (canRevealEmployeeKioskPin) void revealEmployeeKioskPin(employee.profile_id)
@@ -6786,10 +6794,16 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setEmployeeKioskPinConfirm('')
     setEmployeeKioskPinSaveConfirmation('')
     setEmployeeKioskPinVisibleValue('')
+    setEmployeeKioskPinEmailState('idle')
+    setEmployeeKioskPinEmailRecipient('')
     employeeKioskPinProfileRef.current = staffProfile.id
     if (employeeKioskPinConfirmationTimerRef.current !== null) {
       window.clearTimeout(employeeKioskPinConfirmationTimerRef.current)
       employeeKioskPinConfirmationTimerRef.current = null
+    }
+    if (employeeKioskPinEmailTimerRef.current !== null) {
+      window.clearTimeout(employeeKioskPinEmailTimerRef.current)
+      employeeKioskPinEmailTimerRef.current = null
     }
     setEmployeeKioskAccessRole(employee?.kiosk_access_role === 'manager' ? 'manager' : 'staff')
     setHrTab('employees')
@@ -6823,6 +6837,47 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
   }
 
+  async function sendEmployeeKioskPinEmail(staffProfileId: string) {
+    if (!canRevealEmployeeKioskPin || !staffProfileId || employeeKioskPinEmailState === 'sending') return
+    setEmployeeKioskPinEmailState('sending')
+    setEmployeeKioskPinEmailRecipient('')
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
+      const response = await fetch('/api/staff/kiosk/pin/email', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ profileId: staffProfileId }),
+      })
+      const payload = await response.json().catch(() => ({})) as { error?: string; recipient?: string }
+      if (!response.ok) throw new Error(payload.error || 'Could not send employee PIN email.')
+      if (employeeKioskPinProfileRef.current !== staffProfileId) return
+
+      const recipient = payload.recipient || ''
+      setEmployeeKioskPinEmailRecipient(recipient)
+      setEmployeeKioskPinEmailState('sent')
+      setStatus(resolvedLanguage === 'vi'
+        ? `Đã gửi PIN qua email${recipient ? ` tới ${recipient}` : ''}.`
+        : `PIN emailed${recipient ? ` to ${recipient}` : ''}.`)
+      if (employeeKioskPinEmailTimerRef.current !== null) {
+        window.clearTimeout(employeeKioskPinEmailTimerRef.current)
+      }
+      employeeKioskPinEmailTimerRef.current = window.setTimeout(() => {
+        if (employeeKioskPinProfileRef.current === staffProfileId) setEmployeeKioskPinEmailState('idle')
+        employeeKioskPinEmailTimerRef.current = null
+      }, 5000)
+    } catch (pinEmailError) {
+      if (employeeKioskPinProfileRef.current === staffProfileId) {
+        setEmployeeKioskPinEmailState('idle')
+        setStatus(pinEmailError instanceof Error ? pinEmailError.message : String(pinEmailError))
+      }
+    }
+  }
+
   async function configureEmployeeKioskPin() {
     if (!canManageEmployeeKioskPins) return
     const staffProfileId = employeeForm.profile_id || firstEmployeeStaffProfileId
@@ -6836,6 +6891,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const pinToSave = employeeKioskPin
     setEmployeeKioskPinSaveConfirmation('')
     setEmployeeKioskPinVisibleValue('')
+    setEmployeeKioskPinEmailState('idle')
+    setEmployeeKioskPinEmailRecipient('')
     setSaving(true)
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -7011,6 +7068,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setEmployeeKioskPinConfirm('')
       setEmployeeKioskPinSaveConfirmation('')
       setEmployeeKioskPinVisibleValue('')
+      setEmployeeKioskPinEmailState('idle')
+      setEmployeeKioskPinEmailRecipient('')
       setEmployeeKioskAccessRole(payload.employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
       employeeKioskPinProfileRef.current = payload.employee.profile_id
       setStatus(payload.warning || (resolvedLanguage === 'vi' ? 'Đã tạo hồ sơ HR. Hãy cấp PIN 6 số.' : 'HR record created. Assign the six-digit PIN.'))
@@ -9940,6 +9999,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             employeeKioskAccessRole,
             employeeKioskPin,
             employeeKioskPinConfirm,
+            employeeKioskPinEmailRecipient,
+            employeeKioskPinEmailState,
             employeeKioskPinSaveConfirmation,
             employeeKioskPinLoading,
             employeeKioskPinVisibleValue,
@@ -9999,6 +10060,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             saveAttendanceSettings,
             saveShift,
             saving,
+            sendEmployeeKioskPinEmail,
             selectedEmployeeDocuments,
             selectedEmployeeOutstandingDebt,
             selectedEmployeeStaffId,

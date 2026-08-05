@@ -317,7 +317,7 @@
 }
 
 .staff-hr-kiosk-role > span,
-.staff-hr-kiosk-current-pin > div > span,
+.staff-hr-kiosk-pin-heading > span,
 .staff-hr-kiosk-pin-entry label {
   color: var(--vrena-neutral-700);
   font-size: 12px;
@@ -349,12 +349,12 @@
   gap: 8px 12px;
 }
 
-.staff-hr-kiosk-current-pin > div {
+.staff-hr-kiosk-pin-heading {
   display: grid;
   gap: 2px;
 }
 
-.staff-hr-kiosk-current-pin > div > small {
+.staff-hr-kiosk-pin-heading > small {
   color: var(--vrena-accent-text-strong);
   font-size: 10px;
   font-weight: 850;
@@ -379,6 +379,59 @@
 
 .staff-hr-kiosk-current-pin > small {
   grid-column: 1 / -1;
+}
+
+.staff-hr-kiosk-pin-delivery {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vrena-line-warm);
+}
+
+.staff-hr-kiosk-pin-delivery > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.staff-hr-kiosk-pin-delivery strong {
+  color: var(--vrena-neutral-800);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.staff-hr-kiosk-pin-delivery small {
+  overflow-wrap: anywhere;
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.staff-hr-kiosk-pin-delivery .staff-hr-kiosk-email-recipient {
+  color: var(--vrena-status-success-ink);
+  font-weight: 800;
+}
+
+.staff-hr-kiosk-email {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.staff-hr-kiosk-email.is-confirmed {
+  border-color: var(--vrena-status-success-ink);
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+  opacity: 1;
 }
 
 .staff-hr-kiosk-editor {
@@ -497,6 +550,8 @@
   .staff-hr-kiosk-fields { padding: 15px; }
   .staff-hr-kiosk-overview { grid-template-columns: 1fr; }
   .staff-hr-kiosk-current-pin { grid-template-columns: minmax(0, 1fr) auto; }
+  .staff-hr-kiosk-pin-delivery { align-items: stretch; flex-direction: column; }
+  .staff-hr-kiosk-email { width: 100%; white-space: normal; }
   .staff-hr-kiosk-actions { align-items: stretch; flex-direction: column; }
   .staff-hr-kiosk-save { width: 100%; }
   .staff-hr-kiosk-pin-entry { grid-template-columns: 1fr; }
@@ -540,7 +595,7 @@
   .staff-kiosk-operator-bar small { color: var(--vrena-neutral-400); }
   .staff-hr-kiosk-access-copy > strong,
   .staff-hr-kiosk-role > span,
-  .staff-hr-kiosk-current-pin > div > span,
+  .staff-hr-kiosk-pin-heading > span,
   .staff-hr-kiosk-editor-head strong,
   .staff-hr-kiosk-pin-entry label,
   .staff-hr-kiosk-current-pin output { color: var(--vrena-neutral-50); }
@@ -548,6 +603,9 @@
   .staff-kiosk-operator-card,
   .staff-kiosk-keypad button { color: var(--vrena-neutral-50); }
   .staff-kiosk-keypad button:hover { background: rgb(var(--vrena-purple-500-rgb) / 0.2); }
+  .staff-hr-kiosk-pin-delivery { border-color: rgb(var(--vrena-white-rgb) / 0.15); }
+  .staff-hr-kiosk-pin-delivery strong { color: var(--vrena-neutral-50); }
+  .staff-hr-kiosk-pin-delivery small { color: var(--vrena-neutral-400); }
 }
 
 body {
