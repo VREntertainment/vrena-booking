@@ -7883,10 +7883,19 @@
   padding: 13px 2px;
   text-align: left;
   box-shadow: none;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
-.app .staff-hr-section-toggle:hover {
-  background: color-mix(in srgb, var(--vrena-cyan-600) 5%, transparent);
+.app .staff-hr-section-toggle:hover:not(:disabled) {
+  transform: none;
+  background: color-mix(in srgb, var(--vrena-cyan-600) 7%, transparent);
+  box-shadow: none;
+  filter: none;
+}
+
+.app .staff-hr-section-toggle:hover:not(:disabled) strong,
+.app .staff-hr-section-toggle:hover:not(:disabled) svg {
+  color: var(--vrena-primary-hover);
 }
 
 .app .staff-hr-section-toggle > span {
