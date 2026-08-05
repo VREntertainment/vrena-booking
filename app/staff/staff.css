@@ -9231,26 +9231,68 @@
 
 .app .staff-hr-pit-brackets > div {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin-top: 12px;
 }
 
-.app .staff-hr-pit-brackets label {
+.app .staff-hr-pit-bracket-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 66px auto;
-  gap: 5px;
-  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--vrena-neutral-200);
+  border-radius: 12px;
+  background: var(--vrena-surface);
+  padding: 14px;
 }
 
-.app .staff-hr-pit-brackets label > span {
-  grid-column: 1 / -1;
+.app .staff-hr-pit-bracket-card > header {
+  display: grid;
+  gap: 4px;
+}
+
+.app .staff-hr-pit-bracket-card > header > span,
+.app .staff-hr-pit-bracket-fields label > span {
   color: var(--vrena-neutral-600);
   font-size: 10px;
   font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.app .staff-hr-pit-bracket-card > header > strong {
+  color: var(--vrena-neutral-900);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.app .staff-hr-pit-bracket-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  gap: 10px;
+}
+
+.app .staff-hr-pit-bracket-fields label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .staff-hr-pit-input-with-suffix {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.app .staff-hr-pit-input-with-suffix small {
+  color: var(--vrena-neutral-700);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .app .staff-hr-pit-brackets input {
+  width: 100%;
   min-width: 0;
 }
 
