@@ -16,13 +16,22 @@ type StaffHrHubProps = {
 type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' | 'categories' | 'organization'
 type StaffScheduleViewMode = 'employee' | 'shift'
 type EmployeeProfileSectionId = 'identity' | 'contract' | 'payroll' | 'bank' | 'contact' | 'store' | 'documents'
+type EmployeeDirectoryStatus = 'all' | 'active' | 'terminated'
 
-function normalizeEmployeeDirectoryText(value: unknown) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
+function employeeMatchesDirectoryFilters(
+  employee: any,
+  groupFilter: string,
+  locationFilter: string,
+  statusFilter: EmployeeDirectoryStatus,
+  unassignedLabel: string,
+) {
+  const group = String(employee?.department || '').trim() || unassignedLabel
+  const location = String(employee?.main_work_location || '').trim() || unassignedLabel
+  const terminated = employee?.active === false || employee?.contract_status === 'ended'
+  const matchesStatus = statusFilter === 'all' || (statusFilter === 'terminated' ? terminated : !terminated)
+  return matchesStatus
+    && (groupFilter === 'all' || group === groupFilter)
+    && (locationFilter === 'all' || location === locationFilter)
 }
 
 const employeeExperienceCopy = {
@@ -35,8 +44,8 @@ const employeeExperienceCopy = {
     creating: 'Creating employee…',
     employeeProfiles: 'Employee profiles',
     employeeProfilesHelp: 'Choose an employee, expand only the details you need, then save once.',
-    employeeSearch: 'Search employees',
-    employeeSearchPlaceholder: 'Name, code, email, or phone',
+    employeePicker: 'Employee',
+    selectEmployee: 'Select an employee',
     groupFilter: 'Group',
     locationFilter: 'Location',
     statusFilter: 'Employment status',
@@ -47,7 +56,6 @@ const employeeExperienceCopy = {
     terminatedStatus: 'Terminated / inactive',
     resetFilters: 'Reset filters',
     unassigned: 'Unassigned',
-    currentOutsideFilters: 'Current employee · outside filters',
     noEmployeeMatches: 'No employees match these filters.',
     showingEmployees: (shown: number, total: number) => `${shown} of ${total} employees`,
     employmentType: 'Employment type',
@@ -104,8 +112,8 @@ const employeeExperienceCopy = {
     creating: 'Đang tạo nhân viên…',
     employeeProfiles: 'Hồ sơ nhân viên',
     employeeProfilesHelp: 'Chọn nhân viên, chỉ mở phần cần chỉnh sửa rồi lưu một lần.',
-    employeeSearch: 'Tìm nhân viên',
-    employeeSearchPlaceholder: 'Tên, mã, email hoặc số điện thoại',
+    employeePicker: 'Nhân viên',
+    selectEmployee: 'Chọn nhân viên',
     groupFilter: 'Nhóm',
     locationFilter: 'Địa điểm',
     statusFilter: 'Tình trạng làm việc',
@@ -116,7 +124,6 @@ const employeeExperienceCopy = {
     terminatedStatus: 'Đã nghỉ / không hoạt động',
     resetFilters: 'Đặt lại bộ lọc',
     unassigned: 'Chưa phân loại',
-    currentOutsideFilters: 'Nhân viên hiện tại · ngoài bộ lọc',
     noEmployeeMatches: 'Không có nhân viên phù hợp với bộ lọc.',
     showingEmployees: (shown: number, total: number) => `${shown} / ${total} nhân viên`,
     employmentType: 'Hình thức làm việc',
@@ -653,10 +660,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState('')
   const [createEmployeeStatusTone, setCreateEmployeeStatusTone] = useState<'error' | 'success'>('success')
   const [createEmployeeSaving, setCreateEmployeeSaving] = useState(false)
-  const [employeeDirectorySearch, setEmployeeDirectorySearch] = useState('')
   const [employeeDirectoryGroup, setEmployeeDirectoryGroup] = useState('all')
   const [employeeDirectoryLocation, setEmployeeDirectoryLocation] = useState('all')
-  const [employeeDirectoryStatus, setEmployeeDirectoryStatus] = useState<'all' | 'active' | 'terminated'>('active')
+  const [employeeDirectoryStatus, setEmployeeDirectoryStatus] = useState<EmployeeDirectoryStatus>('active')
   const [payslipDepartmentFilter, setPayslipDepartmentFilter] = useState('all')
   const [payslipLocationFilter, setPayslipLocationFilter] = useState('all')
   const [payslipSelectedEmployeeId, setPayslipSelectedEmployeeId] = useState(selectedEmployeeStaffId)
@@ -704,28 +710,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     return counts
   }, { active: 0, terminated: 0 }), [employeeProfileById, visibleAllStaffProfileOptions])
   const filteredEmployeeProfileOptions = useMemo(() => {
-    const search = normalizeEmployeeDirectoryText(employeeDirectorySearch)
     return visibleAllStaffProfileOptions.filter((staffProfile: any) => {
       const employee = employeeProfileById.get(staffProfile.id)
-      const group = String(employee?.department || '').trim() || employeeCopy.unassigned
-      const location = String(employee?.main_work_location || '').trim() || employeeCopy.unassigned
-      const terminated = employee?.active === false || employee?.contract_status === 'ended'
-      const matchesStatus = employeeDirectoryStatus === 'all' || (employeeDirectoryStatus === 'terminated' ? terminated : !terminated)
-      const matchesSearch = !search || normalizeEmployeeDirectoryText([
-        employee?.legal_name,
-        employee?.employee_code,
-        employee?.personal_email,
-        employee?.personal_phone,
-        staffProfile.email,
-        staffProfile.phone,
-        customerName(staffProfile, text),
-      ].filter(Boolean).join(' ')).includes(search)
-      return matchesStatus
-        && (employeeDirectoryGroup === 'all' || group === employeeDirectoryGroup)
-        && (employeeDirectoryLocation === 'all' || location === employeeDirectoryLocation)
-        && matchesSearch
+      return employeeMatchesDirectoryFilters(employee, employeeDirectoryGroup, employeeDirectoryLocation, employeeDirectoryStatus, employeeCopy.unassigned)
     })
-  }, [customerName, employeeCopy.unassigned, employeeDirectoryGroup, employeeDirectoryLocation, employeeDirectorySearch, employeeDirectoryStatus, employeeProfileById, text, visibleAllStaffProfileOptions])
+  }, [employeeCopy.unassigned, employeeDirectoryGroup, employeeDirectoryLocation, employeeDirectoryStatus, employeeProfileById, visibleAllStaffProfileOptions])
   const groupedEmployeeOptions = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
     const locationOrder = ['HaDo', 'CS']
@@ -754,10 +743,29 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }, [customerName, employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
   const selectedEmployeeOutsideFilters = Boolean(selectedEmployeeStaffProfile)
     && !filteredEmployeeProfileOptions.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)
-  const employeeDirectoryFiltersActive = Boolean(employeeDirectorySearch.trim())
-    || employeeDirectoryGroup !== 'all'
+  const employeeDirectoryFiltersActive = employeeDirectoryGroup !== 'all'
     || employeeDirectoryLocation !== 'all'
     || employeeDirectoryStatus !== 'active'
+  const updateEmployeeDirectoryFilters = ({
+    group = employeeDirectoryGroup,
+    location = employeeDirectoryLocation,
+    status = employeeDirectoryStatus,
+  }: {
+    group?: string
+    location?: string
+    status?: EmployeeDirectoryStatus
+  }) => {
+    setEmployeeDirectoryGroup(group)
+    setEmployeeDirectoryLocation(location)
+    setEmployeeDirectoryStatus(status)
+
+    const matchingProfiles = visibleAllStaffProfileOptions.filter((staffProfile: any) => (
+      employeeMatchesDirectoryFilters(employeeProfileById.get(staffProfile.id), group, location, status, employeeCopy.unassigned)
+    ))
+    if (matchingProfiles.length > 0 && !matchingProfiles.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)) {
+      editEmployeeProfile(matchingProfiles[0])
+    }
+  }
   const enabledEmploymentTypes = useMemo(() => {
     const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffEmploymentTypes.filter((value: string) => activeTokens.has(value))
@@ -1084,38 +1092,48 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </section>
                   )}
 
-                  <section className="staff-hr-employee-navigator" aria-label={employeeCopy.employeeSearch}>
+                  <section className="staff-hr-employee-navigator" aria-label={employeeCopy.employeeProfiles}>
                     <div className="staff-hr-employee-filter-grid">
-                      <label className="staff-hr-employee-search-filter">
-                        <span>{employeeCopy.employeeSearch}</span>
-                        <span className="staff-hr-employee-search-control">
-                          <Search aria-hidden="true" size={16} />
-                          <input
-                            autoComplete="off"
-                            placeholder={employeeCopy.employeeSearchPlaceholder}
-                            type="search"
-                            value={employeeDirectorySearch}
-                            onChange={(event) => setEmployeeDirectorySearch(event.target.value)}
-                          />
-                        </span>
+                      <label className="staff-hr-employee-picker-filter" htmlFor="staff-employee-profile-picker">
+                        <span>{employeeCopy.employeePicker}</span>
+                        <select
+                          id="staff-employee-profile-picker"
+                          disabled={filteredEmployeeProfileOptions.length === 0}
+                          value={selectedEmployeeOutsideFilters ? '' : selectedEmployeeStaffId}
+                          onChange={(event) => {
+                            const staffProfile = filteredEmployeeProfileOptions.find((item: any) => item.id === event.target.value)
+                            if (staffProfile) editEmployeeProfile(staffProfile)
+                          }}
+                        >
+                          <option disabled value="">{filteredEmployeeProfileOptions.length === 0 ? employeeCopy.noEmployeeMatches : employeeCopy.selectEmployee}</option>
+                          {groupedEmployeeOptions.map((group) => (
+                            <optgroup key={group.label} label={group.label}>
+                              {group.employees.map((item: any) => {
+                                const employee = employeeProfileById.get(item.id)
+                                const name = employee?.legal_name || customerName(item, text)
+                                return <option key={item.id} value={item.id}>{name}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option>
+                              })}
+                            </optgroup>
+                          ))}
+                        </select>
                       </label>
                       <label>
                         <span>{employeeCopy.groupFilter}</span>
-                        <select value={employeeDirectoryGroup} onChange={(event) => setEmployeeDirectoryGroup(event.target.value)}>
+                        <select value={employeeDirectoryGroup} onChange={(event) => updateEmployeeDirectoryFilters({ group: event.target.value })}>
                           <option value="all">{employeeCopy.allGroups}</option>
                           {employeeDirectoryGroups.map((group) => <option key={group} value={group}>{group}</option>)}
                         </select>
                       </label>
                       <label>
                         <span>{employeeCopy.locationFilter}</span>
-                        <select value={employeeDirectoryLocation} onChange={(event) => setEmployeeDirectoryLocation(event.target.value)}>
+                        <select value={employeeDirectoryLocation} onChange={(event) => updateEmployeeDirectoryFilters({ location: event.target.value })}>
                           <option value="all">{employeeCopy.allLocations}</option>
                           {employeeDirectoryLocations.map((location) => <option key={location} value={location}>{location}</option>)}
                         </select>
                       </label>
                       <label>
                         <span>{employeeCopy.statusFilter}</span>
-                        <select value={employeeDirectoryStatus} onChange={(event) => setEmployeeDirectoryStatus(event.target.value as 'all' | 'active' | 'terminated')}>
+                        <select value={employeeDirectoryStatus} onChange={(event) => updateEmployeeDirectoryFilters({ status: event.target.value as EmployeeDirectoryStatus })}>
                           <option value="active">{employeeCopy.activeStatus} ({employeeDirectoryCounts.active})</option>
                           <option value="terminated">{employeeCopy.terminatedStatus} ({employeeDirectoryCounts.terminated})</option>
                           <option value="all">{employeeCopy.allStatuses} ({visibleAllStaffProfileOptions.length})</option>
@@ -1127,10 +1145,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       {filteredEmployeeProfileOptions.length === 0 && <strong>{employeeCopy.noEmployeeMatches}</strong>}
                       {employeeDirectoryFiltersActive && (
                         <button type="button" onClick={() => {
-                          setEmployeeDirectorySearch('')
-                          setEmployeeDirectoryGroup('all')
-                          setEmployeeDirectoryLocation('all')
-                          setEmployeeDirectoryStatus('active')
+                          updateEmployeeDirectoryFilters({ group: 'all', location: 'all', status: 'active' })
                         }}>
                           <RefreshCw aria-hidden="true" size={14} />
                           {employeeCopy.resetFilters}
@@ -1139,7 +1154,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </div>
                   </section>
 
-                  <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
+                  {!selectedEmployeeOutsideFilters && <fieldset className="staff-readonly-fieldset staff-attendance-form staff-employee-form staff-hr-workspace" disabled={!canEditEmployeeProfiles || !selectedEmployeeStaffProfile}>
                     {selectedEmployeeStaffProfile && (
                       <div className="staff-employee-selected">
                         <label className="staff-employee-photo-upload" title={text.actions.uploadPhoto}>
@@ -1157,40 +1172,17 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             onChange={(event) => void handleHrDocumentUpload(event, 'profile_photo')}
                           />
                         </label>
-                        <label className="staff-employee-selected-picker" htmlFor="staff-employee-profile-picker">
-                          <span>{text.labels.staffMember}</span>
-                          <select
-                            id="staff-employee-profile-picker"
-                            value={selectedEmployeeStaffId}
-                            onChange={(event) => {
-                              const staffProfile = visibleAllStaffProfileOptions.find((item: any) => item.id === event.target.value)
-                              if (staffProfile) editEmployeeProfile(staffProfile)
-                            }}
-                          >
-                            {selectedEmployeeOutsideFilters && selectedEmployeeStaffProfile && (
-                              <optgroup label={employeeCopy.currentOutsideFilters}>
-                                <option value={selectedEmployeeStaffId}>{employeeProfileById.get(selectedEmployeeStaffId)?.legal_name || customerName(selectedEmployeeStaffProfile, text)}</option>
-                              </optgroup>
-                            )}
-                            {groupedEmployeeOptions.map((group) => (
-                              <optgroup key={group.label} label={group.label}>
-                                {group.employees.map((item: any) => {
-                                  const employee = employeeProfileById.get(item.id)
-                                  const name = employee?.legal_name || customerName(item, text)
-                                  return <option key={item.id} value={item.id}>{name}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option>
-                                })}
-                              </optgroup>
-                            ))}
-                          </select>
-                          <small>
+                        <div className="staff-employee-selected-identity">
+                          <strong>{employeeProfileById.get(selectedEmployeeStaffId)?.legal_name || customerName(selectedEmployeeStaffProfile, text)}</strong>
+                          <span>
                             {[
                               employeeProfileById.get(selectedEmployeeStaffId)?.job_title,
                               employeeProfileById.get(selectedEmployeeStaffId)?.department,
                               employeeProfileById.get(selectedEmployeeStaffId)?.main_work_location,
                               selectedEmployeeStaffProfile.email || selectedEmployeeStaffProfile.phone,
                             ].filter(Boolean).join(' · ') || text.noContact}
-                          </small>
-                        </label>
+                          </span>
+                        </div>
                         <button className="primary staff-employee-selected-save" type="button" disabled={saving || !canEditEmployeeProfiles} onClick={saveEmployeeProfile}>
                           <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveEmployeeProfile}</ButtonIconText>
                         </button>
@@ -1432,7 +1424,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <input type="checkbox" checked={employeeForm.active} onChange={(event) => setEmployeeForm({ ...employeeForm, active: event.target.checked })} />
                       <span>{text.labels.activeEmployee}</span>
                     </label>
-                  </fieldset>
+                  </fieldset>}
                 </div>
               )}
 
