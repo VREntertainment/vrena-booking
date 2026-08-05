@@ -136,6 +136,29 @@ const accountantWorkspaceCopy = {
   },
 } as const
 
+const payslipSelectorCopy = {
+  en: {
+    allGroups: 'All groups',
+    allLocations: 'All shop locations',
+    employee: 'Employee',
+    group: 'Employee group',
+    location: 'Shop location',
+    noEmployees: 'No employees match this group and shop location.',
+    result: 'employee available',
+    results: 'employees available',
+  },
+  vi: {
+    allGroups: 'Tất cả nhóm',
+    allLocations: 'Tất cả địa điểm',
+    employee: 'Nhân viên',
+    group: 'Nhóm nhân viên',
+    location: 'Địa điểm cửa hàng',
+    noEmployees: 'Không có nhân viên phù hợp với nhóm và địa điểm này.',
+    result: 'nhân viên phù hợp',
+    results: 'nhân viên phù hợp',
+  },
+} as const
+
 function CollapsibleEmployeeSection({
   children,
   description,
@@ -539,6 +562,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const employeeCopy = employeeExperienceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const accountantCopy = accountantWorkspaceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const payslipCopy = payslipSelectorCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const [settingsSection, setSettingsSection] = useState<HrSettingsSection>('initialization')
   const [scheduleViewMode, setScheduleViewMode] = useState<StaffScheduleViewMode>('employee')
   const [timesheetSearch, setTimesheetSearch] = useState('')
@@ -546,6 +570,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [createEmployeeStatus, setCreateEmployeeStatus] = useState('')
   const [createEmployeeStatusTone, setCreateEmployeeStatusTone] = useState<'error' | 'success'>('success')
   const [createEmployeeSaving, setCreateEmployeeSaving] = useState(false)
+  const [payslipDepartmentFilter, setPayslipDepartmentFilter] = useState('all')
+  const [payslipLocationFilter, setPayslipLocationFilter] = useState('all')
+  const [payslipSelectedEmployeeId, setPayslipSelectedEmployeeId] = useState(selectedEmployeeStaffId)
   const [newEmployee, setNewEmployee] = useState<{
     email: string
     employmentType: StaffEmployeeRecordEmploymentType
@@ -723,6 +750,32 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     return !employee?.bank_name || !employee?.bank_account_number
   }).length
   const accountantIssueCount = incompleteEmployeeCount + pendingAttendanceCount + missingBankCount
+  const payslipDepartments = useMemo(() => Array.from(new Set<string>(
+    visibleStaffProfileOptions
+      .map((staffProfile: any) => (employeeProfileById.get(staffProfile.id)?.department || '').trim())
+      .filter(Boolean),
+  )).sort((left, right) => left.localeCompare(right)), [employeeProfileById, visibleStaffProfileOptions])
+  const payslipLocations = useMemo(() => Array.from(new Set<string>(
+    visibleStaffProfileOptions
+      .map((staffProfile: any) => (employeeProfileById.get(staffProfile.id)?.main_work_location || '').trim())
+      .filter(Boolean),
+  )).sort((left, right) => left.localeCompare(right)), [employeeProfileById, visibleStaffProfileOptions])
+  const filteredPayslipProfiles = useMemo(() => visibleStaffProfileOptions.filter((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    if (payslipDepartmentFilter !== 'all' && (employee?.department || '').trim() !== payslipDepartmentFilter) return false
+    if (payslipLocationFilter !== 'all' && (employee?.main_work_location || '').trim() !== payslipLocationFilter) return false
+    return true
+  }), [employeeProfileById, payslipDepartmentFilter, payslipLocationFilter, visibleStaffProfileOptions])
+  const effectivePayslipEmployeeId = filteredPayslipProfiles.some((staffProfile: any) => staffProfile.id === payslipSelectedEmployeeId)
+    ? payslipSelectedEmployeeId
+    : filteredPayslipProfiles[0]?.id || ''
+  const payslipEmployeeProfile = filteredPayslipProfiles.find((staffProfile: any) => staffProfile.id === effectivePayslipEmployeeId) || null
+  const payslipEmployee = payslipEmployeeProfile ? employeeProfileById.get(payslipEmployeeProfile.id) : null
+  const payslipEmployeeSummary = effectivePayslipEmployeeId
+    ? staffPayrollCalculations.get(effectivePayslipEmployeeId) || emptyStaffPayrollCalculation(effectivePayslipEmployeeId)
+    : emptyStaffPayrollCalculation('')
+  const payslipEmployeeName = payslipEmployee?.legal_name
+    || (payslipEmployeeProfile ? customerName(payslipEmployeeProfile, text) : text.customerFallback)
   const settingsSections: Array<{ id: HrSettingsSection; icon: typeof ListChecks }> = [
     { id: 'initialization', icon: ListChecks },
     { id: 'clocking', icon: TimerReset },
@@ -1587,24 +1640,36 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </div>
                   </fieldset>
                   <div className="staff-attendance-list">
-                    <h4>{text.labels.payslipPreview}</h4>
-                    <div className="staff-hr-payslip">
-                      <strong>{selectedEmployeeStaffProfile ? customerName(selectedEmployeeStaffProfile, text) : text.customerFallback}</strong>
-                      <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
-                      <dl>
-                        <div><dt>{text.labels.paidLeave}</dt><dd>{Number(employeePayrollSummary.paidLeaveDays.toFixed(2))} {text.days}</dd></div>
-                        <div><dt>{text.labels.mealAllowance}</dt><dd>{formatVnd(employeePayrollSummary.mealAllowance)}</dd></div>
-                        <div><dt>{text.labels.overtimePay}</dt><dd>{formatVnd(employeePayrollSummary.overtimePay)}</dd></div>
-                        <div><dt>{text.labels.grossIncome}</dt><dd>{formatVnd(employeePayrollSummary.grossIncome)}</dd></div>
-                        <div><dt>{text.labels.employeeContributions}</dt><dd>{formatVnd(employeePayrollSummary.employeeContributions)}</dd></div>
-                        <div><dt>{text.labels.pitWithheld}</dt><dd>{formatVnd(employeePayrollSummary.pitWithheld)}</dd></div>
-                        <div><dt>{text.labels.netIncome}</dt><dd>{formatVnd(employeePayrollSummary.netIncome)}</dd></div>
-                        <div><dt>{text.labels.companyCost}</dt><dd>{formatVnd(employeePayrollSummary.companyCost)}</dd></div>
-                      </dl>
-                      <button type="button" onClick={() => void downloadEmployeePayslip()}>
-                        <ButtonIconText icon={<Download aria-hidden="true" size={14} />}>{text.actions.viewPayslip}</ButtonIconText>
-                      </button>
+                    <div className="staff-hr-payslip-heading">
+                      <h4>{text.labels.payslipPreview}</h4>
+                      <span>{filteredPayslipProfiles.length} {filteredPayslipProfiles.length === 1 ? payslipCopy.result : payslipCopy.results}</span>
                     </div>
+                    <div className="staff-hr-payslip-selector">
+                      <label>{payslipCopy.group}<select value={payslipDepartmentFilter} onChange={(event) => setPayslipDepartmentFilter(event.target.value)}><option value="all">{payslipCopy.allGroups}</option>{payslipDepartments.map((department) => <option key={department} value={department}>{department}</option>)}</select></label>
+                      <label>{payslipCopy.location}<select value={payslipLocationFilter} onChange={(event) => setPayslipLocationFilter(event.target.value)}><option value="all">{payslipCopy.allLocations}</option>{payslipLocations.map((location) => <option key={location} value={location}>{location}</option>)}</select></label>
+                      <label className="staff-hr-payslip-employee-select">{payslipCopy.employee}<select disabled={filteredPayslipProfiles.length === 0} value={effectivePayslipEmployeeId} onChange={(event) => setPayslipSelectedEmployeeId(event.target.value)}>{filteredPayslipProfiles.map((staffProfile: any) => { const employee = employeeProfileById.get(staffProfile.id); return <option key={staffProfile.id} value={staffProfile.id}>{employee?.legal_name || customerName(staffProfile, text)}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option> })}</select></label>
+                    </div>
+                    {payslipEmployeeProfile ? (
+                      <div className="staff-hr-payslip">
+                        <div className="staff-hr-payslip-person">
+                          <div><strong>{payslipEmployeeName}</strong><span>{[payslipEmployee?.department, payslipEmployee?.main_work_location].filter(Boolean).join(' · ')}</span></div>
+                          <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
+                        </div>
+                        <dl>
+                          <div><dt>{text.labels.paidLeave}</dt><dd>{Number(payslipEmployeeSummary.paidLeaveDays.toFixed(2))} {text.days}</dd></div>
+                          <div><dt>{text.labels.mealAllowance}</dt><dd>{formatVnd(payslipEmployeeSummary.mealAllowance)}</dd></div>
+                          <div><dt>{text.labels.overtimePay}</dt><dd>{formatVnd(payslipEmployeeSummary.overtimePay)}</dd></div>
+                          <div><dt>{text.labels.grossIncome}</dt><dd>{formatVnd(payslipEmployeeSummary.grossIncome)}</dd></div>
+                          <div><dt>{text.labels.employeeContributions}</dt><dd>{formatVnd(payslipEmployeeSummary.employeeContributions)}</dd></div>
+                          <div><dt>{text.labels.pitWithheld}</dt><dd>{formatVnd(payslipEmployeeSummary.pitWithheld)}</dd></div>
+                          <div><dt>{text.labels.netIncome}</dt><dd>{formatVnd(payslipEmployeeSummary.netIncome)}</dd></div>
+                          <div><dt>{text.labels.companyCost}</dt><dd>{formatVnd(payslipEmployeeSummary.companyCost)}</dd></div>
+                        </dl>
+                        <button type="button" onClick={() => void downloadEmployeePayslip(effectivePayslipEmployeeId)}>
+                          <ButtonIconText icon={<Download aria-hidden="true" size={14} />}>{text.actions.viewPayslip}</ButtonIconText>
+                        </button>
+                      </div>
+                    ) : <p className="notice">{payslipCopy.noEmployees}</p>}
                     <h4>{text.hrTabs.payroll}</h4>
                     {payrollRuns.map((run: any) => (
                       <article className="staff-attendance-row" key={run.id}>

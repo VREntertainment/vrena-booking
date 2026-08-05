@@ -3902,6 +3902,95 @@
   padding: 10px;
 }
 
+.app .staff-hr-payslip-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app .staff-hr-payslip-heading h4 {
+  margin: 0;
+}
+
+.app .staff-hr-payslip-heading > span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-hr-payslip-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-primary) 16%, var(--vrena-line-warm));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-primary) 4%, var(--vrena-surface));
+}
+
+.app .staff-hr-payslip-selector label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.app .staff-hr-payslip-selector select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  color: var(--vrena-neutral-900);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.app .staff-hr-payslip-employee-select {
+  grid-column: 1 / -1;
+}
+
+.app .staff-hr-payslip-person {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent);
+}
+
+.app .staff-hr-payslip-person > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .staff-hr-payslip-person span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-hr-payslip-person > span {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 720px) {
+  .app .staff-hr-payslip-selector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app .staff-hr-payslip-employee-select {
+    grid-column: auto;
+  }
+
+  .app .staff-hr-payslip-person {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
 .app .staff-hr-accountant-workspace {
   display: grid;
   gap: 18px;
@@ -6957,6 +7046,15 @@
     color: var(--vrena-neutral-100);
   }
 
+  .app .staff-hr-payslip-selector {
+    border-color: var(--staff-modern-border);
+    background: var(--staff-modern-soft);
+  }
+
+  .app .staff-hr-payslip-selector select {
+    color: var(--vrena-neutral-100);
+  }
+
   .app .staff-hr-form-section,
   .app .staff-hr-setup-row,
   .app .staff-file-action,
@@ -6976,6 +7074,9 @@
   .app .staff-hr-workspace-head span,
   .app .staff-file-action small,
   .app .staff-hr-document-list span,
+  .app .staff-hr-payslip-heading > span,
+  .app .staff-hr-payslip-person span,
+  .app .staff-hr-payslip-selector label,
   .app .staff-hr-payslip > span,
   .app .staff-hr-payslip dt,
   .app .staff-hr-setup-row p {
