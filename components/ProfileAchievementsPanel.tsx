@@ -93,6 +93,11 @@ import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
 import PlayerReturnMissionCard from './PlayerReturnMissionCard'
 import { buildPlayerReturnMission } from '../lib/playerReturnMission'
+import {
+  buildPlayerReturnVisualPool,
+  playerReturnVisualDayKey,
+  selectPlayerReturnVisual,
+} from '../lib/playerReturnVisual'
 
 type ProfileAchievementsPanelProps = {
   editor?: {
@@ -1304,6 +1309,10 @@ export default function ProfileAchievementsPanel({
     }),
     [achievementSessions, displayAchievements, displayRetentionAchievements, manualAwards, userId],
   )
+  const returnMissionVisualPool = useMemo(
+    () => buildPlayerReturnVisualPool(displayAchievements, displayRetentionAchievements),
+    [displayAchievements, displayRetentionAchievements],
+  )
   const milestoneRewards = useMemo(
     () => achievementMilestoneRewards(summary).map((reward) => localizeMilestoneReward(reward, language)),
     [language, summary],
@@ -1392,6 +1401,14 @@ export default function ProfileAchievementsPanel({
   const activeCelebration = pendingCelebrations[0] ?? null
   const featuredCelebration = pendingCelebrations.find((celebration) => celebration.key === featuredCelebrationKey)
     ?? activeCelebration
+  const returnMissionVisual = selectPlayerReturnVisual({
+    candidates: returnMissionVisualPool,
+    dayKey: playerReturnVisualDayKey(new Date()),
+    featuredUnlock: featuredCelebration
+      ? { id: featuredCelebration.id, kind: featuredCelebration.kind }
+      : undefined,
+    userId,
+  })
   const isCelebrationBatch = pendingCelebrations.length > 1
   const selectedAchievementCelebration = selectedAchievement
     ? celebrationByKey.get(achievementUnlockKey('game', selectedAchievement.game.id, selectedAchievement.tier))
@@ -1675,6 +1692,7 @@ export default function ProfileAchievementsPanel({
           onJoinSession={onJoinSession}
           onScheduleReminder={onScheduleReturnReminder}
           userId={userId}
+          visual={returnMissionVisual}
         />
       )}
       <div className="achievement-rank-card">
