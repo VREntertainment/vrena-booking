@@ -42,6 +42,16 @@ test('recognizes a current-week visit and the next achievement target', () => {
   assert.equal(mission.latestSession?.date, '2026-08-05')
 })
 
+test('returns a ready-to-start mission before the first checked-in visit', () => {
+  const mission = buildPlayerReturnMission([], new Date('2026-08-06T12:00:00'))
+
+  assert.equal(mission.latestSession, null)
+  assert.equal(mission.activeWeeks, 0)
+  assert.equal(mission.currentWeekVisits, 0)
+  assert.equal(mission.graceAvailable, true)
+  assert.equal(mission.targetWeeks, 2)
+})
+
 test('schedules the reminder for Saturday morning in Vietnam', () => {
   const reminder = nextVrenaWeekendReminderAt(new Date('2026-08-06T03:00:00.000Z'))
   assert.equal(reminder.toISOString(), '2026-08-08T03:00:00.000Z')

@@ -1667,7 +1667,7 @@ export default function ProfileAchievementsPanel({
   return (
     <div className="profile-achievements-panel">
       {editorToolbar}
-      {!editor && returnMission.latestSession && onJoinSession && onScheduleReturnReminder && (
+      {!editor && onJoinSession && onScheduleReturnReminder && (
         <PlayerReturnMissionCard
           gameTitle={returnMissionGameTitle}
           language={language}
