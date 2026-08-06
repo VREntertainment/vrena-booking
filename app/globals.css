@@ -8408,11 +8408,38 @@ body {
   animation: returnCharacterGlow 6.2s ease-in-out infinite;
 }
 
+.app .return-mission-character[data-source='trickster']::after {
+  background: color-mix(in srgb, var(--vrena-orange-500) 20%, var(--vrena-purple-500) 10%, transparent);
+}
+
 .app .return-mission-character img {
   object-fit: contain;
   object-position: center bottom;
   transform-origin: 50% 82%;
   animation: returnCharacterBreathe 5.8s ease-in-out infinite;
+}
+
+.app .return-mission-character-origin {
+  position: absolute;
+  z-index: 2;
+  right: 2px;
+  bottom: 4px;
+  left: 2px;
+  overflow: hidden;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 26%, var(--vrena-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-surface) 88%, transparent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  color: var(--vrena-neutral-800);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
 }
 
 .app .return-mission-path {
