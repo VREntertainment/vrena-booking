@@ -8803,6 +8803,15 @@
   font-weight: 760;
 }
 
+.app .staff-hr-leave-cell.has-dates {
+  cursor: help;
+}
+
+.app .staff-hr-leave-cell.has-dates > strong {
+  text-decoration: underline dotted color-mix(in srgb, currentColor 55%, transparent);
+  text-underline-offset: 3px;
+}
+
 .app .staff-hr-approval-state {
   display: inline-flex;
   align-items: center;
