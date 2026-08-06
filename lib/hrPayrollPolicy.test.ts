@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // @ts-expect-error Node's native TypeScript runner requires the explicit extension.
-import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from './hrPayrollPolicy.ts'
+import { calculatePayrollTaxBases, calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from './hrPayrollPolicy.ts'
 
 const brackets: ProgressivePitBracket[] = [
   { up_to: 10_000_000, rate: 5 },
@@ -28,4 +28,18 @@ test('calculates tax across progressive bands', () => {
   assert.equal(calculateProgressivePit(20_000_000, brackets), 1_500_000)
   assert.equal(calculateProgressivePit(50_000_000, brackets), 6_500_000)
   assert.equal(calculateProgressivePit(120_000_000, brackets), 27_500_000)
+})
+
+test('matches the accountant tax bases for exempt meal and overtime income', () => {
+  assert.deepEqual(calculatePayrollTaxBases({
+    grossIncome: 18_318_563,
+    mealAllowance: 945_000,
+    overtimePay: 373_563,
+    employeeContributions: 0,
+    personalDeduction: 15_500_000,
+    dependentDeduction: 0,
+  }), {
+    shortTermWithholdingBase: 17_945_000,
+    progressiveTaxableIncome: 1_500_000,
+  })
 })

@@ -3,6 +3,33 @@ export type ProgressivePitBracket = {
   rate: number
 }
 
+type PayrollTaxBaseInput = {
+  grossIncome: number
+  mealAllowance: number
+  overtimePay: number
+  employeeContributions: number
+  personalDeduction: number
+  dependentDeduction: number
+}
+
+export function calculatePayrollTaxBases({
+  grossIncome,
+  mealAllowance,
+  overtimePay,
+  employeeContributions,
+  personalDeduction,
+  dependentDeduction,
+}: PayrollTaxBaseInput) {
+  const incomeAfterInsurance = Math.max(0, grossIncome - employeeContributions)
+  return {
+    shortTermWithholdingBase: Math.max(0, incomeAfterInsurance - overtimePay),
+    progressiveTaxableIncome: Math.max(
+      0,
+      incomeAfterInsurance - mealAllowance - overtimePay - personalDeduction - dependentDeduction,
+    ),
+  }
+}
+
 export function calculateProgressivePit(taxableIncome: number, brackets: ProgressivePitBracket[]) {
   let previousCap = 0
   let remaining = Math.max(0, taxableIncome)
