@@ -4,6 +4,7 @@ type PayrollPeriodBasisInput = {
   standardMonthlyDays: number
   standardMonthlyHours: number
   weeklyRestDays: number[]
+  standardDailyMinutes?: number
 }
 
 type TimesheetBasePayInput = {
@@ -12,7 +13,44 @@ type TimesheetBasePayInput = {
   hourlyRate: number
   periodStandardDays: number
   salaryPaidDays: number
+  weightedSalaryPaidDays?: number
   baseWorkedMinutes: number
+}
+
+type EmployeePayrollCalendarInput = {
+  department?: string | null
+  payrollType: 'hourly' | 'monthly' | 'manager'
+  companyWeeklyRestDays: number[]
+  companyStandardDailyMinutes: number
+}
+
+export function resolveEmployeePayrollCalendar({
+  department,
+  payrollType,
+  companyWeeklyRestDays,
+  companyStandardDailyMinutes,
+}: EmployeePayrollCalendarInput) {
+  const normalizedDepartment = String(department || '').trim().toLowerCase()
+  if (normalizedDepartment === 'office') {
+    return { weeklyRestDays: [0, 6], standardDailyMinutes: 480, schedule: 'office_5_day' as const }
+  }
+  if (payrollType === 'manager' || normalizedDepartment === 'manager') {
+    return { weeklyRestDays: [0], standardDailyMinutes: 435, schedule: 'manager_6_day' as const }
+  }
+  return {
+    weeklyRestDays: companyWeeklyRestDays,
+    standardDailyMinutes: companyStandardDailyMinutes,
+    schedule: 'company_default' as const,
+  }
+}
+
+export function isMealAllowanceEligible(
+  _payrollType: 'hourly' | 'monthly' | 'manager',
+  workedMinutes: number,
+  standardDailyMinutes: number,
+) {
+  if (workedMinutes <= 0) return false
+  return workedMinutes >= Math.max(1, standardDailyMinutes - 30)
 }
 
 function dateFromInput(value: string) {
@@ -52,11 +90,13 @@ export function payrollFallbackPeriodBasis({
   standardMonthlyDays,
   standardMonthlyHours,
   weeklyRestDays,
+  standardDailyMinutes: standardDailyMinutesOverride,
 }: PayrollPeriodBasisInput) {
-  const standardDailyMinutes = Math.max(
-    1,
-    Math.round((Math.max(0, standardMonthlyHours) * 60) / Math.max(1, standardMonthlyDays)),
-  )
+  const standardDailyMinutes = Math.max(1, Math.round(
+    Number(standardDailyMinutesOverride) > 0
+      ? Number(standardDailyMinutesOverride)
+      : (Math.max(0, standardMonthlyHours) * 60) / Math.max(1, standardMonthlyDays),
+  ))
   const workingDays = countPayrollWorkingDays(periodStart, periodEnd, weeklyRestDays)
   return {
     workingDays,
@@ -71,11 +111,15 @@ export function calculateTimesheetBasePay({
   hourlyRate,
   periodStandardDays,
   salaryPaidDays,
+  weightedSalaryPaidDays,
   baseWorkedMinutes,
 }: TimesheetBasePayInput) {
   if (payrollType !== 'hourly' && monthlyBasePay > 0) {
     return Math.round(
-      Math.max(0, monthlyBasePay) * Math.min(1, Math.max(0, salaryPaidDays) / Math.max(1, periodStandardDays)),
+      Math.max(0, monthlyBasePay) * Math.min(
+        1,
+        Math.max(0, weightedSalaryPaidDays ?? salaryPaidDays) / Math.max(1, periodStandardDays),
+      ),
     )
   }
   return Math.round((Math.max(0, baseWorkedMinutes) / 60) * Math.max(0, hourlyRate))

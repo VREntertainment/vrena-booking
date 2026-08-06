@@ -36,9 +36,9 @@ import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
-import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
+import { calculatePayrollTaxBases, calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
 import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
-import { calculateTimesheetBasePay, payrollFallbackPeriodBasis } from '../lib/staffPayrollPeriod'
+import { calculateTimesheetBasePay, isMealAllowanceEligible, payrollFallbackPeriodBasis, resolveEmployeePayrollCalendar } from '../lib/staffPayrollPeriod'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -578,6 +578,7 @@ type StaffPayrollCalculation = {
   payrollBasis: 'published_schedule' | 'working_calendar'
   workedMinutes: number
   workedDays: number
+  mealDays: number
   salaryPaidDays: number
   regularMinutes: number
   salaryPaidMinutes: number
@@ -2849,15 +2850,36 @@ function leaveHoursInsidePeriod(leave: StaffLeaveRequest, periodStart: string, p
   return Math.max(0, Number(leave.hours) || 0) * overlapDays / requestDays
 }
 
+function leaveSalaryUnitsInsidePeriod(
+  leave: StaffLeaveRequest,
+  employee: StaffEmployeeProfile | undefined,
+  periodStart: string,
+  periodEnd: string,
+  standardDailyHours: number,
+) {
+  const overlapStart = leave.start_date > periodStart ? leave.start_date : periodStart
+  const overlapEnd = leave.end_date < periodEnd ? leave.end_date : periodEnd
+  if (overlapStart > overlapEnd) return 0
+  const requestDays = Math.max(1, daysBetween(leave.start_date, leave.end_date) + 1)
+  const paidDayFraction = (Math.max(0, Number(leave.hours) || 0) / requestDays) / Math.max(1, standardDailyHours)
+  let salaryUnits = 0
+  let date = overlapStart
+  while (date <= overlapEnd) {
+    salaryUnits += paidDayFraction * employeeSalaryPercentageForPeriod(employee, date)
+    date = addDays(date, 1)
+  }
+  return salaryUnits
+}
+
 function isPaidLeaveForEmployee(leave: StaffLeaveRequest, employee: StaffEmployeeProfile | undefined) {
   if (employeePayrollTypeForPeriod(employee, leave.end_date) === 'hourly') return false
   return leave.leave_type === 'annual' || leave.leave_type === 'public_holiday'
 }
 
 function approvedAttendanceMinutes(log: StaffAttendanceLog) {
-  const clockMinutes = minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes)
-  if (clockMinutes > 0) return clockMinutes
-  return Math.max(0, Number(log.regular_minutes) || 0) + Math.max(0, Number(log.overtime_minutes) || 0)
+  const approvedMinutes = Math.max(0, Number(log.regular_minutes) || 0) + Math.max(0, Number(log.overtime_minutes) || 0)
+  if (approvedMinutes > 0) return approvedMinutes
+  return minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes)
 }
 
 function calculateStaffPayroll(
@@ -2871,6 +2893,7 @@ function calculateStaffPayroll(
   attendanceSettings: StaffAttendanceSettings,
   periodStart: string,
   periodEnd: string,
+  periodReference?: StaffPayrollSourceSnapshot,
 ): StaffPayrollCalculation {
   const employeeShifts = shifts.filter((shift) => (
     shift.staff_profile_id === staffProfileId &&
@@ -2907,31 +2930,55 @@ function calculateStaffPayroll(
   const nightMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.night_minutes) || 0), 0)
   const holidayMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.holiday_minutes) || 0), 0)
   const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + leaveHoursInsidePeriod(leave, periodStart, periodEnd), 0)
-  const workedDays = new Set(employeeLogs.filter((log) => approvedAttendanceMinutes(log) > 0).map((log) => log.work_date)).size
+  const workedDates = Array.from(new Set(employeeLogs.filter((log) => approvedAttendanceMinutes(log) > 0).map((log) => log.work_date)))
+  const workedDays = workedDates.length
+  const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
+  const companyStandardDailyMinutes = Math.max(
+    1,
+    Math.round((Math.max(0, settings.standard_monthly_hours) * 60) / Math.max(1, settings.standard_monthly_days)),
+  )
+  const employeePayrollCalendar = resolveEmployeePayrollCalendar({
+    department: employee?.department,
+    payrollType,
+    companyWeeklyRestDays: attendanceSettings.weekly_rest_days,
+    companyStandardDailyMinutes,
+  })
   const fallbackPeriodBasis = payrollFallbackPeriodBasis({
     periodStart,
     periodEnd,
     standardMonthlyDays: settings.standard_monthly_days,
     standardMonthlyHours: settings.standard_monthly_hours,
-    weeklyRestDays: attendanceSettings.weekly_rest_days,
+    weeklyRestDays: employeePayrollCalendar.weeklyRestDays,
+    standardDailyMinutes: employeePayrollCalendar.standardDailyMinutes,
   })
   const standardDailyHours = fallbackPeriodBasis.standardDailyMinutes / 60
   const paidLeaveDays = paidLeaveHours / standardDailyHours
   const annualEntitlement = Math.max(0, Number(employee?.contract_status === 'ended' ? 0 : settings.annual_leave_days) || 0)
   const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
-  const scheduledDays = new Set(employeeShifts.map((shift) => shift.shift_date)).size
-  const periodStandardDays = Math.max(1, scheduledMinutes > 0 ? scheduledDays : fallbackPeriodBasis.workingDays)
-  const periodStandardMinutes = Math.max(1, scheduledMinutes > 0 ? scheduledMinutes : fallbackPeriodBasis.standardMinutes)
-  const payrollBasis = scheduledMinutes > 0 ? 'published_schedule' : 'working_calendar'
+  const periodStandardDays = Math.max(1, fallbackPeriodBasis.workingDays)
+  const periodStandardMinutes = Math.max(1, fallbackPeriodBasis.standardMinutes)
+  const payrollBasis = 'working_calendar'
   const payPercentage = employeeSalaryPercentageForPeriod(employee, periodEnd)
   const bonusPercentage = employeeBonusPercentageForPeriod(employee, periodEnd)
-  const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
   const hourlyRate = (employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)) * payPercentage
-  const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) * payPercentage : 0
+  const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) : 0
   const baseWorkedMinutes = regularMinutes > 0 ? regularMinutes : Math.max(0, workedMinutes - overtimeMinutes)
   const salaryPaidDays = Math.min(periodStandardDays, workedDays + paidLeaveDays)
+  const rawSalaryPaidDays = workedDays + paidLeaveDays
+  const weightedWorkedDays = workedDates.reduce(
+    (sum, workDate) => sum + employeeSalaryPercentageForPeriod(employee, workDate),
+    0,
+  )
+  const weightedLeaveDays = employeeLeaves.reduce(
+    (sum, leave) => sum + leaveSalaryUnitsInsidePeriod(leave, employee, periodStart, periodEnd, standardDailyHours),
+    0,
+  )
+  const weightedSalaryPaidDays = (weightedWorkedDays + weightedLeaveDays) * Math.min(
+    1,
+    periodStandardDays / Math.max(1, rawSalaryPaidDays),
+  )
   const salaryPaidMinutes = monthlyBasePay > 0
-    ? Math.round(salaryPaidDays * periodStandardMinutes / periodStandardDays)
+    ? Math.round(weightedSalaryPaidDays * periodStandardMinutes / periodStandardDays)
     : baseWorkedMinutes + Math.round(paidLeaveHours * 60)
   const hourlyBasePay = calculateTimesheetBasePay({
     payrollType,
@@ -2939,6 +2986,7 @@ function calculateStaffPayroll(
     hourlyRate,
     periodStandardDays,
     salaryPaidDays,
+    weightedSalaryPaidDays,
     baseWorkedMinutes,
   })
   const overtimeMultiplier = Math.max(0, Number(settings.normal_overtime_multiplier) || 0)
@@ -2954,7 +3002,10 @@ function calculateStaffPayroll(
     (categorizedHolidayMinutes / 60) * hourlyRate * holidayMultiplier
   )
   const lunchAllowance = settings.lunch_allowance_vnd
-  const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * workedDays)
+  const mealDays = new Set(employeeLogs
+    .filter((log) => isMealAllowanceEligible(payrollType, approvedAttendanceMinutes(log), employeePayrollCalendar.standardDailyMinutes))
+    .map((log) => log.work_date)).size
+  const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * mealDays)
   const otherAllowances = employeeAdjustments
     .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
     .reduce((sum, item) => sum + item.amount_vnd, 0)
@@ -2985,18 +3036,28 @@ function calculateStaffPayroll(
   const contributionBase = settings.social_insurance_enabled && employee?.social_insurance_enrolled && normalizeStaffContractStatus(employee?.contract_status) === 'active'
     ? Math.max(0, Number(employee?.social_insurance_salary_vnd) || Number(employee?.base_salary_vnd) || 0)
     : 0
-  const employeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
+  const calculatedEmployeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
+  const employeeContributions = periodReference
+    ? Math.max(0, Number(periodReference.employee_insurance_vnd) || 0)
+    : calculatedEmployeeContributions
   const employerContributions = Math.round(contributionBase * employerContributionRate / 100)
-  const taxableIncome = Math.max(
+  const taxBases = calculatePayrollTaxBases({
+    grossIncome,
+    mealAllowance: autoLunchAllowance,
+    overtimePay,
+    employeeContributions,
+    personalDeduction: settings.personal_deduction_vnd,
+    dependentDeduction: Math.max(0, Number(employee?.dependents_count) || 0) * settings.dependent_deduction_vnd,
+  })
+  const employeePitRate = Math.max(
     0,
-    grossIncome - employeeContributions - settings.personal_deduction_vnd - Math.max(0, Number(employee?.dependents_count) || 0) * settings.dependent_deduction_vnd,
+    Number(periodReference?.source_payload?.pit_rate_percent) || Number(employee?.pit_withholding_rate) || 0,
   )
-  const employeePitRate = Math.max(0, Number(employee?.pit_withholding_rate) || 0)
   const pitWithheld = !settings.personal_income_tax_enabled
     ? 0
     : employeePitRate > 0
-      ? Math.round(Math.max(0, grossIncome - employeeContributions) * employeePitRate / 100)
-      : calculateProgressivePit(taxableIncome, settings.pit_brackets)
+      ? Math.round(taxBases.shortTermWithholdingBase * employeePitRate / 100)
+      : calculateProgressivePit(taxBases.progressiveTaxableIncome, settings.pit_brackets)
   const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
   const companyCost = Math.max(0, grossIncome + employerContributions)
 
@@ -3008,6 +3069,7 @@ function calculateStaffPayroll(
     payrollBasis,
     workedMinutes,
     workedDays,
+    mealDays,
     salaryPaidDays,
     regularMinutes,
     salaryPaidMinutes,
@@ -3046,6 +3108,7 @@ function emptyStaffPayrollCalculation(profileId = ''): StaffPayrollCalculation {
     payrollBasis: 'working_calendar',
     workedMinutes: 0,
     workedDays: 0,
+    mealDays: 0,
     salaryPaidDays: 0,
     regularMinutes: 0,
     salaryPaidMinutes: 0,
@@ -5330,9 +5393,15 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const staffPayrollCalculations = useMemo(() => {
     const map = new Map<string, StaffPayrollCalculation>()
     visibleStaffProfileOptions.forEach((staffProfile) => {
+      const employee = employeeProfileById.get(staffProfile.id)
+      const periodReference = payrollSourceSnapshots.find((snapshot) => (
+        snapshot.employee_code === employee?.employee_code &&
+        snapshot.period_start === payrollPeriodStart &&
+        snapshot.period_end === payrollPeriodEnd
+      ))
       map.set(staffProfile.id, calculateStaffPayroll(
         staffProfile.id,
-        employeeProfileById.get(staffProfile.id),
+        employee,
         attendanceShifts,
         attendanceLogs,
         leaveRequests,
@@ -5341,10 +5410,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         attendanceSettings,
         payrollPeriodStart,
         payrollPeriodEnd,
+        periodReference,
       ))
     })
     return map
-  }, [attendanceLogs, attendanceSettings, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, visibleStaffProfileOptions])
+  }, [attendanceLogs, attendanceSettings, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, payrollSourceSnapshots, visibleStaffProfileOptions])
   const selectedEmployeePayrollSummary = staffPayrollCalculations.get(selectedEmployeeStaffId) || emptyStaffPayrollCalculation(selectedEmployeeStaffId)
   const hrPayrollTotals = useMemo(() => {
     const rows = Array.from(staffPayrollCalculations.values())
@@ -7502,7 +7572,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           probationBonusPercentage: Number(employee?.probation_bonus_percentage) === 85 ? 85 : 100,
           probationBonusApplied: true,
           contributionBaseVnd: item.contributionBase,
-          policyReference: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master',
+          policyReference: 'VR_ Payroll July - 260805.xlsx · HR Employee Master',
         },
       }
     })
@@ -7510,8 +7580,27 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       .from('staff_payroll_items')
       .upsert(rows, { onConflict: 'payroll_run_id,profile_id' })
 
-    setStatus(itemError ? itemError.message : text.messages.payrollGenerated)
-    if (!itemError) {
+    const correctionResults = itemError ? [] : await Promise.all(rows.map((row) => (
+      supabase
+        .from('staff_payroll_items')
+        .update({
+          base_salary_vnd: row.base_salary_vnd,
+          overtime_pay_vnd: row.overtime_pay_vnd,
+          allowances_vnd: row.allowances_vnd,
+          employee_contributions_vnd: row.employee_contributions_vnd,
+          employer_contributions_vnd: row.employer_contributions_vnd,
+          pit_withholding_vnd: row.pit_withholding_vnd,
+          net_income_vnd: row.net_income_vnd,
+          company_cost_vnd: row.company_cost_vnd,
+          payslip_snapshot: row.payslip_snapshot,
+        })
+        .eq('payroll_run_id', row.payroll_run_id)
+        .eq('profile_id', row.profile_id)
+    )))
+    const correctionError = correctionResults.find((result) => result.error)?.error
+
+    setStatus(itemError?.message || correctionError?.message || text.messages.payrollGenerated)
+    if (!itemError && !correctionError) {
       setPayrollRunForm({ ...payrollRunForm, id: run.id })
       markStaffDataStale('hr')
       await loadHrData(true)
@@ -7660,7 +7749,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Scheduled hours': Number((calculation.scheduledMinutes / 60).toFixed(2)),
         'Worked hours': Number((calculation.workedMinutes / 60).toFixed(2)),
         'Worked days': calculation.workedDays,
-        'Meal days': calculation.workedDays,
+        'Meal days': calculation.mealDays,
         'Paid leave hours': Number(calculation.paidLeaveHours.toFixed(2)),
         'Paid leave days': Number(calculation.paidLeaveDays.toFixed(2)),
         'Salary-paid hours': Number((calculation.salaryPaidMinutes / 60).toFixed(2)),
@@ -7909,12 +7998,19 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const row = index + 5
       const employee = employeeByCode.get(String(source['Employee code'] || ''))
       const calculation = employee ? staffPayrollCalculations.get(employee.profile_id) : undefined
-      const mealPerDay = calculation && calculation.workedDays > 0
-        ? Math.round(calculation.mealAllowance / calculation.workedDays)
-        : hrSettings.lunch_allowance_vnd
-      const employeeRateValue = hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate
+      const periodReference = historicalSnapshots.find((snapshot) => snapshot.employee_code === employee?.employee_code)
+      const mealPerDay = hrSettings.lunch_allowance_vnd
+      const insuranceBaseValue = Math.max(0, Number(source['Insurance base (VND)']) || 0)
+      const employeeRateValue = periodReference
+        ? insuranceBaseValue > 0
+          ? periodReference.employee_insurance_vnd / insuranceBaseValue * 100
+          : 0
+        : hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate
       const employerRateValue = hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate
-      const pitRateValue = Math.max(0, Number(employee?.pit_withholding_rate) || 0)
+      const pitRateValue = Math.max(
+        0,
+        Number(periodReference?.source_payload?.pit_rate_percent) || Number(employee?.pit_withholding_rate) || 0,
+      )
       const basePay = Number(source['Base pay (VND)']) || 0
       const mealAllowance = Number(source['Meal allowance (VND)']) || 0
       const overtimePay = Number(source['Overtime pay (VND)']) || 0
@@ -7926,6 +8022,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const net = Number(source['Net payable (VND)']) || 0
       const employerInsurance = Number(source['Employer insurance (VND)']) || 0
       const companyCost = Number(source['Company cost (VND)']) || gross + employerInsurance
+      const taxBases = calculatePayrollTaxBases({
+        grossIncome: gross,
+        employeeContributions: employeeInsurance,
+        mealAllowance,
+        overtimePay,
+        personalDeduction: hrSettings.personal_deduction_vnd,
+        dependentDeduction: Math.max(0, Number(employee?.dependents_count) || 0) * hrSettings.dependent_deduction_vnd,
+      })
       const sourceBankTransferValue = Number(source['Bank transfer (VND)'])
       const bankTransfer = Number.isFinite(sourceBankTransferValue) ? sourceBankTransferValue : net
       const bankTransferCheck = !source['Bank name'] || !source['Bank account']
@@ -7947,13 +8051,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': hrSettings.normal_overtime_multiplier,
         'Night multiplier': hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100, 'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
         'Base pay (VND)': accountantFormula(`IF(H${row}>0,ROUND(H${row}*MIN(1,P${row}/MAX(1,K${row})),0),ROUND(P${row}*J${row},0))`, basePay, 'currency'),
-        'Meal allowance (VND)': accountantFormula(`ROUND(M${row}*T${row},0)`, mealAllowance, 'currency'),
+        'Meal allowance (VND)': accountantFormula(`ROUND(${calculation?.mealDays || 0}*T${row},0)`, mealAllowance, 'currency'),
         'Overtime pay (VND)': accountantFormula(`ROUND(MAX(0,Q${row}-R${row}-S${row})*J${row}*AD${row}+R${row}*J${row}*(AD${row}+${hrSettings.night_work_bonus_rate / 100}+${hrSettings.night_overtime_extra_rate / 100})+S${row}*J${row}*AF${row},0)`, overtimePay, 'currency'),
         'Gross income (VND)': accountantFormula(`MAX(0,SUM(AG${row}:AI${row})+U${row}+V${row})`, gross, 'currency'),
         'Insurance base (VND)': source['Insurance base (VND)'],
         'Employee insurance (VND)': accountantFormula(`ROUND(AK${row}*Y${row}/100,0)`, employeeInsurance, 'currency'),
-        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-${hrSettings.personal_deduction_vnd}-AC${row}*${hrSettings.dependent_deduction_vnd})`, Math.max(0, gross - employeeInsurance - hrSettings.personal_deduction_vnd - Math.max(0, Number(employee?.dependents_count) || 0) * hrSettings.dependent_deduction_vnd), 'currency'),
-        'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'<>"yes",0,IF(AB${row}>0,ROUND(MAX(0,AJ${row}-AL${row})*AB${row}/100,0),ROUND(${progressivePitExcelFormula(`AM${row}`, hrSettings.pit_brackets)},0)))`, pit, 'currency'),
+        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AH${row}-AI${row}-${hrSettings.personal_deduction_vnd}-AC${row}*${hrSettings.dependent_deduction_vnd})`, taxBases.progressiveTaxableIncome, 'currency'),
+        'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'<>"yes",0,IF(AB${row}>0,ROUND(MAX(0,AJ${row}-AL${row}-AI${row})*AB${row}/100,0),ROUND(${progressivePitExcelFormula(`AM${row}`, hrSettings.pit_brackets)},0)))`, pit, 'currency'),
         'Net payable (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AN${row}-X${row}-W${row})`, net, 'currency'),
         'Employer insurance (VND)': accountantFormula(`ROUND(AK${row}*Z${row}/100,0)`, employerInsurance, 'currency'),
         'Company cost (VND)': accountantFormula(`MAX(0,AJ${row}+AP${row})`, companyCost, 'currency'),
