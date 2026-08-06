@@ -8483,14 +8483,39 @@ body {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--vrena-mode-accent) 12%, transparent);
 }
 
-.app .return-mission-step.grace {
+.app .return-mission-relief {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 12px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.app .return-mission-relief svg {
+  flex: 0 0 auto;
+}
+
+.app .return-mission-relief.available {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-500) 7%, var(--vrena-surface));
   color: var(--vrena-cyan-700);
 }
 
-.app .return-mission-step.grace .return-mission-node {
-  border-color: color-mix(in srgb, var(--vrena-cyan-700) 45%, transparent);
-  background: color-mix(in srgb, var(--vrena-cyan-500) 10%, var(--vrena-surface));
-  color: var(--vrena-cyan-700);
+.app .return-mission-relief.protecting {
+  border-color: var(--vrena-mode-accent-border);
+  background: var(--vrena-mode-accent-soft);
+  color: var(--vrena-accent-text-strong);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-mode-accent) 10%, transparent);
+}
+
+.app .return-mission-relief.used {
+  background: color-mix(in srgb, var(--vrena-neutral-500) 7%, var(--vrena-surface));
 }
 
 .app .return-mission-meta {
@@ -10215,14 +10240,23 @@ body {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--vrena-orange-600) 17%, transparent);
   }
 
-  .app .return-mission-step.grace,
-  .app .return-mission-step.grace .return-mission-node {
+  .app .return-mission-relief.available {
+    border-color: color-mix(in srgb, var(--vrena-cyan-300) 30%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 9%, var(--vrena-neutral-900));
     color: var(--vrena-cyan-300);
   }
 
-  .app .return-mission-step.grace .return-mission-node {
-    border-color: color-mix(in srgb, var(--vrena-cyan-300) 44%, transparent);
-    background: color-mix(in srgb, var(--vrena-cyan-500) 11%, var(--vrena-neutral-900));
+  .app .return-mission-relief.protecting {
+    border-color: color-mix(in srgb, var(--vrena-orange-400) 52%, transparent);
+    background: color-mix(in srgb, var(--vrena-orange-600) 15%, var(--vrena-neutral-900));
+    color: var(--vrena-orange-300);
+    box-shadow: 0 9px 22px color-mix(in srgb, var(--vrena-orange-600) 18%, transparent);
+  }
+
+  .app .return-mission-relief.used {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 5%, var(--vrena-neutral-900));
+    color: var(--vrena-neutral-400);
   }
 
   .app .return-mission-status {

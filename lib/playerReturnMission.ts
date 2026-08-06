@@ -11,6 +11,14 @@ export type PlayerReturnMission = {
   targetWeeks: 2 | 4
 }
 
+export type PlayerReturnGraceState = 'available' | 'hidden' | 'protecting' | 'used'
+
+export function playerReturnGraceState(mission: PlayerReturnMission): PlayerReturnGraceState {
+  if (!mission.latestSession) return 'hidden'
+  if (!mission.graceUsed) return 'available'
+  return mission.currentWeekVisits > 0 ? 'used' : 'protecting'
+}
+
 function sessionDate(session: DatedSession) {
   if (!session.date) return null
   const value = new Date(`${session.date}T12:00:00`)
