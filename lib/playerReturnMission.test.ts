@@ -6,6 +6,7 @@ import {
   buildPlayerReturnMission,
   longestWeeklyRunWithGrace,
   nextVrenaWeekendReminderAt,
+  playerReturnGraceState,
   returnReminderDateKey,
 } from './playerReturnMission.ts'
 
@@ -50,6 +51,27 @@ test('returns a ready-to-start mission before the first checked-in visit', () =>
   assert.equal(mission.currentWeekVisits, 0)
   assert.equal(mission.graceAvailable, true)
   assert.equal(mission.targetWeeks, 2)
+  assert.equal(playerReturnGraceState(mission), 'hidden')
+})
+
+test('offers grace outside the play-week path and activates it only after a missed week', () => {
+  const available = buildPlayerReturnMission([
+    session('2026-08-03'),
+  ], new Date('2026-08-06T12:00:00'))
+  assert.equal(playerReturnGraceState(available), 'available')
+
+  const protecting = buildPlayerReturnMission([
+    session('2026-07-27'),
+  ], new Date('2026-08-10T12:00:00'))
+  assert.equal(protecting.currentWeekVisits, 0)
+  assert.equal(playerReturnGraceState(protecting), 'protecting')
+
+  const used = buildPlayerReturnMission([
+    session('2026-07-20'),
+    session('2026-08-03'),
+  ], new Date('2026-08-06T12:00:00'))
+  assert.equal(used.currentWeekVisits, 1)
+  assert.equal(playerReturnGraceState(used), 'used')
 })
 
 test('schedules the reminder for Saturday morning in Vietnam', () => {
