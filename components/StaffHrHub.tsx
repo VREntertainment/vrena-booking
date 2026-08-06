@@ -53,6 +53,19 @@ function StaffPeriodRangePicker({
   )
 }
 
+function leaveDateRangeTitle(
+  leaves: any[],
+  periodStart: string,
+  periodEnd: string,
+  formatDate: (value: string) => string,
+) {
+  return leaves.map((leave) => {
+    const start = leave.start_date < periodStart ? periodStart : leave.start_date
+    const end = leave.end_date > periodEnd ? periodEnd : leave.end_date
+    return start === end ? formatDate(start) : `${formatDate(start)} – ${formatDate(end)}`
+  }).join('\n')
+}
+
 function employeeMatchesDirectoryFilters(
   employee: any,
   groupFilter: string,
@@ -429,7 +442,8 @@ const hrCompletionCopy = {
     byMonth: 'Monthly salary',
     byHour: 'By hour',
     present: 'Present',
-    onLeave: 'On leave',
+    paidLeave: 'Paid leave',
+    unpaidLeave: 'Unpaid leave',
     lateArrival: 'Late arrival',
     earlyLeave: 'Early leave',
     shifts: 'shifts',
@@ -516,7 +530,8 @@ const hrCompletionCopy = {
     byMonth: 'Lương tháng',
     byHour: 'Theo giờ',
     present: 'Có mặt',
-    onLeave: 'Nghỉ phép',
+    paidLeave: 'Nghỉ có lương',
+    unpaidLeave: 'Nghỉ không lương',
     lateArrival: 'Đi trễ',
     earlyLeave: 'Về sớm',
     shifts: 'ca',
@@ -604,7 +619,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrSetupOptions,
     hrTab,
     isOwnerOrAdmin,
+    isPaidLeaveForEmployee,
     canRevealEmployeeKioskPin,
+    leaveHoursInsidePeriod,
     leaveRequests,
     normalizeHrAdjustmentStatus,
     normalizeHrAdjustmentType,
@@ -1859,7 +1876,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         <th>{text.labels.staffMember}</th>
                         <th>{completionText.payType}</th>
                         <th>{completionText.present}</th>
-                        <th>{completionText.onLeave}</th>
+                        <th>{completionText.paidLeave}</th>
+                        <th>{completionText.unpaidLeave}</th>
                         <th>{completionText.lateArrival}</th>
                         <th>{completionText.earlyLeave}</th>
                         <th>{text.labels.overtimeHours}</th>
@@ -1877,6 +1895,13 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           && leave.end_date >= payrollPeriodStart
                           && leave.start_date <= payrollPeriodEnd
                         ))
+                        const paidEmployeeLeaves = employeeLeaves.filter((leave: any) => isPaidLeaveForEmployee(leave, employee))
+                        const unpaidEmployeeLeaves = employeeLeaves.filter((leave: any) => !isPaidLeaveForEmployee(leave, employee))
+                        const unpaidLeaveMinutes = unpaidEmployeeLeaves.reduce((sum: number, leave: any) => (
+                          sum + (leaveHoursInsidePeriod(leave, payrollPeriodStart, payrollPeriodEnd) * 60)
+                        ), 0)
+                        const paidLeaveDates = leaveDateRangeTitle(paidEmployeeLeaves, payrollPeriodStart, payrollPeriodEnd, staffDateLabel)
+                        const unpaidLeaveDates = leaveDateRangeTitle(unpaidEmployeeLeaves, payrollPeriodStart, payrollPeriodEnd, staffDateLabel)
                         const presentShifts = employeeLogs.filter((log: any) => log.clock_in_at && log.clock_out_at).length
                         const lateLogs = employeeLogs.filter((log: any) => Number(log.late_minutes) > 0)
                         const earlyLogs = employeeLogs.filter((log: any) => Number(log.early_leave_minutes) > 0)
@@ -1891,7 +1916,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             </td>
                             <td>{Number(employee?.base_salary_vnd) > 0 ? completionText.byMonth : completionText.byHour}</td>
                             <td><strong>{presentShifts} {completionText.shifts}</strong><small>{hoursLabel(calculation.workedMinutes)}</small></td>
-                            <td><strong>{employeeLeaves.length || '—'}</strong><small>{employeeLeaves.length ? hoursLabel(calculation.paidLeaveHours * 60) : ''}</small></td>
+                            <td className={`staff-hr-leave-cell ${paidLeaveDates ? 'has-dates' : ''}`} title={paidLeaveDates || undefined}><strong>{paidEmployeeLeaves.length || '—'}</strong><small>{paidEmployeeLeaves.length ? hoursLabel(calculation.paidLeaveHours * 60) : ''}</small></td>
+                            <td className={`staff-hr-leave-cell ${unpaidLeaveDates ? 'has-dates' : ''}`} title={unpaidLeaveDates || undefined}><strong>{unpaidEmployeeLeaves.length || '—'}</strong><small>{unpaidEmployeeLeaves.length ? hoursLabel(unpaidLeaveMinutes) : ''}</small></td>
                             <td><strong>{lateLogs.length || '—'}{lateLogs.length ? ` ${completionText.occurrences}` : ''}</strong><small>{lateMinutes ? hoursLabel(lateMinutes) : ''}</small></td>
                             <td><strong>{earlyLogs.length || '—'}{earlyLogs.length ? ` ${completionText.occurrences}` : ''}</strong><small>{earlyMinutes ? hoursLabel(earlyMinutes) : ''}</small></td>
                             <td><strong>{calculation.overtimeMinutes > 0 ? hoursLabel(calculation.overtimeMinutes) : '—'}</strong></td>
