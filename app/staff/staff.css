@@ -8692,6 +8692,59 @@
   gap: 12px;
 }
 
+.app .staff-hr-timesheet-title {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-hr-period-picker {
+  display: grid;
+  grid-template-columns: auto minmax(116px, 1fr) auto minmax(116px, 1fr);
+  align-items: end;
+  gap: 7px;
+  min-width: 0;
+}
+
+.app .staff-hr-period-picker > svg {
+  align-self: center;
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-hr-period-picker > label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .staff-hr-period-picker > label > span {
+  color: var(--vrena-neutral-600);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.app .staff-hr-period-picker > span {
+  align-self: center;
+  color: var(--vrena-neutral-500);
+  font-weight: 850;
+}
+
+.app .staff-hr-period-picker .staff-picker-shell {
+  min-width: 0;
+  min-height: 38px;
+  height: 38px;
+}
+
+.app .staff-hr-period-picker .staff-picker-display {
+  min-height: 38px;
+  padding-inline: 8px;
+  font-size: 12px;
+}
+
+.app .staff-hr-accountant-period .staff-hr-period-picker {
+  min-width: 290px;
+}
+
 .app .staff-hr-timesheet-search {
   display: flex;
   align-items: center;
@@ -9465,6 +9518,27 @@
 }
 
 @media (max-width: 640px) {
+  .app .staff-hr-period-picker {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .app .staff-hr-period-picker > svg {
+    display: none;
+  }
+
+  .app .staff-hr-accountant-period .staff-hr-period-picker {
+    min-width: 0;
+  }
+
+  .app .staff-hr-timesheet-title,
+  .app .staff-hr-timesheet-search,
+  .app .staff-hr-approve-attendance {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+  }
+
   .app .staff-hr-settings-workspace {
     gap: 12px;
     padding: 10px;

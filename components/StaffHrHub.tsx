@@ -18,6 +18,41 @@ type StaffScheduleViewMode = 'employee' | 'shift'
 type EmployeeProfileSectionId = 'identity' | 'contract' | 'payroll' | 'bank' | 'contact' | 'store' | 'documents'
 type EmployeeDirectoryStatus = 'all' | 'active' | 'terminated'
 
+type StaffPeriodRangePickerProps = {
+  end: string
+  endLabel: string
+  onEndChange: (value: string) => void
+  onStartChange: (value: string) => void
+  PickerField: any
+  start: string
+  startLabel: string
+}
+
+function StaffPeriodRangePicker({
+  end,
+  endLabel,
+  onEndChange,
+  onStartChange,
+  PickerField,
+  start,
+  startLabel,
+}: StaffPeriodRangePickerProps) {
+  return (
+    <div className="staff-hr-period-picker" role="group">
+      <CalendarDays aria-hidden="true" size={18} />
+      <label>
+        <span>{startLabel}</span>
+        <PickerField ariaLabel={startLabel} type="date" value={start} onChange={onStartChange} />
+      </label>
+      <span aria-hidden="true">–</span>
+      <label>
+        <span>{endLabel}</span>
+        <PickerField ariaLabel={endLabel} type="date" value={end} onChange={onEndChange} />
+      </label>
+    </div>
+  )
+}
+
 function employeeMatchesDirectoryFilters(
   employee: any,
   groupFilter: string,
@@ -684,6 +719,22 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     store: false,
     documents: false,
   })
+  const updatePayrollPeriodStart = (value: string) => {
+    if (!value) return
+    setPayrollRunForm((current: any) => ({
+      ...current,
+      period_start: value,
+      period_end: current.period_end && current.period_end >= value ? current.period_end : value,
+    }))
+  }
+  const updatePayrollPeriodEnd = (value: string) => {
+    if (!value) return
+    setPayrollRunForm((current: any) => ({
+      ...current,
+      period_start: current.period_start && current.period_start <= value ? current.period_start : value,
+      period_end: value,
+    }))
+  }
   const employeeDirectoryGroups = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
     return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile: any) => (
@@ -1777,9 +1828,17 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
               {hrTab === 'timesheet' && (
                 <div className="staff-hr-table-panel">
                   <div className="staff-hr-panel-head staff-hr-timesheet-toolbar">
-                    <div>
+                    <div className="staff-hr-timesheet-title">
                       <h4>{text.hrTabs.timesheet}</h4>
-                      <p className="staff-helper-text">{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</p>
+                      <StaffPeriodRangePicker
+                        end={payrollPeriodEnd}
+                        endLabel={text.labels.periodEnd}
+                        onEndChange={updatePayrollPeriodEnd}
+                        onStartChange={updatePayrollPeriodStart}
+                        PickerField={StaffPickerField}
+                        start={payrollPeriodStart}
+                        startLabel={text.labels.periodStart}
+                      />
                     </div>
                     <label className="staff-hr-timesheet-search">
                       <Search aria-hidden="true" size={17} />
@@ -1857,7 +1916,15 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <p>{accountantCopy.subtitle}</p>
                     </div>
                     <div className="staff-hr-accountant-period">
-                      <span>{rangeLabel(payrollPeriodStart, payrollPeriodEnd)}</span>
+                      <StaffPeriodRangePicker
+                        end={payrollPeriodEnd}
+                        endLabel={text.labels.periodEnd}
+                        onEndChange={updatePayrollPeriodEnd}
+                        onStartChange={updatePayrollPeriodStart}
+                        PickerField={StaffPickerField}
+                        start={payrollPeriodStart}
+                        startLabel={text.labels.periodStart}
+                      />
                       <button className="primary" type="button" disabled={saving} onClick={() => void downloadPayrollExcel()}>
                         <Download aria-hidden="true" size={17} />{accountantCopy.download}
                       </button>
