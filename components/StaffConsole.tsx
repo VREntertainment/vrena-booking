@@ -38,6 +38,7 @@ import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeReco
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
 import { calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
 import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
+import { calculateTimesheetBasePay, payrollFallbackPeriodBasis } from '../lib/staffPayrollPeriod'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
@@ -573,8 +574,11 @@ type StaffPayrollCalculation = {
   profileId: string
   scheduledMinutes: number
   periodStandardMinutes: number
+  periodStandardDays: number
+  payrollBasis: 'published_schedule' | 'working_calendar'
   workedMinutes: number
   workedDays: number
+  salaryPaidDays: number
   regularMinutes: number
   salaryPaidMinutes: number
   overtimeMinutes: number
@@ -2836,19 +2840,6 @@ function countRestPeriodWarnings(shifts: StaffScheduleShift[], restPeriodMinutes
   }, 0)
 }
 
-function proratedMonthlyMinutes(periodStart: string, periodEnd: string, standardMonthlyHours: number) {
-  const [from, to] = orderedRange(periodStart, periodEnd)
-  let cursor = from
-  let minutes = 0
-  while (cursor <= to) {
-    const date = dateFromInput(cursor)
-    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-    minutes += (Math.max(0, standardMonthlyHours) * 60) / Math.max(1, daysInMonth)
-    cursor = addDays(cursor, 1)
-  }
-  return Math.round(minutes)
-}
-
 function leaveHoursInsidePeriod(leave: StaffLeaveRequest, periodStart: string, periodEnd: string) {
   const overlapStart = leave.start_date > periodStart ? leave.start_date : periodStart
   const overlapEnd = leave.end_date < periodEnd ? leave.end_date : periodEnd
@@ -2863,6 +2854,12 @@ function isPaidLeaveForEmployee(leave: StaffLeaveRequest, employee: StaffEmploye
   return leave.leave_type === 'annual' || leave.leave_type === 'public_holiday'
 }
 
+function approvedAttendanceMinutes(log: StaffAttendanceLog) {
+  const clockMinutes = minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes)
+  if (clockMinutes > 0) return clockMinutes
+  return Math.max(0, Number(log.regular_minutes) || 0) + Math.max(0, Number(log.overtime_minutes) || 0)
+}
+
 function calculateStaffPayroll(
   staffProfileId: string,
   employee: StaffEmployeeProfile | undefined,
@@ -2871,11 +2868,22 @@ function calculateStaffPayroll(
   leaves: StaffLeaveRequest[],
   adjustments: StaffHrAdjustment[],
   settings: StaffHrSettings,
+  attendanceSettings: StaffAttendanceSettings,
   periodStart: string,
   periodEnd: string,
 ): StaffPayrollCalculation {
-  const employeeShifts = shifts.filter((shift) => shift.staff_profile_id === staffProfileId && shift.shift_date >= periodStart && shift.shift_date <= periodEnd && activeShift(shift))
-  const employeeLogs = logs.filter((log) => log.staff_profile_id === staffProfileId && log.work_date >= periodStart && log.work_date <= periodEnd)
+  const employeeShifts = shifts.filter((shift) => (
+    shift.staff_profile_id === staffProfileId &&
+    shift.shift_date >= periodStart &&
+    shift.shift_date <= periodEnd &&
+    ['published', 'completed'].includes(shift.status)
+  ))
+  const employeeLogs = logs.filter((log) => (
+    log.staff_profile_id === staffProfileId &&
+    log.work_date >= periodStart &&
+    log.work_date <= periodEnd &&
+    log.approval_status === 'approved'
+  ))
   const employeeLeaves = leaves.filter((leave) => (
     leave.staff_profile_id === staffProfileId &&
     leave.status === 'approved' &&
@@ -2890,7 +2898,7 @@ function calculateStaffPayroll(
   ))
 
   const scheduledMinutes = employeeShifts.reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
-  const workedMinutes = employeeLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
+  const workedMinutes = employeeLogs.reduce((sum, log) => sum + approvedAttendanceMinutes(log), 0)
   const regularMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.regular_minutes) || 0), 0)
   const computedOvertimeMinutes = scheduledMinutes > 0
     ? Math.max(0, workedMinutes - (regularMinutes || Math.min(workedMinutes, scheduledMinutes)))
@@ -2899,23 +2907,40 @@ function calculateStaffPayroll(
   const nightMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.night_minutes) || 0), 0)
   const holidayMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.holiday_minutes) || 0), 0)
   const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + leaveHoursInsidePeriod(leave, periodStart, periodEnd), 0)
-  const workedDays = new Set(employeeLogs.filter((log) => minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes) > 0).map((log) => log.work_date)).size
-  const standardDailyHours = Math.max(1, settings.standard_monthly_hours / Math.max(1, settings.standard_monthly_days))
+  const workedDays = new Set(employeeLogs.filter((log) => approvedAttendanceMinutes(log) > 0).map((log) => log.work_date)).size
+  const fallbackPeriodBasis = payrollFallbackPeriodBasis({
+    periodStart,
+    periodEnd,
+    standardMonthlyDays: settings.standard_monthly_days,
+    standardMonthlyHours: settings.standard_monthly_hours,
+    weeklyRestDays: attendanceSettings.weekly_rest_days,
+  })
+  const standardDailyHours = fallbackPeriodBasis.standardDailyMinutes / 60
   const paidLeaveDays = paidLeaveHours / standardDailyHours
   const annualEntitlement = Math.max(0, Number(employee?.contract_status === 'ended' ? 0 : settings.annual_leave_days) || 0)
   const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
-  const configuredPeriodMinutes = proratedMonthlyMinutes(periodStart, periodEnd, settings.standard_monthly_hours)
-  const periodStandardMinutes = Math.max(1, configuredPeriodMinutes, scheduledMinutes)
+  const scheduledDays = new Set(employeeShifts.map((shift) => shift.shift_date)).size
+  const periodStandardDays = Math.max(1, scheduledMinutes > 0 ? scheduledDays : fallbackPeriodBasis.workingDays)
+  const periodStandardMinutes = Math.max(1, scheduledMinutes > 0 ? scheduledMinutes : fallbackPeriodBasis.standardMinutes)
+  const payrollBasis = scheduledMinutes > 0 ? 'published_schedule' : 'working_calendar'
   const payPercentage = employeeSalaryPercentageForPeriod(employee, periodEnd)
   const bonusPercentage = employeeBonusPercentageForPeriod(employee, periodEnd)
   const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
   const hourlyRate = (employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)) * payPercentage
   const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) * payPercentage : 0
   const baseWorkedMinutes = regularMinutes > 0 ? regularMinutes : Math.max(0, workedMinutes - overtimeMinutes)
-  const salaryPaidMinutes = baseWorkedMinutes + Math.round(paidLeaveHours * 60)
-  const hourlyBasePay = monthlyBasePay > 0
-    ? Math.round(monthlyBasePay * Math.min(1, salaryPaidMinutes / periodStandardMinutes))
-    : Math.round((baseWorkedMinutes / 60) * Math.max(0, hourlyRate))
+  const salaryPaidDays = Math.min(periodStandardDays, workedDays + paidLeaveDays)
+  const salaryPaidMinutes = monthlyBasePay > 0
+    ? Math.round(salaryPaidDays * periodStandardMinutes / periodStandardDays)
+    : baseWorkedMinutes + Math.round(paidLeaveHours * 60)
+  const hourlyBasePay = calculateTimesheetBasePay({
+    payrollType,
+    monthlyBasePay,
+    hourlyRate,
+    periodStandardDays,
+    salaryPaidDays,
+    baseWorkedMinutes,
+  })
   const overtimeMultiplier = Math.max(0, Number(settings.normal_overtime_multiplier) || 0)
   const nightMultiplier = Math.max(0, Number(settings.night_overtime_multiplier) || 0)
   const holidayMultiplier = Math.max(0, Number(settings.holiday_overtime_multiplier) || 0)
@@ -2979,8 +3004,11 @@ function calculateStaffPayroll(
     profileId: staffProfileId,
     scheduledMinutes,
     periodStandardMinutes,
+    periodStandardDays,
+    payrollBasis,
     workedMinutes,
     workedDays,
+    salaryPaidDays,
     regularMinutes,
     salaryPaidMinutes,
     overtimeMinutes,
@@ -3014,8 +3042,11 @@ function emptyStaffPayrollCalculation(profileId = ''): StaffPayrollCalculation {
     profileId,
     scheduledMinutes: 0,
     periodStandardMinutes: 0,
+    periodStandardDays: 0,
+    payrollBasis: 'working_calendar',
     workedMinutes: 0,
     workedDays: 0,
+    salaryPaidDays: 0,
     regularMinutes: 0,
     salaryPaidMinutes: 0,
     overtimeMinutes: 0,
@@ -5307,12 +5338,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         leaveRequests,
         hrAdjustments,
         hrSettings,
+        attendanceSettings,
         payrollPeriodStart,
         payrollPeriodEnd,
       ))
     })
     return map
-  }, [attendanceLogs, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, visibleStaffProfileOptions])
+  }, [attendanceLogs, attendanceSettings, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, visibleStaffProfileOptions])
   const selectedEmployeePayrollSummary = staffPayrollCalculations.get(selectedEmployeeStaffId) || emptyStaffPayrollCalculation(selectedEmployeeStaffId)
   const hrPayrollTotals = useMemo(() => {
     const rows = Array.from(staffPayrollCalculations.values())
@@ -7579,6 +7611,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       '',
       `${text.labels.workedHours}: ${hoursLabel(calculation.workedMinutes)}`,
       `Paid leave: ${Number(calculation.paidLeaveDays.toFixed(2))} ${text.days} / ${Number(calculation.paidLeaveHours.toFixed(2))}h`,
+      `Payroll basis: ${calculation.payrollBasis === 'published_schedule' ? 'published schedule' : 'working calendar'} (${Number(calculation.periodStandardDays.toFixed(2))} days)`,
+      `Salary-paid days: ${Number(calculation.salaryPaidDays.toFixed(2))}`,
       `Salary-paid hours: ${hoursLabel(calculation.salaryPaidMinutes)}`,
       `${text.labels.overtimeHours}: ${hoursLabel(calculation.overtimeMinutes)}`,
       `${text.labels.leaveBalance}: ${Number(calculation.leaveBalanceDays.toFixed(2))} ${text.days}`,
@@ -7609,6 +7643,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const calculatedPayrollRows: Array<Record<string, unknown>> = visibleStaffProfileOptions.map((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
+      const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
       return {
         'Employee code': employee?.employee_code || '',
         Employee: employee?.legal_name || customerName(staffProfile, text),
@@ -7617,7 +7652,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Contract status': text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)],
         'Bank name': employee?.bank_name || '',
         'Bank account': employee?.bank_account_number || '',
-        'Contract salary (VND)': Math.max(0, Number(employee?.base_salary_vnd) || 0),
+        'Contract salary (VND)': payrollType === 'hourly' ? 0 : Math.max(0, Number(employee?.base_salary_vnd) || 0),
         'Configured hourly rate (VND)': Math.max(0, Number(employee?.hourly_rate_vnd) || 0),
         'Recurring monthly bonus (VND)': Math.max(0, Number(employee?.monthly_bonus_vnd) || 0),
         'Payroll hourly rate (VND)': Math.round(calculation.hourlyRate),
@@ -7648,9 +7683,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Company cost (VND)': calculation.companyCost,
         'Rest alerts': calculation.restWarningCount,
         Notes: employee?.payroll_note || '',
+        'Payroll basis': calculation.payrollBasis === 'published_schedule' ? 'Published schedule' : 'Working calendar',
+        'Period standard days': Number(calculation.periodStandardDays.toFixed(2)),
+        'Salary-paid days': Number(calculation.salaryPaidDays.toFixed(2)),
       }
     })
-    const historicalPayrollRows: Array<Record<string, unknown>> = historicalSnapshots.map((snapshot) => ({
+    const historicalSnapshotNumber = (snapshot: StaffPayrollSourceSnapshot, key: string, fallback = 0) => {
+      const value = Number(snapshot.source_payload?.[key])
+      return Number.isFinite(value) ? value : fallback
+    }
+    const historicalPayrollRows: Array<Record<string, unknown>> = historicalSnapshots.map((snapshot) => {
+      const standardHoursPerDay = snapshot.employment_status?.toLowerCase().includes('office') ? 8 : 6.5
+      const insuranceBase = historicalSnapshotNumber(
+        snapshot,
+        'insurance_base_vnd',
+        snapshot.employee_insurance_vnd > 0 ? snapshot.contract_rate_vnd : 0,
+      )
+      return {
       'Employee code': snapshot.employee_code,
       Employee: snapshot.employee_name,
       Department: snapshot.division || '',
@@ -7661,7 +7710,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       'Contract salary (VND)': snapshot.contract_rate_vnd,
       'Configured hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : 0,
       'Payroll hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : '',
-      'Period standard hours': snapshot.basic_days || '',
+      'Period standard hours': snapshot.basic_days === null ? '' : Number((snapshot.basic_days * standardHoursPerDay).toFixed(2)),
       'Scheduled hours': '',
       'Worked hours': snapshot.worked_minutes === null ? '' : Number((snapshot.worked_minutes / 60).toFixed(2)),
       'Worked days': snapshot.worked_days ?? '',
@@ -7674,22 +7723,25 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       'Holiday hours': 0,
       'Base pay (VND)': snapshot.base_pay_vnd,
       'Meal allowance (VND)': snapshot.meal_allowance_vnd,
-      'Other allowances (VND)': 0,
+      'Other allowances (VND)': historicalSnapshotNumber(snapshot, 'other_income_vnd'),
       'Overtime pay (VND)': snapshot.overtime_pay_vnd,
       'Bonuses (VND)': 0,
       'Gross income (VND)': snapshot.gross_income_vnd,
-      'Insurance base (VND)': snapshot.employee_insurance_vnd > 0 ? snapshot.contract_rate_vnd : 0,
+      'Insurance base (VND)': insuranceBase,
       'Employee insurance (VND)': snapshot.employee_insurance_vnd,
+      'Taxable income (VND)': snapshot.taxable_income_vnd,
       'PIT withheld (VND)': snapshot.pit_withheld_vnd,
       'Advances (VND)': 0,
       'Deductions (VND)': 0,
       'Net payable (VND)': snapshot.net_payable_vnd,
       'Employer insurance (VND)': '',
       'Company cost (VND)': '',
+      'Bank transfer (VND)': historicalSnapshotNumber(snapshot, 'bank_transfer_vnd', snapshot.net_payable_vnd),
       'Rest alerts': '',
       Notes: snapshot.details || '',
-    }))
-    const payrollRows = historicalPayrollRows.length > 0 ? historicalPayrollRows : calculatedPayrollRows
+      }
+    })
+    const payrollRows = calculatedPayrollRows
 
     const attendanceRows = attendanceLogs
       .filter((log) => log.work_date >= periodStart && log.work_date <= periodEnd)
@@ -7704,7 +7756,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           'Clock in': log.clock_in_at || '',
           'Clock out': log.clock_out_at || '',
           'Break minutes': Math.max(0, Number(log.break_minutes) || 0),
-          'Worked hours': Number((minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes) / 60).toFixed(2)),
+          'Worked hours': Number((approvedAttendanceMinutes(log) / 60).toFixed(2)),
           'Regular hours': Number((Math.max(0, Number(log.regular_minutes) || 0) / 60).toFixed(2)),
           'Overtime hours': Number((Math.max(0, Number(log.overtime_minutes) || 0) / 60).toFixed(2)),
           'Night hours': Number((Math.max(0, Number(log.night_minutes) || 0) / 60).toFixed(2)),
@@ -7756,11 +7808,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     const calculationBasisRows = [
       { Setting: 'Report period', Value: `${periodStart} to ${periodEnd}`, Notes: 'Selected in the Payroll tab' },
-      { Setting: 'Payroll data source', Value: historicalPayrollRows.length > 0 ? 'Protected historical snapshot' : 'Live HR attendance and payroll data', Notes: historicalPayrollRows.length > 0 ? 'Exact reconciled period imported from the source workbook' : 'Calculated when the Excel file is generated' },
+      { Setting: 'Payroll data source', Value: 'Live HR attendance and payroll data', Notes: historicalPayrollRows.length > 0 ? 'The imported source payroll is exported separately for employee-by-employee comparison.' : 'Calculated when the Excel file is generated.' },
       { Setting: 'Reference workbook', Value: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master', Notes: 'HR Employee Master is authoritative for employee status, contract periods, payroll type, salary, and insurance enrollment. Reconcile remains authoritative for the July historical snapshot.' },
       { Setting: 'Reference workbook URL', Value: 'https://docs.google.com/spreadsheets/d/1UbmITiVHdogTU8zOhHRFS4NmZn6unL_XsZms16zIZfA', Notes: '' },
-      { Setting: 'Standard monthly days', Value: hrSettings.standard_monthly_days, Notes: 'July reference: 26 days for venue staff' },
-      { Setting: 'Standard monthly hours', Value: hrSettings.standard_monthly_hours, Notes: 'July reference: 169 hours for 6.5-hour venue days; a larger published schedule is used when applicable' },
+      { Setting: 'Monthly payroll denominator', Value: 'Published employee schedule for the selected period', Notes: 'Changes with each month. Approved attendance and paid leave are the payable numerator.' },
+      { Setting: 'Fallback daily hours', Value: Number((hrSettings.standard_monthly_hours / Math.max(1, hrSettings.standard_monthly_days)).toFixed(2)), Notes: `Applied to the selected period's working-calendar days when an employee has no published schedule. Weekly rest days: ${attendanceSettings.weekly_rest_days.join(', ')} (0 = Sunday).` },
       { Setting: 'Meal allowance per worked day (VND)', Value: hrSettings.lunch_allowance_vnd, Notes: 'July reference: 35,000 VND per worked day' },
       { Setting: 'Normal overtime multiplier', Value: hrSettings.normal_overtime_multiplier, Notes: 'July reference: 150%' },
       { Setting: 'Night overtime multiplier', Value: hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100, Notes: 'Ordinary OT multiplier plus night-work and night-OT premiums' },
@@ -7874,6 +7926,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const net = Number(source['Net payable (VND)']) || 0
       const employerInsurance = Number(source['Employer insurance (VND)']) || 0
       const companyCost = Number(source['Company cost (VND)']) || gross + employerInsurance
+      const sourceBankTransferValue = Number(source['Bank transfer (VND)'])
+      const bankTransfer = Number.isFinite(sourceBankTransferValue) ? sourceBankTransferValue : net
+      const bankTransferCheck = !source['Bank name'] || !source['Bank account']
+        ? 'MISSING BANK'
+        : Math.abs(bankTransfer - net) > 1
+          ? 'CHECK TRANSFER'
+          : 'OK'
       return {
         'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
         'Employment type': source['Employment type'], 'Contract status': source['Contract status'], Bank: source['Bank name'], 'Bank account': source['Bank account'],
@@ -7898,9 +7957,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Net payable (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AN${row}-X${row}-W${row})`, net, 'currency'),
         'Employer insurance (VND)': accountantFormula(`ROUND(AK${row}*Z${row}/100,0)`, employerInsurance, 'currency'),
         'Company cost (VND)': accountantFormula(`MAX(0,AJ${row}+AP${row})`, companyCost, 'currency'),
-        'Bank transfer (VND)': accountantFormula(`AO${row}`, net, 'currency'),
-        Check: accountantFormula(`IF(OR(A${row}="",B${row}=""),"MISSING EMPLOYEE",IF(OR(F${row}="",G${row}=""),"MISSING BANK",IF(ABS(AR${row}-AO${row})>1,"CHECK TRANSFER","OK")))`, source['Bank name'] && source['Bank account'] ? 'OK' : 'MISSING BANK'),
+        'Bank transfer (VND)': accountantFormula(`AO${row}`, bankTransfer, 'currency'),
+        Check: accountantFormula(`IF(OR(A${row}="",B${row}=""),"MISSING EMPLOYEE",IF(OR(F${row}="",G${row}=""),"MISSING BANK",IF(ABS(AR${row}-AO${row})>1,"CHECK TRANSFER","OK")))`, bankTransferCheck),
         Notes: source.Notes,
+        'Payroll basis': source['Payroll basis'] || '',
+        'Period standard days': source['Period standard days'] ?? '',
+        'Salary-paid days': source['Salary-paid days'] ?? '',
       }
     })
     const payrollFirstRow = 5
@@ -7916,8 +7978,37 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       return row
     }, { __xlsxRowStyle: 'total' })
 
+    const payrollFormulaRowByEmployeeCode = new Map(
+      payrollFormulaRows.map((row, index) => [String(row['Employee code'] || ''), index + payrollFirstRow]),
+    )
+    const historicalComparisonRows = historicalSnapshots.map((snapshot, index) => {
+      const row = index + payrollFirstRow
+      const payrollRow = payrollFormulaRowByEmployeeCode.get(snapshot.employee_code)
+      const sourceBankTransfer = historicalSnapshotNumber(snapshot, 'bank_transfer_vnd', snapshot.net_payable_vnd)
+      const calculatedGross = payrollRow ? Number((payrollFormulaRows[payrollRow - payrollFirstRow]?.['Gross income (VND)'] as { result?: number })?.result || 0) : 0
+      const calculatedNet = payrollRow ? Number((payrollFormulaRows[payrollRow - payrollFirstRow]?.['Net payable (VND)'] as { result?: number })?.result || 0) : 0
+      return {
+        'Employee code': snapshot.employee_code,
+        Employee: snapshot.employee_name,
+        'Source basic days': snapshot.basic_days ?? '',
+        'Source worked days': snapshot.worked_days ?? '',
+        'Source worked hours': snapshot.worked_minutes === null ? '' : Number((snapshot.worked_minutes / 60).toFixed(2)),
+        'Source gross (VND)': snapshot.gross_income_vnd,
+        'Calculated gross (VND)': payrollRow ? accountantFormula(`'Payroll Formulas'!AJ${payrollRow}`, calculatedGross, 'currency') : 0,
+        'Gross difference (VND)': accountantFormula(`G${row}-F${row}`, calculatedGross - snapshot.gross_income_vnd, 'currency'),
+        'Source employee insurance (VND)': snapshot.employee_insurance_vnd,
+        'Source PIT (VND)': snapshot.pit_withheld_vnd,
+        'Source net (VND)': snapshot.net_payable_vnd,
+        'Calculated net (VND)': payrollRow ? accountantFormula(`'Payroll Formulas'!AO${payrollRow}`, calculatedNet, 'currency') : 0,
+        'Net difference (VND)': accountantFormula(`L${row}-K${row}`, calculatedNet - snapshot.net_payable_vnd, 'currency'),
+        'Source bank transfer (VND)': sourceBankTransfer,
+        Check: accountantFormula(`IF(ABS(H${row})<=1,"GROSS MATCH",IF(ABS(M${row})<=1,"NET MATCH","REVIEW"))`, Math.abs(calculatedGross - snapshot.gross_income_vnd) <= 1 ? 'GROSS MATCH' : Math.abs(calculatedNet - snapshot.net_payable_vnd) <= 1 ? 'NET MATCH' : 'REVIEW'),
+        Notes: snapshot.details || '',
+      }
+    })
+
     const summaryRows = [
-      { Metric: 'Payroll period', Value: `${periodStart} to ${periodEnd}`, Status: historicalPayrollRows.length > 0 ? 'Protected historical snapshot' : 'Live HR data' },
+      { Metric: 'Payroll period', Value: `${periodStart} to ${periodEnd}`, Status: historicalPayrollRows.length > 0 ? 'Live calculation with imported source comparison' : 'Live HR data' },
       { Metric: 'Headcount', Value: accountantFormula(`COUNTA('Payroll Formulas'!A${payrollFirstRow}:A${payrollLastRow})`, payrollFormulaRows.length, 'integer'), Status: 'Employees included' },
       { Metric: 'Gross pay (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AJ${payrollFirstRow}:AJ${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Gross income (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
       { Metric: 'Employee insurance (VND)', Value: accountantFormula(`SUM('Payroll Formulas'!AL${payrollFirstRow}:AL${payrollLastRow})`, payrollFormulaRows.reduce((sum, row) => sum + Number((row['Employee insurance (VND)'] as { result?: number }).result || 0), 0), 'currency'), Status: 'Formula total' },
@@ -7996,6 +8087,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       { Step: 'Control', Action: 'Source workbook', Details: 'Functional specification: VR_Payroll_July_2026_Emile_V2. The app export is normalized for human HR and accountant review.' },
     ]
 
+    const historicalComparisonSheets = historicalSnapshots.length > 0
+      ? [
+          { title: 'Source Payroll', description: 'Protected source payroll imported from the authoritative workbook. These values are reference inputs, not the live calculation.', rows: historicalPayrollRows },
+          { title: 'Source Comparison', description: 'Employee-by-employee comparison between the timesheet-based live calculation and the authoritative source payroll.', rows: historicalComparisonRows },
+        ]
+      : []
+
     await downloadExcel(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, [
       { title: 'Instructions', description: 'Use this workbook as the accountant-ready audit trail for the selected VRena payroll period.', rows: instructionRows },
       { title: 'Summary', description: 'Formula-linked payroll totals and handoff status.', rows: summaryRows },
@@ -8009,6 +8107,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       { title: 'Payslips', description: 'Formula-linked payslip register for every employee in the selected period.', rows: payslipRows },
       { title: 'Bank Transfer', description: 'Bank-ready net payment register with missing-detail controls.', rows: bankTransferRows },
       { title: 'Reconciliation', description: 'Net payroll must equal the bank-transfer register employee by employee.', rows: reconciliationRows },
+      ...historicalComparisonSheets,
       { title: 'Calculation Basis', description: 'Company payroll settings and 2026 policy references used by the workbook.', rows: calculationBasisRows },
     ], text)
   }
