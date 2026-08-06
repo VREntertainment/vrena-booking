@@ -150,6 +150,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     rememberFailedAvatarUrl,
     rememberLogin,
     replayOnboardingTour,
+    scheduleReturnReminder,
     removeTotpFactor,
     resetCaptcha,
     saveProfile,
@@ -345,6 +346,8 @@ export default function BookingProfileView({ context }: { context: any }) {
               <ProfileAchievementsPanel
                 language={language}
                 mySessions={mySessions}
+                onJoinSession={() => setActiveView('sessions')}
+                onScheduleReturnReminder={scheduleReturnReminder}
                 playerStats={playerStats}
                 profile={profile}
                 text={text}

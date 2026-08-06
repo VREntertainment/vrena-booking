@@ -15,8 +15,8 @@ export type StaffAchievementAwardCatalogItem = {
 const retentionAchievementCatalog: Array<Pick<RetentionAchievement, 'category' | 'description' | 'id' | 'title'>> = [
   { category: 'special', id: 'first-blood', title: 'First Blood', description: 'Complete your first checked-in session.' },
   { category: 'comeback', id: 'weekly-warrior', title: 'Weekly Warrior', description: 'Play one checked-in session this week.' },
-  { category: 'comeback', id: 'streak-builder', title: 'Streak Builder', description: 'Play in two consecutive weeks.' },
-  { category: 'comeback', id: 'arena-regular', title: 'Arena Regular', description: 'Play in four consecutive weeks.' },
+  { category: 'comeback', id: 'streak-builder', title: 'Streak Builder', description: 'Play in two active weeks. One grace week is allowed.' },
+  { category: 'comeback', id: 'arena-regular', title: 'Arena Regular', description: 'Play in four active weeks. One grace week is allowed.' },
   { category: 'comeback', id: 'back-for-more', title: 'Back for More', description: 'Return after a break of 30 days or more.' },
   { category: 'explore', id: 'perfect-rotation', title: 'Perfect Rotation', description: 'Try every VRena game at least once.' },
   { category: 'explore', id: 'genre-explorer', title: 'Genre Explorer', description: 'Play at least one FPS/PVP game and one Escape game.' },

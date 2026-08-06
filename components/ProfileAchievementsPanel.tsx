@@ -91,6 +91,8 @@ import {
 import { formatWholePercent } from '../lib/playerStatsShare'
 import { supabase } from '../lib/supabase/client'
 import { shouldSkipImageOptimization } from './AvatarNode'
+import PlayerReturnMissionCard from './PlayerReturnMissionCard'
+import { buildPlayerReturnMission } from '../lib/playerReturnMission'
 
 type ProfileAchievementsPanelProps = {
   editor?: {
@@ -109,6 +111,8 @@ type ProfileAchievementsPanelProps = {
   language: LanguageCode
   manualAwardsOverride?: ManualProfileAchievementAward[]
   mySessions: AchievementSession[]
+  onJoinSession?: () => void
+  onScheduleReturnReminder?: () => Promise<{ message?: string; ok: boolean; scheduledFor?: string }>
   playerGameCountOverrides?: Record<string, number>
   playerStats: {
     averageAccuracy?: number | null
@@ -1080,6 +1084,8 @@ export default function ProfileAchievementsPanel({
   language,
   manualAwardsOverride,
   mySessions,
+  onJoinSession,
+  onScheduleReturnReminder,
   playerGameCountOverrides,
   playerStats,
   profile,
@@ -1250,6 +1256,14 @@ export default function ProfileAchievementsPanel({
       .sort((left, right) => achievementSessionSortValue(right).localeCompare(achievementSessionSortValue(left))),
     [achievementSessions, userId],
   )
+  const returnMission = useMemo(
+    () => buildPlayerReturnMission(completedAchievementSessions(achievementSessions, userId)),
+    [achievementSessions, userId],
+  )
+  const returnMissionGameTitle = useMemo(() => {
+    const gameId = returnMission.latestSession?.confirmed_game_id || returnMission.latestSession?.game_options?.[0]
+    return (gameId && gameTitleById.get(gameId)) || returnMission.latestSession?.name || 'Wild West'
+  }, [gameTitleById, returnMission.latestSession])
   const createdSessionDetails = useMemo(
     () => mySessions
       .filter((session) => session.owner_id === userId)
@@ -1653,6 +1667,16 @@ export default function ProfileAchievementsPanel({
   return (
     <div className="profile-achievements-panel">
       {editorToolbar}
+      {!editor && returnMission.latestSession && onJoinSession && onScheduleReturnReminder && (
+        <PlayerReturnMissionCard
+          gameTitle={returnMissionGameTitle}
+          language={language}
+          mission={returnMission}
+          onJoinSession={onJoinSession}
+          onScheduleReminder={onScheduleReturnReminder}
+          userId={userId}
+        />
+      )}
       <div className="achievement-rank-card">
         <div className="achievement-rank-main">
           <div className="achievement-rank-ring" style={{ '--rank-progress': `${levelProgress.progressToNext}%` } as CSSProperties}>

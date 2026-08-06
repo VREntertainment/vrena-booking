@@ -1,4 +1,5 @@
 import { games, type GameId, type GameInfo } from './bookingStaticData'
+import { longestWeeklyRunWithGrace } from './playerReturnMission'
 
 export type AchievementTier = 'none' | 'bronze' | 'silver' | 'gold' | 'mastered'
 export type AchievementState = 'locked' | 'unlocked' | 'mastered' | 'secret'
@@ -245,34 +246,8 @@ function weekKey(date: Date) {
   return weekStart.toISOString().slice(0, 10)
 }
 
-function weeksBetween(previousWeekKey: string, nextWeekKey: string) {
-  const previous = new Date(`${previousWeekKey}T00:00:00`).getTime()
-  const next = new Date(`${nextWeekKey}T00:00:00`).getTime()
-  return Math.round((next - previous) / (7 * 24 * 60 * 60 * 1000))
-}
-
 function longestWeeklyStreak(sessions: AchievementSession[]) {
-  const weekKeys = Array.from(new Set(sessions
-    .map(sessionDateValue)
-    .filter((date): date is Date => Boolean(date))
-    .map(weekKey)))
-    .sort()
-
-  if (weekKeys.length === 0) return 0
-
-  let longest = 1
-  let current = 1
-
-  for (let index = 1; index < weekKeys.length; index += 1) {
-    if (weeksBetween(weekKeys[index - 1], weekKeys[index]) === 1) {
-      current += 1
-    } else {
-      current = 1
-    }
-    longest = Math.max(longest, current)
-  }
-
-  return longest
+  return longestWeeklyRunWithGrace(sessions)
 }
 
 function maxGapDaysBetweenSessions(sessions: AchievementSession[]) {
@@ -633,8 +608,8 @@ export function buildRetentionAchievements(
   return [
     retentionAchievement('first-blood', 'First Blood', 'Complete your first checked-in session.', 'special', completedSessions.length, 1),
     retentionAchievement('weekly-warrior', 'Weekly Warrior', 'Play one checked-in session this week.', 'comeback', currentWeekPlayCount(completedSessions), 1),
-    retentionAchievement('streak-builder', 'Streak Builder', 'Play in two consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 2),
-    retentionAchievement('arena-regular', 'Arena Regular', 'Play in four consecutive weeks.', 'comeback', longestWeeklyStreak(completedSessions), 4),
+    retentionAchievement('streak-builder', 'Streak Builder', 'Play in two active weeks. One grace week is allowed.', 'comeback', longestWeeklyStreak(completedSessions), 2),
+    retentionAchievement('arena-regular', 'Arena Regular', 'Play in four active weeks. One grace week is allowed.', 'comeback', longestWeeklyStreak(completedSessions), 4),
     retentionAchievement('back-for-more', 'Back for More', 'Return after a break of 30 days or more.', 'comeback', maxGapDaysBetweenSessions(completedSessions), 30),
     retentionAchievement('perfect-rotation', 'Perfect Rotation', 'Try every VRena game at least once.', 'explore', gamesTried, games.length),
     retentionAchievement('genre-explorer', 'Genre Explorer', 'Play at least one FPS/PVP game and one Escape game.', 'explore', Math.min(2, (fpsGamesTried > 0 ? 1 : 0) + (escapeGamesTried > 0 ? 1 : 0)), 2),
