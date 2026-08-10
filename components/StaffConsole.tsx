@@ -8229,14 +8229,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     void [paidLeaveRows, adjustmentRows, contractCheckRows, payrollTotalRow, summaryRows, leaveBalanceRows, bankTransferRows, reconciliationRows, payslipRows, instructionRows, historicalComparisonSheets]
 
     try {
-      const { downloadAccountantPayrollWorkbook } = await import('../lib/accountantPayrollWorkbook')
-      await downloadAccountantPayrollWorkbook(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, {
-        periodStart,
-        periodEnd,
-        payrollRows: payrollFormulaRows,
-        employeeRows: employeeMasterRows,
-        attendanceRows,
-        calculationBasisRows,
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const accessToken = sessionData.session?.access_token || ''
+      const { submitAccountantPayrollDownload } = await import('../lib/accountantPayrollBrowserDownload')
+      submitAccountantPayrollDownload({
+        accessToken,
+        operatorToken: getStaffKioskOperatorToken(),
+        filename: `vrena-payroll-${periodStart}-${periodEnd}.xlsx`,
+        input: {
+          periodStart,
+          periodEnd,
+          payrollRows: payrollFormulaRows,
+          employeeRows: employeeMasterRows,
+          attendanceRows,
+          calculationBasisRows,
+        },
       })
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error))
