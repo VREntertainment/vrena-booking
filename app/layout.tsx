@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Suspense } from "react";
 import ContentStudioPreviewBridge from "../components/ContentStudioPreviewBridge";
+import GoogleAnalyticsConsent from "../components/GoogleAnalyticsConsent";
 import ProductAnalytics from "../components/ProductAnalytics";
+import { GOOGLE_ANALYTICS_ID } from "../lib/googleAnalytics";
 import { siteUrl } from "../lib/siteMetadata";
 import "./globals.css";
 
@@ -45,11 +48,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <Script id="vrena-booking-google-analytics-init" strategy="beforeInteractive">
+        {`window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};if(!window.__vrenaGoogleAnalyticsConfigured){window.__vrenaGoogleAnalyticsConfigured=true;window.gtag("consent","default",{ad_personalization:"denied",ad_storage:"denied",ad_user_data:"denied",analytics_storage:"denied",wait_for_update:500});window.gtag("js",new Date());window.gtag("config","${GOOGLE_ANALYTICS_ID}",{anonymize_ip:true,send_page_view:false})}`}
+      </Script>
       <body className="min-h-full flex flex-col">
         {children}
+        <footer className="booking-privacy-footer">
+          <span id="vrena-booking-mobile-privacy-choices-slot" />
+        </footer>
         <ContentStudioPreviewBridge />
         <Suspense fallback={null}>
           <ProductAnalytics />
+          <GoogleAnalyticsConsent />
         </Suspense>
         <Analytics />
         <SpeedInsights />

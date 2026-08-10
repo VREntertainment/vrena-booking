@@ -1,8 +1,9 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { CONSENT_CHANGE_EVENT, analyticsConsentGranted } from '@/lib/googleAnalytics'
 
 type AnalyticsEventName = 'page_view' | 'engagement' | 'search'
 
@@ -25,6 +26,15 @@ const CLIENT_KEY = 'vrena_product_analytics_client_id'
 const SESSION_KEY = 'vrena_product_analytics_session_id'
 const ATTRIBUTION_KEY = 'vrena_product_analytics_attribution'
 const INTERNAL_PATH = /^\/(staff|hr|admin)(\/|$)/
+
+function subscribeToAnalyticsConsent(listener: () => void) {
+  window.addEventListener(CONSENT_CHANGE_EVENT, listener)
+  return () => window.removeEventListener(CONSENT_CHANGE_EVENT, listener)
+}
+
+function readServerAnalyticsConsent() {
+  return false
+}
 
 function randomId() {
   return crypto.randomUUID()
@@ -102,11 +112,16 @@ function firstTouchAttribution() {
 
 export default function ProductAnalytics() {
   const pathname = usePathname()
+  const analyticsAllowed = useSyncExternalStore(
+    subscribeToAnalyticsConsent,
+    analyticsConsentGranted,
+    readServerAnalyticsConsent,
+  )
   const [authReady, setAuthReady] = useState(false)
   const accessTokenRef = useRef('')
   const pageRef = useRef<PageEngagement | null>(null)
   const sendEventRef = useRef<(event: AnalyticsEvent, beacon?: boolean) => void>(() => undefined)
-  const excluded = INTERNAL_PATH.test(pathname)
+  const excluded = !analyticsAllowed || INTERNAL_PATH.test(pathname)
 
   useEffect(() => {
     let active = true
@@ -127,7 +142,7 @@ export default function ProductAnalytics() {
 
   useEffect(() => {
     sendEventRef.current = (event, beacon = false) => {
-      if (INTERNAL_PATH.test(event.path)) return
+      if (!analyticsConsentGranted() || INTERNAL_PATH.test(event.path)) return
       try {
         const clientId = storageValue(localStorage, CLIENT_KEY, true)
         const sessionId = storageValue(sessionStorage, SESSION_KEY, true)

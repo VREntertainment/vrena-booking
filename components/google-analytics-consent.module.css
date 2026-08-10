@@ -1,0 +1,165 @@
+.panel {
+  position: fixed;
+  z-index: 2000;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  width: min(800px, calc(100% - 32px));
+  margin-inline: auto;
+  padding: clamp(18px, 2.4vw, 24px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  gap: 24px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--vrena-white) 95%, transparent);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(22px) saturate(1.08);
+}
+
+.copy h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.55rem);
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+}
+
+.copy p {
+  margin: 8px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.copy a {
+  margin-top: 8px;
+  display: inline-flex;
+  color: var(--vrena-accent-text);
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-underline-offset: 3px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.actions button,
+.fallbackSettingsButton {
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.primaryButton {
+  grid-column: 1 / -1;
+  min-height: 48px !important;
+  border: 1px solid var(--vrena-blue-600);
+  background: var(--vrena-blue-600);
+  color: var(--vrena-white);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-blue-600) 24%, transparent);
+}
+
+.primaryButton:hover {
+  background: var(--vrena-blue-700);
+}
+
+.secondaryButton,
+.fallbackSettingsButton {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-800);
+}
+
+.footerSettingsButton,
+.mobileFooterSettingsButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vrena-accent-text);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.footerSettingsButton:hover,
+.mobileFooterSettingsButton:hover {
+  text-decoration: underline;
+}
+
+.fallbackSettingsButton {
+  position: fixed;
+  z-index: 1900;
+  bottom: 12px;
+  left: 12px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+}
+
+.actions button:focus-visible,
+.copy a:focus-visible,
+.footerSettingsButton:focus-visible,
+.mobileFooterSettingsButton:focus-visible,
+.fallbackSettingsButton:focus-visible {
+  outline: 3px solid var(--vrena-blue-400);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .panel {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .panel {
+    padding: 18px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryButton {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .panel {
+    border-color: color-mix(in srgb, var(--vrena-white) 16%, transparent);
+    background: color-mix(in srgb, var(--vrena-neutral-900) 95%, transparent);
+    color: var(--vrena-white);
+  }
+
+  .copy p {
+    color: var(--vrena-neutral-300);
+  }
+
+  .secondaryButton,
+  .fallbackSettingsButton {
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-white);
+  }
+}
