@@ -7726,7 +7726,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   async function downloadPayrollExcel() {
     const [periodStart, periodEnd] = orderedRange(payrollPeriodStart, payrollPeriodEnd)
-    const accountantCategoryForEmployee = (employee: StaffEmployeeProfile | undefined) => {
+    const accountantClassificationForEmployee = (employee: StaffEmployeeProfile | undefined) => {
       const employmentType = normalizeStaffEmploymentType(employee?.employment_type)
       const contractStatus = normalizeStaffContractStatus(employee?.contract_status)
       const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
@@ -7738,15 +7738,15 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         (!laborStart || periodEnd < laborStart)
       )
       const probation = probationApplies || contractStatus === 'probation' || employmentType.startsWith('probation')
+      if (payrollType === 'manager') return { category: 'manager', probation }
       if (probation) {
-        if (payrollType === 'manager') return 'probation_manager'
-        if (payrollType === 'hourly' || employmentType === 'probation_part_time') return 'probation_part_time'
-        return 'probation_monthly'
+        if (payrollType === 'hourly' || employmentType === 'probation_part_time') return { category: 'probation_part_time', probation }
+        return { category: 'probation_monthly', probation }
       }
       if (payrollType === 'hourly') {
-        return employmentType === 'part_time' || employmentType === 'contractor' ? 'part_time' : 'official_hourly'
+        return { category: employmentType === 'part_time' || employmentType === 'contractor' ? 'part_time' : 'official_hourly', probation }
       }
-      return 'monthly'
+      return { category: 'monthly', probation }
     }
     const historicalSnapshots = payrollSourceSnapshots.filter((snapshot) => (
       snapshot.period_start === periodStart && snapshot.period_end === periodEnd
@@ -7755,8 +7755,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const employee = employeeProfileById.get(staffProfile.id)
       const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
       const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
+      const accountantClassification = accountantClassificationForEmployee(employee)
       return {
-        __accountantCategory: accountantCategoryForEmployee(employee),
+        __accountantCategory: accountantClassification.category,
+        __accountantProbation: accountantClassification.probation,
         'Employee code': employee?.employee_code || '',
         Employee: employee?.legal_name || customerName(staffProfile, text),
         Department: employee?.department || '',
@@ -7946,8 +7948,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const employeeByCode = new Map(Array.from(employeeProfileById.values()).map((employee) => [employee.employee_code || '', employee]))
     const employeeMasterRows = visibleStaffProfileOptions.map((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
+      const accountantClassification = accountantClassificationForEmployee(employee)
       return {
-        __accountantCategory: accountantCategoryForEmployee(employee),
+        __accountantCategory: accountantClassification.category,
+        __accountantProbation: accountantClassification.probation,
         'Employee code': employee?.employee_code || '',
         'Legal name': employee?.legal_name || customerName(staffProfile, text),
         'Employment status': employee?.active === false ? 'Inactive' : text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)],
@@ -8063,6 +8067,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           : 'OK'
       return {
         __accountantCategory: source.__accountantCategory,
+        __accountantProbation: source.__accountantProbation,
         'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
         'Employment type': source['Employment type'], 'Contract status': source['Contract status'], Bank: source['Bank name'], 'Bank account': source['Bank account'],
         'Contract salary (VND)': source['Contract salary (VND)'], 'Configured hourly rate (VND)': source['Configured hourly rate (VND)'],
