@@ -6,7 +6,7 @@ import {
   selectPlayerReturnVisual,
 } from './playerReturnVisual.ts'
 
-test('builds the visual pool only from unlocked collection and Trickster rewards', () => {
+test('builds the visual pool from the complete collection and Trickster catalog', () => {
   const pool = buildPlayerReturnVisualPool(
     [
       { game: { id: 'laser-tag', title: 'Laser Tag' }, state: 'unlocked', tier: 'bronze' },
@@ -20,7 +20,9 @@ test('builds the visual pool only from unlocked collection and Trickster rewards
 
   assert.deepEqual(pool.map((visual) => visual.id), [
     'achievement:laser-tag',
+    'achievement:wild-west',
     'trickster:weekly-warrior',
+    'trickster:arena-regular',
   ])
 })
 
@@ -59,7 +61,38 @@ test('prioritizes a newly unlocked reward while its celebration is pending', () 
   assert.equal(selected.id, 'trickster:weekly-warrior')
 })
 
-test('uses the fallback character when the player has no unlocked rewards', () => {
+test('lets every distinct character appear without requiring unlocks', () => {
+  const candidates = buildPlayerReturnVisualPool(
+    [
+      { game: { id: 'arc-of-the-covenant', title: 'Arc of the Covenant' }, state: 'locked', tier: 'none' },
+      { game: { id: 'castle-unspunnen', title: 'Castle Unspunnen' }, state: 'locked', tier: 'none' },
+      { game: { id: 'laser-tag', title: 'Laser Tag' }, state: 'locked', tier: 'none' },
+      { game: { id: 'mini-block-towers', title: 'Mini Block Towers' }, state: 'locked', tier: 'none' },
+      { game: { id: 'wild-west', title: 'Wild West' }, state: 'locked', tier: 'none' },
+    ],
+    [{ id: 'weekly-warrior', state: 'locked', title: 'Weekly Warrior' }],
+  )
+  const selectedImages = new Set<string>()
+
+  for (let index = 0; index < 200; index += 1) {
+    selectedImages.add(selectPlayerReturnVisual({
+      candidates,
+      dayKey: `2026-08-${String((index % 28) + 1).padStart(2, '0')}`,
+      userId: `player-${index}`,
+    }).imageSrc)
+  }
+
+  assert.deepEqual(selectedImages, new Set([
+    '/retention/alpine-sentinel.png',
+    '/retention/arena-builder.png',
+    '/retention/arena-laser-champion.png',
+    '/retention/escape-investigator.png',
+    '/retention/trickster-host.png',
+    '/retention/wild-west-cowboy.png',
+  ]))
+})
+
+test('uses the fallback character when the visual catalog is unavailable', () => {
   const selected = selectPlayerReturnVisual({
     candidates: [],
     dayKey: '2026-08-06',

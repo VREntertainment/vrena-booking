@@ -84,8 +84,8 @@ export function buildPlayerReturnVisualPool(
   gameAchievements: GameVisualAchievement[],
   tricksterAchievements: TricksterVisualAchievement[],
 ) {
+  // Characters are discovery art, not unlock rewards, so locked entries stay eligible.
   const gameVisuals = gameAchievements
-    .filter((achievement) => achievement.state !== 'locked' && achievement.tier !== 'none')
     .map((achievement): PlayerReturnVisual => ({
       id: `achievement:${achievement.game.id}`,
       imageSrc: gameVisualById[achievement.game.id],
@@ -94,7 +94,6 @@ export function buildPlayerReturnVisualPool(
     }))
 
   const tricksterVisuals = tricksterAchievements
-    .filter((achievement) => achievement.state !== 'locked')
     .map((achievement): PlayerReturnVisual => ({
       id: `trickster:${achievement.id}`,
       imageSrc: '/retention/trickster-host.png',
@@ -124,10 +123,9 @@ export function selectPlayerReturnVisual({
     if (featuredCandidate) return featuredCandidate
   }
 
-  const collectionVisuals = candidates.filter((candidate) => candidate.source === 'achievement')
-  const tricksterVisuals = candidates.filter((candidate) => candidate.source === 'trickster')
-  const sourceGroups = [collectionVisuals, tricksterVisuals].filter((group) => group.length > 0)
-  const sourceGroup = sourceGroups[stableHash(`${userId}:${dayKey}:source`) % sourceGroups.length]
+  const uniqueVisuals = [...new Map(
+    candidates.map((candidate) => [candidate.imageSrc, candidate]),
+  ).values()]
 
-  return sourceGroup[stableHash(`${userId}:${dayKey}:item`) % sourceGroup.length] ?? fallbackVisual
+  return uniqueVisuals[stableHash(`${userId}:${dayKey}:item`) % uniqueVisuals.length] ?? fallbackVisual
 }
