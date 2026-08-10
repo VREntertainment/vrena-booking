@@ -7726,6 +7726,28 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   async function downloadPayrollExcel() {
     const [periodStart, periodEnd] = orderedRange(payrollPeriodStart, payrollPeriodEnd)
+    const accountantCategoryForEmployee = (employee: StaffEmployeeProfile | undefined) => {
+      const employmentType = normalizeStaffEmploymentType(employee?.employment_type)
+      const contractStatus = normalizeStaffContractStatus(employee?.contract_status)
+      const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
+      const probationEnd = employee?.probation_end_date || ''
+      const laborStart = employee?.labor_start_date || ''
+      const probationApplies = Boolean(
+        (employee?.probation_start_date && periodEnd >= employee.probation_start_date) &&
+        (!probationEnd || periodEnd <= probationEnd) &&
+        (!laborStart || periodEnd < laborStart)
+      )
+      const probation = probationApplies || contractStatus === 'probation' || employmentType.startsWith('probation')
+      if (probation) {
+        if (payrollType === 'manager') return 'probation_manager'
+        if (payrollType === 'hourly' || employmentType === 'probation_part_time') return 'probation_part_time'
+        return 'probation_monthly'
+      }
+      if (payrollType === 'hourly') {
+        return employmentType === 'part_time' || employmentType === 'contractor' ? 'part_time' : 'official_hourly'
+      }
+      return 'monthly'
+    }
     const historicalSnapshots = payrollSourceSnapshots.filter((snapshot) => (
       snapshot.period_start === periodStart && snapshot.period_end === periodEnd
     ))
@@ -7734,6 +7756,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
       const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
       return {
+        __accountantCategory: accountantCategoryForEmployee(employee),
         'Employee code': employee?.employee_code || '',
         Employee: employee?.legal_name || customerName(staffProfile, text),
         Department: employee?.department || '',
@@ -7924,6 +7947,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const employeeMasterRows = visibleStaffProfileOptions.map((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       return {
+        __accountantCategory: accountantCategoryForEmployee(employee),
         'Employee code': employee?.employee_code || '',
         'Legal name': employee?.legal_name || customerName(staffProfile, text),
         'Employment status': employee?.active === false ? 'Inactive' : text.contractStatuses[normalizeStaffContractStatus(employee?.contract_status)],
@@ -8038,6 +8062,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           ? 'CHECK TRANSFER'
           : 'OK'
       return {
+        __accountantCategory: source.__accountantCategory,
         'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
         'Employment type': source['Employment type'], 'Contract status': source['Contract status'], Bank: source['Bank name'], 'Bank account': source['Bank account'],
         'Contract salary (VND)': source['Contract salary (VND)'], 'Configured hourly rate (VND)': source['Configured hourly rate (VND)'],
@@ -8198,22 +8223,24 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         ]
       : []
 
-    await downloadExcel(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, [
-      { title: 'Instructions', description: 'Use this workbook as the accountant-ready audit trail for the selected VRena payroll period.', rows: instructionRows },
-      { title: 'Summary', description: 'Formula-linked payroll totals and handoff status.', rows: summaryRows },
-      { title: 'Employee Master', description: 'Single source of truth exported from private HR employee records.', rows: employeeMasterRows },
-      { title: 'Contract Checks', description: 'Formula-driven validation of identity, pay rate, contract dates, and bank readiness.', rows: contractCheckRows },
-      { title: 'Attendance', description: 'Clock records inside the selected payroll period.', rows: attendanceRows },
-      { title: 'Leave Requests', description: 'Approved and pending leave requests overlapping the selected payroll period.', rows: paidLeaveRows },
-      { title: 'Leave Balance', description: 'Paid leave entitlement, use, closing balance, and termination payout control.', rows: leaveBalanceRows },
-      { title: 'Adjustments', description: 'Bonuses, allowances, deductions, advances, debts, and repayments affecting this period.', rows: adjustmentRows },
-      { title: 'Payroll Formulas', description: 'Every calculated payroll amount is a live Excel formula with the webapp result cached for immediate review.', rows: [...payrollFormulaRows, payrollTotalRow] },
-      { title: 'Payslips', description: 'Formula-linked payslip register for every employee in the selected period.', rows: payslipRows },
-      { title: 'Bank Transfer', description: 'Bank-ready net payment register with missing-detail controls.', rows: bankTransferRows },
-      { title: 'Reconciliation', description: 'Net payroll must equal the bank-transfer register employee by employee.', rows: reconciliationRows },
-      ...historicalComparisonSheets,
-      { title: 'Calculation Basis', description: 'Company payroll settings and 2026 policy references used by the workbook.', rows: calculationBasisRows },
-    ], text)
+    // Keep the normalized audit tables available while the exact accountant-template
+    // export is the active download path. They remain useful for parity checks and a
+    // controlled fallback without changing the workbook handed to the accountant.
+    void [paidLeaveRows, adjustmentRows, contractCheckRows, payrollTotalRow, summaryRows, leaveBalanceRows, bankTransferRows, reconciliationRows, payslipRows, instructionRows, historicalComparisonSheets]
+
+    try {
+      const { downloadAccountantPayrollWorkbook } = await import('../lib/accountantPayrollWorkbook')
+      await downloadAccountantPayrollWorkbook(`vrena-payroll-${periodStart}-${periodEnd}.xlsx`, {
+        periodStart,
+        periodEnd,
+        payrollRows: payrollFormulaRows,
+        employeeRows: employeeMasterRows,
+        attendanceRows,
+        calculationBasisRows,
+      })
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error))
+    }
   }
 
   function setAttendanceRange(start: string, end: string) {
