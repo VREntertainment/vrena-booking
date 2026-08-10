@@ -228,6 +228,8 @@ const accountantWorkspaceCopy = {
     title: 'Payroll & compliance',
     subtitle: 'One guided workflow from employee records to an accountant-ready workbook.',
     download: 'Download accountant Excel',
+    downloading: 'Preparing accountant Excel…',
+    downloadWait: 'Download can take up to 3 minutes. Do not close this page.',
     readiness: 'Payroll readiness',
     ready: 'Ready',
     review: 'Review',
@@ -251,6 +253,8 @@ const accountantWorkspaceCopy = {
     title: 'Bảng lương & tuân thủ',
     subtitle: 'Một quy trình hướng dẫn từ hồ sơ nhân viên đến file Excel sẵn sàng cho kế toán.',
     download: 'Tải Excel cho kế toán',
+    downloading: 'Đang chuẩn bị Excel cho kế toán…',
+    downloadWait: 'Quá trình tải xuống có thể mất đến 3 phút. Vui lòng không đóng trang này.',
     readiness: 'Mức độ sẵn sàng',
     ready: 'Sẵn sàng',
     review: 'Cần kiểm tra',
@@ -721,6 +725,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const [payslipDepartmentFilter, setPayslipDepartmentFilter] = useState('all')
   const [payslipLocationFilter, setPayslipLocationFilter] = useState('all')
   const [payslipSelectedEmployeeId, setPayslipSelectedEmployeeId] = useState(selectedEmployeeStaffId)
+  const [accountantDownloadPending, setAccountantDownloadPending] = useState(false)
   const [newEmployee, setNewEmployee] = useState<{
     email: string
     employmentType: StaffEmployeeRecordEmploymentType
@@ -751,6 +756,21 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       period_start: current.period_start && current.period_start <= value ? current.period_start : value,
       period_end: value,
     }))
+  }
+  useEffect(() => {
+    if (!accountantDownloadPending) return
+    const timeoutId = window.setTimeout(() => setAccountantDownloadPending(false), 180_000)
+    return () => window.clearTimeout(timeoutId)
+  }, [accountantDownloadPending])
+  const startAccountantDownload = async () => {
+    if (accountantDownloadPending) return
+    setAccountantDownloadPending(true)
+    try {
+      const started = await downloadPayrollExcel()
+      if (started === false) setAccountantDownloadPending(false)
+    } catch {
+      setAccountantDownloadPending(false)
+    }
   }
   const employeeDirectoryGroups = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
@@ -1951,9 +1971,25 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         start={payrollPeriodStart}
                         startLabel={text.labels.periodStart}
                       />
-                      <button className="primary" type="button" disabled={saving} onClick={() => void downloadPayrollExcel()}>
-                        <Download aria-hidden="true" size={17} />{accountantCopy.download}
-                      </button>
+                      <div className="staff-hr-accountant-download-action">
+                        <button
+                          aria-describedby={accountantDownloadPending ? 'staff-accountant-download-wait' : undefined}
+                          className="primary"
+                          type="button"
+                          disabled={saving || accountantDownloadPending}
+                          onClick={() => void startAccountantDownload()}
+                        >
+                          {accountantDownloadPending
+                            ? <RefreshCw aria-hidden="true" className="staff-spin" size={17} />
+                            : <Download aria-hidden="true" size={17} />}
+                          {accountantDownloadPending ? accountantCopy.downloading : accountantCopy.download}
+                        </button>
+                        {accountantDownloadPending ? (
+                          <p className="staff-hr-accountant-download-wait" id="staff-accountant-download-wait" role="status">
+                            {accountantCopy.downloadWait}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </header>
                   <div className="staff-hr-accountant-steps">

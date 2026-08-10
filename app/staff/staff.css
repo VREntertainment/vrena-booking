@@ -4074,6 +4074,22 @@
   min-height: 44px;
 }
 
+.app .staff-hr-accountant-download-action {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+.app .staff-hr-accountant-download-wait {
+  max-width: 330px;
+  margin: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .app .staff-hr-accountant-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4284,6 +4300,16 @@
     justify-content: center;
     max-width: 100%;
     width: 100%;
+  }
+
+  .app .staff-hr-accountant-download-action {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .app .staff-hr-accountant-download-wait {
+    max-width: none;
+    text-align: center;
   }
 
   .app .staff-hr-accountant-steps,
