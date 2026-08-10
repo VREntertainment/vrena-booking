@@ -10,7 +10,7 @@ export type AccountantPayrollCategory =
   | 'monthly'
   | 'official_hourly'
   | 'part_time'
-  | 'probation_manager'
+  | 'manager'
   | 'probation_monthly'
   | 'probation_part_time'
 
@@ -36,7 +36,7 @@ const categoryLayouts: Record<AccountantPayrollCategory, {
   monthly: { basic: [9, 10, 11, 12, 13, 14], payroll: [10, 11, 12, 13, 14, 15, 16], workRecord: [14, 15, 16, 17, 18, 19, 20], bank: [9, 10, 11, 12, 13, 14, 15], reconcile: [10, 11, 12, 13, 14, 15, 16] },
   official_hourly: { basic: [16, 17, 18], payroll: [18, 19, 20], workRecord: [21, 22, 23], bank: [16, 17, 18], reconcile: [17, 18, 19, 20, 21] },
   part_time: { basic: [20, 21], payroll: [22, 23], workRecord: [25, 26], bank: [20, 21], reconcile: [23, 24] },
-  probation_manager: { basic: [23], payroll: [25], workRecord: [28], bank: [23], reconcile: [26, 27] },
+  manager: { basic: [23], payroll: [25], workRecord: [28], bank: [23], reconcile: [26, 27] },
   probation_monthly: { basic: [25, 26], payroll: [27, 28], workRecord: [30, 31], bank: [25, 26], reconcile: [29, 30, 31, 32, 33] },
   probation_part_time: { basic: [28], payroll: [30], workRecord: [33], bank: [28], reconcile: [35, 36] },
 }
@@ -148,6 +148,10 @@ function categoryOf(row: Record<string, unknown>): AccountantPayrollCategory {
   return categories.includes(value as AccountantPayrollCategory) ? value as AccountantPayrollCategory : 'monthly'
 }
 
+function probationAppliesToPayroll(row: Record<string, unknown>) {
+  return row.__accountantProbation === true || categoryOf(row).startsWith('probation')
+}
+
 function cellXml(openingAttributes: string, value: CellValue) {
   const attributes = openingAttributes.replace(/\s+t="[^"]*"/g, '').replace(/\/\s*$/, '')
   if (value && typeof value === 'object' && value.__xlsxFormula) {
@@ -249,6 +253,7 @@ function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput
     }
     for (const [column, value] of Object.entries(values)) xml = setCell(xml, `${column}${row}`, value)
   }
+  xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   return xml
 }
@@ -349,7 +354,7 @@ function updateTimesheets(entries: ZipEntries, paths: Map<string, string>, input
       const code = payroll ? stringValue(payroll, 'Employee code') : ''
       const name = payroll ? stringValue(payroll, 'Employee') : ''
       xml = setCell(xml, `C${layout.name}`, name)
-      xml = setCell(xml, `G${layout.name}`, payroll && ['monthly', 'probation_manager', 'probation_monthly'].includes(categoryOf(payroll)) ? 'FULLTIME' : payroll ? 'PARTTIME' : '')
+      xml = setCell(xml, `G${layout.name}`, payroll && ['monthly', 'manager', 'probation_monthly'].includes(categoryOf(payroll)) ? 'FULLTIME' : payroll ? 'PARTTIME' : '')
       for (let dayIndex = 0; dayIndex < dayCapacity; dayIndex += 1) {
         const column = columnName(dayIndex + 3)
         const date = dates[dayIndex]
@@ -412,6 +417,7 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
     xml = setCell(xml, `${column}9`, date ? new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) : '')
   }
   xml = setCell(xml, 'A5', `BẢNG CHẤM CÔNG - WORKING RECORD ${input.periodStart} - ${input.periodEnd}`)
+  xml = setCell(xml, 'A27', 'IV. Quản lý cửa hàng - Store manager')
   input.payrollRows.forEach((payroll) => {
     const assignment = assignments.get(payroll)
     const timesheet = timesheetAssignments.get(payroll)
@@ -467,18 +473,19 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const pit = numberValue(payroll, 'PIT withheld (VND)')
     const net = numberValue(payroll, 'Net payable (VND)')
     const adjustments = -(numberValue(payroll, 'Advances (VND)') + numberValue(payroll, 'Deductions (VND)'))
+    const probation = probationAppliesToPayroll(payroll)
     const values: Record<string, CellValue> = {
       A: categoryIndex, B: formula(`'Basic'!D${basicRow}`, stringValue(payroll, 'Employee code')), C: formula(`'Basic'!C${basicRow}`, stringValue(payroll, 'Employee')),
       D: formula(`IFERROR('Basic'!U${basicRow}-$C$3,0)`, 0), E: formula(`'Basic'!E${basicRow}`, stringValue(employee, 'Position')),
       F: numberValue(payroll, 'Salary-paid days'), G: numberValue(payroll, 'Paid leave days'), H: numberValue(payroll, 'Period standard days'),
-      I: categoryOf(payroll).startsWith('probation') ? Math.max(0, workedHours - overtimeHours) / 24 : 0,
-      J: categoryOf(payroll).startsWith('probation') ? 0 : Math.max(0, workedHours - overtimeHours) / 24,
+      I: probation ? Math.max(0, workedHours - overtimeHours) / 24 : 0,
+      J: probation ? 0 : Math.max(0, workedHours - overtimeHours) / 24,
       K: (workedHours - overtimeHours) / 24, L: contributionBase, M: formula(`'Basic'!F${basicRow}`, stringValue(payroll, 'Division')),
       N: formula(`ROUND(IF('Basic'!AA${basicRow}>0,'Basic'!AA${basicRow}*MIN(1,F${row}/MAX(1,H${row})),K${row}*24*Y${row}),0)`, basePay),
       P: numberValue(payroll, 'Other allowances (VND)'), Q: 0, R: 0,
       S: formula(`${numberValue(payroll, 'Meal days')}*${numberValue(employee, 'Meal / worked day (VND)') || (numberValue(payroll, 'Meal days') > 0 ? mealAllowance / numberValue(payroll, 'Meal days') : 0)}`, mealAllowance),
       T: 0, U: formula(`'Work record 100%'!AK${workRow}`, overtimeHours / 24), V: formula(`'Work record 100%'!AL${workRow}`, nightHours / 24), W: formula(`'Work record 100%'!AM${workRow}`, holidayHours / 24),
-      X: categoryOf(payroll).startsWith('probation') ? numberValue(payroll, 'Payroll hourly rate (VND)') : 0, Y: numberValue(payroll, 'Payroll hourly rate (VND)'),
+      X: probation ? numberValue(payroll, 'Payroll hourly rate (VND)') : 0, Y: numberValue(payroll, 'Payroll hourly rate (VND)'),
       Z: numberValue(payroll, 'Bonuses (VND)'), AA: 0, AB: numberValue(payroll, 'Recurring monthly bonus (VND)'),
       AC: formula(`ROUND(N${row}+SUM(P${row}:T${row})+Z${row}-AA${row}+AB${row}+(U${row}*150%+V${row}*200%+W${row}*300%)*24*Y${row},0)`, gross),
       AD: formula(`MAX(0,AC${row}-S${row}-(U${row}*150%+V${row}*200%+W${row}*300%)*24*Y${row})`, taxable),
@@ -492,6 +499,7 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     }
     for (const [column, value] of Object.entries(values)) xml = setCell(xml, `${column}${row}`, value)
   }
+  xml = setCell(xml, 'A24', 'IV. Quản lý cửa hàng - Store manager')
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
@@ -519,6 +527,7 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
     xml = setCell(xml, `E${row}`, stringValue(payroll, 'Bank'))
     xml = setCell(xml, `F${row}`, stringValue(payroll, 'Notes'))
   })
+  xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
   xml = setCell(xml, 'A3', excelSerial(input.periodEnd))
   xml = setCell(xml, 'C29', formula('SUM(C9:C28)', input.payrollRows.reduce((sum, row) => sum + numberValue(row, 'Net payable (VND)'), 0)))
   return xml
@@ -587,6 +596,7 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
     xml = setCell(xml, `AU${row}`, formula(`AT${row}-AS${row}`, 0))
     xml = setCell(xml, `AV${row}`, stringValue(payroll, 'Notes'))
   })
+  xml = setCell(xml, 'A25', 'IV. Quản lý cửa hàng - Store manager')
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
@@ -610,7 +620,7 @@ export function buildAccountantPayrollWorkbook(templateBytes: Uint8Array, input:
     ['Bank account ', (xml: string) => updateBank(xml, input, assignments)],
     ['Summary', (xml: string) => updateSummary(xml, input)],
     ['PaySlip-h', (xml: string) => updatePayslip(xml, input, assignments, input.payrollRows.find((row) => ['official_hourly', 'part_time', 'probation_part_time'].includes(categoryOf(row))))],
-    ['PaySlip-D', (xml: string) => updatePayslip(xml, input, assignments, input.payrollRows.find((row) => ['monthly', 'probation_manager', 'probation_monthly'].includes(categoryOf(row))))],
+    ['PaySlip-D', (xml: string) => updatePayslip(xml, input, assignments, input.payrollRows.find((row) => ['monthly', 'manager', 'probation_monthly'].includes(categoryOf(row))))],
     ['Reconcile', (xml: string) => updateReconcile(xml, input, assignments)],
     ['Leave balance', (xml: string) => updateLeaveBalance(xml, input)],
   ] as const) {
