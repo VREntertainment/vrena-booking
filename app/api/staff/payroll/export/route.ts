@@ -74,10 +74,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { error: rateLimitError } = await auth.adminClient.rpc('consume_rate_limit', {
-      p_action: 'payroll_excel_export',
+      // The shared limiter accepts an audited action allowlist. Keep payroll
+      // exports isolated through the subject while using its staff-write bucket.
+      p_action: 'staff_config_write',
       p_limit: 6,
       p_window_seconds: 10 * 60,
-      p_subject: `staff:${auth.user.id}:ip:${trustedClientIp(request.headers)}`,
+      p_subject: `payroll-export:staff:${auth.user.id}:ip:${trustedClientIp(request.headers)}`,
     })
     if (rateLimitError) return staffKioskJsonError(rateLimitError.message, 429)
 
