@@ -20,6 +20,7 @@
     "test:staff-payroll-probation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffPayrollProbation.test.ts",
     "test:staff-payroll-policy": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/hrPayrollPolicy.test.ts",
     "test:staff-payroll-period": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/staffPayrollPeriod.test.ts",
+    "test:accountant-payroll": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/accountantPayrollWorkbook.test.ts",
     "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
     "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs"
   },
@@ -29,6 +30,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "driver.js": "^1.6.0",
+    "fflate": "^0.8.2",
     "lucide-react": "^1.22.0",
     "next": "16.2.12",
     "react": "19.2.4",
