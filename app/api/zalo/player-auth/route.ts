@@ -1,19 +1,17 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { trustedClientIp, UNKNOWN_CLIENT_IP } from '@/lib/security/requestIp'
-import { absoluteSiteUrl } from '@/lib/siteMetadata'
 
 export const runtime = 'nodejs'
 
 const ZALO_MINI_APP_ORIGIN = 'https://h5.zdn.vn'
 const MAX_TOKEN_LENGTH = 4096
-const HANDOFF_LIFETIME_MS = 2 * 60 * 1000
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com/privacy-policy'
 const TERMS_CONDITIONS_URL = 'https://www.vre-vietnam.com/terms-and-conditions'
-const LEGAL_CONSENT_VERSION = '2026-07-06'
+const LEGAL_CONSENT_VERSION = '2026-08-10'
 
-type PlayerAction = 'status' | 'continue'
+type PlayerAction = 'status' | 'register'
 
 type ZaloProfile = {
   id: string
@@ -105,7 +103,7 @@ async function fetchZaloJson(url: string, headers: HeadersInit) {
     })
     const payload = await response.json().catch(() => null)
     if (!response.ok || !payload || typeof payload !== 'object') {
-      throw new Error('Zalo could not verify this request.')
+      throw new Error('Zalo chưa thể xác minh yêu cầu này. Vui lòng thử lại.')
     }
     return payload as Record<string, unknown>
   } finally {
@@ -114,8 +112,15 @@ async function fetchZaloJson(url: string, headers: HeadersInit) {
 }
 
 async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> {
-  const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me?fields=id,name', {
+  const appSecret = process.env.ZALO_APP_SECRET
+  if (!appSecret) throw new Error('Dịch vụ đăng ký VRena chưa được cấu hình đầy đủ.')
+
+  const appsecretProof = createHmac('sha256', appSecret)
+    .update(accessToken)
+    .digest('hex')
+  const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me?fields=id', {
     access_token: accessToken,
+    appsecret_proof: appsecretProof,
   })
   const data = payload.data && typeof payload.data === 'object'
     ? payload.data as Record<string, unknown>
@@ -123,7 +128,7 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
   const id = cleanString(data.id, 255)
 
   if (!id || (typeof payload.error === 'number' && payload.error !== 0)) {
-    throw new Error('Zalo session expired. Reopen the Mini App and try again.')
+    throw new Error('Phiên Zalo đã hết hạn. Vui lòng đóng và mở lại Mini App.')
   }
 
   return {
@@ -134,7 +139,7 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
 
 async function decodeZaloPhone(accessToken: string, phoneToken: string) {
   const appSecret = process.env.ZALO_APP_SECRET
-  if (!appSecret) throw new Error('Zalo player accounts are not configured yet.')
+  if (!appSecret) throw new Error('Dịch vụ đăng ký VRena chưa được cấu hình đầy đủ.')
 
   const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me/info', {
     access_token: accessToken,
@@ -147,7 +152,7 @@ async function decodeZaloPhone(accessToken: string, phoneToken: string) {
   const phone = normalizeVietnamPhone(data.number)
 
   if (!phone || (typeof payload.error === 'number' && payload.error !== 0)) {
-    throw new Error('Zalo could not verify the phone number. Approve access and try again.')
+    throw new Error('Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.')
   }
 
   return phone
@@ -169,8 +174,8 @@ async function consumeRateLimit(
     const message = cleanString(error.message, 200)
     throw new Error(
       message.includes('Too many attempts')
-        ? message
-        : 'Account security checks are temporarily unavailable.',
+        ? 'Bạn đã thử quá nhiều lần. Vui lòng chờ một phút rồi thử lại.'
+        : 'Kiểm tra bảo mật đang tạm thời gián đoạn. Vui lòng thử lại sau.',
     )
   }
 }
@@ -193,7 +198,7 @@ async function existingProfileForPhone(adminClient: SupabaseClient, phone: strin
     .limit(1)
     .maybeSingle()
 
-  if (error) throw new Error('VRena could not safely check this phone number.')
+  if (error) throw new Error('VRena chưa thể kiểm tra an toàn số điện thoại này.')
   return data as { id: string } | null
 }
 
@@ -228,8 +233,8 @@ async function createPlayer(
   if (createError || !createData.user) {
     throw new Error(
       createError?.message.toLowerCase().includes('already')
-        ? 'A VRena account already uses this phone number. Sign in normally before connecting Zalo.'
-        : 'VRena could not create the player account.',
+        ? 'Số điện thoại này đã có hồ sơ VRena. Vui lòng liên hệ nhân viên VRena tại quầy để được hỗ trợ.'
+        : 'VRena chưa thể tạo hồ sơ người chơi.',
     )
   }
   createdUser = createData.user
@@ -262,41 +267,21 @@ async function createPlayer(
       })
       .select('id, profile_id, zalo_app_user_id, verified_phone, display_name, revoked_at')
       .single()
-    if (identityError || !identity) throw identityError || new Error('Missing player identity.')
+    if (identityError || !identity) throw identityError || new Error('Không tìm thấy hồ sơ người chơi vừa tạo.')
 
     return identity as PlayerIdentity
   } catch {
     await adminClient.auth.admin.deleteUser(createdUser.id).catch(() => undefined)
-    throw new Error('VRena could not finish creating the player account.')
+    throw new Error('VRena chưa thể hoàn tất hồ sơ người chơi.')
   }
 }
 
-async function issueHandoff(adminClient: SupabaseClient, profileId: string) {
-  const rawToken = randomBytes(32).toString('base64url')
-  const tokenHash = createHash('sha256').update(rawToken).digest('hex')
-  const now = Date.now()
-
-  await adminClient
-    .from('player_zalo_handoffs')
-    .delete()
-    .lt('expires_at', new Date(now - 24 * 60 * 60 * 1000).toISOString())
-
-  const { error } = await adminClient.from('player_zalo_handoffs').insert({
-    profile_id: profileId,
-    token_hash: tokenHash,
-    expires_at: new Date(now + HANDOFF_LIFETIME_MS).toISOString(),
-  })
-  if (error) throw new Error('VRena could not prepare the secure sign-in.')
-
-  return absoluteSiteUrl(`/auth/zalo?token=${encodeURIComponent(rawToken)}`)
-}
-
 function safeErrorStatus(message: string) {
-  if (message.includes('Too many attempts')) return 429
-  if (message.includes('temporarily unavailable') || message.includes('not configured')) return 503
-  if (message.includes('expired')) return 401
-  if (message.includes('already uses') || message.includes('already connected')) return 409
-  if (message.includes('revoked')) return 403
+  if (message.includes('quá nhiều lần')) return 429
+  if (message.includes('tạm thời gián đoạn') || message.includes('chưa được cấu hình')) return 503
+  if (message.includes('hết hạn')) return 401
+  if (message.includes('đã có hồ sơ') || message.includes('đã được dùng')) return 409
+  if (message.includes('đã bị thu hồi')) return 403
   return 400
 }
 
@@ -308,27 +293,27 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const origin = requestOrigin(request)
-  if (!isAllowedOrigin(origin)) return jsonResponse(request, { error: 'Origin not allowed.' }, 403)
+  if (!isAllowedOrigin(origin)) return jsonResponse(request, { error: 'Nguồn yêu cầu không được phép.' }, 403)
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse(request, { error: 'Zalo player accounts are not configured on this environment.' }, 503)
+    return jsonResponse(request, { error: 'Dịch vụ đăng ký VRena chưa được cấu hình trên môi trường này.' }, 503)
   }
 
   const accessToken = bearerToken(request)
-  if (!accessToken) return jsonResponse(request, { error: 'A valid Zalo session is required.' }, 401)
+  if (!accessToken) return jsonResponse(request, { error: 'Cần một phiên Zalo hợp lệ để tiếp tục.' }, 401)
 
   let body: Record<string, unknown>
   try {
     body = await request.json()
   } catch {
-    return jsonResponse(request, { error: 'Invalid player account request.' }, 400)
+    return jsonResponse(request, { error: 'Yêu cầu đăng ký hồ sơ không hợp lệ.' }, 400)
   }
 
   const action = cleanString(body.action, 20) as PlayerAction
-  if (!['status', 'continue'].includes(action)) {
-    return jsonResponse(request, { error: 'Unsupported player account action.' }, 400)
+  if (!['status', 'register'].includes(action)) {
+    return jsonResponse(request, { error: 'Thao tác hồ sơ không được hỗ trợ.' }, 400)
   }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
@@ -349,14 +334,14 @@ export async function POST(request: NextRequest) {
       .select('id, profile_id, zalo_app_user_id, verified_phone, display_name, revoked_at')
       .eq('zalo_app_user_id', zaloProfile.id)
       .maybeSingle()
-    if (identityError) throw new Error('VRena could not check the Zalo player account.')
+    if (identityError) throw new Error('VRena chưa thể kiểm tra hồ sơ người chơi Zalo.')
 
     let identity = identityData as PlayerIdentity | null
-    if (identity?.revoked_at) throw new Error('This Zalo connection was revoked. Contact VRena for help.')
+    if (identity?.revoked_at) throw new Error('Hồ sơ Zalo này đã bị thu hồi. Vui lòng liên hệ VRena để được hỗ trợ.')
 
     if (action === 'status') {
       return jsonResponse(request, {
-        linked: Boolean(identity),
+        registered: Boolean(identity),
         displayName: identity?.display_name || zaloProfile.name || 'Người chơi',
         maskedPhone: identity ? maskPhone(identity.verified_phone) : null,
       })
@@ -364,10 +349,10 @@ export async function POST(request: NextRequest) {
 
     if (!identity) {
       if (body.acceptedTerms !== true) {
-        throw new Error('Accept the Privacy Policy and Terms before creating the account.')
+        throw new Error('Vui lòng đồng ý với Chính sách quyền riêng tư và Điều khoản sử dụng trước khi đăng ký.')
       }
       const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
-      if (!phoneToken) throw new Error('Approve phone access in Zalo to create the VRena account.')
+      if (!phoneToken) throw new Error('Vui lòng cấp quyền số điện thoại Zalo để đăng ký hồ sơ mới.')
 
       const phone = await decodeZaloPhone(accessToken, phoneToken)
       const existingPhoneIdentity = await adminClient
@@ -375,12 +360,12 @@ export async function POST(request: NextRequest) {
         .select('id')
         .eq('verified_phone', phone)
         .maybeSingle()
-      if (existingPhoneIdentity.error) throw new Error('VRena could not safely check this phone number.')
+      if (existingPhoneIdentity.error) throw new Error('VRena chưa thể kiểm tra an toàn số điện thoại này.')
       if (existingPhoneIdentity.data) {
-        throw new Error('This phone number is already connected to another Zalo account.')
+        throw new Error('Số điện thoại này đã được dùng để đăng ký một hồ sơ VRena khác.')
       }
       if (await existingProfileForPhone(adminClient, phone)) {
-        throw new Error('A VRena account already uses this phone number. Sign in normally before connecting Zalo.')
+        throw new Error('Số điện thoại này đã có hồ sơ VRena. Vui lòng liên hệ nhân viên VRena tại quầy để được hỗ trợ.')
       }
 
       identity = await createPlayer(adminClient, zaloProfile, phone)
@@ -392,17 +377,16 @@ export async function POST(request: NextRequest) {
           last_login_at: new Date().toISOString(),
         })
         .eq('id', identity.id)
-      if (updateError) throw new Error('VRena could not refresh the Zalo player account.')
+      if (updateError) throw new Error('VRena chưa thể cập nhật hồ sơ người chơi Zalo.')
     }
 
     return jsonResponse(request, {
-      linked: true,
+      registered: true,
       displayName: identity.display_name || zaloProfile.name || 'Người chơi',
       maskedPhone: maskPhone(identity.verified_phone),
-      handoffUrl: await issueHandoff(adminClient, identity.profile_id),
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'VRena could not complete the Zalo sign-in.'
+    const message = error instanceof Error ? error.message : 'VRena chưa thể hoàn tất đăng ký hồ sơ.'
     return jsonResponse(request, { error: message }, safeErrorStatus(message))
   }
 }
