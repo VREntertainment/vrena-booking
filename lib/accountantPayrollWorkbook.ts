@@ -202,22 +202,44 @@ function saveSheet(entries: ZipEntries, path: string, xml: string) {
 }
 
 function assignRows(rows: Array<Record<string, unknown>>) {
-  const assignments = new Map<Record<string, unknown>, { basic: number; payroll: number; workRecord: number; bank: number; reconcile: number }>()
-  for (const category of categories) {
-    const categoryRows = rows.filter((row) => categoryOf(row) === category)
-    const layout = categoryLayouts[category]
-    if (categoryRows.length > layout.basic.length || categoryRows.length > layout.payroll.length || categoryRows.length > layout.bank.length) {
-      throw new Error(`The accountant template has no free ${category.replaceAll('_', ' ')} row for ${categoryRows[layout.basic.length]?.['Employee code'] || 'an employee'}.`)
+  const assignments = new Map<Record<string, unknown>, { basic: number; payroll: number; workRecord: number; bank: number; reconcile: number; layoutCategory: AccountantPayrollCategory }>()
+  const assignCategoryRows = (categoryRows: Array<Record<string, unknown>>, layoutCategory: AccountantPayrollCategory, startIndex = 0) => {
+    const layout = categoryLayouts[layoutCategory]
+    if (startIndex + categoryRows.length > layout.basic.length || startIndex + categoryRows.length > layout.payroll.length || startIndex + categoryRows.length > layout.bank.length) {
+      const unavailableRow = categoryRows[Math.max(0, layout.basic.length - startIndex)]
+      throw new Error(`The accountant template has no free ${layoutCategory.replaceAll('_', ' ')} row for ${unavailableRow?.['Employee code'] || 'an employee'}.`)
     }
     categoryRows.forEach((row, index) => assignments.set(row, {
-      basic: layout.basic[index],
-      payroll: layout.payroll[index],
-      workRecord: layout.workRecord[index],
-      bank: layout.bank[index],
-      reconcile: layout.reconcile[index],
+      basic: layout.basic[startIndex + index],
+      payroll: layout.payroll[startIndex + index],
+      workRecord: layout.workRecord[startIndex + index],
+      bank: layout.bank[startIndex + index],
+      reconcile: layout.reconcile[startIndex + index],
+      layoutCategory,
     }))
   }
+
+  for (const category of categories.filter((category) => category !== 'monthly' && category !== 'probation_monthly')) {
+    const categoryRows = rows.filter((row) => categoryOf(row) === category)
+    assignCategoryRows(categoryRows, category)
+  }
+
+  const probationMonthlyRows = rows.filter((row) => categoryOf(row) === 'probation_monthly')
+  assignCategoryRows(probationMonthlyRows, 'probation_monthly')
+  const monthlyRows = rows.filter((row) => categoryOf(row) === 'monthly')
+  const standardMonthlyCapacity = categoryLayouts.monthly.basic.length
+  assignCategoryRows(monthlyRows.slice(0, standardMonthlyCapacity), 'monthly')
+  assignCategoryRows(monthlyRows.slice(standardMonthlyCapacity), 'probation_monthly', probationMonthlyRows.length)
   return assignments
+}
+
+function probationMonthlyBandLabel(input: AccountantPayrollWorkbookInput, assignments: ReturnType<typeof assignRows>) {
+  const hasMonthlyOverflow = input.payrollRows.some((row) => categoryOf(row) === 'monthly' && assignments.get(row)?.layoutCategory === 'probation_monthly')
+  if (!hasMonthlyOverflow) return null
+  const hasProbationEmployees = input.payrollRows.some((row) => categoryOf(row) === 'probation_monthly')
+  return hasProbationEmployees
+    ? 'V. Nhân viên tháng bổ sung / thử việc - Additional monthly / probation employees'
+    : 'V. Nhân viên tháng bổ sung - Additional monthly employees'
 }
 
 function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput, assignments: ReturnType<typeof assignRows>) {
@@ -236,7 +258,7 @@ function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput
     const employee = employeesByCode.get(stringValue(payroll, 'Employee code')) || payroll
     const row = assignment.basic
     const values: Record<string, CellValue> = {
-      B: categoryLayouts[categoryOf(payroll)].basic.indexOf(row) + 1,
+      B: categoryLayouts[assignment.layoutCategory].basic.indexOf(row) + 1,
       C: stringValue(employee, 'Legal name') || stringValue(payroll, 'Employee'),
       D: stringValue(employee, 'Employee code') || stringValue(payroll, 'Employee code'),
       E: stringValue(employee, 'Position'), F: stringValue(employee, 'Division') || stringValue(payroll, 'Division'),
@@ -254,6 +276,8 @@ function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput
     for (const [column, value] of Object.entries(values)) xml = setCell(xml, `${column}${row}`, value)
   }
   xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
+  const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
+  if (monthlyBandLabel) xml = setCell(xml, 'A24', monthlyBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   return xml
 }
@@ -423,7 +447,7 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
     const timesheet = timesheetAssignments.get(payroll)
     if (!assignment || !timesheet) return
     const row = assignment.workRecord
-    xml = setCell(xml, `A${row}`, categoryLayouts[categoryOf(payroll)].workRecord.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].workRecord.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee'))
     xml = setCell(xml, `C${row}`, stringValue(payroll, 'Employee code'))
     for (let dayIndex = 0; dayIndex < 31; dayIndex += 1) {
@@ -438,6 +462,8 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
     xml = setCell(xml, `AM${row}`, formula(`'${timesheet.sheet}'!AH${timesheet.summaryRow + 3}`, numberValue(payroll, 'Holiday hours') / 24))
     xml = setCell(xml, `AN${row}`, formula(`COUNTIF(D${row}:AH${row},">0")`, numberValue(payroll, 'Worked days')))
   })
+  const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
+  if (monthlyBandLabel) xml = setCell(xml, 'A29', monthlyBandLabel)
   return xml
 }
 
@@ -453,7 +479,7 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const row = assignment.payroll
     const basicRow = assignment.basic
     const workRow = assignment.workRecord
-    const categoryIndex = categoryLayouts[categoryOf(payroll)].payroll.indexOf(row) + 1
+    const categoryIndex = categoryLayouts[assignment.layoutCategory].payroll.indexOf(row) + 1
     const workedHours = numberValue(payroll, 'Worked hours')
     const overtimeHours = numberValue(payroll, 'Overtime hours')
     const nightHours = numberValue(payroll, 'Night hours')
@@ -500,6 +526,8 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     for (const [column, value] of Object.entries(values)) xml = setCell(xml, `${column}${row}`, value)
   }
   xml = setCell(xml, 'A24', 'IV. Quản lý cửa hàng - Store manager')
+  const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
+  if (monthlyBandLabel) xml = setCell(xml, 'A26', monthlyBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
@@ -520,7 +548,7 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
     const assignment = assignments.get(payroll)
     if (!assignment) return
     const row = assignment.bank
-    xml = setCell(xml, `A${row}`, categoryLayouts[categoryOf(payroll)].bank.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].bank.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee'))
     xml = setCell(xml, `C${row}`, formula(`'Full time'!AS${assignment.payroll}`, numberValue(payroll, 'Net payable (VND)')))
     xml = setCell(xml, `D${row}`, stringValue(payroll, 'Bank account'))
@@ -528,6 +556,8 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
     xml = setCell(xml, `F${row}`, stringValue(payroll, 'Notes'))
   })
   xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
+  const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
+  if (monthlyBandLabel) xml = setCell(xml, 'A24', monthlyBandLabel)
   xml = setCell(xml, 'A3', excelSerial(input.periodEnd))
   xml = setCell(xml, 'C29', formula('SUM(C9:C28)', input.payrollRows.reduce((sum, row) => sum + numberValue(row, 'Net payable (VND)'), 0)))
   return xml
@@ -586,7 +616,7 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
     const assignment = assignments.get(payroll)
     if (!assignment) return
     const row = assignment.reconcile
-    xml = setCell(xml, `A${row}`, categoryLayouts[categoryOf(payroll)].reconcile.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].reconcile.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee code'))
     for (let column = 3; column <= 45; column += 1) {
       const name = columnName(column)
@@ -597,6 +627,8 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
     xml = setCell(xml, `AV${row}`, stringValue(payroll, 'Notes'))
   })
   xml = setCell(xml, 'A25', 'IV. Quản lý cửa hàng - Store manager')
+  const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
+  if (monthlyBandLabel) xml = setCell(xml, 'A28', monthlyBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
