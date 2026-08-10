@@ -4,7 +4,7 @@ import test from 'node:test'
 import { strFromU8, unzipSync } from 'fflate'
 import { buildAccountantPayrollWorkbook } from './accountantPayrollWorkbook.ts'
 
-const templatePath = new URL('../public/templates/vr-payroll-accountant-template.xlsx', import.meta.url)
+const templatePath = new URL('./templates/vr-payroll-accountant-template.xlsx', import.meta.url)
 
 function worksheetByName(entries: Record<string, Uint8Array>, name: string) {
   const workbook = strFromU8(entries['xl/workbook.xml'])
@@ -15,6 +15,22 @@ function worksheetByName(entries: Record<string, Uint8Array>, name: string) {
   assert.ok(target, `${name} target exists`)
   return strFromU8(entries[`xl/${target}`])
 }
+
+test('returns the verified July accountant source byte for byte', () => {
+  const templateBytes = new Uint8Array(fs.readFileSync(templatePath))
+  const output = buildAccountantPayrollWorkbook(templateBytes, {
+    periodStart: '2026-07-01',
+    periodEnd: '2026-07-31',
+    sourceWorkbookKey: 'july-2026-260805',
+    sourceWorkbookRowCount: 15,
+    payrollRows: [],
+    employeeRows: [],
+    attendanceRows: [],
+    calculationBasisRows: [],
+  })
+
+  assert.deepEqual(output, templateBytes)
+})
 
 test('builds the accountant workbook from the exact 19-tab template with live formulas', () => {
   const templateBytes = new Uint8Array(fs.readFileSync(templatePath))
@@ -106,6 +122,11 @@ test('builds the accountant workbook from the exact 19-tab template with live fo
   assert.match(payroll, /<c[^>]*r="B10"[^>]*><f>&apos;Basic&apos;!D9<\/f><v>NV101<\/v><\/c>/)
   assert.match(payroll, /<c[^>]*r="AC10"[^>]*><f>ROUND\(N10\+SUM\(P10:T10\)/)
   assert.match(payroll, /<c[^>]*r="AS10"[^>]*><f>MAX\(0,AQ10\+AR10\)<\/f><v>9725385<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AG31"[^>]*><f>SUM\(AG10:AG30\)<\/f><v>1840000<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AJ31"[^>]*><f>SUM\(AJ10:AJ30\)<\/f><v>4025000<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AQ31"[^>]*><f>SUM\(AQ10:AQ30\)<\/f><v>29990385<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AR31"[^>]*><f>SUM\(AR10:AR30\)<\/f><v>0<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AS31"[^>]*><f>SUM\(AS10:AS30\)<\/f><v>29990385<\/v><\/c>/)
   assert.match(payroll, /<c[^>]*r="A24"[^>]*t="inlineStr"><is><t[^>]*>IV\. Quản lý cửa hàng - Store manager<\/t><\/is><\/c>/)
   assert.match(payroll, /<c[^>]*r="B25"[^>]*><f>&apos;Basic&apos;!D23<\/f><v>NV104<\/v><\/c>/)
   assert.match(payroll, /<c[^>]*r="I25"[^>]*><v>0<\/v><\/c>/)

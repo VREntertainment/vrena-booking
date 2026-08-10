@@ -17,10 +17,22 @@ export type AccountantPayrollCategory =
 export type AccountantPayrollWorkbookInput = {
   periodStart: string
   periodEnd: string
+  sourceWorkbookKey?: string
+  sourceWorkbookRowCount?: number
   payrollRows: Array<Record<string, unknown>>
   employeeRows: Array<Record<string, unknown>>
   attendanceRows: Array<Record<string, unknown>>
   calculationBasisRows: Array<Record<string, unknown>>
+}
+
+const JULY_2026_ACCOUNTANT_SOURCE_KEY = 'july-2026-260805'
+const JULY_2026_ACCOUNTANT_SOURCE_ROWS = 15
+
+function usesExactJulyAccountantSource(input: AccountantPayrollWorkbookInput) {
+  return input.periodStart === '2026-07-01'
+    && input.periodEnd === '2026-07-31'
+    && input.sourceWorkbookKey === JULY_2026_ACCOUNTANT_SOURCE_KEY
+    && input.sourceWorkbookRowCount === JULY_2026_ACCOUNTANT_SOURCE_ROWS
 }
 
 type CellValue = string | number | null | WorkbookFormulaValue
@@ -100,6 +112,26 @@ function numberValue(row: Record<string, unknown>, key: string) {
 
 function stringValue(row: Record<string, unknown>, key: string) {
   return String(unwrap(row[key]) ?? '')
+}
+
+function hasNumericValue(row: Record<string, unknown>, key: string) {
+  const raw = unwrap(row[key])
+  return raw !== '' && Number.isFinite(Number(raw))
+}
+
+function bankAdjustmentValue(row: Record<string, unknown>) {
+  if (hasNumericValue(row, 'Bank adjustment (VND)')) return numberValue(row, 'Bank adjustment (VND)')
+  return -(numberValue(row, 'Advances (VND)') + numberValue(row, 'Deductions (VND)'))
+}
+
+function netBeforeAdjustmentValue(row: Record<string, unknown>) {
+  if (hasNumericValue(row, 'Net before adjustment (VND)')) return numberValue(row, 'Net before adjustment (VND)')
+  return numberValue(row, 'Net payable (VND)') - bankAdjustmentValue(row)
+}
+
+function bankTransferValue(row: Record<string, unknown>) {
+  if (hasNumericValue(row, 'Bank transfer (VND)')) return numberValue(row, 'Bank transfer (VND)')
+  return netBeforeAdjustmentValue(row) + bankAdjustmentValue(row)
 }
 
 function formula(formulaText: string, result: string | number = ''): WorkbookFormulaValue {
@@ -524,6 +556,7 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
 
 function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assignments: ReturnType<typeof assignRows>) {
   const employeesByCode = new Map(input.employeeRows.map((row) => [stringValue(row, 'Employee code'), row]))
+  const totalResults = new Map<string, number>()
   for (const row of payrollDataRows) {
     for (let column = 1; column <= 48; column += 1) xml = setCell(xml, `${columnName(column)}${row}`, '')
   }
@@ -552,8 +585,9 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const taxable = numberValue(payroll, 'Taxable income (VND)') || Math.max(0, gross - mealAllowance)
     const assessable = Math.max(0, taxable - employeeInsurance - personalDeduction - dependents * dependentDeduction)
     const pit = numberValue(payroll, 'PIT withheld (VND)')
-    const net = numberValue(payroll, 'Net payable (VND)')
-    const adjustments = -(numberValue(payroll, 'Advances (VND)') + numberValue(payroll, 'Deductions (VND)'))
+    const adjustments = bankAdjustmentValue(payroll)
+    const netBeforeAdjustment = netBeforeAdjustmentValue(payroll)
+    const bankTransfer = bankTransferValue(payroll)
     const probation = probationAppliesToPayroll(payroll)
     const values: Record<string, CellValue> = {
       A: categoryIndex, B: formula(`'Basic'!D${basicRow}`, stringValue(payroll, 'Employee code')), C: formula(`'Basic'!C${basicRow}`, stringValue(payroll, 'Employee')),
@@ -575,10 +609,16 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
       AG: formula(`ROUND(L${row}*8%,0)`, Math.round(employeeInsurance * 8 / 10.5)), AH: formula(`ROUND(L${row}*1.5%,0)`, Math.round(employeeInsurance * 1.5 / 10.5)), AI: formula(`ROUND(L${row}*1%,0)`, employeeInsurance - Math.round(employeeInsurance * 8 / 10.5) - Math.round(employeeInsurance * 1.5 / 10.5)),
       AJ: formula(`ROUND(L${row}*17.5%,0)`, Math.round(employerInsurance * 17.5 / 23.5)), AK: formula(`ROUND(L${row}*3%,0)`, Math.round(employerInsurance * 3 / 23.5)), AL: formula(`ROUND(L${row}*1%,0)`, Math.round(employerInsurance * 1 / 23.5)), AM: formula(`ROUND(L${row}*2%,0)`, Math.max(0, employerInsurance - Math.round(employerInsurance * 17.5 / 23.5) - Math.round(employerInsurance * 3 / 23.5) - Math.round(employerInsurance * 1 / 23.5))),
       AN: personalDeduction, AO: dependents * dependentDeduction, AP: 0,
-      AQ: formula(`MAX(0,AC${row}-SUM(AG${row}:AI${row})-AF${row}-AP${row})`, net - adjustments), AR: adjustments,
-      AS: formula(`MAX(0,AQ${row}+AR${row})`, net), AT: formula(`AS${row}`, net), AU: formula(`AT${row}-AS${row}`, 0), AV: stringValue(payroll, 'Notes'),
+      AQ: formula(`MAX(0,AC${row}-SUM(AG${row}:AI${row})-AF${row}-AP${row})`, netBeforeAdjustment), AR: adjustments,
+      AS: formula(`MAX(0,AQ${row}+AR${row})`, bankTransfer), AT: formula(`AS${row}`, bankTransfer), AU: formula(`AT${row}-AS${row}`, 0), AV: stringValue(payroll, 'Notes'),
     }
-    for (const [column, value] of Object.entries(values)) xml = setCell(xml, `${column}${row}`, value)
+    for (const [column, value] of Object.entries(values)) {
+      xml = setCell(xml, `${column}${row}`, value)
+      const numericValue = Number(unwrap(value))
+      if (Number.isFinite(numericValue) && numericValue !== 0) {
+        totalResults.set(column, (totalResults.get(column) || 0) + numericValue)
+      }
+    }
   }
   xml = setCell(xml, 'A24', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
@@ -592,13 +632,7 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
-    const result = input.payrollRows.reduce((sum, payroll) => {
-      const assignment = assignments.get(payroll)
-      if (!assignment) return sum
-      const keyByColumn: Record<string, string> = { F: 'Salary-paid days', G: 'Paid leave days', H: 'Period standard days', L: 'Insurance base (VND)', N: 'Base pay (VND)', S: 'Meal allowance (VND)', Z: 'Bonuses (VND)', AC: 'Gross income (VND)', AF: 'PIT withheld (VND)', AQ: 'Net payable (VND)', AS: 'Net payable (VND)' }
-      return sum + (keyByColumn[name] ? numberValue(payroll, keyByColumn[name]) : 0)
-    }, 0)
-    xml = setCell(xml, `${name}31`, formula(`SUM(${name}10:${name}30)`, result))
+    xml = setCell(xml, `${name}31`, formula(`SUM(${name}10:${name}30)`, totalResults.get(name) || 0))
   }
   return xml
 }
@@ -611,7 +645,7 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
     const row = assignment.bank
     xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].bank.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee'))
-    xml = setCell(xml, `C${row}`, formula(`'Full time'!AS${assignment.payroll}`, numberValue(payroll, 'Net payable (VND)')))
+    xml = setCell(xml, `C${row}`, formula(`'Full time'!AS${assignment.payroll}`, bankTransferValue(payroll)))
     xml = setCell(xml, `D${row}`, stringValue(payroll, 'Bank account'))
     xml = setCell(xml, `E${row}`, stringValue(payroll, 'Bank'))
     xml = setCell(xml, `F${row}`, stringValue(payroll, 'Notes'))
@@ -626,7 +660,7 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
   if (partTimeBandLabel) xml = setCell(xml, 'A19', partTimeBandLabel)
   if (probationPartTimeBandLabel) xml = setCell(xml, 'A27', probationPartTimeBandLabel)
   xml = setCell(xml, 'A3', excelSerial(input.periodEnd))
-  xml = setCell(xml, 'C29', formula('SUM(C9:C28)', input.payrollRows.reduce((sum, row) => sum + numberValue(row, 'Net payable (VND)'), 0)))
+  xml = setCell(xml, 'C29', formula('SUM(C9:C28)', input.payrollRows.reduce((sum, row) => sum + bankTransferValue(row), 0)))
   return xml
 }
 
@@ -671,7 +705,7 @@ function updatePayslip(xml: string, input: AccountantPayrollWorkbookInput, assig
     D24: formula(`'Full time'!AJ${row}`, 0), D25: formula(`'Full time'!AK${row}`, 0), D26: formula(`'Full time'!AL${row}`, 0), D27: formula(`SUM('Full time'!AG${row}:AI${row})`, numberValue(payroll, 'Employee insurance (VND)')),
     D28: formula(`'Full time'!AG${row}`, 0), D29: formula(`'Full time'!AH${row}`, 0), D30: formula(`'Full time'!AI${row}`, 0), D31: formula(`SUM('Full time'!AN${row}:AO${row})`, 0),
     D32: formula(`'Full time'!AN${row}`, 0), D33: formula(`'Full time'!AO${row}`, 0), D34: formula(`'Full time'!AF${row}`, numberValue(payroll, 'PIT withheld (VND)')), D35: formula(`'Full time'!AE${row}`, 0),
-    D36: formula(`'Full time'!AS${row}`, numberValue(payroll, 'Net payable (VND)')), D37: formula(`'Full time'!AC${row}+SUM('Full time'!AJ${row}:AM${row})`, numberValue(payroll, 'Company cost (VND)')),
+    D36: formula(`'Full time'!AS${row}`, bankTransferValue(payroll)), D37: formula(`'Full time'!AC${row}+SUM('Full time'!AJ${row}:AM${row})`, numberValue(payroll, 'Company cost (VND)')),
   }
   for (const [reference, value] of Object.entries(cells)) xml = setCell(xml, reference, value)
   return xml
@@ -689,7 +723,7 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
       const name = columnName(column)
       xml = setCell(xml, `${name}${row}`, formula(`IFERROR(VLOOKUP(B${row},'Full time'!$B$10:$AS$30,${column - 1},FALSE),0)`, column === 3 ? stringValue(payroll, 'Employee') : 0))
     }
-    xml = setCell(xml, `AT${row}`, formula(`AS${row}`, numberValue(payroll, 'Net payable (VND)')))
+    xml = setCell(xml, `AT${row}`, formula(`AS${row}`, bankTransferValue(payroll)))
     xml = setCell(xml, `AU${row}`, formula(`AT${row}-AS${row}`, 0))
     xml = setCell(xml, `AV${row}`, stringValue(payroll, 'Notes'))
   })
@@ -711,6 +745,11 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
 }
 
 export function buildAccountantPayrollWorkbook(templateBytes: Uint8Array, input: AccountantPayrollWorkbookInput) {
+  // The verified July source is the accountant's signed-off workbook. Returning
+  // those exact bytes is the only way to preserve its historical formulas,
+  // terminated payroll row, and signed bank adjustments without reinterpretation.
+  if (usesExactJulyAccountantSource(input)) return templateBytes
+
   const entries = unzipSync(templateBytes)
   const paths = sheetPaths(entries)
   const assignments = assignRows(input.payrollRows)
@@ -739,20 +778,4 @@ export function buildAccountantPayrollWorkbook(templateBytes: Uint8Array, input:
   entries[workbookPath] = strToU8(workbookXml)
   delete entries['xl/calcChain.xml']
   return zipSync(entries, { level: 6 })
-}
-
-export async function downloadAccountantPayrollWorkbook(filename: string, input: AccountantPayrollWorkbookInput) {
-  const response = await fetch('/templates/vr-payroll-accountant-template.xlsx', { cache: 'no-store' })
-  if (!response.ok) throw new Error(`Unable to load accountant payroll template (${response.status})`)
-  const workbook = buildAccountantPayrollWorkbook(new Uint8Array(await response.arrayBuffer()), input)
-  const blob = new Blob([workbook.buffer as ArrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename.replace(/\.(xls|xlsx)$/i, '') + '.xlsx'
-  anchor.style.display = 'none'
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
 }

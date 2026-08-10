@@ -46,6 +46,9 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    '/api/staff/payroll/export': ['./lib/templates/vr-payroll-accountant-template.xlsx'],
+  },
   turbopack: {
     root: process.cwd(),
   },

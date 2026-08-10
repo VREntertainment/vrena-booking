@@ -7751,6 +7751,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const historicalSnapshots = payrollSourceSnapshots.filter((snapshot) => (
       snapshot.period_start === periodStart && snapshot.period_end === periodEnd
     ))
+    const historicalSourceKey = historicalSnapshots.length === 15
+      && historicalSnapshots.every((snapshot) => snapshot.source_key === historicalSnapshots[0]?.source_key)
+      ? historicalSnapshots[0]?.source_key || ''
+      : ''
     const calculatedPayrollRows: Array<Record<string, unknown>> = visibleStaffProfileOptions.map((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
@@ -8245,6 +8249,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         input: {
           periodStart,
           periodEnd,
+          ...(historicalSourceKey ? {
+            sourceWorkbookKey: historicalSourceKey,
+            sourceWorkbookRowCount: historicalSnapshots.length,
+          } : {}),
           payrollRows: payrollFormulaRows,
           employeeRows: employeeMasterRows,
           attendanceRows,
