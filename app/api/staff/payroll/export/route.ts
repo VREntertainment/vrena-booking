@@ -1,4 +1,6 @@
 import type { NextRequest } from 'next/server'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import {
   ACCOUNTANT_PAYROLL_EXPORT_MAX_BYTES,
   accountantPayrollContentDisposition,
@@ -91,15 +93,9 @@ export async function POST(request: NextRequest) {
     }
     const input = validateAccountantPayrollExportInput(rawInput)
 
-    const templateUrl = new URL('/templates/vr-payroll-accountant-template.xlsx', request.url)
-    const templateResponse = await fetch(templateUrl, { cache: 'no-store' })
-    if (!templateResponse.ok) {
-      throw new Error(`Unable to load accountant payroll template (${templateResponse.status}).`)
-    }
-
     const [{ buildAccountantPayrollWorkbook }, templateBuffer] = await Promise.all([
       import('@/lib/accountantPayrollWorkbook'),
-      templateResponse.arrayBuffer(),
+      readFile(join(process.cwd(), 'lib/templates/vr-payroll-accountant-template.xlsx')),
     ])
     const workbook = buildAccountantPayrollWorkbook(new Uint8Array(templateBuffer), input)
     const filename = accountantPayrollFilename(formString(form, 'filename'))

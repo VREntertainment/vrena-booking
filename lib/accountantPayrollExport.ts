@@ -47,9 +47,20 @@ export function validateAccountantPayrollExportInput(value: unknown): Accountant
   if (!isRecordArray(value.attendanceRows, 5_000)) throw new Error('Invalid attendance rows in the accountant export.')
   if (!isRecordArray(value.calculationBasisRows, 250)) throw new Error('Invalid calculation basis rows in the accountant export.')
 
+  const sourceWorkbookKey = typeof value.sourceWorkbookKey === 'string' ? value.sourceWorkbookKey.trim() : ''
+  const sourceWorkbookRowCount = value.sourceWorkbookRowCount
+  if (sourceWorkbookKey && !/^[a-z0-9][a-z0-9-]{0,79}$/.test(sourceWorkbookKey)) {
+    throw new Error('The accountant source workbook key is invalid.')
+  }
+  if (sourceWorkbookRowCount !== undefined && (typeof sourceWorkbookRowCount !== 'number' || !Number.isInteger(sourceWorkbookRowCount) || sourceWorkbookRowCount < 0 || sourceWorkbookRowCount > 32)) {
+    throw new Error('The accountant source workbook row count is invalid.')
+  }
+
   return {
     periodStart,
     periodEnd,
+    ...(sourceWorkbookKey ? { sourceWorkbookKey } : {}),
+    ...(sourceWorkbookRowCount !== undefined ? { sourceWorkbookRowCount: Number(sourceWorkbookRowCount) } : {}),
     payrollRows: value.payrollRows,
     employeeRows: value.employeeRows,
     attendanceRows: value.attendanceRows,
