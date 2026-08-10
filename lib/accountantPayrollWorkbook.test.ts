@@ -19,10 +19,10 @@ function worksheetByName(entries: Record<string, Uint8Array>, name: string) {
 test('builds the accountant workbook from the exact 19-tab template with live formulas', () => {
   const templateBytes = new Uint8Array(fs.readFileSync(templatePath))
   const templateEntries = unzipSync(templateBytes)
-  const monthlyCapacityRows = Array.from({ length: 5 }, (_, index) => ({
-    __accountantCategory: 'monthly', __accountantProbation: false, 'Employee code': `NV10${index + 5}`, Employee: `MONTHLY CAPACITY ${index + 1}`, Division: 'Vrena', Bank: 'MB Bank', 'Bank account': `9900000${index}`,
-    'Salary-paid days': 0, 'Paid leave days': 0, 'Period standard days': 26, 'Worked hours': 0, 'Worked days': 0, 'Meal days': 0,
-    'Salary-paid hours': 0, 'Overtime hours': 0, 'Night hours': 0, 'Holiday hours': 0, 'Payroll hourly rate (VND)': 0,
+  const monthlyCapacityRows = Array.from({ length: 6 }, (_, index) => ({
+    __accountantCategory: 'monthly', __accountantProbation: false, 'Employee code': `NV1${String(index + 5).padStart(2, '0')}`, Employee: `MONTHLY CAPACITY ${index + 1}`, Division: index === 5 ? 'Office' : 'Vrena', Bank: 'MB Bank', 'Bank account': `9900000${index}`,
+    'Salary-paid days': 0, 'Paid leave days': 0, 'Period standard days': 26, 'Worked hours': index === 5 ? 24 : 0, 'Worked days': index === 5 ? 1 : 0, 'Meal days': 0,
+    'Salary-paid hours': index === 5 ? 24 : 0, 'Overtime hours': 0, 'Night hours': 0, 'Holiday hours': 0, 'Payroll hourly rate (VND)': 0,
     'Base pay (VND)': 0, 'Meal allowance (VND)': 0, 'Other allowances (VND)': 0, 'Bonuses (VND)': 0,
     'Gross income (VND)': 0, 'Insurance base (VND)': 0, 'Employee insurance (VND)': 0,
     'PIT withheld (VND)': 0, 'Net payable (VND)': 0, 'Employer insurance (VND)': 0, 'Company cost (VND)': 0,
@@ -100,11 +100,16 @@ test('builds the accountant workbook from the exact 19-tab template with live fo
   assert.match(payroll, /<c[^>]*r="B25"[^>]*><f>&apos;Basic&apos;!D23<\/f><v>NV104<\/v><\/c>/)
   assert.match(payroll, /<c[^>]*r="I25"[^>]*><v>0<\/v><\/c>/)
   assert.match(payroll, /<c[^>]*r="J25"[^>]*><v>7\.041666666666667<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="A26"[^>]*t="inlineStr"><is><t[^>]*>V\. Nhân viên tháng bổ sung \/ thử việc - Additional monthly \/ probation employees<\/t><\/is><\/c>/)
+  assert.match(payroll, /<c[^>]*r="B28"[^>]*><f>&apos;Basic&apos;!D26<\/f><v>NV110<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="I28"[^>]*><v>0<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="J28"[^>]*><v>1<\/v><\/c>/)
   assert.doesNotMatch(payroll, /#REF!|#DIV\/0!|#VALUE!|#NAME\?|#N\/A/)
 
   const basic = worksheetByName(entries, 'Basic')
   assert.match(basic, /<c[^>]*r="D14"[^>]*t="inlineStr"><is><t[^>]*>NV109<\/t><\/is><\/c>/)
   assert.match(basic, /<c[^>]*r="D23"[^>]*t="inlineStr"><is><t[^>]*>NV104<\/t><\/is><\/c>/)
+  assert.match(basic, /<c[^>]*r="D26"[^>]*t="inlineStr"><is><t[^>]*>NV110<\/t><\/is><\/c>/)
 
   const bank = worksheetByName(entries, 'Bank account ')
   assert.match(bank, /<c[^>]*r="B9"[^>]*t="inlineStr"><is><t[^>]*>MONTHLY EMPLOYEE<\/t><\/is><\/c>/)
