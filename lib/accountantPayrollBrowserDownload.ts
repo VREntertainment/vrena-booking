@@ -43,9 +43,12 @@ export function submitAccountantPayrollDownload({
 
   document.body.append(target, form)
   form.submit()
-  form.remove()
 
-  // Keep the target alive long enough for Safari to finish receiving the native
-  // attachment. It contains no payroll content once the response is downloaded.
-  window.setTimeout(() => target.remove(), 120_000)
+  // Safari can cancel the queued form navigation if either the form or its target
+  // is detached immediately after submit. Keep both alive while it receives the
+  // native attachment; neither contains payroll content after the response ends.
+  window.setTimeout(() => {
+    form.remove()
+    target.remove()
+  }, 120_000)
 }
