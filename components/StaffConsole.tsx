@@ -8251,8 +8251,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           calculationBasisRows,
         },
       })
+      return true
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error))
+      return false
     }
   }
 
