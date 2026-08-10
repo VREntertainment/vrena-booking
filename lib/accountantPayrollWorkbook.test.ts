@@ -16,20 +16,36 @@ function worksheetByName(entries: Record<string, Uint8Array>, name: string) {
   return strFromU8(entries[`xl/${target}`])
 }
 
-test('returns the verified July accountant source byte for byte', () => {
+test('regenerates the verified July source from payroll rows instead of returning template bytes', () => {
   const templateBytes = new Uint8Array(fs.readFileSync(templatePath))
   const output = buildAccountantPayrollWorkbook(templateBytes, {
     periodStart: '2026-07-01',
     periodEnd: '2026-07-31',
     sourceWorkbookKey: 'july-2026-260805',
     sourceWorkbookRowCount: 15,
-    payrollRows: [],
-    employeeRows: [],
+    payrollRows: [{
+      __accountantHistoricalSource: true,
+      __accountantCategory: 'monthly',
+      __accountantPlacement: { layoutCategory: 'monthly', basic: 9, payroll: 10, workRecord: 14, bank: 9, reconcile: 10 },
+      'Employee code': 'NVTEST', Employee: 'GENERATED JULY ROW', Division: 'Office', Bank: 'Test bank', 'Bank account': '0001',
+      'Period standard days': 23, 'Salary-paid days': 21, 'Worked hours': 168, 'Worked days': 21, 'Meal days': 21,
+      'Salary-paid hours': 168, 'Overtime hours': 0, 'Night hours': 0, 'Holiday hours': 0, 'Payroll hourly rate (VND)': 54_348,
+      'Contract salary (VND)': 10_000_000, 'Base pay (VND)': 9_130_435, 'Meal allowance (VND)': 735_000,
+      'Other allowances (VND)': 0, 'Bonuses (VND)': 0, 'Gross income (VND)': 9_865_435,
+      'Insurance base (VND)': 10_000_000, 'Employee insurance (VND)': 1_050_000, 'Employee insurance deducted (VND)': 1_050_000,
+      'Taxable income (VND)': 9_130_435, 'PIT withheld (VND)': 0, 'Net payable (VND)': 8_815_435, 'Net before adjustment (VND)': 8_815_435,
+      'Employer insurance %': 21.5, 'Employer insurance (VND)': 2_150_000, 'Company cost (VND)': 12_015_435,
+      'Bank adjustment (VND)': 0, 'Bank transfer (VND)': 8_815_435,
+    }],
+    employeeRows: [{ 'Employee code': 'NVTEST', 'Legal name': 'GENERATED JULY ROW', 'Monthly salary (VND)': 10_000_000, 'Meal / worked day (VND)': 35_000, Bank: 'Test bank', 'Bank account': '0001' }],
     attendanceRows: [],
     calculationBasisRows: [],
   })
 
-  assert.deepEqual(output, templateBytes)
+  assert.notDeepEqual(output, templateBytes)
+  const payroll = worksheetByName(unzipSync(output), 'Full time')
+  assert.match(payroll, /<c[^>]*r="B10"[^>]*><f>&apos;Basic&apos;!D9<\/f><v>NVTEST<\/v><\/c>/)
+  assert.match(payroll, /<c[^>]*r="AS10"[^>]*><f>MAX\(0,AQ10\+AR10\)<\/f><v>8815435<\/v><\/c>/)
 })
 
 test('builds the accountant workbook from the exact 19-tab template with live formulas', () => {

@@ -37,6 +37,7 @@ import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
 import { calculatePayrollTaxBases, calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from '../lib/hrPayrollPolicy'
+import { hasCompleteHistoricalAccountantLayout, historicalAccountantCategory, historicalAccountantPlacement, sortHistoricalAccountantRows } from '../lib/historicalAccountantPayroll'
 import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
 import { calculateTimesheetBasePay, isMealAllowanceEligible, payrollFallbackPeriodBasis, resolveEmployeePayrollCalendar } from '../lib/staffPayrollPeriod'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin } from '../lib/staffKioskScope'
@@ -7751,10 +7752,17 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const historicalSnapshots = payrollSourceSnapshots.filter((snapshot) => (
       snapshot.period_start === periodStart && snapshot.period_end === periodEnd
     ))
-    const historicalSourceKey = historicalSnapshots.length === 15
+    const candidateHistoricalSourceKey = historicalSnapshots.length === 15
       && historicalSnapshots.every((snapshot) => snapshot.source_key === historicalSnapshots[0]?.source_key)
       ? historicalSnapshots[0]?.source_key || ''
       : ''
+    const historicalSourceKey = hasCompleteHistoricalAccountantLayout(
+      candidateHistoricalSourceKey,
+      historicalSnapshots.map((snapshot) => snapshot.employee_code),
+    ) ? candidateHistoricalSourceKey : ''
+    const orderedHistoricalSnapshots = historicalSourceKey
+      ? sortHistoricalAccountantRows(historicalSourceKey, historicalSnapshots)
+      : historicalSnapshots
     const calculatedPayrollRows: Array<Record<string, unknown>> = visibleStaffProfileOptions.map((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
@@ -7810,56 +7818,91 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const value = Number(snapshot.source_payload?.[key])
       return Number.isFinite(value) ? value : fallback
     }
-    const historicalPayrollRows: Array<Record<string, unknown>> = historicalSnapshots.map((snapshot) => {
+    const historicalPayrollRows: Array<Record<string, unknown>> = orderedHistoricalSnapshots.map((snapshot) => {
       const standardHoursPerDay = snapshot.employment_status?.toLowerCase().includes('office') ? 8 : 6.5
       const insuranceBase = historicalSnapshotNumber(
         snapshot,
         'insurance_base_vnd',
         snapshot.employee_insurance_vnd > 0 ? snapshot.contract_rate_vnd : 0,
       )
+      const placement = historicalAccountantPlacement(historicalSourceKey, snapshot.employee_code)
+      const accountantCategory = historicalAccountantCategory(
+        historicalSourceKey,
+        snapshot.employee_code,
+        String(snapshot.source_payload?.category || snapshot.employment_status || ''),
+      )
+      const bankAdjustment = historicalSnapshotNumber(snapshot, 'difference_vnd')
+      const bankTransfer = snapshot.net_payable_vnd + bankAdjustment
+      const employeeInsuranceDeducted = Math.max(0, snapshot.gross_income_vnd - snapshot.pit_withheld_vnd - snapshot.net_payable_vnd)
+      const employeeInsuranceRate = insuranceBase > 0 ? snapshot.employee_insurance_vnd / insuranceBase * 100 : 0
+      const employerInsuranceRate = insuranceBase > 0 && snapshot.employee_insurance_vnd > 0 ? 21.5 : 0
+      const employerInsurance = Math.round(insuranceBase * employerInsuranceRate / 100)
+      const standardDays = snapshot.basic_days ?? 0
+      const salaryPaidDays = accountantCategory === 'official_hourly' || accountantCategory === 'part_time'
+        ? snapshot.worked_days ?? 0
+        : snapshot.contract_rate_vnd > 0 && standardDays > 0
+          ? Number((snapshot.base_pay_vnd / snapshot.contract_rate_vnd * standardDays).toFixed(6))
+          : 0
+      const payrollHourlyRate = accountantCategory === 'official_hourly' || accountantCategory === 'part_time'
+        ? snapshot.contract_rate_vnd
+        : standardDays > 0
+          ? snapshot.contract_rate_vnd / standardDays / standardHoursPerDay
+          : 0
       return {
-      'Employee code': snapshot.employee_code,
-      Employee: snapshot.employee_name,
-      Department: snapshot.division || '',
-      'Employment type': snapshot.employment_status || '',
-      'Contract status': snapshot.employment_status || '',
-      'Bank name': snapshot.bank_name || '',
-      'Bank account': snapshot.bank_account_number || '',
-      'Contract salary (VND)': snapshot.contract_rate_vnd,
-      'Configured hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : 0,
-      'Payroll hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : '',
-      'Period standard hours': snapshot.basic_days === null ? '' : Number((snapshot.basic_days * standardHoursPerDay).toFixed(2)),
-      'Scheduled hours': '',
-      'Worked hours': snapshot.worked_minutes === null ? '' : Number((snapshot.worked_minutes / 60).toFixed(2)),
-      'Worked days': snapshot.worked_days ?? '',
-      'Meal days': snapshot.meal_days,
-      'Paid leave hours': snapshot.worked_minutes === null ? '' : Number(((snapshot.salary_paid_minutes - snapshot.worked_minutes) / 60).toFixed(2)),
-      'Paid leave days': snapshot.paid_leave_days,
-      'Salary-paid hours': Number((snapshot.salary_paid_minutes / 60).toFixed(2)),
-      'Overtime hours': Number((snapshot.overtime_minutes / 60).toFixed(2)),
-      'Night hours': 0,
-      'Holiday hours': 0,
-      'Base pay (VND)': snapshot.base_pay_vnd,
-      'Meal allowance (VND)': snapshot.meal_allowance_vnd,
-      'Other allowances (VND)': historicalSnapshotNumber(snapshot, 'other_income_vnd'),
-      'Overtime pay (VND)': snapshot.overtime_pay_vnd,
-      'Bonuses (VND)': 0,
-      'Gross income (VND)': snapshot.gross_income_vnd,
-      'Insurance base (VND)': insuranceBase,
-      'Employee insurance (VND)': snapshot.employee_insurance_vnd,
-      'Taxable income (VND)': snapshot.taxable_income_vnd,
-      'PIT withheld (VND)': snapshot.pit_withheld_vnd,
-      'Advances (VND)': 0,
-      'Deductions (VND)': 0,
-      'Net payable (VND)': snapshot.net_payable_vnd,
-      'Employer insurance (VND)': '',
-      'Company cost (VND)': '',
-      'Bank transfer (VND)': historicalSnapshotNumber(snapshot, 'bank_transfer_vnd', snapshot.net_payable_vnd),
-      'Rest alerts': '',
-      Notes: snapshot.details || '',
+        __accountantHistoricalSource: true,
+        __accountantCategory: accountantCategory,
+        __accountantProbation: accountantCategory === 'probation_monthly' || accountantCategory === 'probation_part_time',
+        __accountantPlacement: placement || undefined,
+        __accountantSkipTimesheet: snapshot.employee_code === 'NV03',
+        'Employee code': snapshot.employee_code,
+        Employee: snapshot.employee_name,
+        Department: snapshot.division || '',
+        'Employment type': snapshot.employment_status || '',
+        'Contract status': snapshot.employment_status || '',
+        'Bank name': snapshot.bank_name || '',
+        'Bank account': snapshot.bank_account_number || '',
+        'Contract salary (VND)': snapshot.contract_rate_vnd,
+        'Configured hourly rate (VND)': snapshot.employment_status?.toLowerCase().includes('hourly') ? snapshot.contract_rate_vnd : 0,
+        'Payroll hourly rate (VND)': payrollHourlyRate,
+        'Period standard hours': snapshot.basic_days === null ? '' : Number((snapshot.basic_days * standardHoursPerDay).toFixed(2)),
+        'Scheduled hours': '',
+        'Worked hours': snapshot.worked_minutes === null ? '' : Number((snapshot.worked_minutes / 60).toFixed(2)),
+        'Worked days': snapshot.worked_days ?? '',
+        'Meal days': snapshot.meal_days,
+        'Paid leave hours': snapshot.worked_minutes === null ? '' : Number(((snapshot.salary_paid_minutes - snapshot.worked_minutes) / 60).toFixed(2)),
+        'Paid leave days': snapshot.paid_leave_days,
+        'Salary-paid hours': Number((snapshot.salary_paid_minutes / 60).toFixed(2)),
+        'Overtime hours': Number((snapshot.overtime_minutes / 60).toFixed(2)),
+        'Night hours': 0,
+        'Holiday hours': 0,
+        'Base pay (VND)': snapshot.base_pay_vnd,
+        'Meal allowance (VND)': snapshot.meal_allowance_vnd,
+        'Other allowances (VND)': historicalSnapshotNumber(snapshot, 'other_income_vnd'),
+        'Overtime pay (VND)': snapshot.overtime_pay_vnd,
+        'Bonuses (VND)': 0,
+        'Gross income (VND)': snapshot.gross_income_vnd,
+        'Insurance base (VND)': insuranceBase,
+        'Employee insurance (VND)': snapshot.employee_insurance_vnd,
+        'Employee insurance %': employeeInsuranceRate,
+        'Taxable income (VND)': snapshot.taxable_income_vnd,
+        'PIT withheld (VND)': snapshot.pit_withheld_vnd,
+        'Advances (VND)': 0,
+        'Deductions (VND)': 0,
+        'Net payable (VND)': snapshot.net_payable_vnd,
+        'Net before adjustment (VND)': snapshot.net_payable_vnd,
+        'Employee insurance deducted (VND)': employeeInsuranceDeducted,
+        'Employer insurance %': employerInsuranceRate,
+        'Employer insurance (VND)': employerInsurance,
+        'Company cost (VND)': snapshot.gross_income_vnd + employerInsurance,
+        'Bank adjustment (VND)': bankAdjustment,
+        'Bank transfer (VND)': bankTransfer,
+        'Rest alerts': '',
+        Notes: snapshot.details || '',
+        'Period standard days': standardDays,
+        'Salary-paid days': salaryPaidDays,
       }
     })
-    const payrollRows = calculatedPayrollRows
+    const payrollRows = historicalSourceKey ? historicalPayrollRows : calculatedPayrollRows
 
     const attendanceRows = attendanceLogs
       .filter((log) => log.work_date >= periodStart && log.work_date <= periodEnd)
@@ -7926,7 +7969,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     const calculationBasisRows = [
       { Setting: 'Report period', Value: `${periodStart} to ${periodEnd}`, Notes: 'Selected in the Payroll tab' },
-      { Setting: 'Payroll data source', Value: 'Live HR attendance and payroll data', Notes: historicalPayrollRows.length > 0 ? 'The imported source payroll is exported separately for employee-by-employee comparison.' : 'Calculated when the Excel file is generated.' },
+      { Setting: 'Payroll data source', Value: historicalSourceKey ? 'Protected historical payroll source' : 'Live HR attendance and payroll data', Notes: historicalSourceKey ? 'The workbook is regenerated from the signed-off employee-level source snapshot, including historical reconciliation adjustments.' : 'Calculated when the Excel file is generated.' },
       { Setting: 'Reference workbook', Value: 'VR_Payroll_July_2026_Emile_V2 · HR Employee Master', Notes: 'HR Employee Master is authoritative for employee status, contract periods, payroll type, salary, and insurance enrollment. Reconcile remains authoritative for the July historical snapshot.' },
       { Setting: 'Reference workbook URL', Value: 'https://docs.google.com/spreadsheets/d/1UbmITiVHdogTU8zOhHRFS4NmZn6unL_XsZms16zIZfA', Notes: '' },
       { Setting: 'Monthly payroll denominator', Value: 'Published employee schedule for the selected period', Notes: 'Changes with each month. Approved attendance and paid leave are the payable numerator.' },
@@ -8007,8 +8050,37 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         'Google Drive employee folder': employee?.google_drive_folder_url || '',
       }
     })
+    const currentEmployeeRowByCode = new Map<string, Record<string, unknown>>(employeeMasterRows.map((employee) => [String(employee['Employee code'] || ''), employee]))
+    const historicalPayrollRowByCode = new Map<string, Record<string, unknown>>(historicalPayrollRows.map((payroll) => [String(payroll['Employee code'] || ''), payroll]))
+    const exportEmployeeRows: Array<Record<string, unknown>> = historicalSourceKey
+      ? orderedHistoricalSnapshots.map((snapshot) => {
+          const payroll = historicalPayrollRowByCode.get(snapshot.employee_code) || {}
+          const current = currentEmployeeRowByCode.get(snapshot.employee_code) || {}
+          const category = String(payroll.__accountantCategory || '')
+          const hourly = category === 'official_hourly' || category === 'part_time' || category === 'probation_part_time'
+          return {
+            ...current,
+            __accountantCategory: payroll.__accountantCategory,
+            __accountantProbation: payroll.__accountantProbation,
+            'Employee code': snapshot.employee_code,
+            'Legal name': snapshot.employee_name,
+            'Employment status': snapshot.employment_status || current['Employment status'] || '',
+            'Employment type': snapshot.employment_status || current['Employment type'] || '',
+            Division: snapshot.division || current.Division || '',
+            'Monthly salary (VND)': hourly ? 0 : snapshot.contract_rate_vnd,
+            'Hourly rate (VND)': hourly ? snapshot.contract_rate_vnd : 0,
+            'Configured hourly rate (VND)': hourly ? snapshot.contract_rate_vnd : 0,
+            'Meal / worked day (VND)': snapshot.meal_days > 0 ? snapshot.meal_allowance_vnd / snapshot.meal_days : hrSettings.lunch_allowance_vnd,
+            'Employee insurance %': Number(payroll['Employee insurance %']) || 0,
+            'Employer insurance & union %': Number(payroll['Employer insurance %']) || 0,
+            Bank: snapshot.bank_name || '',
+            'Bank account': snapshot.bank_account_number || '',
+            Notes: snapshot.details || '',
+          }
+        })
+      : employeeMasterRows
 
-    const contractCheckRows = employeeMasterRows.map((employee, index) => {
+    const contractCheckRows = exportEmployeeRows.map((employee, index) => {
       const row = index + 5
       const employeeRow = row
       const statusFormula = `IF(OR('Employee Master'!A${employeeRow}="",'Employee Master'!B${employeeRow}=""),"MISSING IDENTITY",IF(AND('Employee Master'!R${employeeRow}=0,'Employee Master'!S${employeeRow}=0),"MISSING PAY RATE",IF(OR('Employee Master'!AD${employeeRow}="",'Employee Master'!AE${employeeRow}=""),"MISSING BANK",IF(AND('Employee Master'!P${employeeRow}<>"",'Employee Master'!Q${employeeRow}<>"",'Employee Master'!Q${employeeRow}<'Employee Master'!P${employeeRow}),"CHECK CONTRACT DATES","OK"))))`
@@ -8030,15 +8102,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const row = index + 5
       const employee = employeeByCode.get(String(source['Employee code'] || ''))
       const calculation = employee ? staffPayrollCalculations.get(employee.profile_id) : undefined
-      const periodReference = historicalSnapshots.find((snapshot) => snapshot.employee_code === employee?.employee_code)
-      const mealPerDay = hrSettings.lunch_allowance_vnd
+      const sourceEmployeeCode = String(source['Employee code'] || '')
+      const periodReference = historicalSnapshots.find((snapshot) => snapshot.employee_code === sourceEmployeeCode)
+      const sourceMealDays = Math.max(0, Number(source['Meal days']) || 0)
+      const mealPerDay = sourceMealDays > 0
+        ? Math.max(0, Number(source['Meal allowance (VND)']) || 0) / sourceMealDays
+        : hrSettings.lunch_allowance_vnd
       const insuranceBaseValue = Math.max(0, Number(source['Insurance base (VND)']) || 0)
       const employeeRateValue = periodReference
         ? insuranceBaseValue > 0
           ? periodReference.employee_insurance_vnd / insuranceBaseValue * 100
           : 0
         : hrSettings.employee_social_insurance_rate + hrSettings.employee_health_insurance_rate + hrSettings.employee_unemployment_insurance_rate
-      const employerRateValue = hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate
+      const sourceEmployerRateValue = Number(source['Employer insurance %'])
+      const employerRateValue = Number.isFinite(sourceEmployerRateValue)
+        ? Math.max(0, sourceEmployerRateValue)
+        : hrSettings.employer_social_insurance_rate + hrSettings.employer_health_insurance_rate + hrSettings.employer_unemployment_insurance_rate + hrSettings.employer_trade_union_rate
       const pitRateValue = Math.max(
         0,
         Number(periodReference?.source_payload?.pit_rate_percent) || Number(employee?.pit_withholding_rate) || 0,
@@ -8062,16 +8141,25 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         personalDeduction: hrSettings.personal_deduction_vnd,
         dependentDeduction: Math.max(0, Number(employee?.dependents_count) || 0) * hrSettings.dependent_deduction_vnd,
       })
+      const sourceTaxableIncomeValue = Number(source['Taxable income (VND)'])
+      const taxableIncome = source.__accountantHistoricalSource && Number.isFinite(sourceTaxableIncomeValue)
+        ? Math.max(0, sourceTaxableIncomeValue)
+        : taxBases.progressiveTaxableIncome
       const sourceBankTransferValue = Number(source['Bank transfer (VND)'])
       const bankTransfer = Number.isFinite(sourceBankTransferValue) ? sourceBankTransferValue : net
+      const sourceBankAdjustmentValue = Number(source['Bank adjustment (VND)'])
+      const bankAdjustment = Number.isFinite(sourceBankAdjustmentValue) ? sourceBankAdjustmentValue : -(advances + deductions)
       const bankTransferCheck = !source['Bank name'] || !source['Bank account']
         ? 'MISSING BANK'
-        : Math.abs(bankTransfer - net) > 1
+        : Math.abs(bankTransfer - (net + bankAdjustment)) > 1
           ? 'CHECK TRANSFER'
           : 'OK'
       return {
+        __accountantHistoricalSource: source.__accountantHistoricalSource,
         __accountantCategory: source.__accountantCategory,
         __accountantProbation: source.__accountantProbation,
+        __accountantPlacement: source.__accountantPlacement,
+        __accountantSkipTimesheet: source.__accountantSkipTimesheet,
         'Employee code': source['Employee code'], Employee: source.Employee, Division: source.Department,
         'Employment type': source['Employment type'], 'Contract status': source['Contract status'], Bank: source['Bank name'], 'Bank account': source['Bank account'],
         'Contract salary (VND)': source['Contract salary (VND)'], 'Configured hourly rate (VND)': source['Configured hourly rate (VND)'],
@@ -8085,16 +8173,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         Dependents: Math.max(0, Number(employee?.dependents_count) || 0), 'OT multiplier': hrSettings.normal_overtime_multiplier,
         'Night multiplier': hrSettings.normal_overtime_multiplier + hrSettings.night_work_bonus_rate / 100 + hrSettings.night_overtime_extra_rate / 100, 'Holiday multiplier': hrSettings.holiday_overtime_multiplier,
         'Base pay (VND)': accountantFormula(`IF(H${row}>0,ROUND(H${row}*MIN(1,P${row}/MAX(1,K${row})),0),ROUND(P${row}*J${row},0))`, basePay, 'currency'),
-        'Meal allowance (VND)': accountantFormula(`ROUND(${calculation?.mealDays || 0}*T${row},0)`, mealAllowance, 'currency'),
+        'Meal days': sourceMealDays,
+        'Meal allowance (VND)': accountantFormula(`ROUND(${sourceMealDays || calculation?.mealDays || 0}*T${row},0)`, mealAllowance, 'currency'),
         'Overtime pay (VND)': accountantFormula(`ROUND(MAX(0,Q${row}-R${row}-S${row})*J${row}*AD${row}+R${row}*J${row}*(AD${row}+${hrSettings.night_work_bonus_rate / 100}+${hrSettings.night_overtime_extra_rate / 100})+S${row}*J${row}*AF${row},0)`, overtimePay, 'currency'),
         'Gross income (VND)': accountantFormula(`MAX(0,SUM(AG${row}:AI${row})+U${row}+V${row})`, gross, 'currency'),
         'Insurance base (VND)': source['Insurance base (VND)'],
         'Employee insurance (VND)': accountantFormula(`ROUND(AK${row}*Y${row}/100,0)`, employeeInsurance, 'currency'),
-        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AH${row}-AI${row}-${hrSettings.personal_deduction_vnd}-AC${row}*${hrSettings.dependent_deduction_vnd})`, taxBases.progressiveTaxableIncome, 'currency'),
+        'Taxable income (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AH${row}-AI${row}-${hrSettings.personal_deduction_vnd}-AC${row}*${hrSettings.dependent_deduction_vnd})`, taxableIncome, 'currency'),
         'PIT withheld (VND)': accountantFormula(`IF('${hrSettings.personal_income_tax_enabled ? 'yes' : 'no'}'<>"yes",0,IF(AB${row}>0,ROUND(MAX(0,AJ${row}-AL${row}-AI${row})*AB${row}/100,0),ROUND(${progressivePitExcelFormula(`AM${row}`, hrSettings.pit_brackets)},0)))`, pit, 'currency'),
         'Net payable (VND)': accountantFormula(`MAX(0,AJ${row}-AL${row}-AN${row}-X${row}-W${row})`, net, 'currency'),
+        'Net before adjustment (VND)': source['Net before adjustment (VND)'] ?? net,
+        'Employee insurance deducted (VND)': source['Employee insurance deducted (VND)'] ?? employeeInsurance,
         'Employer insurance (VND)': accountantFormula(`ROUND(AK${row}*Z${row}/100,0)`, employerInsurance, 'currency'),
         'Company cost (VND)': accountantFormula(`MAX(0,AJ${row}+AP${row})`, companyCost, 'currency'),
+        'Bank adjustment (VND)': bankAdjustment,
         'Bank transfer (VND)': accountantFormula(`AO${row}`, bankTransfer, 'currency'),
         Check: accountantFormula(`IF(OR(A${row}="",B${row}=""),"MISSING EMPLOYEE",IF(OR(F${row}="",G${row}=""),"MISSING BANK",IF(ABS(AR${row}-AO${row})>1,"CHECK TRANSFER","OK")))`, bankTransferCheck),
         Notes: source.Notes,
@@ -8254,7 +8346,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             sourceWorkbookRowCount: historicalSnapshots.length,
           } : {}),
           payrollRows: payrollFormulaRows,
-          employeeRows: employeeMasterRows,
+          employeeRows: exportEmployeeRows,
           attendanceRows,
           calculationBasisRows,
         },

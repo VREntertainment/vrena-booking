@@ -14,6 +14,17 @@ export type AccountantPayrollCategory =
   | 'probation_monthly'
   | 'probation_part_time'
 
+export type AccountantPayrollPlacement = {
+  layoutCategory: AccountantPayrollCategory
+  basic: number
+  payroll: number
+  workRecord?: number
+  bank?: number
+  reconcile?: number
+  sequence?: Partial<Record<'basic' | 'payroll' | 'workRecord' | 'bank' | 'reconcile', number>>
+  timesheet?: { sheet: 'VRENA-timesheet' | 'Manager-timesheet' | 'GC- timesheet'; slot: number }
+}
+
 export type AccountantPayrollWorkbookInput = {
   periodStart: string
   periodEnd: string
@@ -23,16 +34,6 @@ export type AccountantPayrollWorkbookInput = {
   employeeRows: Array<Record<string, unknown>>
   attendanceRows: Array<Record<string, unknown>>
   calculationBasisRows: Array<Record<string, unknown>>
-}
-
-const JULY_2026_ACCOUNTANT_SOURCE_KEY = 'july-2026-260805'
-const JULY_2026_ACCOUNTANT_SOURCE_ROWS = 15
-
-function usesExactJulyAccountantSource(input: AccountantPayrollWorkbookInput) {
-  return input.periodStart === '2026-07-01'
-    && input.periodEnd === '2026-07-31'
-    && input.sourceWorkbookKey === JULY_2026_ACCOUNTANT_SOURCE_KEY
-    && input.sourceWorkbookRowCount === JULY_2026_ACCOUNTANT_SOURCE_ROWS
 }
 
 type CellValue = string | number | null | WorkbookFormulaValue
@@ -132,6 +133,19 @@ function netBeforeAdjustmentValue(row: Record<string, unknown>) {
 function bankTransferValue(row: Record<string, unknown>) {
   if (hasNumericValue(row, 'Bank transfer (VND)')) return numberValue(row, 'Bank transfer (VND)')
   return netBeforeAdjustmentValue(row) + bankAdjustmentValue(row)
+}
+
+function employeeInsuranceDeductionValue(row: Record<string, unknown>) {
+  if (hasNumericValue(row, 'Employee insurance deducted (VND)')) return numberValue(row, 'Employee insurance deducted (VND)')
+  return numberValue(row, 'Employee insurance (VND)')
+}
+
+function employeeInsuranceDeductionFormula(row: Record<string, unknown>, payrollRow: number) {
+  const deduction = employeeInsuranceDeductionValue(row)
+  const contributions = numberValue(row, 'Employee insurance (VND)')
+  if (Math.abs(deduction - contributions) <= 1) return `SUM(AG${payrollRow}:AI${payrollRow})`
+  if (Math.abs(deduction) <= 1) return '0'
+  return String(Math.round(deduction))
 }
 
 function formula(formulaText: string, result: string | number = ''): WorkbookFormulaValue {
@@ -234,7 +248,28 @@ function saveSheet(entries: ZipEntries, path: string, xml: string) {
 }
 
 function assignRows(rows: Array<Record<string, unknown>>) {
-  const assignments = new Map<Record<string, unknown>, { basic: number; payroll: number; workRecord: number; bank: number; reconcile: number; layoutCategory: AccountantPayrollCategory }>()
+  const assignments = new Map<Record<string, unknown>, AccountantPayrollPlacement>()
+  const explicitPlacements = rows.map((row) => row.__accountantPlacement as AccountantPayrollPlacement | undefined)
+  if (explicitPlacements.some(Boolean)) {
+    if (!explicitPlacements.every(Boolean)) throw new Error('Accountant row placements must be supplied for every payroll row or for none of them.')
+    const occupied = new Map<string, string>()
+    rows.forEach((row, index) => {
+      const placement = explicitPlacements[index] as AccountantPayrollPlacement
+      if (!categories.includes(placement.layoutCategory) || !Number.isInteger(placement.basic) || !Number.isInteger(placement.payroll)) {
+        throw new Error(`Invalid accountant row placement for ${row['Employee code'] || 'an employee'}.`)
+      }
+      for (const surface of ['basic', 'payroll', 'workRecord', 'bank', 'reconcile'] as const) {
+        const target = placement[surface]
+        if (target == null) continue
+        const key = `${surface}:${target}`
+        const existing = occupied.get(key)
+        if (existing) throw new Error(`Accountant ${surface} row ${target} is assigned to both ${existing} and ${row['Employee code'] || 'an employee'}.`)
+        occupied.set(key, String(row['Employee code'] || 'an employee'))
+      }
+      assignments.set(row, placement)
+    })
+    return assignments
+  }
   const assignCategoryRows = (categoryRows: Array<Record<string, unknown>>, layoutCategory: AccountantPayrollCategory, startIndex = 0) => {
     const layout = categoryLayouts[layoutCategory]
     if (startIndex + categoryRows.length > layout.basic.length || startIndex + categoryRows.length > layout.payroll.length || startIndex + categoryRows.length > layout.bank.length) {
@@ -333,7 +368,7 @@ function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput
     const employee = employeesByCode.get(stringValue(payroll, 'Employee code')) || payroll
     const row = assignment.basic
     const values: Record<string, CellValue> = {
-      B: categoryLayouts[assignment.layoutCategory].basic.indexOf(row) + 1,
+      B: assignment.sequence?.basic ?? categoryLayouts[assignment.layoutCategory].basic.indexOf(row) + 1,
       C: stringValue(employee, 'Legal name') || stringValue(payroll, 'Employee'),
       D: stringValue(employee, 'Employee code') || stringValue(payroll, 'Employee code'),
       E: stringValue(employee, 'Position'), F: stringValue(employee, 'Division') || stringValue(payroll, 'Division'),
@@ -445,11 +480,23 @@ function updateTimesheets(entries: ZipEntries, paths: Map<string, string>, input
   for (const sheetName of Object.keys(timesheetLayouts) as Array<keyof typeof timesheetLayouts>) {
     const target = getSheet(entries, paths, sheetName)
     let xml = target.xml
-    const employees = input.payrollRows.filter((row) => timesheetName(row) === sheetName)
+    const hasExplicitTimesheetPlacements = input.payrollRows.some((row) => Boolean((row.__accountantPlacement as AccountantPayrollPlacement | undefined)?.timesheet))
+    const explicitlyPlacedEmployees = new Map<number, Record<string, unknown>>()
+    if (hasExplicitTimesheetPlacements) {
+      input.payrollRows.forEach((row) => {
+        const placement = (row.__accountantPlacement as AccountantPayrollPlacement | undefined)?.timesheet
+        if (!placement || placement.sheet !== sheetName) return
+        if (explicitlyPlacedEmployees.has(placement.slot)) throw new Error(`${sheetName} slot ${placement.slot + 1} is assigned more than once.`)
+        explicitlyPlacedEmployees.set(placement.slot, row)
+      })
+    }
+    const employees = hasExplicitTimesheetPlacements
+      ? [...explicitlyPlacedEmployees.values()]
+      : input.payrollRows.filter((row) => !row.__accountantSkipTimesheet && timesheetName(row) === sheetName)
     const layouts = timesheetLayouts[sheetName]
     if (employees.length > layouts.length) throw new Error(`${sheetName} has ${employees.length} employees but the accountant template supports ${layouts.length}.`)
     layouts.forEach((layout, index) => {
-      const payroll = employees[index]
+      const payroll = hasExplicitTimesheetPlacements ? explicitlyPlacedEmployees.get(index) : employees[index]
       const hasThirtyFirstDay = xml.includes(`r="AH${layout.summary}"`)
       const dayCapacity = hasThirtyFirstDay ? 31 : 30
       const totalColumn = hasThirtyFirstDay ? 'AH' : 'AG'
@@ -526,9 +573,9 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
   input.payrollRows.forEach((payroll) => {
     const assignment = assignments.get(payroll)
     const timesheet = timesheetAssignments.get(payroll)
-    if (!assignment || !timesheet) return
+    if (!assignment || !timesheet || assignment.workRecord == null) return
     const row = assignment.workRecord
-    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].workRecord.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, assignment.sequence?.workRecord ?? categoryLayouts[assignment.layoutCategory].workRecord.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee'))
     xml = setCell(xml, `C${row}`, stringValue(payroll, 'Employee code'))
     for (let dayIndex = 0; dayIndex < 31; dayIndex += 1) {
@@ -543,6 +590,7 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
     xml = setCell(xml, `AM${row}`, formula(`'${timesheet.sheet}'!AH${timesheet.summaryRow + 3}`, numberValue(payroll, 'Holiday hours') / 24))
     xml = setCell(xml, `AN${row}`, formula(`COUNTIF(D${row}:AH${row},">0")`, numberValue(payroll, 'Worked days')))
   })
+  xml = setCell(xml, 'A20', 'II. Nhân viên chính thức lương giờ - Hourly salary')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A29', monthlyBandLabel)
   const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
@@ -575,6 +623,9 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const employeeInsurance = numberValue(payroll, 'Employee insurance (VND)')
     const employerInsurance = numberValue(payroll, 'Employer insurance (VND)')
     const contributionBase = numberValue(payroll, 'Insurance base (VND)')
+    const employeeInsuranceRate = numberValue(payroll, 'Employee insurance %') || (contributionBase > 0 ? employeeInsurance / contributionBase * 100 : 0)
+    const employerRate = numberValue(payroll, 'Employer insurance %') || (contributionBase > 0 ? employerInsurance / contributionBase * 100 : 0)
+    const tradeUnionRate = Math.max(0, employerRate - 21.5)
     const personalDeduction = numberValue(input.calculationBasisRows.find((item) => item.Setting === 'PIT self deduction (VND)') || {}, 'Value') || 15_500_000
     const dependentDeduction = numberValue(input.calculationBasisRows.find((item) => item.Setting === 'PIT dependent deduction (VND)') || {}, 'Value') || 6_200_000
     const dependents = numberValue(payroll, 'Dependents') || numberValue(employee, 'Dependents')
@@ -583,6 +634,8 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const mealAllowance = numberValue(payroll, 'Meal allowance (VND)')
     const gross = numberValue(payroll, 'Gross income (VND)')
     const taxable = numberValue(payroll, 'Taxable income (VND)') || Math.max(0, gross - mealAllowance)
+    const historicalSource = Boolean(payroll.__accountantHistoricalSource)
+    const historicalNonTaxableIncome = Math.max(0, gross - taxable)
     const assessable = Math.max(0, taxable - employeeInsurance - personalDeduction - dependents * dependentDeduction)
     const pit = numberValue(payroll, 'PIT withheld (VND)')
     const adjustments = bankAdjustmentValue(payroll)
@@ -590,7 +643,7 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
     const bankTransfer = bankTransferValue(payroll)
     const probation = probationAppliesToPayroll(payroll)
     const values: Record<string, CellValue> = {
-      A: categoryIndex, B: formula(`'Basic'!D${basicRow}`, stringValue(payroll, 'Employee code')), C: formula(`'Basic'!C${basicRow}`, stringValue(payroll, 'Employee')),
+      A: assignment.sequence?.payroll ?? categoryIndex, B: formula(`'Basic'!D${basicRow}`, stringValue(payroll, 'Employee code')), C: formula(`'Basic'!C${basicRow}`, stringValue(payroll, 'Employee')),
       D: formula(`IFERROR('Basic'!U${basicRow}-$C$3,0)`, 0), E: formula(`'Basic'!E${basicRow}`, stringValue(employee, 'Position')),
       F: numberValue(payroll, 'Salary-paid days'), G: numberValue(payroll, 'Paid leave days'), H: numberValue(payroll, 'Period standard days'),
       I: probation ? Math.max(0, workedHours - overtimeHours) / 24 : 0,
@@ -599,17 +652,37 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
       N: formula(`ROUND(IF('Basic'!AA${basicRow}>0,'Basic'!AA${basicRow}*MIN(1,F${row}/MAX(1,H${row})),K${row}*24*Y${row}),0)`, basePay),
       P: numberValue(payroll, 'Other allowances (VND)'), Q: 0, R: 0,
       S: formula(`${numberValue(payroll, 'Meal days')}*${numberValue(employee, 'Meal / worked day (VND)') || (numberValue(payroll, 'Meal days') > 0 ? mealAllowance / numberValue(payroll, 'Meal days') : 0)}`, mealAllowance),
-      T: 0, U: formula(`'Work record 100%'!AK${workRow}`, overtimeHours / 24), V: formula(`'Work record 100%'!AL${workRow}`, nightHours / 24), W: formula(`'Work record 100%'!AM${workRow}`, holidayHours / 24),
+      T: 0,
+      U: historicalSource ? formula(`${overtimeHours}/24`, overtimeHours / 24) : workRow == null ? 0 : formula(`'Work record 100%'!AK${workRow}`, overtimeHours / 24),
+      V: historicalSource ? formula(`${nightHours}/24`, nightHours / 24) : workRow == null ? 0 : formula(`'Work record 100%'!AL${workRow}`, nightHours / 24),
+      W: historicalSource ? formula(`${holidayHours}/24`, holidayHours / 24) : workRow == null ? 0 : formula(`'Work record 100%'!AM${workRow}`, holidayHours / 24),
       X: probation ? numberValue(payroll, 'Payroll hourly rate (VND)') : 0, Y: numberValue(payroll, 'Payroll hourly rate (VND)'),
       Z: numberValue(payroll, 'Bonuses (VND)'), AA: 0, AB: numberValue(payroll, 'Recurring monthly bonus (VND)'),
       AC: formula(`ROUND(N${row}+SUM(P${row}:T${row})+Z${row}-AA${row}+AB${row}+(U${row}*150%+V${row}*200%+W${row}*300%)*24*Y${row},0)`, gross),
-      AD: formula(`MAX(0,AC${row}-S${row}-(U${row}*150%+V${row}*200%+W${row}*300%)*24*Y${row})`, taxable),
+      AD: formula(historicalSource
+        ? `MAX(0,AC${row}-${Math.round(historicalNonTaxableIncome)})`
+        : `MAX(0,AC${row}-S${row}-(U${row}*150%+V${row}*200%+W${row}*300%)*24*Y${row})`, taxable),
       AE: formula(`MAX(0,AD${row}-SUM(AG${row}:AI${row})-AN${row}-AO${row})`, assessable),
-      AF: formula(pitRate > 0 ? `ROUND(MAX(0,AD${row}-SUM(AG${row}:AI${row}))*${pitRate}%,0)` : `ROUND(IF(AE${row}<=10000000,AE${row}*5%,IF(AE${row}<=30000000,AE${row}*10%-500000,IF(AE${row}<=60000000,AE${row}*20%-3500000,IF(AE${row}<=100000000,AE${row}*30%-9500000,AE${row}*35%-14500000)))),0)`, pit),
-      AG: formula(`ROUND(L${row}*8%,0)`, Math.round(employeeInsurance * 8 / 10.5)), AH: formula(`ROUND(L${row}*1.5%,0)`, Math.round(employeeInsurance * 1.5 / 10.5)), AI: formula(`ROUND(L${row}*1%,0)`, employeeInsurance - Math.round(employeeInsurance * 8 / 10.5) - Math.round(employeeInsurance * 1.5 / 10.5)),
-      AJ: formula(`ROUND(L${row}*17.5%,0)`, Math.round(employerInsurance * 17.5 / 23.5)), AK: formula(`ROUND(L${row}*3%,0)`, Math.round(employerInsurance * 3 / 23.5)), AL: formula(`ROUND(L${row}*1%,0)`, Math.round(employerInsurance * 1 / 23.5)), AM: formula(`ROUND(L${row}*2%,0)`, Math.max(0, employerInsurance - Math.round(employerInsurance * 17.5 / 23.5) - Math.round(employerInsurance * 3 / 23.5) - Math.round(employerInsurance * 1 / 23.5))),
+      AF: formula(pitRate > 0
+        ? historicalSource
+          ? `ROUND(AD${row}*${pitRate}%,0)`
+          : `ROUND(MAX(0,AD${row}-SUM(AG${row}:AI${row}))*${pitRate}%,0)`
+        : `ROUND(IF(AE${row}<=10000000,AE${row}*5%,IF(AE${row}<=30000000,AE${row}*10%-500000,IF(AE${row}<=60000000,AE${row}*20%-3500000,IF(AE${row}<=100000000,AE${row}*30%-9500000,AE${row}*35%-14500000)))),0)`, pit),
+      AG: historicalSource && Math.abs(employeeInsuranceRate - 10.5) > 0.001
+        ? formula(`ROUND(L${row}*${employeeInsuranceRate}%,0)`, employeeInsurance)
+        : formula(`ROUND(L${row}*8%,0)`, Math.round(employeeInsurance * 8 / 10.5)),
+      AH: historicalSource && Math.abs(employeeInsuranceRate - 10.5) > 0.001
+        ? formula('0', 0)
+        : formula(`ROUND(L${row}*1.5%,0)`, Math.round(employeeInsurance * 1.5 / 10.5)),
+      AI: historicalSource && Math.abs(employeeInsuranceRate - 10.5) > 0.001
+        ? formula('0', 0)
+        : formula(`ROUND(L${row}*1%,0)`, employeeInsurance - Math.round(employeeInsurance * 8 / 10.5) - Math.round(employeeInsurance * 1.5 / 10.5)),
+      AJ: formula(`ROUND(L${row}*17.5%,0)`, Math.round(contributionBase * 17.5 / 100)),
+      AK: formula(`ROUND(L${row}*3%,0)`, Math.round(contributionBase * 3 / 100)),
+      AL: formula(`ROUND(L${row}*1%,0)`, Math.round(contributionBase * 1 / 100)),
+      AM: formula(`ROUND(L${row}*${tradeUnionRate}%,0)`, Math.max(0, employerInsurance - Math.round(contributionBase * 17.5 / 100) - Math.round(contributionBase * 3 / 100) - Math.round(contributionBase * 1 / 100))),
       AN: personalDeduction, AO: dependents * dependentDeduction, AP: 0,
-      AQ: formula(`MAX(0,AC${row}-SUM(AG${row}:AI${row})-AF${row}-AP${row})`, netBeforeAdjustment), AR: adjustments,
+      AQ: formula(`MAX(0,AC${row}-${employeeInsuranceDeductionFormula(payroll, row)}-AF${row}-AP${row})`, netBeforeAdjustment), AR: adjustments,
       AS: formula(`MAX(0,AQ${row}+AR${row})`, bankTransfer), AT: formula(`AS${row}`, bankTransfer), AU: formula(`AT${row}-AS${row}`, 0), AV: stringValue(payroll, 'Notes'),
     }
     for (const [column, value] of Object.entries(values)) {
@@ -641,15 +714,16 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
   for (const row of bankDataRows) for (let column = 1; column <= 6; column += 1) xml = setCell(xml, `${columnName(column)}${row}`, '')
   input.payrollRows.forEach((payroll) => {
     const assignment = assignments.get(payroll)
-    if (!assignment) return
+    if (!assignment || assignment.bank == null) return
     const row = assignment.bank
-    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].bank.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, assignment.sequence?.bank ?? categoryLayouts[assignment.layoutCategory].bank.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee'))
     xml = setCell(xml, `C${row}`, formula(`'Full time'!AS${assignment.payroll}`, bankTransferValue(payroll)))
     xml = setCell(xml, `D${row}`, stringValue(payroll, 'Bank account'))
     xml = setCell(xml, `E${row}`, stringValue(payroll, 'Bank'))
     xml = setCell(xml, `F${row}`, stringValue(payroll, 'Notes'))
   })
+  xml = setCell(xml, 'A15', 'II. Nhân viên chính thức lương giờ - Part-time')
   xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A24', monthlyBandLabel)
@@ -715,9 +789,9 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
   for (const row of reconcileDataRows) for (let column = 1; column <= 48; column += 1) xml = setCell(xml, `${columnName(column)}${row}`, '')
   input.payrollRows.forEach((payroll) => {
     const assignment = assignments.get(payroll)
-    if (!assignment) return
+    if (!assignment || assignment.reconcile == null) return
     const row = assignment.reconcile
-    xml = setCell(xml, `A${row}`, categoryLayouts[assignment.layoutCategory].reconcile.indexOf(row) + 1)
+    xml = setCell(xml, `A${row}`, assignment.sequence?.reconcile ?? categoryLayouts[assignment.layoutCategory].reconcile.indexOf(row) + 1)
     xml = setCell(xml, `B${row}`, stringValue(payroll, 'Employee code'))
     for (let column = 3; column <= 45; column += 1) {
       const name = columnName(column)
@@ -727,6 +801,7 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
     xml = setCell(xml, `AU${row}`, formula(`AT${row}-AS${row}`, 0))
     xml = setCell(xml, `AV${row}`, stringValue(payroll, 'Notes'))
   })
+  xml = setCell(xml, 'A16', 'II. Nhân viên chính thức lương giờ - Hourly salary')
   xml = setCell(xml, 'A25', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A28', monthlyBandLabel)
@@ -745,11 +820,6 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
 }
 
 export function buildAccountantPayrollWorkbook(templateBytes: Uint8Array, input: AccountantPayrollWorkbookInput) {
-  // The verified July source is the accountant's signed-off workbook. Returning
-  // those exact bytes is the only way to preserve its historical formulas,
-  // terminated payroll row, and signed bank adjustments without reinterpretation.
-  if (usesExactJulyAccountantSource(input)) return templateBytes
-
   const entries = unzipSync(templateBytes)
   const paths = sheetPaths(entries)
   const assignments = assignRows(input.payrollRows)
