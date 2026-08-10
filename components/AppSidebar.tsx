@@ -175,6 +175,7 @@ export default function AppSidebar({
         <a href="https://www.vre-vietnam.com" target="_blank" rel="noreferrer">www.vre-vietnam.com</a>
         <a href="mailto:contact@vre-vietnam.com">contact@vre-vietnam.com</a>
         <ContactChannels label={text.contactUs} />
+        <span id="vrena-booking-privacy-choices-slot" />
       </div>
     </aside>
   )

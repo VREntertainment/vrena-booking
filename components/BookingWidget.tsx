@@ -21,6 +21,7 @@ import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as i
 import { getStaffKioskOperator, setStaffKioskOperatorToken, type StaffKioskOperator } from '../lib/supabase/client'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
+import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/googleAnalytics'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
@@ -7216,6 +7217,17 @@ function handleSessionDateChange(value: string) {
     const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
     if (!allowed) return false
 
+    const ticketAnalytics = {
+      ticketType,
+      ticketLabel: ticketTypeLabel(ticketType, looseText),
+      date: ticketDate,
+      time: ticketTime,
+      players: ticketPlayers,
+      durationMinutes: activeTicketDuration,
+      totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+    }
+    trackTicketCheckoutStarted(ticketAnalytics)
+
     setIsBookingTickets(true)
     showTicketStatus(text.bookingTickets)
     setTicketConfirmation(null)
@@ -7297,6 +7309,10 @@ function handleSessionDateChange(value: string) {
     }
 
     setTicketConfirmation(confirmation)
+    trackTicketBookingCompleted({
+      ...ticketAnalytics,
+      transactionId: confirmation.reference || confirmation.sessionId,
+    })
     showTicketStatus(text.ticketBookingCreated)
     showActionToast(text.ticketBookingCreated)
     setTicketTime('')
