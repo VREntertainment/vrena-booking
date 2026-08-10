@@ -219,7 +219,8 @@ function assignRows(rows: Array<Record<string, unknown>>) {
     }))
   }
 
-  for (const category of categories.filter((category) => category !== 'monthly' && category !== 'probation_monthly')) {
+  const pooledCategories: AccountantPayrollCategory[] = ['monthly', 'probation_monthly', 'official_hourly', 'part_time', 'probation_part_time']
+  for (const category of categories.filter((category) => !pooledCategories.includes(category))) {
     const categoryRows = rows.filter((row) => categoryOf(row) === category)
     assignCategoryRows(categoryRows, category)
   }
@@ -230,6 +231,37 @@ function assignRows(rows: Array<Record<string, unknown>>) {
   const standardMonthlyCapacity = categoryLayouts.monthly.basic.length
   assignCategoryRows(monthlyRows.slice(0, standardMonthlyCapacity), 'monthly')
   assignCategoryRows(monthlyRows.slice(standardMonthlyCapacity), 'probation_monthly', probationMonthlyRows.length)
+
+  const officialHourlyRows = rows.filter((row) => categoryOf(row) === 'official_hourly')
+  const partTimeRows = rows.filter((row) => categoryOf(row) === 'part_time')
+  const probationPartTimeRows = rows.filter((row) => categoryOf(row) === 'probation_part_time')
+  const hourlyPoolLayouts: AccountantPayrollCategory[] = ['official_hourly', 'part_time', 'probation_part_time']
+  const preferredRows = new Map<AccountantPayrollCategory, Array<Record<string, unknown>>>([
+    ['official_hourly', officialHourlyRows],
+    ['part_time', partTimeRows],
+    ['probation_part_time', probationPartTimeRows],
+  ])
+  const usedCounts = new Map<AccountantPayrollCategory, number>()
+  const overflowRows: Array<Record<string, unknown>> = []
+  for (const layoutCategory of hourlyPoolLayouts) {
+    const categoryRows = preferredRows.get(layoutCategory) || []
+    const capacity = categoryLayouts[layoutCategory].basic.length
+    const preferred = categoryRows.slice(0, capacity)
+    assignCategoryRows(preferred, layoutCategory)
+    usedCounts.set(layoutCategory, preferred.length)
+    overflowRows.push(...categoryRows.slice(capacity))
+  }
+  let overflowIndex = 0
+  for (const layoutCategory of hourlyPoolLayouts) {
+    const used = usedCounts.get(layoutCategory) || 0
+    const free = categoryLayouts[layoutCategory].basic.length - used
+    const sharedRows = overflowRows.slice(overflowIndex, overflowIndex + free)
+    assignCategoryRows(sharedRows, layoutCategory, used)
+    overflowIndex += sharedRows.length
+  }
+  if (overflowIndex < overflowRows.length) {
+    throw new Error(`The accountant template has no free hourly or part-time row for ${overflowRows[overflowIndex]?.['Employee code'] || 'an employee'}.`)
+  }
   return assignments
 }
 
@@ -240,6 +272,17 @@ function probationMonthlyBandLabel(input: AccountantPayrollWorkbookInput, assign
   return hasProbationEmployees
     ? 'V. Nhân viên tháng bổ sung / thử việc - Additional monthly / probation employees'
     : 'V. Nhân viên tháng bổ sung - Additional monthly employees'
+}
+
+function sharedHourlyBandLabel(input: AccountantPayrollWorkbookInput, assignments: ReturnType<typeof assignRows>, layoutCategory: AccountantPayrollCategory) {
+  const hasSharedRows = input.payrollRows.some((row) => assignments.get(row)?.layoutCategory === layoutCategory && categoryOf(row) !== layoutCategory)
+  if (!hasSharedRows) return null
+  const labels: Partial<Record<AccountantPayrollCategory, string>> = {
+    official_hourly: 'II. Nhân viên theo giờ / bán thời gian - Hourly / part-time employees',
+    part_time: 'III. Nhân viên bán thời gian / theo giờ - Part-time / hourly employees',
+    probation_part_time: 'VI. Nhân viên bán thời gian bổ sung / thử việc - Additional / probation part-time employees',
+  }
+  return labels[layoutCategory] || null
 }
 
 function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput, assignments: ReturnType<typeof assignRows>) {
@@ -278,6 +321,12 @@ function updateEmployeeMaster(xml: string, input: AccountantPayrollWorkbookInput
   xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A24', monthlyBandLabel)
+  const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
+  const partTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'part_time')
+  const probationPartTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'probation_part_time')
+  if (hourlyBandLabel) xml = setCell(xml, 'A15', hourlyBandLabel)
+  if (partTimeBandLabel) xml = setCell(xml, 'A19', partTimeBandLabel)
+  if (probationPartTimeBandLabel) xml = setCell(xml, 'A27', probationPartTimeBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   return xml
 }
@@ -464,6 +513,12 @@ function updateWorkRecord(xml: string, input: AccountantPayrollWorkbookInput, as
   })
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A29', monthlyBandLabel)
+  const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
+  const partTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'part_time')
+  const probationPartTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'probation_part_time')
+  if (hourlyBandLabel) xml = setCell(xml, 'A20', hourlyBandLabel)
+  if (partTimeBandLabel) xml = setCell(xml, 'A24', partTimeBandLabel)
+  if (probationPartTimeBandLabel) xml = setCell(xml, 'A32', probationPartTimeBandLabel)
   return xml
 }
 
@@ -528,6 +583,12 @@ function updatePayroll(xml: string, input: AccountantPayrollWorkbookInput, assig
   xml = setCell(xml, 'A24', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A26', monthlyBandLabel)
+  const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
+  const partTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'part_time')
+  const probationPartTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'probation_part_time')
+  if (hourlyBandLabel) xml = setCell(xml, 'A17', hourlyBandLabel)
+  if (partTimeBandLabel) xml = setCell(xml, 'A21', partTimeBandLabel)
+  if (probationPartTimeBandLabel) xml = setCell(xml, 'A29', probationPartTimeBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
@@ -558,6 +619,12 @@ function updateBank(xml: string, input: AccountantPayrollWorkbookInput, assignme
   xml = setCell(xml, 'A22', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A24', monthlyBandLabel)
+  const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
+  const partTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'part_time')
+  const probationPartTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'probation_part_time')
+  if (hourlyBandLabel) xml = setCell(xml, 'A15', hourlyBandLabel)
+  if (partTimeBandLabel) xml = setCell(xml, 'A19', partTimeBandLabel)
+  if (probationPartTimeBandLabel) xml = setCell(xml, 'A27', probationPartTimeBandLabel)
   xml = setCell(xml, 'A3', excelSerial(input.periodEnd))
   xml = setCell(xml, 'C29', formula('SUM(C9:C28)', input.payrollRows.reduce((sum, row) => sum + numberValue(row, 'Net payable (VND)'), 0)))
   return xml
@@ -629,6 +696,12 @@ function updateReconcile(xml: string, input: AccountantPayrollWorkbookInput, ass
   xml = setCell(xml, 'A25', 'IV. Quản lý cửa hàng - Store manager')
   const monthlyBandLabel = probationMonthlyBandLabel(input, assignments)
   if (monthlyBandLabel) xml = setCell(xml, 'A28', monthlyBandLabel)
+  const hourlyBandLabel = sharedHourlyBandLabel(input, assignments, 'official_hourly')
+  const partTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'part_time')
+  const probationPartTimeBandLabel = sharedHourlyBandLabel(input, assignments, 'probation_part_time')
+  if (hourlyBandLabel) xml = setCell(xml, 'A16', hourlyBandLabel)
+  if (partTimeBandLabel) xml = setCell(xml, 'A22', partTimeBandLabel)
+  if (probationPartTimeBandLabel) xml = setCell(xml, 'A34', probationPartTimeBandLabel)
   xml = setCell(xml, 'C3', excelSerial(input.periodEnd))
   for (let column = 6; column <= 47; column += 1) {
     const name = columnName(column)
