@@ -5,17 +5,13 @@ import {
   isAuthorizedVenueRequest,
   usableVenueToken,
 } from '@/lib/venueService'
+import { isVenueResultReviewReason } from '@/lib/venueResultReview'
 
 export const runtime = 'nodejs'
 
 const maximumScreenshotBytes = 2_000_000
 const maximumOcrCharacters = 100_000
 const captureIdPattern = /^[0-9a-f]{64}$/
-const reviewReasons = new Set([
-  'game_not_recognized',
-  'players_not_recognized',
-])
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
@@ -53,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   if (!captureIdPattern.test(captureId)) return jsonError('Invalid capture ID.', 400)
   if (!Number.isFinite(Date.parse(capturedAt))) return jsonError('Invalid capture time.', 400)
-  if (!reviewReasons.has(reviewReason)) return jsonError('Invalid review reason.', 400)
+  if (!isVenueResultReviewReason(reviewReason)) return jsonError('Invalid review reason.', 400)
   if (!(screenshot instanceof File)) return jsonError('Review screenshot is required.', 400)
   if (screenshot.name !== `${captureId}.jpg` || screenshot.type !== 'image/jpeg') {
     return jsonError('Invalid review screenshot.', 400)
