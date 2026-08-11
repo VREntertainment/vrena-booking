@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.10/VRenaResultsCapture-Setup.exe',
-      publishedAt: '2026-08-03T05:11:42Z',
+      downloadUrl: 'https://github.com/VREntertainment/vrena-results-capture/releases/download/v2.1.11/VRenaResultsCapture-Setup.exe',
+      publishedAt: '2026-08-11T01:11:50Z',
       releaseNotes:
-        'Use booking.vre-vietnam.com as the canonical web app endpoint and migrate existing settings from the retired Vercel hostname.',
-      sha256: '9c312539f74b62f48bd3eea0fc0d9f4c78a16e8e5efbc99eeac290ba8dbeb330',
-      version: '2.1.10',
+        'Reliability update: supports 1-4 escape players and 2-4 shooting players, recovers missed OCR statistics, keeps sync queues moving, and creates uploadable debug bundles.',
+      sha256: 'eafc67bcddb298c49ce1cfaf5225dc5b678c37ad756c23b0af1be00120eb605d',
+      version: '2.1.11',
     },
     {
       headers: {
