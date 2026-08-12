@@ -1,15 +1,39 @@
 import type { Metadata } from 'next'
 import HomeAppShell from '../../components/HomeAppShell'
+import PublicRouteSeoContent from '../../components/PublicRouteSeoContent'
 import { publicAppRoutes } from '../../lib/appRoutes'
 
+const title = 'VRena Tickets | Book Without an Account'
+const description = 'Book VRena tickets in Ho Chi Minh City for individual players, friends, families, birthdays, and groups, with guest booking available without an account.'
+
 export const metadata: Metadata = {
-  title: 'VRena Tickets | Book Without an Account',
-  description: 'Reserve VRena for you or your group without creating an account.',
+  title,
+  description,
   alternates: {
     canonical: publicAppRoutes.tickets,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    title,
+    description,
+    url: publicAppRoutes.tickets,
+  },
+  twitter: {
+    card: 'summary',
+    title,
+    description,
   },
 }
 
 export default function TicketsPage() {
-  return <HomeAppShell initialView="tickets" />
+  return (
+    <>
+      <PublicRouteSeoContent currentPath={publicAppRoutes.tickets} title="Book VRena Tickets" />
+      <HomeAppShell initialView="tickets" />
+    </>
+  )
 }
