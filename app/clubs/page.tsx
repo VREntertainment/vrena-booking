@@ -1,15 +1,39 @@
 import type { Metadata } from 'next'
 import HomeAppShell from '../../components/HomeAppShell'
+import PublicRouteSeoContent from '../../components/PublicRouteSeoContent'
 import { publicAppRoutes } from '../../lib/appRoutes'
 
+const title = 'VRena Clubs | Player Groups'
+const description = 'Discover public and private VRena clubs for friends, teams, and regular players in Ho Chi Minh City, including club sessions, members, and competitions.'
+
 export const metadata: Metadata = {
-  title: 'VRena Clubs | Player Groups',
-  description: 'Discover public and private VRena clubs for groups, friends, and regular players.',
+  title,
+  description,
   alternates: {
     canonical: publicAppRoutes.clubs,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    title,
+    description,
+    url: publicAppRoutes.clubs,
+  },
+  twitter: {
+    card: 'summary',
+    title,
+    description,
   },
 }
 
 export default function ClubsPage() {
-  return <HomeAppShell initialView="clubs" />
+  return (
+    <>
+      <PublicRouteSeoContent currentPath={publicAppRoutes.clubs} title="VRena Clubs" />
+      <HomeAppShell initialView="clubs" />
+    </>
+  )
 }
