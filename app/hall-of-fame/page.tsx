@@ -21,11 +21,13 @@ export const metadata: Metadata = {
     title,
     description,
     url: publicAppRoutes.leaderboard,
+    images: [{ url: '/gallery/vrena-gallery-players-01.jpg', alt: 'Players enjoying VR games at VRena' }],
   },
   twitter: {
     card: 'summary',
     title,
     description,
+    images: ['/gallery/vrena-gallery-players-01.jpg'],
   },
 }
 
