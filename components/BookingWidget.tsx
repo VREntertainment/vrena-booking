@@ -25,6 +25,7 @@ import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
+import BookingVenueSelector, { BookingVenueComingSoon, type BookingVenueId } from './BookingVenueSelector'
 import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
 import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type ClubVisibilityFilter, type SessionTimeScope } from './BookingWidgetSurfaces'
 import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
@@ -282,6 +283,8 @@ export default function WidgetPage({
   const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const [tourReplayNonce, setTourReplayNonce] = useState(0)
+  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>('ha-do-centrosa')
+  const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
   const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
@@ -4503,6 +4506,11 @@ function handleSessionDateChange(value: string) {
   }
 
   function validateTicketSelection(activeProfile = profile) {
+    if (!isHaDoBookingVenue) {
+      showTicketStatus(text.bookingVenueCafeComingSoonBody, 'error')
+      return false
+    }
+
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
 
@@ -7192,6 +7200,11 @@ function handleSessionDateChange(value: string) {
   }
 
   async function bookTickets(profileOverride?: Profile | null) {
+    if (!isHaDoBookingVenue) {
+      showTicketStatus(text.bookingVenueCafeComingSoonBody, 'error')
+      return false
+    }
+
     const activeProfile = profileOverride === undefined ? profile : profileOverride
 
     const service = selectedTicketService(ticketType)
@@ -7328,6 +7341,12 @@ function handleSessionDateChange(value: string) {
   }
 
   async function createSession() {
+    if (!isHaDoBookingVenue) {
+      setCreateStatus(text.bookingVenueCafeComingSoonBody)
+      setIsCreating(false)
+      return
+    }
+
     if (!requireProfile()) {
       setIsCreating(false)
       return
@@ -8986,8 +9005,14 @@ function handleSessionDateChange(value: string) {
 
   const appMain = (
       <main>
+        {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
+          <BookingVenueSelector onChange={setBookingVenue} text={text} value={bookingVenue} />
+        )}
+
         {activeView === 'sessions' && (
-          <BookingSessionsPanel context={sessionsPanelContext} />
+          isHaDoBookingVenue
+            ? <BookingSessionsPanel context={sessionsPanelContext} />
+            : <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
         )}
 
         {activeView === 'leaderboard' && (
@@ -9152,83 +9177,88 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'tickets' && (
-          <TicketBookingView
-            activeTicketDuration={activeTicketDuration}
-            currentTicketPricing={currentTicketPricing}
-            currentTicketTotalPrice={currentTicketTotalPrice}
-            currentTicketUnitPrice={currentTicketUnitPrice}
-            formatShortDate={formatShortDate}
-            formatVnd={formatVnd}
-            gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
-            guestTicketContact={guestTicketContact}
-            isBookingTickets={isBookingTickets}
-            isCheckingTicketDiscount={isCheckingTicketDiscount}
-            isLoadingTicketLoyalty={isLoadingTicketLoyalty}
-            isLoggedIn={Boolean(profile)}
-            estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
-            estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
-            loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
-            loyaltyPointsBalance={ticketLoyaltyBalance}
-            loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}
-            loyaltyRedeemValue={ticketLoyaltyRedeemValue}
-            maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
-            language={language}
-            onBookTickets={bookTickets}
-            onGuestTicketContactChange={setGuestTicketContact}
-            onPrepareGuestTicketAction={prepareGuestTicketAction}
-            onPromptCreateAccount={promptTicketCreateAccount}
-            onPromptLogin={promptTicketLogin}
-            onValidateTicketSelection={validateTicketSelection}
-            onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
-            onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
-            onTicketDateChange={(value) => {
-              setTicketDate(value)
-              setTicketTime('')
-              setTicketConfirmation(null)
-              clearTicketStatus()
-            }}
-            onTicketDurationChange={handleTicketDurationChange}
-            onTicketPlayersChange={handleTicketPlayersChange}
-            onTicketTimeChange={(value) => {
-              setTicketTime(value)
-              setTicketConfirmation(null)
-              clearTicketStatus()
-            }}
-            onTicketTypeChange={handleTicketTypeChange}
-            onTicketUseLoyaltyPointsChange={handleTicketUseLoyaltyPointsChange}
-            tariffTrigger={renderTariffTrigger('ticket-tariff-link')}
-            text={looseText}
-            ticketConfirmation={ticketConfirmation}
-            ticketDate={ticketDate}
-            ticketDiscountAmount={activeTicketDiscountAmount}
-            ticketDiscountCode={ticketDiscountCode}
-            ticketDiscountSource={activeTicketDiscountSource}
-            ticketDiscountStatus={ticketDiscountStatus}
-            ticketDurationOptions={ticketDurationOptions}
-            ticketPlayerOptions={ticketPlayerOptions}
-            ticketPlayers={ticketPlayers}
-            ticketServices={ticketServices}
-            ticketStatus={ticketStatus}
-            ticketStatusVariant={ticketStatusVariant}
-            ticketSpecialNote={ticketSpecialNote}
-            ticketTime={ticketTime}
-            ticketTimeOptions={ticketTimeOptions}
-            ticketType={ticketType}
-            ticketTypeDescription={ticketTypeDescription}
-            ticketTypeLabel={ticketTypeLabel}
-            ticketUnitFormulaText={ticketUnitFormulaText}
-            useLoyaltyPoints={ticketUseLoyaltyPoints}
-            onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
-          />
+          isHaDoBookingVenue ? (
+            <TicketBookingView
+              activeTicketDuration={activeTicketDuration}
+              currentTicketPricing={currentTicketPricing}
+              currentTicketTotalPrice={currentTicketTotalPrice}
+              currentTicketUnitPrice={currentTicketUnitPrice}
+              formatShortDate={formatShortDate}
+              formatVnd={formatVnd}
+              gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
+              guestTicketContact={guestTicketContact}
+              isBookingTickets={isBookingTickets}
+              isCheckingTicketDiscount={isCheckingTicketDiscount}
+              isLoadingTicketLoyalty={isLoadingTicketLoyalty}
+              isLoggedIn={Boolean(profile)}
+              estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
+              estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
+              loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
+              loyaltyPointsBalance={ticketLoyaltyBalance}
+              loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}
+              loyaltyRedeemValue={ticketLoyaltyRedeemValue}
+              maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
+              language={language}
+              onBookTickets={bookTickets}
+              onGuestTicketContactChange={setGuestTicketContact}
+              onPrepareGuestTicketAction={prepareGuestTicketAction}
+              onPromptCreateAccount={promptTicketCreateAccount}
+              onPromptLogin={promptTicketLogin}
+              onValidateTicketSelection={validateTicketSelection}
+              onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
+              onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
+              onTicketDateChange={(value) => {
+                setTicketDate(value)
+                setTicketTime('')
+                setTicketConfirmation(null)
+                clearTicketStatus()
+              }}
+              onTicketDurationChange={handleTicketDurationChange}
+              onTicketPlayersChange={handleTicketPlayersChange}
+              onTicketTimeChange={(value) => {
+                setTicketTime(value)
+                setTicketConfirmation(null)
+                clearTicketStatus()
+              }}
+              onTicketTypeChange={handleTicketTypeChange}
+              onTicketUseLoyaltyPointsChange={handleTicketUseLoyaltyPointsChange}
+              tariffTrigger={renderTariffTrigger('ticket-tariff-link')}
+              text={looseText}
+              ticketConfirmation={ticketConfirmation}
+              ticketDate={ticketDate}
+              ticketDiscountAmount={activeTicketDiscountAmount}
+              ticketDiscountCode={ticketDiscountCode}
+              ticketDiscountSource={activeTicketDiscountSource}
+              ticketDiscountStatus={ticketDiscountStatus}
+              ticketDurationOptions={ticketDurationOptions}
+              ticketPlayerOptions={ticketPlayerOptions}
+              ticketPlayers={ticketPlayers}
+              ticketServices={ticketServices}
+              ticketStatus={ticketStatus}
+              ticketStatusVariant={ticketStatusVariant}
+              ticketSpecialNote={ticketSpecialNote}
+              ticketTime={ticketTime}
+              ticketTimeOptions={ticketTimeOptions}
+              ticketType={ticketType}
+              ticketTypeDescription={ticketTypeDescription}
+              ticketTypeLabel={ticketTypeLabel}
+              ticketUnitFormulaText={ticketUnitFormulaText}
+              useLoyaltyPoints={ticketUseLoyaltyPoints}
+              onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
+            />
+          ) : (
+            <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
+          )
         )}
 
         {activeView === 'create' && (
-          <CreateSessionView
-            createStatus={createStatus}
-            mode={createSessionMode}
-            onModeChange={handleCreateSessionModeChange}
-            text={text}
-          >
+          isHaDoBookingVenue ? (
+            <CreateSessionView
+              createStatus={createStatus}
+              mode={createSessionMode}
+              onModeChange={handleCreateSessionModeChange}
+              text={text}
+            >
             {createSessionMode === 'calendar' ? (
               <div className="calendar-panel" aria-label={text.calendarAvailabilityTitle}>
                 <div className="calendar-toolbar">
@@ -9567,7 +9597,10 @@ function handleSessionDateChange(value: string) {
             </button>
               </div>
             )}
-          </CreateSessionView>
+            </CreateSessionView>
+          ) : (
+            <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
+          )
         )}
 
         {activeView === 'profile' && (

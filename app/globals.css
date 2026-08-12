@@ -15394,6 +15394,196 @@ body {
   padding: clamp(28px, 3vw, 44px);
 }
 
+.app .booking-venue-selector {
+  display: grid;
+  gap: 18px;
+  margin: 0 0 30px;
+  padding: clamp(18px, 2.2vw, 24px);
+  border: 1px solid var(--player-border, var(--vrena-line-warm));
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 0 0, rgb(var(--vrena-cyan-500-rgb) / 0.09), transparent 34%),
+    radial-gradient(circle at 100% 0, rgb(var(--vrena-purple-500-rgb) / 0.09), transparent 32%),
+    var(--player-surface-raised, var(--vrena-surface));
+  box-shadow: var(--player-shadow-soft, 0 14px 34px rgb(var(--vrena-neutral-950-rgb) / 0.07));
+}
+
+.app .booking-venue-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.app .booking-venue-heading > span {
+  color: var(--vrena-accent-text);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.app .booking-venue-heading h2,
+.app .booking-venue-heading p,
+.app .booking-venue-coming-soon h2,
+.app .booking-venue-coming-soon p {
+  margin: 0;
+}
+
+.app .booking-venue-heading h2 {
+  color: var(--player-text, var(--vrena-neutral-950));
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.15;
+}
+
+.app .booking-venue-heading p {
+  color: var(--player-text-muted, var(--vrena-neutral-600));
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.app .booking-venue-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app .booking-venue-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  min-width: 0;
+  min-height: 82px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--player-border, var(--vrena-line-warm));
+  border-radius: 17px;
+  background: var(--player-surface-raised, var(--vrena-surface));
+  color: var(--player-text, var(--vrena-neutral-950));
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .booking-venue-option:hover {
+  border-color: color-mix(in srgb, var(--vrena-purple-500) 48%, var(--player-border, var(--vrena-line-warm)));
+  transform: translateY(-1px);
+}
+
+.app .booking-venue-option.active {
+  border-color: var(--vrena-purple-500);
+  background: color-mix(in srgb, var(--vrena-purple-500) 8%, var(--player-surface-raised, var(--vrena-surface)));
+  box-shadow: 0 0 0 3px rgb(var(--vrena-purple-500-rgb) / 0.11);
+}
+
+.app .booking-venue-icon,
+.app .booking-venue-coming-soon-icon {
+  display: grid;
+  place-items: center;
+  color: var(--vrena-mode-accent-ink);
+  background: var(--vrena-mode-accent-soft);
+}
+
+.app .booking-venue-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+
+.app .booking-venue-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .booking-venue-copy strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.app .booking-venue-copy small {
+  overflow: hidden;
+  color: var(--player-text-muted, var(--vrena-neutral-600));
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+
+.app .booking-venue-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app .booking-venue-status.open {
+  border-color: var(--vrena-status-success-border);
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+}
+
+.app .booking-venue-status.soon {
+  border-color: var(--vrena-status-warning-border);
+  background: var(--vrena-status-warning-bg);
+  color: var(--vrena-status-warning-ink);
+}
+
+.app .booking-venue-coming-soon {
+  display: grid;
+  width: min(680px, 100%);
+  min-height: 330px;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 54px) !important;
+  border: 1px solid var(--player-border, var(--vrena-line-warm)) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 50% 0, rgb(var(--vrena-yellow-500-rgb) / 0.13), transparent 46%),
+    var(--player-surface-raised, var(--vrena-surface)) !important;
+  color: var(--player-text, var(--vrena-neutral-950));
+  text-align: center;
+  box-shadow: var(--player-shadow, 0 18px 44px rgb(var(--vrena-neutral-950-rgb) / 0.08)) !important;
+}
+
+.app .booking-venue-coming-soon-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+}
+
+.app .booking-venue-coming-soon h2 {
+  max-width: 520px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.12;
+}
+
+.app .booking-venue-coming-soon p {
+  max-width: 540px;
+  color: var(--player-text-muted, var(--vrena-neutral-600));
+  line-height: 1.6;
+}
+
+.app .booking-venue-coming-soon > small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--player-text-muted, var(--vrena-neutral-600));
+  line-height: 1.4;
+}
+
+.app .booking-venue-coming-soon > button {
+  margin-top: 6px;
+}
+
 .app.player-workspace .section-head {
   gap: 20px;
   margin-bottom: 20px;
@@ -15735,6 +15925,38 @@ body {
 @media (max-width: 720px) {
   .app.player-workspace main {
     padding: 18px 16px 28px;
+  }
+
+  .app .booking-venue-selector {
+    gap: 14px;
+    margin-bottom: 22px;
+    padding: 16px;
+    border-radius: 19px;
+  }
+
+  .app .booking-venue-options {
+    grid-template-columns: 1fr;
+  }
+
+  .app .booking-venue-option {
+    grid-template-columns: 40px minmax(0, 1fr);
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .app .booking-venue-option .booking-venue-status {
+    grid-column: 2;
+  }
+
+  .app .booking-venue-icon {
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+  }
+
+  .app .booking-venue-coming-soon {
+    min-height: 300px;
+    padding: 30px 20px !important;
   }
 
   .app.player-workspace :is(
