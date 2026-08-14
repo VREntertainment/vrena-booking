@@ -35,6 +35,7 @@ class ZaloApiError extends Error {
     readonly stage: ZaloApiStage,
     readonly httpStatus: number,
     readonly zaloErrorCode: number | null,
+    readonly zaloMessage: string | null,
   ) {
     super(message)
     this.name = 'ZaloApiError'
@@ -113,6 +114,20 @@ function zaloErrorCode(payload: Record<string, unknown> | null) {
   return null
 }
 
+function zaloErrorMessage(payload: Record<string, unknown> | null) {
+  if (!payload) return null
+  const nestedError = payload.error && typeof payload.error === 'object'
+    ? payload.error as Record<string, unknown>
+    : null
+  const message = cleanString(payload.message ?? nestedError?.message, 200)
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/(?:eyJ[A-Za-z0-9._-]+|[A-Za-z0-9_-]{40,})/g, '[redacted]')
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, '[redacted-phone]')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return message || null
+}
+
 async function fetchZaloJson(
   url: string,
   headers: HeadersInit,
@@ -141,6 +156,7 @@ async function fetchZaloJson(
         stage,
         response.status,
         errorCode,
+        zaloErrorMessage(payload),
       )
     }
     return payload
@@ -150,6 +166,7 @@ async function fetchZaloJson(
       'Zalo chưa phản hồi yêu cầu xác minh. Vui lòng thử lại.',
       stage,
       503,
+      null,
       null,
     )
   } finally {
@@ -183,6 +200,7 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
       'access-token',
       401,
       null,
+      null,
     )
   }
 
@@ -215,6 +233,7 @@ async function decodeZaloPhone(accessToken: string, phoneToken: string) {
       'Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.',
       'phone-number',
       400,
+      null,
       null,
     )
   }
@@ -398,9 +417,9 @@ export async function POST(request: NextRequest) {
       const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
       if (!phoneToken) throw new Error('Vui lòng cấp quyền số điện thoại Zalo để đăng ký hồ sơ mới.')
 
-      // Requesting and decoding the phone permission first is intentional. For a
-      // parent Zalo App with multiple Mini Apps, the access token only becomes
-      // usable after this Mini App has completed its own authorization step.
+      // The client captures the access token after permission authorization and
+      // immediately before requesting this one-time phone token, so this server
+      // decodes the same Zalo session pair before verifying the user profile.
       verifiedPhone = await decodeZaloPhone(accessToken, phoneToken)
     }
 
@@ -472,6 +491,7 @@ export async function POST(request: NextRequest) {
         stage: error.stage,
         httpStatus: error.httpStatus,
         zaloErrorCode: error.zaloErrorCode,
+        zaloMessage: error.zaloMessage,
       })
     }
     const message = error instanceof Error ? error.message : 'VRena chưa thể hoàn tất đăng ký hồ sơ.'
