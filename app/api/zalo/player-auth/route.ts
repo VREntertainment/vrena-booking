@@ -27,6 +27,20 @@ type PlayerIdentity = {
   revoked_at: string | null
 }
 
+type ZaloApiStage = 'access-token' | 'phone-number'
+
+class ZaloApiError extends Error {
+  constructor(
+    message: string,
+    readonly stage: ZaloApiStage,
+    readonly httpStatus: number,
+    readonly zaloErrorCode: number | null,
+  ) {
+    super(message)
+    this.name = 'ZaloApiError'
+  }
+}
+
 function requestOrigin(request: NextRequest) {
   return request.headers.get('origin')?.trim() || null
 }
@@ -90,7 +104,20 @@ function maskPhone(phone: string) {
   return `+84 ••• ••• ${phone.slice(-3)}`
 }
 
-async function fetchZaloJson(url: string, headers: HeadersInit) {
+function zaloErrorCode(payload: Record<string, unknown> | null) {
+  if (!payload) return null
+  if (typeof payload.error === 'number') return payload.error
+  if (typeof payload.error === 'string' && /^-?\d+$/.test(payload.error)) {
+    return Number(payload.error)
+  }
+  return null
+}
+
+async function fetchZaloJson(
+  url: string,
+  headers: HeadersInit,
+  stage: ZaloApiStage,
+) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 8_000)
 
@@ -101,11 +128,30 @@ async function fetchZaloJson(url: string, headers: HeadersInit) {
       cache: 'no-store',
       signal: controller.signal,
     })
-    const payload = await response.json().catch(() => null)
-    if (!response.ok || !payload || typeof payload !== 'object') {
-      throw new Error('Zalo chưa thể xác minh yêu cầu này. Vui lòng thử lại.')
+    const rawPayload: unknown = await response.json().catch(() => null)
+    const payload = rawPayload && typeof rawPayload === 'object'
+      ? rawPayload as Record<string, unknown>
+      : null
+    const errorCode = zaloErrorCode(payload)
+    if (!response.ok || !payload || (errorCode !== null && errorCode !== 0)) {
+      throw new ZaloApiError(
+        stage === 'phone-number'
+          ? 'Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.'
+          : 'Zalo chưa thể xác minh phiên đăng ký sau khi cấp quyền. Vui lòng đóng và mở lại Mini App.',
+        stage,
+        response.status,
+        errorCode,
+      )
     }
-    return payload as Record<string, unknown>
+    return payload
+  } catch (error) {
+    if (error instanceof ZaloApiError) throw error
+    throw new ZaloApiError(
+      'Zalo chưa phản hồi yêu cầu xác minh. Vui lòng thử lại.',
+      stage,
+      503,
+      null,
+    )
   } finally {
     clearTimeout(timeout)
   }
@@ -118,17 +164,26 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
   const appsecretProof = createHmac('sha256', appSecret)
     .update(accessToken)
     .digest('hex')
-  const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me?fields=id', {
-    access_token: accessToken,
-    appsecret_proof: appsecretProof,
-  })
+  const payload = await fetchZaloJson(
+    'https://graph.zalo.me/v2.0/me?fields=id',
+    {
+      access_token: accessToken,
+      appsecret_proof: appsecretProof,
+    },
+    'access-token',
+  )
   const data = payload.data && typeof payload.data === 'object'
     ? payload.data as Record<string, unknown>
     : payload
   const id = cleanString(data.id, 255)
 
-  if (!id || (typeof payload.error === 'number' && payload.error !== 0)) {
-    throw new Error('Phiên Zalo đã hết hạn. Vui lòng đóng và mở lại Mini App.')
+  if (!id) {
+    throw new ZaloApiError(
+      'Zalo chưa thể xác minh phiên đăng ký sau khi cấp quyền. Vui lòng đóng và mở lại Mini App.',
+      'access-token',
+      401,
+      null,
+    )
   }
 
   return {
@@ -141,18 +196,27 @@ async function decodeZaloPhone(accessToken: string, phoneToken: string) {
   const appSecret = process.env.ZALO_APP_SECRET
   if (!appSecret) throw new Error('Dịch vụ đăng ký VRena chưa được cấu hình đầy đủ.')
 
-  const payload = await fetchZaloJson('https://graph.zalo.me/v2.0/me/info', {
-    access_token: accessToken,
-    code: phoneToken,
-    secret_key: appSecret,
-  })
+  const payload = await fetchZaloJson(
+    'https://graph.zalo.me/v2.0/me/info',
+    {
+      access_token: accessToken,
+      code: phoneToken,
+      secret_key: appSecret,
+    },
+    'phone-number',
+  )
   const data = payload.data && typeof payload.data === 'object'
     ? payload.data as Record<string, unknown>
     : {}
   const phone = normalizeVietnamPhone(data.number)
 
-  if (!phone || (typeof payload.error === 'number' && payload.error !== 0)) {
-    throw new Error('Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.')
+  if (!phone) {
+    throw new ZaloApiError(
+      'Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.',
+      'phone-number',
+      400,
+      null,
+    )
   }
 
   return phone
@@ -279,7 +343,7 @@ async function createPlayer(
 function safeErrorStatus(message: string) {
   if (message.includes('quá nhiều lần')) return 429
   if (message.includes('tạm thời gián đoạn') || message.includes('chưa được cấu hình')) return 503
-  if (message.includes('hết hạn')) return 401
+  if (message.toLowerCase().includes('phiên zalo')) return 401
   if (message.includes('đã có hồ sơ') || message.includes('đã được dùng')) return 409
   if (message.includes('đã bị thu hồi')) return 403
   return 400
@@ -326,7 +390,25 @@ export async function POST(request: NextRequest) {
     const preAuthSubject = ip === UNKNOWN_CLIENT_IP ? `token:${tokenHash}` : `ip:${ip}`
     await consumeRateLimit(adminClient, `zalo-player-preauth:${preAuthSubject}`, 40, 60)
 
+    let verifiedPhone: string | null = null
+    if (action === 'register') {
+      if (body.acceptedTerms !== true) {
+        throw new Error('Vui lòng đồng ý với Chính sách quyền riêng tư và Điều khoản sử dụng trước khi đăng ký.')
+      }
+      const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
+      if (!phoneToken) throw new Error('Vui lòng cấp quyền số điện thoại Zalo để đăng ký hồ sơ mới.')
+
+      // Requesting and decoding the phone permission first is intentional. For a
+      // parent Zalo App with multiple Mini Apps, the access token only becomes
+      // usable after this Mini App has completed its own authorization step.
+      verifiedPhone = await decodeZaloPhone(accessToken, phoneToken)
+    }
+
     const zaloProfile = await verifyZaloAccessToken(accessToken)
+    const clientZaloUserId = cleanString(body.zaloUserId, 255)
+    if (action === 'register' && (!clientZaloUserId || clientZaloUserId !== zaloProfile.id)) {
+      throw new Error('Phiên Zalo không khớp với người dùng đăng ký. Vui lòng đóng và mở lại Mini App.')
+    }
     await consumeRateLimit(adminClient, `zalo-player:${action}:${zaloProfile.id}`, action === 'status' ? 60 : 12, 60)
 
     const { data: identityData, error: identityError } = await adminClient
@@ -348,13 +430,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!identity) {
-      if (body.acceptedTerms !== true) {
-        throw new Error('Vui lòng đồng ý với Chính sách quyền riêng tư và Điều khoản sử dụng trước khi đăng ký.')
-      }
-      const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
-      if (!phoneToken) throw new Error('Vui lòng cấp quyền số điện thoại Zalo để đăng ký hồ sơ mới.')
-
-      const phone = await decodeZaloPhone(accessToken, phoneToken)
+      const phone = verifiedPhone
+      if (!phone) throw new Error('Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.')
       const existingPhoneIdentity = await adminClient
         .from('player_zalo_identities')
         .select('id')
@@ -370,6 +447,9 @@ export async function POST(request: NextRequest) {
 
       identity = await createPlayer(adminClient, zaloProfile, phone)
     } else {
+      if (verifiedPhone && verifiedPhone !== identity.verified_phone) {
+        throw new Error('Số điện thoại Zalo không khớp với hồ sơ thành viên đã đăng ký.')
+      }
       const { error: updateError } = await adminClient
         .from('player_zalo_identities')
         .update({
@@ -386,6 +466,14 @@ export async function POST(request: NextRequest) {
       maskedPhone: maskPhone(identity.verified_phone),
     })
   } catch (error) {
+    if (error instanceof ZaloApiError) {
+      console.error('[zalo-player-auth] Zalo verification failed', {
+        action,
+        stage: error.stage,
+        httpStatus: error.httpStatus,
+        zaloErrorCode: error.zaloErrorCode,
+      })
+    }
     const message = error instanceof Error ? error.message : 'VRena chưa thể hoàn tất đăng ký hồ sơ.'
     return jsonResponse(request, { error: message }, safeErrorStatus(message))
   }
