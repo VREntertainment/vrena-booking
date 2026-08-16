@@ -160,6 +160,9 @@ const emptyProductSummary: StaffProductAnalyticsSummary = {
   latestEventAt: null,
 }
 
+const PAID_ACQUISITION_MEDIUM = /(paid|cpc|ppc)/
+const ORGANIC_SOCIAL_MEDIA = new Set(['social', 'organic', 'organic social', 'organic_social'])
+
 const copy = {
   en: {
     title: 'Player behavior',
@@ -312,7 +315,7 @@ const productCopy = {
     devices: 'Device mix',
     devicesSubtitle: 'Sessions by device class',
     acquisition: 'Acquisition',
-    acquisitionSubtitle: 'First-touch source for each session',
+    acquisitionSubtitle: 'First-touch source. Organic/social are grouped; UTM-tagged ads appear separately.',
     searchIntent: 'Search activity',
     searchIntentSubtitle: 'Search surfaces; typed text is never stored',
     views: 'views',
@@ -348,7 +351,7 @@ const productCopy = {
     devices: 'Thiết bị',
     devicesSubtitle: 'Phiên theo loại thiết bị',
     acquisition: 'Nguồn truy cập',
-    acquisitionSubtitle: 'Nguồn chạm đầu tiên của mỗi phiên',
+    acquisitionSubtitle: 'Nguồn chạm đầu tiên. Gộp organic/social; quảng cáo gắn UTM hiển thị riêng.',
     searchIntent: 'Hoạt động tìm kiếm',
     searchIntentSubtitle: 'Khu vực tìm kiếm; không bao giờ lưu nội dung đã nhập',
     views: 'lượt xem',
@@ -396,6 +399,36 @@ function activityChartScale(values: number[]) {
   return { height, max, ticks }
 }
 
+function normalizedAcquisitionMix(rows: StaffProductAnalyticsSnapshot['acquisitionMix']) {
+  const grouped = new Map<string, { source: string; medium: string; sessions: number }>()
+
+  for (const row of rows) {
+    const sourceKey = row.source.trim().toLowerCase()
+    const mediumKey = row.medium.trim().toLowerCase()
+    const paid = PAID_ACQUISITION_MEDIUM.test(mediumKey)
+    const platform = sourceKey === 'google' || sourceKey === 'google ads' || sourceKey === 'adwords'
+      ? 'Google'
+      : sourceKey === 'facebook' || sourceKey === 'fb' || sourceKey === 'meta'
+        ? 'Facebook'
+        : sourceKey === 'instagram'
+          ? 'Instagram'
+          : sourceKey === 'tiktok' || sourceKey === 'tik tok'
+            ? 'TikTok'
+            : null
+    const source = platform ? `${platform}${paid ? ' Ads' : ''}` : row.source
+    const medium = ORGANIC_SOCIAL_MEDIA.has(mediumKey)
+      ? 'Organic social'
+      : paid
+        ? platform === 'Google' ? 'Paid search' : 'Paid social'
+        : row.medium
+    const key = `${source.toLowerCase()}\u0000${medium.toLowerCase()}`
+    const existing = grouped.get(key)
+    grouped.set(key, { source, medium, sessions: row.sessions + (existing?.sessions ?? 0) })
+  }
+
+  return [...grouped.values()].sort((left, right) => right.sessions - left.sessions || left.source.localeCompare(right.source))
+}
+
 type ActivityChartPoint = {
   first: number
   key: string
@@ -414,11 +447,18 @@ function ActivityChart({
   secondClass: string
 }) {
   const scale = activityChartScale(points.flatMap((point) => [point.first, point.second]))
+  const plotTop = 6
   const chartStyle = {
     '--activity-chart-height': `${scale.height}px`,
-    '--activity-point-count': points.length,
+    '--activity-point-count': Math.max(points.length, 1),
+    '--activity-plot-top': `${plotTop}px`,
   } as CSSProperties
   const barHeight = (value: number) => value > 0 ? `${Math.max(3, (value / scale.max) * 100)}%` : '0%'
+  const showsLabel = (index: number, targetCount: number) => {
+    if (points.length <= targetCount) return true
+    const step = Math.ceil((points.length - 1) / (targetCount - 1))
+    return index === 0 || index === points.length - 1 || index % step === 0
+  }
 
   return (
     <div className="staff-insight-activity-chart" style={chartStyle}>
@@ -427,19 +467,20 @@ function ActivityChart({
           aria-hidden="true"
           className="staff-insight-activity-gridline"
           key={tick}
-          style={{ top: `${(1 - (tick / scale.max)) * scale.height}px` }}
+          style={{ top: `${plotTop + ((1 - (tick / scale.max)) * scale.height)}px` }}
         >
           <small>{tick.toLocaleString()}</small>
         </span>
       ))}
       <div className="staff-insight-activity-days">
-        {points.map((point) => (
+        {points.map((point, index) => (
           <div className="staff-insight-activity-day" key={point.key} title={point.title}>
             <div className="staff-insight-activity-track">
               <span className={firstClass} style={{ height: barHeight(point.first) }} />
               <span className={secondClass} style={{ height: barHeight(point.second) }} />
             </div>
-            <small>{point.label}</small>
+            <small className={showsLabel(index, 8) ? 'activity-label-desktop' : 'activity-label-desktop is-hidden'}>{point.label}</small>
+            <small className={showsLabel(index, 5) ? 'activity-label-mobile' : 'activity-label-mobile is-hidden'}>{point.label}</small>
           </div>
         ))}
       </div>
@@ -511,6 +552,7 @@ export default function StaffPlayerInsights({
   const maxTransition = Math.max(1, ...(data?.productAnalytics?.transitions ?? []).map((transition) => transition.transitions))
   const maxSearchSurface = Math.max(1, ...(data?.productAnalytics?.searchSurfaces ?? []).map((surface) => surface.searches))
   const totalDeviceSessions = (data?.productAnalytics?.deviceMix ?? []).reduce((sum, item) => sum + item.sessions, 0)
+  const acquisitionMix = normalizedAcquisitionMix(data?.productAnalytics?.acquisitionMix ?? [])
   const weekdayLabels = language === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayparts = ['morning', 'afternoon', 'evening'] as const
   const productFreshness = timeLabel(productSummary.latestEventAt, language)
@@ -814,7 +856,7 @@ export default function StaffPlayerInsights({
                     <div><h5>{digitalText.acquisition}</h5><span>{digitalText.acquisitionSubtitle}</span></div>
                   </div>
                   <div className="staff-digital-source-list">
-                    {(data?.productAnalytics?.acquisitionMix ?? []).map((source) => (
+                    {acquisitionMix.map((source) => (
                       <div key={`${source.source}-${source.medium}`}><span><strong>{source.source}</strong><small>{source.medium}</small></span><b>{source.sessions}</b></div>
                     ))}
                   </div>
