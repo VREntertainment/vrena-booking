@@ -6014,6 +6014,17 @@
   display: none;
 }
 
+.app .staff-insight-activity-day:first-child small {
+  left: 0;
+  transform: none;
+}
+
+.app .staff-insight-activity-day:last-child small {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .app .staff-insight-heatmap {
   display: grid;
   gap: 5px;
