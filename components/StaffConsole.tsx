@@ -30,6 +30,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode, RefObject } from 'react'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
+import { normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
@@ -831,6 +832,8 @@ type CustomerInviteForm = {
   email: string
   phone: string
   nickname: string
+  password: string
+  confirmPassword: string
 }
 
 type StaffConsoleProps = {
@@ -948,6 +951,7 @@ const staffConsoleText = {
       saveShift: 'Save shift',
       saveSetupOption: 'Save option',
       saveVoucher: 'Save voucher',
+      createPhoneAccount: 'Create phone account',
       sendPasswordRequest: 'Send setup email',
       sessionCalendar: 'Session Calendar',
       submitLeave: 'Submit leave',
@@ -1230,12 +1234,15 @@ const staffConsoleText = {
       communitySession: 'Community session',
       customer: 'Customer',
       guestBooking: 'Guest booking',
-      customerAccountHelp: 'Create a customer profile. The secure password setup link is always sent to the required email address.',
+      customerAccountHelp: 'Use an email setup link, or create a phone + password account without SMS verification.',
+      customerAccountPhonePasswordHelp: 'No email: let the customer enter the password privately. The phone is not verified and cannot be used for self-service password recovery.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
       noAwardsYet: 'No manual unlocks yet.',
       noPlayersFound: 'No matching players.',
       optional: 'optional',
+      password: 'Password',
+      confirmPassword: 'Confirm password',
       sendAward: 'Unlock achievement',
       date: 'Date',
       dateRange: 'Date range',
@@ -1488,6 +1495,10 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Enter a customer email.',
       customerAccountInvited: 'Customer account created. Password request sent.',
       customerAccountNameRequired: 'Enter the customer name.',
+      customerAccountPasswordMismatch: 'Passwords do not match.',
+      customerAccountPasswordRequired: 'Enter a password of at least 6 characters.',
+      customerAccountPhoneCreated: 'Phone account created. No SMS verification or password recovery is enabled.',
+      customerAccountPhoneRequired: 'Enter a valid customer phone number.',
       guestBookingHelp: 'No customer profile, name, contact details, or player stats will be created. Payment, player count, date, time, duration, and game are still recorded.',
       achievementAwarded: 'Achievement unlocked for this player.',
       achievementAlreadyAwarded: 'Already awarded to this player.',
@@ -1744,6 +1755,7 @@ const staffConsoleText = {
       saveShift: 'Lưu ca',
       saveSetupOption: 'Lưu tùy chọn',
       saveVoucher: 'Lưu voucher',
+      createPhoneAccount: 'Tạo tài khoản bằng số điện thoại',
       sendPasswordRequest: 'Gửi email tạo mật khẩu',
       sessionCalendar: 'Lịch phiên',
       submitLeave: 'Gửi nghỉ phép',
@@ -2026,12 +2038,15 @@ const staffConsoleText = {
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
       guestBooking: 'Đặt chỗ khách vãng lai',
-      customerAccountHelp: 'Tạo hồ sơ khách hàng. Link bảo mật để đặt mật khẩu luôn được gửi đến địa chỉ email bắt buộc.',
+      customerAccountHelp: 'Dùng link qua email, hoặc tạo tài khoản số điện thoại + mật khẩu mà không xác minh SMS.',
+      customerAccountPhonePasswordHelp: 'Không có email: để khách tự nhập mật khẩu riêng. Số điện thoại chưa được xác minh và không thể dùng để tự khôi phục mật khẩu.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
       noAwardsYet: 'Chưa có mở khóa thủ công.',
       noPlayersFound: 'Không tìm thấy người chơi.',
       optional: 'không bắt buộc',
+      password: 'Mật khẩu',
+      confirmPassword: 'Xác nhận mật khẩu',
       sendAward: 'Mở khóa thành tựu',
       date: 'Ngày',
       dateRange: 'Khoảng ngày',
@@ -2284,6 +2299,10 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Nhập email khách hàng.',
       customerAccountInvited: 'Đã tạo tài khoản khách hàng. Đã gửi yêu cầu tạo mật khẩu.',
       customerAccountNameRequired: 'Nhập tên khách hàng.',
+      customerAccountPasswordMismatch: 'Mật khẩu xác nhận không khớp.',
+      customerAccountPasswordRequired: 'Nhập mật khẩu có ít nhất 6 ký tự.',
+      customerAccountPhoneCreated: 'Đã tạo tài khoản bằng số điện thoại. Không xác minh SMS và không có chức năng tự khôi phục mật khẩu.',
+      customerAccountPhoneRequired: 'Nhập số điện thoại khách hàng hợp lệ.',
       guestBookingHelp: 'Không tạo hồ sơ khách hàng, tên, thông tin liên hệ hay thống kê người chơi. Thanh toán, số người, ngày, giờ, thời lượng và trò chơi vẫn được lưu.',
       achievementAwarded: 'Đã mở khóa thành tựu cho người chơi.',
       achievementAlreadyAwarded: 'Người chơi đã có thành tựu này.',
@@ -3345,6 +3364,8 @@ const defaultCustomerInviteForm = (): CustomerInviteForm => ({
   email: '',
   phone: '',
   nickname: '',
+  password: '',
+  confirmPassword: '',
 })
 
 const defaultGameForm = () => ({
@@ -8793,12 +8814,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     const fullName = customerInviteForm.fullName.trim()
     const email = customerInviteForm.email.trim()
+    const phone = normalizePhonePasswordIdentifier(customerInviteForm.phone)
+    const phoneAccount = !email
     if (!fullName) {
       setCustomerInviteStatus(text.messages.customerAccountNameRequired)
       return
     }
-    if (!email) {
-      setCustomerInviteStatus(text.messages.customerAccountEmailRequired)
+    if (phoneAccount && !phone) {
+      setCustomerInviteStatus(text.messages.customerAccountPhoneRequired)
+      return
+    }
+    if (phoneAccount && customerInviteForm.password.length < 6) {
+      setCustomerInviteStatus(text.messages.customerAccountPasswordRequired)
+      return
+    }
+    if (phoneAccount && customerInviteForm.password !== customerInviteForm.confirmPassword) {
+      setCustomerInviteStatus(text.messages.customerAccountPasswordMismatch)
       return
     }
 
@@ -8823,16 +8854,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         body: JSON.stringify({
           fullName,
           email,
-          phone: customerInviteForm.phone.trim(),
+          phone: phone || customerInviteForm.phone.trim(),
           nickname: customerInviteForm.nickname.trim(),
+          password: phoneAccount ? customerInviteForm.password : undefined,
         }),
       })
       const payload = await response.json().catch(() => ({})) as { error?: string; message?: string }
       if (!response.ok) throw new Error(payload.error || 'Could not create customer account.')
 
       setCustomerInviteForm(defaultCustomerInviteForm())
-      setCustomerInviteStatus(text.messages.customerAccountInvited)
-      setStatus(text.messages.customerAccountInvited)
+      const successMessage = phoneAccount
+        ? text.messages.customerAccountPhoneCreated
+        : text.messages.customerAccountInvited
+      setCustomerInviteStatus(successMessage)
+      setStatus(successMessage)
       markStaffDataStale('profiles')
       await loadProfiles(true)
     } catch (error) {
@@ -11070,7 +11105,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 />
               </label>
               <label>
-                <span className="staff-field-label">{text.labels.email}</span>
+                <span className="staff-field-label">{text.labels.email} ({text.labels.optional})</span>
                 <input
                   autoComplete="email"
                   type="email"
@@ -11080,7 +11115,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 />
               </label>
               <label>
-                <span className="staff-field-label">{text.labels.phone}</span>
+                <span className="staff-field-label">
+                  {text.labels.phone}{!customerInviteForm.email.trim() ? ' *' : ` (${text.labels.optional})`}
+                </span>
                 <PhoneNumberInput
                   buttonLabel={sharedText.countryCode}
                   className="staff-phone-control"
@@ -11098,13 +11135,42 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   placeholder="Phantom"
                 />
               </label>
+              {!customerInviteForm.email.trim() && (
+                <div className="staff-customer-phone-account-setup">
+                  <p>{text.labels.customerAccountPhonePasswordHelp}</p>
+                  <label>
+                    <span className="staff-field-label">{text.labels.password} *</span>
+                    <input
+                      autoComplete="new-password"
+                      maxLength={128}
+                      minLength={6}
+                      type="password"
+                      value={customerInviteForm.password}
+                      onChange={(event) => setCustomerInviteForm((current) => ({ ...current, password: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <span className="staff-field-label">{text.labels.confirmPassword} *</span>
+                    <input
+                      autoComplete="new-password"
+                      maxLength={128}
+                      minLength={6}
+                      type="password"
+                      value={customerInviteForm.confirmPassword}
+                      onChange={(event) => setCustomerInviteForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                    />
+                  </label>
+                </div>
+              )}
               <button
                 className={isCustomerInviteSaving ? 'primary loading' : 'primary'}
                 disabled={isCustomerInviteSaving}
                 type="button"
                 onClick={createCustomerAccount}
               >
-                {text.actions.sendPasswordRequest}
+                {customerInviteForm.email.trim()
+                  ? text.actions.sendPasswordRequest
+                  : text.actions.createPhoneAccount}
               </button>
             </div>
             {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
