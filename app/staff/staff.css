@@ -264,6 +264,32 @@
   accent-color: var(--vrena-mode-accent);
 }
 
+.app .staff-card .compact-form-grid > .staff-guest-booking-toggle {
+  width: 100%;
+  justify-self: stretch;
+  align-items: flex-start;
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 34%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-mode-accent) 7%, var(--vrena-white));
+  padding: 10px;
+}
+
+.app .staff-guest-booking-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.app .staff-guest-booking-copy strong {
+  color: var(--vrena-neutral-900);
+  font-size: 13px;
+}
+
+.app .staff-guest-booking-copy small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .app .staff-card .compact-form-grid > .staff-customer-name-field {
   position: relative;
   display: grid;
