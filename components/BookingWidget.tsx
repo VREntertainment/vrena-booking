@@ -4670,21 +4670,23 @@ function handleSessionDateChange(value: string) {
   }
 
   function handleTicketPlayersChange(value: number) {
-    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, activeTicketArenaCount)
+    const nextArenaCount = value <= 4 ? 1 : activeTicketArenaCount
+    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
+    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
 
     setTicketPlayers(value)
+    setTicketArenaCount(nextArenaCount)
     setTicketDuration(nextDuration)
     setTicketConfirmation(null)
-    if (!keepsSelectedTime || nextDuration !== activeTicketDuration) {
+    if (!keepsSelectedTime || nextDuration !== activeTicketDuration || nextArenaCount !== activeTicketArenaCount) {
       setTicketTime('')
     }
   }
 
   function handleTicketArenaCountChange(value: number) {
-    const nextArenaCount = ticketArenaCountForPlayers(value)
+    const nextArenaCount = ticketPlayers <= 4 ? 1 : ticketArenaCountForPlayers(value)
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
     const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
@@ -4856,9 +4858,11 @@ function handleSessionDateChange(value: string) {
     setEditSessionMaxPlayers(value)
 
     if (editBookingType === 'ticket') {
-      const nextDuration = ticketDurationForPlayers(editTicketType, value, editSessionArenaCount)
+      const nextArenaCount = value <= 4 ? 1 : editSessionArenaCount
+      const nextDuration = ticketDurationForPlayers(editTicketType, value, nextArenaCount)
+      setEditSessionArenaCount(nextArenaCount)
       setEditSessionDuration(nextDuration)
-      setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration, editSessionArenaCount).totalPrice))
+      setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration, nextArenaCount).totalPrice))
       return
     }
 
@@ -4869,7 +4873,7 @@ function handleSessionDateChange(value: string) {
 
   function handleEditArenaCountChange(value: number) {
     if (editBookingType === 'ticket') {
-      const nextArenaCount = ticketArenaCountForPlayers(value)
+      const nextArenaCount = editSessionMaxPlayers <= 4 ? 1 : ticketArenaCountForPlayers(value)
       const nextDuration = Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers, nextArenaCount), editSessionDuration)
       setEditSessionArenaCount(nextArenaCount)
       setEditSessionDuration(nextDuration)

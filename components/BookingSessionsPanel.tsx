@@ -1022,7 +1022,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                     <label>{text.arenas}</label>
                     <select value={editSessionArenaCount} onChange={(event) => handleEditArenaCountChange(Number(event.target.value))}>
                       <option value={1}>{text.oneArena}</option>
-                      <option value={2} disabled={editBookingType !== 'ticket' && editSessionMaxPlayers < 8}>
+                      <option value={2} disabled={editBookingType === 'ticket' ? editSessionMaxPlayers <= 4 : editSessionMaxPlayers < 8}>
                         {editBookingType === 'ticket' ? text.ticketTwoArenas : text.twoArenas}
                       </option>
                     </select>

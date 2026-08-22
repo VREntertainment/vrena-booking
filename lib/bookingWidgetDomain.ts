@@ -721,7 +721,10 @@ export function ticketMinimumDurationBlocks(players: number, arenaCount = ticket
 
 export function ticketBillablePlayersPerBlock(players: number, arenaCount = ticketArenaCount) {
   const playerCount = Math.max(1, players)
-  return Math.min(playerCount, ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))
+  const simultaneousPlayers = Math.min(playerCount, ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))
+  const rotationPlayers = Math.max(0, playerCount - simultaneousPlayers)
+
+  return simultaneousPlayers + rotationPlayers * 0.5
 }
 
 export function ticketPricingSummary(
@@ -762,14 +765,8 @@ export function ticketArenaCountForPlayers(arenaCount = ticketArenaCount) {
   return Math.max(1, Math.min(ARENA_COUNT, selectedArenaCount))
 }
 
-export function ticketUnitFormulaText(text: Record<string, string>, unitPrice: number, players: number, arenaCount = ticketArenaCount) {
-  const playerCount = ticketBillablePlayersPerBlock(players, arenaCount)
-  const playerWord = playerCount === 1 ? text.ticketFormulaPlayer : text.ticketFormulaPlayers
-
-  return text.ticketUnitFormula
-    .replace('{price}', formatTicketFormulaPrice(unitPrice))
-    .replace('{players}', String(playerCount))
-    .replace('{playerWord}', playerWord)
+export function ticketUnitFormulaText(text: Record<string, string>) {
+  return text.ticketUnitPriceBasis
 }
 
 export function clampTicketLoyaltyRedemption(points: number, balance: number, redeemValue: number, subtotal: number) {
