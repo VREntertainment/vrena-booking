@@ -12,6 +12,7 @@ import {
   type TicketType,
 } from './bookingStaticData'
 import type { LanguageCode } from './i18n/languages'
+import { calculateTicketPricing, minimumTicketDurationMinutes } from './ticketPricing'
 import { vrenaPalette } from './theme/vrenaPalette'
 import type { LeaderboardCriterion, LeaderboardPlayer } from '../components/LeaderboardPanel'
 import type { StaffProfile } from '../components/StaffConsole'
@@ -710,8 +711,7 @@ export function ticketRequiredSlots(players: number) {
 }
 
 export function ticketMinimumDurationBlocks(players: number) {
-  if (players > 12) return 3
-  return ticketRequiredSlots(players)
+  return minimumTicketDurationMinutes(players, ticketPriceBlockMinutes, ticketArenaCapacityPerSlot) / ticketPriceBlockMinutes
 }
 
 export function ticketBillablePlayersPerBlock(players: number) {
@@ -729,29 +729,20 @@ export function ticketPricingSummary(
 ) {
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
   const requiredSlots = ticketMinimumDurationBlocks(players)
-  const durationBlocks = Math.max(1, Math.ceil(durationMinutes / ticketPriceBlockMinutes))
-  const chargedPlayersPerBlock = ticketBillablePlayersPerBlock(players)
-  const chargedPlayerSpots = durationBlocks * chargedPlayersPerBlock
   const unitPrice = baseUnitPrice
-  const grossPrice = baseUnitPrice * chargedPlayerSpots
-  const discountRate = players >= 9 && players <= 12
-    ? 0.15
-    : players >= 5 && players <= 8
-      ? 0.1
-      : 0
-  const discountAmount = Math.round(grossPrice * discountRate)
+  const pricing = calculateTicketPricing(
+    baseUnitPrice,
+    players,
+    durationMinutes,
+    ticketPriceBlockMinutes,
+    ticketArenaCapacityPerSlot
+  )
 
   return {
     baseUnitPrice,
     unitPrice,
     requiredSlots,
-    durationBlocks,
-    chargedPlayersPerBlock,
-    chargedPlayerSpots,
-    grossPrice,
-    discountRate,
-    discountAmount,
-    totalPrice: grossPrice - discountAmount,
+    ...pricing,
   }
 }
 
