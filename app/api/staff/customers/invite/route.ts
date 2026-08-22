@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '@/lib/phonePasswordAccount'
+import { isValidStaffCustomerEmail, normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '@/lib/phonePasswordAccount'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 import { trustedClientIp } from '@/lib/security/requestIp'
 import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   const phone = phoneAccount ? normalizePhonePasswordIdentifier(submittedPhone) : submittedPhone
 
   if (!fullName) return jsonError('Enter the customer name.', 400)
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Enter a valid customer email.', 400)
+  if (email && !isValidStaffCustomerEmail(email)) return jsonError('Enter a valid customer email.', 400)
   if (phoneAccount && !phone) return jsonError('Enter a valid customer phone number.', 400)
   if (phoneAccount && password.length < 6) return jsonError('Password must be at least 6 characters.', 400)
   if (phoneAccount && password.length > 128) return jsonError('Password must be 128 characters or fewer.', 400)

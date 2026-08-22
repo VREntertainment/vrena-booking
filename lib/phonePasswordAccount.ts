@@ -1,6 +1,24 @@
 const DEFAULT_COUNTRY_CODE = '+84'
 const PHONE_LOGIN_DOMAIN = 'phone-login.vrena.invalid'
 
+export function isValidStaffCustomerEmail(value: string) {
+  if (!value || value.length > 254) return false
+
+  let atIndex = -1
+  for (let index = 0; index < value.length; index += 1) {
+    const characterCode = value.charCodeAt(index)
+    if (characterCode <= 32 || characterCode === 127) return false
+    if (value[index] !== '@') continue
+    if (atIndex !== -1) return false
+    atIndex = index
+  }
+
+  if (atIndex <= 0 || atIndex > 64 || atIndex >= value.length - 3) return false
+  const domain = value.slice(atIndex + 1)
+  const finalDotIndex = domain.lastIndexOf('.')
+  return finalDotIndex > 0 && finalDotIndex < domain.length - 1
+}
+
 export function normalizePhonePasswordIdentifier(value: string, defaultCountryCode = DEFAULT_COUNTRY_CODE) {
   const trimmed = value.trim()
   if (!trimmed) return ''
