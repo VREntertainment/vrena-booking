@@ -47,6 +47,10 @@ type TicketTimeOption = {
 type TicketPricingSummary = {
   unitPrice: number
   durationBlocks: number
+  simultaneousPlayers: number
+  rotationPlayers: number
+  rotationPriceRate: number
+  billablePlayersPerBlock: number
   chargedPlayersPerBlock: number
   chargedPlayerSpots: number
   discountRate: number
@@ -221,6 +225,18 @@ export default function TicketBookingView({
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
+  const ticketRotationSummary = currentTicketPricing.rotationPlayers > 0
+    ? text.ticketRotationPricingSummary
+      .replace('{simultaneous}', String(currentTicketPricing.simultaneousPlayers))
+      .replace('{rotation}', String(currentTicketPricing.rotationPlayers))
+    : ticketPlayers === 1
+      ? text.ticketOnePlayerSimultaneous
+      : text.ticketAllPlayersSimultaneous.replace('{players}', String(ticketPlayers))
+  const ticketGroupDiscountSummary = currentTicketPricing.discountRate > 0
+    ? text.ticketGroupDiscountApplied
+      .replace('{discount}', String(Math.round(currentTicketPricing.discountRate * 100)))
+      .replace('{players}', String(ticketPlayers))
+    : text.ticketGroupDiscountStartsAtFive
 
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
@@ -326,7 +342,7 @@ export default function TicketBookingView({
                   <select id="ticket-player-count" value={ticketPlayers} onChange={(event) => onTicketPlayersChange(Number(event.target.value))}>
                     {ticketPlayerOptions.map((count) => (
                       <option key={count} value={count}>
-                        {count} {text.players}
+                        {count} {count === 1 ? text.ticketFormulaPlayer : text.players}
                       </option>
                     ))}
                   </select>
@@ -339,7 +355,7 @@ export default function TicketBookingView({
                     onChange={(event) => onTicketArenaCountChange(Number(event.target.value))}
                   >
                     <option value={1}>{text.ticketOneArena}</option>
-                    <option value={2}>{text.ticketTwoArenas}</option>
+                    <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenas}</option>
                   </select>
                 </div>
               </div>
@@ -388,9 +404,9 @@ export default function TicketBookingView({
                   </div>
                 )}
                 <div className="ticket-reserved-line">
-                  <span>{text.reservedPlayerSpots}</span>
-                  <strong>{currentTicketPricing.chargedPlayerSpots}</strong>
-                  <small>{currentTicketPricing.durationBlocks} x {currentTicketPricing.chargedPlayersPerBlock} {text.players}</small>
+                  <span>{text.ticketPlayersAndRotation}</span>
+                  <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
+                  <small>{ticketRotationSummary}</small>
                 </div>
                 <div className="ticket-total-line">
                   <span className="ticket-total-heading">
@@ -461,6 +477,13 @@ export default function TicketBookingView({
                   </div>
                 )}
               </div>
+
+              {!isSpecialTicket && (
+                <div className="ticket-group-pricing-note" aria-live="polite">
+                  <strong>{ticketGroupDiscountSummary}</strong>
+                  <span>{text.ticketGroupDiscountRule}</span>
+                </div>
+              )}
 
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
