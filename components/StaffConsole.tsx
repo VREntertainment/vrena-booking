@@ -803,6 +803,7 @@ type StaffHourlyRevenuePoint = {
 }
 
 type BookingForm = {
+  guestBooking: boolean
   customerId: string
   customerName: string
   customerPhone: string
@@ -1228,6 +1229,7 @@ const staffConsoleText = {
       current: 'current',
       communitySession: 'Community session',
       customer: 'Customer',
+      guestBooking: 'Guest booking',
       customerAccountHelp: 'Create a customer profile. The secure password setup link is always sent to the required email address.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
@@ -1486,6 +1488,7 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Enter a customer email.',
       customerAccountInvited: 'Customer account created. Password request sent.',
       customerAccountNameRequired: 'Enter the customer name.',
+      guestBookingHelp: 'No customer profile, name, contact details, or player stats will be created. Payment, player count, date, time, duration, and game are still recorded.',
       achievementAwarded: 'Achievement unlocked for this player.',
       achievementAlreadyAwarded: 'Already awarded to this player.',
       achievementAwardSelectPlayer: 'Choose a player first.',
@@ -2022,6 +2025,7 @@ const staffConsoleText = {
       current: 'hiện tại',
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
+      guestBooking: 'Đặt chỗ khách vãng lai',
       customerAccountHelp: 'Tạo hồ sơ khách hàng. Link bảo mật để đặt mật khẩu luôn được gửi đến địa chỉ email bắt buộc.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
@@ -2280,6 +2284,7 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Nhập email khách hàng.',
       customerAccountInvited: 'Đã tạo tài khoản khách hàng. Đã gửi yêu cầu tạo mật khẩu.',
       customerAccountNameRequired: 'Nhập tên khách hàng.',
+      guestBookingHelp: 'Không tạo hồ sơ khách hàng, tên, thông tin liên hệ hay thống kê người chơi. Thanh toán, số người, ngày, giờ, thời lượng và trò chơi vẫn được lưu.',
       achievementAwarded: 'Đã mở khóa thành tựu cho người chơi.',
       achievementAlreadyAwarded: 'Người chơi đã có thành tựu này.',
       achievementAwardSelectPlayer: 'Chọn người chơi trước.',
@@ -3312,6 +3317,7 @@ function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): Paym
 }
 
 const defaultBookingForm = (): BookingForm => ({
+  guestBooking: true,
   customerId: '',
   customerName: '',
   customerPhone: '',
@@ -6484,10 +6490,25 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const selected = profiles.find((item) => item.id === profileId)
     setBooking((current) => ({
       ...current,
+      guestBooking: false,
       customerId: profileId,
       customerName: selected ? customerName(selected, text) : current.customerName,
       customerPhone: selected?.phone || current.customerPhone,
       customerEmail: selected?.email || current.customerEmail,
+    }))
+  }
+
+  function setGuestBooking(enabled: boolean) {
+    setCustomerNameFocused(false)
+    setBooking((current) => ({
+      ...current,
+      guestBooking: enabled,
+      ...(enabled ? {
+        customerId: '',
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
+      } : {}),
     }))
   }
 
@@ -6515,13 +6536,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     setSaving(true)
     setStatus(text.messages.orderCreating)
+    const guestCustomer = booking.guestBooking
     const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
     const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
     const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
-      p_customer_id: booking.customerId || null,
-      p_customer_name: booking.customerName || null,
-      p_customer_phone: booking.customerPhone || null,
-      p_customer_email: booking.customerEmail || null,
+      p_customer_id: guestCustomer ? null : booking.customerId || null,
+      p_customer_name: guestCustomer ? null : booking.customerName || null,
+      p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
+      p_customer_email: guestCustomer ? null : booking.customerEmail || null,
       p_game_id: selectedGame.id,
       p_booking_date: booking.date,
       p_booking_time: `${booking.time}:00`,
@@ -9505,9 +9527,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders}>
             <div className="form-grid compact-form-grid">
+              <label className="checkbox-row staff-guest-booking-toggle full">
+                <input
+                  checked={booking.guestBooking}
+                  type="checkbox"
+                  onChange={(event) => setGuestBooking(event.target.checked)}
+                />
+                <span className="staff-guest-booking-copy">
+                  <strong>{text.labels.guestBooking}</strong>
+                  <small>{text.messages.guestBookingHelp}</small>
+                </span>
+              </label>
               <label>
                 {text.labels.customerProfile}
-                <select value={booking.customerId} onChange={(event) => applyCustomer(event.target.value)}>
+                <select disabled={booking.guestBooking} value={booking.customerId} onChange={(event) => applyCustomer(event.target.value)}>
                   <option value="">{text.walkIn}</option>
                   {profiles.map((item) => (
                     <option key={item.id} value={item.id}>{customerName(item, text)}</option>
@@ -9525,8 +9558,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 <input
                   id="staff-booking-customer-name"
                   aria-autocomplete="list"
-                  aria-controls={showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
-                  aria-expanded={showCustomerNameSuggestions}
+                  aria-controls={!booking.guestBooking && showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
+                  aria-expanded={!booking.guestBooking && showCustomerNameSuggestions}
+                  disabled={booking.guestBooking}
                   role="combobox"
                   value={booking.customerName}
                   onChange={(event) => handleCustomerNameChange(event.target.value)}
@@ -9554,6 +9588,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 <PhoneNumberInput
                   buttonLabel={sharedText.countryCode}
                   className="staff-phone-control"
+                  disabled={booking.guestBooking}
                   inputLabel={text.labels.phone}
                   onChange={(phone) => setBooking({ ...booking, customerPhone: phone })}
                   searchPlaceholder={sharedText.searchCountry}
@@ -9562,7 +9597,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </label>
               <label>
                 {text.labels.email}
-                <input value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
+                <input disabled={booking.guestBooking} value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
               </label>
               <label>
                 {text.labels.game}
@@ -9694,6 +9729,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           <div className="staff-card staff-summary-card">
             <h3>{text.labels.summary}</h3>
             <div className="staff-price-lines">
+              <span>{text.labels.customer}</span><strong>{booking.guestBooking ? text.labels.guestBooking : booking.customerName || text.walkIn}</strong>
               <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
               <span>{text.labels.duration}</span><strong>{quote.duration} min</strong>
               <span>{text.labels.subtotal}</span><strong>{formatVnd(quote.subtotal)}</strong>
