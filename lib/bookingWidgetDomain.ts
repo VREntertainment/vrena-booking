@@ -706,18 +706,22 @@ export function ticketUnitPrice(_ticketType: TicketType, dateValue: string, time
   return individualTicketUnitPrice(dateValue, timeValue)
 }
 
-export function ticketRequiredSlots(players: number) {
-  return Math.max(1, Math.ceil(Math.max(1, players) / ticketArenaCapacityPerSlot))
+export function ticketRequiredSlots(players: number, arenaCount = ticketArenaCount) {
+  return Math.max(1, Math.ceil(Math.max(1, players) / (ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))))
 }
 
-export function ticketMinimumDurationBlocks(players: number) {
-  return minimumTicketDurationMinutes(players, ticketPriceBlockMinutes, ticketArenaCapacityPerSlot) / ticketPriceBlockMinutes
+export function ticketMinimumDurationBlocks(players: number, arenaCount = ticketArenaCount) {
+  return minimumTicketDurationMinutes(
+    players,
+    ticketPriceBlockMinutes,
+    ticketArenaCapacityPerSlot,
+    ticketArenaCountForPlayers(arenaCount)
+  ) / ticketPriceBlockMinutes
 }
 
-export function ticketBillablePlayersPerBlock(players: number) {
+export function ticketBillablePlayersPerBlock(players: number, arenaCount = ticketArenaCount) {
   const playerCount = Math.max(1, players)
-  if (playerCount <= ticketArenaCapacityPerSlot) return playerCount
-  return ticketArenaCapacityPerSlot
+  return Math.min(playerCount, ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))
 }
 
 export function ticketPricingSummary(
@@ -725,17 +729,20 @@ export function ticketPricingSummary(
   dateValue: string,
   timeValue: string,
   players: number,
-  durationMinutes: number
+  durationMinutes: number,
+  arenaCount = ticketArenaCount
 ) {
+  const selectedArenaCount = ticketArenaCountForPlayers(arenaCount)
   const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
-  const requiredSlots = ticketMinimumDurationBlocks(players)
+  const requiredSlots = ticketMinimumDurationBlocks(players, selectedArenaCount)
   const unitPrice = baseUnitPrice
   const pricing = calculateTicketPricing(
     baseUnitPrice,
     players,
     durationMinutes,
     ticketPriceBlockMinutes,
-    ticketArenaCapacityPerSlot
+    ticketArenaCapacityPerSlot,
+    selectedArenaCount
   )
 
   return {
@@ -746,16 +753,17 @@ export function ticketPricingSummary(
   }
 }
 
-export function ticketDurationForPlayers(ticketType: TicketType, players: number) {
-  return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players) * ticketPriceBlockMinutes)
+export function ticketDurationForPlayers(ticketType: TicketType, players: number, arenaCount = ticketArenaCount) {
+  return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players, arenaCount) * ticketPriceBlockMinutes)
 }
 
-export function ticketArenaCountForPlayers() {
-  return ticketArenaCount
+export function ticketArenaCountForPlayers(arenaCount = ticketArenaCount) {
+  const selectedArenaCount = Number.isFinite(arenaCount) ? Math.floor(arenaCount) : ticketArenaCount
+  return Math.max(1, Math.min(ARENA_COUNT, selectedArenaCount))
 }
 
-export function ticketUnitFormulaText(text: Record<string, string>, unitPrice: number, players: number) {
-  const playerCount = Math.max(1, players >= ticketArenaCapacityPerSlot ? ticketArenaCapacityPerSlot : players)
+export function ticketUnitFormulaText(text: Record<string, string>, unitPrice: number, players: number, arenaCount = ticketArenaCount) {
+  const playerCount = ticketBillablePlayersPerBlock(players, arenaCount)
   const playerWord = playerCount === 1 ? text.ticketFormulaPlayer : text.ticketFormulaPlayers
 
   return text.ticketUnitFormula

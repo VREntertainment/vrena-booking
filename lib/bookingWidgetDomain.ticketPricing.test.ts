@@ -30,7 +30,7 @@ test('keeps the minimum rotation time for larger groups', () => {
   assert.equal(minimumTicketDurationMinutes(4), 20)
   assert.equal(minimumTicketDurationMinutes(5), 40)
   assert.equal(minimumTicketDurationMinutes(9), 60)
-  assert.equal(minimumTicketDurationMinutes(16), 60)
+  assert.equal(minimumTicketDurationMinutes(16), 80)
 })
 
 test('applies the configured 15 percent discount through 16 players', () => {
@@ -39,4 +39,21 @@ test('applies the configured 15 percent discount through 16 players', () => {
   assert.equal(pricing.chargedPlayersPerBlock, 4)
   assert.equal(pricing.discountRate, 0.15)
   assert.equal(pricing.totalPrice, 6_732_000)
+})
+
+test('two arenas allow up to eight simultaneous billed players', () => {
+  const pricing = calculateTicketPricing(330_000, 6, 120, 20, 4, 2)
+
+  assert.equal(pricing.arenaCount, 2)
+  assert.equal(pricing.chargedPlayersPerBlock, 6)
+  assert.equal(pricing.chargedPlayerSpots, 36)
+  assert.equal(pricing.grossPrice, 11_880_000)
+  assert.equal(pricing.discountRate, 0.1)
+  assert.equal(pricing.totalPrice, 10_692_000)
+})
+
+test('two arenas reduce the minimum rotation time', () => {
+  assert.equal(minimumTicketDurationMinutes(8, 20, 4, 2), 20)
+  assert.equal(minimumTicketDurationMinutes(9, 20, 4, 2), 40)
+  assert.equal(minimumTicketDurationMinutes(16, 20, 4, 2), 40)
 })

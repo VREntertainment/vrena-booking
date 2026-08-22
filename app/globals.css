@@ -4795,9 +4795,13 @@ body {
 }
 
 .app .ticket-form-panel .ticket-form-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
+}
+
+.app .ticket-control-arenas {
+  grid-column: span 2;
 }
 
 .app .ticket-control {
@@ -11094,6 +11098,10 @@ body {
 
   .app .ticket-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-control-arenas {
+    grid-column: span 2;
   }
 
   .app .ticket-price-summary {

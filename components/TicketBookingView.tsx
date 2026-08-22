@@ -96,6 +96,7 @@ export type TicketBookingViewProps = {
   ticketTimeOptions: TicketTimeOption[]
   ticketPlayerOptions: number[]
   activeTicketDuration: number
+  activeTicketArenaCount: number
   currentTicketPricing: TicketPricingSummary
   currentTicketUnitPrice: number
   currentTicketTotalPrice: number
@@ -116,6 +117,7 @@ export type TicketBookingViewProps = {
   onTicketDateChange: (value: string) => void
   onTicketTimeChange: (value: string) => void
   onTicketDurationChange: (value: number) => void
+  onTicketArenaCountChange: (value: number) => void
   onTicketPlayersChange: (value: number) => void
   onTicketSpecialNoteChange: (value: string) => void
   onTicketDiscountCodeChange: (value: string) => void
@@ -130,7 +132,7 @@ export type TicketBookingViewProps = {
   formatVnd: (value: number) => string
   ticketTypeLabel: (ticketType: TicketType, text: Record<string, string>) => string
   ticketTypeDescription: (ticketType: TicketType, text: Record<string, string>) => string
-  ticketUnitFormulaText: (text: Record<string, string>, unitPrice: number, players: number) => string
+  ticketUnitFormulaText: (text: Record<string, string>, unitPrice: number, players: number, arenaCount: number) => string
   guestTicketContact: GuestTicketContact
   onGuestTicketContactChange: (contact: GuestTicketContact) => void
 }
@@ -156,6 +158,7 @@ export default function TicketBookingView({
   ticketTimeOptions,
   ticketPlayerOptions,
   activeTicketDuration,
+  activeTicketArenaCount,
   currentTicketPricing,
   currentTicketUnitPrice,
   currentTicketTotalPrice,
@@ -176,6 +179,7 @@ export default function TicketBookingView({
   onTicketDateChange,
   onTicketTimeChange,
   onTicketDurationChange,
+  onTicketArenaCountChange,
   onTicketPlayersChange,
   onTicketSpecialNoteChange,
   onTicketDiscountCodeChange,
@@ -327,6 +331,17 @@ export default function TicketBookingView({
                     ))}
                   </select>
                 </div>
+                <div className="ticket-control ticket-control-arenas">
+                  <label htmlFor="ticket-arena-count">{text.ticketArenaCountLabel}</label>
+                  <select
+                    id="ticket-arena-count"
+                    value={activeTicketArenaCount}
+                    onChange={(event) => onTicketArenaCountChange(Number(event.target.value))}
+                  >
+                    <option value={1}>{text.ticketOneArena}</option>
+                    <option value={2}>{text.ticketTwoArenas}</option>
+                  </select>
+                </div>
               </div>
 
               {!isSpecialTicket && (
@@ -369,7 +384,7 @@ export default function TicketBookingView({
                   <div>
                     <span>{text.unitPrice}</span>
                     <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                    <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers)}</small>
+                    <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers, activeTicketArenaCount)}</small>
                   </div>
                 )}
                 <div className="ticket-reserved-line">
