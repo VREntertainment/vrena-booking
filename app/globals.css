@@ -4938,21 +4938,21 @@ body {
   display: grid;
   gap: 3px;
   padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+  border: 1px solid var(--vrena-status-info-border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--vrena-cyan-500) 6%, var(--vrena-white));
-  color: var(--vrena-neutral-950);
+  background: var(--vrena-status-info-bg);
+  color: var(--player-text);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .app .ticket-group-pricing-note strong {
-  color: var(--vrena-cyan-900);
+  color: var(--vrena-status-info-ink);
   font-size: 13px;
 }
 
 .app .ticket-group-pricing-note span {
-  color: var(--vrena-neutral-700);
+  color: var(--player-text-muted);
 }
 
 .app .ticket-discount-line strong {

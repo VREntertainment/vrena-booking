@@ -169,7 +169,7 @@ export const vi = {
   ticketSpecialNoteLabel: 'Cho tụi mình biết nhu cầu của bạn',
   ticketSpecialNotePlaceholder: 'Sinh nhật, sự kiện công ty, setup mong muốn, lịch trình...',
   ticketSpecialNoteCharacterCount: '{count}/500 ký tự',
-  ticketDiscountDeskNote: 'Voucher, giảm giá hoặc điểm thưởng. Hệ thống áp dụng mức giảm tốt nhất.',
+  ticketDiscountDeskNote: 'Có thể dùng điểm thưởng hiện có sau khi áp dụng voucher hoặc giảm giá nhóm. Mọi vé đã thanh toán đều tích điểm theo số tiền thực trả.',
   ticketDiscountCodeLabel: 'Mã voucher / giảm giá',
   ticketDiscountCodePlaceholder: 'Nhập mã',
   ticketDiscountCodeChecking: 'Đang kiểm tra mã...',
