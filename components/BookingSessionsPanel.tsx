@@ -6,7 +6,7 @@ import { Fragment, useMemo, type ReactNode } from 'react'
 import { Bold, CalendarDays, ChevronDown, ChevronUp, Gift, Italic, Map as MapIcon, Sparkles, Strikethrough, Ticket, Trophy, Underline, Users, X } from 'lucide-react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
 import { games, ticketServices, type TicketType } from '../lib/bookingStaticData'
-import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketArenaCountForPlayers, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
+import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
 import { ShareSymbol } from './BookingWidgetUi'
@@ -222,7 +222,6 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
     setCheckInTarget,
     setConfirmedGameDrafts,
     setEditBookingType,
-    setEditSessionArenaCount,
     setEditSessionDate,
     setEditSessionDuration,
     setEditSessionName,
@@ -856,11 +855,10 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               value={editTicketType}
                               onChange={(event) => {
                                 const nextType = event.target.value as TicketType
-                                const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers)
+                                const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers, editSessionArenaCount)
                                 setEditTicketType(nextType)
                                 setEditSessionDuration(nextDuration)
-                                setEditSessionArenaCount(ticketArenaCountForPlayers())
-                                setEditTicketTotalPrice(String(ticketPricingSummary(nextType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration).totalPrice))
+                                setEditTicketTotalPrice(String(ticketPricingSummary(nextType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration, editSessionArenaCount).totalPrice))
                               }}
                             >
                               {ticketServices.map((service) => (
@@ -1024,8 +1022,8 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                     <label>{text.arenas}</label>
                     <select value={editSessionArenaCount} onChange={(event) => handleEditArenaCountChange(Number(event.target.value))}>
                       <option value={1}>{text.oneArena}</option>
-                      <option value={2} disabled={editSessionMaxPlayers < 8}>
-                        {text.twoArenas}
+                      <option value={2} disabled={editBookingType !== 'ticket' && editSessionMaxPlayers < 8}>
+                        {editBookingType === 'ticket' ? text.ticketTwoArenas : text.twoArenas}
                       </option>
                     </select>
                   </div>
