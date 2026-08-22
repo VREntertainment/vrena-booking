@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHmac } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizePhonePasswordIdentifier } from '@/lib/phonePasswordAccount'
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  const identifierDigest = createHash('sha256').update(phone).digest('hex').slice(0, 24)
+  const identifierDigest = createHmac('sha256', serviceRoleKey).update(phone).digest('hex').slice(0, 24)
   const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
     p_action: 'phone_password_login',
     p_limit: 8,
