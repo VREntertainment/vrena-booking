@@ -16,18 +16,15 @@ export function calculateTicketPricing(
   players: number,
   durationMinutes: number,
   priceBlockMinutes = 20,
-  arenaCapacity = 4,
+  _arenaCapacity = 4,
   arenaCount = 1
 ) {
   const playerCount = Math.max(1, players)
   const selectedArenaCount = Math.max(1, arenaCount)
+  void _arenaCapacity
   const durationBlocks = Math.max(1, Math.ceil(durationMinutes / priceBlockMinutes))
-  const simultaneousPlayers = Math.min(playerCount, arenaCapacity * selectedArenaCount)
-  const rotationPlayers = Math.max(0, playerCount - simultaneousPlayers)
-  const rotationPriceRate = 0.5
-  const billablePlayersPerBlock = simultaneousPlayers + rotationPlayers * rotationPriceRate
-  const chargedPlayersPerBlock = billablePlayersPerBlock
-  const chargedPlayerSpots = durationBlocks * billablePlayersPerBlock
+  const chargedPlayersPerBlock = playerCount
+  const chargedPlayerSpots = durationBlocks * chargedPlayersPerBlock
   const grossPrice = Math.round(baseUnitPrice * chargedPlayerSpots)
   const discountRate = playerCount >= 9 && playerCount <= 16
     ? 0.15
@@ -39,10 +36,6 @@ export function calculateTicketPricing(
   return {
     arenaCount: selectedArenaCount,
     durationBlocks,
-    simultaneousPlayers,
-    rotationPlayers,
-    rotationPriceRate,
-    billablePlayersPerBlock,
     chargedPlayersPerBlock,
     chargedPlayerSpots,
     grossPrice,
