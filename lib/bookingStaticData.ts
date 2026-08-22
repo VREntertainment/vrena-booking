@@ -190,7 +190,7 @@ export const ticketServices: Array<{
     id: 'corporate',
     duration: 20,
     minPlayers: 6,
-    maxPlayers: 16,
+    maxPlayers: 32,
     arenaCount: 1,
     defaultGame: 'office-war',
   },

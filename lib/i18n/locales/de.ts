@@ -169,7 +169,7 @@ export const de = {
   ticketSpecialNoteLabel: 'Sag uns, was du brauchst',
   ticketSpecialNotePlaceholder: 'Geburtstag, Firmenevent, gewünschtes Setup, Zeitplan...',
   ticketSpecialNoteCharacterCount: '{count}/500 Zeichen',
-  ticketDiscountDeskNote: 'Voucher, Rabatt oder Treuepunkte. Die beste Ermäßigung wird angewendet.',
+  ticketDiscountDeskNote: 'Verfügbare Treuepunkte können nach jedem Voucher oder Gruppenrabatt eingesetzt werden. Jedes bezahlte Ticket sammelt Punkte auf den endgültig bezahlten Betrag.',
   ticketDiscountCodeLabel: 'Voucher- / Rabattcode',
   ticketDiscountCodePlaceholder: 'Code eingeben',
   ticketDiscountCodeChecking: 'Code wird geprüft...',

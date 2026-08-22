@@ -4270,7 +4270,6 @@ export default function WidgetPage({
   const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
   const ticketAutomaticDiscountAmount = Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
   const ticketBuiltInDiscountAmount = Math.max(0, Math.floor(Number(currentTicketPricing.discountAmount ?? 0) || 0))
-  const hasTicketVoucherDiscount = !isSpecialTicketType && ticketVoucherDiscountAmount > 0 && ticketDiscountCode.trim().length > 0
   const activeTicketAutomaticDiscountAmount = Math.max(ticketBuiltInDiscountAmount, ticketAutomaticDiscountAmount)
   const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(activeTicketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
   const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > activeTicketAutomaticDiscountAmount ? 'voucher' : 'automatic'
@@ -4280,7 +4279,7 @@ export default function WidgetPage({
     Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
   )
   const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
-  const canUseTicketLoyaltyPoints = !isSpecialTicketType && !hasTicketVoucherDiscount
+  const canUseTicketLoyaltyPoints = !isSpecialTicketType
   const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
     ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
     : 0
@@ -4461,15 +4460,6 @@ export default function WidgetPage({
       window.clearTimeout(timeoutId)
     }
   }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isSpecialTicketType, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
-
-  useEffect(() => {
-    if (!hasTicketVoucherDiscount || !ticketUseLoyaltyPoints) return undefined
-    return schedulePostEffectStateUpdate(() => {
-      setTicketUseLoyaltyPoints(false)
-      setTicketLoyaltyPointsToRedeem('')
-      showTicketStatus(ticketDiscountBestReductionText)
-    })
-  }, [hasTicketVoucherDiscount, ticketDiscountBestReductionText, ticketUseLoyaltyPoints])
 
   useEffect(() => {
     if (!ticketUseLoyaltyPoints) return
@@ -4712,12 +4702,6 @@ function handleSessionDateChange(value: string) {
   }
 
   function handleTicketUseLoyaltyPointsChange(checked: boolean) {
-    if (checked && hasTicketVoucherDiscount) {
-      setTicketUseLoyaltyPoints(false)
-      setTicketLoyaltyPointsToRedeem('')
-      showTicketStatus(ticketDiscountBestReductionText)
-      return
-    }
     setTicketUseLoyaltyPoints(checked)
     setTicketConfirmation(null)
     if (checked) {

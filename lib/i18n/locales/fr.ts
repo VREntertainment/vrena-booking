@@ -169,7 +169,7 @@ export const fr = {
   ticketSpecialNoteLabel: 'Dites-nous vos besoins',
   ticketSpecialNotePlaceholder: 'Anniversaire, événement d’entreprise, setup souhaité, horaires...',
   ticketSpecialNoteCharacterCount: '{count}/500 caractères',
-  ticketDiscountDeskNote: 'Voucher, réduction ou points fidélité. La meilleure réduction est appliquée.',
+  ticketDiscountDeskNote: 'Les points fidélité disponibles peuvent être utilisés après tout voucher ou remise de groupe. Chaque ticket payé rapporte des points sur le montant final payé.',
   ticketDiscountCodeLabel: 'Code voucher / réduction',
   ticketDiscountCodePlaceholder: 'Entrer un code',
   ticketDiscountCodeChecking: 'Vérification du code...',
