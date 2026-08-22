@@ -43,6 +43,7 @@ import ContactChannels from './ContactChannels'
 import { shouldSkipImageOptimization } from './AvatarNode'
 import ProfileAchievementsPanel from './ProfileAchievementsPanel'
 import ProfileAuthView from './ProfileAuthView'
+import PhoneFirstLoginPanel from './PhoneFirstLoginPanel'
 import ShortDateInput from './ShortDateInput'
 
 const profileTabCopy = {
@@ -112,6 +113,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     isProfileAuthLoading,
     isProfileSaveSuccessful,
     isPasskeyLoading,
+    isPhoneSetupSaving,
     isRecoveryMode,
     isResettingPassword,
     isSavingAnonymousMode,
@@ -131,6 +133,9 @@ export default function BookingProfileView({ context }: { context: any }) {
     newPassword,
     passkeyButtonRef,
     personalDataConsent,
+    phoneSetupEmail,
+    phoneSetupRequired,
+    phoneSetupSentTo,
     playerStats,
     privacyPolicyUrl,
     profile,
@@ -155,6 +160,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     resetCaptcha,
     saveProfile,
     sendPasswordReset,
+    sendPhoneSetupEmail,
     setActiveView,
     setAnonymousConfirmOpen,
     setAuthMode,
@@ -170,6 +176,8 @@ export default function BookingProfileView({ context }: { context: any }) {
     setMfaVerifyCode,
     setNewPassword,
     setPersonalDataConsent,
+    setPhoneSetupEmail,
+    setPhoneSetupSentTo,
     setProfileBirthday,
     setProfileCountryCode,
     setProfileEmail,
@@ -252,6 +260,25 @@ export default function BookingProfileView({ context }: { context: any }) {
   const completedProfileSteps = profileCompletionSteps.filter((step) => step.done).length
   const profileCompletionPercent = Math.round((completedProfileSteps / profileCompletionSteps.length) * 100)
   const nextProfileStep = profileCompletionSteps.find((step) => !step.done)
+
+  if (phoneSetupRequired) {
+    return (
+      <PhoneFirstLoginPanel
+        email={phoneSetupEmail}
+        isSaving={isPhoneSetupSaving}
+        maskedEmail={phoneSetupSentTo}
+        onEmailChange={setPhoneSetupEmail}
+        onLogout={logout}
+        onResetEmail={() => {
+          setPhoneSetupSentTo('')
+          setProfileStatus('')
+        }}
+        onSend={sendPhoneSetupEmail}
+        status={profileStatus}
+        text={text}
+      />
+    )
+  }
 
   return (
           <ProfileAuthView

@@ -13,7 +13,8 @@ import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient
 import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
-import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '../lib/phonePasswordAccount'
+import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
+import { isPendingPhoneAccountSetup, normalizePhoneSetupEmail } from '../lib/phoneAccountSetup'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
@@ -237,6 +238,10 @@ export default function WidgetPage({
   const [profileCountryCode, setProfileCountryCode] = useState('+84')
   const [profilePhone, setProfilePhone] = useState('')
   const [profilePassword, setProfilePassword] = useState('')
+  const [phoneSetupRequired, setPhoneSetupRequired] = useState(false)
+  const [phoneSetupEmail, setPhoneSetupEmail] = useState('')
+  const [phoneSetupSentTo, setPhoneSetupSentTo] = useState('')
+  const [isPhoneSetupSaving, setIsPhoneSetupSaving] = useState(false)
   const [rememberLogin, setRememberLogin] = useState(true)
   const [captchaToken, setCaptchaToken] = useState('')
   const captchaTokenRef = useRef('')
@@ -1719,6 +1724,7 @@ export default function WidgetPage({
         setUserId('')
         setAuthEmail('')
         setProfile(null)
+        setPhoneSetupRequired(false)
         if (/auth session missing/i.test(userError.message)) {
           setProfileStatus('')
           return null
@@ -1731,11 +1737,20 @@ export default function WidgetPage({
         setUserId('')
         setAuthEmail('')
         setProfile(null)
+        setPhoneSetupRequired(false)
         return null
       }
 
       setUserId(authUser.id)
       setAuthEmail(isPhonePasswordLoginEmail(authUser.email) ? '' : authUser.email?.toLowerCase() || '')
+
+      const requiresPhoneSetup = isPendingPhoneAccountSetup(authUser.app_metadata)
+      setPhoneSetupRequired(requiresPhoneSetup)
+      if (requiresPhoneSetup) {
+        setProfile(null)
+        setActiveView('profile')
+        return null
+      }
 
       if (!options.skipMfaChallenge) {
         const needsMfa = await prepareMfaChallengeIfNeeded()
@@ -2078,16 +2093,36 @@ export default function WidgetPage({
         isAdminEmail: isAdminEmail(loginEmail),
       })
 
-      const authCredentialEmail = phoneLogin
-        ? await phonePasswordLoginEmail(loginPhone)
-        : loginEmail
-      const signInResult = await (await getSupabase()).auth.signInWithPassword({
-        email: authCredentialEmail,
-        password: profilePassword,
-        options: {
-          captchaToken: captchaTokenForAuth,
-        },
-      })
+      const authClient = await getSupabase()
+      const signInResult = phoneLogin
+        ? await (async () => {
+            const response = await fetch('/api/auth/phone-password-login', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                captchaToken: captchaTokenForAuth,
+                password: profilePassword,
+                phone: loginPhone,
+              }),
+            })
+            const payload = await response.json().catch(() => ({})) as {
+              accessToken?: string
+              error?: string
+              refreshToken?: string
+            }
+            if (!response.ok || !payload.accessToken || !payload.refreshToken) {
+              throw new Error(payload.error || 'Invalid phone number or password.')
+            }
+            return authClient.auth.setSession({
+              access_token: payload.accessToken,
+              refresh_token: payload.refreshToken,
+            })
+          })()
+        : await authClient.auth.signInWithPassword({
+            email: loginEmail,
+            password: profilePassword,
+            options: { captchaToken: captchaTokenForAuth },
+          })
 
       authDebug('handleAuth:signInWithPassword:response', {
         error: signInResult.error,
@@ -2120,12 +2155,19 @@ export default function WidgetPage({
 
       setUserId(signInResult.data.user.id)
       setProfilePassword('')
+      const requiresPhoneSetup = isPendingPhoneAccountSetup(signInResult.data.user.app_metadata)
       const needsMfa = await prepareMfaChallengeIfNeeded()
       if (needsMfa) {
         setIsSavingProfile(false)
         return
       }
       const loadedProfile = await loadProfile()
+      if (requiresPhoneSetup) {
+        setProfileStatus('')
+        setActiveView('profile')
+        setIsSavingProfile(false)
+        return
+      }
       const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
       if (!completedTicketAuth) {
         setProfileStatus('')
@@ -2146,6 +2188,9 @@ export default function WidgetPage({
     setAuthEmail('')
     setProfile(null)
     setProfilePassword('')
+    setPhoneSetupRequired(false)
+    setPhoneSetupEmail('')
+    setPhoneSetupSentTo('')
     setAuthStep('email')
     setNewPassword('')
     setIsRecoveryMode(false)
@@ -2158,6 +2203,41 @@ export default function WidgetPage({
     setMfaAssuranceLevel(null)
     setMfaStatus('')
     setProfileStatus(text.loggedOut)
+  }
+
+  async function sendPhoneSetupEmail() {
+    if (isPhoneSetupSaving) return
+    const email = normalizePhoneSetupEmail(phoneSetupEmail)
+    if (!email) {
+      setProfileStatus(text.emailRequired)
+      return
+    }
+
+    setIsPhoneSetupSaving(true)
+    setProfileStatus('')
+    try {
+      const client = await getSupabase()
+      const { data, error } = await client.auth.getSession()
+      if (error || !data.session?.access_token) throw new Error(text.loginRequired)
+
+      const response = await fetch('/api/auth/phone-account-setup/start', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${data.session.access_token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+      const payload = await response.json().catch(() => ({})) as { error?: string; maskedEmail?: string }
+      if (!response.ok || !payload.maskedEmail) throw new Error(payload.error || 'Could not send the verification email.')
+
+      setPhoneSetupEmail(email)
+      setPhoneSetupSentTo(payload.maskedEmail)
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : 'Could not send the verification email.')
+    } finally {
+      setIsPhoneSetupSaving(false)
+    }
   }
 
   async function logoutStaffKiosk() {
@@ -3836,6 +3916,9 @@ export default function WidgetPage({
           setUserId('')
           setAuthEmail('')
           setProfile(null)
+          setPhoneSetupRequired(false)
+          setPhoneSetupEmail('')
+          setPhoneSetupSentTo('')
           setIsProfileAuthLoading(false)
           setMfaFactors([])
           setMfaEnrollment(null)
@@ -8782,7 +8865,7 @@ function handleSessionDateChange(value: string) {
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
 
-  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, scheduleReturnReminder, sendPasswordReset, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isPhoneSetupSaving, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, phoneSetupEmail, phoneSetupRequired, phoneSetupSentTo, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, scheduleReturnReminder, sendPasswordReset, sendPhoneSetupEmail, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setPhoneSetupEmail, setPhoneSetupSentTo, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
   const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 

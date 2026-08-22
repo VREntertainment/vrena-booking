@@ -1040,7 +1040,6 @@
 
 .app .staff-customer-phone-account-setup {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-column: 1 / -1;
   gap: 7px;
   align-items: end;
@@ -1048,6 +1047,50 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--vrena-blue-50) 74%, var(--vrena-white));
   padding: 9px;
+}
+
+.app .staff-customer-temporary-access {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: center;
+  margin-top: 5px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--vrena-purple-500) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-purple-500) 7%, var(--staff-modern-surface, var(--vrena-white)));
+}
+
+.app .staff-customer-temporary-access > span,
+.app .staff-customer-temporary-access > small,
+.app .staff-customer-temporary-access > p {
+  grid-column: 1;
+}
+
+.app .staff-customer-temporary-access > span {
+  color: var(--vrena-neutral-700);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app .staff-customer-temporary-access > strong {
+  grid-column: 1;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 0.08em;
+}
+
+.app .staff-customer-temporary-access > p {
+  margin: 2px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+}
+
+.app .staff-customer-temporary-access > button {
+  grid-column: 2;
+  grid-row: 1 / span 4;
 }
 
 .app .staff-customer-phone-account-setup > p {
@@ -5091,6 +5134,15 @@
   .app .staff-achievement-award-layout {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .app .staff-customer-temporary-access {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-customer-temporary-access > button {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .app .staff-card .staff-customer-invite-form > button.primary {

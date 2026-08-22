@@ -832,8 +832,12 @@ type CustomerInviteForm = {
   email: string
   phone: string
   nickname: string
+}
+
+type CustomerTemporaryAccess = {
+  expiresAt: string
   password: string
-  confirmPassword: string
+  phone: string
 }
 
 type StaffConsoleProps = {
@@ -952,6 +956,7 @@ const staffConsoleText = {
       saveSetupOption: 'Save option',
       saveVoucher: 'Save voucher',
       createPhoneAccount: 'Create phone account',
+      copyTemporaryPassword: 'Copy temporary password',
       sendPasswordRequest: 'Send setup email',
       sessionCalendar: 'Session Calendar',
       submitLeave: 'Submit leave',
@@ -1234,8 +1239,10 @@ const staffConsoleText = {
       communitySession: 'Community session',
       customer: 'Customer',
       guestBooking: 'Guest booking',
-      customerAccountHelp: 'Use an email setup link, or create a phone + password account without SMS verification.',
-      customerAccountPhonePasswordHelp: 'No email: let the customer enter the password privately. The phone is not verified and cannot be used for self-service password recovery.',
+      customerAccountHelp: 'Use an email setup link, or create a phone account with a temporary first-login password.',
+      customerAccountPhonePasswordHelp: 'No email: VRena generates a temporary password. The customer signs in, adds and verifies an email, then creates a private permanent password.',
+      customerTemporaryPassword: 'Temporary first-login password',
+      customerTemporaryPasswordHelp: 'Show this once to the customer. It expires after 24 hours. Staff cannot retrieve it later.',
       customerName: 'Customer name',
       customerProfile: 'Customer profile',
       noAwardsYet: 'No manual unlocks yet.',
@@ -1497,7 +1504,8 @@ const staffConsoleText = {
       customerAccountNameRequired: 'Enter the customer name.',
       customerAccountPasswordMismatch: 'Passwords do not match.',
       customerAccountPasswordRequired: 'Enter a password of at least 6 characters.',
-      customerAccountPhoneCreated: 'Phone account created. No SMS verification or password recovery is enabled.',
+      customerAccountPhoneCreated: 'Phone account created. Give the temporary password below to the customer.',
+      customerTemporaryPasswordCopied: 'Temporary password copied.',
       customerAccountPhoneRequired: 'Enter a valid customer phone number.',
       guestBookingHelp: 'No customer profile, name, contact details, or player stats will be created. Payment, player count, date, time, duration, and game are still recorded.',
       achievementAwarded: 'Achievement unlocked for this player.',
@@ -1756,6 +1764,7 @@ const staffConsoleText = {
       saveSetupOption: 'Lưu tùy chọn',
       saveVoucher: 'Lưu voucher',
       createPhoneAccount: 'Tạo tài khoản bằng số điện thoại',
+      copyTemporaryPassword: 'Sao chép mật khẩu tạm thời',
       sendPasswordRequest: 'Gửi email tạo mật khẩu',
       sessionCalendar: 'Lịch phiên',
       submitLeave: 'Gửi nghỉ phép',
@@ -2038,8 +2047,10 @@ const staffConsoleText = {
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
       guestBooking: 'Đặt chỗ khách vãng lai',
-      customerAccountHelp: 'Dùng link qua email, hoặc tạo tài khoản số điện thoại + mật khẩu mà không xác minh SMS.',
-      customerAccountPhonePasswordHelp: 'Không có email: để khách tự nhập mật khẩu riêng. Số điện thoại chưa được xác minh và không thể dùng để tự khôi phục mật khẩu.',
+      customerAccountHelp: 'Dùng link qua email, hoặc tạo tài khoản số điện thoại với mật khẩu tạm thời cho lần đăng nhập đầu.',
+      customerAccountPhonePasswordHelp: 'Không có email: VRena tạo mật khẩu tạm thời. Khách đăng nhập, thêm và xác minh email, sau đó tạo mật khẩu riêng.',
+      customerTemporaryPassword: 'Mật khẩu tạm thời cho lần đăng nhập đầu',
+      customerTemporaryPasswordHelp: 'Chỉ hiển một lần cho khách. Hết hạn sau 24 giờ. Nhân viên không thể xem lại sau đó.',
       customerName: 'Tên khách hàng',
       customerProfile: 'Hồ sơ khách',
       noAwardsYet: 'Chưa có mở khóa thủ công.',
@@ -2301,7 +2312,8 @@ const staffConsoleText = {
       customerAccountNameRequired: 'Nhập tên khách hàng.',
       customerAccountPasswordMismatch: 'Mật khẩu xác nhận không khớp.',
       customerAccountPasswordRequired: 'Nhập mật khẩu có ít nhất 6 ký tự.',
-      customerAccountPhoneCreated: 'Đã tạo tài khoản bằng số điện thoại. Không xác minh SMS và không có chức năng tự khôi phục mật khẩu.',
+      customerAccountPhoneCreated: 'Đã tạo tài khoản bằng số điện thoại. Hãy đưa mật khẩu tạm thời bên dưới cho khách.',
+      customerTemporaryPasswordCopied: 'Đã sao chép mật khẩu tạm thời.',
       customerAccountPhoneRequired: 'Nhập số điện thoại khách hàng hợp lệ.',
       guestBookingHelp: 'Không tạo hồ sơ khách hàng, tên, thông tin liên hệ hay thống kê người chơi. Thanh toán, số người, ngày, giờ, thời lượng và trò chơi vẫn được lưu.',
       achievementAwarded: 'Đã mở khóa thành tựu cho người chơi.',
@@ -3364,8 +3376,6 @@ const defaultCustomerInviteForm = (): CustomerInviteForm => ({
   email: '',
   phone: '',
   nickname: '',
-  password: '',
-  confirmPassword: '',
 })
 
 const defaultGameForm = () => ({
@@ -5046,6 +5056,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [customerNameFocused, setCustomerNameFocused] = useState(false)
   const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
   const [customerInviteStatus, setCustomerInviteStatus] = useState('')
+  const [customerTemporaryAccess, setCustomerTemporaryAccess] = useState<CustomerTemporaryAccess | null>(null)
   const [isCustomerInviteSaving, setIsCustomerInviteSaving] = useState(false)
   const [clientProfileDirty, setClientProfileDirty] = useState(false)
   const [gameForm, setGameForm] = useState(() => defaultGameForm())
@@ -8824,17 +8835,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setCustomerInviteStatus(text.messages.customerAccountPhoneRequired)
       return
     }
-    if (phoneAccount && customerInviteForm.password.length < 6) {
-      setCustomerInviteStatus(text.messages.customerAccountPasswordRequired)
-      return
-    }
-    if (phoneAccount && customerInviteForm.password !== customerInviteForm.confirmPassword) {
-      setCustomerInviteStatus(text.messages.customerAccountPasswordMismatch)
-      return
-    }
-
     setIsCustomerInviteSaving(true)
     setCustomerInviteStatus('')
+    setCustomerTemporaryAccess(null)
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     const accessToken = sessionData.session?.access_token
     if (sessionError || !accessToken) {
@@ -8856,11 +8859,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           email,
           phone: phone || customerInviteForm.phone.trim(),
           nickname: customerInviteForm.nickname.trim(),
-          password: phoneAccount ? customerInviteForm.password : undefined,
         }),
       })
-      const payload = await response.json().catch(() => ({})) as { error?: string; message?: string }
+      const payload = await response.json().catch(() => ({})) as {
+        error?: string
+        message?: string
+        temporaryPassword?: string | null
+        temporaryPasswordExpiresAt?: string | null
+      }
       if (!response.ok) throw new Error(payload.error || 'Could not create customer account.')
+
+      if (phoneAccount && payload.temporaryPassword && payload.temporaryPasswordExpiresAt) {
+        setCustomerTemporaryAccess({
+          expiresAt: payload.temporaryPasswordExpiresAt,
+          password: payload.temporaryPassword,
+          phone,
+        })
+      }
 
       setCustomerInviteForm(defaultCustomerInviteForm())
       const successMessage = phoneAccount
@@ -11138,28 +11153,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               {!customerInviteForm.email.trim() && (
                 <div className="staff-customer-phone-account-setup">
                   <p>{text.labels.customerAccountPhonePasswordHelp}</p>
-                  <label>
-                    <span className="staff-field-label">{text.labels.password} *</span>
-                    <input
-                      autoComplete="new-password"
-                      maxLength={128}
-                      minLength={6}
-                      type="password"
-                      value={customerInviteForm.password}
-                      onChange={(event) => setCustomerInviteForm((current) => ({ ...current, password: event.target.value }))}
-                    />
-                  </label>
-                  <label>
-                    <span className="staff-field-label">{text.labels.confirmPassword} *</span>
-                    <input
-                      autoComplete="new-password"
-                      maxLength={128}
-                      minLength={6}
-                      type="password"
-                      value={customerInviteForm.confirmPassword}
-                      onChange={(event) => setCustomerInviteForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                    />
-                  </label>
                 </div>
               )}
               <button
@@ -11174,6 +11167,28 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </button>
             </div>
             {customerInviteStatus && <p className="notice compact-notice">{customerInviteStatus}</p>}
+            {customerTemporaryAccess && (
+              <div className="staff-customer-temporary-access" role="status">
+                <span>{text.labels.customerTemporaryPassword}</span>
+                <strong>{customerTemporaryAccess.password}</strong>
+                <small>{customerTemporaryAccess.phone} · {new Date(customerTemporaryAccess.expiresAt).toLocaleString(resolvedLanguage)}</small>
+                <p>{text.labels.customerTemporaryPasswordHelp}</p>
+                <button
+                  className="secondary small-button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(customerTemporaryAccess.password)
+                      setCustomerInviteStatus(text.messages.customerTemporaryPasswordCopied)
+                    } catch {
+                      setCustomerInviteStatus(customerTemporaryAccess.password)
+                    }
+                  }}
+                  type="button"
+                >
+                  {text.actions.copyTemporaryPassword}
+                </button>
+              </div>
+            )}
           </div>
           )}
           {canAwardAchievements && (
