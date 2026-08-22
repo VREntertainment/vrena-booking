@@ -1239,7 +1239,7 @@ const staffConsoleText = {
       communitySession: 'Community session',
       customer: 'Customer',
       guestBooking: 'Guest booking',
-      customerAccountHelp: 'Use an email setup link, or create a phone account with a temporary first-login password.',
+      customerAccountHelp: 'Names may repeat. Every new player needs a unique nickname. Leave email blank to create a phone account with a temporary first-login password.',
       customerAccountPhonePasswordHelp: 'No email: VRena generates a temporary password. The customer signs in, adds and verifies an email, then creates a private permanent password.',
       customerTemporaryPassword: 'Temporary first-login password',
       customerTemporaryPasswordHelp: 'Show this once to the customer. It expires after 24 hours. Staff cannot retrieve it later.',
@@ -1502,6 +1502,8 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Enter a customer email.',
       customerAccountInvited: 'Customer account created. Password request sent.',
       customerAccountNameRequired: 'Enter the customer name.',
+      customerAccountNicknameRequired: 'Enter a customer nickname.',
+      customerAccountNicknameTaken: 'This nickname is already in use.',
       customerAccountPasswordMismatch: 'Passwords do not match.',
       customerAccountPasswordRequired: 'Enter a password of at least 6 characters.',
       customerAccountPhoneCreated: 'Phone account created. Give the temporary password below to the customer.',
@@ -2047,7 +2049,7 @@ const staffConsoleText = {
       communitySession: 'Phiên cộng đồng',
       customer: 'Khách hàng',
       guestBooking: 'Đặt chỗ khách vãng lai',
-      customerAccountHelp: 'Dùng link qua email, hoặc tạo tài khoản số điện thoại với mật khẩu tạm thời cho lần đăng nhập đầu.',
+      customerAccountHelp: 'Tên có thể trùng nhau. Mỗi người chơi mới cần một biệt danh riêng. Để trống email để tạo tài khoản số điện thoại với mật khẩu tạm thời.',
       customerAccountPhonePasswordHelp: 'Không có email: VRena tạo mật khẩu tạm thời. Khách đăng nhập, thêm và xác minh email, sau đó tạo mật khẩu riêng.',
       customerTemporaryPassword: 'Mật khẩu tạm thời cho lần đăng nhập đầu',
       customerTemporaryPasswordHelp: 'Chỉ hiển một lần cho khách. Hết hạn sau 24 giờ. Nhân viên không thể xem lại sau đó.',
@@ -2310,6 +2312,8 @@ const staffConsoleText = {
       customerAccountEmailRequired: 'Nhập email khách hàng.',
       customerAccountInvited: 'Đã tạo tài khoản khách hàng. Đã gửi yêu cầu tạo mật khẩu.',
       customerAccountNameRequired: 'Nhập tên khách hàng.',
+      customerAccountNicknameRequired: 'Nhập biệt danh khách hàng.',
+      customerAccountNicknameTaken: 'Biệt danh này đã được sử dụng.',
       customerAccountPasswordMismatch: 'Mật khẩu xác nhận không khớp.',
       customerAccountPasswordRequired: 'Nhập mật khẩu có ít nhất 6 ký tự.',
       customerAccountPhoneCreated: 'Đã tạo tài khoản bằng số điện thoại. Hãy đưa mật khẩu tạm thời bên dưới cho khách.',
@@ -8825,6 +8829,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
     const fullName = customerInviteForm.fullName.trim()
     const email = customerInviteForm.email.trim()
+    const nickname = customerInviteForm.nickname.trim()
     const phone = normalizePhonePasswordIdentifier(customerInviteForm.phone)
     const phoneAccount = !email
     if (!fullName) {
@@ -8833,6 +8838,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
     if (phoneAccount && !phone) {
       setCustomerInviteStatus(text.messages.customerAccountPhoneRequired)
+      return
+    }
+    if (!nickname) {
+      setCustomerInviteStatus(text.messages.customerAccountNicknameRequired)
       return
     }
     setIsCustomerInviteSaving(true)
@@ -8856,9 +8865,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         },
         body: JSON.stringify({
           fullName,
-          email,
+          email: email || null,
           phone: phone || customerInviteForm.phone.trim(),
-          nickname: customerInviteForm.nickname.trim(),
+          nickname,
         }),
       })
       const payload = await response.json().catch(() => ({})) as {
@@ -8867,7 +8876,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         temporaryPassword?: string | null
         temporaryPasswordExpiresAt?: string | null
       }
-      if (!response.ok) throw new Error(payload.error || 'Could not create customer account.')
+      if (!response.ok) {
+        const message = response.status === 409 && /nickname/i.test(payload.error || '')
+          ? text.messages.customerAccountNicknameTaken
+          : payload.error || 'Could not create customer account.'
+        throw new Error(message)
+      }
 
       if (phoneAccount && payload.temporaryPassword && payload.temporaryPasswordExpiresAt) {
         setCustomerTemporaryAccess({
@@ -11143,7 +11157,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 />
               </label>
               <label>
-                <span className="staff-field-label">{text.labels.nickname}</span>
+                <span className="staff-field-label">{text.labels.nickname} *</span>
                 <input
                   value={customerInviteForm.nickname}
                   onChange={(event) => setCustomerInviteForm((current) => ({ ...current, nickname: event.target.value }))}
