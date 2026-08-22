@@ -13,6 +13,7 @@ import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient
 import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
 import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
+import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '../lib/phonePasswordAccount'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
@@ -1275,14 +1276,18 @@ export default function WidgetPage({
   }
 
   function continueAuthFromEmail() {
-    const loginEmail = profileEmail.trim().toLowerCase()
+    const submittedIdentifier = profileEmail.trim()
+    const loginEmail = submittedIdentifier.toLowerCase()
+    const loginPhone = authMode === 'login' && !loginEmail.includes('@')
+      ? normalizePhonePasswordIdentifier(submittedIdentifier)
+      : ''
 
-    if (!loginEmail || !loginEmail.includes('@')) {
-      setProfileStatus(text.emailRequired)
+    if (authMode === 'login' ? (!loginEmail.includes('@') && !loginPhone) : (!loginEmail || !loginEmail.includes('@'))) {
+      setProfileStatus(authMode === 'login' ? text.emailOrPhoneRequired : text.emailRequired)
       return
     }
 
-    setProfileEmail(loginEmail)
+    setProfileEmail(loginPhone || loginEmail)
     setProfileStatus('')
     resetCaptcha()
     setAuthStep('credentials')
@@ -1730,7 +1735,7 @@ export default function WidgetPage({
       }
 
       setUserId(authUser.id)
-      setAuthEmail(authUser.email?.toLowerCase() || '')
+      setAuthEmail(isPhonePasswordLoginEmail(authUser.email) ? '' : authUser.email?.toLowerCase() || '')
 
       if (!options.skipMfaChallenge) {
         const needsMfa = await prepareMfaChallengeIfNeeded()
@@ -1785,7 +1790,7 @@ export default function WidgetPage({
         return profileRow
       }
 
-      const email = authUser.email?.toLowerCase() || ''
+      const email = isPhonePasswordLoginEmail(authUser.email) ? '' : authUser.email?.toLowerCase() || ''
       const fullName = (
         typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name :
           typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name :
@@ -1947,20 +1952,23 @@ export default function WidgetPage({
       }
 
       const localPhone = profilePhone.replace(/\D/g, '')
-      const loginEmail = profileEmail.trim().toLowerCase()
+      const submittedIdentifier = profileEmail.trim()
+      const phoneLogin = authMode === 'login' && !submittedIdentifier.includes('@')
+      const loginPhone = phoneLogin ? normalizePhonePasswordIdentifier(submittedIdentifier) : ''
+      const loginEmail = phoneLogin ? '' : submittedIdentifier.toLowerCase()
       const fullName = profileName.trim()
 
       authDebug('handleAuth:attempt', {
         mode: authMode,
-        email: loginEmail,
+        identifierType: phoneLogin ? 'phone' : 'email',
         isAdminEmail: isAdminEmail(loginEmail),
         hasCaptcha: Boolean(currentCaptchaToken()),
         localPhoneLength: localPhone.length,
         hasFullName: Boolean(fullName),
       })
 
-      if (!loginEmail || !loginEmail.includes('@')) {
-        setProfileStatus(text.emailRequired)
+      if (phoneLogin ? !loginPhone : (!loginEmail || !loginEmail.includes('@'))) {
+        setProfileStatus(authMode === 'login' ? text.emailOrPhoneRequired : text.emailRequired)
         return
       }
 
@@ -2066,12 +2074,15 @@ export default function WidgetPage({
       }
 
       authDebug('handleAuth:signInWithPassword:start', {
-        email: loginEmail,
+        identifierType: phoneLogin ? 'phone' : 'email',
         isAdminEmail: isAdminEmail(loginEmail),
       })
 
+      const authCredentialEmail = phoneLogin
+        ? await phonePasswordLoginEmail(loginPhone)
+        : loginEmail
       const signInResult = await (await getSupabase()).auth.signInWithPassword({
-        email: loginEmail,
+        email: authCredentialEmail,
         password: profilePassword,
         options: {
           captchaToken: captchaTokenForAuth,
@@ -2337,7 +2348,7 @@ export default function WidgetPage({
       setMfaAssuranceLevel('aal2')
       if (data?.user) {
         setUserId(data.user.id)
-        setAuthEmail(data.user.email?.toLowerCase() || '')
+        setAuthEmail(isPhonePasswordLoginEmail(data.user.email) ? '' : data.user.email?.toLowerCase() || '')
       }
       setProfileStatus('')
       await refreshMfaFactors()

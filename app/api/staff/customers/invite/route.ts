@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isValidStaffCustomerEmail, normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '@/lib/phonePasswordAccount'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 import { trustedClientIp } from '@/lib/security/requestIp'
 import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
@@ -41,11 +42,17 @@ export async function POST(request: NextRequest) {
 
   const email = normalizeEmail(body.email)
   const fullName = cleanString(body.fullName)
-  const phone = cleanString(body.phone)
+  const submittedPhone = cleanString(body.phone)
   const nickname = cleanString(body.nickname)
+  const password = typeof body.password === 'string' ? body.password : ''
+  const phoneAccount = !email
+  const phone = phoneAccount ? normalizePhonePasswordIdentifier(submittedPhone) : submittedPhone
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Enter a valid customer email.', 400)
   if (!fullName) return jsonError('Enter the customer name.', 400)
+  if (email && !isValidStaffCustomerEmail(email)) return jsonError('Enter a valid customer email.', 400)
+  if (phoneAccount && !phone) return jsonError('Enter a valid customer phone number.', 400)
+  if (phoneAccount && password.length < 6) return jsonError('Password must be at least 6 characters.', 400)
+  if (phoneAccount && password.length > 128) return jsonError('Password must be 128 characters or fewer.', 400)
 
   const ip = trustedClientIp(request.headers)
   const { error: actorRateLimitError } = await adminClient.rpc('consume_rate_limit', {
@@ -63,40 +70,53 @@ export async function POST(request: NextRequest) {
     p_action: 'customer_invite',
     p_limit: 5,
     p_window_seconds: 10 * 60,
-    p_subject: `staff:${auth.user.id}:email:${email}:ip:${ip}`,
+    p_subject: `staff:${auth.user.id}:${phoneAccount ? `phone:${phone}` : `email:${email}`}:ip:${ip}`,
   })
 
   if (rateLimitError) {
     return jsonError(rateLimitError.message || 'Too many attempts. Please wait a moment and try again.', 429)
   }
 
-  const redirect = resolveTrustedAppRedirect('/login')
-  if (!redirect.ok) {
-    return jsonError(redirect.message, redirect.status)
+  const userMetadata = {
+    full_name: fullName,
+    name: fullName,
+    display_name: nickname || fullName,
+    nickname: nickname || null,
+    phone: phone || null,
+    staff_created: true,
+    created_by_staff_id: actorProfileId,
   }
 
-  const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo: redirect.url,
-    data: {
-      full_name: fullName,
-      name: fullName,
-      display_name: nickname || fullName,
-      nickname: nickname || null,
-      phone: phone || null,
-      staff_created: true,
-      created_by_staff_id: actorProfileId,
-    },
-  })
+  const redirect = phoneAccount ? null : resolveTrustedAppRedirect('/login')
+  if (redirect && !redirect.ok) return jsonError(redirect.message, redirect.status)
 
-  if (inviteError || !invited.user) {
+  const invited = phoneAccount
+    ? await adminClient.auth.admin.createUser({
+        email: await phonePasswordLoginEmail(phone),
+        email_confirm: true,
+        password,
+        user_metadata: userMetadata,
+        app_metadata: {
+          login_identifier: 'phone_password',
+          phone_verified: false,
+        },
+      })
+    : await adminClient.auth.admin.inviteUserByEmail(email, {
+        redirectTo: redirect!.url,
+        data: userMetadata,
+      })
+
+  const inviteError = invited.error
+
+  if (inviteError || !invited.data.user) {
     const message = errorMessage(inviteError) || 'Could not create customer account.'
     const status = /already|registered|exists/i.test(message) ? 409 : 400
     return jsonError(message, status)
   }
 
   const profilePayload = {
-    id: invited.user.id,
-    email,
+    id: invited.data.user.id,
+    email: email || null,
     full_name: fullName,
     nickname: nickname || null,
     phone: phone || null,
@@ -114,15 +134,19 @@ export async function POST(request: NextRequest) {
     auth_user_id: auth.user.id,
     operator_session_id: operatorSessionId,
     operator_role: operatorSessionId ? (actorRank >= 80 ? 'manager' : 'staff') : null,
-    action: 'customer_invited',
+    action: phoneAccount ? 'customer_phone_account_created' : 'customer_invited',
     entity_type: 'profiles',
-    entity_id: invited.user.id,
-    new_value: { email, full_name: fullName },
+    entity_id: invited.data.user.id,
+    new_value: phoneAccount
+      ? { phone, full_name: fullName, phone_verified: false }
+      : { email, full_name: fullName },
   })
   if (auditError) return jsonError(auditError.message, 500)
 
   return NextResponse.json({
     profile: profilePayload,
-    message: 'Customer account created and password request sent.',
+    message: phoneAccount
+      ? 'Phone account created. No SMS verification or recovery was enabled.'
+      : 'Customer account created and password request sent.',
   })
 }

@@ -607,15 +607,20 @@ export default function BookingProfileView({ context }: { context: any }) {
                   </div>
                 </>
               )}
-              {(profile || authMode === 'reset' || isRecoveryMode || authStep === 'email') && (
+              {((profile && profile.email) || !profile) && (profile || authMode === 'reset' || isRecoveryMode || authStep === 'email') && (
                 <div className="email-field">
-                  <label>{text.email} <span className="required">*</span></label>
+                  <label>
+                    {!profile && authMode === 'login' && authStep === 'email' ? text.emailOrPhone : text.email}{' '}
+                    <span className="required">*</span>
+                  </label>
                   <input
-                    type="email"
+                    autoComplete={!profile && authMode === 'login' ? 'username' : 'email'}
+                    inputMode={!profile && authMode === 'login' ? 'text' : 'email'}
+                    type={!profile && authMode === 'login' ? 'text' : 'email'}
                     value={profileEmail}
                     onChange={(event) => setProfileEmail(event.target.value)}
                     onKeyDown={handleAuthInputKeyDown}
-                    placeholder="contact@vre-vietnam.com"
+                    placeholder={!profile && authMode === 'login' ? 'contact@vre-vietnam.com / 0779950079' : 'contact@vre-vietnam.com'}
                   />
                 </div>
               )}
@@ -623,7 +628,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <div className="auth-email-review">
                   <span>{profileEmail}</span>
                   <button className="auth-inline-link" onClick={editAuthEmail} type="button">
-                    {text.changeEmail}
+                    {authMode === 'login' ? text.changeLoginIdentifier : text.changeEmail}
                   </button>
                 </div>
               )}
@@ -805,19 +810,22 @@ export default function BookingProfileView({ context }: { context: any }) {
                           />
                           <span>{text.rememberMe}</span>
                         </label>
-                        <button
-                          className="auth-inline-link"
-                          onClick={() => {
-                            setAuthMode('reset')
-                            setAuthStep('email')
-                            setProfileStatus('')
-                            resetCaptcha()
-                          }}
-                          type="button"
-                        >
-                          {text.forgotPassword}
-                        </button>
+                        {profileEmail.includes('@') && (
+                          <button
+                            className="auth-inline-link"
+                            onClick={() => {
+                              setAuthMode('reset')
+                              setAuthStep('email')
+                              setProfileStatus('')
+                              resetCaptcha()
+                            }}
+                            type="button"
+                          >
+                            {text.forgotPassword}
+                          </button>
+                        )}
                       </div>
+                      {!profileEmail.includes('@') && <p className="field-help">{text.phoneOnlyRecoveryWarning}</p>}
                       <p className="field-help">{text.passwordLoginHelp}</p>
                     </>
                   )}
@@ -928,7 +936,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                     : profile
                       ? text.saveProfile
                       : authStep === 'email' && authMode !== 'reset'
-                        ? text.continueWithEmail
+                        ? authMode === 'login' ? text.continueWithEmailOrPhone : text.continueWithEmail
                       : authMode === 'login'
                         ? text.logIn
                         : text.createAccount}
@@ -945,9 +953,11 @@ export default function BookingProfileView({ context }: { context: any }) {
                   <button className="link-button" disabled={isPasskeyLoading} onClick={registerPasskey} type="button">
                     <ButtonIconText icon={<KeyRound aria-hidden="true" size={16} />}>{isPasskeyLoading ? text.saving : text.addPasskey}</ButtonIconText>
                   </button>
-                  <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
-                    <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
-                  </button>
+                  {profile.email && (
+                    <button className="link-button" disabled={isResettingPassword} onClick={sendPasswordReset} type="button">
+                      <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
+                    </button>
+                  )}
                   <button className="link-button" onClick={replayOnboardingTour} type="button">
                     <ButtonIconText icon={<UserRound aria-hidden="true" size={16} />}>{text.takeTourAgain}</ButtonIconText>
                   </button>
@@ -978,6 +988,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                     </button>
                   )}
                 </div>
+                {!profile.email && <p className="field-help">{text.phoneOnlyRecoveryWarning}</p>}
                 {mfaEnrollment && (
                   <div className="mfa-enroll-panel" ref={mfaEnrollmentRef} tabIndex={-1}>
                     <div className="mfa-panel-copy">
