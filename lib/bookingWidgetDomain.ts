@@ -719,14 +719,6 @@ export function ticketMinimumDurationBlocks(players: number, arenaCount = ticket
   ) / ticketPriceBlockMinutes
 }
 
-export function ticketBillablePlayersPerBlock(players: number, arenaCount = ticketArenaCount) {
-  const playerCount = Math.max(1, players)
-  const simultaneousPlayers = Math.min(playerCount, ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))
-  const rotationPlayers = Math.max(0, playerCount - simultaneousPlayers)
-
-  return simultaneousPlayers + rotationPlayers * 0.5
-}
-
 export function ticketPricingSummary(
   ticketType: TicketType,
   dateValue: string,

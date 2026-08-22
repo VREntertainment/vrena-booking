@@ -47,10 +47,6 @@ type TicketTimeOption = {
 type TicketPricingSummary = {
   unitPrice: number
   durationBlocks: number
-  simultaneousPlayers: number
-  rotationPlayers: number
-  rotationPriceRate: number
-  billablePlayersPerBlock: number
   chargedPlayersPerBlock: number
   chargedPlayerSpots: number
   discountRate: number
@@ -225,13 +221,6 @@ export default function TicketBookingView({
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
-  const ticketRotationSummary = currentTicketPricing.rotationPlayers > 0
-    ? text.ticketRotationPricingSummary
-      .replace('{simultaneous}', String(currentTicketPricing.simultaneousPlayers))
-      .replace('{rotation}', String(currentTicketPricing.rotationPlayers))
-    : ticketPlayers === 1
-      ? text.ticketOnePlayerSimultaneous
-      : text.ticketAllPlayersSimultaneous.replace('{players}', String(ticketPlayers))
   const ticketGroupDiscountSummary = currentTicketPricing.discountRate > 0
     ? text.ticketGroupDiscountApplied
       .replace('{discount}', String(Math.round(currentTicketPricing.discountRate * 100)))
@@ -404,9 +393,9 @@ export default function TicketBookingView({
                   </div>
                 )}
                 <div className="ticket-reserved-line">
-                  <span>{text.ticketPlayersAndRotation}</span>
+                  <span>{text.numberOfPlayers}</span>
                   <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
-                  <small>{ticketRotationSummary}</small>
+                  <small>{text.ticketEveryPlayerFullPrice}</small>
                 </div>
                 <div className="ticket-total-line">
                   <span className="ticket-total-heading">
