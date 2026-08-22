@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizePhonePasswordIdentifier } from '@/lib/phonePasswordAccount'
@@ -36,14 +35,14 @@ export async function POST(request: NextRequest) {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  const identifierDigest = createHmac('sha256', serviceRoleKey).update(phone).digest('hex').slice(0, 24)
-  const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
-    p_action: 'phone_password_login',
-    p_limit: 8,
+  const clientIp = trustedClientIp(request.headers)
+  const { error: ipRateLimitError } = await adminClient.rpc('consume_rate_limit', {
+    p_action: 'phone_password_login_ip',
+    p_limit: 30,
     p_window_seconds: 10 * 60,
-    p_subject: `phone:${identifierDigest}:ip:${trustedClientIp(request.headers)}`,
+    p_subject: `ip:${clientIp}`,
   })
-  if (rateLimitError) return jsonError('Too many login attempts. Please wait and try again.', 429)
+  if (ipRateLimitError) return jsonError('Too many login attempts. Please wait and try again.', 429)
 
   const { data: profiles, error: profileError } = await adminClient
     .from('profiles')
@@ -53,6 +52,14 @@ export async function POST(request: NextRequest) {
     .limit(2)
 
   if (profileError || profiles?.length !== 1) return jsonError('Invalid phone number or password.', 400)
+
+  const { error: accountRateLimitError } = await adminClient.rpc('consume_rate_limit', {
+    p_action: 'phone_password_login_account',
+    p_limit: 8,
+    p_window_seconds: 10 * 60,
+    p_subject: `user:${profiles[0].id}:ip:${clientIp}`,
+  })
+  if (accountRateLimitError) return jsonError('Too many login attempts. Please wait and try again.', 429)
 
   const { data: authRecord, error: authRecordError } = await adminClient.auth.admin.getUserById(profiles[0].id)
   const credentialEmail = authRecord.user?.email?.toLowerCase() || ''
