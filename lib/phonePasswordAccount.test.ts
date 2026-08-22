@@ -35,4 +35,8 @@ test('creates a stable non-routable login email without exposing the phone numbe
   assert.equal(first, second)
   assert.equal(isPhonePasswordLoginEmail(first), true)
   assert.equal(first.includes('779950079'), false)
+
+  const randomized = await phonePasswordLoginEmail('0779950079', 'unique-account-salt')
+  assert.notEqual(randomized, first)
+  assert.equal(isPhonePasswordLoginEmail(randomized), true)
 })

@@ -52,13 +52,13 @@ export function isPhonePasswordLoginEmail(value: string | null | undefined) {
   return Boolean(value?.toLowerCase().endsWith(`@${PHONE_LOGIN_DOMAIN}`))
 }
 
-export async function phonePasswordLoginEmail(phone: string) {
+export async function phonePasswordLoginEmail(phone: string, accountSalt = '') {
   const normalizedPhone = normalizePhonePasswordIdentifier(phone)
   if (!normalizedPhone) throw new Error('Enter a valid phone number.')
 
   const digest = await globalThis.crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(`vrena-phone-login:${normalizedPhone}`),
+    new TextEncoder().encode(`vrena-phone-login:${normalizedPhone}:${accountSalt}`),
   )
   const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
   return `phone-${hash.slice(0, 48)}@${PHONE_LOGIN_DOMAIN}`
