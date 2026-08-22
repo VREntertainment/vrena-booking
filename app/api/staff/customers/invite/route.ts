@@ -2,6 +2,11 @@ import { randomBytes, randomInt } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidStaffCustomerEmail, normalizePhonePasswordIdentifier, phonePasswordLoginEmail } from '@/lib/phonePasswordAccount'
 import { PHONE_SETUP_TEMPORARY_PASSWORD_TTL_HOURS } from '@/lib/phoneAccountSetup'
+import {
+  isStaffCustomerNicknameConflict,
+  normalizeOptionalStaffCustomerEmail,
+  normalizeStaffCustomerNickname,
+} from '@/lib/staffCustomerIdentity'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
 import { trustedClientIp } from '@/lib/security/requestIp'
 import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
@@ -14,10 +19,6 @@ function jsonError(message: string, status: number) {
 
 function cleanString(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
-}
-
-function normalizeEmail(value: unknown) {
-  return cleanString(value).toLowerCase()
 }
 
 function errorMessage(value: unknown) {
@@ -49,16 +50,17 @@ export async function POST(request: NextRequest) {
     return jsonError('Invalid customer payload.', 400)
   }
 
-  const email = normalizeEmail(body.email)
+  const email = normalizeOptionalStaffCustomerEmail(body.email)
   const fullName = cleanString(body.fullName)
   const submittedPhone = cleanString(body.phone)
-  const nickname = cleanString(body.nickname)
-  const phoneAccount = !email
+  const nickname = normalizeStaffCustomerNickname(body.nickname)
+  const phoneAccount = email === null
   const phone = phoneAccount ? normalizePhonePasswordIdentifier(submittedPhone) : submittedPhone
 
   if (!fullName) return jsonError('Enter the customer name.', 400)
   if (email && !isValidStaffCustomerEmail(email)) return jsonError('Enter a valid customer email.', 400)
   if (phoneAccount && !phone) return jsonError('Enter a valid customer phone number.', 400)
+  if (!nickname) return jsonError('Enter a customer nickname.', 400)
 
   const ip = trustedClientIp(request.headers)
   const { error: actorRateLimitError } = await adminClient.rpc('consume_rate_limit', {
@@ -120,12 +122,25 @@ export async function POST(request: NextRequest) {
         return jsonError('This phone number already belongs to a completed account.', 409)
       }
 
+      const { data: nicknameAvailable, error: nicknameCheckError } = await adminClient.rpc('service_profile_nickname_available', {
+        p_exclude_id: existingProfileId,
+        p_nickname: nickname,
+      })
+      if (nicknameCheckError) return jsonError('Could not check this nickname.', 503)
+      if (nicknameAvailable !== true) return jsonError('This nickname is already in use.', 409)
+
       const { error: profileUpdateError } = await adminClient.from('profiles').update({
         full_name: fullName,
         nickname: nickname || null,
         updated_at: new Date().toISOString(),
       }).eq('id', existingProfileId)
-      if (profileUpdateError) return jsonError(profileUpdateError.message, 500)
+      if (profileUpdateError) {
+        const nicknameConflict = isStaffCustomerNicknameConflict(profileUpdateError)
+        return jsonError(
+          nicknameConflict ? 'This nickname is already in use.' : profileUpdateError.message,
+          nicknameConflict ? 409 : 500,
+        )
+      }
 
       const { error: rotateError } = await adminClient.auth.admin.updateUserById(existingProfileId, {
         password: generatedTemporaryPassword,
@@ -141,7 +156,7 @@ export async function POST(request: NextRequest) {
       if (rotateError) return jsonError('Could not generate a new temporary password.', 500)
 
       await adminClient.from('audit_logs').insert({
-        actor_user_id: actorProfileId,
+        actor_user_id: auth.user.id,
         auth_user_id: auth.user.id,
         operator_session_id: operatorSessionId,
         operator_role: operatorSessionId ? (actorRank >= 80 ? 'manager' : 'staff') : null,
@@ -160,6 +175,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const { data: nicknameAvailable, error: nicknameCheckError } = await adminClient.rpc('service_profile_nickname_available', {
+    p_exclude_id: null,
+    p_nickname: nickname,
+  })
+  if (nicknameCheckError) return jsonError('Could not check this nickname.', 503)
+  if (nicknameAvailable !== true) return jsonError('This nickname is already in use.', 409)
+
   const invited = phoneAccount
     ? await adminClient.auth.admin.createUser({
         email: await phonePasswordLoginEmail(phone, randomBytes(16).toString('hex')),
@@ -173,7 +195,7 @@ export async function POST(request: NextRequest) {
           phone_setup_expires_at: temporaryPasswordExpiresAt,
         },
       })
-    : await adminClient.auth.admin.inviteUserByEmail(email, {
+    : await adminClient.auth.admin.inviteUserByEmail(email!, {
         redirectTo: redirect!.url,
         data: userMetadata,
       })
@@ -188,7 +210,7 @@ export async function POST(request: NextRequest) {
 
   const profilePayload = {
     id: invited.data.user.id,
-    email: email || null,
+    email,
     full_name: fullName,
     nickname: nickname || null,
     phone: phone || null,
@@ -200,12 +222,13 @@ export async function POST(request: NextRequest) {
     .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) {
-    if (phoneAccount) await adminClient.auth.admin.deleteUser(invited.data.user.id).catch(() => undefined)
-    return jsonError(profileError.message, 500)
+    await adminClient.auth.admin.deleteUser(invited.data.user.id).catch(() => undefined)
+    const nicknameConflict = isStaffCustomerNicknameConflict(profileError)
+    return jsonError(nicknameConflict ? 'This nickname is already in use.' : profileError.message, nicknameConflict ? 409 : 500)
   }
 
   const { error: auditError } = await adminClient.from('audit_logs').insert({
-    actor_user_id: actorProfileId,
+    actor_user_id: auth.user.id,
     auth_user_id: auth.user.id,
     operator_session_id: operatorSessionId,
     operator_role: operatorSessionId ? (actorRank >= 80 ? 'manager' : 'staff') : null,

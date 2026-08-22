@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
+import { isStaffCustomerNicknameConflict } from '@/lib/staffCustomerIdentity'
+import { authenticateStaffKioskRequest, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
 
 export const runtime = 'nodejs'
 
@@ -39,7 +40,6 @@ export async function PATCH(request: NextRequest) {
   const actorRank = await staffKioskCurrentRank(auth)
   if (actorRank < 50) return jsonError('Staff access required.', 403)
   const adminClient = auth.adminClient
-  const actorProfileId = await staffKioskCurrentActorProfileId(auth) || auth.user.id
   const operatorSessionId = await staffKioskCurrentSessionId(auth)
 
   let body: Record<string, unknown>
@@ -61,9 +61,19 @@ export async function PATCH(request: NextRequest) {
   const gender = cleanGender(body.gender)
   if (gender === undefined) return jsonError('Choose a valid gender value.', 400)
 
+  const nickname = cleanNullableString(body.nickname, 80)
+  if (nickname) {
+    const { data: nicknameAvailable, error: nicknameCheckError } = await adminClient.rpc('service_profile_nickname_available', {
+      p_exclude_id: profileId,
+      p_nickname: nickname,
+    })
+    if (nicknameCheckError) return jsonError('Could not check this nickname.', 503)
+    if (nicknameAvailable !== true) return jsonError('This nickname is already in use.', 409)
+  }
+
   const updates = {
     full_name: fullName,
-    nickname: cleanNullableString(body.nickname, 80),
+    nickname,
     phone: cleanNullableString(body.phone, 40),
     birthday,
     gender,
@@ -79,10 +89,13 @@ export async function PATCH(request: NextRequest) {
     .select(profileSelect)
     .single()
 
-  if (updateError) return jsonError(updateError.message, 500)
+  if (updateError) {
+    const nicknameConflict = isStaffCustomerNicknameConflict(updateError)
+    return jsonError(nicknameConflict ? 'This nickname is already in use.' : updateError.message, nicknameConflict ? 409 : 500)
+  }
 
   const { error: auditError } = await adminClient.from('audit_logs').insert({
-    actor_user_id: actorProfileId,
+    actor_user_id: auth.user.id,
     auth_user_id: auth.user.id,
     operator_session_id: operatorSessionId,
     operator_role: operatorSessionId ? (actorRank >= 80 ? 'manager' : 'staff') : null,
