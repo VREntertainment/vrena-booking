@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   createVenueAdminClient,
-  isAuthorizedVenueRequest,
-  usableVenueToken,
+  authorizedVenuePrincipal,
+  configuredVenueCredentials,
 } from '@/lib/venueService'
 import { isVenueResultReviewReason } from '@/lib/venueResultReview'
 
@@ -22,12 +22,12 @@ function safeHeader(value: string | null, fallback: string, maximumLength: numbe
 }
 
 export async function POST(request: NextRequest) {
-  const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
   const adminClient = createVenueAdminClient()
-  if (!usableVenueToken(configuredToken) || !adminClient) {
+  if (configuredVenueCredentials().length === 0 || !adminClient) {
     return jsonError('Venue result review upload is not configured.', 503)
   }
-  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
+  const principal = authorizedVenuePrincipal(request)
+  if (!principal) return jsonError('Unauthorized.', 401)
 
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (contentLength > maximumScreenshotBytes + 250_000) {
@@ -66,16 +66,28 @@ export async function POST(request: NextRequest) {
     bytes[bytes.length - 1] === 0xd9
   if (!hasJpegSignature) return jsonError('Invalid review screenshot.', 400)
 
+  const { data: reservationId, error: reservationError } = await adminClient.rpc('service_reserve_venue_upload', {
+    p_bytes: screenshot.size,
+    p_upload_kind: 'review',
+    p_venue_key: principal.venueKey,
+  })
+  if (reservationError || typeof reservationId !== 'string') {
+    return jsonError('Venue review upload quota reached.', 429)
+  }
+  const releaseReservation = () => adminClient.rpc('service_release_venue_upload', { p_reservation_id: reservationId })
+
   const { data: existing, error: existingError } = await adminClient
     .from('venue_result_reviews')
     .select('id, created_at')
     .eq('source_capture_id', captureId)
     .maybeSingle()
   if (existingError) {
+    await releaseReservation()
     console.error('Venue result review duplicate check failed', { error: existingError.message })
     return jsonError('Result review upload failed.', 500)
   }
   if (existing) {
+    await releaseReservation()
     return NextResponse.json({
       duplicate: true,
       reviewId: existing.id,
@@ -103,6 +115,7 @@ export async function POST(request: NextRequest) {
       upsert: false,
     })
   if (uploadError) {
+    await releaseReservation()
     console.error('Venue result review storage upload failed', {
       error: uploadError.message,
       fileSize: screenshot.size,
@@ -116,19 +129,24 @@ export async function POST(request: NextRequest) {
       app_version: appVersion,
       captured_at: new Date(capturedAt).toISOString(),
       id: reviewId,
+      file_size_bytes: screenshot.size,
       ocr_text: ocrText,
       review_reason: reviewReason,
       sha256: createHash('sha256').update(bytes).digest('hex'),
       source_capture_id: captureId,
       source_device: sourceDevice,
       storage_path: storagePath,
+      venue_key: principal.venueKey,
     })
 
   if (metadataError) {
     await adminClient.storage.from('venue-result-reviews').remove([storagePath])
+    await releaseReservation()
     console.error('Venue result review metadata insert failed', { error: metadataError.message })
     return jsonError('Result review upload failed.', 500)
   }
+
+  await releaseReservation()
 
   return NextResponse.json({
     duplicate: false,

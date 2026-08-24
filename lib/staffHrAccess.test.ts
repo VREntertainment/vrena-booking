@@ -22,10 +22,10 @@ test('Zalo settings are limited to named owners and admins', () => {
   assert.equal(canAccessZaloHrSettings({ authEmail: 'manager@vre-vietnam.com', role: 'manager', roleRank: 80 }), false)
 })
 
-test('core HR settings include named office staff but exclude managers', () => {
+test('core HR and payroll settings are limited to named owners and admins', () => {
   assert.equal(canAccessCoreHrSettings({ authEmail: 'owner@vre-vietnam.com', role: 'owner', roleRank: 120 }), true)
   assert.equal(canAccessCoreHrSettings({ authEmail: 'admin@vre-vietnam.com', role: 'admin', roleRank: 100 }), true)
-  assert.equal(canAccessCoreHrSettings({ authEmail: 'office@vre-vietnam.com', role: 'cashier', roleRank: 20 }), true)
+  assert.equal(canAccessCoreHrSettings({ authEmail: 'office@vre-vietnam.com', role: 'cashier', roleRank: 20 }), false)
   assert.equal(canAccessCoreHrSettings({ authEmail: 'manager@vre-vietnam.com', role: 'manager', roleRank: 80 }), false)
 })
 
@@ -33,4 +33,12 @@ test('the HR tab rail removes every unauthorized settings surface', () => {
   assert.deepEqual(accessibleStaffHrTabs(hrTabs, { canAccessHrSettings: false, canAccessZaloSettings: false }), ['employees'])
   assert.deepEqual(accessibleStaffHrTabs(hrTabs, { canAccessHrSettings: true, canAccessZaloSettings: false }), ['employees', 'settings'])
   assert.deepEqual(accessibleStaffHrTabs(hrTabs, { canAccessHrSettings: true, canAccessZaloSettings: true }), hrTabs)
+})
+
+test('payroll and adjustment tabs follow the confidential HR permission', () => {
+  const tabs = ['employees', 'schedule', 'timesheet', 'payroll', 'adjustments', 'advances', 'settings'] as const
+  assert.deepEqual(
+    accessibleStaffHrTabs(tabs, { canAccessHrSettings: false, canAccessZaloSettings: false }),
+    ['employees', 'schedule', 'timesheet'],
+  )
 })

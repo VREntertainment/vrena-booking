@@ -6,10 +6,11 @@ import {
   type VenueResultPayload,
   type VenueResultPlayer,
 } from '@/lib/venueResults'
+import { venueCandidatesForGame } from '@/lib/venueSessionMatching'
 import {
   createVenueAdminClient,
-  isAuthorizedVenueRequest,
-  usableVenueToken,
+  authorizedVenuePrincipal,
+  configuredVenueCredentials,
 } from '@/lib/venueService'
 
 export const runtime = 'nodejs'
@@ -33,15 +34,12 @@ type SessionParticipantRow = {
     game_options: string[] | null
     id: string
     start_time: string
+    venue_key: string
   } | null
 }
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function sessionMatchesGame(session: NonNullable<SessionParticipantRow['sessions']>, gameSlug: string) {
-  return session.confirmed_game_id === gameSlug || (session.game_options ?? []).includes(gameSlug)
 }
 
 async function exactProfilesForName(
@@ -60,7 +58,7 @@ async function exactProfilesForName(
 async function candidateSessionParticipants(
   adminClient: VenueAdminClient,
   profileId: string,
-  payload: VenueResultPayload
+  payload: VenueResultPayload & { venueKey: string }
 ) {
   const range = venueCaptureDateRange(payload.capturedAt)
   const { data, error } = await adminClient
@@ -75,13 +73,15 @@ async function candidateSessionParticipants(
         start_time,
         duration_minutes,
         confirmed_game_id,
-        game_options
+        game_options,
+        venue_key
       )
     `)
     .eq('profile_id', profileId)
     .is('deleted_at', null)
     .is('sessions.deleted_at', null)
     .neq('sessions.status', 'cancelled')
+    .eq('sessions.venue_key', payload.venueKey)
     .gte('sessions.date', range.from)
     .lte('sessions.date', range.to)
 
@@ -96,18 +96,16 @@ async function candidateSessionParticipants(
       payload.capturedAt
     ))
 
-  if (inTimeSlot.length <= 1) return inTimeSlot
-  const matchingGame = inTimeSlot.filter(
-    (row) => row.sessions && sessionMatchesGame(row.sessions, payload.gameSlug)
-  )
-  return matchingGame.length === 1 ? matchingGame : inTimeSlot
+  return venueCandidatesForGame(inTimeSlot, payload.gameSlug)
 }
 
 async function importPlayerResult(
   adminClient: VenueAdminClient,
   payload: VenueResultPayload,
-  player: VenueResultPlayer
+  player: VenueResultPlayer,
+  venueKey: string,
 ) {
+  const scopedPayload = { ...payload, venueKey }
   const { data: existing, error: existingError } = await adminClient
     .from('venue_game_results')
     .select('id, match_status')
@@ -126,7 +124,7 @@ async function importPlayerResult(
   if (profiles.length > 1) return { name: player.name, status: 'player_name_ambiguous' }
 
   const profile = profiles[0]
-  const candidates = await candidateSessionParticipants(adminClient, profile.id, payload)
+  const candidates = await candidateSessionParticipants(adminClient, profile.id, scopedPayload)
   const matchedParticipant = candidates.length === 1 ? candidates[0] : null
   const matchStatus = matchedParticipant
     ? 'session_matched'
@@ -152,6 +150,7 @@ async function importPlayerResult(
       p_score: player.score,
       p_source_capture_id: payload.captureId,
       p_source_device: payload.deviceName,
+      p_venue_key: venueKey,
     }) as never
   )
 
@@ -172,20 +171,20 @@ async function importPlayerResult(
 }
 
 export async function GET(request: NextRequest) {
-  const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
-  if (!usableVenueToken(configuredToken)) return jsonError('Venue results import is not configured.', 503)
-  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
-  return NextResponse.json({ ok: true })
+  if (configuredVenueCredentials().length === 0) return jsonError('Venue results import is not configured.', 503)
+  const principal = authorizedVenuePrincipal(request)
+  if (!principal) return jsonError('Unauthorized.', 401)
+  return NextResponse.json({ ok: true, venue: principal.venueKey })
 }
 
 export async function POST(request: NextRequest) {
-  const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
   const adminClient = createVenueAdminClient()
 
-  if (!usableVenueToken(configuredToken) || !adminClient) {
+  if (configuredVenueCredentials().length === 0 || !adminClient) {
     return jsonError('Venue results import is not configured.', 503)
   }
-  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
+  const principal = authorizedVenuePrincipal(request)
+  if (!principal) return jsonError('Unauthorized.', 401)
 
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (contentLength > 65_536) return jsonError('Payload too large.', 413)
@@ -203,7 +202,7 @@ export async function POST(request: NextRequest) {
   try {
     const results = []
     for (const player of payload.players) {
-      results.push(await importPlayerResult(adminClient, payload, player))
+      results.push(await importPlayerResult(adminClient, payload, player, principal.venueKey))
     }
 
     const savedCount = results.filter((result) => result.status === 'saved').length

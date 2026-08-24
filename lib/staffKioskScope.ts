@@ -63,17 +63,17 @@ export function canAccessZaloHrSettings(context: StaffHrAccessContext) {
 }
 
 export function canAccessCoreHrSettings(context: StaffHrAccessContext) {
-  return canAccessHrConsole(context)
-    && (context.roleRank >= 100 || context.role?.trim().toLowerCase() === 'cashier')
+  return canAccessHrConsole(context) && context.roleRank >= 100
 }
 
 export function accessibleStaffHrTabs<T extends string>(
   tabs: readonly T[],
   access: { canAccessHrSettings: boolean; canAccessZaloSettings: boolean },
 ) {
+  const restrictedHrTabs = new Set(['payroll', 'adjustments', 'advances', 'settings'])
   return tabs.filter((tab) => (
     (tab !== 'zalo' || access.canAccessZaloSettings)
-    && (tab !== 'settings' || access.canAccessHrSettings)
+    && (!restrictedHrTabs.has(tab) || access.canAccessHrSettings)
   ))
 }
 

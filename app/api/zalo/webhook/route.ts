@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isFreshZaloWebhookTimestamp, zaloWebhookTimestampMs } from '@/lib/zaloWebhookFreshness'
 
 export const runtime = 'nodejs'
 
@@ -51,9 +52,10 @@ function parseConsentEvent(payload: Record<string, unknown>): ZaloConsentEvent |
   const event = cleanString(payload.event, 80)
   const appId = cleanString(payload.appId, 40)
   const userId = cleanString(payload.userId, 255)
-  const timestamp = typeof payload.timestamp === 'number' && Number.isFinite(payload.timestamp)
-    ? payload.timestamp
-    : undefined
+  const numericTimestamp = typeof payload.timestamp === 'number' || typeof payload.timestamp === 'string'
+    ? Number(payload.timestamp)
+    : Number.NaN
+  const timestamp = Number.isFinite(numericTimestamp) ? numericTimestamp : undefined
 
   if (event !== 'user.revoke.consent' || appId !== PLAYER_MINI_APP_ID || !userId) return null
   return { event, appId, userId, timestamp }
@@ -108,10 +110,30 @@ export async function POST(request: NextRequest) {
   if (!event) {
     return NextResponse.json({ error: 'Unsupported webhook event.' }, { status: 400 })
   }
+  if (!isFreshZaloWebhookTimestamp(event.timestamp)) {
+    return NextResponse.json({ error: 'Expired webhook event.' }, { status: 400 })
+  }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
+
+  const eventDigest = createHash('sha256').update(`${rawBody}:${suppliedSignature}`).digest('hex')
+  const { error: receiptError } = await adminClient.from('zalo_webhook_receipts').insert({
+    event_digest: eventDigest,
+    event_timestamp: new Date(zaloWebhookTimestampMs(event.timestamp as number)).toISOString(),
+  })
+  if (receiptError?.code === '23505') {
+    return NextResponse.json({ ok: true, duplicate: true })
+  }
+  if (receiptError) {
+    return NextResponse.json({ error: 'Unable to record webhook event.' }, { status: 503 })
+  }
+  const releaseReceipt = () => adminClient.from('zalo_webhook_receipts').delete().eq('event_digest', eventDigest)
+  const markReceiptProcessed = () => adminClient
+    .from('zalo_webhook_receipts')
+    .update({ processed_at: new Date().toISOString() })
+    .eq('event_digest', eventDigest)
 
   const { data: identity, error: identityError } = await adminClient
     .from('player_zalo_identities')
@@ -120,15 +142,18 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   if (identityError) {
+    await releaseReceipt()
     return NextResponse.json({ error: 'Unable to process consent withdrawal.' }, { status: 503 })
   }
   if (!identity) {
+    await markReceiptProcessed()
     return NextResponse.json({ ok: true })
   }
 
   const profileId = cleanString(identity.profile_id, 64)
   const { data: authData, error: authError } = await adminClient.auth.admin.getUserById(profileId)
   if (authError && !authError.message.toLowerCase().includes('not found')) {
+    await releaseReceipt()
     return NextResponse.json({ error: 'Unable to process consent withdrawal.' }, { status: 503 })
   }
 
@@ -137,6 +162,7 @@ export async function POST(request: NextRequest) {
   if (isZaloOnlyAccount) {
     const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(profileId)
     if (deleteUserError) {
+      await releaseReceipt()
       return NextResponse.json({ error: 'Unable to process consent withdrawal.' }, { status: 503 })
     }
   } else {
@@ -145,6 +171,7 @@ export async function POST(request: NextRequest) {
       .delete()
       .eq('profile_id', profileId)
     if (deleteHandoffsError) {
+      await releaseReceipt()
       return NextResponse.json({ error: 'Unable to process consent withdrawal.' }, { status: 503 })
     }
 
@@ -153,8 +180,14 @@ export async function POST(request: NextRequest) {
       .delete()
       .eq('zalo_app_user_id', event.userId)
     if (deleteIdentityError) {
+      await releaseReceipt()
       return NextResponse.json({ error: 'Unable to process consent withdrawal.' }, { status: 503 })
     }
+  }
+
+  const { error: processedError } = await markReceiptProcessed()
+  if (processedError) {
+    return NextResponse.json({ error: 'Unable to finalize webhook event.' }, { status: 503 })
   }
 
   return NextResponse.json({ ok: true })

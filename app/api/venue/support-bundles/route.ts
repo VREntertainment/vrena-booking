@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   createVenueAdminClient,
-  isAuthorizedVenueRequest,
-  usableVenueToken,
+  authorizedVenuePrincipal,
+  configuredVenueCredentials,
 } from '@/lib/venueService'
 
 export const runtime = 'nodejs'
@@ -21,12 +21,12 @@ function safeHeader(value: string | null, fallback: string, maximumLength: numbe
 }
 
 export async function POST(request: NextRequest) {
-  const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
   const adminClient = createVenueAdminClient()
-  if (!usableVenueToken(configuredToken) || !adminClient) {
+  if (configuredVenueCredentials().length === 0 || !adminClient) {
     return jsonError('Venue support upload is not configured.', 503)
   }
-  if (!isAuthorizedVenueRequest(request, configuredToken)) return jsonError('Unauthorized.', 401)
+  const principal = authorizedVenuePrincipal(request)
+  if (!principal) return jsonError('Unauthorized.', 401)
 
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (contentLength > maximumBundleBytes + 100_000) return jsonError('Support bundle is too large.', 413)
@@ -52,6 +52,16 @@ export async function POST(request: NextRequest) {
     ((bytes[2] === 0x03 && bytes[3] === 0x04) || (bytes[2] === 0x05 && bytes[3] === 0x06))
   if (!hasZipSignature) return jsonError('Invalid support bundle file.', 400)
 
+  const { data: reservationId, error: reservationError } = await adminClient.rpc('service_reserve_venue_upload', {
+    p_bytes: bundle.size,
+    p_upload_kind: 'support',
+    p_venue_key: principal.venueKey,
+  })
+  if (reservationError || typeof reservationId !== 'string') {
+    return jsonError('Venue support upload quota reached.', 429)
+  }
+  const releaseReservation = () => adminClient.rpc('service_release_venue_upload', { p_reservation_id: reservationId })
+
   const sha256 = createHash('sha256').update(bytes).digest('hex')
   const now = new Date()
   const bundleId = randomUUID()
@@ -73,6 +83,7 @@ export async function POST(request: NextRequest) {
       upsert: false,
     })
   if (uploadError) {
+    await releaseReservation()
     console.error('Venue support bundle storage upload failed', {
       error: uploadError.message,
       fileSize: bundle.size,
@@ -90,13 +101,17 @@ export async function POST(request: NextRequest) {
       sha256,
       source_device: sourceDevice,
       storage_path: storagePath,
+      venue_key: principal.venueKey,
     })
 
   if (metadataError) {
     await adminClient.storage.from('venue-support-bundles').remove([storagePath])
+    await releaseReservation()
     console.error('Venue support bundle metadata insert failed', { error: metadataError.message })
     return jsonError('Support bundle upload failed.', 500)
   }
+
+  await releaseReservation()
 
   return NextResponse.json({
     bundleId,
