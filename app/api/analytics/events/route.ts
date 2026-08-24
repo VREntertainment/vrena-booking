@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { trustedClientIp, UNKNOWN_CLIENT_IP } from '@/lib/security/requestIp'
+import { isSameOriginRequest } from '@/lib/security/requestOrigin'
 import { staffRoleRank } from '@/lib/staffRoles'
 
 export const runtime = 'nodejs'
@@ -55,16 +56,6 @@ function cleanPath(value: unknown) {
   return path
 }
 
-function sameOriginRequest(request: NextRequest) {
-  const origin = request.headers.get('origin')
-  if (!origin) return request.headers.get('sec-fetch-site') !== 'cross-site'
-  try {
-    return new URL(origin).host === request.nextUrl.host
-  } catch {
-    return false
-  }
-}
-
 function cleanEvent(value: unknown, profileId: string | null): AnalyticsInsert | null {
   if (!value || typeof value !== 'object') return null
   const event = value as Record<string, unknown>
@@ -108,7 +99,9 @@ function cleanEvent(value: unknown, profileId: string | null): AnalyticsInsert |
 }
 
 export async function POST(request: NextRequest) {
-  if (!sameOriginRequest(request)) return jsonError('Cross-site analytics requests are not accepted.', 403)
+  if (!isSameOriginRequest(request.headers, request.nextUrl.origin)) {
+    return jsonError('Same-origin analytics requests are required.', 403)
+  }
 
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (Number.isFinite(contentLength) && contentLength > 16_384) return jsonError('Analytics payload is too large.', 413)
@@ -159,22 +152,27 @@ export async function POST(request: NextRequest) {
 
   const clientId = events[0].client_id
   const ip = trustedClientIp(request.headers)
-  const limitChecks = [
+  const ipSubject = ip === UNKNOWN_CLIENT_IP ? 'unknown' : ip
+  const limitChecks = events.flatMap(() => [
     adminClient.rpc('consume_rate_limit', {
       p_action: 'product_analytics',
       p_limit: 90,
       p_window_seconds: 60,
       p_subject: `client:${clientId}`,
     }),
-  ]
-  if (ip !== UNKNOWN_CLIENT_IP) {
-    limitChecks.push(adminClient.rpc('consume_rate_limit', {
+    adminClient.rpc('consume_rate_limit', {
       p_action: 'product_analytics',
-      p_limit: 240,
+      p_limit: 120,
       p_window_seconds: 60,
-      p_subject: `ip:${ip}`,
-    }))
-  }
+      p_subject: `ip:${ipSubject}`,
+    }),
+    adminClient.rpc('consume_rate_limit', {
+      p_action: 'product_analytics',
+      p_limit: 2_000,
+      p_window_seconds: 60,
+      p_subject: 'global',
+    }),
+  ])
 
   const rateLimitResults = await Promise.all(limitChecks)
   if (rateLimitResults.some((result) => result.error)) return jsonError('Analytics rate limit reached.', 429)

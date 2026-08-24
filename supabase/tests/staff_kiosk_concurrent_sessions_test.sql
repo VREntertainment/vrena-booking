@@ -1,11 +1,19 @@
 begin;
 
-select plan(4);
+select plan(5);
 
 select ok(
   pg_get_functiondef('public.staff_kiosk_verify_pin(uuid,text,text,text)'::regprocedure)
     not like '%revoked_reason = ''operator_switched''%',
   'unlocking a station does not revoke other active shared-account sessions'
+);
+
+select ok(
+  pg_get_functiondef('public.staff_kiosk_verify_pin(uuid,text,text,text)'::regprocedure)
+    like '%v_attempt_hash text := repeat(''0''%'
+    and pg_get_functiondef('public.staff_kiosk_verify_pin(uuid,text,text,text)'::regprocedure)
+      like '%user_agent_hash = v_attempt_hash%',
+  'PIN failures use one shared-account bucket instead of caller-controlled User-Agent buckets'
 );
 
 select ok(

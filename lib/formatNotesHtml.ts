@@ -1,4 +1,7 @@
+import sanitizeHtml from 'sanitize-html'
+
 const allowedNotesTagPattern = /<\/?(strong|b|em|i|u|s|strike|br|div|p)\b/i
+const allowedNotesTags = ['strong', 'b', 'em', 'i', 'u', 's', 'strike', 'br', 'div', 'p']
 
 type FormatNotesHtmlOptions = {
   markdownShortcuts?: boolean
@@ -18,10 +21,13 @@ export function formatNotesHtml(value: string, options: FormatNotesHtmlOptions =
   if (!value.trim()) return ''
 
   if (allowedNotesTagPattern.test(value)) {
-    return value
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<(\/?)(strong|b|em|i|u|s|strike|br|div|p)(?:\s[^>]*)?>/gi, '<$1$2>')
-      .replace(/<(?!\/?(strong|b|em|i|u|s|strike|br|div|p)\b)[^>]*>/gi, '')
+    return sanitizeHtml(value, {
+      allowedTags: allowedNotesTags,
+      allowedAttributes: {},
+      allowProtocolRelative: false,
+      disallowedTagsMode: 'discard',
+      enforceHtmlBoundary: true,
+    })
   }
 
   const escaped = escapeHtml(value)

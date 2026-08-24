@@ -265,6 +265,30 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  const translationLimits = await Promise.all([
+    serviceClient.rpc('consume_rate_limit', {
+      p_action: 'session_message',
+      p_limit: 30,
+      p_window_seconds: 60 * 60,
+      p_subject: `translation:user:${authData.user.id}`,
+    }),
+    serviceClient.rpc('consume_rate_limit', {
+      p_action: 'session_message',
+      p_limit: 7,
+      p_window_seconds: 24 * 60 * 60,
+      p_subject: `translation:message:${messageTable}:${messageId}`,
+    }),
+    serviceClient.rpc('consume_rate_limit', {
+      p_action: 'session_message',
+      p_limit: 1_000,
+      p_window_seconds: 24 * 60 * 60,
+      p_subject: 'translation:global',
+    }),
+  ])
+  if (translationLimits.some((result) => result.error)) {
+    return jsonError('Translation limit reached. Please try again later.', 429)
+  }
+
   try {
     const { model, translation } = await translateMessage(originalBody, targetLanguage)
     const translatedText = translation.translated_text || originalBody

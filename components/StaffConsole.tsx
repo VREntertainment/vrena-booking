@@ -5007,8 +5007,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const isStaffOnly = role === 'staff'
   const canManageAttendance = isOwnerOrAdmin || role === 'manager' || isOfficeStaff
   const canEditAttendance = canManageAttendance
-  const canViewAllEmployeeProfiles = canManageAttendance || role === 'viewer'
-  const canEditEmployeeProfiles = canManageAttendance
+  const canViewAllEmployeeProfiles = isOwnerOrAdmin
+  const canEditEmployeeProfiles = isOwnerOrAdmin
   const canManageEmployeeKioskPins = isOwnerOrAdmin && !kioskOperator
   const canRevealEmployeeKioskPin = (isOwnerOrAdmin || isOfficeStaff) && !kioskOperator
   const hrAccessContext = { authEmail: authEmail || profile?.email, role, roleRank: rank }
@@ -6216,6 +6216,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const [weekStart, weekEnd] = currentTab === 'hr'
         ? orderedRange(payrollPeriodStart, payrollPeriodEnd)
         : [attendanceWeekStart, attendanceWeekEnd]
+      const employeeRequest = canViewAllEmployeeProfiles
+        ? supabase
+          .from('staff_employee_profiles')
+          .select('*')
+          .is('deleted_at', null)
+          .order('legal_name', { ascending: true })
+        : supabase.rpc('staff_employee_directory')
       const [shiftsResult, logsResult, leaveResult, settingsResult, employeeResult] = await Promise.all([
         supabase
           .from('staff_schedule_shifts')
@@ -6245,11 +6252,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           .select('*')
           .eq('id', 'default')
           .maybeSingle(),
-        supabase
-          .from('staff_employee_profiles')
-          .select('*')
-          .is('deleted_at', null)
-          .order('legal_name', { ascending: true }),
+        employeeRequest,
       ])
 
       if (shiftsResult.error) throw new Error(shiftsResult.error.message)
@@ -6308,6 +6311,16 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   async function loadHrData(force = false) {
     await runStaffLoader('hr', async () => {
+      if (!canAccessHrSettings) {
+        setHrSettings(defaultHrSettings())
+        setHrSetupOptions([])
+        setHrAdjustments([])
+        setPayrollRuns([])
+        setPayrollItems([])
+        setPayrollSourceSnapshots([])
+        setHrDocuments([])
+        return
+      }
       const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult] = await Promise.all([
         supabase
           .from('staff_hr_settings')

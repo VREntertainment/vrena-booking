@@ -36,7 +36,8 @@
     "lucide-react": "^1.22.0",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sanitize-html": "^2.17.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -44,12 +45,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4.3.2",
     "typescript": "^5"
   },
   "overrides": {
+    "nanoid": "^3.3.18",
     "postcss": "^8.5.18",
     "sharp": "0.35.1"
   }

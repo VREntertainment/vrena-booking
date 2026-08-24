@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedVenueRequest, usableVenueToken } from '@/lib/venueService'
+import { authorizedVenuePrincipal, configuredVenueCredentials } from '@/lib/venueService'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const configuredToken = process.env.VRENA_RESULTS_INGEST_TOKEN
-  if (!usableVenueToken(configuredToken)) {
+  if (configuredVenueCredentials().length === 0) {
     return NextResponse.json({ error: 'Venue updates are not configured.' }, { status: 503 })
   }
-  if (!isAuthorizedVenueRequest(request, configuredToken)) {
+  if (!authorizedVenuePrincipal(request)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 

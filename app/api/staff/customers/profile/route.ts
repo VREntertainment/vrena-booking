@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isStaffCustomerNicknameConflict } from '@/lib/staffCustomerIdentity'
+import { isStaffCustomerProfile } from '@/lib/staffCustomerProfileAccess'
 import { authenticateStaffKioskRequest, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
 
 export const runtime = 'nodejs'
@@ -51,6 +52,26 @@ export async function PATCH(request: NextRequest) {
 
   const profileId = cleanRequiredString(body.profileId)
   if (!profileId) return jsonError('Profile id is required.', 400)
+
+  const [{ data: targetProfile, error: targetError }, { data: employeeRecord, error: employeeError }] = await Promise.all([
+    adminClient
+      .from('profiles')
+      .select('id, role')
+      .eq('id', profileId)
+      .is('deleted_at', null)
+      .maybeSingle(),
+    adminClient
+      .from('staff_employee_profiles')
+      .select('profile_id')
+      .eq('profile_id', profileId)
+      .is('deleted_at', null)
+      .maybeSingle(),
+  ])
+  if (targetError || employeeError) return jsonError('Could not verify this customer profile.', 503)
+  if (!targetProfile) return jsonError('Customer profile not found.', 404)
+  if (!isStaffCustomerProfile(targetProfile.role, Boolean(employeeRecord))) {
+    return jsonError('Staff profiles must be updated through HR.', 403)
+  }
 
   const fullName = cleanRequiredString(body.fullName, 120)
   if (!fullName) return jsonError('Enter the customer name.', 400)
