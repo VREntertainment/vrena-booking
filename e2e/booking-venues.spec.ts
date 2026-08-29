@@ -27,7 +27,7 @@ test.describe('booking venue selection', () => {
       await page.goto(route.path)
 
       const venueSelector = page.locator('.booking-venue-selector')
-      const cafe = venueSelector.getByRole('radio').filter({ hasText: 'Café des Stagiaires' })
+      const cafe = venueSelector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' })
 
       await expect(page.locator(route.activeSurface)).toBeVisible()
       await cafe.click()
@@ -45,7 +45,7 @@ test.describe('booking venue selection', () => {
     await page.goto('/tickets')
 
     const venueSelector = page.locator('.booking-venue-selector')
-    const cafe = venueSelector.getByRole('radio').filter({ hasText: 'Café des Stagiaires' })
+    const cafe = venueSelector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' })
 
     await cafe.click()
 
@@ -53,7 +53,7 @@ test.describe('booking venue selection', () => {
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toContainText('Your booking is confirmed only after the team replies on Zalo or WhatsApp.')
-    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily 16:00–00:00')
+    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily only 16:00–22:00')
     const zaloLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /Zalo/ })
     const whatsappLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /WhatsApp/ })
     await expect(zaloLink).toHaveAttribute('href', 'https://zalo.me/84981152315')
@@ -62,7 +62,7 @@ test.describe('booking venue selection', () => {
     await expect(whatsappLink.locator('img')).toHaveCount(1)
     await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
-    await expect(page.locator('#ticket-available-time option')).toHaveCount(25)
+    await expect(page.locator('#ticket-available-time option')).toHaveCount(17)
     if (test.info().project.name === 'chromium') {
       const noticeHeight = await page.locator('.cafe-booking-notice').evaluate((element) => element.getBoundingClientRect().height)
       expect(noticeHeight).toBeLessThan(620)

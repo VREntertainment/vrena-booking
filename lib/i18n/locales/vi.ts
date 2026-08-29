@@ -91,7 +91,7 @@ export const vi = {
   bookingVenueCafeAddress: '8–10 Đường số 54, An Khánh, TP.HCM',
   bookingVenueComingSoon: 'Từ 31/8 · 16:00–22:00',
   bookingVenueCafeComingSoonTitle: 'Khai trương Thứ Hai, 31/8',
-  bookingVenueCafeComingSoonBody: 'VRena khai trương tại tầng trệt Café des Stagiaires. Mở cửa hằng ngày 16:00–22:00. Phiên cộng đồng chưa mở; vào mục Vé để gửi yêu cầu đặt chỗ.',
+  bookingVenueCafeComingSoonBody: 'VRena Café des Stagiaires khai trương tại tầng trệt. Mở cửa hằng ngày 16:00–22:00. Phiên cộng đồng chưa mở; vào mục Vé để gửi yêu cầu đặt chỗ.',
   bookingVenueCafeSoftOpeningNotice: 'Từ 31/8: chỉ mở hằng ngày 16:00–22:00.',
   bookingVenueCafeConfirmZalo: 'Xác nhận qua Zalo trước khi đến',
   bookingVenueCafeBookingNoticeTitle: 'Đặt chỗ giai đoạn soft opening',

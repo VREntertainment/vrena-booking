@@ -91,7 +91,7 @@ export const de = {
   bookingVenueCafeAddress: 'Straße 54, Nr. 8–10, An Khánh, Ho-Chi-Minh-Stadt',
   bookingVenueComingSoon: 'Ab 31.8. · 16:00–22:00',
   bookingVenueCafeComingSoonTitle: 'Eröffnung am Montag, 31. August',
-  bookingVenueCafeComingSoonBody: 'VRena eröffnet im Erdgeschoss des Café des Stagiaires. Täglich von 16:00–22:00 Uhr geöffnet. Community-Sessions sind noch nicht verfügbar; unter Tickets kann eine Buchungsanfrage gesendet werden.',
+  bookingVenueCafeComingSoonBody: 'VRena Café des Stagiaires eröffnet im Erdgeschoss. Täglich von 16:00–22:00 Uhr geöffnet. Community-Sessions sind noch nicht verfügbar; unter Tickets kann eine Buchungsanfrage gesendet werden.',
   bookingVenueCafeSoftOpeningNotice: 'Ab 31. August: täglich nur 16:00–22:00 geöffnet.',
   bookingVenueCafeConfirmZalo: 'Vor dem Besuch über Zalo bestätigen',
   bookingVenueCafeBookingNoticeTitle: 'Buchung während der Soft-Eröffnung',
