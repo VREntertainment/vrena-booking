@@ -2,15 +2,18 @@ import {
   countries,
   dateLocales,
   games,
-  individualTicketPrices,
   monthAbbreviations,
   selectedTicketService,
   ticketArenaCapacityPerSlot,
   ticketArenaCount,
-  ticketPriceBlockMinutes,
   type GameId,
   type TicketType,
 } from './bookingStaticData'
+import {
+  individualTicketUnitPrice as resolveIndividualTicketUnitPrice,
+  ticketPriceBlockMinutesForDate,
+  type TicketPricingVenue,
+} from './ticketTariffs'
 import type { LanguageCode } from './i18n/languages'
 import { calculateTicketPricing, minimumTicketDurationMinutes } from './ticketPricing'
 import { vrenaPalette } from './theme/vrenaPalette'
@@ -696,29 +699,38 @@ export function participantPaymentAmountSummary(participant: Participant) {
   return splitTotal || participant.payment_amount || 0
 }
 
-export function individualTicketUnitPrice(dateValue: string, timeValue: string) {
-  if (!dateValue) return individualTicketPrices.weekdayDay
-  const day = new Date(`${dateValue}T12:00:00`).getDay()
-  if (day === 0 || day === 6) return individualTicketPrices.weekend
-  const minutes = timeValue ? timeToMinutes(timeValue) : 12 * 60
-  return minutes >= 18 * 60 ? individualTicketPrices.weekdayEvening : individualTicketPrices.weekdayDay
+export function individualTicketUnitPrice(
+  dateValue: string,
+  timeValue: string,
+  venue: TicketPricingVenue = 'ha-do-centrosa'
+) {
+  return resolveIndividualTicketUnitPrice(dateValue, timeValue, venue)
 }
 
-export function ticketUnitPrice(_ticketType: TicketType, dateValue: string, timeValue: string) {
-  return individualTicketUnitPrice(dateValue, timeValue)
+export function ticketUnitPrice(
+  _ticketType: TicketType,
+  dateValue: string,
+  timeValue: string,
+  venue: TicketPricingVenue = 'ha-do-centrosa'
+) {
+  return individualTicketUnitPrice(dateValue, timeValue, venue)
 }
 
 export function ticketRequiredSlots(players: number, arenaCount = ticketArenaCount) {
   return Math.max(1, Math.ceil(Math.max(1, players) / (ticketArenaCapacityPerSlot * ticketArenaCountForPlayers(arenaCount))))
 }
 
-export function ticketMinimumDurationBlocks(players: number, arenaCount = ticketArenaCount) {
+export function ticketMinimumDurationBlocks(
+  players: number,
+  arenaCount = ticketArenaCount,
+  priceBlockMinutes = ticketPriceBlockMinutesForDate('')
+) {
   return minimumTicketDurationMinutes(
     players,
-    ticketPriceBlockMinutes,
+    priceBlockMinutes,
     ticketArenaCapacityPerSlot,
     ticketArenaCountForPlayers(arenaCount)
-  ) / ticketPriceBlockMinutes
+  ) / priceBlockMinutes
 }
 
 export function ticketPricingSummary(
@@ -727,17 +739,19 @@ export function ticketPricingSummary(
   timeValue: string,
   players: number,
   durationMinutes: number,
-  arenaCount = ticketArenaCount
+  arenaCount = ticketArenaCount,
+  venue: TicketPricingVenue = 'ha-do-centrosa'
 ) {
+  const priceBlockMinutes = ticketPriceBlockMinutesForDate(dateValue)
   const selectedArenaCount = ticketArenaCountForPlayers(arenaCount)
-  const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue)
-  const requiredSlots = ticketMinimumDurationBlocks(players, selectedArenaCount)
+  const baseUnitPrice = ticketUnitPrice(ticketType, dateValue, timeValue, venue)
+  const requiredSlots = ticketMinimumDurationBlocks(players, selectedArenaCount, priceBlockMinutes)
   const unitPrice = baseUnitPrice
   const pricing = calculateTicketPricing(
     baseUnitPrice,
     players,
     durationMinutes,
-    ticketPriceBlockMinutes,
+    priceBlockMinutes,
     ticketArenaCapacityPerSlot,
     selectedArenaCount
   )
@@ -750,8 +764,14 @@ export function ticketPricingSummary(
   }
 }
 
-export function ticketDurationForPlayers(ticketType: TicketType, players: number, arenaCount = ticketArenaCount) {
-  return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players, arenaCount) * ticketPriceBlockMinutes)
+export function ticketDurationForPlayers(
+  ticketType: TicketType,
+  players: number,
+  arenaCount = ticketArenaCount,
+  dateValue = ''
+) {
+  const priceBlockMinutes = ticketPriceBlockMinutesForDate(dateValue)
+  return Math.max(selectedTicketService(ticketType).duration, ticketMinimumDurationBlocks(players, arenaCount, priceBlockMinutes) * priceBlockMinutes)
 }
 
 export function ticketArenaCountForPlayers(arenaCount = ticketArenaCount) {

@@ -98,6 +98,7 @@ export type TicketBookingViewProps = {
   ticketTimeOptions: TicketTimeOption[]
   ticketPlayerOptions: number[]
   activeTicketDuration: number
+  ticketPriceBlockMinutes: number
   activeTicketArenaCount: number
   currentTicketPricing: TicketPricingSummary
   currentTicketUnitPrice: number
@@ -161,6 +162,7 @@ export default function TicketBookingView({
   ticketTimeOptions,
   ticketPlayerOptions,
   activeTicketDuration,
+  ticketPriceBlockMinutes,
   activeTicketArenaCount,
   currentTicketPricing,
   currentTicketUnitPrice,
@@ -392,13 +394,13 @@ export default function TicketBookingView({
                   <div>
                     <span>{text.unitPrice}</span>
                     <strong>{formatVnd(currentTicketUnitPrice)}</strong>
-                    <small>{ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers, activeTicketArenaCount)}</small>
+                    <small>{ticketPriceBlockMinutes === 20 ? text.ticketUnitPriceBasisLegacy : ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers, activeTicketArenaCount)}</small>
                   </div>
                 )}
                 <div className="ticket-reserved-line">
                   <span>{text.numberOfPlayers}</span>
                   <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
-                  <small>{text.ticketEveryPlayerFullPrice}</small>
+                  <small>{ticketPriceBlockMinutes === 20 ? text.ticketEveryPlayerFullPriceLegacy : text.ticketEveryPlayerFullPrice}</small>
                 </div>
                 <div className="ticket-total-line">
                   <span className="ticket-total-heading">

@@ -4,7 +4,8 @@ import NextImage from 'next/image'
 import { Bold, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, Lock, MessageSquare, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
 import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
-import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, games, isEscapeSession, selectedTicketService, ticketMaxCustomerDurationMinutes, ticketPriceBlockMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
+import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, games, isEscapeSession, selectedTicketService, ticketMaxCustomerDurationMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
+import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
@@ -56,7 +57,7 @@ const SESSION_MESSAGE_PAGE_SIZE = 30
 const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
 const CAFE_SOFT_OPENING_DATE = '2026-08-31'
 const CAFE_OPEN_MINUTES = 16 * 60
-const CAFE_CLOSE_MINUTES = 24 * 60
+const CAFE_CLOSE_MINUTES = 22 * 60
 const PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY = 'vrena.ticket.pending-account-booking.v1'
 const PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS = 30 * 60 * 1000
 
@@ -4190,7 +4191,7 @@ export default function WidgetPage({
       if (date === today && start <= nowMinutes) continue
 
       const end = start + duration
-      const endLabel = end === CAFE_CLOSE_MINUTES ? '00:00' : minutesToTime(end)
+      const endLabel = minutesToTime(end)
       options.push({
         value: minutesToTime(start),
         label: `${minutesToTime(start)}-${endLabel}`,
@@ -4216,7 +4217,8 @@ export default function WidgetPage({
   }, [editSessionArenaCount, editSessionDate, editSessionDuration, editingSessionId, getAvailableTimeOptions])
 
   const activeTicketService = selectedTicketService(ticketType)
-  const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
+  const activeTicketPriceBlockMinutes = ticketPriceBlockMinutesForDate(ticketDate)
+  const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, ticketDuration))
   const activeTicketArenaCount = ticketArenaCountForPlayers(ticketArenaCount)
   const ticketTimeOptions = useMemo(() => {
     return getTicketTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
@@ -4302,7 +4304,7 @@ export default function WidgetPage({
   const challengeTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
-  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount)
+  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount, bookingVenue)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const isSpecialTicketType = ticketType !== 'individual'
   const ticketVoucherDiscountAmount = isHaDoBookingVenue
@@ -4351,11 +4353,11 @@ export default function WidgetPage({
   }, [gameGuideGameId])
   const effectiveEditTicketDuration = editSessionDuration
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration, editSessionArenaCount)
-  const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount)
+  const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount, ticketDate)
   const ticketDurationOptions = useMemo(() => {
     const durationOptions = Array.from(
-      { length: Math.floor((ticketMaxCustomerDurationMinutes - ticketPriceBlockMinutes) / ticketPriceBlockMinutes) + 1 },
-      (_, index) => ticketPriceBlockMinutes + index * ticketPriceBlockMinutes
+      { length: Math.floor((ticketMaxCustomerDurationMinutes - activeTicketPriceBlockMinutes) / activeTicketPriceBlockMinutes) + 1 },
+      (_, index) => activeTicketPriceBlockMinutes + index * activeTicketPriceBlockMinutes
     )
 
     if (!ticketDate) return durationOptions
@@ -4366,7 +4368,7 @@ export default function WidgetPage({
       if (ticketTime) return options.some((option) => option.value === ticketTime)
       return options.length > 0
     })
-  }, [activeTicketArenaCount, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
+  }, [activeTicketArenaCount, activeTicketPriceBlockMinutes, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -4689,7 +4691,7 @@ function handleSessionDateChange(value: string) {
   function handleTicketTypeChange(value: TicketType) {
     const service = selectedTicketService(value)
     const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
-    const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers, activeTicketArenaCount), ticketDuration)
+    const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers, activeTicketArenaCount, ticketDate), ticketDuration)
     const nextIsSpecialTicket = value !== 'individual'
     setTicketType(value)
     setTicketPlayers(nextPlayers)
@@ -4717,9 +4719,9 @@ function handleSessionDateChange(value: string) {
 
   function handleTicketPlayersChange(value: number) {
     const nextArenaCount = value <= 4 ? 1 : activeTicketArenaCount
-    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount)
+    const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount, ticketDate)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
+    const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
 
     setTicketPlayers(value)
@@ -4733,9 +4735,9 @@ function handleSessionDateChange(value: string) {
 
   function handleTicketArenaCountChange(value: number) {
     const nextArenaCount = ticketPlayers <= 4 ? 1 : ticketArenaCountForPlayers(value)
-    const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount)
+    const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount, ticketDate)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, nextArenaCount)
+    const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
 
     setTicketArenaCount(nextArenaCount)
@@ -4748,8 +4750,8 @@ function handleSessionDateChange(value: string) {
   }
 
   function handleTicketDurationChange(value: number) {
-    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, value))
-    const nextTimeOptions = getAvailableTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
+    const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, value))
+    const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
 
     setTicketDuration(nextDuration)
@@ -4899,7 +4901,7 @@ function handleSessionDateChange(value: string) {
 
     if (editBookingType === 'ticket') {
       const nextArenaCount = value <= 4 ? 1 : editSessionArenaCount
-      const nextDuration = ticketDurationForPlayers(editTicketType, value, nextArenaCount)
+      const nextDuration = ticketDurationForPlayers(editTicketType, value, nextArenaCount, editSessionDate)
       setEditSessionArenaCount(nextArenaCount)
       setEditSessionDuration(nextDuration)
       setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, value, nextDuration, nextArenaCount).totalPrice))
@@ -4914,7 +4916,7 @@ function handleSessionDateChange(value: string) {
   function handleEditArenaCountChange(value: number) {
     if (editBookingType === 'ticket') {
       const nextArenaCount = editSessionMaxPlayers <= 4 ? 1 : ticketArenaCountForPlayers(value)
-      const nextDuration = Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers, nextArenaCount), editSessionDuration)
+      const nextDuration = Math.max(ticketDurationForPlayers(editTicketType, editSessionMaxPlayers, nextArenaCount, editSessionDate), editSessionDuration)
       setEditSessionArenaCount(nextArenaCount)
       setEditSessionDuration(nextDuration)
       setEditTicketTotalPrice(String(ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration, nextArenaCount).totalPrice))
@@ -9409,6 +9411,7 @@ function handleSessionDateChange(value: string) {
               ticketDiscountSource={activeTicketDiscountSource}
               ticketDiscountStatus={ticketDiscountStatus}
               ticketDurationOptions={ticketDurationOptions}
+              ticketPriceBlockMinutes={activeTicketPriceBlockMinutes}
               ticketPlayerOptions={ticketPlayerOptions}
               ticketPlayers={ticketPlayers}
               ticketServices={ticketServices}
@@ -9908,11 +9911,18 @@ function handleSessionDateChange(value: string) {
         <TariffPaymentModal
           closeText={text.close}
           title={text.sessionTariffTitle}
-          rates={[
-            text.sessionTariffRateDay,
-            text.sessionTariffRateEvening,
-            text.sessionTariffRateWeekend,
-          ]}
+          rates={isHaDoBookingVenue
+            ? [
+              text.sessionTariffRateDay,
+              text.sessionTariffRateEvening,
+              text.sessionTariffRateWeekend,
+              text.sessionTariffRateWeekendDay,
+              text.sessionTariffRateWeekendEvening,
+            ]
+            : [
+              text.sessionTariffRateCafeHappy,
+              text.sessionTariffRateCafeEvening,
+            ]}
           arenaText={text.sessionTariffArena}
           discounts={[
             text.sessionTariffGroupSmall,

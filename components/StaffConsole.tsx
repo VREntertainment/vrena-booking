@@ -5222,7 +5222,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     if (!selectedGame) return null
     return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
   }, [booking.date, booking.time, prices, selectedGame])
-  const bookingUnitPrice = selectedRule?.price_per_player || 200000
+  const bookingUnitPrice = selectedRule?.price_per_player || 220000
   const bookingDurationBlocks = Math.max(1, Math.ceil((selectedGame?.duration_minutes || 20) / 20))
   const bookingSubtotal = selectedRule?.price_per_arena_slot
     ? selectedRule.price_per_arena_slot * bookingDurationBlocks
