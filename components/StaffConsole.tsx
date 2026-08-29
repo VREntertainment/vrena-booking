@@ -9918,7 +9918,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <div className="staff-operation-title-row">
                       <strong>{session.name}</strong>
                       <span>{sessionKindLabel(session, text)}</span>
-                      {session.venue_key === 'cafe-des-stagiaires' && <span>Café des Stagiaires</span>}
+                      {session.venue_key === 'cafe-des-stagiaires' && <span>VRena Café des Stagiaires</span>}
                     </div>
                     <div className="staff-operation-meta">
                       <span>{sessionGameName(session, games, text)}</span>

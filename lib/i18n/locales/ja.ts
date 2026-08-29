@@ -91,7 +91,7 @@ export const ja = {
   bookingVenueCafeAddress: 'ホーチミン市An Khánh、54番通り8–10',
   bookingVenueComingSoon: '8月31日から · 16:00–22:00',
   bookingVenueCafeComingSoonTitle: '8月31日（月）オープン',
-  bookingVenueCafeComingSoonBody: 'VRenaはCafé des Stagiairesの1階にオープンします。毎日16:00〜22:00営業。コミュニティセッションはまだ利用できません。チケットから予約リクエストを送信できます。',
+  bookingVenueCafeComingSoonBody: 'VRena Café des Stagiairesは1階にオープンします。毎日16:00〜22:00営業。コミュニティセッションはまだ利用できません。チケットから予約リクエストを送信できます。',
   bookingVenueCafeSoftOpeningNotice: '8月31日から：毎日16:00〜22:00のみ営業。',
   bookingVenueCafeConfirmZalo: '来店前にZaloで確認',
   bookingVenueCafeBookingNoticeTitle: 'ソフトオープン予約',

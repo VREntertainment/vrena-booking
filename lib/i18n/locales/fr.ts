@@ -91,7 +91,7 @@ export const fr = {
   bookingVenueCafeAddress: '8–10 rue 54, An Khánh, Hô Chi Minh-Ville',
   bookingVenueComingSoon: 'Dès le 31/8 · 16:00–22:00',
   bookingVenueCafeComingSoonTitle: 'Ouverture lundi 31 août',
-  bookingVenueCafeComingSoonBody: 'VRena ouvre au rez-de-chaussée du Café des Stagiaires. Ouvert tous les jours de 16:00 à 22:00. Les sessions communautaires ne sont pas encore disponibles ; utilisez Billets pour envoyer une demande.',
+  bookingVenueCafeComingSoonBody: 'VRena Café des Stagiaires ouvre au rez-de-chaussée. Ouvert tous les jours de 16:00 à 22:00. Les sessions communautaires ne sont pas encore disponibles ; utilisez Billets pour envoyer une demande.',
   bookingVenueCafeSoftOpeningNotice: 'Dès le 31 août : ouvert tous les jours uniquement de 16:00 à 22:00.',
   bookingVenueCafeConfirmZalo: 'Confirmer sur Zalo avant de venir',
   bookingVenueCafeBookingNoticeTitle: 'Réservation en ouverture progressive',

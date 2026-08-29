@@ -91,7 +91,7 @@ export const ko = {
   bookingVenueCafeAddress: '호찌민시 An Khánh, 54번 도로 8–10',
   bookingVenueComingSoon: '8월 31일부터 · 16:00–22:00',
   bookingVenueCafeComingSoonTitle: '8월 31일 월요일 오픈',
-  bookingVenueCafeComingSoonBody: 'VRena가 Café des Stagiaires 1층에 오픈합니다. 매일 16:00–22:00 운영합니다. 커뮤니티 세션은 아직 이용할 수 없으며, 티켓에서 예약 요청을 보낼 수 있습니다.',
+  bookingVenueCafeComingSoonBody: 'VRena Café des Stagiaires가 1층에 오픈합니다. 매일 16:00–22:00 운영합니다. 커뮤니티 세션은 아직 이용할 수 없으며, 티켓에서 예약 요청을 보낼 수 있습니다.',
   bookingVenueCafeSoftOpeningNotice: '8월 31일부터: 매일 16:00–22:00만 운영합니다.',
   bookingVenueCafeConfirmZalo: '방문 전 Zalo로 확인',
   bookingVenueCafeBookingNoticeTitle: '소프트 오픈 예약',
