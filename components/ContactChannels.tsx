@@ -2,6 +2,7 @@ import Image from 'next/image'
 
 export const VRENA_CONTACT_PHONE_DISPLAY = '0981152315'
 export const VRENA_CONTACT_PHONE_INTERNATIONAL = '84981152315'
+export const VRENA_ZALO_URL = `https://zalo.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`
 
 const CONTACT_CHANNELS = [
   {
@@ -12,7 +13,7 @@ const CONTACT_CHANNELS = [
   },
   {
     className: 'zalo',
-    href: `https://zalo.me/${VRENA_CONTACT_PHONE_INTERNATIONAL}`,
+    href: VRENA_ZALO_URL,
     iconSrc: '/brand/zalo.svg',
     label: 'Zalo',
   },

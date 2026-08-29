@@ -92,6 +92,8 @@ export const vi = {
   bookingVenueComingSoon: 'Khai trương 31/8',
   bookingVenueCafeComingSoonTitle: 'Khai trương Thứ Hai, 31/8',
   bookingVenueCafeComingSoonBody: 'VRena khai trương tại tầng trệt Café des Stagiaires. Mở cửa hằng ngày 16:00–00:00. Phiên chơi và đặt vé chưa mở.',
+  bookingVenueCafeSoftOpeningNotice: 'Trong giai đoạn soft opening, giờ mở cửa có thể thay đổi.',
+  bookingVenueCafeConfirmZalo: 'Xác nhận qua Zalo trước khi đến',
   bookingVenueChooseHaDo: 'Đặt tại Hà Đô Centrosa',
   ticketType: 'Loại vé',
   ticketEventHelpTitle: 'Bạn đang lên kế hoạch cho sự kiện?',

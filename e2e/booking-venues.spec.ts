@@ -48,6 +48,9 @@ test.describe('booking venue selection', () => {
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Opening Monday, August 31')
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Open daily 16:00–00:00.')
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Sessions and tickets are not open yet.')
+      await expect(page.locator('.booking-venue-soft-opening-notice')).toContainText('During soft opening, opening hours may vary.')
+      await expect(page.getByRole('link', { name: 'Confirm via Zalo before visiting' })).toHaveAttribute('href', 'https://zalo.me/84981152315')
+      await expect(page.getByRole('link', { name: 'Confirm via Zalo before visiting' })).toHaveAttribute('target', '_blank')
       await expectContainedLayout(page)
 
       await page.getByRole('button', { name: 'Book at Hà Đô Centrosa' }).click()
