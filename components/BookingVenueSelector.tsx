@@ -81,7 +81,7 @@ export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
 
 export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap }) {
   return (
-    <aside className="cafe-booking-notice" aria-labelledby="cafe-booking-notice-title">
+    <section className="cafe-booking-notice" aria-labelledby="cafe-booking-notice-title">
       <div className="cafe-booking-notice-icon">
         <MessageCircle aria-hidden="true" size={24} />
       </div>
@@ -94,6 +94,6 @@ export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap })
         <MessageCircle aria-hidden="true" size={17} />
         {text.bookingVenueCafeOpenZalo}
       </a>
-    </aside>
+    </section>
   )
 }
