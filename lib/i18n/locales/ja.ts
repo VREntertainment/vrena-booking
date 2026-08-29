@@ -96,7 +96,7 @@ export const ja = {
   bookingVenueCafeConfirmZalo: '来店前にZaloで確認',
   bookingVenueCafeBookingNoticeTitle: 'ソフトオープン予約',
   bookingVenueCafeBookingNoticeBody: '希望する日付と時間を選択してください。Café des Stagiairesチームにリクエストが送信されますが、すぐには確定しません。',
-  bookingVenueCafeBookingNoticeStatus: 'Zaloでチームから返信を受け取った後にのみ予約が確定します。',
+  bookingVenueCafeBookingNoticeStatus: 'ZaloまたはWhatsAppでチームから返信を受け取った後にのみ予約が確定します。',
   bookingVenueCafeBookingHours: '毎日16:00〜24:00 · ソフトオープン中は営業時間が変更される場合があります',
   bookingVenueCafeOpenZalo: 'Zaloで確認する',
   bookingVenueChooseHaDo: 'Hà Đô Centrosaで予約',

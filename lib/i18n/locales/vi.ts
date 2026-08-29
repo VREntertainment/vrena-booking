@@ -96,7 +96,7 @@ export const vi = {
   bookingVenueCafeConfirmZalo: 'Xác nhận qua Zalo trước khi đến',
   bookingVenueCafeBookingNoticeTitle: 'Đặt chỗ giai đoạn soft opening',
   bookingVenueCafeBookingNoticeBody: 'Chọn ngày và giờ mong muốn. Hệ thống sẽ gửi yêu cầu đến đội ngũ Café des Stagiaires; lượt đặt chỗ chưa được xác nhận ngay.',
-  bookingVenueCafeBookingNoticeStatus: 'Lượt đặt chỗ chỉ được xác nhận sau khi đội ngũ phản hồi qua Zalo.',
+  bookingVenueCafeBookingNoticeStatus: 'Lượt đặt chỗ chỉ được xác nhận sau khi đội ngũ phản hồi qua Zalo hoặc WhatsApp.',
   bookingVenueCafeBookingHours: 'Hằng ngày 16:00–00:00 · giờ mở cửa có thể thay đổi trong giai đoạn soft opening',
   bookingVenueCafeOpenZalo: 'Mở Zalo để xác nhận',
   bookingVenueChooseHaDo: 'Đặt tại Hà Đô Centrosa',
