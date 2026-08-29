@@ -1,5 +1,6 @@
-import { CalendarClock, MapPin, Store } from 'lucide-react'
+import { CalendarClock, MapPin, MessageCircle, Store } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
+import { VRENA_ZALO_URL } from './ContactChannels'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -67,6 +68,13 @@ export function BookingVenueComingSoon({ onChooseHaDo, text }: BookingVenueComin
       <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
       <h2 id="booking-venue-coming-soon-title">{text.bookingVenueCafeComingSoonTitle}</h2>
       <p>{text.bookingVenueCafeComingSoonBody}</p>
+      <p className="booking-venue-soft-opening-notice">
+        <span>{text.bookingVenueCafeSoftOpeningNotice}</span>
+        <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
+          <MessageCircle aria-hidden="true" size={16} />
+          {text.bookingVenueCafeConfirmZalo}
+        </a>
+      </p>
       <small><MapPin aria-hidden="true" size={15} /> {text.bookingVenueCafeAddress}</small>
       <button className="primary" onClick={onChooseHaDo} type="button">
         {text.bookingVenueChooseHaDo}

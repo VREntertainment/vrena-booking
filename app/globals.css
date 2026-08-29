@@ -15804,6 +15804,40 @@ body {
   line-height: 1.6;
 }
 
+.app .booking-venue-coming-soon .booking-venue-soft-opening-notice {
+  display: flex;
+  width: min(560px, 100%);
+  max-width: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--vrena-status-warning-border);
+  border-radius: 14px;
+  background: var(--vrena-status-warning-bg);
+  color: var(--vrena-status-warning-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.app .booking-venue-soft-opening-notice a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.app .booking-venue-soft-opening-notice a:hover,
+.app .booking-venue-soft-opening-notice a:focus-visible {
+  text-decoration-thickness: 2.5px;
+}
+
 .app .booking-venue-coming-soon > small {
   display: inline-flex;
   align-items: center;

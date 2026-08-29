@@ -92,6 +92,8 @@ export const de = {
   bookingVenueComingSoon: 'Eröffnung am 31.8.',
   bookingVenueCafeComingSoonTitle: 'Eröffnung am Montag, 31. August',
   bookingVenueCafeComingSoonBody: 'VRena eröffnet im Erdgeschoss des Café des Stagiaires. Täglich von 16:00–00:00 Uhr geöffnet. Sessions und Tickets sind noch nicht buchbar.',
+  bookingVenueCafeSoftOpeningNotice: 'Während der Soft-Opening-Phase können die Öffnungszeiten abweichen.',
+  bookingVenueCafeConfirmZalo: 'Vor dem Besuch über Zalo bestätigen',
   bookingVenueChooseHaDo: 'In Hà Đô Centrosa buchen',
   ticketType: 'Ticketart',
   ticketEventHelpTitle: 'Planst du ein Event?',

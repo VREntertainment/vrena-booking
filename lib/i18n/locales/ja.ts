@@ -92,6 +92,8 @@ export const ja = {
   bookingVenueComingSoon: '8月31日オープン',
   bookingVenueCafeComingSoonTitle: '8月31日（月）オープン',
   bookingVenueCafeComingSoonBody: 'VRenaはCafé des Stagiairesの1階にオープンします。毎日16:00〜24:00営業。セッションとチケットの予約はまだ開始していません。',
+  bookingVenueCafeSoftOpeningNotice: 'ソフトオープン期間中は営業時間が変更になる場合があります。',
+  bookingVenueCafeConfirmZalo: '来店前にZaloで確認',
   bookingVenueChooseHaDo: 'Hà Đô Centrosaで予約',
   ticketType: 'チケットの種類',
   ticketEventHelpTitle: 'イベントをご予定ですか？',
