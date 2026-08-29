@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
-import ContactChannels from './ContactChannels'
+import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
@@ -69,6 +69,7 @@ type TicketBookingConfirmation = {
   loyaltyDiscountAmount?: number
   discountCode?: string
   discountAmount?: number
+  requiresZaloConfirmation?: boolean
 }
 
 type GuestTicketAction = 'create-account' | 'guest'
@@ -79,6 +80,7 @@ export type TicketBookingViewProps = {
   text: Record<string, string>
   language: LanguageCode
   isLoggedIn: boolean
+  requiresZaloConfirmation: boolean
   gameGuideTrigger: ReactNode
   tariffTrigger: ReactNode
   ticketServices: TicketService[]
@@ -141,6 +143,7 @@ export default function TicketBookingView({
   text,
   language,
   isLoggedIn,
+  requiresZaloConfirmation,
   gameGuideTrigger,
   tariffTrigger,
   ticketServices,
@@ -204,7 +207,7 @@ export default function TicketBookingView({
   const isGuestAccountChoiceConfirmation = Boolean(guestAccountChoicePhone) && guestAccountChoicePhone === guestTicketContact.phone
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
-  const showLoyaltyTools = isLoggedIn && !isSpecialTicket
+  const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !requiresZaloConfirmation
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
   const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
     ? text.ticketAccountValueWithPoints
@@ -349,7 +352,7 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              {!isSpecialTicket && (
+              {!isSpecialTicket && !requiresZaloConfirmation && (
                 <label className="ticket-discount-code-field">
                   <span>{text.ticketDiscountCodeLabel}</span>
                   <input
@@ -477,7 +480,7 @@ export default function TicketBookingView({
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
               )}
-              <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>
+              {!requiresZaloConfirmation && <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>}
 
               <button
                 className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
@@ -485,7 +488,9 @@ export default function TicketBookingView({
                 type="button"
                 onClick={handleBookTicketsClick}
               >
-                {isBookingTickets ? text.bookingTickets : text.bookTickets}
+                {isBookingTickets
+                  ? requiresZaloConfirmation ? text.submittingBookingRequest : text.bookingTickets
+                  : requiresZaloConfirmation ? text.submitBookingRequest : text.bookTickets}
               </button>
               {!isLoggedIn && !isSpecialTicket && (
                 <button className="ticket-account-value-note" type="button" onClick={onPromptCreateAccount}>
@@ -611,7 +616,7 @@ export default function TicketBookingView({
           {ticketConfirmation && (
             <div className="ticket-confirmation">
               <div>
-                <span>{text.bookingConfirmed}</span>
+                <span>{ticketConfirmation.requiresZaloConfirmation ? text.bookingRequestSubmitted : text.bookingConfirmed}</span>
                 <strong>{ticketConfirmation.ticketLabel}</strong>
               </div>
               <div className="ticket-confirmation-grid">
@@ -633,6 +638,14 @@ export default function TicketBookingView({
               {ticketConfirmation.reference && (
                 <p>
                   {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
+                </p>
+              )}
+              {ticketConfirmation.requiresZaloConfirmation && (
+                <p className="ticket-confirmation-zalo">
+                  <strong>{text.bookingRequestPendingZalo}</strong>
+                  <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
+                    {text.bookingVenueCafeOpenZalo}
+                  </a>
                 </p>
               )}
               {ticketConfirmation.guestPhone && (

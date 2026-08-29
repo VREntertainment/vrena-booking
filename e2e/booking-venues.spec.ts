@@ -1,11 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const BOOKING_ROUTES = [
-  { path: '/sessions', activeSurface: '.sessions-section' },
-  { path: '/create-session', activeSurface: '.create-session-section' },
-  { path: '/tickets', activeSurface: '.ticket-form-panel' },
-] as const
-
 async function expectContainedLayout(page: Page) {
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -24,40 +18,46 @@ async function keepConsentOutOfTheBookingFlow(page: Page) {
 }
 
 test.describe('booking venue selection', () => {
-  for (const route of BOOKING_ROUTES) {
-    test(`${route.path} keeps Ha Do bookable and shows the Cafe opening details`, async ({ page }) => {
+  for (const route of [
+    { path: '/sessions', activeSurface: '.sessions-section' },
+    { path: '/create-session', activeSurface: '.create-session-section' },
+  ] as const) {
+    test(`${route.path} keeps Cafe community flows closed without redirecting to Ha Do`, async ({ page }) => {
       await keepConsentOutOfTheBookingFlow(page)
       await page.goto(route.path)
 
       const venueSelector = page.locator('.booking-venue-selector')
-      const haDo = venueSelector.getByRole('radio').filter({ hasText: 'Hà Đô Centrosa' })
       const cafe = venueSelector.getByRole('radio').filter({ hasText: 'Café des Stagiaires' })
 
-      await expect(venueSelector).toBeVisible()
-      await expect(venueSelector.getByRole('radio')).toHaveCount(2)
-      await expect(haDo).toHaveAttribute('aria-checked', 'true')
       await expect(page.locator(route.activeSurface)).toBeVisible()
-      await expectContainedLayout(page)
-
       await cafe.click()
 
       await expect(cafe).toHaveAttribute('aria-checked', 'true')
       await expect(page.locator(route.activeSurface)).toHaveCount(0)
-      await expect(cafe).toContainText('Opens Aug 31')
-      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Café des Stagiaires')
-      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Opening Monday, August 31')
-      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Open daily 16:00–00:00.')
-      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Sessions and tickets are not open yet.')
-      await expect(page.locator('.booking-venue-soft-opening-notice')).toContainText('During soft opening, opening hours may vary.')
-      await expect(page.getByRole('link', { name: 'Confirm via Zalo before visiting' })).toHaveAttribute('href', 'https://zalo.me/84981152315')
-      await expect(page.getByRole('link', { name: 'Confirm via Zalo before visiting' })).toHaveAttribute('target', '_blank')
-      await expectContainedLayout(page)
-
-      await page.getByRole('button', { name: 'Book at Hà Đô Centrosa' }).click()
-
-      await expect(haDo).toHaveAttribute('aria-checked', 'true')
-      await expect(page.locator(route.activeSurface)).toBeVisible()
+      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Community sessions are not available yet')
+      await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
       await expectContainedLayout(page)
     })
   }
+
+  test('Cafe tickets stay bookable and explain Zalo-only confirmation in the right panel', async ({ page }) => {
+    await keepConsentOutOfTheBookingFlow(page)
+    await page.goto('/tickets')
+
+    const venueSelector = page.locator('.booking-venue-selector')
+    const cafe = venueSelector.getByRole('radio').filter({ hasText: 'Café des Stagiaires' })
+
+    await cafe.click()
+
+    await expect(cafe).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('.ticket-form-panel')).toBeVisible()
+    await expect(page.locator('.cafe-booking-notice')).toBeVisible()
+    await expect(page.locator('.cafe-booking-notice')).toContainText('Your booking is confirmed only after the team replies on Zalo.')
+    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily 16:00–00:00')
+    await expect(page.getByRole('link', { name: 'Open Zalo to confirm' })).toHaveAttribute('href', 'https://zalo.me/84981152315')
+    await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
+    await expect(page.locator('#ticket-available-time option')).toHaveCount(25)
+    await expectContainedLayout(page)
+  })
 })

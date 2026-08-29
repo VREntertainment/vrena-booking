@@ -11,7 +11,6 @@ type BookingVenueSelectorProps = {
 }
 
 type BookingVenueComingSoonProps = {
-  onChooseHaDo: () => void
   text: TranslationMap
 }
 
@@ -59,7 +58,7 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
   )
 }
 
-export function BookingVenueComingSoon({ onChooseHaDo, text }: BookingVenueComingSoonProps) {
+export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
   return (
     <section className="section booking-venue-coming-soon" aria-labelledby="booking-venue-coming-soon-title">
       <div className="booking-venue-coming-soon-icon">
@@ -76,9 +75,25 @@ export function BookingVenueComingSoon({ onChooseHaDo, text }: BookingVenueComin
         </a>
       </p>
       <small><MapPin aria-hidden="true" size={15} /> {text.bookingVenueCafeAddress}</small>
-      <button className="primary" onClick={onChooseHaDo} type="button">
-        {text.bookingVenueChooseHaDo}
-      </button>
     </section>
+  )
+}
+
+export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap }) {
+  return (
+    <aside className="cafe-booking-notice" aria-labelledby="cafe-booking-notice-title">
+      <div className="cafe-booking-notice-icon">
+        <MessageCircle aria-hidden="true" size={24} />
+      </div>
+      <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
+      <h2 id="cafe-booking-notice-title">{text.bookingVenueCafeBookingNoticeTitle}</h2>
+      <p>{text.bookingVenueCafeBookingNoticeBody}</p>
+      <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
+      <small><CalendarClock aria-hidden="true" size={16} /> {text.bookingVenueCafeBookingHours}</small>
+      <a className="primary" href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
+        <MessageCircle aria-hidden="true" size={17} />
+        {text.bookingVenueCafeOpenZalo}
+      </a>
+    </aside>
   )
 }
