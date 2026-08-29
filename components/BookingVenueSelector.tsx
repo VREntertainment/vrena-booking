@@ -1,6 +1,6 @@
 import { CalendarClock, MapPin, MessageCircle, Store } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
-import { VRENA_ZALO_URL } from './ContactChannels'
+import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -90,10 +90,7 @@ export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap })
       <p>{text.bookingVenueCafeBookingNoticeBody}</p>
       <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
       <small><CalendarClock aria-hidden="true" size={16} /> {text.bookingVenueCafeBookingHours}</small>
-      <a className="primary" href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
-        <MessageCircle aria-hidden="true" size={17} />
-        {text.bookingVenueCafeOpenZalo}
-      </a>
+      <ContactChannels className="cafe-booking-contact-channels" label={text.contactUs} />
     </section>
   )
 }

@@ -96,7 +96,7 @@ export const ko = {
   bookingVenueCafeConfirmZalo: '방문 전 Zalo로 확인',
   bookingVenueCafeBookingNoticeTitle: '소프트 오픈 예약',
   bookingVenueCafeBookingNoticeBody: '원하는 날짜와 시간을 선택하세요. Café des Stagiaires 팀에 요청이 전송되며 즉시 확정되지는 않습니다.',
-  bookingVenueCafeBookingNoticeStatus: 'Zalo에서 팀의 답변을 받은 후에만 예약이 확정됩니다.',
+  bookingVenueCafeBookingNoticeStatus: 'Zalo 또는 WhatsApp에서 팀의 답변을 받은 후에만 예약이 확정됩니다.',
   bookingVenueCafeBookingHours: '매일 16:00–24:00 · 소프트 오픈 기간에는 운영 시간이 달라질 수 있습니다',
   bookingVenueCafeOpenZalo: 'Zalo에서 확인하기',
   bookingVenueChooseHaDo: 'Hà Đô Centrosa에서 예약',

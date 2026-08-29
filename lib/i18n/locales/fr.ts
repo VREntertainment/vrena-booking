@@ -96,7 +96,7 @@ export const fr = {
   bookingVenueCafeConfirmZalo: 'Confirmer sur Zalo avant de venir',
   bookingVenueCafeBookingNoticeTitle: 'Réservation en ouverture progressive',
   bookingVenueCafeBookingNoticeBody: 'Choisissez la date et l’heure souhaitées. La demande est envoyée à l’équipe du Café des Stagiaires et n’est pas confirmée immédiatement.',
-  bookingVenueCafeBookingNoticeStatus: 'La réservation est confirmée uniquement après la réponse de l’équipe sur Zalo.',
+  bookingVenueCafeBookingNoticeStatus: 'La réservation est confirmée uniquement après la réponse de l’équipe sur Zalo ou WhatsApp.',
   bookingVenueCafeBookingHours: 'Tous les jours 16:00–00:00 · horaires susceptibles de varier pendant l’ouverture progressive',
   bookingVenueCafeOpenZalo: 'Ouvrir Zalo pour confirmer',
   bookingVenueChooseHaDo: 'Réserver à Hà Đô Centrosa',

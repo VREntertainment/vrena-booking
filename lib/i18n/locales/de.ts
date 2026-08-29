@@ -96,7 +96,7 @@ export const de = {
   bookingVenueCafeConfirmZalo: 'Vor dem Besuch über Zalo bestätigen',
   bookingVenueCafeBookingNoticeTitle: 'Buchung während der Soft-Eröffnung',
   bookingVenueCafeBookingNoticeBody: 'Wähle dein gewünschtes Datum und die Uhrzeit. Die Anfrage geht an das Café-des-Stagiaires-Team und ist nicht sofort bestätigt.',
-  bookingVenueCafeBookingNoticeStatus: 'Die Buchung ist erst nach einer Antwort des Teams über Zalo bestätigt.',
+  bookingVenueCafeBookingNoticeStatus: 'Die Buchung ist erst nach einer Antwort des Teams über Zalo oder WhatsApp bestätigt.',
   bookingVenueCafeBookingHours: 'Täglich 16:00–00:00 · während der Soft-Eröffnung können die Zeiten abweichen',
   bookingVenueCafeOpenZalo: 'Zalo zur Bestätigung öffnen',
   bookingVenueChooseHaDo: 'In Hà Đô Centrosa buchen',

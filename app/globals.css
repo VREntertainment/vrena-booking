@@ -15934,12 +15934,12 @@ body {
   margin-top: 2px;
 }
 
-.app .cafe-booking-notice > a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-decoration: none;
+.app .cafe-booking-notice .cafe-booking-contact-channels {
+  justify-items: stretch;
+}
+
+.app .cafe-booking-notice .cafe-booking-contact-channels .contact-channel-buttons {
+  width: 100%;
 }
 
 .app .ticket-confirmation-zalo {
