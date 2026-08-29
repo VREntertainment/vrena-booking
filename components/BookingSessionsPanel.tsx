@@ -855,7 +855,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               value={editTicketType}
                               onChange={(event) => {
                                 const nextType = event.target.value as TicketType
-                                const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers, editSessionArenaCount)
+                                const nextDuration = ticketDurationForPlayers(nextType, editSessionMaxPlayers, editSessionArenaCount, editSessionDate)
                                 setEditTicketType(nextType)
                                 setEditSessionDuration(nextDuration)
                                 setEditTicketTotalPrice(String(ticketPricingSummary(nextType, editSessionDate, editSessionTime, editSessionMaxPlayers, nextDuration, editSessionArenaCount).totalPrice))
