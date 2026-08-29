@@ -25,7 +25,7 @@ async function keepConsentOutOfTheBookingFlow(page: Page) {
 
 test.describe('booking venue selection', () => {
   for (const route of BOOKING_ROUTES) {
-    test(`${route.path} keeps Ha Do bookable and Cafe gated as coming soon`, async ({ page }) => {
+    test(`${route.path} keeps Ha Do bookable and shows the Cafe opening details`, async ({ page }) => {
       await keepConsentOutOfTheBookingFlow(page)
       await page.goto(route.path)
 
@@ -43,7 +43,10 @@ test.describe('booking venue selection', () => {
 
       await expect(cafe).toHaveAttribute('aria-checked', 'true')
       await expect(page.locator(route.activeSurface)).toHaveCount(0)
+      await expect(cafe).toContainText('Opens Aug 31')
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Café des Stagiaires')
+      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Opening Monday, August 31')
+      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Open daily 16:00–00:00.')
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Sessions and tickets are not open yet.')
       await expectContainedLayout(page)
 
