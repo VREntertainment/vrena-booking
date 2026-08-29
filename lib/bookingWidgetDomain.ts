@@ -71,6 +71,7 @@ export type TicketBookingConfirmation = {
   loyaltyDiscountAmount?: number
   discountCode?: string
   discountAmount?: number
+  requiresZaloConfirmation?: boolean
 }
 
 export type Profile = {
@@ -321,6 +322,7 @@ export type RealtimeRefreshTask = 'profile' | 'sessions' | 'leaderboard' | 'club
 
 export type Session = {
   id: string
+  venue_key?: string
   owner_id: string
   club_id: string | null
   session_type: 'game' | 'tournament'

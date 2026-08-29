@@ -693,6 +693,7 @@ type StaffSessionParticipant = {
 
 type StaffOperationSession = {
   id: string
+  venue_key?: string | null
   owner_id: string | null
   name: string
   date: string
@@ -5940,7 +5941,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const today = todayString()
       let query = supabase
         .from('sessions')
-        .select('id, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, deleted_at, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, hits, movement_meters, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
+        .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, arena_count, game_options, confirmed_game_id, visibility, status, booking_type, ticket_type, ticket_player_count, ticket_total_price, ticket_status, ticket_reference, notes, session_participants(id, profile_id, display_name, deleted_at, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, hits, movement_meters, projectiles_fired, escape_duration_seconds, placement, chapter_times:session_participant_chapter_times(chapter_number, duration_seconds, game_slug))')
         .is('deleted_at', null)
 
       query = operationSessionScope === 'past'
@@ -9917,6 +9918,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <div className="staff-operation-title-row">
                       <strong>{session.name}</strong>
                       <span>{sessionKindLabel(session, text)}</span>
+                      {session.venue_key === 'cafe-des-stagiaires' && <span>Café des Stagiaires</span>}
                     </div>
                     <div className="staff-operation-meta">
                       <span>{sessionGameName(session, games, text)}</span>

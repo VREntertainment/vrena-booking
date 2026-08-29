@@ -27,7 +27,7 @@ import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
-import BookingVenueSelector, { BookingVenueComingSoon, type BookingVenueId } from './BookingVenueSelector'
+import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
 import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
 import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type ClubVisibilityFilter, type SessionTimeScope } from './BookingWidgetSurfaces'
 import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
@@ -54,6 +54,9 @@ const CLUB_MESSAGE_LIMIT = 30
 
 const SESSION_MESSAGE_PAGE_SIZE = 30
 const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
+const CAFE_SOFT_OPENING_DATE = '2026-08-31'
+const CAFE_OPEN_MINUTES = 16 * 60
+const CAFE_CLOSE_MINUTES = 24 * 60
 const PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY = 'vrena.ticket.pending-account-booking.v1'
 const PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS = 30 * 60 * 1000
 
@@ -4137,7 +4140,12 @@ export default function WidgetPage({
       if (date === today && start <= nowMinutes) continue
 
       const activeSessionArenas = sessions
-        .filter((session) => session.status === 'open' && session.date === date && session.id !== excludeSessionId)
+        .filter((session) => (
+          session.status === 'open'
+          && session.date === date
+          && session.id !== excludeSessionId
+          && (session.venue_key || 'ha-do-centrosa') === 'ha-do-centrosa'
+        ))
         .filter((session) =>
           rangesOverlap(
             start,
@@ -4169,6 +4177,36 @@ export default function WidgetPage({
     return options
   }, [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
 
+  const getCafeSoftOpeningTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => {
+    if (!date || date < CAFE_SOFT_OPENING_DATE) return []
+
+    const now = new Date()
+    const today = localDateString(now)
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    const latestStart = CAFE_CLOSE_MINUTES - duration
+    const options: Array<{ value: string; label: string; remaining: number }> = []
+
+    for (let start = CAFE_OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
+      if (date === today && start <= nowMinutes) continue
+
+      const end = start + duration
+      const endLabel = end === CAFE_CLOSE_MINUTES ? '00:00' : minutesToTime(end)
+      options.push({
+        value: minutesToTime(start),
+        label: `${minutesToTime(start)}-${endLabel}`,
+        remaining: arenaCount,
+      })
+    }
+
+    return options
+  }, [])
+
+  const getTicketTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => (
+    isHaDoBookingVenue
+      ? getAvailableTimeOptions(date, duration, arenaCount)
+      : getCafeSoftOpeningTimeOptions(date, duration, arenaCount)
+  ), [getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
+
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
   }, [getAvailableTimeOptions, sessionArenaCount, sessionDate, sessionDuration])
@@ -4181,8 +4219,8 @@ export default function WidgetPage({
   const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(ticketPriceBlockMinutes, ticketDuration))
   const activeTicketArenaCount = ticketArenaCountForPlayers(ticketArenaCount)
   const ticketTimeOptions = useMemo(() => {
-    return getAvailableTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
-  }, [activeTicketArenaCount, activeTicketDuration, getAvailableTimeOptions, ticketDate])
+    return getTicketTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
+  }, [activeTicketArenaCount, activeTicketDuration, getTicketTimeOptions, ticketDate])
   useEffect(() => {
     if (activeView !== 'tickets' || ticketTimeOptions.length === 0) return
 
@@ -4210,7 +4248,7 @@ export default function WidgetPage({
     const searchStartDate = ticketDate < localDateString() ? localDateString() : ticketDate
     for (let offset = 1; offset <= TICKET_NEXT_AVAILABLE_SCAN_DAYS; offset += 1) {
       const candidateDate = addDaysToDateValue(searchStartDate, offset)
-      const candidateOptions = getAvailableTimeOptions(candidateDate, activeTicketDuration, activeTicketArenaCount)
+      const candidateOptions = getTicketTimeOptions(candidateDate, activeTicketDuration, activeTicketArenaCount)
       if (candidateOptions.length > 0) return candidateDate
     }
 
@@ -4218,7 +4256,7 @@ export default function WidgetPage({
   }, [
     activeTicketArenaCount,
     activeTicketDuration,
-    getAvailableTimeOptions,
+    getTicketTimeOptions,
     ticketDate,
     ticketNextAvailableSearchEndDate,
     ticketTimeOptions.length,
@@ -4267,8 +4305,12 @@ export default function WidgetPage({
   const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount)
   const currentTicketUnitPrice = currentTicketPricing.unitPrice
   const isSpecialTicketType = ticketType !== 'individual'
-  const ticketVoucherDiscountAmount = Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
-  const ticketAutomaticDiscountAmount = Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
+  const ticketVoucherDiscountAmount = isHaDoBookingVenue
+    ? Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
+    : 0
+  const ticketAutomaticDiscountAmount = isHaDoBookingVenue
+    ? Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
+    : 0
   const ticketBuiltInDiscountAmount = Math.max(0, Math.floor(Number(currentTicketPricing.discountAmount ?? 0) || 0))
   const activeTicketAutomaticDiscountAmount = Math.max(ticketBuiltInDiscountAmount, ticketAutomaticDiscountAmount)
   const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(activeTicketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
@@ -4279,7 +4321,7 @@ export default function WidgetPage({
     Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
   )
   const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
-  const canUseTicketLoyaltyPoints = !isSpecialTicketType
+  const canUseTicketLoyaltyPoints = !isSpecialTicketType && isHaDoBookingVenue
   const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
     ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
     : 0
@@ -4320,11 +4362,11 @@ export default function WidgetPage({
 
     return durationOptions.filter((duration) => {
       if (duration < minimumTicketDuration) return false
-      const options = getAvailableTimeOptions(ticketDate, duration, activeTicketArenaCount)
+      const options = getTicketTimeOptions(ticketDate, duration, activeTicketArenaCount)
       if (ticketTime) return options.some((option) => option.value === ticketTime)
       return options.length > 0
     })
-  }, [activeTicketArenaCount, getAvailableTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
+  }, [activeTicketArenaCount, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
@@ -4353,7 +4395,7 @@ export default function WidgetPage({
   const ticketDiscountCodeCheckingText = text.ticketDiscountCodeChecking
 
   useEffect(() => {
-    if (isSpecialTicketType || !ticketDate || currentTicketPricing.grossPrice <= 0) {
+    if (!isHaDoBookingVenue || isSpecialTicketType || !ticketDate || currentTicketPricing.grossPrice <= 0) {
       return schedulePostEffectStateUpdate(() => setTicketAutomaticDiscountQuote(null))
     }
 
@@ -4392,15 +4434,15 @@ export default function WidgetPage({
     return () => {
       active = false
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isSpecialTicketType, ticketDate, ticketPlayers, ticketTime, ticketType])
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isHaDoBookingVenue, isSpecialTicketType, ticketDate, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     const normalizedCode = ticketDiscountCode.trim().toUpperCase()
 
-    if (isSpecialTicketType || !normalizedCode) {
+    if (!isHaDoBookingVenue || isSpecialTicketType || !normalizedCode) {
       return schedulePostEffectStateUpdate(() => {
         setTicketDiscountQuote(null)
-        if (isSpecialTicketType) setTicketDiscountCode('')
+        if (!isHaDoBookingVenue || isSpecialTicketType) setTicketDiscountCode('')
         setTicketDiscountStatus('')
         setIsCheckingTicketDiscount(false)
       })
@@ -4459,7 +4501,7 @@ export default function WidgetPage({
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isSpecialTicketType, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
+  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isHaDoBookingVenue, isSpecialTicketType, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
 
   useEffect(() => {
     if (!ticketUseLoyaltyPoints) return
@@ -4497,7 +4539,26 @@ function handleSessionDateChange(value: string) {
     setTicketStatusVariant('info')
   }
 
+  function handleBookingVenueChange(value: BookingVenueId) {
+    setBookingVenue(value)
+    setTicketTime('')
+    setTicketConfirmation(null)
+    setTicketDiscountCode('')
+    setTicketDiscountQuote(null)
+    setTicketAutomaticDiscountQuote(null)
+    setTicketDiscountStatus('')
+    setTicketUseLoyaltyPoints(false)
+    setTicketLoyaltyPointsToRedeem('')
+    clearTicketStatus()
+
+    if (value === 'cafe-des-stagiaires' && ticketDate < CAFE_SOFT_OPENING_DATE) {
+      setTicketDate(CAFE_SOFT_OPENING_DATE)
+    }
+  }
+
   function ticketAccountBookingConfirmationMessage() {
+    if (!isHaDoBookingVenue) return text.bookingRequestPendingZalo
+
     const pendingBooking = readPendingTicketAccountBooking()
     if (!pendingBooking) return text.guestTicketSavedToAccount
 
@@ -4593,11 +4654,6 @@ function handleSessionDateChange(value: string) {
   }
 
   function validateTicketSelection(activeProfile = profile) {
-    if (!isHaDoBookingVenue) {
-      showTicketStatus(text.bookingVenueCafeComingSoonBody, 'error')
-      return false
-    }
-
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
 
@@ -4611,18 +4667,18 @@ function handleSessionDateChange(value: string) {
       return false
     }
 
-    if (activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
+    if (isHaDoBookingVenue && activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
       showTicketStatus(text.ticketLoyaltyInvalid, 'error')
       return false
     }
 
     const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
+    if (isHaDoBookingVenue && !isSpecialTicketType && normalizedTicketDiscountCode && isCheckingTicketDiscount) {
       showTicketStatus(ticketDiscountCodeCheckingText)
       return false
     }
 
-    if (!isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
+    if (isHaDoBookingVenue && !isSpecialTicketType && normalizedTicketDiscountCode && !ticketDiscountQuote) {
       showTicketStatus(ticketDiscountCodeInvalidText, 'error')
       return false
     }
@@ -7303,11 +7359,6 @@ function handleSessionDateChange(value: string) {
   }
 
   async function bookTickets(profileOverride?: Profile | null) {
-    if (!isHaDoBookingVenue) {
-      showTicketStatus(text.bookingVenueCafeComingSoonBody, 'error')
-      return false
-    }
-
     const activeProfile = profileOverride === undefined ? profile : profileOverride
 
     const service = selectedTicketService(ticketType)
@@ -7345,7 +7396,7 @@ function handleSessionDateChange(value: string) {
     trackTicketCheckoutStarted(ticketAnalytics)
 
     setIsBookingTickets(true)
-    showTicketStatus(text.bookingTickets)
+    showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
     setTicketConfirmation(null)
 
     const ticketRpcArgs = {
@@ -7361,18 +7412,32 @@ function handleSessionDateChange(value: string) {
     }
     const trimmedTicketSpecialNote = ticketSpecialNote.trim().slice(0, 500)
 
-    const { data, error } = activeProfile
-      ? await (await getSupabase()).rpc('create_ticket_booking', {
-        ...ticketRpcArgs,
-        p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
-        p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
-        ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
-      })
-      : await (await getSupabase()).rpc('create_guest_ticket_booking', {
-        ...ticketRpcArgs,
-        p_guest_name: guestTicketContact.name.trim() || null,
-        p_guest_phone: guestContactValidation.normalizedPhone,
-        ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
+    const client = await getSupabase()
+    const { data, error } = isHaDoBookingVenue
+      ? activeProfile
+        ? await client.rpc('create_ticket_booking', {
+          ...ticketRpcArgs,
+          p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
+          p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+          ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
+        })
+        : await client.rpc('create_guest_ticket_booking', {
+          ...ticketRpcArgs,
+          p_guest_name: guestTicketContact.name.trim() || null,
+          p_guest_phone: guestContactValidation.normalizedPhone,
+          ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
+        })
+      : await client.rpc('create_cafe_ticket_booking_request', {
+        p_ticket_type: ticketType,
+        p_date: ticketDate,
+        p_start_time: `${ticketTime}:00`,
+        p_duration_minutes: activeTicketDuration,
+        p_player_count: ticketPlayers,
+        p_arena_count: activeTicketArenaCount,
+        p_game_options: [service.defaultGame],
+        p_guest_name: activeProfile ? null : guestTicketContact.name.trim() || null,
+        p_guest_phone: activeProfile ? null : guestContactValidation.normalizedPhone,
+        p_special_note: trimmedTicketSpecialNote || null,
       })
 
     if (error) {
@@ -7387,6 +7452,7 @@ function handleSessionDateChange(value: string) {
       loyalty_points_total?: number | null
       session_id?: string
       ticket_reference?: string
+      ticket_total_price?: number | null
     }
     const confirmation: TicketBookingConfirmation = {
       sessionId: booking.session_id || '',
@@ -7396,13 +7462,18 @@ function handleSessionDateChange(value: string) {
       date: ticketDate,
       time: ticketTime,
       players: ticketPlayers,
-      totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+      totalPrice: isSpecialTicketType
+        ? 0
+        : isHaDoBookingVenue
+          ? currentTicketTotalPrice
+          : Math.max(0, Math.floor(Number(booking.ticket_total_price ?? currentTicketPricing.totalPrice) || 0)),
       guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
       guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
       discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
       discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
       loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
       loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
+      requiresZaloConfirmation: !isHaDoBookingVenue,
     }
 
     if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
@@ -7414,7 +7485,7 @@ function handleSessionDateChange(value: string) {
       })
     }
 
-    if (activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
+    if (isHaDoBookingVenue && activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
       const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
       const nextProfile = { ...activeProfile, loyalty_points_total: nextPointsTotal }
       setProfile(nextProfile)
@@ -7429,8 +7500,9 @@ function handleSessionDateChange(value: string) {
       ...ticketAnalytics,
       transactionId: confirmation.reference || confirmation.sessionId,
     })
-    showTicketStatus(text.ticketBookingCreated)
-    showActionToast(text.ticketBookingCreated)
+    const bookingCreatedMessage = isHaDoBookingVenue ? text.ticketBookingCreated : text.bookingRequestSubmitted
+    showTicketStatus(bookingCreatedMessage)
+    showActionToast(bookingCreatedMessage)
     setTicketTime('')
     setTicketUseLoyaltyPoints(false)
     setTicketLoyaltyPointsToRedeem('')
@@ -9109,13 +9181,13 @@ function handleSessionDateChange(value: string) {
   const appMain = (
       <main>
         {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-          <BookingVenueSelector onChange={setBookingVenue} text={text} value={bookingVenue} />
+          <BookingVenueSelector onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
         )}
 
         {activeView === 'sessions' && (
           isHaDoBookingVenue
             ? <BookingSessionsPanel context={sessionsPanelContext} />
-            : <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
+            : <BookingVenueComingSoon text={text} />
         )}
 
         {activeView === 'leaderboard' && (
@@ -9280,7 +9352,7 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'tickets' && (
-          isHaDoBookingVenue ? (
+          <div className={isHaDoBookingVenue ? 'ticket-booking-layout' : 'ticket-booking-layout cafe'}>
             <TicketBookingView
               activeTicketDuration={activeTicketDuration}
               activeTicketArenaCount={activeTicketArenaCount}
@@ -9295,6 +9367,7 @@ function handleSessionDateChange(value: string) {
               isCheckingTicketDiscount={isCheckingTicketDiscount}
               isLoadingTicketLoyalty={isLoadingTicketLoyalty}
               isLoggedIn={Boolean(profile)}
+              requiresZaloConfirmation={!isHaDoBookingVenue}
               estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
               estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
               loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
@@ -9351,9 +9424,8 @@ function handleSessionDateChange(value: string) {
               useLoyaltyPoints={ticketUseLoyaltyPoints}
               onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
             />
-          ) : (
-            <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
-          )
+            {!isHaDoBookingVenue && <CafeSoftOpeningBookingNotice text={text} />}
+          </div>
         )}
 
         {activeView === 'create' && (
@@ -9704,7 +9776,7 @@ function handleSessionDateChange(value: string) {
             )}
             </CreateSessionView>
           ) : (
-            <BookingVenueComingSoon onChooseHaDo={() => setBookingVenue('ha-do-centrosa')} text={text} />
+            <BookingVenueComingSoon text={text} />
           )
         )}
 
