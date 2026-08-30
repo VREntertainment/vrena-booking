@@ -15,9 +15,17 @@ type BookingVenueComingSoonProps = {
   text: TranslationMap
 }
 
-const venueMapCoordinates: Record<BookingVenueId, { latitude: number; longitude: number }> = {
-  'ha-do-centrosa': { latitude: 10.77476, longitude: 106.67843 },
-  'cafe-des-stagiaires': { latitude: 10.80107, longitude: 106.72906 },
+const venueMaps: Record<BookingVenueId, { directionsUrl: string; latitude: number; longitude: number }> = {
+  'ha-do-centrosa': {
+    directionsUrl: 'https://www.google.com/maps/search/?api=1&query=10.77476%2C106.67843',
+    latitude: 10.77476,
+    longitude: 106.67843,
+  },
+  'cafe-des-stagiaires': {
+    directionsUrl: 'https://www.google.com/maps/search/?api=1&query=10.80107%2C106.72906',
+    latitude: 10.80107,
+    longitude: 106.72906,
+  },
 }
 
 function VenueMapPreview({ icon, name, venue }: {
@@ -25,20 +33,27 @@ function VenueMapPreview({ icon, name, venue }: {
   name: string
   venue: BookingVenueId
 }) {
-  const { latitude, longitude } = venueMapCoordinates[venue]
+  const { directionsUrl, latitude, longitude } = venueMaps[venue]
   const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`
 
   return (
-    <span className="booking-venue-map" aria-hidden="true">
+    <a
+      aria-label={`${name} · Google Maps`}
+      className="booking-venue-map"
+      href={directionsUrl}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
       <iframe
+        aria-hidden="true"
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
         src={mapUrl}
         tabIndex={-1}
         title={`${name} — Google Maps`}
       />
-      <span className="booking-venue-icon">{icon}</span>
-    </span>
+      <span className="booking-venue-icon" aria-hidden="true">{icon}</span>
+    </a>
   )
 }
 
@@ -52,43 +67,49 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
       </div>
 
       <div className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
-        <button
-          aria-checked={value === 'ha-do-centrosa'}
-          className={value === 'ha-do-centrosa' ? 'booking-venue-option active' : 'booking-venue-option'}
-          onClick={() => onChange('ha-do-centrosa')}
-          role="radio"
-          type="button"
-        >
+        <div className="booking-venue-option-shell">
+          <button
+            aria-checked={value === 'ha-do-centrosa'}
+            className={value === 'ha-do-centrosa' ? 'booking-venue-option active' : 'booking-venue-option'}
+            onClick={() => onChange('ha-do-centrosa')}
+            role="radio"
+            type="button"
+          >
+            <span className="booking-venue-map-placeholder" aria-hidden="true" />
+            <span className="booking-venue-copy">
+              <strong>{text.bookingVenueHaDoName}</strong>
+              <small>{text.bookingVenueHaDoAddress}</small>
+            </span>
+            <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
+          </button>
           <VenueMapPreview
             icon={<MapPin aria-hidden="true" size={17} />}
             name={text.bookingVenueHaDoName}
             venue="ha-do-centrosa"
           />
-          <span className="booking-venue-copy">
-            <strong>{text.bookingVenueHaDoName}</strong>
-            <small>{text.bookingVenueHaDoAddress}</small>
-          </span>
-          <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
-        </button>
+        </div>
 
-        <button
-          aria-checked={value === 'cafe-des-stagiaires'}
-          className={value === 'cafe-des-stagiaires' ? 'booking-venue-option active' : 'booking-venue-option'}
-          onClick={() => onChange('cafe-des-stagiaires')}
-          role="radio"
-          type="button"
-        >
+        <div className="booking-venue-option-shell">
+          <button
+            aria-checked={value === 'cafe-des-stagiaires'}
+            className={value === 'cafe-des-stagiaires' ? 'booking-venue-option active' : 'booking-venue-option'}
+            onClick={() => onChange('cafe-des-stagiaires')}
+            role="radio"
+            type="button"
+          >
+            <span className="booking-venue-map-placeholder" aria-hidden="true" />
+            <span className="booking-venue-copy">
+              <strong>{text.bookingVenueCafeName}</strong>
+              <small>{text.bookingVenueCafeAddress}</small>
+            </span>
+            <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
+          </button>
           <VenueMapPreview
             icon={<Store aria-hidden="true" size={17} />}
             name={text.bookingVenueCafeName}
             venue="cafe-des-stagiaires"
           />
-          <span className="booking-venue-copy">
-            <strong>{text.bookingVenueCafeName}</strong>
-            <small>{text.bookingVenueCafeAddress}</small>
-          </span>
-          <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
-        </button>
+        </div>
       </div>
     </section>
   )

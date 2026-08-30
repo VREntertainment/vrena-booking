@@ -15689,10 +15689,17 @@ body {
   gap: 12px;
 }
 
+.app .booking-venue-option-shell {
+  position: relative;
+  min-width: 0;
+}
+
 .app .booking-venue-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 82px;
   align-items: center;
@@ -15736,7 +15743,10 @@ body {
 }
 
 .app .booking-venue-map {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  z-index: 2;
   display: block;
   width: 60px;
   height: 54px;
@@ -15746,6 +15756,19 @@ body {
   background: var(--vrena-mode-accent-soft);
   box-shadow: inset 0 0 0 1px rgb(var(--vrena-neutral-950-rgb) / 0.03);
   isolation: isolate;
+  transform: translateY(-50%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.app .booking-venue-map:hover {
+  border-color: var(--vrena-purple-500);
+  box-shadow: 0 7px 18px rgb(var(--vrena-neutral-950-rgb) / 0.14);
+  transform: translateY(calc(-50% - 1px));
+}
+
+.app .booking-venue-map:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 40%, transparent);
+  outline-offset: 2px;
 }
 
 .app .booking-venue-map::after {
@@ -15764,6 +15787,12 @@ body {
   pointer-events: none;
   transform: scale(0.5);
   transform-origin: top left;
+}
+
+.app .booking-venue-map-placeholder {
+  display: block;
+  width: 60px;
+  height: 54px;
 }
 
 .app .booking-venue-copy {
@@ -16383,6 +16412,10 @@ body {
   }
 
   .app .booking-venue-map {
+    left: 12px;
+  }
+
+  .app .booking-venue-map-placeholder {
     grid-row: 1 / span 2;
   }
 
