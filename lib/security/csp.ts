@@ -51,7 +51,7 @@ export function buildContentSecurityPolicy({
       'https://vitals.vercel-insights.com',
       'https://*.vercel-insights.com',
     ].filter(Boolean).join(' '),
-    'frame-src https://hcaptcha.com https://*.hcaptcha.com',
+    'frame-src https://hcaptcha.com https://*.hcaptcha.com https://www.google.com',
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
