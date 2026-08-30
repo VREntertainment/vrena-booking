@@ -15723,23 +15723,11 @@ body {
   box-shadow: 0 0 0 3px rgb(var(--vrena-purple-500-rgb) / 0.11);
 }
 
-.app .booking-venue-icon,
 .app .booking-venue-coming-soon-icon {
   display: grid;
   place-items: center;
   color: var(--vrena-mode-accent-ink);
   background: var(--vrena-mode-accent-soft);
-}
-
-.app .booking-venue-icon {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgb(var(--vrena-purple-500-rgb) / 0.22);
-  border-radius: 9px;
-  box-shadow: 0 4px 12px rgb(var(--vrena-neutral-950-rgb) / 0.16);
 }
 
 .app .booking-venue-map {
