@@ -9,6 +9,8 @@ export type GameAudience =
   | 'beginnerFriendly'
   | 'competitive'
 
+export type GameVenue = 'ha-do-centrosa' | 'cafe-des-stagiaires'
+
 export type PublicGameGuideGame = {
   id: string
   title: string
@@ -17,6 +19,7 @@ export type PublicGameGuideGame = {
   durationMinutes: number
   maxPlayersPerArena: number
   audience: GameAudience[]
+  venues: GameVenue[]
 }
 
 export type StaffGameGuideText = Partial<Record<LanguageCode, string>>
@@ -47,6 +50,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['competitive', 'teamwork', 'beginnerFriendly', 'fun'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'mini-block-towers',
@@ -56,6 +60,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'office-war',
@@ -65,6 +70,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['fun', 'teamwork', 'beginnerFriendly'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'paintball',
@@ -74,6 +80,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['competitive', 'teamwork', 'fun'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'snow-battle',
@@ -83,6 +90,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['familyFriendly', 'beginnerFriendly', 'fun'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'castle-unspunnen',
@@ -92,6 +100,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['quest', 'teamwork', 'competitive'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'wild-west',
@@ -101,6 +110,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 20,
     maxPlayersPerArena: 4,
     audience: ['competitive', 'fun'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'arc-of-the-covenant',
@@ -110,6 +120,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 40,
     maxPlayersPerArena: 4,
     audience: ['quest', 'teamwork'],
+    venues: ['ha-do-centrosa'],
   },
   {
     id: 'joller-house',
@@ -119,6 +130,37 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
     durationMinutes: 40,
     maxPlayersPerArena: 4,
     audience: ['scary', 'quest', 'teamwork'],
+    venues: ['ha-do-centrosa'],
+  },
+  {
+    id: 'revolta',
+    title: 'Revolta',
+    category: 'FPS / PVP',
+    image: '/games/revolta.webp',
+    durationMinutes: 45,
+    maxPlayersPerArena: 8,
+    audience: ['competitive', 'teamwork', 'fun'],
+    venues: ['ha-do-centrosa', 'cafe-des-stagiaires'],
+  },
+  {
+    id: 'city-z',
+    title: 'City Z',
+    category: 'Other',
+    image: '/games/city-z.webp',
+    durationMinutes: 45,
+    maxPlayersPerArena: 6,
+    audience: ['scary', 'quest', 'teamwork'],
+    venues: ['ha-do-centrosa', 'cafe-des-stagiaires'],
+  },
+  {
+    id: 'station-zarya',
+    title: 'Station Zarya',
+    category: 'Other',
+    image: '/games/station-zarya.webp',
+    durationMinutes: 45,
+    maxPlayersPerArena: 6,
+    audience: ['scary', 'quest', 'teamwork'],
+    venues: ['ha-do-centrosa', 'cafe-des-stagiaires'],
   },
 ]
 

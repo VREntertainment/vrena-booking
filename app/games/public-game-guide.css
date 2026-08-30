@@ -73,6 +73,23 @@
   flex-wrap: wrap;
 }
 
+.app .game-guide-venues {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.app .game-guide-venues span {
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 34%, var(--player-border));
+  border-radius: 999px;
+  background: var(--player-surface-raised);
+  color: var(--player-text);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
 .app .game-guide-audience span {
   border-radius: 999px;
   background: var(--vrena-mode-accent-soft);

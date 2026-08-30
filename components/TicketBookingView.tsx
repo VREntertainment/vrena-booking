@@ -81,6 +81,7 @@ export type TicketBookingViewProps = {
   language: LanguageCode
   isLoggedIn: boolean
   requiresZaloConfirmation: boolean
+  singleArenaOnly: boolean
   gameGuideTrigger: ReactNode
   tariffTrigger: ReactNode
   ticketServices: TicketService[]
@@ -145,6 +146,7 @@ export default function TicketBookingView({
   language,
   isLoggedIn,
   requiresZaloConfirmation,
+  singleArenaOnly,
   gameGuideTrigger,
   tariffTrigger,
   ticketServices,
@@ -218,6 +220,11 @@ export default function TicketBookingView({
     : text.ticketAccountValueNoPoints
   const ticketAccountValueLines = ticketAccountValueNote.split('\n')
   const showDiscountedTotal = !isSpecialTicket && currentTicketPricing.grossPrice > currentTicketTotalPrice
+  const groupDiscountPercent = Math.round(currentTicketPricing.discountRate * 100)
+  const showDiscountedUnitPrice = !isSpecialTicket && ticketDiscountSource === 'automatic' && groupDiscountPercent > 0
+  const discountedTicketUnitPrice = showDiscountedUnitPrice
+    ? Math.round(currentTicketUnitPrice * (1 - currentTicketPricing.discountRate))
+    : currentTicketUnitPrice
   const ticketTotalReductionLabel = !isSpecialTicket && ticketDiscountAmount > 0
     ? ticketDiscountSource === 'automatic' && currentTicketPricing.discountRate > 0
       ? `-${Math.round(currentTicketPricing.discountRate * 100)}%`
@@ -344,12 +351,13 @@ export default function TicketBookingView({
                 <div className="ticket-control ticket-control-arenas">
                   <label htmlFor="ticket-arena-count">{text.ticketArenaCountLabel}</label>
                   <select
+                    disabled={singleArenaOnly}
                     id="ticket-arena-count"
                     value={activeTicketArenaCount}
                     onChange={(event) => onTicketArenaCountChange(Number(event.target.value))}
                   >
-                    <option value={1}>{text.ticketOneArena}</option>
-                    <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenas}</option>
+                    <option value={1}>{singleArenaOnly ? text.ticketCafeArena : text.ticketOneArena}</option>
+                    {!singleArenaOnly && <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenas}</option>}
                   </select>
                 </div>
               </div>
@@ -392,15 +400,22 @@ export default function TicketBookingView({
                 </div>
                 {!isSpecialTicket && (
                   <div>
-                    <span>{text.unitPrice}</span>
-                    <strong>{formatVnd(currentTicketUnitPrice)}</strong>
+                    <span className="ticket-unit-heading">
+                      {text.unitPrice}
+                      {showDiscountedUnitPrice && <em className="ticket-total-reduction">-{groupDiscountPercent}%</em>}
+                    </span>
+                    {showDiscountedUnitPrice && (
+                      <small className="ticket-total-original">{formatVnd(currentTicketUnitPrice)}</small>
+                    )}
+                    <strong className={showDiscountedUnitPrice ? 'ticket-unit-discounted' : undefined}>
+                      {formatVnd(discountedTicketUnitPrice)}
+                    </strong>
                     <small>{ticketPriceBlockMinutes === 20 ? text.ticketUnitPriceBasisLegacy : ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers, activeTicketArenaCount)}</small>
                   </div>
                 )}
                 <div className="ticket-reserved-line">
                   <span>{text.numberOfPlayers}</span>
                   <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
-                  <small>{ticketPriceBlockMinutes === 20 ? text.ticketEveryPlayerFullPriceLegacy : text.ticketEveryPlayerFullPrice}</small>
                 </div>
                 <div className="ticket-total-line">
                   <span className="ticket-total-heading">

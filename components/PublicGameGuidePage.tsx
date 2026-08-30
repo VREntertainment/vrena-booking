@@ -72,24 +72,30 @@ function mergeStaffGames(staffGuides: StaffGameGuide[]) {
       durationMinutes: guide.duration_minutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || 4,
       audience: normalizeStaffAudience(guide.audience, guide.difficulty),
+      venues: ['ha-do-centrosa'],
     }))
 
   return [...mergedGames, ...extraStaffGames]
 }
 
 function fallbackSummary(game: PublicGameGuideGame, text: TranslationMap) {
+  if (game.id === 'revolta') return text.gameGuideRevoltaSummary
+  if (game.id === 'city-z') return text.gameGuideCityZSummary
+  if (game.id === 'station-zarya') return text.gameGuideStationZaryaSummary
   if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersSummary
   if (game.category === 'Escape') return text.gameGuideEscapeSummary
   return text.gameGuideFpsSummary
 }
 
 function fallbackRules(game: PublicGameGuideGame, text: TranslationMap) {
+  if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
   if (game.category === 'Escape') return ''
   if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersRules
   return text.gameGuideFpsRules
 }
 
 function fallbackTips(game: PublicGameGuideGame, text: TranslationMap) {
+  if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
   if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersTips
   if (game.category === 'Escape') return text.gameGuideEscapeTips
   return text.gameGuideFpsTips
@@ -154,6 +160,13 @@ export default function PublicGameGuidePage({
                       <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
                       <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
+                  </div>
+                  <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>
+                    {game.venues.map((venue) => (
+                      <span key={venue}>
+                        {venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName}
+                      </span>
+                    ))}
                   </div>
                   <p>{summary}</p>
                   {game.audience.length > 0 && (
