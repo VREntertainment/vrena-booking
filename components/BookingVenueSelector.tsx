@@ -1,4 +1,5 @@
 import { CalendarClock, MapPin, MessageCircle, Store } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 
@@ -12,6 +13,33 @@ type BookingVenueSelectorProps = {
 
 type BookingVenueComingSoonProps = {
   text: TranslationMap
+}
+
+const venueMapCoordinates: Record<BookingVenueId, { latitude: number; longitude: number }> = {
+  'ha-do-centrosa': { latitude: 10.77476, longitude: 106.67843 },
+  'cafe-des-stagiaires': { latitude: 10.80107, longitude: 106.72906 },
+}
+
+function VenueMapPreview({ icon, name, venue }: {
+  icon: ReactNode
+  name: string
+  venue: BookingVenueId
+}) {
+  const { latitude, longitude } = venueMapCoordinates[venue]
+  const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`
+
+  return (
+    <span className="booking-venue-map" aria-hidden="true">
+      <iframe
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        src={mapUrl}
+        tabIndex={-1}
+        title={`${name} — Google Maps`}
+      />
+      <span className="booking-venue-icon">{icon}</span>
+    </span>
+  )
 }
 
 export default function BookingVenueSelector({ onChange, text, value }: BookingVenueSelectorProps) {
@@ -31,7 +59,11 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
           role="radio"
           type="button"
         >
-          <span className="booking-venue-icon"><MapPin aria-hidden="true" size={21} /></span>
+          <VenueMapPreview
+            icon={<MapPin aria-hidden="true" size={17} />}
+            name={text.bookingVenueHaDoName}
+            venue="ha-do-centrosa"
+          />
           <span className="booking-venue-copy">
             <strong>{text.bookingVenueHaDoName}</strong>
             <small>{text.bookingVenueHaDoAddress}</small>
@@ -46,7 +78,11 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
           role="radio"
           type="button"
         >
-          <span className="booking-venue-icon"><Store aria-hidden="true" size={21} /></span>
+          <VenueMapPreview
+            icon={<Store aria-hidden="true" size={17} />}
+            name={text.bookingVenueCafeName}
+            venue="cafe-des-stagiaires"
+          />
           <span className="booking-venue-copy">
             <strong>{text.bookingVenueCafeName}</strong>
             <small>{text.bookingVenueCafeAddress}</small>
