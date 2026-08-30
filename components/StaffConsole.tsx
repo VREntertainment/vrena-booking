@@ -45,6 +45,7 @@ import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
+import type { StaffQrAnalyticsSnapshot } from './StaffQrAnalytics'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
 import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
@@ -62,6 +63,10 @@ const StaffPlayerInsights = dynamic(() => import('./StaffPlayerInsights'), {
   ssr: false,
 })
 
+const StaffQrAnalytics = dynamic(() => import('./StaffQrAnalytics'), {
+  ssr: false,
+})
+
 type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'hr' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
 type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 type StaffCommerceTab = 'discounts' | 'vouchers' | 'loyalty'
@@ -72,7 +77,7 @@ type StaffOperationScope = 'today' | 'past'
 type StaffRole = 'owner' | 'admin' | 'manager' | 'staff' | 'cashier' | 'viewer' | 'player' | 'employee'
 type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_desc' | 'role_asc' | 'email_asc'
 type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
-type StaffReportView = 'business' | 'players'
+type StaffReportView = 'business' | 'players' | 'qr'
 type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 type AccountantExportFormat = 'excel' | 'csv'
 type StaffShiftTemplateId = 'opening' | 'afternoon' | 'evening' | 'full_day'
@@ -755,7 +760,7 @@ type SoftDeletedRecord = {
   deleted_by_phone?: string | null
 }
 
-type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'hr' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report'
+type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'hr' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report' | 'qrReport'
 
 type StaffReportSummary = {
   totalSales: number
@@ -5137,6 +5142,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [profileDeleteDraft, setProfileDeleteDraft] = useState<StaffProfileDeleteDraft | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
   const [playerInsightsSnapshot, setPlayerInsightsSnapshot] = useState<StaffPlayerInsightsSnapshot | null>(null)
+  const [qrAnalyticsSnapshot, setQrAnalyticsSnapshot] = useState<StaffQrAnalyticsSnapshot | null>(null)
+  const [qrAnalyticsError, setQrAnalyticsError] = useState('')
   const bookingDateInputRef = useRef<HTMLInputElement | null>(null)
   const staffTabsRef = useRef<HTMLDivElement | null>(null)
   const [canScrollStaffTabsBack, setCanScrollStaffTabsBack] = useState(false)
@@ -5581,7 +5588,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   const emptyReport = useMemo(() => emptyStaffReport(text), [text])
   const [todayReportStart, todayReportEnd] = reportPresetRange('today')
-  const secondaryReportPreset: StaffReportRangePreset = reportView === 'players' ? 'last_30' : 'yesterday'
+  const secondaryReportPreset: StaffReportRangePreset = reportView === 'business' ? 'yesterday' : 'last_30'
   const [secondaryReportStart, secondaryReportEnd] = reportPresetRange(secondaryReportPreset)
   const activeReportPreset = reportStart === todayReportStart && reportEnd === todayReportEnd
     ? 'today'
@@ -5672,7 +5679,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                         ? loadingData.restore
                         : currentTab === 'orders'
                           ? loadingData.games || loadingData.orders
-                          : loadingData.games || loadingData.report
+                          : reportView === 'qr'
+                            ? loadingData.qrReport
+                            : loadingData.games || loadingData.report
   )
 
   useEffect(() => {
@@ -5709,10 +5718,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   useEffect(() => {
     if (currentTab !== 'report') return
+    if (reportView === 'qr') {
+      void loadQrAnalytics(true)
+      return
+    }
     void Promise.all([loadGames(), loadReportData(true)])
     // Report data is intentionally refreshed only by visible range/filter state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, reportStart, reportEnd, compareEnabled, compareStart, compareEnd])
+  }, [currentTab, reportView, reportStart, reportEnd, compareEnabled, compareStart, compareEnd])
 
   async function runStaffLoader(key: StaffDataKey, loader: () => Promise<void>, force = false) {
     if (inFlightDataRef.current[key]) {
@@ -6517,6 +6530,39 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(legacyResult.data, text))
       setReportSnapshot(snapshot)
       await updatePlayerInsights()
+    }, force)
+  }
+
+  async function loadQrAnalytics(force = false) {
+    await runStaffLoader('qrReport', async () => {
+      setQrAnalyticsError('')
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (sessionError || !accessToken) throw new Error(sessionError?.message || 'Staff session required.')
+
+        const params = new URLSearchParams({ start: reportStart, end: reportEnd })
+        if (compareEnabled) {
+          params.set('compareStart', compareStart)
+          params.set('compareEnd', compareEnd)
+        }
+        const operatorToken = getStaffKioskOperatorToken()
+        const response = await fetch(`/api/staff/reports/qr-analytics?${params.toString()}`, {
+          cache: 'no-store',
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            ...(operatorToken ? { [STAFF_KIOSK_HEADER]: operatorToken } : {}),
+          },
+        })
+        const payload = await response.json().catch(() => ({})) as StaffQrAnalyticsSnapshot & { error?: string }
+        if (!response.ok) throw new Error(payload.error || 'Could not load QR analytics.')
+        setQrAnalyticsSnapshot(payload)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not load QR analytics.'
+        setQrAnalyticsSnapshot(null)
+        setQrAnalyticsError(message)
+        throw error
+      }
     }, force)
   }
 
@@ -9193,7 +9239,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
   function selectReportView(nextView: StaffReportView) {
     setReportView(nextView)
-    if (nextView === 'players' && reportStart === todayString() && reportEnd === todayString()) {
+    if (nextView !== 'business' && reportStart === todayString() && reportEnd === todayString()) {
       setReportStart(addDays(todayString(), -29))
       setReportEnd(todayString())
     }
@@ -11431,6 +11477,15 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               >
                 {resolvedLanguage === 'vi' ? 'Hành vi người chơi' : 'Player behavior'}
               </button>
+              <button
+                aria-selected={reportView === 'qr'}
+                className={reportView === 'qr' ? 'active' : ''}
+                role="tab"
+                type="button"
+                onClick={() => selectReportView('qr')}
+              >
+                {resolvedLanguage === 'vi' ? 'Phân tích QR' : 'QR analytics'}
+              </button>
             </div>
             <div className="staff-report-filters">
               <div className="staff-report-filter-row">
@@ -11464,7 +11519,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                       }}
                     >
                       <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>
-                        {reportView === 'players' ? text.reportRangePresets.last_30 : text.actions.yesterday}
+                        {reportView === 'business' ? text.actions.yesterday : text.reportRangePresets.last_30}
                       </ButtonIconText>
                     </button>
                     <button
@@ -11888,13 +11943,23 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           </div>
           {orderRows(reportOrders, reportPaymentsByOrderId)}
           </>
-          ) : (
+          ) : reportView === 'players' ? (
             <StaffPlayerInsights
               compareEnabled={compareEnabled}
               compareLabel={rangeLabel(compareStart, compareEnd)}
               data={playerInsightsSnapshot}
               language={resolvedLanguage}
               loading={Boolean(loadingData.report)}
+              rangeLabel={rangeLabel(reportStart, reportEnd)}
+            />
+          ) : (
+            <StaffQrAnalytics
+              compareEnabled={compareEnabled}
+              compareLabel={rangeLabel(compareStart, compareEnd)}
+              data={qrAnalyticsSnapshot}
+              error={qrAnalyticsError}
+              language={resolvedLanguage}
+              loading={Boolean(loadingData.qrReport)}
               rangeLabel={rangeLabel(reportStart, reportEnd)}
             />
           )}
