@@ -1,5 +1,4 @@
-import { CalendarClock, MapPin, MessageCircle, Store } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { CalendarClock, MapPin, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 
@@ -28,8 +27,7 @@ const venueMaps: Record<BookingVenueId, { directionsUrl: string; latitude: numbe
   },
 }
 
-function VenueMapPreview({ icon, name, venue }: {
-  icon: ReactNode
+function VenueMapPreview({ name, venue }: {
   name: string
   venue: BookingVenueId
 }) {
@@ -52,7 +50,6 @@ function VenueMapPreview({ icon, name, venue }: {
         tabIndex={-1}
         title={`${name} — Google Maps`}
       />
-      <span className="booking-venue-icon" aria-hidden="true">{icon}</span>
     </a>
   )
 }
@@ -83,7 +80,6 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
             <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
           </button>
           <VenueMapPreview
-            icon={<MapPin aria-hidden="true" size={17} />}
             name={text.bookingVenueHaDoName}
             venue="ha-do-centrosa"
           />
@@ -105,7 +101,6 @@ export default function BookingVenueSelector({ onChange, text, value }: BookingV
             <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
           </button>
           <VenueMapPreview
-            icon={<Store aria-hidden="true" size={17} />}
             name={text.bookingVenueCafeName}
             venue="cafe-des-stagiaires"
           />
