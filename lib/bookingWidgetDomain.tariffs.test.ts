@@ -46,3 +46,9 @@ test('uses 45-minute capacity steps for larger groups', () => {
   assert.equal(minimumTicketDurationMinutes(8, 45, 4, 2), 45)
   assert.equal(minimumTicketDurationMinutes(16, 45, 4, 2), 90)
 })
+
+test('fits up to eight simultaneous players in the Cafe single arena', () => {
+  assert.equal(minimumTicketDurationMinutes(8, 45, 8, 1), 45)
+  assert.equal(minimumTicketDurationMinutes(9, 45, 8, 1), 90)
+  assert.equal(minimumTicketDurationMinutes(16, 45, 8, 1), 90)
+})

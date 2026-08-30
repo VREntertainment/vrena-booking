@@ -5048,6 +5048,17 @@ body {
   flex-wrap: wrap;
 }
 
+.app .ticket-unit-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.app .ticket-unit-discounted {
+  color: var(--vrena-green-800);
+}
+
 .app .ticket-total-reduction {
   color: var(--vrena-green-800);
   font-size: 12px;

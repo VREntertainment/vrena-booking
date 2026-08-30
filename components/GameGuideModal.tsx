@@ -17,11 +17,12 @@ type GameAudience =
 export type GameGuideGame = {
   id: string
   title: string
-  category: 'FPS / PVP' | 'Escape'
+  category: 'FPS / PVP' | 'Escape' | 'Tournament' | 'Other'
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
   audience: GameAudience[]
+  venues: Array<'ha-do-centrosa' | 'cafe-des-stagiaires'>
 }
 
 type StaffGameGuideText = Partial<Record<LanguageCode, string>>
@@ -51,6 +52,12 @@ const gameAudienceLabelKeys: Record<GameAudience, string> = {
   teamwork: 'audienceTeamwork',
   beginnerFriendly: 'audienceBeginnerFriendly',
   competitive: 'audienceCompetitive',
+}
+
+const gameSummaryLabelKeys: Record<string, string> = {
+  revolta: 'gameGuideRevoltaSummary',
+  'city-z': 'gameGuideCityZSummary',
+  'station-zarya': 'gameGuideStationZaryaSummary',
 }
 
 function guideTextItems(value: string) {
@@ -97,17 +104,23 @@ export default function GameGuideModal({
             const isMiniBlockTowers = game.id === 'mini-block-towers'
             const staffGuide = staffGameGuides[game.id]
             const fallbackGuideLanguage = isLanguageCode(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
-            const fallbackSummary = isMiniBlockTowers
+            const customSummaryKey = gameSummaryLabelKeys[game.id]
+            const fallbackSummary = customSummaryKey
+              ? text[customSummaryKey]
+              : isMiniBlockTowers
               ? text.gameGuideBlockTowersSummary
               : isEscape
                 ? text.gameGuideEscapeSummary
                 : text.gameGuideFpsSummary
-            const fallbackRules = isEscape
+            const isAnvioGame = Boolean(customSummaryKey)
+            const fallbackRules = isEscape || isAnvioGame
               ? ''
               : isMiniBlockTowers
                 ? text.gameGuideBlockTowersRules
                 : text.gameGuideFpsRules
-            const fallbackTips = isMiniBlockTowers
+            const fallbackTips = isAnvioGame
+              ? ''
+              : isMiniBlockTowers
               ? text.gameGuideBlockTowersTips
               : isEscape
                 ? text.gameGuideEscapeTips
@@ -129,6 +142,13 @@ export default function GameGuideModal({
                       <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
                       <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
+                  </div>
+                  <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>
+                    {game.venues.map((venue) => (
+                      <span key={venue}>
+                        {venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName}
+                      </span>
+                    ))}
                   </div>
                   <p>{summary}</p>
                   <div className="game-guide-audience" aria-label={text.gameGuideAudience}>
