@@ -12,6 +12,7 @@ export type BookingUpdateEmailPayload = {
   bookingKind: BookingUpdateKind
   sessionId?: string | null
   orderId?: string | null
+  venueKey?: string | null
   title?: string | null
   reference?: string | null
   date?: string | null

@@ -166,6 +166,7 @@ function sendNotificationEmail(payload, receivedAt) {
   const lines = [
     isTicket ? 'A new ticket booking was created.' : 'A new community session was created.',
     '',
+    `Shop: ${bookingShopName(payload)}`,
     `Received: ${formatDateTime(receivedAt)}`,
     `Name: ${session.name || ''}`,
     `Date: ${session.date || ''}`,
@@ -189,6 +190,18 @@ function sendNotificationEmail(payload, receivedAt) {
   })
 }
 
+function bookingShopName(payload) {
+  const session = getSession(payload)
+  const venueKey = session.venue_key || (payload.raw_session || {}).venue_key
+  if (venueKey === 'ha-do-centrosa') return 'VRena Hà Đô Centrosa'
+  if (venueKey === 'cafe-des-stagiaires') return 'VRena Café des Stagiaires'
+  if (venueKey) return 'Unknown shop (' + venueKey + ')'
+  // Earlier webhook versions omitted the venue but retained the venue-specific reference.
+  return String(session.ticket_reference || '').startsWith('CS-')
+    ? 'VRena Café des Stagiaires'
+    : 'VRena Hà Đô Centrosa'
+}
+
 function buildEmailHtml(payload, receivedAt) {
   const session = getSession(payload)
   const owner = payload.owner || {}
@@ -197,6 +210,7 @@ function buildEmailHtml(payload, receivedAt) {
     ? session.game_options.filter(Boolean).join(', ')
     : stringifyCell(session.game_options)
   const rows = [
+    ['Shop', bookingShopName(payload)],
     ['Received', formatDateTime(receivedAt)],
     ['Event', payload.event_type || ''],
     ['Session ID', session.id || ''],

@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
   if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
+      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', payload.sessionId)
       .maybeSingle()
 
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
   if (!session && order?.session_id) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
+      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', order.session_id)
       .maybeSingle()
 
@@ -283,6 +283,7 @@ export async function POST(request: NextRequest) {
   await sendBookingUpdateEmail({
     ...payload,
     action,
+    venueKey: cleanString(session?.venue_key) || null,
     sessionId: canonicalSessionId || payload.sessionId || null,
     orderId: canonicalOrderId || payload.orderId || null,
     bookingKind: session ? (session.booking_type === 'ticket' ? 'ticket' : 'session') : payload.bookingKind,

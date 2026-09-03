@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
@@ -207,6 +207,7 @@ export default function TicketBookingView({
 }: TicketBookingViewProps) {
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
   const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
+  const guestTicketActionInFlightRef = useRef(false)
   const [guestAccountChoicePhone, setGuestAccountChoicePhone] = useState('')
   const isGuestAccountChoiceConfirmation = Boolean(guestAccountChoicePhone) && guestAccountChoicePhone === guestTicketContact.phone
   const isSpecialTicket = ticketType !== 'individual'
@@ -255,24 +256,29 @@ export default function TicketBookingView({
   }
 
   async function handleGuestTicketAction(action: GuestTicketAction) {
-    const preparation = await onPrepareGuestTicketAction(action, {
-      continueWithoutAccount: action === 'guest' && guestAccountChoicePhone === guestTicketContact.phone,
-    })
-    if (preparation !== 'ready') {
-      if (action === 'guest' && preparation === 'confirmation-required') {
-        setGuestAccountChoicePhone(guestTicketContact.phone)
-      }
-      return
-    }
-
+    if (guestTicketActionInFlightRef.current || isBookingTickets) return
+    guestTicketActionInFlightRef.current = true
     setGuestTicketAction(action)
-    const booked = await onBookTickets()
-    setGuestTicketAction(null)
+    try {
+      const preparation = await onPrepareGuestTicketAction(action, {
+        continueWithoutAccount: action === 'guest' && guestAccountChoicePhone === guestTicketContact.phone,
+      })
+      if (preparation !== 'ready') {
+        if (action === 'guest' && preparation === 'confirmation-required') {
+          setGuestAccountChoicePhone(guestTicketContact.phone)
+        }
+        return
+      }
 
-    if (!booked) return
+      const booked = await onBookTickets()
+      if (!booked) return
 
-    setGuestTicketContactOpen(false)
-    if (action === 'create-account') onPromptCreateAccount()
+      setGuestTicketContactOpen(false)
+      if (action === 'create-account') onPromptCreateAccount()
+    } finally {
+      guestTicketActionInFlightRef.current = false
+      setGuestTicketAction(null)
+    }
   }
 
   return (
@@ -383,7 +389,7 @@ export default function TicketBookingView({
                 <label className="ticket-special-note-field">
                   <span>{text.ticketSpecialNoteLabel}</span>
                   <textarea
-                    disabled={isBookingTickets}
+                    disabled={isBookingTickets || guestTicketAction !== null}
                     maxLength={500}
                     onChange={(event) => onTicketSpecialNoteChange(event.target.value)}
                     placeholder={text.ticketSpecialNotePlaceholder}
@@ -501,7 +507,7 @@ export default function TicketBookingView({
 
               <button
                 className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
-                disabled={isBookingTickets}
+                disabled={isBookingTickets || guestTicketAction !== null}
                 type="button"
                 onClick={handleBookTicketsClick}
               >
@@ -565,7 +571,7 @@ export default function TicketBookingView({
                     <div className="guest-ticket-actions">
                       <button
                         className="primary create-button"
-                        disabled={isBookingTickets}
+                        disabled={isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => {
                           setGuestTicketContactOpen(false)
@@ -576,7 +582,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
-                        disabled={isBookingTickets}
+                        disabled={isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('guest')}
                       >
@@ -584,7 +590,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className="link-button guest-ticket-back-button"
-                        disabled={isBookingTickets}
+                        disabled={isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => setGuestAccountChoicePhone('')}
                       >
@@ -596,7 +602,7 @@ export default function TicketBookingView({
                   <>
                     <GuestTicketContactPanel
                       contact={guestTicketContact}
-                      disabled={isBookingTickets}
+                      disabled={isBookingTickets || guestTicketAction !== null}
                       estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
                       onChange={onGuestTicketContactChange}
                       onPromptLogin={() => {
@@ -609,7 +615,7 @@ export default function TicketBookingView({
                     <div className="guest-ticket-actions">
                       <button
                         className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
-                        disabled={isBookingTickets}
+                        disabled={isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('create-account')}
                       >
@@ -617,7 +623,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
-                        disabled={isBookingTickets}
+                        disabled={isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('guest')}
                       >
