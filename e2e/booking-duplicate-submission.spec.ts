@@ -41,6 +41,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await expect(page.getByText('QA-SINGLE-BOOKING', { exact: true })).toBeVisible()
     expect(rateChecks).toBe(2)
     expect(bookingRequests).toBe(1)
+    await expect(page.locator('.guest-ticket-modal')).toHaveCount(0)
     await expect(page.locator('[data-nextjs-dialog]')).toHaveCount(0)
     await page.screenshot({ path: `/tmp/booking-dedupe-${venue}-${test.info().project.name}.png` })
   })
