@@ -7,6 +7,8 @@ import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecor
 import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
 import { PhoneNumberInput } from './CountryCodePicker'
+import { employeeHomeLocation } from '@/lib/staffCostAllocation'
+import { StaffCostAssignments, StaffCostReport, type StaffCostReportRow } from './StaffCostAssignments'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
 type StaffHrHubProps = {
@@ -644,6 +646,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     profileById,
     rangeLabel,
     resolvedLanguage,
+    costAssignments,
+    reloadCostAssignments,
+    staffCostAllocations,
     saveEmployeeProfile,
     saveHrAdjustment,
     saveHrSettings,
@@ -708,6 +713,15 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
   const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
+  const costReportRows: StaffCostReportRow[] = visibleStaffProfileOptions.flatMap((staffProfile: any) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    const allocation = staffCostAllocations.get(staffProfile.id)
+    return (allocation?.shares || []).map((share: any) => ({
+      ...share, employee: employee?.legal_name || customerName(staffProfile, text),
+      employeeCode: employee?.employee_code || '', home: employee?.main_work_location || '—',
+      needsPaidHours: allocation?.needsPaidHours || false,
+    }))
+  })
   const employeeCopy = employeeExperienceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const accountantCopy = accountantWorkspaceCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const payslipCopy = payslipSelectorCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
@@ -1332,9 +1346,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contract} id="contract" onToggle={toggleEmployeeSection} open={openEmployeeSections.contract} title={employeeCopy.sectionTitles.contract}>
                         <div className="form-grid compact-form-grid">
-                          <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => setEmployeeForm({ ...employeeForm, department: event.target.value })}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option: any) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => { const location = employeeHomeLocation(event.target.value); setEmployeeForm({ ...employeeForm, department: event.target.value, ...(location ? { main_work_location: location, payroll_location: location } : {}) }) }}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option: any) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.jobTitle}<select value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })}><option value="">{text.any}</option>{employeeForm.job_title && !hrJobTitleOptions.some((option: any) => option.name === employeeForm.job_title) && <option value={employeeForm.job_title}>{employeeForm.job_title}</option>}{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.mainWorkLocation}<select value={employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.mainWorkLocation}<select disabled={Boolean(employeeHomeLocation(employeeForm.department))} value={employeeHomeLocation(employeeForm.department) || employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>{text.labels.payrollLocation}<select value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.payroll_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.payroll_location) && <option value={employeeForm.payroll_location}>{employeeForm.payroll_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>
                             {text.labels.employmentType}
@@ -1359,6 +1373,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>{employeeCopy.laborEnd}<StaffPickerField ariaLabel={employeeCopy.laborEnd} placeholder={text.chooseDate} type="date" value={employeeForm.labor_end_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, labor_end_date: value })} /></label>
                         </div>
                       </CollapsibleEmployeeSection>
+
+                      <StaffCostAssignments key={selectedEmployeeStaffId} profileId={selectedEmployeeStaffId} homeLocation={employeeProfileById.get(selectedEmployeeStaffId)?.main_work_location || ''} assignments={costAssignments} canEdit={canEditEmployeeProfiles} language={resolvedLanguage} reload={reloadCostAssignments} />
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.payroll} id="payroll" onToggle={toggleEmployeeSection} open={openEmployeeSections.payroll} title={employeeCopy.sectionTitles.payroll}>
                         <div className="form-grid compact-form-grid">
@@ -2034,6 +2050,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </aside>
                   </div>
                 </section>
+                <StaffCostReport rows={costReportRows} language={resolvedLanguage} start={payrollPeriodStart} end={payrollPeriodEnd} />
                 <div className="staff-attendance-layout staff-hr-payroll-layout">
                   <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
                     <h4>{text.labels.payrollRun}</h4>

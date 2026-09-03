@@ -11422,3 +11422,17 @@
     background: color-mix(in srgb, var(--vrena-neutral-900) 92%, var(--vrena-neutral-800));
   }
 }
+
+/* Dated employee cost assignments and payroll attribution. */
+.app .staff-cost-assignments { min-width: 0; width: 100%; padding: 20px 0; border-top: 1px solid var(--staff-modern-border); }
+.app .staff-cost-assignments h3, .app .staff-cost-assignments h4 { margin: 0 0 8px; }
+.app .staff-cost-assignments p { margin: 8px 0; line-height: 1.5; }
+.app .staff-cost-assignment-list { list-style: none; padding: 0; }
+.app .staff-cost-assignment-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--staff-modern-border); }
+.app .staff-cost-assignment-list p { margin: 4px 0; overflow-wrap: anywhere; }
+.app .staff-cost-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.app .staff-cost-totals > div { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--staff-modern-border); border-radius: 12px; }
+.app .staff-cost-totals strong { font-size: 20px; overflow-wrap: anywhere; }
+.app .staff-cost-table-scroll { max-width: 100%; overflow-x: auto; margin-top: 16px; }
+.app .staff-cost-table-scroll table { width: 100%; min-width: 600px; border-collapse: collapse; }
+.app .staff-cost-table-scroll th, .app .staff-cost-table-scroll td { text-align: left; padding: 10px; border-bottom: 1px solid var(--staff-modern-border); }
