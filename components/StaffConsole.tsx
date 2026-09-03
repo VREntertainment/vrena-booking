@@ -33,6 +33,7 @@ import { uiText } from '../lib/i18n/translations'
 import { normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
+import { allocateStaffCompanyCost, employeeHomeLocation, type StaffCostAssignment } from '../lib/staffCostAllocation'
 import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
@@ -5035,6 +5036,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [attendanceShifts, setAttendanceShifts] = useState<StaffScheduleShift[]>([])
   const [attendanceLogs, setAttendanceLogs] = useState<StaffAttendanceLog[]>([])
   const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([])
+  const [costAssignments, setCostAssignments] = useState<StaffCostAssignment[]>([])
   const [employeeProfiles, setEmployeeProfiles] = useState<StaffEmployeeProfile[]>([])
   const [employeePhotoUrls, setEmployeePhotoUrls] = useState<Record<string, string>>({})
   const [attendanceSettings, setAttendanceSettings] = useState<StaffAttendanceSettings>(() => defaultAttendanceSettings())
@@ -5466,6 +5468,18 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     })
     return map
   }, [attendanceLogs, attendanceSettings, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, payrollSourceSnapshots, visibleStaffProfileOptions])
+  const staffCostAllocations = useMemo(() => new Map(visibleStaffProfileOptions.map((staffProfile) => {
+    const employee = employeeProfileById.get(staffProfile.id)
+    const calculation = staffPayrollCalculations.get(staffProfile.id)
+    return [staffProfile.id, allocateStaffCompanyCost({
+      profileId: staffProfile.id,
+      homeLocation: employee?.payroll_location || employee?.main_work_location || '',
+      periodStart: payrollPeriodStart, periodEnd: payrollPeriodEnd,
+      companyCost: calculation?.companyCost || 0,
+      paidLeaveMinutes: Math.round((calculation?.paidLeaveHours || 0) * 60),
+      assignments: costAssignments, attendance: attendanceLogs,
+    })]
+  })), [attendanceLogs, costAssignments, employeeProfileById, payrollPeriodEnd, payrollPeriodStart, staffPayrollCalculations, visibleStaffProfileOptions])
   const selectedEmployeePayrollSummary = staffPayrollCalculations.get(selectedEmployeeStaffId) || emptyStaffPayrollCalculation(selectedEmployeeStaffId)
   const hrPayrollTotals = useMemo(() => {
     const rows = Array.from(staffPayrollCalculations.values())
@@ -6333,9 +6347,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setPayrollItems([])
         setPayrollSourceSnapshots([])
         setHrDocuments([])
+        setCostAssignments([])
         return
       }
-      const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult] = await Promise.all([
+      const [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, sourceSnapshotsResult, documentsResult, costAssignmentsResult] = await Promise.all([
         supabase
           .from('staff_hr_settings')
           .select('*')
@@ -6378,9 +6393,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .limit(500),
+        supabase.from('staff_cost_assignments').select('*').is('cancelled_at', null).order('start_date', { ascending: false }),
       ])
 
-      const coreResults = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult]
+      const coreResults = [settingsResult, optionsResult, adjustmentsResult, payrollRunsResult, payrollItemsResult, documentsResult, costAssignmentsResult]
       const blockingError = coreResults.find((result) => result.error && !isStaffHrSchemaUnavailable(result.error))?.error
         ?? (sourceSnapshotsResult.error && !isStaffHrSchemaUnavailable(sourceSnapshotsResult.error) && !isStaffHrPermissionDenied(sourceSnapshotsResult.error)
           ? sourceSnapshotsResult.error
@@ -6396,6 +6412,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         setPayrollItems([])
         setPayrollSourceSnapshots([])
         setHrDocuments([])
+        setCostAssignments([])
         return
       }
 
@@ -6406,6 +6423,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       setPayrollItems((payrollItemsResult.data ?? []) as StaffPayrollItem[])
       setPayrollSourceSnapshots(sourceSnapshotsResult.error ? [] : (sourceSnapshotsResult.data ?? []) as StaffPayrollSourceSnapshot[])
       setHrDocuments((documentsResult.data ?? []) as StaffHrDocument[])
+      setCostAssignments((costAssignmentsResult.data ?? []) as StaffCostAssignment[])
     }, force)
   }
 
@@ -7306,7 +7324,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       department: employeeForm.department.trim() || null,
       job_title: employeeForm.job_title.trim() || null,
       employment_type: normalizeStaffEmploymentType(employeeForm.employment_type),
-      main_work_location: employeeForm.main_work_location.trim() || null,
+      main_work_location: employeeHomeLocation(employeeForm.department) || employeeForm.main_work_location.trim() || null,
       payroll_location: employeeForm.payroll_location.trim() || null,
       contract_status: normalizeStaffContractStatus(employeeForm.contract_status),
       contract_type: employeeForm.contract_type.trim() || null,
@@ -7691,6 +7709,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           probationBonusPercentage: Number(employee?.probation_bonus_percentage) === 85 ? 85 : 100,
           probationBonusApplied: true,
           contributionBaseVnd: item.contributionBase,
+          costAllocation: staffCostAllocations.get(item.profileId),
+          costAssignments: costAssignments.filter((row) => row.profile_id === item.profileId && !row.cancelled_at && row.start_date <= periodEnd && row.end_date >= periodStart),
+          mainWorkLocation: employee?.main_work_location || null,
+          payrollLocation: employee?.payroll_location || null,
           policyReference: 'VR_ Payroll July - 260805.xlsx · HR Employee Master',
         },
       }
@@ -10734,6 +10756,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             rangeLabel,
             resolvedLanguage,
             roleLabel,
+            costAssignments,
+            reloadCostAssignments: () => loadHrData(true),
+            staffCostAllocations,
             saveEmployeeProfile,
             saveHrAdjustment,
             saveHrSettings,
