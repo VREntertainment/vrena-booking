@@ -43,6 +43,7 @@ function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | 
       ? 'This VRena booking was created by a player account that needs staff attention.'
       : 'This is an update to an existing VRena booking. It is not a new booking confirmation.',
     '',
+    `Shop: ${payload.venueKey === 'cafe-des-stagiaires' ? 'VRena Café des Stagiaires' : payload.venueKey === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'Shop not available'}`,
     `Action: ${subjectAction(payload.action)}`,
     `Booking type: ${bookingKindLabel(payload.bookingKind)}`,
     `Title: ${valueText(payload.title)}`,

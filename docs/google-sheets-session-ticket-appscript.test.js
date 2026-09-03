@@ -51,3 +51,24 @@ test('email only shows game options when the payload contains a real selection',
   assert.match(withGame, /Game options/)
   assert.match(withGame, /laser-tag/)
 })
+
+for (const [venueKey, shop] of [
+  ['ha-do-centrosa', 'VRena Hà Đô Centrosa'],
+  ['cafe-des-stagiaires', 'VRena Café des Stagiaires'],
+]) {
+  test(`notification identifies ${shop} in HTML and plain text`, () => {
+    const { context, sentEmail } = loadScript()
+    context.sendNotificationEmail({
+      event_type: 'ticket_booked',
+      session: { venue_key: venueKey, ticket_reference: 'TEST', game_options: [] },
+    }, new Date())
+    assert.ok(sentEmail().body.includes(`Shop: ${shop}`))
+    assert.ok(sentEmail().htmlBody.includes(`<th>Shop</th><td>${shop}</td>`))
+  })
+}
+
+test('shop uses the raw database venue when the older webhook omits it from session', () => {
+  const { context } = loadScript()
+  assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'VRena Café des Stagiaires')
+  assert.equal(context.bookingShopName({ session: { venue_key: 'unexpected-shop' } }), 'Unknown shop (unexpected-shop)')
+})

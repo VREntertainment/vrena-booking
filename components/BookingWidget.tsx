@@ -337,6 +337,7 @@ export default function WidgetPage({
   const [ticketStatus, setTicketStatus] = useState('')
   const [ticketStatusVariant, setTicketStatusVariant] = useState<'info' | 'error'>('info')
   const [isBookingTickets, setIsBookingTickets] = useState(false)
+  const bookingTicketsInFlightRef = useRef(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
   const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(false)
   const [ticketLoyaltyPointsToRedeem, setTicketLoyaltyPointsToRedeem] = useState('')
@@ -7367,6 +7368,8 @@ function handleSessionDateChange(value: string) {
   }
 
   async function bookTickets(profileOverride?: Profile | null) {
+    if (bookingTicketsInFlightRef.current) return false
+
     const activeProfile = profileOverride === undefined ? profile : profileOverride
 
     const service = selectedTicketService(ticketType)
@@ -7389,53 +7392,28 @@ function handleSessionDateChange(value: string) {
       return false
     }
 
-    const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
-    if (!allowed) return false
-
-    const ticketAnalytics = {
-      ticketType,
-      ticketLabel: ticketTypeLabel(ticketType, looseText),
-      date: ticketDate,
-      time: ticketTime,
-      players: ticketPlayers,
-      durationMinutes: activeTicketDuration,
-      totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-    }
-    trackTicketCheckoutStarted(ticketAnalytics)
-
+    // Lock synchronously before the first server check, including same-tick clicks.
+    bookingTicketsInFlightRef.current = true
     setIsBookingTickets(true)
-    showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
-    setTicketConfirmation(null)
+    try {
+      const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
+      if (!allowed) return false
 
-    const ticketRpcArgs = {
-      p_ticket_type: ticketType,
-      p_date: ticketDate,
-      p_start_time: `${ticketTime}:00`,
-      p_duration_minutes: activeTicketDuration,
-      p_player_count: ticketPlayers,
-      p_arena_count: activeTicketArenaCount,
-      p_game_options: [service.defaultGame],
-      p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
-      p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-    }
-    const trimmedTicketSpecialNote = ticketSpecialNote.trim().slice(0, 500)
+      const ticketAnalytics = {
+        ticketType,
+        ticketLabel: ticketTypeLabel(ticketType, looseText),
+        date: ticketDate,
+        time: ticketTime,
+        players: ticketPlayers,
+        durationMinutes: activeTicketDuration,
+        totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+      }
+      trackTicketCheckoutStarted(ticketAnalytics)
 
-    const client = await getSupabase()
-    const { data, error } = isHaDoBookingVenue
-      ? activeProfile
-        ? await client.rpc('create_ticket_booking', {
-          ...ticketRpcArgs,
-          p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
-          p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
-          ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
-        })
-        : await client.rpc('create_guest_ticket_booking', {
-          ...ticketRpcArgs,
-          p_guest_name: guestTicketContact.name.trim() || null,
-          p_guest_phone: guestContactValidation.normalizedPhone,
-          ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
-        })
-      : await client.rpc('create_cafe_ticket_booking_request', {
+      showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
+      setTicketConfirmation(null)
+
+      const ticketRpcArgs = {
         p_ticket_type: ticketType,
         p_date: ticketDate,
         p_start_time: `${ticketTime}:00`,
@@ -7443,84 +7421,117 @@ function handleSessionDateChange(value: string) {
         p_player_count: ticketPlayers,
         p_arena_count: activeTicketArenaCount,
         p_game_options: [service.defaultGame],
-        p_guest_name: activeProfile ? null : guestTicketContact.name.trim() || null,
-        p_guest_phone: activeProfile ? null : guestContactValidation.normalizedPhone,
-        p_special_note: trimmedTicketSpecialNote || null,
-      })
+        p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
+        p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
+      }
+      const trimmedTicketSpecialNote = ticketSpecialNote.trim().slice(0, 500)
 
-    if (error) {
-      showTicketStatus(error.message || text.ticketBookingError, 'error')
-      setIsBookingTickets(false)
+      const client = await getSupabase()
+      const { data, error } = isHaDoBookingVenue
+        ? activeProfile
+          ? await client.rpc('create_ticket_booking', {
+            ...ticketRpcArgs,
+            p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
+            p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+            ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
+          })
+          : await client.rpc('create_guest_ticket_booking', {
+            ...ticketRpcArgs,
+            p_guest_name: guestTicketContact.name.trim() || null,
+            p_guest_phone: guestContactValidation.normalizedPhone,
+            ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
+          })
+        : await client.rpc('create_cafe_ticket_booking_request', {
+          p_ticket_type: ticketType,
+          p_date: ticketDate,
+          p_start_time: `${ticketTime}:00`,
+          p_duration_minutes: activeTicketDuration,
+          p_player_count: ticketPlayers,
+          p_arena_count: activeTicketArenaCount,
+          p_game_options: [service.defaultGame],
+          p_guest_name: activeProfile ? null : guestTicketContact.name.trim() || null,
+          p_guest_phone: activeProfile ? null : guestContactValidation.normalizedPhone,
+          p_special_note: trimmedTicketSpecialNote || null,
+        })
+
+      if (error) {
+        showTicketStatus(error.message || text.ticketBookingError, 'error')
+        return false
+      }
+
+      const booking = (data || {}) as {
+        discount_amount?: number | null
+        discount_code?: string | null
+        loyalty_points_total?: number | null
+        session_id?: string
+        ticket_reference?: string
+        ticket_total_price?: number | null
+      }
+      const confirmation: TicketBookingConfirmation = {
+        sessionId: booking.session_id || '',
+        reference: booking.ticket_reference || '',
+        ticketType,
+        ticketLabel: ticketTypeLabel(ticketType, looseText),
+        date: ticketDate,
+        time: ticketTime,
+        players: ticketPlayers,
+        totalPrice: isSpecialTicketType
+          ? 0
+          : isHaDoBookingVenue
+            ? currentTicketTotalPrice
+            : Math.max(0, Math.floor(Number(booking.ticket_total_price ?? currentTicketPricing.totalPrice) || 0)),
+        guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
+        guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
+        discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
+        discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
+        loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
+        loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
+        requiresZaloConfirmation: !isHaDoBookingVenue,
+      }
+
+      if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
+        setPendingGuestTicketClaim({
+          phone: confirmation.guestPhone,
+          reference: confirmation.reference,
+          name: confirmation.guestName,
+          date: confirmation.date,
+        })
+      }
+
+      if (isHaDoBookingVenue && activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
+        const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
+        const nextProfile = { ...activeProfile, loyalty_points_total: nextPointsTotal }
+        setProfile(nextProfile)
+        syncProfileEverywhere(nextProfile)
+        setTicketLoyaltyRedemption((current) => current
+          ? { ...current, loyalty_points_total: nextPointsTotal }
+          : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
+      }
+
+      setTicketConfirmation(confirmation)
+      trackTicketBookingCompleted({
+        ...ticketAnalytics,
+        transactionId: confirmation.reference || confirmation.sessionId,
+      })
+      const bookingCreatedMessage = isHaDoBookingVenue ? text.ticketBookingCreated : text.bookingRequestSubmitted
+      showTicketStatus(bookingCreatedMessage)
+      showActionToast(bookingCreatedMessage)
+      setTicketTime('')
+      setTicketUseLoyaltyPoints(false)
+      setTicketLoyaltyPointsToRedeem('')
+      setTicketDiscountCode('')
+      setTicketDiscountQuote(null)
+      setTicketDiscountStatus('')
+      await notifyMinorBookingCreated('ticket', confirmation.sessionId, activeProfile)
+      await loadSessions({ focusDate: ticketDate })
+      return true
+    } catch (error) {
+      showTicketStatus(error instanceof Error ? error.message : text.ticketBookingError, 'error')
       return false
+    } finally {
+      bookingTicketsInFlightRef.current = false
+      setIsBookingTickets(false)
     }
-
-    const booking = (data || {}) as {
-      discount_amount?: number | null
-      discount_code?: string | null
-      loyalty_points_total?: number | null
-      session_id?: string
-      ticket_reference?: string
-      ticket_total_price?: number | null
-    }
-    const confirmation: TicketBookingConfirmation = {
-      sessionId: booking.session_id || '',
-      reference: booking.ticket_reference || '',
-      ticketType,
-      ticketLabel: ticketTypeLabel(ticketType, looseText),
-      date: ticketDate,
-      time: ticketTime,
-      players: ticketPlayers,
-      totalPrice: isSpecialTicketType
-        ? 0
-        : isHaDoBookingVenue
-          ? currentTicketTotalPrice
-          : Math.max(0, Math.floor(Number(booking.ticket_total_price ?? currentTicketPricing.totalPrice) || 0)),
-      guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
-      guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
-      discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
-      discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
-      loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
-      loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
-      requiresZaloConfirmation: !isHaDoBookingVenue,
-    }
-
-    if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
-      setPendingGuestTicketClaim({
-        phone: confirmation.guestPhone,
-        reference: confirmation.reference,
-        name: confirmation.guestName,
-        date: confirmation.date,
-      })
-    }
-
-    if (isHaDoBookingVenue && activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
-      const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
-      const nextProfile = { ...activeProfile, loyalty_points_total: nextPointsTotal }
-      setProfile(nextProfile)
-      syncProfileEverywhere(nextProfile)
-      setTicketLoyaltyRedemption((current) => current
-        ? { ...current, loyalty_points_total: nextPointsTotal }
-        : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
-    }
-
-    setTicketConfirmation(confirmation)
-    trackTicketBookingCompleted({
-      ...ticketAnalytics,
-      transactionId: confirmation.reference || confirmation.sessionId,
-    })
-    const bookingCreatedMessage = isHaDoBookingVenue ? text.ticketBookingCreated : text.bookingRequestSubmitted
-    showTicketStatus(bookingCreatedMessage)
-    showActionToast(bookingCreatedMessage)
-    setTicketTime('')
-    setTicketUseLoyaltyPoints(false)
-    setTicketLoyaltyPointsToRedeem('')
-    setTicketDiscountCode('')
-    setTicketDiscountQuote(null)
-    setTicketDiscountStatus('')
-    await notifyMinorBookingCreated('ticket', confirmation.sessionId, activeProfile)
-    await loadSessions({ focusDate: ticketDate })
-    setIsBookingTickets(false)
-    return true
   }
 
   async function createSession() {
