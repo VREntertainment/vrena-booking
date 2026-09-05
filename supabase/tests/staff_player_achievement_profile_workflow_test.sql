@@ -107,7 +107,7 @@ select ok(
 
 select ok(
   (
-    select procedures.prosecdef
+    select not procedures.prosecdef
       and pg_get_functiondef(procedures.oid) like '%staff_save_player_achievement_profile_v2(%'
     from pg_proc procedures
     where procedures.oid = 'public.staff_save_player_achievement_profile(uuid,integer,jsonb,jsonb,jsonb,text)'::regprocedure

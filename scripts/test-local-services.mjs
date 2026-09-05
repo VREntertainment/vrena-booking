@@ -11,7 +11,7 @@ process.chdir(root)
 const container = 'supabase_db_vrena-health-ci'
 const baseline = '20260905011752'
 const cli = (args) => execFileSync('supabase', [...args, '--workdir', 'e2e'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-const sql = (input) => execFileSync('docker', ['exec', '-i', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
+const sql = (input, role = 'postgres') => execFileSync('docker', ['exec', '-i', container, 'psql', '-U', role, '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
 
 // Deliberately fixed to a dedicated local Docker project. No linked project or production URL is accepted.
 console.log('Starting the isolated local test services…')
@@ -19,6 +19,7 @@ cli(['start', '--exclude', 'analytics,vector,studio,postgres-meta,realtime,stora
 if (!sql("select to_regclass('public.profiles');").trim()) {
   sql('create extension if not exists unaccent with schema extensions; create extension if not exists btree_gist with schema extensions;')
   sql(readFileSync('e2e/supabase/schema.sql', 'utf8'))
+  sql(readFileSync('e2e/supabase/storage-policies.sql', 'utf8'), 'supabase_admin')
 }
 sql('create table if not exists private.e2e_migrations (version text primary key);')
 const applied = new Set(sql('select version from private.e2e_migrations;').trim().split('\n'))
@@ -65,12 +66,6 @@ if (enrolled.error) throw enrolled.error
 const verified = await client.auth.mfa.challengeAndVerify({ factorId: enrolled.data.id, code: totpCode(enrolled.data.totp.secret) })
 if (verified.error) throw verified.error
 
-console.log(cli(['test', 'db', ...[
-  'booking_review_fixes_test.sql', 'ticket_tariffs_20260831_test.sql',
-  'minor_birthday_lock_test.sql', 'security_hardening_20260824_test.sql',
-  'staff_kiosk_concurrent_sessions_test.sql', 'staff_player_achievement_profile_workflow_test.sql',
-].map((file) => path.join(root, 'supabase/tests', file))]))
-
 const env = {
   ...process.env,
   NEXT_PUBLIC_SUPABASE_URL: services.API_URL,
@@ -90,6 +85,7 @@ const run = (command, args) => new Promise((resolve, reject) => {
   child.on('exit', (code) => code === 0 ? resolve() : reject(new Error(`${command} exited with ${code}`)))
 })
 try {
+  console.log(cli(['test', 'db', path.join(root, 'supabase/tests')]))
   if (process.env.E2E_PRODUCTION_BUILD === '1') await run('npm', ['run', 'build'])
   await run('npx', ['playwright', 'test', ...process.argv.slice(2)])
 } finally {

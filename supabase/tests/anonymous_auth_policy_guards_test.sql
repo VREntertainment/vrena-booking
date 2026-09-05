@@ -58,6 +58,18 @@ values
 
 select '1..8';
 
+-- These identities and public club are local transaction-scoped fixtures.
+-- A missing auth.users row can fail a profile trigger before RLS is evaluated.
+insert into auth.users (id,email) values
+ ('72222222-2222-4222-8222-222222222222','anonymous-guard-anon@example.invalid'),
+ ('73333333-3333-4333-8333-333333333333','anonymous-guard-permanent@example.invalid'),
+ ('74444444-4444-4444-8444-444444444444','anonymous-guard-owner@example.invalid');
+insert into public.profiles (id,email,full_name)
+values ('74444444-4444-4444-8444-444444444444','anonymous-guard-owner@example.invalid','Guard Club Owner')
+on conflict (id) do nothing;
+insert into public.clubs (id,owner_id,name,visibility)
+values ('75555555-5555-4555-8555-555555555555','74444444-4444-4444-8444-444444444444','Guard public club','public');
+
 select case when
   (select count(*) from expected_anonymous_auth_guards) = 47
   and (

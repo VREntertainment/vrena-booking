@@ -81,7 +81,7 @@ insert into public.session_messages (
     '53333333-3333-4333-8333-333333333333',
     'Message Author',
     'Pending AAL2 fixture',
-    'pending'
+    'pending_review'
   ),
   (
     '5ccccccc-cccc-4ccc-8ccc-cccccccccccc',
@@ -89,7 +89,7 @@ insert into public.session_messages (
     '53333333-3333-4333-8333-333333333333',
     'Message Author',
     'Delete AAL2 fixture',
-    'pending'
+    'pending_review'
   );
 
 select ok(

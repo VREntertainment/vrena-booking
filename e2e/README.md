@@ -17,7 +17,7 @@ The runner always overrides the app's Supabase settings with local service value
 The release gate covers:
 
 - Lint, complete TypeScript checking (including test files), palette validation, and unit tests.
-- Booking capacity/pricing, minor birthday locks, authorization hardening, concurrent kiosk sessions, and player-achievement database regressions (82 assertions).
+- All database regression files, including booking capacity/pricing, MFA and kiosk authorization, private-session visibility, club roles, grants, RPC allowlists, and policy efficiency (181 assertions).
 - Desktop Chromium and Android Chrome sign-in, admin access, booking creation/editing, guest double-submit recovery, venue selection, and readiness.
 - Light/dark fixtures and six public routes on phone, tablet, and desktop (42 theme cases).
 
@@ -35,7 +35,7 @@ supabase stop --workdir e2e --no-backup
 
 `supabase/schema.sql` is a schema-only snapshot through migration `20260905011752`. The repository's earlier migrations are incremental and lack a complete original schema; replaying them into an empty database does not create a usable test environment. The runner restores this baseline once, then applies migrations with later version numbers in order. This file is a local/CI fixture, never a production migration. Refresh it when intentionally advancing the baseline and update the version in `scripts/test-local-services.mjs` together.
 
-A full run of all 12 historical database audit files still reports failures in six files. Some fixtures omit mandatory session fields or use a removed message-moderation value; other assertions concern grants, authorization helpers, and public RPC allowlists and need separate security triage. Those failures have not been resolved by this engineering release. The six passing files above form the explicit release gate; they do not establish that every historical security assertion passes.
+The runner also restores `supabase/storage-policies.sql`, a schema-only copy of the reviewed production Storage rules, using the local `supabase_admin` owner. It runs every SQL test in `supabase/tests`; no historical security file is excluded. Fixtures use current mandatory fields and moderation values, and privileged RPC allowlists are explicit reviewed snapshots. Refresh an existing local stack with the stop command above when changing the baseline. Never apply the local Storage ownership setup to production.
 
 ## Production verification
 
