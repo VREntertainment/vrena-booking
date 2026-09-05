@@ -5951,7 +5951,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         payments.length = 0
         for (let offset = 0; ; offset += pageSize) {
           const { data, error } = await supabase.from('staff_orders').select('*')
-            .is('deleted_at', null).gte('booking_date', from).lte('booking_date', to)
+            .gte('booking_date', from).lte('booking_date', to)
             .order('booking_date', { ascending: false }).order('booking_time', { ascending: false })
             .order('id', { ascending: true }).range(offset, offset + pageSize - 1)
           if (error) throw new Error(error.message)
@@ -5996,7 +5996,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       // Past sessions must load their own orders; today's ledger cannot explain them.
       if (operationSessionScope === 'past' && sessions.length > 0) {
         const { data: linkedOrders, error: ordersError } = await supabase.from('staff_orders')
-          .select('*').in('session_id', sessions.map((session) => session.id)).is('deleted_at', null)
+          .select('*').in('session_id', sessions.map((session) => session.id))
         if (ordersError) throw new Error(ordersError.message)
         const rows = (linkedOrders ?? []) as StaffOrder[]
         const payments = await fetchOrderPayments(rows)
