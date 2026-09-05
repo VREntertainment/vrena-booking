@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error Node's native TypeScript runner requires the explicit extension.
 import { shouldStartFirstLoginTour } from './firstLoginTour.ts'
 
 test('the tour starts automatically for a player who has not seen it', () => {

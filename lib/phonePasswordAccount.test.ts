@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 // Node's type-stripping test runner requires the explicit TypeScript extension.
-// @ts-expect-error allowImportingTsExtensions is intentionally disabled for app code.
 import {
   isValidStaffCustomerEmail,
   isPhonePasswordLoginEmail,

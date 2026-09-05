@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { e2eConfig } from './env'
+import { totpCode } from './totp'
 
 export const uniqueSessionName = () => `E2E Admin Session ${Date.now()}`
 
@@ -42,30 +43,41 @@ export async function loginAsAdmin(page: Page) {
   const { adminEmail, adminPassword } = e2eConfig()
 
   await stubHCaptcha(page)
-  await page.goto('/book')
-
-  await page.locator('.profile-chip').click()
-  const profileSection = page.locator('section').filter({ has: page.getByRole('heading', { name: /profile/i }) }).first()
-  await expect(profileSection).toBeVisible()
-  await expect(profileSection.locator('.captcha-box')).toBeVisible()
-  await page.waitForFunction(() => Boolean((window as Window & { hcaptcha?: unknown }).hcaptcha))
-
-  await profileSection.locator('input[type="email"]').fill(adminEmail)
-  await profileSection.locator('input[type="password"]').fill(adminPassword)
-  await profileSection.getByRole('button', { name: /^Log In$/i }).last().click()
-
+  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: e2eConfig().baseURL }])
+  await page.goto('/profile')
+  await page.locator('.login-profile-form .email-field input').fill(adminEmail)
+  await page.locator('.login-profile-form .email-field input').press('Enter')
+  await page.locator('.login-profile-form input[type="password"]').fill(adminPassword)
+  await page.locator('.profile-auth-section .action-row button.primary').click()
+  await expect(page.locator('.mfa-code-row input')).toBeVisible()
+  const secret = process.env.E2E_ADMIN_TOTP_SECRET
+  if (!secret) throw new Error('E2E_ADMIN_TOTP_SECRET is required for the dedicated test authenticator.')
+  await page.locator('.mfa-code-row input').fill(totpCode(secret))
+  await expect(page.locator('.mfa-code-row input')).toHaveCount(0)
+  const welcome = page.getByRole('dialog', { name: /Welcome to VRena/ })
+  await expect(welcome).toBeVisible()
+  await welcome.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.goto('/profile')
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('button', { name: /log out/i })).toBeVisible()
+
 }
 
 export async function openAdmin(page: Page) {
   await page.goto('/admin')
   await expect(page.getByTestId('staff-console')).toBeVisible()
-  await expect(page.getByRole('heading', { name: /staff console/i })).toBeVisible()
+  await expect(page.getByRole('tablist', { name: /staff console/i })).toBeVisible()
 }
 
 export async function openCreateSession(page: Page) {
-  await page.goto('/book')
-  await page.getByRole('button', { name: /^Sessions$/i }).click()
-  await page.getByRole('button', { name: /^Create Session$/i }).click()
-  await expect(page.getByRole('heading', { name: /^Create Session$/i })).toBeVisible()
+  await page.goto('/create-session')
+  await expect(page.getByTestId('create-session-name')).toBeVisible()
+}
+
+export async function chooseCafeVenue(page: Page) {
+  const selector = page.locator('.booking-venue-selector')
+  await expect(selector).toBeVisible()
+  const change = selector.getByRole('button', { name: /change/i })
+  if (await change.isVisible()) await change.click()
+  await selector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' }).click()
 }

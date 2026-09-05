@@ -24,7 +24,11 @@
     "test:accountant-payroll-export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/accountantPayrollExport.test.ts",
     "test:venue-review-reasons": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/venueResultReview.test.ts",
     "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
-    "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs"
+    "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/*.test.ts lib/security/*.test.ts docs/*.test.js",
+    "check": "npm run lint && npm run typecheck && npm run verify:palette && npm run test:unit",
+    "test:services": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-local-services.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -32,7 +36,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "driver.js": "^1.6.0",
-    "fflate": "^0.8.2",
+    "fflate": "0.8.3",
     "lucide-react": "^1.22.0",
     "next": "16.2.12",
     "react": "19.2.4",

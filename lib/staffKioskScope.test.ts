@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error Node's native TypeScript runner requires the explicit extension.
 import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {

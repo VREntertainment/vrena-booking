@@ -235,6 +235,11 @@ async function auditRoute(page, theme, device, routePath) {
   await page.setViewportSize({ width: device.width, height: device.height })
   await page.emulateMedia({ colorScheme: theme })
   await page.goto(url, { waitUntil: 'domcontentloaded' })
+  await page.locator('.app main').waitFor({ state: 'visible' })
+  await page.waitForFunction(() => {
+    const main = document.querySelector('.app main')
+    return main && main.innerText.trim().length > 40 && !main.querySelector('.app-loading-state')
+  })
 
   const result = await page.evaluate(() => {
     const bodyText = document.body.innerText.trim()

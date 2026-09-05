@@ -1,18 +1,20 @@
+import { vrenaPalette } from './theme/vrenaPalette.ts'
+
 const DEFAULT_FROM_EMAIL = 'VRena <contact@vre-vietnam.com>'
 const CONTACT_EMAIL = 'contact@vre-vietnam.com'
 const DEFAULT_SITE_URL = 'https://booking.vre-vietnam.com'
 const EMAIL_COLORS = {
-  accent: '#3d38f3',
-  accentBorder: '#c2d0ff',
-  accentInk: '#332cd6',
-  accentSoft: '#edf2ff',
-  ink: '#020e0e',
-  muted: '#5f6d6d',
-  mutedStrong: '#3b4a4a',
-  page: '#f5f7f7',
-  border: '#eeeeee',
-  header: '#0b1717',
-  white: '#ffffff',
+  accent: vrenaPalette.purple[600],
+  accentBorder: vrenaPalette.purple[200],
+  accentInk: vrenaPalette.purple[700],
+  accentSoft: vrenaPalette.purple[50],
+  ink: vrenaPalette.neutral[950],
+  muted: vrenaPalette.neutral[600],
+  mutedStrong: vrenaPalette.neutral[700],
+  page: vrenaPalette.neutral[100],
+  border: vrenaPalette.neutral[200],
+  header: vrenaPalette.neutral[900],
+  white: vrenaPalette.white,
 } as const
 
 export type StaffPinEmailPayload = {

@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-// @ts-expect-error Node's built-in TypeScript test runner requires the explicit extension.
 import { calculateTimesheetBasePay, countPayrollWorkingDays, isMealAllowanceEligible, payrollFallbackPeriodBasis, resolveEmployeePayrollCalendar } from './staffPayrollPeriod.ts'
 
 test('July 2026 has 27 working days when Sunday is the weekly rest day', () => {

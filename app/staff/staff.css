@@ -4090,7 +4090,7 @@
   border: 1px solid color-mix(in srgb, var(--vrena-primary) 20%, var(--vrena-line-warm));
   border-radius: 20px;
   background: var(--vrena-surface);
-  box-shadow: 0 18px 52px rgba(43, 51, 79, 0.08);
+  box-shadow: 0 18px 52px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
 
 .app .staff-hr-accountant-workspace > * {
@@ -4137,7 +4137,7 @@
 
 .app .staff-hr-accountant-eyebrow {
   gap: 7px;
-  color: #08758a;
+  color: var(--vrena-cyan-800);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -4218,13 +4218,13 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #138a3d;
+  background: var(--vrena-green-800);
   color: white;
   font-weight: 850;
 }
 
 .app .staff-hr-accountant-steps button.needs-review .staff-hr-accountant-step-number {
-  background: #d98600;
+  background: var(--vrena-yellow-600);
 }
 
 .app .staff-hr-accountant-steps strong,
@@ -4240,14 +4240,14 @@
 
 .app .staff-hr-accountant-steps em {
   grid-column: 2;
-  color: #138a3d;
+  color: var(--vrena-green-800);
   font-size: 0.7rem;
   font-style: normal;
   font-weight: 800;
 }
 
 .app .staff-hr-accountant-steps button.needs-review em {
-  color: #b86f00;
+  color: var(--vrena-yellow-700);
 }
 
 .app .staff-hr-accountant-grid {
@@ -4290,12 +4290,12 @@
 }
 
 .app .staff-hr-accountant-readiness > div > svg {
-  color: #138a3d;
+  color: var(--vrena-green-800);
 }
 
 .app .staff-hr-accountant-readiness > div.needs-review > svg,
 .app .staff-hr-accountant-readiness > div.needs-review > em {
-  color: #c27700;
+  color: var(--vrena-yellow-700);
 }
 
 .app .staff-hr-accountant-readiness strong,
@@ -4308,7 +4308,7 @@
 }
 
 .app .staff-hr-accountant-readiness em {
-  color: #138a3d;
+  color: var(--vrena-green-800);
   font-size: 0.74rem;
   font-style: normal;
   font-weight: 850;
@@ -4335,8 +4335,8 @@
 .app .staff-hr-accountant-policy span {
   padding: 9px 11px;
   border-radius: 9px;
-  background: color-mix(in srgb, #22c6df 12%, var(--vrena-surface));
-  color: #08758a;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 12%, var(--vrena-surface));
+  color: var(--vrena-cyan-800);
   font-size: 0.76rem;
   font-weight: 800;
 }

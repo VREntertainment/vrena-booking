@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { chooseCafeVenue } from './support/admin'
 
 for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
   test(`${venue}: repeated guest clicks send one booking and recover after a failed check`, async ({ page }) => {
@@ -24,7 +25,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     })
     await page.goto('/tickets')
     if (venue === 'cafe-des-stagiaires') {
-      await page.locator('.booking-venue-selector').getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' }).click()
+      await chooseCafeVenue(page)
     }
     await page.locator('.ticket-control-date input[type="date"]').fill(new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10))
     await page.locator('#ticket-available-time').selectOption(venue === 'cafe-des-stagiaires' ? '17:00' : '12:00')

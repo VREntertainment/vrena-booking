@@ -88,12 +88,12 @@ export default function ContentStudioPreviewBridge() {
       "display:none",
       "min-height:42px",
       "padding:0 16px",
-      "border:1px solid #fd5901",
+      "border:1px solid var(--vrena-orange-600)",
       "border-radius:8px",
-      "background:#fd5901",
-      "color:#fff",
+      "background:var(--vrena-orange-600)",
+      "color:var(--vrena-white)",
       "font:700 14px/1 Inter,Arial,sans-serif",
-      "box-shadow:0 10px 28px rgba(0,0,0,.34)",
+      "box-shadow:0 10px 28px rgb(var(--vrena-neutral-950-rgb) / .34)",
       "cursor:pointer",
     ].join(";");
     document.body.appendChild(toolbar);
@@ -209,7 +209,7 @@ export default function ContentStudioPreviewBridge() {
       highlightedElement = target;
       previousOutline = target.style.outline;
       previousOutlineOffset = target.style.outlineOffset;
-      target.style.outline = "3px solid #fd5901";
+      target.style.outline = "3px solid var(--vrena-orange-600)";
       target.style.outlineOffset = "4px";
     }
 
