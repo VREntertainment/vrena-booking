@@ -86,6 +86,7 @@ const run = (command, args) => new Promise((resolve, reject) => {
 })
 try {
   console.log(cli(['test', 'db', path.join(root, 'supabase/tests')]))
+  await run('node', ['--test', 'scripts/test-security-rpc-errors.mjs'])
   if (process.env.E2E_PRODUCTION_BUILD === '1') await run('npm', ['run', 'build'])
   await run('npx', ['playwright', 'test', ...process.argv.slice(2)])
 } finally {
