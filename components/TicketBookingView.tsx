@@ -282,7 +282,7 @@ export default function TicketBookingView({
   }
 
   return (
-    <section className="section tickets-section">
+    <section className={`section tickets-section${ticketConfirmation ? ' ticket-confirmed' : ''}`}>
       <div className="ticket-quick-actions">
         {gameGuideTrigger}
         {tariffTrigger}
@@ -369,20 +369,23 @@ export default function TicketBookingView({
               </div>
 
               {!isSpecialTicket && !requiresZaloConfirmation && (
-                <label className="ticket-discount-code-field">
-                  <span>{text.ticketDiscountCodeLabel}</span>
-                  <input
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    inputMode="text"
-                    placeholder={text.ticketDiscountCodePlaceholder}
-                    value={ticketDiscountCode}
-                    onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
-                  />
-                  {(isCheckingTicketDiscount || ticketDiscountStatus) && (
-                    <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
-                  )}
-                </label>
+                <details className="ticket-voucher-details">
+                  <summary>{text.ticketDiscountCodeLabel}{ticketDiscountCode ? ` · ${ticketDiscountCode}` : ''}</summary>
+                  <label className="ticket-discount-code-field">
+                    <span>{text.ticketDiscountCodeLabel}</span>
+                    <input
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      inputMode="text"
+                      placeholder={text.ticketDiscountCodePlaceholder}
+                      value={ticketDiscountCode}
+                      onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
+                    />
+                    {(isCheckingTicketDiscount || ticketDiscountStatus) && (
+                      <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
+                    )}
+                  </label>
+                </details>
               )}
 
               {isSpecialTicket && (
@@ -505,16 +508,20 @@ export default function TicketBookingView({
               )}
               {!requiresZaloConfirmation && <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>}
 
-              <button
-                className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
-                disabled={isBookingTickets || guestTicketAction !== null}
-                type="button"
-                onClick={handleBookTicketsClick}
-              >
-                {isBookingTickets
-                  ? requiresZaloConfirmation ? text.submittingBookingRequest : text.bookingTickets
-                  : requiresZaloConfirmation ? text.submitBookingRequest : text.bookTickets}
-              </button>
+              <div className="ticket-checkout-action">
+                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
+                {requiresZaloConfirmation && <p className="ticket-confirmation-requirement">{text.bookingVenueCafeBookingNoticeStatus}</p>}
+                <button
+                  className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
+                  disabled={isBookingTickets || guestTicketAction !== null}
+                  type="button"
+                  onClick={handleBookTicketsClick}
+                >
+                  {isBookingTickets
+                    ? requiresZaloConfirmation ? text.submittingBookingRequest : text.bookingTickets
+                    : requiresZaloConfirmation ? text.submitBookingRequest : text.bookTickets}
+                </button>
+              </div>
               {!isLoggedIn && !isSpecialTicket && (
                 <button className="ticket-account-value-note" type="button" onClick={onPromptCreateAccount}>
                   {ticketAccountValueLines.map((line, index) => (

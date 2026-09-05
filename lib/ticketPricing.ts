@@ -1,3 +1,7 @@
+export function ticketArenaCapacityForVenue(venue: 'ha-do-centrosa' | 'cafe-des-stagiaires' = 'ha-do-centrosa') {
+  return venue === 'cafe-des-stagiaires' ? 8 : 4
+}
+
 export function minimumTicketDurationMinutes(
   players: number,
   priceBlockMinutes = 20,

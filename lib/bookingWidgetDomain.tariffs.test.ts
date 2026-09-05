@@ -4,7 +4,7 @@ import {
   individualTicketUnitPrice,
   ticketPriceBlockMinutesForDate,
 } from './ticketTariffs.ts'
-import { calculateTicketPricing, minimumTicketDurationMinutes } from './ticketPricing.ts'
+import { calculateTicketPricing, minimumTicketDurationMinutes, ticketArenaCapacityForVenue } from './ticketPricing.ts'
 
 test('keeps the legacy tariff and 20-minute block before August 31', () => {
   assert.equal(ticketPriceBlockMinutesForDate('2026-08-30'), 20)
@@ -51,4 +51,18 @@ test('fits up to eight simultaneous players in the Cafe single arena', () => {
   assert.equal(minimumTicketDurationMinutes(8, 45, 8, 1), 45)
   assert.equal(minimumTicketDurationMinutes(9, 45, 8, 1), 90)
   assert.equal(minimumTicketDurationMinutes(16, 45, 8, 1), 90)
+})
+
+
+test('venue capacity used by the booking form covers the Cafe five-to-nine player boundary', () => {
+  const cafe = ticketArenaCapacityForVenue('cafe-des-stagiaires')
+  const hado = ticketArenaCapacityForVenue('ha-do-centrosa')
+  assert.equal(cafe, 8)
+  assert.equal(hado, 4)
+  for (const count of [5, 6, 7, 8]) {
+    assert.equal(minimumTicketDurationMinutes(count, 45, cafe, 1), 45)
+  }
+  assert.equal(minimumTicketDurationMinutes(9, 45, cafe, 1), 90)
+  assert.equal(minimumTicketDurationMinutes(5, 45, hado, 1), 90)
+  assert.equal(calculateTicketPricing(240_000, 5, 45, 45, cafe, 1).totalPrice, 1_080_000)
 })

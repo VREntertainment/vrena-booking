@@ -26,6 +26,7 @@ export type StaffGameGuideText = Partial<Record<LanguageCode, string>>
 
 export type StaffGameGuide = {
   slug: string
+  active?: boolean
   name?: string | null
   game_type?: string | null
   duration_minutes?: number | null
@@ -39,7 +40,7 @@ export type StaffGameGuide = {
   guide_tips?: StaffGameGuideText | null
 }
 
-export const PUBLIC_GAME_GUIDE_REVALIDATE_SECONDS = 60 * 60 * 24
+export const PUBLIC_GAME_GUIDE_REVALIDATE_SECONDS = 60
 
 export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
@@ -237,4 +238,33 @@ export function normalizeStaffAudience(value: StaffGameGuide['audience'], legacy
 
 export function isStaffGuideLanguage(value: string | null | undefined): value is LanguageCode {
   return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it'
+}
+
+/** Active staff records define availability; the built-in catalog supplies artwork
+ * and editorial defaults only for games that are actually in the staff catalog. */
+export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin?: string) {
+  const defaults = new Map(publicGameGuideCatalog.map((game) => [game.id, game]))
+  const categories: Record<string, PublicGameGuideGame['category']> = {
+    shooting: 'FPS / PVP', escape: 'Escape', tournament: 'Tournament', other: 'Other',
+  }
+  const safeImage = (url: string | null | undefined) => {
+    if (!url) return false
+    if (/^\/games\/[a-zA-Z0-9/_.-]+$/.test(url) && !url.includes('..')) return true
+    if (!imageOrigin) return false
+    try { return new URL(url).origin === new URL(imageOrigin).origin } catch { return false }
+  }
+  return staffGuides.filter((guide) => guide.slug && guide.active !== false).map<PublicGameGuideGame>((guide) => {
+    const base = defaults.get(guide.slug)
+    const audience = normalizeStaffAudience(guide.audience, guide.difficulty)
+    return {
+      id: guide.slug,
+      title: guide.name?.trim() || base?.title || guide.slug,
+      category: categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
+      image: safeImage(guide.image_url) ? guide.image_url! : base?.image || '/games/laser-tag.png',
+      durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
+      maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
+      audience: audience.length > 0 ? audience : base?.audience || [],
+      venues: base?.venues || ['ha-do-centrosa'],
+    }
+  })
 }

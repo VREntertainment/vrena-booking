@@ -82,6 +82,7 @@ export const en = {
   audienceTeamwork: 'Teamwork',
   audienceBeginnerFriendly: 'Beginner friendly',
   audienceCompetitive: 'Competitive',
+  bookingVenueChange: 'Change',
   bookingVenueLabel: 'Shop location',
   bookingVenueTitle: 'Where do you want to play?',
   bookingVenueHint: 'Choose a VRena location before viewing sessions or booking.',

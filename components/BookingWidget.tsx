@@ -9200,7 +9200,7 @@ function handleSessionDateChange(value: string) {
   const appMain = (
       <main>
         {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-          <BookingVenueSelector onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
+          <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
         )}
 
         {activeView === 'sessions' && (

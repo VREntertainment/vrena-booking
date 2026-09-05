@@ -6,6 +6,7 @@ import {
 
 const STAFF_GAME_GUIDE_SELECT = [
   'slug',
+  'active',
   'name',
   'game_type',
   'duration_minutes',
@@ -21,6 +22,7 @@ const STAFF_GAME_GUIDE_SELECT = [
 
 const LEGACY_STAFF_GAME_GUIDE_SELECT = [
   'slug',
+  'active',
   'name',
   'game_type',
   'duration_minutes',
@@ -67,17 +69,14 @@ async function fetchPublicStaffGameGuides() {
   try {
     return await fetchStaffGames(STAFF_GAME_GUIDE_SELECT)
   } catch {
-    try {
-      return await fetchStaffGames(LEGACY_STAFF_GAME_GUIDE_SELECT)
-    } catch {
-      return []
-    }
+    // Let ISR retain the last successful catalog if the backend is unavailable.
+    return await fetchStaffGames(LEGACY_STAFF_GAME_GUIDE_SELECT)
   }
 }
 
 export const getCachedPublicStaffGameGuides = unstable_cache(
   fetchPublicStaffGameGuides,
-  ['public-staff-game-guides-v1'],
+  ['public-staff-game-guides-v2'],
   {
     revalidate: PUBLIC_GAME_GUIDE_REVALIDATE_SECONDS,
     tags: ['public-game-guide'],

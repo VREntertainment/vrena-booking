@@ -1,5 +1,6 @@
 'use client'
 
+import { summarizeOperationMoney } from '../lib/staffOperationMoney'
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import {
@@ -871,6 +872,14 @@ const staffDiscountTicketTypes: StaffDiscountTicketType[] = ['all', 'individual'
 const staffConsoleText = {
   en: {
     accessRequired: 'Staff access required.',
+    operationsMoney: {
+      title: 'Booking & payments', bookingValue: 'Confirmed booking value', orderTotal: 'Recorded orders',
+      orderPaid: 'Order payments', orderBalance: 'Order balance due', pendingValue: 'Pending requests / drafts',
+      unlinkedValue: 'Bookings needing an order', needsOrder: 'Order reconciliation needed',
+      pending: 'Awaiting confirmation', clear: 'No unlinked confirmed tickets',
+      hint: 'Booking value includes confirmed tickets without an order. Payments and balance due cover recorded orders only. Pending requests are excluded from confirmed value. Reconcile unlinked tickets before collecting payment.',
+      past: 'Totals cover the past sessions shown and their linked orders.',
+    },
     active: 'active',
     inactive: 'inactive',
     allGames: 'All games',
@@ -1680,6 +1689,14 @@ const staffConsoleText = {
     } satisfies Record<StaffTabGroupId, string>,
   },
   vi: {
+    operationsMoney: {
+      title: 'Đặt chỗ & thanh toán', bookingValue: 'Giá trị đặt chỗ đã xác nhận', orderTotal: 'Đơn hàng đã ghi nhận',
+      orderPaid: 'Thanh toán đơn hàng', orderBalance: 'Đơn hàng còn phải thu', pendingValue: 'Yêu cầu chờ / đơn nháp',
+      unlinkedValue: 'Đặt chỗ cần tạo đơn', needsOrder: 'Cần đối soát đơn hàng',
+      pending: 'Chờ xác nhận', clear: 'Không có vé đã xác nhận thiếu đơn hàng',
+      hint: 'Giá trị đặt chỗ gồm cả vé đã xác nhận chưa có đơn hàng. Thanh toán và số còn phải thu chỉ tính đơn hàng đã ghi nhận. Yêu cầu đang chờ không thuộc giá trị đã xác nhận. Đối soát vé chưa có đơn trước khi thu tiền.',
+      past: 'Tổng chỉ tính các phiên trước đây đang hiển thị và đơn hàng liên kết.',
+    },
     accessRequired: 'Cần quyền nhân viên.',
     active: 'đang bật',
     inactive: 'đã tắt',
@@ -4896,12 +4913,6 @@ function buildDailySeries(orders: StaffOrder[], start: string, end: string) {
   return [...byDate.values()]
 }
 
-function mergeById<T extends { id: string }>(current: T[], next: T[]) {
-  const map = new Map(current.map((item) => [item.id, item]))
-  next.forEach((item) => map.set(item.id, item))
-  return [...map.values()]
-}
-
 function mergeOrderPayments(current: StaffOrderPayment[], orderIds: string[], next: StaffOrderPayment[]) {
   const orderIdSet = new Set(orderIds)
   return [
@@ -5274,9 +5285,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
   const operationOrders = useMemo(() => (
     orders
-      .filter((order) => order.booking_date === operationsDate)
+      .filter((order) => operationSessionScope === 'past'
+        ? operationSessions.some((session) => session.id === order.session_id)
+        : order.booking_date === operationsDate)
       .sort((left, right) => left.booking_time.localeCompare(right.booking_time) || left.order_number.localeCompare(right.order_number))
-  ), [operationsDate, orders])
+  ), [operationsDate, operationSessionScope, operationSessions, orders])
   const operationOrderBySessionId = useMemo(() => {
     const map = new Map<string, StaffOrder>()
     operationOrders.forEach((order) => {
@@ -5303,8 +5316,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       return sum + (session ? sessionCapacity(session, order) : order.players_count)
     }, 0)
     const checkedIn = operationSessions.reduce((sum, session) => sum + sessionCheckedInCount(session), 0)
-    const paid = operationOrders.reduce((sum, order) => sum + orderPaidAmount(order, orderPaymentsByOrderId), 0)
-    const total = operationOrders.reduce((sum, order) => sum + order.total, 0)
+    const money = summarizeOperationMoney(operationSessions, operationOrders.map((order) => ({
+      ...order, paidAmount: orderPaidAmount(order, orderPaymentsByOrderId),
+    })))
 
     return {
       sessions: operationSessions.length,
@@ -5313,8 +5327,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       capacity: orderCapacity + sessionOnlyCapacity,
       checkedIn,
       checkablePlayers: operationSessions.reduce((sum, session) => sum + Math.max(session.session_participants?.length || 0, sessionCheckedInCount(session)), 0),
-      paid,
-      unpaid: Math.max(0, total - paid),
+      money,
     }
   }, [operationOrders, operationSessions, orderPaymentsByOrderId])
   const [attendanceWeekStart, attendanceWeekEnd] = useMemo(
@@ -5914,52 +5927,51 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   async function loadOrdersForRange(key: 'today' | 'orders', start: string, end: string, force = false) {
     const [from, to] = orderedRange(start, end)
     await runStaffLoader(key, async () => {
-      const rpcResult = await supabase.rpc('staff_orders_page', {
-        p_start_date: from,
-        p_end_date: to,
-        p_limit: key === 'today' ? 120 : 250,
-        p_offset: 0,
-        p_search: null,
-        p_status: null,
-      })
-
-      if (!rpcResult.error && rpcResult.data) {
-        const { orders: rows, payments } = staffOrdersPageFromRpc(rpcResult.data)
-        setOrders((current) => key === 'orders' ? rows : mergeById(current, rows))
-        setOrderPayments((current) => key === 'orders'
-          ? payments
-          : mergeOrderPayments(current, rows.map((order) => order.id), payments))
-        return
+      const pageSize = key === 'today' ? 120 : 250
+      const rows: StaffOrder[] = []
+      const payments: StaffOrderPayment[] = []
+      let useFallback = false
+      for (let offset = 0; ; offset += pageSize) {
+        const rpcResult = await supabase.rpc('staff_orders_page', {
+          p_start_date: from, p_end_date: to, p_limit: pageSize,
+          p_offset: offset, p_search: null, p_status: null,
+        })
+        if (rpcResult.error || !rpcResult.data) {
+          if (rpcResult.error && !rpcFunctionMissing(rpcResult.error)) throw new Error(rpcResult.error.message)
+          useFallback = true
+          break
+        }
+        const page = staffOrdersPageFromRpc(rpcResult.data)
+        rows.push(...page.orders)
+        payments.push(...page.payments)
+        if (key !== 'today' || page.orders.length < pageSize) break
       }
-
-      if (rpcResult.error && !rpcFunctionMissing(rpcResult.error)) {
-        throw new Error(rpcResult.error.message)
+      if (useFallback) {
+        rows.length = 0
+        payments.length = 0
+        for (let offset = 0; ; offset += pageSize) {
+          const { data, error } = await supabase.from('staff_orders').select('*')
+            .is('deleted_at', null).gte('booking_date', from).lte('booking_date', to)
+            .order('booking_date', { ascending: false }).order('booking_time', { ascending: false })
+            .order('id', { ascending: true }).range(offset, offset + pageSize - 1)
+          if (error) throw new Error(error.message)
+          const page = (data ?? []) as StaffOrder[]
+          rows.push(...page)
+          payments.push(...await fetchOrderPayments(page))
+          if (key !== 'today' || page.length < pageSize) break
+        }
       }
-
-      const { data, error } = await supabase
-        .from('staff_orders')
-        .select('*')
-        .gte('booking_date', from)
-        .lte('booking_date', to)
-        .order('booking_date', { ascending: false })
-        .order('booking_time', { ascending: false })
-        .limit(key === 'today' ? 120 : 250)
-      if (error) throw new Error(error.message)
-      const rows = (data ?? []) as StaffOrder[]
-      const payments = await fetchOrderPayments(rows)
-      setOrders((current) => key === 'orders' ? rows : mergeById(current, rows))
+      // Refresh the whole date range, including removal of deleted orders.
+      setOrders((current) => key === 'orders' ? rows : [
+        ...current.filter((order) => order.booking_date < from || order.booking_date > to), ...rows,
+      ])
       setOrderPayments((current) => key === 'orders'
-        ? payments
-        : mergeOrderPayments(current, rows.map((order) => order.id), payments))
+        ? payments : mergeOrderPayments(current, rows.map((order) => order.id), payments))
     }, force)
   }
 
   async function loadTodayOrders(force = false) {
-    if (operationSessionScope !== 'today') {
-      setOrders([])
-      setOrderPayments([])
-      return
-    }
+    if (operationSessionScope !== 'today') return
     await loadOrdersForRange('today', operationsDate, operationsDate, force)
   }
 
@@ -5977,10 +5989,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
       const { data, error } = await query
       if (error) throw new Error(error.message)
-      setOperationSessions((data ?? []).map((session) => ({
+      const sessions = (data ?? []).map((session) => ({
         ...session,
         session_participants: (session.session_participants ?? []).filter((participant) => !participant.deleted_at),
-      })) as StaffOperationSession[])
+      })) as StaffOperationSession[]
+      // Past sessions must load their own orders; today's ledger cannot explain them.
+      if (operationSessionScope === 'past' && sessions.length > 0) {
+        const { data: linkedOrders, error: ordersError } = await supabase.from('staff_orders')
+          .select('*').in('session_id', sessions.map((session) => session.id)).is('deleted_at', null)
+        if (ordersError) throw new Error(ordersError.message)
+        const rows = (linkedOrders ?? []) as StaffOrder[]
+        const payments = await fetchOrderPayments(rows)
+        setOrders(rows)
+        setOrderPayments(payments)
+      }
+      setOperationSessions(sessions)
     }, force)
   }
 
@@ -9956,9 +9979,24 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             <div><span>{text.labels.ticketBookings}</span><strong>{operationSummary.ticketBookings}</strong></div>
             <div><span>{text.labels.capacity}</span><strong>{operationSummary.bookedPlayers}/{operationSummary.capacity}</strong></div>
             <div><span>{text.labels.checkIns}</span><strong>{operationSummary.checkedIn}/{operationSummary.checkablePlayers}</strong></div>
-            <div><span>{text.labels.totalPaid}</span><strong>{formatVnd(operationSummary.paid)}</strong></div>
-            <div><span>{text.unpaid}</span><strong>{formatVnd(operationSummary.unpaid)}</strong></div>
+
           </div>
+
+          <details className="staff-operations-money">
+            <summary>
+              <strong>{text.operationsMoney.title}: {formatVnd(operationSummary.money.bookingValue)}</strong>
+              <span>{operationSummary.money.unlinkedCount > 0
+                ? `${text.operationsMoney.needsOrder}: ${operationSummary.money.unlinkedCount}`
+                : text.operationsMoney.clear}</span>
+            </summary>
+            <div className="staff-summary-grid staff-operations-money-grid">
+              {(['bookingValue', 'orderTotal', 'orderPaid', 'orderBalance', 'pendingValue', 'unlinkedValue'] as const).map((key) => (
+                <div key={key}><span>{text.operationsMoney[key]}</span><strong>{formatVnd(operationSummary.money[key])}</strong></div>
+              ))}
+            </div>
+            <p>{text.operationsMoney.hint}</p>
+            {operationSessionScope === 'past' && <p>{text.operationsMoney.past}</p>}
+          </details>
 
           <div className="staff-operations-list">
             {operationSessions.map((session) => {
@@ -9994,6 +10032,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                       <span>{text.labels.capacity}: {sessionBookedPlayers(session, order)}/{sessionCapacity(session, order)}</span>
                       <span>{text.labels.checkIns}: {sessionCheckedInCount(session)}/{Math.max(participants.length, sessionCheckedInCount(session))}</span>
                       <span>{text.labels.payment}: {paymentLabel}</span>
+                      {!order && operationSummary.money.unlinkedSessionIds.includes(session.id) && (
+                        <strong className="staff-operation-reconcile">{text.operationsMoney.needsOrder}</strong>
+                      )}
+                      {!order && session.ticket_status === 'pending' && (
+                        <strong>{text.operationsMoney.pending}</strong>
+                      )}
                     </div>
                     {order && (
                       <div className="staff-operation-order">

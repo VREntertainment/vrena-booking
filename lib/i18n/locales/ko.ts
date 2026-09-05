@@ -84,6 +84,7 @@ export const ko = {
   audienceTeamwork: '팀워크',
   audienceBeginnerFriendly: '초보자 친화',
   audienceCompetitive: '경쟁',
+  bookingVenueChange: '변경',
   bookingVenueLabel: '매장 위치',
   bookingVenueTitle: '어디에서 플레이할까요?',
   bookingVenueHint: '세션을 확인하거나 예약하기 전에 VRena 지점을 선택하세요.',

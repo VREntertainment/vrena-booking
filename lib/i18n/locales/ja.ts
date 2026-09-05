@@ -84,6 +84,7 @@ export const ja = {
   audienceTeamwork: 'チームワーク',
   audienceBeginnerFriendly: '初心者向け',
   audienceCompetitive: '競技向け',
+  bookingVenueChange: '変更',
   bookingVenueLabel: '店舗ロケーション',
   bookingVenueTitle: 'どこでプレイしますか？',
   bookingVenueHint: 'セッションの確認や予約の前にVRenaのロケーションを選んでください。',
