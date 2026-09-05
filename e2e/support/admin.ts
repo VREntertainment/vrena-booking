@@ -40,8 +40,20 @@ export async function stubHCaptcha(page: Page) {
 }
 
 export async function loginAsAdmin(page: Page) {
-  const { adminEmail, adminPassword } = e2eConfig()
+  const { adminEmail, adminPassword, baseURL } = e2eConfig()
 
+  // WebKit upgrades loopback HTTP assets to HTTPS under the production CSP.
+  // Only the local HTTP fixture has no TLS server; keep the deployed CSP intact.
+  const testUrl = new URL(baseURL)
+  if (page.context().browser()?.browserType().name() === 'webkit' && testUrl.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(testUrl.hostname)) {
+    await page.route(`${testUrl.origin}/**`, async (route) => {
+      if (route.request().resourceType() !== 'document') return route.continue()
+      const response = await route.fetch()
+      const headers = response.headers()
+      if (headers['content-security-policy']) headers['content-security-policy'] = headers['content-security-policy'].replace(/(^|;)\s*upgrade-insecure-requests(?=;|$)/g, '')
+      await route.fulfill({ response, headers })
+    })
+  }
   await stubHCaptcha(page)
   await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: e2eConfig().baseURL }])
   await page.goto('/profile')

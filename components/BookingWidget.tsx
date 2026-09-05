@@ -29,6 +29,7 @@ import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, remo
 import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
 import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/googleAnalytics'
 import AppLoadingState from './AppLoadingState'
+import DocumentLanguage from './DocumentLanguage'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
 import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
@@ -9181,7 +9182,7 @@ function handleSessionDateChange(value: string) {
   }
 
   const appMain = (
-      <main>
+      <main lang={language}>
         {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
           <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
         )}
@@ -9288,7 +9289,7 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'staff' && (
-          canAccessStaffConsole ? (
+          isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessStaffConsole ? (
             sharedKioskAccount && kioskOperator ? (
               <StaffConsole
                 authEmail=""
@@ -9321,7 +9322,7 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'hr' && (
-          canAccessHrConsole ? (
+          isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessHrConsole ? (
             sharedKioskAccount && kioskOperator ? (
               <StaffConsole
                 authEmail=""
@@ -9563,13 +9564,13 @@ function handleSessionDateChange(value: string) {
               <div className="create-session-form" id="create-session-form">
             <div className="form-grid">
               <div className="full">
-                <label>{text.sessionName} <span className="required">*</span></label>
-                <input data-testid="create-session-name" placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
+                <label htmlFor="create-sessionName">{text.sessionName} <span className="required">*</span></label>
+                <input id="create-sessionName" data-testid="create-session-name" placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
               </div>
               <div className="full session-mode-row">
                 <div>
                   <label>{text.sessionType}</label>
-                  <div className="segmented session-type-toggle">
+                  <div className="segmented session-type-toggle" role="group" aria-label={text.sessionType}>
                     <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
                       {text.normalGame}
                     </button>
@@ -9581,7 +9582,7 @@ function handleSessionDateChange(value: string) {
                 {!sessionClubId && (
                   <div>
                     <label>{text.visibility}</label>
-                    <div className="segmented visibility-toggle">
+                    <div className="segmented visibility-toggle" role="group" aria-label={text.visibility}>
                       <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
                         {text.public}
                       </button>
@@ -9600,8 +9601,8 @@ function handleSessionDateChange(value: string) {
                   </div>
                   <div className="form-grid compact-form-grid">
                     <div>
-                      <label>{text.tournamentFormat}</label>
-                      <select value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
+                      <label htmlFor="create-tournamentFormat">{text.tournamentFormat}</label>
+                      <select id="create-tournamentFormat" value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
                         <option value="pool_only">{text.formatPoolOnly}</option>
                         <option value="pool_to_semifinal">{text.formatPoolSemifinal}</option>
                         <option value="pool_to_final">{text.formatPoolFinal}</option>
@@ -9611,16 +9612,16 @@ function handleSessionDateChange(value: string) {
                       </select>
                     </div>
                     <div>
-                      <label>{text.matchSeries}</label>
-                      <select value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
+                      <label htmlFor="create-matchSeries">{text.matchSeries}</label>
+                      <select id="create-matchSeries" value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
                         <option value={1}>BO1</option>
                         <option value={3}>BO3</option>
                         <option value={5}>BO5</option>
                       </select>
                     </div>
                     <div>
-                      <label>{text.roundsPerMatch}</label>
-                      <select value={tournamentRoundsPerMatch} onChange={(event) => setTournamentRoundsPerMatch(Number(event.target.value))}>
+                      <label htmlFor="create-roundsPerMatch">{text.roundsPerMatch}</label>
+                      <select id="create-roundsPerMatch" value={tournamentRoundsPerMatch} onChange={(event) => setTournamentRoundsPerMatch(Number(event.target.value))}>
                         {[1, 2, 3, 4, 5].map((roundCount) => (
                           <option key={roundCount} value={roundCount}>{roundCount}</option>
                         ))}
@@ -9628,8 +9629,8 @@ function handleSessionDateChange(value: string) {
                       <p className="field-help">{text.roundsPerMatchHint}</p>
                     </div>
                     <div>
-                      <label>{text.qualification}</label>
-                      <select value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
+                      <label htmlFor="create-qualification">{text.qualification}</label>
+                      <select id="create-qualification" value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
                         <option value="top_1">{text.topOnePerPool}</option>
                         <option value="top_2">{text.topTwoPerPool}</option>
                         <option value="top_4">{text.topFourPerPool}</option>
@@ -9638,8 +9639,8 @@ function handleSessionDateChange(value: string) {
                     </div>
                     {tournamentQualificationRule === 'custom' && (
                       <div>
-                        <label>{text.customQualifiers}</label>
-                        <input inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
+                        <label htmlFor="create-customQualifiers">{text.customQualifiers}</label>
+                        <input id="create-customQualifiers" inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
                       </div>
                     )}
                     <label className="toggle-line">
@@ -9651,23 +9652,23 @@ function handleSessionDateChange(value: string) {
                       <span>{text.createBronzeMatch}</span>
                     </label>
                     <div>
-                      <label>{text.firstPrize}</label>
-                      <input value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
+                      <label htmlFor="create-firstPrize">{text.firstPrize}</label>
+                      <input id="create-firstPrize" value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
                     </div>
                     <div>
-                      <label>{text.secondPrize}</label>
-                      <input value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
+                      <label htmlFor="create-secondPrize">{text.secondPrize}</label>
+                      <input id="create-secondPrize" value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
                     </div>
                     <div>
-                      <label>{text.thirdPrize}</label>
-                      <input value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
+                      <label htmlFor="create-thirdPrize">{text.thirdPrize}</label>
+                      <input id="create-thirdPrize" value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
                     </div>
                   </div>
                 </div>
               )}
               <div className="full">
-                <label>{text.clubOnly}</label>
-                <select value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
+                <label htmlFor="create-clubOnly">{text.clubOnly}</label>
+                <select id="create-clubOnly" value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
                   <option value="">{text.noClub}</option>
                   {sessionClubOptions.map((club) => (
                     <option key={club.id} value={club.id}>
@@ -9689,8 +9690,8 @@ function handleSessionDateChange(value: string) {
                   />
                 </div>
                 <div>
-                  <label>{text.availableTime} <span className="required">*</span></label>
-                  <select data-testid="create-session-time" value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
+                  <label htmlFor="create-availableTime">{text.availableTime} <span className="required">*</span></label>
+                  <select id="create-availableTime" data-testid="create-session-time" value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
                     <option value="">{text.chooseTime}</option>
                     {timeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -9700,8 +9701,8 @@ function handleSessionDateChange(value: string) {
                   </select>
                 </div>
                 <div>
-                  <label>{text.duration}</label>
-                  <select data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
+                  <label htmlFor="create-duration">{text.duration}</label>
+                  <select id="create-duration" data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
                     {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
                       <option value={duration} key={duration}>
                         {duration} min
@@ -9712,8 +9713,8 @@ function handleSessionDateChange(value: string) {
               </div>
               <div className="full session-capacity-row">
                 <div>
-                  <label>{text.maxPlayers}</label>
-                  <select data-testid="create-session-max-players" value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
+                  <label htmlFor="create-maxPlayers">{text.maxPlayers}</label>
+                  <select id="create-maxPlayers" data-testid="create-session-max-players" value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
                     {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
                       <option value={count} key={count}>
                         {count} player{count === 1 ? '' : 's'}
@@ -9722,8 +9723,8 @@ function handleSessionDateChange(value: string) {
                   </select>
                 </div>
                 <div>
-                  <label>{text.arenas}</label>
-                  <select value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
+                  <label htmlFor="create-arenas">{text.arenas}</label>
+                  <select id="create-arenas" value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
                     <option value={1}>{text.oneArena}</option>
                     <option value={2} disabled={sessionMaxPlayers < 8}>
                       {text.twoArenas}
@@ -9739,7 +9740,7 @@ function handleSessionDateChange(value: string) {
                   <label>{text.gameOptions} <span className="required">*</span></label>
                   {renderGameGuideTrigger(null, 'game-picker-guide-link')}
                 </div>
-                <div className="game-picker">
+                <div className="game-picker" role="group" aria-label={text.gameOptions}>
                   {games.map((game) => (
                     <div className="game-card-shell" key={game.id}>
                       <button
@@ -9764,7 +9765,7 @@ function handleSessionDateChange(value: string) {
                   <button type="button" aria-label={text.formatUnderline} title={text.formatUnderline} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}><Underline aria-hidden="true" size={15} strokeWidth={2.5} /></button>
                   <button type="button" aria-label={text.formatStrike} title={text.formatStrike} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}><Strikethrough aria-hidden="true" size={15} strokeWidth={2.5} /></button>
                 </div>
-                <RichNotesEditor
+                <RichNotesEditor ariaLabel={text.notes}
                   value={sessionNotes}
                   onChange={setSessionNotes}
                   placeholder={text.notesPlaceholder}
@@ -10686,6 +10687,7 @@ function handleSessionDateChange(value: string) {
 
   const appShell = (
     <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? 'console-workspace' : 'player-workspace'}${navigationCollapsed ? ' navigation-collapsed' : ''}`} data-tour="app-shell">
+      <DocumentLanguage language={language} />
       {profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}
