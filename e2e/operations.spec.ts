@@ -11,6 +11,57 @@ function localAdmin() {
   return createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
 }
 
+test('operations includes unlinked ticket value and saves every ANVIO game', async ({ page }, info) => {
+  if (info.project.name !== 'chromium') await page.setViewportSize({ width: 375, height: 667 })
+  const db = localAdmin()
+  const ids = [randomUUID(), randomUUID()]
+  const name = `Catalog visit ${ids[0].slice(0, 8)}`
+  const day = futureDate(info.project.name === 'chromium' ? 75 : info.project.name === 'webkit' ? 77 : 76)
+  const { data: user, error } = await db.auth.admin.createUser({ email: `${ids[0]}@operations.test.invalid`, password: randomUUID(), email_confirm: true })
+  expect(error).toBeNull()
+  const profileId = user.user!.id
+  try {
+    expect((await db.from('sessions').insert(ids.map((id, index) => ({
+      id, owner_id: profileId, name: index ? `${name} pending` : name, date: day, start_time: '10:00',
+      max_players: 1, game_options: ['laser-tag'], booking_type: 'ticket', ticket_type: 'individual',
+      ticket_player_count: 1, ticket_total_price: index ? 480000 : 660000,
+      ticket_status: index ? 'pending' : 'confirmed', venue_key: index ? 'cafe-des-stagiaires' : 'ha-do-centrosa',
+    })))).error).toBeNull()
+    await loginAsAdmin(page)
+    await openAdmin(page)
+    await page.getByRole('tab', { name: 'Today', exact: true }).click()
+    await page.getByLabel('Operations date', { exact: true }).fill(day)
+    const money = page.locator('.staff-operations-money')
+    await expect(money.locator('summary')).toContainText('660.000')
+    await expect(money.locator('summary')).toContainText('Order reconciliation needed: 1')
+    await money.locator('summary').click()
+    for (const [label, amount] of [['Confirmed booking value', '660000'], ['Pending requests / drafts', '480000'], ['Bookings needing an order', '660000'], ['Order payments', '0'], ['Order balance due', '0']]) {
+      const row = money.locator('.staff-operations-money-grid > div').filter({ has: page.getByText(label, { exact: true }) })
+      await expect.poll(async () => (await row.locator('strong').innerText()).replace(/\D/g, '')).toBe(amount)
+    }
+    await money.locator('summary').click()
+    const card = page.locator('article.staff-operation-session').filter({ has: page.getByText(name, { exact: true }) })
+    await card.getByRole('button', { name: 'Record visit', exact: true }).click()
+    const gameSelect = card.getByRole('combobox', { name: 'Game', exact: true })
+    for (const [slug, title] of [['revolta', 'Revolta'], ['city-z', 'City Z'], ['station-zarya', 'Station Zarya']]) {
+      await gameSelect.selectOption(slug)
+      await expect.poll(async () => (await db.from('sessions').select('confirmed_game_id').eq('id', ids[0]).single()).data?.confirmed_game_id).toBe(slug)
+      await expect(card.locator('.staff-operation-meta')).toContainText(title)
+      await expect(gameSelect).toBeEnabled()
+    }
+    await page.reload()
+    await page.getByRole('tab', { name: 'Today', exact: true }).click()
+    await page.getByLabel('Operations date', { exact: true }).fill(day)
+    await expect(card.locator('.staff-operation-meta')).toContainText('Station Zarya')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false)
+    await card.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: `/tmp/vrena-priority-operations-${info.project.name}.png` })
+  } finally {
+    expect((await db.from('sessions').delete().in('id', ids)).error).toBeNull()
+    await db.auth.admin.deleteUser(profileId)
+  }
+})
+
 test('visit arrival, results, order linkage and receipts survive reload and connection failures', async ({ page }, info) => {
   if (info.project.name === 'webkit') await page.setViewportSize({ width: 375, height: 667 })
   const db = localAdmin()
