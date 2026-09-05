@@ -15870,6 +15870,12 @@ body {
   color: var(--vrena-status-success-ink);
 }
 
+@media (prefers-color-scheme: light) {
+  .app .booking-venue-status.open {
+    color: var(--vrena-green-900);
+  }
+}
+
 .app .booking-venue-coming-soon {
   display: grid;
   width: min(680px, 100%);
