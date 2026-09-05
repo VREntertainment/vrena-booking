@@ -58,6 +58,16 @@ function VenueMapPreview({ name, venue }: {
   )
 }
 
+function VenueHoursPill({ label }: { label: string }) {
+  const [opening, hours] = label.split(' · ')
+  return (
+    <span className="booking-venue-status open">
+      <span>{opening}</span>
+      {hours && <span className="booking-venue-hours-time">· {hours}</span>}
+    </span>
+  )
+}
+
 export default function BookingVenueSelector({ compactOnMobile = false, onChange, text, value }: BookingVenueSelectorProps) {
   const [expanded, setExpanded] = useState(false)
   const venueName = value === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
@@ -94,9 +104,9 @@ export default function BookingVenueSelector({ compactOnMobile = false, onChange
               <span className="booking-venue-map-placeholder" aria-hidden="true" />
               <span className="booking-venue-copy">
                 <strong>{text.bookingVenueHaDoName}</strong>
+                <VenueHoursPill label={text.bookingVenueHaDoHours} />
                 <small>{text.bookingVenueHaDoAddress}</small>
               </span>
-              <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
             </button>
             <VenueMapPreview
               name={text.bookingVenueHaDoName}
@@ -115,9 +125,9 @@ export default function BookingVenueSelector({ compactOnMobile = false, onChange
               <span className="booking-venue-map-placeholder" aria-hidden="true" />
               <span className="booking-venue-copy">
                 <strong>{text.bookingVenueCafeName}</strong>
+                <VenueHoursPill label={text.bookingVenueCafeHours} />
                 <small>{text.bookingVenueCafeAddress}</small>
               </span>
-              <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
             </button>
             <VenueMapPreview
               name={text.bookingVenueCafeName}
@@ -136,7 +146,7 @@ export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
       <div className="booking-venue-coming-soon-icon">
         <CalendarClock aria-hidden="true" size={30} />
       </div>
-      <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
+      <VenueHoursPill label={text.bookingVenueCafeHours} />
       <h2 id="booking-venue-coming-soon-title">{text.bookingVenueCafeComingSoonTitle}</h2>
       <p>{text.bookingVenueCafeComingSoonBody}</p>
       <p className="booking-venue-soft-opening-notice">
@@ -157,7 +167,7 @@ export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap })
       <div className="cafe-booking-notice-icon">
         <MessageCircle aria-hidden="true" size={24} />
       </div>
-      <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
+      <VenueHoursPill label={text.bookingVenueCafeHours} />
       <h2 id="cafe-booking-notice-title">{text.bookingVenueCafeBookingNoticeTitle}</h2>
       <p>{text.bookingVenueCafeBookingNoticeBody}</p>
       <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
