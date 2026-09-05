@@ -4,7 +4,6 @@ import {
   games,
   monthAbbreviations,
   selectedTicketService,
-  ticketArenaCapacityPerSlot,
   ticketArenaCount,
   type GameId,
   type TicketType,
@@ -15,7 +14,8 @@ import {
   type TicketPricingVenue,
 } from './ticketTariffs'
 import type { LanguageCode } from './i18n/languages'
-import { calculateTicketPricing, minimumTicketDurationMinutes } from './ticketPricing'
+import { calculateTicketPricing, minimumTicketDurationMinutes, ticketArenaCapacityForVenue } from './ticketPricing'
+export { ticketArenaCapacityForVenue } from './ticketPricing'
 import { vrenaPalette } from './theme/vrenaPalette'
 import type { LeaderboardCriterion, LeaderboardPlayer } from '../components/LeaderboardPanel'
 import type { StaffProfile } from '../components/StaffConsole'
@@ -714,10 +714,6 @@ export function ticketUnitPrice(
   venue: TicketPricingVenue = 'ha-do-centrosa'
 ) {
   return individualTicketUnitPrice(dateValue, timeValue, venue)
-}
-
-export function ticketArenaCapacityForVenue(venue: TicketPricingVenue = 'ha-do-centrosa') {
-  return venue === 'cafe-des-stagiaires' ? 8 : ticketArenaCapacityPerSlot
 }
 
 export function ticketRequiredSlots(

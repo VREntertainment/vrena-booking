@@ -84,6 +84,7 @@ export const fr = {
   audienceTeamwork: 'Équipe',
   audienceBeginnerFriendly: 'Débutants',
   audienceCompetitive: 'Compétitif',
+  bookingVenueChange: 'Changer',
   bookingVenueLabel: 'Adresse',
   bookingVenueTitle: 'Où veux-tu jouer ?',
   bookingVenueHint: 'Choisis une adresse VRena avant de consulter les sessions ou de réserver.',

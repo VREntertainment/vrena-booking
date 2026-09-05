@@ -11436,3 +11436,60 @@
 .app .staff-cost-table-scroll { max-width: 100%; overflow-x: auto; margin-top: 16px; }
 .app .staff-cost-table-scroll table { width: 100%; min-width: 600px; border-collapse: collapse; }
 .app .staff-cost-table-scroll th, .app .staff-cost-table-scroll td { text-align: left; padding: 10px; border-bottom: 1px solid var(--staff-modern-border); }
+
+/* Keep the operating queue ahead of optional financial detail on mobile. */
+.app .staff-operations-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.app .staff-operations-money {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--vrena-line-warm);
+  border-radius: 12px;
+  background: var(--vrena-surface);
+}
+
+.app .staff-operations-money > summary {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app .staff-operations-money > summary span {
+  display: block;
+  margin-top: 3px;
+  color: var(--vrena-accent-text);
+}
+
+.app .staff-operations-money-grid {
+  margin-top: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app .staff-operations-money > p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app .staff-operation-reconcile {
+  color: var(--vrena-status-warning-ink);
+}
+
+@media (max-width: 720px) {
+  .app .staff-operations-summary,
+  .app .staff-operations-money-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .app .staff-operations-summary > div {
+    min-height: 0;
+    padding: 8px 10px;
+  }
+
+  .app .staff-operations-summary strong {
+    font-size: 20px;
+  }
+}

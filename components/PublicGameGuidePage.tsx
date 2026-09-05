@@ -6,9 +6,8 @@ import {
   gameAudienceLabelKeys,
   guideTextItems,
   isStaffGuideLanguage,
-  normalizeStaffAudience,
   normalizedGuideText,
-  publicGameGuideCatalog,
+  mergeStaffGameCatalog,
   type PublicGameGuideGame,
   type StaffGameGuide,
 } from '../lib/gameGuideCatalog'
@@ -18,64 +17,6 @@ type PublicGameGuidePageProps = {
   language: LanguageCode
   staffGuides: StaffGameGuide[]
   text: TranslationMap
-}
-
-function isSafeStaffImageUrl(value: string | null | undefined) {
-  if (!value) return false
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!supabaseUrl) return false
-
-  try {
-    return new URL(value).origin === new URL(supabaseUrl).origin
-  } catch {
-    return false
-  }
-}
-
-function categoryFromStaffGame(value: string | null | undefined, fallback: PublicGameGuideGame['category']) {
-  const normalized = value?.toLowerCase() || ''
-  if (normalized === 'escape') return 'Escape'
-  if (normalized === 'tournament') return 'Tournament'
-  if (normalized === 'shooting') return 'FPS / PVP'
-  if (normalized === 'other') return 'Other'
-  return fallback
-}
-
-function mergeStaffGames(staffGuides: StaffGameGuide[]) {
-  const staffGuideBySlug = new Map(staffGuides.map((guide) => [guide.slug, guide]))
-  const knownIds = new Set(publicGameGuideCatalog.map((game) => game.id))
-  const mergedGames = publicGameGuideCatalog.map((game) => {
-    const staffGuide = staffGuideBySlug.get(game.id)
-    if (!staffGuide) return game
-
-    const staffAudience = normalizeStaffAudience(staffGuide.audience, staffGuide.difficulty)
-
-    return {
-      ...game,
-      title: staffGuide.name?.trim() || game.title,
-      category: categoryFromStaffGame(staffGuide.game_type, game.category),
-      image: isSafeStaffImageUrl(staffGuide.image_url) ? staffGuide.image_url as string : game.image,
-      durationMinutes: staffGuide.duration_minutes || game.durationMinutes,
-      maxPlayersPerArena: staffGuide.max_players_per_arena || game.maxPlayersPerArena,
-      audience: staffAudience.length > 0 ? staffAudience : game.audience,
-    }
-  })
-
-  const extraStaffGames = staffGuides
-    .filter((guide) => guide.slug && !knownIds.has(guide.slug))
-    .map<PublicGameGuideGame>((guide) => ({
-      id: guide.slug,
-      title: guide.name?.trim() || guide.slug,
-      category: categoryFromStaffGame(guide.game_type, 'Other'),
-      image: isSafeStaffImageUrl(guide.image_url) ? guide.image_url as string : '/games/laser-tag.png',
-      durationMinutes: guide.duration_minutes || 20,
-      maxPlayersPerArena: guide.max_players_per_arena || 4,
-      audience: normalizeStaffAudience(guide.audience, guide.difficulty),
-      venues: ['ha-do-centrosa'],
-    }))
-
-  return [...mergedGames, ...extraStaffGames]
 }
 
 function fallbackSummary(game: PublicGameGuideGame, text: TranslationMap) {
@@ -108,7 +49,7 @@ export default function PublicGameGuidePage({
   text,
 }: PublicGameGuidePageProps) {
   const staffGuideBySlug = new Map(staffGuides.map((guide) => [guide.slug, guide]))
-  const games = mergeStaffGames(staffGuides)
+  const games = mergeStaffGameCatalog(staffGuides, process.env.NEXT_PUBLIC_SUPABASE_URL)
 
   return (
     <main>

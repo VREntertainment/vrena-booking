@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import { CalendarClock, MapPin, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
@@ -5,6 +8,7 @@ import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
 type BookingVenueSelectorProps = {
+  compactOnMobile?: boolean
   onChange: (venue: BookingVenueId) => void
   text: TranslationMap
   value: BookingVenueId
@@ -54,56 +58,72 @@ function VenueMapPreview({ name, venue }: {
   )
 }
 
-export default function BookingVenueSelector({ onChange, text, value }: BookingVenueSelectorProps) {
+export default function BookingVenueSelector({ compactOnMobile = false, onChange, text, value }: BookingVenueSelectorProps) {
+  const [expanded, setExpanded] = useState(false)
+  const venueName = value === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
+  const selectVenue = (venue: BookingVenueId) => {
+    onChange(venue)
+    setExpanded(false)
+  }
   return (
-    <section className="booking-venue-selector" aria-labelledby="booking-venue-title">
-      <div className="booking-venue-heading">
-        <span>{text.bookingVenueLabel}</span>
-        <h2 id="booking-venue-title">{text.bookingVenueTitle}</h2>
-        <p>{text.bookingVenueHint}</p>
-      </div>
-
-      <div className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
-        <div className="booking-venue-option-shell">
-          <button
-            aria-checked={value === 'ha-do-centrosa'}
-            className={value === 'ha-do-centrosa' ? 'booking-venue-option active' : 'booking-venue-option'}
-            onClick={() => onChange('ha-do-centrosa')}
-            role="radio"
-            type="button"
-          >
-            <span className="booking-venue-map-placeholder" aria-hidden="true" />
-            <span className="booking-venue-copy">
-              <strong>{text.bookingVenueHaDoName}</strong>
-              <small>{text.bookingVenueHaDoAddress}</small>
-            </span>
-            <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
+    <section className={`booking-venue-selector${compactOnMobile ? ' booking-venue-selector-compact' : ''}${expanded ? ' expanded' : ''}`} aria-label={text.bookingVenueTitle}>
+      {compactOnMobile && (
+        <div className="booking-venue-mobile-summary">
+          <div><span>{text.bookingVenueLabel}</span><strong>{venueName}</strong></div>
+          <button aria-controls="booking-venue-expanded-options" aria-expanded={expanded} className="secondary small-button" type="button" onClick={() => setExpanded(!expanded)}>
+            {expanded ? text.close : text.bookingVenueChange}
           </button>
-          <VenueMapPreview
-            name={text.bookingVenueHaDoName}
-            venue="ha-do-centrosa"
-          />
+        </div>
+      )}
+      <div className="booking-venue-expanded-content" id="booking-venue-expanded-options">
+        <div className="booking-venue-heading">
+          <span>{text.bookingVenueLabel}</span>
+          <h2 id="booking-venue-title">{text.bookingVenueTitle}</h2>
+          <p>{text.bookingVenueHint}</p>
         </div>
 
-        <div className="booking-venue-option-shell">
-          <button
-            aria-checked={value === 'cafe-des-stagiaires'}
-            className={value === 'cafe-des-stagiaires' ? 'booking-venue-option active' : 'booking-venue-option'}
-            onClick={() => onChange('cafe-des-stagiaires')}
-            role="radio"
-            type="button"
-          >
-            <span className="booking-venue-map-placeholder" aria-hidden="true" />
-            <span className="booking-venue-copy">
-              <strong>{text.bookingVenueCafeName}</strong>
-              <small>{text.bookingVenueCafeAddress}</small>
-            </span>
-            <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
-          </button>
-          <VenueMapPreview
-            name={text.bookingVenueCafeName}
-            venue="cafe-des-stagiaires"
-          />
+        <div className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
+          <div className="booking-venue-option-shell">
+            <button
+              aria-checked={value === 'ha-do-centrosa'}
+              className={value === 'ha-do-centrosa' ? 'booking-venue-option active' : 'booking-venue-option'}
+              onClick={() => selectVenue('ha-do-centrosa')}
+              role="radio"
+              type="button"
+            >
+              <span className="booking-venue-map-placeholder" aria-hidden="true" />
+              <span className="booking-venue-copy">
+                <strong>{text.bookingVenueHaDoName}</strong>
+                <small>{text.bookingVenueHaDoAddress}</small>
+              </span>
+              <span className="booking-venue-status open">{text.bookingVenueOpenNow}</span>
+            </button>
+            <VenueMapPreview
+              name={text.bookingVenueHaDoName}
+              venue="ha-do-centrosa"
+            />
+          </div>
+
+          <div className="booking-venue-option-shell">
+            <button
+              aria-checked={value === 'cafe-des-stagiaires'}
+              className={value === 'cafe-des-stagiaires' ? 'booking-venue-option active' : 'booking-venue-option'}
+              onClick={() => selectVenue('cafe-des-stagiaires')}
+              role="radio"
+              type="button"
+            >
+              <span className="booking-venue-map-placeholder" aria-hidden="true" />
+              <span className="booking-venue-copy">
+                <strong>{text.bookingVenueCafeName}</strong>
+                <small>{text.bookingVenueCafeAddress}</small>
+              </span>
+              <span className="booking-venue-status soon">{text.bookingVenueComingSoon}</span>
+            </button>
+            <VenueMapPreview
+              name={text.bookingVenueCafeName}
+              venue="cafe-des-stagiaires"
+            />
+          </div>
         </div>
       </div>
     </section>

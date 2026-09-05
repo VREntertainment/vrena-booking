@@ -84,6 +84,7 @@ export const vi = {
   audienceTeamwork: 'Đồng đội',
   audienceBeginnerFriendly: 'Dễ cho người mới',
   audienceCompetitive: 'Cạnh tranh',
+  bookingVenueChange: 'Đổi',
   bookingVenueLabel: 'Địa điểm cửa hàng',
   bookingVenueTitle: 'Bạn muốn chơi ở đâu?',
   bookingVenueHint: 'Chọn một địa điểm VRena trước khi xem phiên chơi hoặc đặt chỗ.',

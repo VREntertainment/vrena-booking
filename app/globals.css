@@ -15651,6 +15651,39 @@ body {
   box-shadow: var(--player-shadow-soft, 0 14px 34px rgb(var(--vrena-neutral-950-rgb) / 0.07));
 }
 
+.app .booking-venue-expanded-content {
+  display: grid;
+  gap: 18px;
+}
+
+.app .booking-venue-mobile-summary,
+.app .ticket-mobile-total {
+  display: none;
+}
+
+.app .ticket-voucher-details {
+  margin-top: 12px;
+  color: var(--player-text-muted);
+}
+
+.app .ticket-voucher-details > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .ticket-checkout-action {
+  display: grid;
+  gap: 8px;
+}
+
+.app .ticket-confirmation-requirement {
+  margin: 0;
+  color: var(--vrena-status-warning-ink);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .app .booking-venue-heading {
   display: grid;
   gap: 5px;
@@ -16526,5 +16559,122 @@ body {
   .app.player-workspace :is(.login-modal, .player-profile-panel, .club-drawer) {
     gap: 16px;
     padding: 20px;
+  }
+}
+
+/* Keep the selected venue, booking fields, and checkout within easy reach. */
+@media (max-width: 720px) {
+  .app .booking-venue-selector-compact {
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  .app .booking-venue-selector-compact .booking-venue-mobile-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .app .booking-venue-mobile-summary > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .app .booking-venue-mobile-summary span {
+    color: var(--player-text-muted);
+    font-size: 11px;
+  }
+
+  .app .booking-venue-mobile-summary strong {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .app .booking-venue-mobile-summary button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    margin: 0;
+  }
+
+  .app .booking-venue-selector-compact:not(.expanded) .booking-venue-expanded-content {
+    display: none;
+  }
+
+  .app .booking-venue-selector-compact .booking-venue-heading {
+    display: none;
+  }
+
+  .app.player-workspace .ticket-booking-layout.cafe .cafe-booking-notice {
+    grid-row: auto;
+  }
+
+  .app.player-workspace .tickets-section {
+    padding-bottom: 160px;
+  }
+
+  .app.player-workspace .ticket-form-panel .ticket-form-grid {
+    gap: 8px;
+  }
+
+  .app .ticket-form-panel .ticket-price-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .app .ticket-price-summary > div:first-child,
+  .app .ticket-price-summary .ticket-reserved-line,
+  .app .ticket-price-summary .ticket-total-line {
+    display: none;
+  }
+
+  .app .ticket-checkout-action {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    border-top: 1px solid var(--player-border, var(--vrena-line-warm));
+    background: var(--player-surface-raised, var(--vrena-surface));
+    box-shadow: 0 -4px 20px rgb(var(--vrena-neutral-950-rgb) / 0.08);
+  }
+
+  .app .ticket-mobile-total {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .app .ticket-mobile-total span {
+    font-size: 11px;
+    color: var(--player-text-muted);
+  }
+
+  .app .ticket-mobile-total strong {
+    font-size: 16px;
+    color: var(--player-text);
+  }
+
+  .app .ticket-checkout-action .create-button {
+    min-height: 44px;
+    margin: 0;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .app .ticket-confirmation-requirement {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .app .tickets-section.ticket-confirmed .ticket-checkout-action {
+    position: static;
+    padding: 12px;
   }
 }

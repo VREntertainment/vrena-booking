@@ -12,7 +12,7 @@ type GamesLanguagePageProps = {
   }>
 }
 
-export const revalidate = 86400
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Game Guide | VRena_Booking_App',
