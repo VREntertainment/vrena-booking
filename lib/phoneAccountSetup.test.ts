@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error allowImportingTsExtensions is intentionally disabled for app code.
 import {
   isPendingPhoneAccountSetup,
   isValidPhoneSetupPassword,

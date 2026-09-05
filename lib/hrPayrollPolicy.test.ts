@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error Node's native TypeScript runner requires the explicit extension.
 import { calculatePayrollTaxBases, calculateProgressivePit, progressivePitExcelFormula, type ProgressivePitBracket } from './hrPayrollPolicy.ts'
 
 const brackets: ProgressivePitBracket[] = [

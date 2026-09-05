@@ -45,3 +45,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Isolated local test service state
+e2e/supabase/.temp/
+e2e/supabase/.branches/

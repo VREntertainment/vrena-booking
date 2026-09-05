@@ -1,5 +1,7 @@
 'use client'
 
+import { buildTicketBookingRequest } from '../lib/ticketBookingRequest'
+
 import NextImage from 'next/image'
 import { Bold, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, Lock, MessageSquare, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
 import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -7413,46 +7415,27 @@ function handleSessionDateChange(value: string) {
       showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
       setTicketConfirmation(null)
 
-      const ticketRpcArgs = {
-        p_ticket_type: ticketType,
-        p_date: ticketDate,
-        p_start_time: `${ticketTime}:00`,
-        p_duration_minutes: activeTicketDuration,
-        p_player_count: ticketPlayers,
-        p_arena_count: activeTicketArenaCount,
-        p_game_options: [service.defaultGame],
-        p_unit_price: isSpecialTicketType ? 0 : currentTicketUnitPrice,
-        p_total_price: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-      }
-      const trimmedTicketSpecialNote = ticketSpecialNote.trim().slice(0, 500)
-
+      const request = buildTicketBookingRequest({
+        isHaDo: isHaDoBookingVenue,
+        authenticated: Boolean(activeProfile),
+        ticketType,
+        date: ticketDate,
+        time: ticketTime,
+        durationMinutes: activeTicketDuration,
+        players: ticketPlayers,
+        arenaCount: activeTicketArenaCount,
+        defaultGame: service.defaultGame,
+        unitPrice: currentTicketUnitPrice,
+        totalPrice: currentTicketTotalPrice,
+        special: isSpecialTicketType,
+        note: ticketSpecialNote,
+        loyaltyPoints: appliedTicketLoyaltyPoints,
+        discountCode: ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+        guestName: guestTicketContact.name,
+        guestPhone: guestContactValidation.normalizedPhone,
+      })
       const client = await getSupabase()
-      const { data, error } = isHaDoBookingVenue
-        ? activeProfile
-          ? await client.rpc('create_ticket_booking', {
-            ...ticketRpcArgs,
-            p_loyalty_points_to_redeem: isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints,
-            p_discount_code: !isSpecialTicketType && ticketDiscountQuote ? normalizedTicketDiscountCode : null,
-            ...(isSpecialTicketType ? { p_special_note: trimmedTicketSpecialNote || null } : {}),
-          })
-          : await client.rpc('create_guest_ticket_booking', {
-            ...ticketRpcArgs,
-            p_guest_name: guestTicketContact.name.trim() || null,
-            p_guest_phone: guestContactValidation.normalizedPhone,
-            ...(isSpecialTicketType ? { p_guest_note: trimmedTicketSpecialNote || null } : {}),
-          })
-        : await client.rpc('create_cafe_ticket_booking_request', {
-          p_ticket_type: ticketType,
-          p_date: ticketDate,
-          p_start_time: `${ticketTime}:00`,
-          p_duration_minutes: activeTicketDuration,
-          p_player_count: ticketPlayers,
-          p_arena_count: activeTicketArenaCount,
-          p_game_options: [service.defaultGame],
-          p_guest_name: activeProfile ? null : guestTicketContact.name.trim() || null,
-          p_guest_phone: activeProfile ? null : guestContactValidation.normalizedPhone,
-          p_special_note: trimmedTicketSpecialNote || null,
-        })
+      const { data, error } = await client.rpc(request.name, request.args)
 
       if (error) {
         showTicketStatus(error.message || text.ticketBookingError, 'error')

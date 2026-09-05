@@ -1,3 +1,4 @@
+import { vrenaPalette } from './theme/vrenaPalette.ts'
 const STAFF_KIOSK_ELIGIBLE_DEPARTMENTS = new Set(['vrena', 'manager'])
 
 export const STAFF_KIOSK_ELIGIBILITY_MESSAGE = 'Store PIN access is limited to VRena and Manager employees.'
@@ -65,7 +66,7 @@ export function staffKioskOperatorFromEmployee(
     ),
     avatarEmoji: null,
     avatarInitials: employeeInitials(name),
-    avatarColor: '#f3f4f6',
-    avatarTextColor: '#111827',
+    avatarColor: vrenaPalette.neutral[100],
+    avatarTextColor: vrenaPalette.neutral[900],
   }
 }

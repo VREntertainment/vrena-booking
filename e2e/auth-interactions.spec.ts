@@ -32,9 +32,10 @@ async function stubDeferredHCaptcha(page: Page) {
 }
 
 async function openPasswordStep(page: Page) {
+  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: process.env.E2E_BASE_URL || 'http://127.0.0.1:3000' }])
   await page.goto('/profile')
 
-  const emailInput = page.locator('.login-profile-form input[type="email"]')
+  const emailInput = page.locator('.login-profile-form .email-field input')
   await emailInput.fill(TEST_EMAIL)
   await emailInput.press('Enter')
 

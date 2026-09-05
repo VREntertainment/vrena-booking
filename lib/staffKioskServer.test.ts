@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error Node's native TypeScript runner requires the explicit extension.
 import { isStaffKioskEligibleDepartment, staffKioskOperatorFromEmployee } from './staffKioskDirectory.ts'
 
 test('only VRena and Manager employees are eligible for shared-device PIN access', () => {

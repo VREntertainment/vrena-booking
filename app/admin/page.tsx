@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { connection } from 'next/server'
-import BookingWidget from '../../components/BookingWidget'
+import HomeAppShell from '../../components/HomeAppShell'
 import '../staff/staff.css'
 
 export const metadata: Metadata = {
@@ -17,5 +17,5 @@ export const metadata: Metadata = {
 
 export default async function AdminPage() {
   await connection()
-  return <BookingWidget initialView="staff" />
+  return <HomeAppShell initialView="staff" />
 }

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-// @ts-expect-error Node's native TypeScript runner requires the explicit extension.
 import { validateStaffEmployeeRecord } from './staffEmployeeRecord.ts'
 
 test('normalizes an HR-only employee record with optional contact details', () => {

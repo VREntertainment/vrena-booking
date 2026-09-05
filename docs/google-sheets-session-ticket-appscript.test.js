@@ -1,10 +1,10 @@
-const assert = require('node:assert/strict')
-const { readFileSync } = require('node:fs')
-const test = require('node:test')
-const vm = require('node:vm')
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+import vm from 'node:vm'
 
 const scriptSource = readFileSync(
-  new URL('./google-sheets-session-ticket-appscript.js', `file://${__dirname}/`),
+  new URL('./google-sheets-session-ticket-appscript.js', import.meta.url),
   'utf8'
 )
 

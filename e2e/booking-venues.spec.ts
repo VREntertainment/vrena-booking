@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { chooseCafeVenue, futureDate } from './support/admin'
 
 async function expectContainedLayout(page: Page) {
   const hasHorizontalOverflow = await page.evaluate(
@@ -27,12 +28,11 @@ test.describe('booking venue selection', () => {
       await page.goto(route.path)
 
       const venueSelector = page.locator('.booking-venue-selector')
-      const cafe = venueSelector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' })
 
       await expect(page.locator(route.activeSurface)).toBeVisible()
-      await cafe.click()
+      await chooseCafeVenue(page)
 
-      await expect(cafe).toHaveAttribute('aria-checked', 'true')
+      await expect(venueSelector).toContainText('VRena Café des Stagiaires')
       await expect(page.locator(route.activeSurface)).toHaveCount(0)
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Community sessions are not available yet')
       await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
@@ -45,11 +45,10 @@ test.describe('booking venue selection', () => {
     await page.goto('/tickets')
 
     const venueSelector = page.locator('.booking-venue-selector')
-    const cafe = venueSelector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' })
 
-    await cafe.click()
+    await chooseCafeVenue(page)
 
-    await expect(cafe).toHaveAttribute('aria-checked', 'true')
+    await expect(venueSelector).toContainText('VRena Café des Stagiaires')
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toContainText('Your booking is confirmed only after the team replies on Zalo or WhatsApp.')
@@ -62,6 +61,7 @@ test.describe('booking venue selection', () => {
     await expect(whatsappLink.locator('img')).toHaveCount(1)
     await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
+    await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
     await expect(page.locator('#ticket-available-time option')).toHaveCount(17)
     if (test.info().project.name === 'chromium') {
       const noticeHeight = await page.locator('.cafe-booking-notice').evaluate((element) => element.getBoundingClientRect().height)

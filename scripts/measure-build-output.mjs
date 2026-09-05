@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -46,7 +47,7 @@ const collectFiles = (directory, predicate) => {
 
       const relativePath = path.relative(repoRoot, absolutePath);
       if (predicate(relativePath)) {
-        entries.push({ relativePath, bytes: statSync(absolutePath).size });
+        entries.push({ relativePath, bytes: statSync(absolutePath).size, gzipBytes: gzipSync(readFileSync(absolutePath)).byteLength });
       }
     }
   };
@@ -63,7 +64,7 @@ const printTable = (title, rows, limit = 10) => {
   }
 
   for (const row of rows.slice(0, limit)) {
-    console.log(`  ${formatBytes(row.bytes).padStart(10)}  ${row.relativePath}`);
+    console.log(`  ${formatBytes(row.bytes).padStart(10)}${row.gzipBytes ? ` (${formatBytes(row.gzipBytes)} gzip)` : ''}  ${row.relativePath}`);
   }
 };
 

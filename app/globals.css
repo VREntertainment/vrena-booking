@@ -1,5 +1,9 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 @import "../styles/vrena-tokens.css";
+@source "./";
+@source "../components";
+@source "../hooks";
+@source "../lib";
 
 @theme inline {
   --color-background: var(--background);
@@ -14,18 +18,18 @@
   place-items: center;
   padding: 32px 16px;
   background:
-    radial-gradient(circle at top left, rgba(61, 56, 243, 0.16), transparent 34%),
-    #f5f7f7;
-  color: #020e0e;
+    radial-gradient(circle at top left, color-mix(in srgb, var(--vrena-purple-600) 16%, transparent), transparent 34%),
+    var(--vrena-neutral-100);
+  color: var(--vrena-neutral-950);
 }
 
 .phone-account-setup-card {
   width: min(100%, 560px);
   padding: 32px;
-  border: 1px solid #e3e8e8;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 22px 60px rgba(2, 14, 14, 0.12);
+  background: var(--vrena-white);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
 }
 
 .phone-account-setup-card h1 {
@@ -35,7 +39,7 @@
 }
 
 .phone-account-setup-card > p {
-  color: #4b5b5b;
+  color: var(--vrena-neutral-700);
   line-height: 1.55;
 }
 
@@ -45,14 +49,14 @@
   display: grid;
   place-items: center;
   border-radius: 15px;
-  background: #edf2ff;
-  color: #332cd6;
+  background: var(--vrena-purple-50);
+  color: var(--vrena-purple-700);
 }
 
 .phone-account-setup-eyebrow {
   display: block;
   margin-top: 22px;
-  color: #332cd6;
+  color: var(--vrena-purple-700);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -75,16 +79,16 @@
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
-  border: 1px solid #cbd5d5;
+  border: 1px solid var(--vrena-neutral-300);
   border-radius: 12px;
-  background: #ffffff;
-  color: #020e0e;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font: inherit;
 }
 
 .phone-account-setup-form input:focus {
-  border-color: #3d38f3;
-  outline: 3px solid rgba(61, 56, 243, 0.13);
+  border-color: var(--vrena-purple-600);
+  outline: 3px solid color-mix(in srgb, var(--vrena-purple-600) 13%, transparent);
 }
 
 .phone-account-setup-password-control {
@@ -101,7 +105,7 @@
   width: 44px;
   border: 0;
   background: transparent;
-  color: #4b5b5b;
+  color: var(--vrena-neutral-700);
   cursor: pointer;
 }
 
@@ -110,7 +114,7 @@
   align-items: center;
   gap: 7px;
   margin: -6px 0 0;
-  color: #5f6d6d;
+  color: var(--vrena-neutral-600);
   font-size: 0.84rem;
 }
 
@@ -122,9 +126,9 @@
   padding: 12px 18px;
   border: 0;
   border-radius: 12px;
-  background: #3d38f3;
-  color: #ffffff;
-  box-shadow: 0 12px 26px rgba(61, 56, 243, 0.22);
+  background: var(--vrena-purple-600);
+  color: var(--vrena-white);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--vrena-purple-600) 22%, transparent);
   font: inherit;
   font-weight: 800;
   text-decoration: none;
@@ -132,7 +136,7 @@
 }
 
 .phone-account-setup-cta:disabled {
-  background: #b8b7e8;
+  background: var(--vrena-purple-200);
   box-shadow: none;
   cursor: wait;
 }
@@ -140,7 +144,7 @@
 .phone-account-setup-vietnamese {
   margin: 24px 0 0;
   padding-top: 20px;
-  border-top: 1px solid #e8eded;
+  border-top: 1px solid var(--vrena-neutral-200);
   font-size: 0.9rem;
 }
 
@@ -149,7 +153,7 @@
 }
 
 .phone-account-setup-success > svg {
-  color: #168a5b;
+  color: var(--vrena-green-800);
 }
 
 @media (max-width: 520px) {
@@ -1801,10 +1805,10 @@ body {
 }
 
 .app .profile-save-button.save-success {
-  border-color: #22c55e;
-  background: #ecfdf3;
-  box-shadow: 0 10px 24px color-mix(in srgb, #22c55e 22%, transparent);
-  color: #15803d;
+  border-color: var(--vrena-green-700);
+  background: var(--vrena-green-50);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-green-700) 22%, transparent);
+  color: var(--vrena-green-900);
 }
 
 .app .profile-save-success-content {
@@ -1820,8 +1824,8 @@ body {
   height: 26px;
   place-items: center;
   border-radius: 999px;
-  background: #22c55e;
-  color: #fff;
+  background: var(--vrena-green-700);
+  color: var(--vrena-white);
   animation: profile-save-check-in 420ms cubic-bezier(.2, .9, .3, 1.35) both;
 }
 
@@ -9936,7 +9940,7 @@ body {
 }
 
 .app .achievement-share-actions .achievement-zalo-button {
-  --achievement-zalo-blue: #0068ff;
+  --achievement-zalo-blue: var(--vrena-zalo);
   border-color: color-mix(in srgb, var(--achievement-zalo-blue) 42%, transparent);
   background: color-mix(in srgb, var(--achievement-zalo-blue) 7%, var(--vrena-white));
   color: var(--achievement-zalo-blue);
@@ -10790,15 +10794,15 @@ body {
   }
 
   .app .achievement-share-actions .achievement-zalo-button {
-    border-color: color-mix(in srgb, #0068ff 62%, var(--vrena-white));
-    background: color-mix(in srgb, #0068ff 18%, var(--vrena-neutral-900));
+    border-color: color-mix(in srgb, var(--vrena-zalo) 62%, var(--vrena-white));
+    background: color-mix(in srgb, var(--vrena-zalo) 18%, var(--vrena-neutral-900));
     color: var(--vrena-blue-300);
   }
 
   .app .achievement-share-actions .achievement-zalo-button:hover,
   .app .achievement-share-actions .achievement-zalo-button:focus-visible {
-    border-color: color-mix(in srgb, #0068ff 76%, var(--vrena-white));
-    background: color-mix(in srgb, #0068ff 28%, var(--vrena-neutral-900));
+    border-color: color-mix(in srgb, var(--vrena-zalo) 76%, var(--vrena-white));
+    background: color-mix(in srgb, var(--vrena-zalo) 28%, var(--vrena-neutral-900));
   }
 
   .app .achievement-unlock-copy h3 {

@@ -29,6 +29,7 @@ declare
   v_email text := lower(nullif(btrim(coalesce(p_email, '')), ''));
   v_user_id uuid;
   v_profile_phone text;
+  v_nickname text;
 begin
   if p_allow_non_production is distinct from true then
     raise exception 'Refusing to create E2E admin. Pass true only on local/staging.';
@@ -57,9 +58,11 @@ begin
   limit 1;
 
   v_user_id := coalesce(v_user_id, gen_random_uuid());
+  v_nickname := 'E2E ' || substring(v_user_id::text from 1 for 8);
   v_profile_phone := '+84000' || substring(regexp_replace(v_user_id::text, '[^0-9]', '', 'g') || '0000000000' from 1 for 8);
 
   insert into auth.users (
+    instance_id,
     id,
     aud,
     role,
@@ -81,6 +84,7 @@ begin
     email_change_confirm_status,
     reauthentication_token
   ) values (
+    '00000000-0000-0000-0000-000000000000',
     v_user_id,
     'authenticated',
     'authenticated',
@@ -94,7 +98,7 @@ begin
     ),
     jsonb_build_object(
       'full_name', 'E2E Admin',
-      'nickname', 'E2E Admin',
+      'nickname', v_nickname,
       'name', 'E2E Admin',
       'e2e_test_user', true
     ),
@@ -112,7 +116,8 @@ begin
     ''
   )
   on conflict (id) do update
-  set email = excluded.email,
+  set instance_id = excluded.instance_id,
+      email = excluded.email,
       encrypted_password = excluded.encrypted_password,
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
       raw_app_meta_data = excluded.raw_app_meta_data,
@@ -160,7 +165,7 @@ begin
     v_user_id,
     v_profile_phone,
     'E2E Admin',
-    'E2E Admin',
+    v_nickname,
     v_email,
     'admin',
     now()
@@ -168,7 +173,7 @@ begin
   on conflict (id) do update
   set phone = coalesce(nullif(public.profiles.phone, ''), excluded.phone),
       full_name = 'E2E Admin',
-      nickname = 'E2E Admin',
+      nickname = excluded.nickname,
       email = excluded.email,
       role = 'admin',
       deleted_at = null,

@@ -1,3 +1,4 @@
+import { vrenaPalette } from './theme/vrenaPalette'
 import { maskPhoneSetupEmail, PHONE_SETUP_TOKEN_TTL_MINUTES } from './phoneAccountSetup'
 
 const DEFAULT_FROM_EMAIL = 'VRena <contact@vre-vietnam.com>'
@@ -46,15 +47,15 @@ export function buildPhoneAccountSetupEmail(payload: PhoneAccountSetupEmailPaylo
   const html = `<!doctype html>
 <html lang="en">
   <head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${subject}</title></head>
-  <body style="margin:0;background:#f5f7f7;color:#020e0e;font-family:Arial,Helvetica,sans-serif;">
+  <body style="margin:0;background:${vrenaPalette.neutral[100]};color:${vrenaPalette.neutral[950]};font-family:Arial,Helvetica,sans-serif;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Verify your VRena email and create your password.</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f7f7;padding:28px 12px;"><tr><td align="center">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;overflow:hidden;border:1px solid #eeeeee;border-radius:20px;background:#ffffff;">
-        <tr><td style="padding:28px 32px;background:#0b1717;"><img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-dark.png" alt="VRena" width="176" style="display:block;width:176px;max-width:100%;height:auto;border:0;"></td></tr>
-        <tr><td style="padding:34px 32px 16px;"><p style="margin:0 0 10px;color:#332cd6;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;">Finish account setup</p><h1 style="margin:0 0 14px;font-size:28px;line-height:1.18;">Hello ${safeName},</h1><p style="margin:0;color:#3b4a4a;font-size:16px;line-height:1.55;">Verify this email address, then create the private password you will use for VRena.</p></td></tr>
-        <tr><td style="padding:12px 32px 24px;"><a href="${safeUrl}" style="display:inline-block;border-radius:12px;background:#3d38f3;color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;padding:14px 22px;">Verify email and create password</a><p style="margin:16px 0 0;color:#5f6d6d;font-size:13px;line-height:1.5;">This link expires in ${PHONE_SETUP_TOKEN_TTL_MINUTES} minutes and can be used once.</p></td></tr>
-        <tr><td style="padding:0 32px 28px;"><p style="margin:0;color:#3b4a4a;font-size:14px;line-height:1.55;"><strong>Tiếng Việt:</strong> Xác minh email này, sau đó tạo mật khẩu riêng để đăng nhập VRena. Liên kết hết hạn sau ${PHONE_SETUP_TOKEN_TTL_MINUTES} phút.</p></td></tr>
-        <tr><td style="border-top:1px solid #eeeeee;padding:20px 32px;color:#5f6d6d;font-size:12px;line-height:1.5;">Questions / Hỗ trợ: <a href="mailto:${CONTACT_EMAIL}" style="color:#332cd6;">${CONTACT_EMAIL}</a></td></tr>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${vrenaPalette.neutral[100]};padding:28px 12px;"><tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;overflow:hidden;border:1px solid ${vrenaPalette.neutral[200]};border-radius:20px;background:${vrenaPalette.white};">
+        <tr><td style="padding:28px 32px;background:${vrenaPalette.neutral[900]};"><img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-dark.png" alt="VRena" width="176" style="display:block;width:176px;max-width:100%;height:auto;border:0;"></td></tr>
+        <tr><td style="padding:34px 32px 16px;"><p style="margin:0 0 10px;color:${vrenaPalette.purple[700]};font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;">Finish account setup</p><h1 style="margin:0 0 14px;font-size:28px;line-height:1.18;">Hello ${safeName},</h1><p style="margin:0;color:${vrenaPalette.neutral[700]};font-size:16px;line-height:1.55;">Verify this email address, then create the private password you will use for VRena.</p></td></tr>
+        <tr><td style="padding:12px 32px 24px;"><a href="${safeUrl}" style="display:inline-block;border-radius:12px;background:${vrenaPalette.purple[600]};color:${vrenaPalette.white};font-size:15px;font-weight:800;text-decoration:none;padding:14px 22px;">Verify email and create password</a><p style="margin:16px 0 0;color:${vrenaPalette.neutral[600]};font-size:13px;line-height:1.5;">This link expires in ${PHONE_SETUP_TOKEN_TTL_MINUTES} minutes and can be used once.</p></td></tr>
+        <tr><td style="padding:0 32px 28px;"><p style="margin:0;color:${vrenaPalette.neutral[700]};font-size:14px;line-height:1.55;"><strong>Tiếng Việt:</strong> Xác minh email này, sau đó tạo mật khẩu riêng để đăng nhập VRena. Liên kết hết hạn sau ${PHONE_SETUP_TOKEN_TTL_MINUTES} phút.</p></td></tr>
+        <tr><td style="border-top:1px solid ${vrenaPalette.neutral[200]};padding:20px 32px;color:${vrenaPalette.neutral[600]};font-size:12px;line-height:1.5;">Questions / Hỗ trợ: <a href="mailto:${CONTACT_EMAIL}" style="color:${vrenaPalette.purple[700]};">${CONTACT_EMAIL}</a></td></tr>
       </table>
     </td></tr></table>
   </body>

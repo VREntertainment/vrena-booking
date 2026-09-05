@@ -1,6 +1,7 @@
 'use client'
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- This lazy view receives StaffConsole's private HR model without exporting the whole console type graph. */
+import type { StaffEmployeeProfile, StaffHrSetupOptionType, StaffLeaveRequest, StaffProfile, StaffScheduleShift, StaffShiftTemplate, StaffShiftTemplateId } from '../lib/staff/types'
+import type { StaffHrModel } from '../lib/staff/hrModel'
 import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
@@ -12,7 +13,7 @@ import { StaffCostAssignments, StaffCostReport, type StaffCostReportRow } from '
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
 type StaffHrHubProps = {
-  model: any
+  model: StaffHrModel
 }
 
 type HrSettingsSection = 'initialization' | 'clocking' | 'salary' | 'work_rest' | 'categories' | 'organization'
@@ -25,7 +26,7 @@ type StaffPeriodRangePickerProps = {
   endLabel: string
   onEndChange: (value: string) => void
   onStartChange: (value: string) => void
-  PickerField: any
+  PickerField: StaffHrModel['StaffPickerField']
   start: string
   startLabel: string
 }
@@ -56,7 +57,7 @@ function StaffPeriodRangePicker({
 }
 
 function leaveDateRangeTitle(
-  leaves: any[],
+  leaves: StaffLeaveRequest[],
   periodStart: string,
   periodEnd: string,
   formatDate: (value: string) => string,
@@ -69,7 +70,7 @@ function leaveDateRangeTitle(
 }
 
 function employeeMatchesDirectoryFilters(
-  employee: any,
+  employee: StaffEmployeeProfile | undefined,
   groupFilter: string,
   locationFilter: string,
   statusFilter: EmployeeDirectoryStatus,
@@ -713,10 +714,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
   const completionText = hrCompletionCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
   const scheduleCopy = staffScheduleCopy[resolvedLanguage === 'vi' ? 'vi' : 'en']
-  const costReportRows: StaffCostReportRow[] = visibleStaffProfileOptions.flatMap((staffProfile: any) => {
+  const costReportRows: StaffCostReportRow[] = visibleStaffProfileOptions.flatMap((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     const allocation = staffCostAllocations.get(staffProfile.id)
-    return (allocation?.shares || []).map((share: any) => ({
+    return (allocation?.shares || []).map((share) => ({
       ...share, employee: employee?.legal_name || customerName(staffProfile, text),
       employeeCode: employee?.employee_code || '', home: employee?.main_work_location || '—',
       needsPaidHours: allocation?.needsPaidHours || false,
@@ -757,7 +758,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   })
   const updatePayrollPeriodStart = (value: string) => {
     if (!value) return
-    setPayrollRunForm((current: any) => ({
+    setPayrollRunForm((current) => ({
       ...current,
       period_start: value,
       period_end: current.period_end && current.period_end >= value ? current.period_end : value,
@@ -765,7 +766,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }
   const updatePayrollPeriodEnd = (value: string) => {
     if (!value) return
-    setPayrollRunForm((current: any) => ({
+    setPayrollRunForm((current) => ({
       ...current,
       period_start: current.period_start && current.period_start <= value ? current.period_start : value,
       period_end: value,
@@ -788,7 +789,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }
   const employeeDirectoryGroups = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
-    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile: any) => (
+    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile) => (
       String(employeeProfileById.get(staffProfile.id)?.department || '').trim() || employeeCopy.unassigned
     )))).sort((left, right) => {
       const leftIndex = groupOrder.indexOf(left)
@@ -799,7 +800,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }, [employeeCopy.unassigned, employeeProfileById, visibleAllStaffProfileOptions])
   const employeeDirectoryLocations = useMemo(() => {
     const locationOrder = ['HaDo', 'CS']
-    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile: any) => (
+    return Array.from(new Set<string>(visibleAllStaffProfileOptions.map((staffProfile) => (
       String(employeeProfileById.get(staffProfile.id)?.main_work_location || '').trim() || employeeCopy.unassigned
     )))).sort((left, right) => {
       const leftIndex = locationOrder.indexOf(left)
@@ -808,14 +809,14 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       return left.localeCompare(right)
     })
   }, [employeeCopy.unassigned, employeeProfileById, visibleAllStaffProfileOptions])
-  const employeeDirectoryCounts = useMemo(() => visibleAllStaffProfileOptions.reduce((counts: { active: number; terminated: number }, staffProfile: any) => {
+  const employeeDirectoryCounts = useMemo(() => visibleAllStaffProfileOptions.reduce((counts: { active: number; terminated: number }, staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     const terminated = employee?.active === false || employee?.contract_status === 'ended'
     counts[terminated ? 'terminated' : 'active'] += 1
     return counts
   }, { active: 0, terminated: 0 }), [employeeProfileById, visibleAllStaffProfileOptions])
   const filteredEmployeeProfileOptions = useMemo(() => {
-    return visibleAllStaffProfileOptions.filter((staffProfile: any) => {
+    return visibleAllStaffProfileOptions.filter((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       return employeeMatchesDirectoryFilters(employee, employeeDirectoryGroup, employeeDirectoryLocation, employeeDirectoryStatus, employeeCopy.unassigned)
     })
@@ -823,8 +824,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   const groupedEmployeeOptions = useMemo(() => {
     const groupOrder = ['GC', 'VRena', 'Manager', 'Office']
     const locationOrder = ['HaDo', 'CS']
-    const groups = new Map<string, any[]>()
-    filteredEmployeeProfileOptions.forEach((staffProfile: any) => {
+    const groups = new Map<string, StaffProfile[]>()
+    filteredEmployeeProfileOptions.forEach((staffProfile) => {
       const employee = employeeProfileById.get(staffProfile.id)
       const group = String(employee?.department || '').trim() || employeeCopy.unassigned
       const location = String(employee?.main_work_location || '').trim() || employeeCopy.unassigned
@@ -843,11 +844,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       })
       .map(([label, employees]) => ({
         label,
-        employees: employees.sort((left: any, right: any) => customerName(left, text).localeCompare(customerName(right, text))),
+        employees: employees.sort((left, right) => customerName(left, text).localeCompare(customerName(right, text))),
       }))
   }, [customerName, employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
   const selectedEmployeeOutsideFilters = Boolean(selectedEmployeeStaffProfile)
-    && !filteredEmployeeProfileOptions.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)
+    && !filteredEmployeeProfileOptions.some((staffProfile) => staffProfile.id === selectedEmployeeStaffId)
   const firstFilteredEmployeeProfile = filteredEmployeeProfileOptions[0]
   useEffect(() => {
     if (selectedEmployeeOutsideFilters && firstFilteredEmployeeProfile) {
@@ -870,20 +871,20 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     setEmployeeDirectoryLocation(location)
     setEmployeeDirectoryStatus(status)
 
-    const matchingProfiles = visibleAllStaffProfileOptions.filter((staffProfile: any) => (
+    const matchingProfiles = visibleAllStaffProfileOptions.filter((staffProfile) => (
       employeeMatchesDirectoryFilters(employeeProfileById.get(staffProfile.id), group, location, status, employeeCopy.unassigned)
     ))
-    if (matchingProfiles.length > 0 && !matchingProfiles.some((staffProfile: any) => staffProfile.id === selectedEmployeeStaffId)) {
+    if (matchingProfiles.length > 0 && !matchingProfiles.some((staffProfile) => staffProfile.id === selectedEmployeeStaffId)) {
       editEmployeeProfile(matchingProfiles[0])
     }
   }
   const enabledEmploymentTypes = useMemo(() => {
-    const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
+    const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffEmploymentTypes.filter((value: string) => activeTokens.has(value))
     return filtered.length > 0 ? filtered : staffEmploymentTypes
   }, [hrOptionsByType, staffEmploymentTypes])
   const enabledContractStatuses = useMemo(() => {
-    const activeTokens = new Set((hrOptionsByType.get('contract_status') || []).map((option: any) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
+    const activeTokens = new Set((hrOptionsByType.get('contract_status') || []).map((option) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffContractStatuses.filter((value: string) => activeTokens.has(value))
     return filtered.length > 0 ? filtered : staffContractStatuses
   }, [hrOptionsByType, staffContractStatuses])
@@ -912,21 +913,21 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     })
   }
 
-  function selectHrSetupOption(optionType: string, optionId: string) {
-    const selectedOption = hrSetupOptions.find((option: any) => option.id === optionId)
+  function selectHrSetupOption(optionType: StaffHrSetupOptionType, optionId: string) {
+    const selectedOption = hrSetupOptions.find((option) => option.id === optionId)
     setSelectedHrSetupOptionIds((current) => ({ ...current, [optionType]: optionId }))
-    setHrSetupForm((current: any) => ({
+    setHrSetupForm((current) => ({
       ...current,
       [optionType]: selectedOption?.name || '',
     }))
   }
 
-  function cancelHrSetupOptionEdit(optionType: string) {
+  function cancelHrSetupOptionEdit(optionType: StaffHrSetupOptionType) {
     setSelectedHrSetupOptionIds((current) => ({ ...current, [optionType]: '' }))
-    setHrSetupForm((current: any) => ({ ...current, [optionType]: '' }))
+    setHrSetupForm((current) => ({ ...current, [optionType]: '' }))
   }
 
-  async function modifyHrSetupOption(optionType: string) {
+  async function modifyHrSetupOption(optionType: StaffHrSetupOptionType) {
     const optionId = selectedHrSetupOptionIds[optionType]
     if (!optionId) return
     const updated = await updateHrSetupOption(optionId, hrSetupForm[optionType])
@@ -953,28 +954,28 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
   }
 
   const weekScheduleShifts = useMemo(() => (
-    visibleScheduleAttendanceShifts.filter((shift: any) => (
+    visibleScheduleAttendanceShifts.filter((shift) => (
       shift.shift_date >= attendanceWeekStart && shift.shift_date <= attendanceWeekEnd
     ))
   ), [attendanceWeekEnd, attendanceWeekStart, visibleScheduleAttendanceShifts])
   const scheduledEmployeeIds = useMemo(() => new Set(
     weekScheduleShifts
-      .filter((shift: any) => shift.status !== 'cancelled')
-      .map((shift: any) => shift.staff_profile_id),
+      .filter((shift) => shift.status !== 'cancelled')
+      .map((shift) => shift.staff_profile_id),
   ), [weekScheduleShifts])
-  const weekDraftCount = weekScheduleShifts.filter((shift: any) => shift.status === 'draft').length
+  const weekDraftCount = weekScheduleShifts.filter((shift) => shift.status === 'draft').length
   const scheduleGridStyle = useMemo(() => ({
     gridTemplateColumns: `minmax(168px, 0.85fr) repeat(${attendanceWeekDates.length}, minmax(92px, 1fr))`,
     minWidth: `${168 + attendanceWeekDates.length * 96}px`,
   }), [attendanceWeekDates.length])
   const scheduleShiftRows = useMemo(() => {
-    const rowByTemplateId = new Map<string, { id: string; label: string; template: any; shiftsByDate: Map<string, any[]>; subtitle: string }>()
-    effectiveShiftTemplates.forEach((template: any) => {
+    const rowByTemplateId = new Map<string, { id: string; label: string; template: StaffShiftTemplate | null; shiftsByDate: Map<string, StaffScheduleShift[]>; subtitle: string }>()
+    effectiveShiftTemplates.forEach((template) => {
       rowByTemplateId.set(template.id, {
         id: template.id,
         label: text.shiftTemplates[template.id],
         template,
-        shiftsByDate: new Map<string, any[]>(),
+        shiftsByDate: new Map<string, StaffScheduleShift[]>(),
         subtitle: `${normalizeTime(template.start_time)}–${normalizeTime(template.end_time)}`,
       })
     })
@@ -983,12 +984,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       id: 'custom',
       label: scheduleCopy.customShift,
       template: null,
-      shiftsByDate: new Map<string, any[]>(),
+      shiftsByDate: new Map<string, StaffScheduleShift[]>(),
       subtitle: scheduleCopy.customShiftHelp,
     }
 
-    weekScheduleShifts.forEach((shift: any) => {
-      const matchingTemplate = effectiveShiftTemplates.find((template: any) => (
+    weekScheduleShifts.forEach((shift) => {
+      const matchingTemplate = effectiveShiftTemplates.find((template) => (
         normalizeTime(template.start_time) === normalizeTime(shift.start_time)
         && normalizeTime(template.end_time) === normalizeTime(shift.end_time)
       ))
@@ -1000,7 +1001,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     })
 
     rowByTemplateId.forEach((row) => {
-      row.shiftsByDate.forEach((shifts) => shifts.sort((left: any, right: any) => {
+      row.shiftsByDate.forEach((shifts) => shifts.sort((left, right) => {
         const leftProfile = profileById.get(left.staff_profile_id)
         const rightProfile = profileById.get(right.staff_profile_id)
         const leftName = leftProfile ? customerName(leftProfile, text) : text.customerFallback
@@ -1008,7 +1009,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
         return leftName.localeCompare(rightName)
       }))
     })
-    customRow.shiftsByDate.forEach((shifts) => shifts.sort((left: any, right: any) => (
+    customRow.shiftsByDate.forEach((shifts) => shifts.sort((left, right) => (
       left.start_time.localeCompare(right.start_time)
     )))
 
@@ -1017,10 +1018,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     return rows
   }, [customerName, effectiveShiftTemplates, normalizeTime, profileById, scheduleCopy.customShift, scheduleCopy.customShiftHelp, text, weekScheduleShifts])
 
-  function prepareShiftEditor(template: any, shiftDate: string) {
+  function prepareShiftEditor(template: StaffShiftTemplate | null, shiftDate: string) {
     if (!canManageAttendance || !template) return
     applyShiftTemplate(template.id)
-    setShiftForm((current: any) => ({
+    setShiftForm((current) => ({
       ...current,
       staff_profile_id: current.staff_profile_id || firstScheduleStaffProfileId,
       shift_date: shiftDate,
@@ -1034,19 +1035,19 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     })
   }
 
-  const activeEmployeeCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => (
+  const activeEmployeeCount = visibleAllStaffProfileOptions.filter((staffProfile) => (
     employeeProfileById.get(staffProfile.id)?.active !== false
   )).length
-  const missingEmployeeDocumentCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => {
+  const missingEmployeeDocumentCount = visibleAllStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     return !employee?.profile_photo_path || !employee?.cv_document_path
   }).length
-  const pendingAdjustmentCount = periodHrAdjustments.filter((item: any) => normalizeHrAdjustmentStatus(item.status) === 'pending').length
-  const periodAdvanceCount = periodHrAdjustments.filter((item: any) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
+  const pendingAdjustmentCount = periodHrAdjustments.filter((item) => normalizeHrAdjustmentStatus(item.status) === 'pending').length
+  const periodAdvanceCount = periodHrAdjustments.filter((item) => ['advance', 'debt', 'debt_repayment'].includes(normalizeHrAdjustmentType(item.adjustment_type))).length
   const visibleHrTabs = accessibleStaffHrTabs(staffHrTabs, { canAccessHrSettings, canAccessZaloSettings })
-  const periodAttendanceLogs = attendanceLogs.filter((log: any) => log.work_date >= payrollPeriodStart && log.work_date <= payrollPeriodEnd)
-  const pendingAttendanceCount = periodAttendanceLogs.filter((log: any) => log.approval_status !== 'approved').length
-  const timesheetProfiles = visibleStaffProfileOptions.filter((staffProfile: any) => {
+  const periodAttendanceLogs = attendanceLogs.filter((log) => log.work_date >= payrollPeriodStart && log.work_date <= payrollPeriodEnd)
+  const pendingAttendanceCount = periodAttendanceLogs.filter((log) => log.approval_status !== 'approved').length
+  const timesheetProfiles = visibleStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     const query = timesheetSearch.trim().toLowerCase()
     if (!query) return true
@@ -1054,43 +1055,43 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(query))
   })
-  const scheduledEmployeeCount = new Set(visibleScheduleAttendanceShifts.filter((shift: any) => shift.status === 'published').map((shift: any) => shift.staff_profile_id)).size
-  const salaryConfiguredCount = visibleAllStaffProfileOptions.filter((staffProfile: any) => {
+  const scheduledEmployeeCount = new Set(visibleScheduleAttendanceShifts.filter((shift) => shift.status === 'published').map((shift) => shift.staff_profile_id)).size
+  const salaryConfiguredCount = visibleAllStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     return Number(employee?.base_salary_vnd) > 0 || Number(employee?.hourly_rate_vnd) > 0
   }).length
-  const incompleteEmployeeCount = visibleStaffProfileOptions.filter((staffProfile: any) => {
+  const incompleteEmployeeCount = visibleStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     return !employee?.employee_code
       || !employee?.legal_name
       || (!Number(employee?.base_salary_vnd) && !Number(employee?.hourly_rate_vnd))
       || !employee?.start_date
   }).length
-  const missingBankCount = visibleStaffProfileOptions.filter((staffProfile: any) => {
+  const missingBankCount = visibleStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     return !employee?.bank_name || !employee?.bank_account_number
   }).length
   const accountantIssueCount = incompleteEmployeeCount + pendingAttendanceCount + missingBankCount
   const payslipDepartments = useMemo(() => Array.from(new Set<string>(
     visibleStaffProfileOptions
-      .map((staffProfile: any) => (employeeProfileById.get(staffProfile.id)?.department || '').trim())
+      .map((staffProfile) => (employeeProfileById.get(staffProfile.id)?.department || '').trim())
       .filter(Boolean),
   )).sort((left, right) => left.localeCompare(right)), [employeeProfileById, visibleStaffProfileOptions])
   const payslipLocations = useMemo(() => Array.from(new Set<string>(
     visibleStaffProfileOptions
-      .map((staffProfile: any) => (employeeProfileById.get(staffProfile.id)?.main_work_location || '').trim())
+      .map((staffProfile) => (employeeProfileById.get(staffProfile.id)?.main_work_location || '').trim())
       .filter(Boolean),
   )).sort((left, right) => left.localeCompare(right)), [employeeProfileById, visibleStaffProfileOptions])
-  const filteredPayslipProfiles = useMemo(() => visibleStaffProfileOptions.filter((staffProfile: any) => {
+  const filteredPayslipProfiles = useMemo(() => visibleStaffProfileOptions.filter((staffProfile) => {
     const employee = employeeProfileById.get(staffProfile.id)
     if (payslipDepartmentFilter !== 'all' && (employee?.department || '').trim() !== payslipDepartmentFilter) return false
     if (payslipLocationFilter !== 'all' && (employee?.main_work_location || '').trim() !== payslipLocationFilter) return false
     return true
   }), [employeeProfileById, payslipDepartmentFilter, payslipLocationFilter, visibleStaffProfileOptions])
-  const effectivePayslipEmployeeId = filteredPayslipProfiles.some((staffProfile: any) => staffProfile.id === payslipSelectedEmployeeId)
+  const effectivePayslipEmployeeId = filteredPayslipProfiles.some((staffProfile) => staffProfile.id === payslipSelectedEmployeeId)
     ? payslipSelectedEmployeeId
     : filteredPayslipProfiles[0]?.id || ''
-  const payslipEmployeeProfile = filteredPayslipProfiles.find((staffProfile: any) => staffProfile.id === effectivePayslipEmployeeId) || null
+  const payslipEmployeeProfile = filteredPayslipProfiles.find((staffProfile) => staffProfile.id === effectivePayslipEmployeeId) || null
   const payslipEmployee = payslipEmployeeProfile ? employeeProfileById.get(payslipEmployeeProfile.id) : null
   const payslipEmployeeSummary = effectivePayslipEmployeeId
     ? staffPayrollCalculations.get(effectivePayslipEmployeeId) || emptyStaffPayrollCalculation(effectivePayslipEmployeeId)
@@ -1132,7 +1133,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
           ) : (
             <>
               <nav className="staff-hr-module-rail staff-hr-top-navigation" aria-label={text.tabs.hr}>
-                {visibleHrTabs.map((tab: any) => (
+                {visibleHrTabs.map((tab) => (
                   <button aria-current={hrTab === tab ? 'page' : undefined} className={hrTab === tab ? 'active' : ''} key={tab} type="button" onClick={() => setHrTab(tab)}>
                     <span className="staff-hr-module-icon">{hrModuleIcon(tab)}</span>
                     <span>
@@ -1209,7 +1210,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         <label>
                           {employeeCopy.employmentType}
                           <select value={newEmployee.employmentType} onChange={(event) => setNewEmployee((current) => ({ ...current, employmentType: event.target.value as StaffEmployeeRecordEmploymentType }))}>
-                            {staffEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
+                            {staffEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                           </select>
                         </label>
                       </div>
@@ -1232,14 +1233,14 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           disabled={filteredEmployeeProfileOptions.length === 0}
                           value={selectedEmployeeOutsideFilters ? '' : selectedEmployeeStaffId}
                           onChange={(event) => {
-                            const staffProfile = filteredEmployeeProfileOptions.find((item: any) => item.id === event.target.value)
+                            const staffProfile = filteredEmployeeProfileOptions.find((item) => item.id === event.target.value)
                             if (staffProfile) editEmployeeProfile(staffProfile)
                           }}
                         >
                           <option disabled value="">{filteredEmployeeProfileOptions.length === 0 ? employeeCopy.noEmployeeMatches : employeeCopy.selectEmployee}</option>
                           {groupedEmployeeOptions.map((group) => (
                             <optgroup key={group.label} label={group.label}>
-                              {group.employees.map((item: any) => {
+                              {group.employees.map((item) => {
                                 const employee = employeeProfileById.get(item.id)
                                 const name = employee?.legal_name || customerName(item, text)
                                 return <option key={item.id} value={item.id}>{name}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option>
@@ -1264,7 +1265,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       </label>
                       <label>
                         <span>{employeeCopy.statusFilter}</span>
-                        <select value={employeeDirectoryStatus} onChange={(event) => updateEmployeeDirectoryFilters({ status: event.target.value as EmployeeDirectoryStatus })}>
+                        <select value={employeeDirectoryStatus} onChange={(event) => updateEmployeeDirectoryFilters({ status: event.target.value as StaffHrModel['shiftForm']['status'] as EmployeeDirectoryStatus })}>
                           <option value="active">{employeeCopy.activeStatus} ({employeeDirectoryCounts.active})</option>
                           <option value="terminated">{employeeCopy.terminatedStatus} ({employeeDirectoryCounts.terminated})</option>
                           <option value="all">{employeeCopy.allStatuses} ({visibleAllStaffProfileOptions.length})</option>
@@ -1325,7 +1326,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       <div><span>{text.labels.grossIncome}</span><strong>{formatVnd(employeePayrollSummary.grossIncome)}</strong></div>
                       <div><span>{text.labels.netIncome}</span><strong>{formatVnd(employeePayrollSummary.netIncome)}</strong></div>
                     </div>
-                    <datalist id="staff-hr-job-title-options">{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name} />)}</datalist>
+                    <datalist id="staff-hr-job-title-options">{hrJobTitleOptions.map((option) => <option key={option.id} value={option.name} />)}</datalist>
                     <div className="staff-hr-profile-form">
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.identity} id="identity" onToggle={toggleEmployeeSection} open={openEmployeeSections.identity} title={employeeCopy.sectionTitles.identity}>
                         <div className="form-grid compact-form-grid">
@@ -1338,7 +1339,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             {text.labels.gender}
                             <select value={employeeForm.gender} onChange={(event) => setEmployeeForm({ ...employeeForm, gender: event.target.value })}>
                               <option value="">{text.any}</option>
-                              {staffGenderOptions.map((gender: any) => <option key={gender} value={gender}>{text.genderOptions[gender]}</option>)}
+                              {staffGenderOptions.map((gender) => <option key={gender} value={gender}>{text.genderOptions[gender]}</option>)}
                             </select>
                           </label>
                         </div>
@@ -1346,25 +1347,25 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.contract} id="contract" onToggle={toggleEmployeeSection} open={openEmployeeSections.contract} title={employeeCopy.sectionTitles.contract}>
                         <div className="form-grid compact-form-grid">
-                          <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => { const location = employeeHomeLocation(event.target.value); setEmployeeForm({ ...employeeForm, department: event.target.value, ...(location ? { main_work_location: location, payroll_location: location } : {}) }) }}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option: any) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.jobTitle}<select value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })}><option value="">{text.any}</option>{employeeForm.job_title && !hrJobTitleOptions.some((option: any) => option.name === employeeForm.job_title) && <option value={employeeForm.job_title}>{employeeForm.job_title}</option>}{hrJobTitleOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.mainWorkLocation}<select disabled={Boolean(employeeHomeLocation(employeeForm.department))} value={employeeHomeLocation(employeeForm.department) || employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.payrollLocation}<select value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.payroll_location && !hrLocationOptions.some((option: any) => option.name === employeeForm.payroll_location) && <option value={employeeForm.payroll_location}>{employeeForm.payroll_location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.department}<select value={employeeForm.department} onChange={(event) => { const location = employeeHomeLocation(event.target.value); setEmployeeForm({ ...employeeForm, department: event.target.value, ...(location ? { main_work_location: location, payroll_location: location } : {}) }) }}><option value="">{text.any}</option>{employeeForm.department && !hrDepartmentOptions.some((option) => option.name === employeeForm.department) && <option value={employeeForm.department}>{employeeForm.department}</option>}{hrDepartmentOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.jobTitle}<select value={employeeForm.job_title} onChange={(event) => setEmployeeForm({ ...employeeForm, job_title: event.target.value })}><option value="">{text.any}</option>{employeeForm.job_title && !hrJobTitleOptions.some((option) => option.name === employeeForm.job_title) && <option value={employeeForm.job_title}>{employeeForm.job_title}</option>}{hrJobTitleOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.mainWorkLocation}<select disabled={Boolean(employeeHomeLocation(employeeForm.department))} value={employeeHomeLocation(employeeForm.department) || employeeForm.main_work_location} onChange={(event) => setEmployeeForm({ ...employeeForm, main_work_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.main_work_location && !hrLocationOptions.some((option) => option.name === employeeForm.main_work_location) && <option value={employeeForm.main_work_location}>{employeeForm.main_work_location}</option>}{hrLocationOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.payrollLocation}<select value={employeeForm.payroll_location} onChange={(event) => setEmployeeForm({ ...employeeForm, payroll_location: event.target.value })}><option value="">{text.any}</option>{employeeForm.payroll_location && !hrLocationOptions.some((option) => option.name === employeeForm.payroll_location) && <option value={employeeForm.payroll_location}>{employeeForm.payroll_location}</option>}{hrLocationOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
                           <label>
                             {text.labels.employmentType}
                             <select value={employeeForm.employment_type} onChange={(event) => setEmployeeForm({ ...employeeForm, employment_type: normalizeStaffEmploymentType(event.target.value) })}>
-                              {enabledEmploymentTypes.map((item: any) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
+                              {enabledEmploymentTypes.map((item) => <option key={item} value={item}>{text.employmentTypes[item]}</option>)}
                             </select>
                           </label>
                           <label>
                             {text.labels.contractStatus}
                             <select value={employeeForm.contract_status} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_status: normalizeStaffContractStatus(event.target.value) })}>
-                              {enabledContractStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
+                              {enabledContractStatuses.map((statusValue) => <option key={statusValue} value={statusValue}>{text.contractStatuses[statusValue]}</option>)}
                             </select>
                           </label>
-                          <label>{text.labels.contractType}<select value={employeeForm.contract_type} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_type: event.target.value })}><option value="">{text.any}</option>{employeeForm.contract_type && !hrContractTypeOptions.some((option: any) => option.name === employeeForm.contract_type) && <option value={employeeForm.contract_type}>{employeeForm.contract_type}</option>}{hrContractTypeOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{employeeCopy.probationPayrollType}<select value={employeeForm.probation_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
-                          <label>{employeeCopy.laborPayrollType}<select value={employeeForm.labor_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, labor_payroll_type: event.target.value })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
+                          <label>{text.labels.contractType}<select value={employeeForm.contract_type} onChange={(event) => setEmployeeForm({ ...employeeForm, contract_type: event.target.value })}><option value="">{text.any}</option>{employeeForm.contract_type && !hrContractTypeOptions.some((option) => option.name === employeeForm.contract_type) && <option value={employeeForm.contract_type}>{employeeForm.contract_type}</option>}{hrContractTypeOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{employeeCopy.probationPayrollType}<select value={employeeForm.probation_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_payroll_type: event.target.value as StaffHrModel['employeeForm']['probation_payroll_type'] })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
+                          <label>{employeeCopy.laborPayrollType}<select value={employeeForm.labor_payroll_type} onChange={(event) => setEmployeeForm({ ...employeeForm, labor_payroll_type: event.target.value as StaffHrModel['employeeForm']['labor_payroll_type'] })}><option value="hourly">{employeeCopy.hourly}</option><option value="monthly">{employeeCopy.monthly}</option><option value="manager">{employeeCopy.manager}</option></select></label>
                           <label>{employeeCopy.probationSalaryPercentage}<select value={employeeForm.probation_salary_percentage} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_salary_percentage: event.target.value })}><option value="85">85%</option><option value="100">100%</option></select></label>
                           <label>{employeeCopy.probationBonusPercentage}<select value={employeeForm.probation_bonus_percentage} onChange={(event) => setEmployeeForm({ ...employeeForm, probation_bonus_percentage: event.target.value })}><option value="85">85%</option><option value="100">100%</option></select></label>
                           <label>{employeeCopy.probationStart}<StaffPickerField ariaLabel={employeeCopy.probationStart} placeholder={text.chooseDate} type="date" value={employeeForm.probation_start_date} onChange={(value: string) => setEmployeeForm({ ...employeeForm, probation_start_date: value })} /></label>
@@ -1534,7 +1535,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       </div>
                       <p className="staff-hr-document-count"><strong>{selectedEmployeeDocuments.length}</strong> {text.labels.attachmentList}</p>
                       <div className="staff-hr-document-list">
-                        {selectedEmployeeDocuments.length > 0 ? selectedEmployeeDocuments.slice(0, 4).map((document: any) => (
+                        {selectedEmployeeDocuments.length > 0 ? selectedEmployeeDocuments.slice(0, 4).map((document) => (
                           <span key={document.id}>{text.hrTabs.employees}: {document.file_name}</span>
                         )) : <span>{text.messages.noHrDocuments}</span>}
                       </div>
@@ -1614,7 +1615,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </button>
                       </div>
                       <div className="staff-planning-scope" role="group" aria-label={text.labels.scheduleScope}>
-                        {attendanceScheduleScopeOptions.map((scope: any) => (
+                        {attendanceScheduleScopeOptions.map((scope) => (
                           <button
                             className={effectiveAttendanceScheduleScope === scope ? 'active' : ''}
                             key={scope}
@@ -1627,8 +1628,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       </div>
                       <label className="staff-hr-shift-template-field">
                         {text.labels.shiftTemplate}
-                        <select value={selectedShiftTemplate} onChange={(event) => applyShiftTemplate(event.target.value)} disabled={!canManageAttendance}>
-                          {effectiveShiftTemplates.map((template: any) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
+                        <select value={selectedShiftTemplate} onChange={(event) => applyShiftTemplate(event.target.value as StaffShiftTemplateId)} disabled={!canManageAttendance}>
+                          {effectiveShiftTemplates.map((template) => <option key={template.id} value={template.id}>{text.shiftTemplates[template.id]}</option>)}
                         </select>
                       </label>
                       {canManageAttendance && (
@@ -1657,7 +1658,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                               <span>{text.reportWeekdays[(dateFromInput(dateValue).getDay() + 6) % 7]}</span>
                             </div>
                           ))}
-                          {scheduleViewMode === 'employee' && visibleScheduleStaffProfileOptions.map((staffProfile: any) => {
+                          {scheduleViewMode === 'employee' && visibleScheduleStaffProfileOptions.map((staffProfile) => {
                             const employee = employeeProfileById.get(staffProfile.id)
                             const isInactiveEmployee = employee?.active === false
                             return (
@@ -1683,7 +1684,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                       onDrop={(event) => {
                                         event.preventDefault()
                                         if (isInactiveEmployee) return
-                                        const shift = visibleScheduleAttendanceShifts.find((item: any) => item.id === draggingShiftId)
+                                        const shift = visibleScheduleAttendanceShifts.find((item) => item.id === draggingShiftId)
                                         if (shift) void moveShiftToCell(shift, staffProfile.id, dateValue)
                                         setDraggingShiftId('')
                                       }}
@@ -1700,7 +1701,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                           <span>{scheduleCopy.add}</span>
                                         </button>
                                       )}
-                                      {cellShifts.map((shift: any) => {
+                                      {cellShifts.map((shift) => {
                                         const warnings = shiftWarningsById.get(shift.id) || []
                                         return (
                                           <button
@@ -1752,7 +1753,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                         <span>{scheduleCopy.add}</span>
                                       </button>
                                     )}
-                                    {cellShifts.map((shift: any) => {
+                                    {cellShifts.map((shift) => {
                                       const staffProfile = profileById.get(shift.staff_profile_id)
                                       const warnings = shiftWarningsById.get(shift.id) || []
                                       return (
@@ -1792,7 +1793,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         </div>
                         <strong>{visibleScheduleAttendanceShifts.length}</strong>
                       </div>
-                      {visibleScheduleAttendanceShifts.map((shift: any) => {
+                      {visibleScheduleAttendanceShifts.map((shift) => {
                         const staffProfile = profileById.get(shift.staff_profile_id)
                         const warnings = shiftWarningsById.get(shift.id) || []
                         const payrollWarnings = staffPayrollCalculations.get(shift.staff_profile_id)?.restWarningCount || 0
@@ -1849,7 +1850,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label>
                             {text.labels.staffMember}
                             <select value={shiftForm.staff_profile_id || firstScheduleStaffProfileId} onChange={(event) => setShiftForm({ ...shiftForm, staff_profile_id: event.target.value })}>
-                              {visibleScheduleStaffProfileOptions.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
+                              {visibleScheduleStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}
                             </select>
                           </label>
                           <label>
@@ -1865,8 +1866,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                             <StaffPickerField ariaLabel={text.labels.end} placeholder={text.chooseTime} type="time" value={shiftForm.end_time} onChange={(value: string) => setShiftForm({ ...shiftForm, end_time: value })} />
                           </label>
                           <label>{text.labels.breakMinutes}<input min={0} type="number" value={shiftForm.break_minutes} onChange={(event) => setShiftForm({ ...shiftForm, break_minutes: event.target.value })} /></label>
-                          <label>{text.labels.location}<select value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })}>{shiftForm.location && !hrLocationOptions.some((option: any) => option.name === shiftForm.location) && <option value={shiftForm.location}>{shiftForm.location}</option>}{hrLocationOptions.map((option: any) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
-                          <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value })}>{staffShiftStatuses.map((status: any) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
+                          <label>{text.labels.location}<select value={shiftForm.location} onChange={(event) => setShiftForm({ ...shiftForm, location: event.target.value })}>{shiftForm.location && !hrLocationOptions.some((option) => option.name === shiftForm.location) && <option value={shiftForm.location}>{shiftForm.location}</option>}{hrLocationOptions.map((option) => <option key={option.id} value={option.name}>{option.name}</option>)}</select></label>
+                          <label>{text.labels.status}<select value={shiftForm.status} onChange={(event) => setShiftForm({ ...shiftForm, status: event.target.value as StaffScheduleShift['status'] })}>{staffShiftStatuses.map((status) => <option key={status} value={status}>{text.shiftStatuses[status]}</option>)}</select></label>
                           <label className="full">{text.labels.notes}<textarea value={shiftForm.notes} onChange={(event) => setShiftForm({ ...shiftForm, notes: event.target.value })} /></label>
                         </div>
                         <button className="primary" type="button" disabled={saving || !(shiftForm.staff_profile_id || firstScheduleStaffProfileId)} onClick={saveShift}>
@@ -1921,29 +1922,29 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {timesheetProfiles.map((staffProfile: any) => {
+                      {timesheetProfiles.map((staffProfile) => {
                         const calculation = staffPayrollCalculations.get(staffProfile.id) || emptyStaffPayrollCalculation(staffProfile.id)
                         const employee = employeeProfileById.get(staffProfile.id)
-                        const employeeLogs = periodAttendanceLogs.filter((log: any) => log.staff_profile_id === staffProfile.id)
-                        const employeeLeaves = leaveRequests.filter((leave: any) => (
+                        const employeeLogs = periodAttendanceLogs.filter((log) => log.staff_profile_id === staffProfile.id)
+                        const employeeLeaves = leaveRequests.filter((leave) => (
                           leave.staff_profile_id === staffProfile.id
                           && leave.status === 'approved'
                           && leave.end_date >= payrollPeriodStart
                           && leave.start_date <= payrollPeriodEnd
                         ))
-                        const paidEmployeeLeaves = employeeLeaves.filter((leave: any) => isPaidLeaveForEmployee(leave, employee))
-                        const unpaidEmployeeLeaves = employeeLeaves.filter((leave: any) => !isPaidLeaveForEmployee(leave, employee))
-                        const unpaidLeaveMinutes = unpaidEmployeeLeaves.reduce((sum: number, leave: any) => (
+                        const paidEmployeeLeaves = employeeLeaves.filter((leave) => isPaidLeaveForEmployee(leave, employee))
+                        const unpaidEmployeeLeaves = employeeLeaves.filter((leave) => !isPaidLeaveForEmployee(leave, employee))
+                        const unpaidLeaveMinutes = unpaidEmployeeLeaves.reduce((sum: number, leave) => (
                           sum + (leaveHoursInsidePeriod(leave, payrollPeriodStart, payrollPeriodEnd) * 60)
                         ), 0)
                         const paidLeaveDates = leaveDateRangeTitle(paidEmployeeLeaves, payrollPeriodStart, payrollPeriodEnd, staffDateLabel)
                         const unpaidLeaveDates = leaveDateRangeTitle(unpaidEmployeeLeaves, payrollPeriodStart, payrollPeriodEnd, staffDateLabel)
-                        const presentShifts = employeeLogs.filter((log: any) => log.clock_in_at && log.clock_out_at).length
-                        const lateLogs = employeeLogs.filter((log: any) => Number(log.late_minutes) > 0)
-                        const earlyLogs = employeeLogs.filter((log: any) => Number(log.early_leave_minutes) > 0)
-                        const lateMinutes = lateLogs.reduce((sum: number, log: any) => sum + Number(log.late_minutes || 0), 0)
-                        const earlyMinutes = earlyLogs.reduce((sum: number, log: any) => sum + Number(log.early_leave_minutes || 0), 0)
-                        const approved = employeeLogs.length > 0 && employeeLogs.every((log: any) => log.approval_status === 'approved')
+                        const presentShifts = employeeLogs.filter((log) => log.clock_in_at && log.clock_out_at).length
+                        const lateLogs = employeeLogs.filter((log) => Number(log.late_minutes) > 0)
+                        const earlyLogs = employeeLogs.filter((log) => Number(log.early_leave_minutes) > 0)
+                        const lateMinutes = lateLogs.reduce((sum: number, log) => sum + Number(log.late_minutes || 0), 0)
+                        const earlyMinutes = earlyLogs.reduce((sum: number, log) => sum + Number(log.early_leave_minutes || 0), 0)
+                        const approved = employeeLogs.length > 0 && employeeLogs.every((log) => log.approval_status === 'approved')
                         return (
                           <tr key={staffProfile.id}>
                             <td>
@@ -2057,7 +2058,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     <div className="form-grid compact-form-grid">
                       <label>{text.labels.payrollCode}<input value={payrollRunForm.code} onChange={(event) => setPayrollRunForm({ ...payrollRunForm, code: event.target.value })} /></label>
                       <label>{text.labels.payrollName}<input value={payrollRunForm.name} onChange={(event) => setPayrollRunForm({ ...payrollRunForm, name: event.target.value })} /></label>
-                      <label>{text.labels.payCycle}<select value={payrollRunForm.pay_cycle} onChange={(event) => setPayrollRunForm({ ...payrollRunForm, pay_cycle: normalizePayrollPayCycle(event.target.value) })}>{staffPayrollPayCycles.map((cycle: any) => <option key={cycle} value={cycle}>{text.payrollPayCycles[cycle]}</option>)}</select></label>
+                      <label>{text.labels.payCycle}<select value={payrollRunForm.pay_cycle} onChange={(event) => setPayrollRunForm({ ...payrollRunForm, pay_cycle: normalizePayrollPayCycle(event.target.value) })}>{staffPayrollPayCycles.map((cycle) => <option key={cycle} value={cycle}>{text.payrollPayCycles[cycle]}</option>)}</select></label>
                       <label>{text.labels.periodStart}<StaffPickerField ariaLabel={text.labels.periodStart} placeholder={text.chooseDate} type="date" value={payrollRunForm.period_start} onChange={(value: string) => setPayrollRunForm({ ...payrollRunForm, period_start: value })} /></label>
                       <label>{text.labels.periodEnd}<StaffPickerField ariaLabel={text.labels.periodEnd} placeholder={text.chooseDate} type="date" value={payrollRunForm.period_end} onChange={(value: string) => setPayrollRunForm({ ...payrollRunForm, period_end: value })} /></label>
                       <label className="full">{text.labels.notes}<textarea value={payrollRunForm.notes} onChange={(event) => setPayrollRunForm({ ...payrollRunForm, notes: event.target.value })} /></label>
@@ -2084,7 +2085,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     <div className="staff-hr-payslip-selector">
                       <label>{payslipCopy.group}<select value={payslipDepartmentFilter} onChange={(event) => setPayslipDepartmentFilter(event.target.value)}><option value="all">{payslipCopy.allGroups}</option>{payslipDepartments.map((department) => <option key={department} value={department}>{department}</option>)}</select></label>
                       <label>{payslipCopy.location}<select value={payslipLocationFilter} onChange={(event) => setPayslipLocationFilter(event.target.value)}><option value="all">{payslipCopy.allLocations}</option>{payslipLocations.map((location) => <option key={location} value={location}>{location}</option>)}</select></label>
-                      <label className="staff-hr-payslip-employee-select">{payslipCopy.employee}<select disabled={filteredPayslipProfiles.length === 0} value={effectivePayslipEmployeeId} onChange={(event) => setPayslipSelectedEmployeeId(event.target.value)}>{filteredPayslipProfiles.map((staffProfile: any) => { const employee = employeeProfileById.get(staffProfile.id); return <option key={staffProfile.id} value={staffProfile.id}>{employee?.legal_name || customerName(staffProfile, text)}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option> })}</select></label>
+                      <label className="staff-hr-payslip-employee-select">{payslipCopy.employee}<select disabled={filteredPayslipProfiles.length === 0} value={effectivePayslipEmployeeId} onChange={(event) => setPayslipSelectedEmployeeId(event.target.value)}>{filteredPayslipProfiles.map((staffProfile) => { const employee = employeeProfileById.get(staffProfile.id); return <option key={staffProfile.id} value={staffProfile.id}>{employee?.legal_name || customerName(staffProfile, text)}{employee?.employee_code ? ` · ${employee.employee_code}` : ''}</option> })}</select></label>
                     </div>
                     {payslipEmployeeProfile ? (
                       <div className="staff-hr-payslip">
@@ -2108,7 +2109,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                       </div>
                     ) : <p className="notice">{payslipCopy.noEmployees}</p>}
                     <h4>{text.hrTabs.payroll}</h4>
-                    {payrollRuns.map((run: any) => (
+                    {payrollRuns.map((run) => (
                       <article className="staff-attendance-row" key={run.id}>
                         <div className="staff-attendance-person">
                           <FileSpreadsheet aria-hidden="true" size={20} />
@@ -2120,7 +2121,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                         <div className="staff-attendance-meta">
                           <span>{text.payrollStatuses[normalizePayrollStatus(run.status)]}</span>
                           <span>{formatVnd(run.total_net_vnd)}</span>
-                          <span>{payrollItems.filter((item: any) => item.payroll_run_id === run.id).length} {text.hrTabs.employees}</span>
+                          <span>{payrollItems.filter((item) => item.payroll_run_id === run.id).length} {text.hrTabs.employees}</span>
                         </div>
                         <div className="staff-row-actions staff-attendance-row-actions">
                           {canManageAttendance && run.status !== 'approved' && (
@@ -2142,12 +2143,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                   <fieldset className="staff-readonly-fieldset staff-attendance-form" disabled={!canManageAttendance}>
                     <h4>{hrTab === 'advances' ? text.hrTabs.advances : text.hrTabs.adjustments}</h4>
                     <div className="form-grid compact-form-grid">
-                      <label>{text.labels.staffMember}<select value={hrAdjustmentForm.profile_id || selectedEmployeeStaffId || firstEmployeeStaffProfileId} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, profile_id: event.target.value })}>{visibleAllStaffProfileOptions.map((item: any) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}</select></label>
-                      <label>{text.labels.type}<select value={hrAdjustmentForm.adjustment_type} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, adjustment_type: normalizeHrAdjustmentType(event.target.value) })}>{staffHrAdjustmentTypes.filter((type: any) => hrTab === 'advances' ? ['advance', 'debt', 'debt_repayment'].includes(type) : !['advance', 'debt', 'debt_repayment'].includes(type)).map((type: any) => <option key={type} value={type}>{text.adjustmentTypes[type]}</option>)}</select></label>
+                      <label>{text.labels.staffMember}<select value={hrAdjustmentForm.profile_id || selectedEmployeeStaffId || firstEmployeeStaffProfileId} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, profile_id: event.target.value })}>{visibleAllStaffProfileOptions.map((item) => <option key={item.id} value={item.id}>{customerName(item, text)}</option>)}</select></label>
+                      <label>{text.labels.type}<select value={hrAdjustmentForm.adjustment_type} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, adjustment_type: normalizeHrAdjustmentType(event.target.value) })}>{staffHrAdjustmentTypes.filter((type) => hrTab === 'advances' ? ['advance', 'debt', 'debt_repayment'].includes(type) : !['advance', 'debt', 'debt_repayment'].includes(type)).map((type) => <option key={type} value={type}>{text.adjustmentTypes[type]}</option>)}</select></label>
                       <label>{text.labels.name}<input value={hrAdjustmentForm.title} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, title: event.target.value })} /></label>
                       <label>{text.vndAmount}<input inputMode="numeric" value={formatDongInput(hrAdjustmentForm.amount_vnd)} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, amount_vnd: dongDigits(event.target.value) })} /></label>
                       <label>{text.labels.date}<StaffPickerField ariaLabel={text.labels.date} placeholder={text.chooseDate} type="date" value={hrAdjustmentForm.effective_date} onChange={(value: string) => setHrAdjustmentForm({ ...hrAdjustmentForm, effective_date: value })} /></label>
-                      <label>{text.labels.status}<select value={hrAdjustmentForm.status} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, status: normalizeHrAdjustmentStatus(event.target.value) })}>{staffHrAdjustmentStatuses.map((statusValue: any) => <option key={statusValue} value={statusValue}>{text.adjustmentStatuses[statusValue]}</option>)}</select></label>
+                      <label>{text.labels.status}<select value={hrAdjustmentForm.status} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, status: normalizeHrAdjustmentStatus(event.target.value) })}>{staffHrAdjustmentStatuses.map((statusValue) => <option key={statusValue} value={statusValue}>{text.adjustmentStatuses[statusValue]}</option>)}</select></label>
                       <label className="full">{text.labels.notes}<textarea value={hrAdjustmentForm.notes} onChange={(event) => setHrAdjustmentForm({ ...hrAdjustmentForm, notes: event.target.value })} /></label>
                     </div>
                     <button className="primary" type="button" disabled={saving || parseDong(hrAdjustmentForm.amount_vnd) <= 0} onClick={() => saveHrAdjustment(hrTab === 'advances' ? 'advance' : 'adjustment')}>
@@ -2155,7 +2156,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                     </button>
                   </fieldset>
                   <div className="staff-attendance-list">
-                    {periodHrAdjustments.filter((item: any) => hrTab === 'advances' ? ['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type) : !['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type)).map((adjustment: any) => {
+                    {periodHrAdjustments.filter((item) => hrTab === 'advances' ? ['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type) : !['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type)).map((adjustment) => {
                       const staffProfile = profileById.get(adjustment.profile_id)
                       return (
                         <article className="staff-attendance-row" key={adjustment.id}>
@@ -2284,7 +2285,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <label className="staff-hr-reference-row staff-hr-switch-row"><div><strong>{completionText.autoUpdate}</strong><span>{completionText.autoUpdateHelp}</span></div><input checked={hrSettings.auto_update_payroll_daily} role="switch" type="checkbox" onChange={(event) => setHrSettings({ ...hrSettings, auto_update_payroll_daily: event.target.checked })} /></label>
                           {(['payroll_template', 'allowance', 'deduction'] as const).map((optionType) => (
                             <button className="staff-hr-reference-row staff-hr-reference-link" key={optionType} type="button" onClick={() => setSettingsSection('categories')}>
-                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><span>{(hrOptionsByType.get(optionType) || []).map((option: any) => option.name).slice(0, 3).join(', ') || completionText.noOptions}</span></div>
+                              <div><strong>{text.hrSetupOptionTypes[optionType]}</strong><span>{(hrOptionsByType.get(optionType) || []).map((option) => option.name).slice(0, 3).join(', ') || completionText.noOptions}</span></div>
                               <span>{(hrOptionsByType.get(optionType) || []).length}</span>
                             </button>
                           ))}
@@ -2303,7 +2304,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                           <div className="staff-hr-pit-brackets">
                             <strong>{resolvedLanguage === 'vi' ? 'Biểu thuế lũy tiến tháng' : 'Monthly progressive PIT brackets'}</strong>
                             <p>{resolvedLanguage === 'vi' ? 'Mỗi giới hạn là thu nhập tính thuế hàng tháng bằng VND; thuế suất chỉ áp dụng cho phần thu nhập trong bậc đó. Để trống giới hạn của bậc cuối.' : 'Each upper limit is monthly taxable income in VND; its rate applies only to the income inside that bracket. Leave the final upper limit empty.'}</p>
-                            <div>{hrSettings.pit_brackets.map((bracket: any, index: number) => {
+                            <div>{hrSettings.pit_brackets.map((bracket, index: number) => {
                               const previousLimit = index > 0 ? hrSettings.pit_brackets[index - 1]?.up_to : null
                               const rangeLabel = bracket.up_to == null
                                 ? previousLimit == null
@@ -2322,12 +2323,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                   <div className="staff-hr-pit-bracket-fields">
                                     <label>
                                       <span>{resolvedLanguage === 'vi' ? 'Giới hạn trên (VND)' : 'Upper limit (VND)'}</span>
-                                      <input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder={resolvedLanguage === 'vi' ? 'Không giới hạn' : 'No ceiling'} value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} />
+                                      <input aria-label={`PIT bracket ${index + 1} upper limit`} inputMode="numeric" placeholder={resolvedLanguage === 'vi' ? 'Không giới hạn' : 'No ceiling'} value={bracket.up_to == null ? '' : formatDongInput(String(bracket.up_to))} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item, itemIndex: number) => itemIndex === index ? { ...item, up_to: event.target.value ? parseDong(dongDigits(event.target.value)) : null } : item) })} />
                                     </label>
                                     <label>
                                       <span>{resolvedLanguage === 'vi' ? 'Thuế suất' : 'Tax rate'}</span>
                                       <div className="staff-hr-pit-input-with-suffix staff-hr-pit-rate-input">
-                                        <input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item: any, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} />
+                                        <input aria-label={`PIT bracket ${index + 1} rate`} min={0} step="0.1" type="number" value={bracket.rate} onChange={(event) => setHrSettings({ ...hrSettings, pit_brackets: hrSettings.pit_brackets.map((item, itemIndex: number) => itemIndex === index ? { ...item, rate: Number(event.target.value) || 0 } : item) })} />
                                         <small>%</small>
                                       </div>
                                     </label>
@@ -2382,11 +2383,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
 
                       {(settingsSection === 'categories' || settingsSection === 'organization') && (
                         <div className="staff-hr-option-settings">
-                          {(settingsSection === 'categories' ? ['payroll_template', 'allowance', 'deduction'] : ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type']).map((optionType) => {
-                            const options = hrSetupOptions.filter((option: any) => option.option_type === optionType)
+                          {(settingsSection === 'categories' ? (['payroll_template', 'allowance', 'deduction'] as const) : (['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type'] as const)).map((optionType) => {
+                            const options = hrSetupOptions.filter((option) => option.option_type === optionType)
                             const selectedId = selectedHrSetupOptionIds[optionType] || ''
-                            const selectedOption = options.find((option: any) => option.id === selectedId)
-                            const modifying = Boolean(selectedOption)
+                            const selectedOption = options.find((option) => option.id === selectedId)
+                            const modifying = selectedOption
                             return (
                               <div className="staff-hr-option-row" key={optionType}>
                                 <div>
@@ -2398,12 +2399,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
                                     <span>{resolvedLanguage === 'vi' ? 'Tùy chọn hiện có' : 'Existing option'}</span>
                                     <select value={selectedId} onChange={(event) => selectHrSetupOption(optionType, event.target.value)}>
                                       <option value="">{options.length > 0 ? (resolvedLanguage === 'vi' ? 'Tạo tùy chọn mới' : 'Create new option') : completionText.noOptions}</option>
-                                      {options.map((option: any) => <option key={option.id} value={option.id}>{option.name}{option.active ? '' : (resolvedLanguage === 'vi' ? ' (đã lưu trữ)' : ' (archived)')}</option>)}
+                                      {options.map((option) => <option key={option.id} value={option.id}>{option.name}{option.active ? '' : (resolvedLanguage === 'vi' ? ' (đã lưu trữ)' : ' (archived)')}</option>)}
                                     </select>
                                   </label>
                                   <label>
                                     <span>{modifying ? (resolvedLanguage === 'vi' ? 'Tên mới' : 'Updated name') : (resolvedLanguage === 'vi' ? 'Tên tùy chọn' : 'Option name')}</span>
-                                    <input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current: any) => ({ ...current, [optionType]: event.target.value }))} />
+                                    <input value={hrSetupForm[optionType]} onChange={(event) => setHrSetupForm((current) => ({ ...current, [optionType]: event.target.value }))} />
                                   </label>
                                   <div className="staff-hr-option-actions">
                                     <button disabled={saving || !hrSetupForm[optionType].trim() || !canManageAttendance} type="button" onClick={() => void (modifying ? modifyHrSetupOption(optionType) : saveHrSetupOption(optionType))}>
