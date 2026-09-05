@@ -147,6 +147,7 @@ select lives_ok(
       name,
       date,
       start_time,
+      max_players,
       visibility,
       booking_type
     )
@@ -156,6 +157,7 @@ select lives_ok(
       'Legitimate community session',
       current_date + 2,
       '13:00',
+      4,
       'public',
       'community'
     )
@@ -200,6 +202,8 @@ select is(
     from pg_policies
     where schemaname = 'public'
       and tablename in ('sessions', 'session_participants', 'bookings')
+      and permissive = 'PERMISSIVE'
+      and not (coalesce(qual, 'false') = 'false' and coalesce(with_check, 'false') = 'false')
       and (
         coalesce(qual, '') = 'true'
         or coalesce(with_check, '') = 'true'

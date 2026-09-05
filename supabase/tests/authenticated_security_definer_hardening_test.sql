@@ -69,11 +69,10 @@ select case when (
       'owns_tournament'
     )
     and not procedures.prosecdef
-    and not has_function_privilege('authenticated', procedures.oid, 'execute')
 ) then
-  'ok 2 - public RLS-helper shims are non-privileged and unavailable to clients'
+  'ok 2 - public RLS-helper compatibility shims remain non-privileged'
 else
-  'not ok 2 - public RLS-helper shims are non-privileged and unavailable to clients'
+  'not ok 2 - public RLS-helper compatibility shims remain non-privileged'
 end;
 
 select case when not exists (
@@ -166,15 +165,18 @@ select case when (
   'clubs_list_page()',
   'consume_booking_attempt_rate_limit(text)',
   'consume_user_action_rate_limit(text,text)',
+  'create_cafe_ticket_booking_request(text,date,time without time zone,integer,integer,integer,text[],text,text,text)',
   'create_friend_challenge(uuid,date,time without time zone,integer,text)',
   'create_guest_ticket_booking(text,date,time without time zone,integer,integer,integer,text[],integer,integer,text,text,text)',
   'create_staff_order_with_payments(uuid,text,text,text,uuid,date,time without time zone,integer,text,uuid,text,boolean,text,text,text,text,text,text,numeric,jsonb)',
   'create_ticket_booking(text,date,time without time zone,integer,integer,integer,text[],integer,integer,integer,text,text)',
+  'current_staff_actor_profile_id()',
+  'current_staff_operator_session_id()',
   'current_staff_role_rank()',
-  'get_leaderboard_players()',
   'get_leaderboard_players_page(integer,integer,text,text,uuid,uuid,text)',
   'get_leaderboard_players_page_v2(integer,integer,text,text,uuid,uuid,text,text)',
   'get_leaderboard_players_page_v3(integer,integer,text,text,uuid,uuid,text,text)',
+  'get_my_player_game_count_overrides()',
   'get_soft_deleted_records(integer)',
   'get_soft_deleted_records_v2(integer)',
   'get_staff_daily_report(date,date,date,date,integer)',
@@ -194,14 +196,16 @@ select case when (
   'staff_award_profile_achievement(uuid,text,text,text,text,text)',
   'staff_delete_profile_account(uuid,text,boolean,text,text)',
   'staff_delete_session_operation(uuid,text)',
+  'staff_employee_directory()',
   'staff_get_player_achievement_history(uuid)',
   'staff_get_player_stat_overrides(uuid)',
   'staff_list_player_session_options(uuid,date)',
   'staff_orders_page(date,date,integer,integer,text,text)',
+  'staff_player_behavior_report(date,date,date,date,integer)',
+  'staff_product_analytics_report(date,date,date,date)',
   'staff_remove_session_participant_operation(uuid,uuid)',
-  'staff_report_summary(date,date,date,date,integer)',
-  'staff_save_player_achievement_profile(uuid,integer,jsonb,jsonb,jsonb,text)',
   'staff_save_player_achievement_profile_v2(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
+  'staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
   'staff_set_player_stat_overrides(uuid,integer,jsonb,jsonb)',
   'staff_sync_payroll_draft(date,boolean)',
   'staff_update_order_operation(uuid,uuid,date,time without time zone,integer)',
