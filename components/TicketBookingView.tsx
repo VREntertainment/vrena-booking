@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { X } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
+import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
@@ -327,7 +328,7 @@ export default function TicketBookingView({
                   </select>
                 </div>
                 <div className="ticket-control ticket-control-duration">
-                  <label htmlFor="ticket-duration">{text.duration}</label>
+                  <label htmlFor="ticket-duration">{bookingDurationCopy[language].ticket}</label>
                   <select
                     disabled={ticketDurationOptions.length === 0}
                     id="ticket-duration"
@@ -404,7 +405,7 @@ export default function TicketBookingView({
 
               <div className="ticket-price-summary">
                 <div>
-                  <span>{text.duration}</span>
+                  <span>{bookingDurationCopy[language].ticket}</span>
                   <strong>{activeTicketDuration} min</strong>
                 </div>
                 {!isSpecialTicket && (
@@ -532,6 +533,7 @@ export default function TicketBookingView({
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
+            <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
             <div className="ticket-type-list ticket-event-options">
               <label>{text.ticketEventHelpTitle}</label>
               <p className="ticket-event-options-copy">{text.ticketEventHelpBody}</p>
@@ -546,7 +548,7 @@ export default function TicketBookingView({
                     <strong>{ticketTypeLabel(service.id, text)}</strong>
                     <span>{ticketTypeDescription(service.id, text)}</span>
                     <small>
-                      20-120 min · {service.minPlayers}-{service.maxPlayers} {text.players}
+                      {bookingDurationCopy[language].event} · {service.minPlayers}-{service.maxPlayers} {text.players}
                     </small>
                   </button>
                 ))}

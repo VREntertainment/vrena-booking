@@ -14,9 +14,14 @@ type GamesLanguagePageProps = {
 
 export const revalidate = 60
 
-export const metadata: Metadata = {
-  title: 'Game Guide | VRena_Booking_App',
-  description: 'Fast public guide to VRena games, gameplay, tips, duration, and audience fit.',
+export async function generateMetadata({ params }: GamesLanguagePageProps): Promise<Metadata> {
+  const { language } = await params
+  if (!isLanguageCode(language)) notFound()
+  return {
+    title: `${uiText[language].gameGuideTitle} | VRena`,
+    description: uiText[language].gameGuideIntro,
+    alternates: { canonical: `/games/${language}` },
+  }
 }
 
 export function generateStaticParams() {

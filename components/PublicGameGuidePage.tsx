@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import DocumentLanguage from './DocumentLanguage'
+import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import Link from 'next/link'
 import type { TranslationMap } from '../lib/i18n/base'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
@@ -52,7 +54,8 @@ export default function PublicGameGuidePage({
   const games = mergeStaffGameCatalog(staffGuides, process.env.NEXT_PUBLIC_SUPABASE_URL)
 
   return (
-    <main>
+    <main lang={language}>
+      <DocumentLanguage language={language} />
       <section className="public-game-guide-page">
         <header className="public-game-guide-hero">
           <Link className="brand-logo" href="/" aria-label="VRena Booking App">
@@ -98,7 +101,7 @@ export default function PublicGameGuidePage({
                       <span>{game.category}</span>
                     </div>
                     <div className="game-guide-facts">
-                      <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
+                      <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
                       <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>

@@ -11493,3 +11493,23 @@
     font-size: 20px;
   }
 }
+
+/* Keep visit progress and the explicit save action readable at every staff viewport. */
+.app .staff-visit-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.app .staff-visit-checklist > strong { flex-basis: 100%; }
+.app .staff-visit-editor fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.app .staff-visit-editor button[type="submit"] { margin-top: 12px; }
+.app .staff-visit-editor label { min-width: 0; }
+.app .staff-orders-filters { align-items: end; margin-bottom: 12px; }
+.app .staff-orders-filters input[type="date"] { min-width: 0; }
