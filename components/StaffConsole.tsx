@@ -1134,7 +1134,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm(order)}>{text.actions.noShow}</button>
               </div></td>}
             </tr>
-            {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order)}</td></tr>}
+            {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order, paymentsByOrderId)}</td></tr>}
             {draft && <tr className="staff-order-detail-row"><td colSpan={6}><form className="staff-visit-editor" onSubmit={(event) => { event.preventDefault(); void saveOrderEdit(order) }}>
               <fieldset disabled={saving}><legend>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'} · {order.order_number}</legend><p>{resolvedLanguage === 'vi' ? 'Các khoản đã thanh toán được giữ nguyên. Tổng mới không được thấp hơn số tiền đã trả.' : 'Recorded payments are retained. The new total cannot be lower than the amount already paid.'}</p>
                 <label>{text.labels.total}<input required min={paid} step={1} type="number" value={draft.total} onChange={(event) => patchOrderEditDraft({ total: event.target.value })} /></label>

@@ -456,7 +456,7 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
   }
 
   async function recordOrderPayment(order: StaffOrder, entries: OrderPaymentEntry[]): Promise<boolean> {
-    const { canCreateOrders, saving, setSaving, setOrders, setBrowsedOrders, setOrderPayments, markStaffDataStale, setPaymentOrderId } = getContext()
+    const { canCreateOrders, saving, setSaving, setOrders, setBrowsedOrders, setOrderPayments, markStaffDataStale, setPaymentOrderId, currentTab, loadReportData } = getContext()
 
     if (!canCreateOrders || saving) return false
     setSaving(true)
@@ -470,15 +470,16 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
       setOrderPayments((items) => [...items.filter((item) => !data.payments.some((payment: StaffOrderPayment) => payment.id === item.id)), ...data.payments])
       markStaffDataStale('report')
       setPaymentOrderId(null)
+      if (currentTab === 'report') await loadReportData(true)
       return true
     } finally { setSaving(false) }
   }
 
-  function orderPaymentForm(order: StaffOrder) {
+  function orderPaymentForm(order: StaffOrder, payments?: Map<string, StaffOrderPayment[]>) {
     const { resolvedLanguage, saving, orderPaymentsByOrderId, setPaymentOrderId, currentTab, loadRecentOrders, loadReportData } = getContext()
 
     return <StaffOrderPaymentForm language={resolvedLanguage} disabled={saving}
-      balance={Math.max(0, order.total - orderPaidAmount(order, orderPaymentsByOrderId))}
+      balance={Math.max(0, order.total - orderPaidAmount(order, payments || orderPaymentsByOrderId))}
       onCancel={() => {
         setPaymentOrderId(null)
         if (currentTab === 'orders') void loadRecentOrders()
