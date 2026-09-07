@@ -44,7 +44,7 @@ test.describe('admin flows', () => {
     await page.getByRole('tablist', { name: 'Staff Console', exact: true }).getByRole('tab', { name: 'Today', exact: true }).click()
     await page.getByLabel('Operations date', { exact: true }).fill(futureDate(2))
     const sessionCard = page.locator('article.staff-operation-session').filter({ hasText: sessionName }).first()
-    await sessionCard.getByRole('button', { name: 'Edit', exact: true }).click()
+    await sessionCard.getByRole('button', { name: 'Visit details', exact: true }).click()
     await sessionCard.getByLabel('Name', { exact: true }).fill(editedSessionName)
     await sessionCard.getByLabel('Name', { exact: true }).press('Tab')
     await expect(page.locator('.staff-operation-title-row').getByText(editedSessionName, { exact: true })).toBeVisible()

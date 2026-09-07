@@ -18,14 +18,15 @@ const copy = {
   vi: { title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', savedPrice: 'Giữ nguyên giá đã thỏa thuận và các khoản đã thanh toán. Kiểm tra đơn hàng nếu thay đổi cần điều chỉnh giá.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
 }
 
-export default function StaffCalendarBookingDialog({ session, language, onClose, onSaved }: {
-  session: Session; language: 'en' | 'vi'; onClose: () => void; onSaved: (date: string, deleted: boolean, venue: BookingForm['venueKey']) => void
+export default function StaffCalendarBookingDialog({ sessionId, language, onClose, onSaved }: {
+  sessionId: string; language: 'en' | 'vi'; onClose: () => void; onSaved: (date: string, deleted: boolean, venue: BookingForm['venueKey']) => void
 }) {
   const text = copy[language]
   const bookingText = staffBookingCopy[language]
   const dialog = useRef<HTMLDialogElement>(null)
   const busy = useRef(false)
   const [draft, setDraft] = useState<Draft | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [version, setVersion] = useState('')
   const [persisted, setPersisted] = useState<{ name: string; venue: string; date: string; time: string } | null>(null)
   const [games, setGames] = useState<StaffGame[]>([])
@@ -41,14 +42,15 @@ export default function StaffCalendarBookingDialog({ session, language, onClose,
     void (async () => {
       try {
         const [booking, linked, catalog] = await Promise.all([
-          supabase.from('sessions').select('*').eq('id', session.id).is('deleted_at', null).abortSignal(controller.signal).single(),
-          supabase.from('staff_orders').select('*').eq('session_id', session.id).abortSignal(controller.signal),
+          supabase.from('sessions').select('*').eq('id', sessionId).is('deleted_at', null).abortSignal(controller.signal).single(),
+          supabase.from('staff_orders').select('*').eq('session_id', sessionId).abortSignal(controller.signal),
           supabase.from('staff_games').select('*').eq('active', true).order('name').abortSignal(controller.signal),
         ])
         if (controller.signal.aborted) return
         const failure = booking.error || linked.error || catalog.error
         if (failure) throw new Error(failure.message)
         const record = booking.data!
+        setSession(record as Session)
         const order = linked.data?.[0]
         const activeGames = (catalog.data || []) as StaffGame[]
         setGames(activeGames)
@@ -65,7 +67,7 @@ export default function StaffCalendarBookingDialog({ session, language, onClose,
       }
     })()
     return () => { controller.abort(); if (previousFocus instanceof HTMLElement) previousFocus.focus() }
-  }, [session.id])
+  }, [sessionId])
 
   const availableGames = games.filter((game) => (publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']).includes(draft?.venue || 'ha-do-centrosa'))
   const game = availableGames.find((item) => item.slug === draft?.game)
@@ -73,7 +75,7 @@ export default function StaffCalendarBookingDialog({ session, language, onClose,
   const patch = (value: Partial<Draft>) => setDraft((current) => current ? { ...current, ...value } : current)
 
   async function mutate(deleted: boolean) {
-    if (!draft || busy.current) return
+    if (!draft || !session || busy.current) return
     busy.current = true
     setSaving(true)
     setError('')
@@ -114,12 +116,13 @@ export default function StaffCalendarBookingDialog({ session, language, onClose,
         <label className="full">{text.name}<input required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
         <label>{text.shop}<select value={draft.venue} onChange={(event) => {
           const venue = event.target.value as Draft['venue']
-          const firstGame = games.find((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
-          patch({ venue, game: firstGame?.slug || '', arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '16:00' ? '16:00' : draft.time })
+          const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
+          const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
+          patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '16:00' ? '16:00' : draft.time })
         }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">VRena Café des Stagiaires</option></select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={!orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
-        <label>{text.time}<input required type="time" value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
+        <label>{text.time}<input required type="time" min={draft.venue === 'cafe-des-stagiaires' ? '16:00' : '09:00'} max={`${String(Math.floor((1320 - draft.duration) / 60)).padStart(2, '0')}:${String((1320 - draft.duration) % 60).padStart(2, '0')}`} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label>{text.game}<select required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
         <label>{text.players}<input required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
         <label>{text.duration}<input required min={20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
@@ -130,7 +133,7 @@ export default function StaffCalendarBookingDialog({ session, language, onClose,
       </fieldset>
       {orders.map((order) => <p key={order.id}>{order.order_number} · {order.customer_name || 'Guest'} · {text.total}: {order.total.toLocaleString('vi-VN')} đ</p>)}
       <p className="field-help">{text.savedPrice}</p>
-      <div className="calendar-dialog-actions"><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button disabled={saving || !game} type="submit">{text.save}</button></div>
+      <div className="calendar-dialog-actions"><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || !game} type="submit">{text.save}</button></div>
     </form>)}
   </dialog>
 }

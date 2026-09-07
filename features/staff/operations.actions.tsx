@@ -455,32 +455,37 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
     await loadTodaySessions(true)
   }
 
-  async function recordOrderPayment(order: StaffOrder, entry: OrderPaymentEntry): Promise<boolean> {
-    const { canCreateOrders, saving, setSaving, setOrders, setBrowsedOrders, setOrderPayments, markStaffDataStale, setPaymentOrderId } = getContext()
+  async function recordOrderPayment(order: StaffOrder, entries: OrderPaymentEntry[]): Promise<boolean> {
+    const { canCreateOrders, saving, setSaving, setOrders, setBrowsedOrders, setOrderPayments, markStaffDataStale, setPaymentOrderId, currentTab, loadReportData } = getContext()
 
     if (!canCreateOrders || saving) return false
     setSaving(true)
     try {
-      const { data, error } = await supabase.rpc('staff_record_order_payment', {
-        p_order_id: order.id, p_payment_id: entry.id, p_payment_method: entry.method, p_amount: entry.amount,
-      })
-      if (error || !data?.order || !data?.payment) return false
+      const { data, error } = await supabase.rpc('staff_record_order_payments', { p_order_id: order.id, p_payments: entries })
+      if (error) throw new Error(error.message)
+      if (!data?.order || !data?.payments) return false
       const updated = data.order as StaffOrder
       setOrders((items) => items.map((item) => item.id === order.id ? updated : item))
       setBrowsedOrders((current) => current ? { ...current, rows: current.rows.map((item) => item.id === order.id ? updated : item) } : null)
-      setOrderPayments((items) => [...items.filter((item) => item.id !== data.payment.id), data.payment])
+      setOrderPayments((items) => [...items.filter((item) => !data.payments.some((payment: StaffOrderPayment) => payment.id === item.id)), ...data.payments])
       markStaffDataStale('report')
       setPaymentOrderId(null)
+      if (currentTab === 'report') await loadReportData(true)
       return true
     } finally { setSaving(false) }
   }
 
-  function orderPaymentForm(order: StaffOrder) {
-    const { resolvedLanguage, saving, orderPaymentsByOrderId, setPaymentOrderId } = getContext()
+  function orderPaymentForm(order: StaffOrder, payments?: Map<string, StaffOrderPayment[]>) {
+    const { resolvedLanguage, saving, orderPaymentsByOrderId, setPaymentOrderId, currentTab, loadRecentOrders, loadReportData } = getContext()
 
     return <StaffOrderPaymentForm language={resolvedLanguage} disabled={saving}
-      balance={Math.max(0, order.total - orderPaidAmount(order, orderPaymentsByOrderId))}
-      onCancel={() => setPaymentOrderId(null)} onSave={(entry) => recordOrderPayment(order, entry)} />
+      balance={Math.max(0, order.total - orderPaidAmount(order, payments || orderPaymentsByOrderId))}
+      onCancel={() => {
+        setPaymentOrderId(null)
+        if (currentTab === 'orders') void loadRecentOrders()
+        if (currentTab === 'today') void loadTodayOrders(true)
+        if (currentTab === 'report') void loadReportData(true)
+      }} onSave={(entry) => recordOrderPayment(order, entry)} />
   }
 
   async function updateOrder(order: StaffOrder, patch: Partial<StaffOrder>) {
@@ -505,7 +510,7 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
       if (!allowed) return
     }
     setSaving(true)
-    const { error } = await supabase.from('staff_orders').update(patch).eq('id', order.id)
+    const { error } = await supabase.rpc('staff_set_order_status', { p_order_id: order.id, p_status: patch.order_status, p_expected_updated_at: order.updated_at })
     setStatus(error ? error.message : text.messages.orderUpdated)
     if (!error) {
       setOrders((items) => items.map((item) => item.id === order.id ? { ...item, ...patch } : item))
@@ -524,7 +529,7 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
         changes: orderChanges(order, patch, games),
       })
       markStaffDataStale('today', 'orders', 'report')
-      if (currentTab === 'today') await loadTodayOrders(true)
+      if (currentTab === 'today') await Promise.all([loadTodayOrders(true), loadTodaySessions(true)])
       if (currentTab === 'orders') await loadRecentOrders()
       if (currentTab === 'report') await loadReportData(true)
     }
@@ -577,14 +582,11 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
 
     if (!canCreateOrders || saving || orderEditDraft?.orderId !== order.id) return
 
-    const selectedGame = games.find((game) => game.id === orderEditDraft.gameId)
     const nextTotal = Number(orderEditDraft.total)
     if (
-      !selectedGame
-      || !orderEditDraft.bookingDate
-      || !orderEditDraft.bookingTime
-      || !Number.isInteger(nextTotal)
+      !Number.isInteger(nextTotal)
       || nextTotal < 0
+      || !orderEditDraft.reason.trim()
     ) {
       setOrderEditError(text.messages.orderEditInvalid)
       return
@@ -595,20 +597,11 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
     setStatus('')
 
     try {
-      const { data, error } = await supabase.rpc('staff_update_order_operation', {
-        p_booking_date: orderEditDraft.bookingDate,
-        p_booking_time: orderEditDraft.bookingTime,
-        p_game_id: selectedGame.id,
-        p_order_id: order.id,
-        p_total: nextTotal,
-      })
+      const { data, error } = await supabase.rpc('staff_adjust_order_total', { p_order_id: order.id, p_total: nextTotal, p_reason: orderEditDraft.reason.trim(), p_expected_updated_at: order.updated_at })
       if (error) throw error
 
       const patch: Partial<StaffOrder> = {
-        booking_date: orderEditDraft.bookingDate,
-        booking_time: orderEditDraft.bookingTime,
-        game_id: selectedGame.id,
-        subtotal: nextTotal + order.discount_total,
+        price_override_reason: orderEditDraft.reason.trim(),
         total: nextTotal,
       }
       const returnedOrder = data && typeof data === 'object' && !Array.isArray(data)
@@ -621,9 +614,6 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
         setOperationSessions((items) => items.map((session) => session.id === order.session_id
           ? {
             ...session,
-            confirmed_game_id: selectedGame.slug,
-            date: orderEditDraft.bookingDate,
-            start_time: orderEditDraft.bookingTime,
             ticket_total_price: session.booking_type === 'ticket' ? nextTotal : session.ticket_total_price,
           }
           : session))
@@ -639,7 +629,7 @@ export function createStaffOperationsActions(getContext: () => OperationsActionC
         date: updatedOrder.booking_date,
         time: normalizeTime(updatedOrder.booking_time),
         total: updatedOrder.total,
-        summary: 'Booking order game, schedule, or total was edited.',
+        summary: 'Agreed booking total was adjusted. Reason: ' + orderEditDraft.reason.trim(),
         changes: orderChanges(order, patch, games),
       })
       markStaffDataStale('today', 'orders', 'report')

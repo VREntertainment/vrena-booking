@@ -88,7 +88,7 @@ test('visit arrival, results, order linkage and receipts survive reload and conn
     await orderSelect.selectOption(orderId, { timeout: 5000 })
     await card.getByRole('button', { name: 'Link existing order', exact: true }).click()
     await expect(card.getByText('Order linked.', { exact: true })).toBeVisible()
-    await card.getByRole('button', { name: 'Done', exact: true }).click()
+    await card.getByRole('button', { name: 'Mark completed', exact: true }).click()
     expect((await db.from('staff_orders').select('order_status').eq('id', orderId).single()).data?.order_status).toBe('confirmed')
     const editor = card.locator('.staff-operation-participant').filter({ hasText: 'Local visit player' })
     await editor.getByLabel('Player arrived', { exact: true }).check()
@@ -103,10 +103,10 @@ test('visit arrival, results, order linkage and receipts survive reload and conn
     await expect(editor.getByText('Visit record saved.', { exact: true })).toBeVisible()
     await expect(card.getByText('Arrived players with results: 1 / 1', { exact: true })).toBeVisible()
 
-    await card.getByRole('button', { name: 'Record order payment', exact: true }).click()
+    await card.getByRole('button', { name: 'Payment', exact: true }).click()
     const payment = card.getByRole('form', { name: 'Record order payment' })
     // Simulate a committed receipt whose response is lost, then retry the same entry.
-    await page.route('**/rest/v1/rpc/staff_record_order_payment', async (route) => {
+    await page.route('**/rest/v1/rpc/staff_record_order_payments', async (route) => {
       const committed = await route.fetch()
       expect(committed.ok()).toBe(true)
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"Response lost after commit"}' })
@@ -117,7 +117,8 @@ test('visit arrival, results, order linkage and receipts survive reload and conn
     await expect(payment).toHaveCount(0)
     const receipts = await db.from('staff_order_payments').select('amount,payment_method').eq('order_id', orderId)
     expect(receipts.data).toEqual([{ amount: 100000, payment_method: 'cash' }])
-    await card.getByRole('button', { name: 'Done', exact: true }).click()
+    await card.getByRole('button', { name: 'Mark completed', exact: true }).click()
+    await card.getByRole('button', { name: 'Confirm completion', exact: true }).click()
     await expect.poll(async () => (await db.from('staff_orders').select('order_status').eq('id', orderId).single()).data?.order_status).toBe('completed')
     await page.reload()
     await page.getByRole('tab', { name: 'Today', exact: true }).click()
