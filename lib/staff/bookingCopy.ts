@@ -1,0 +1,28 @@
+export const staffBookingCopy = {
+  en: {
+    bookingType: 'Booking type', customerBooking: 'Client booking', shop: 'Shop',
+    searchCustomer: 'Search by name, phone or email, or enter a new client',
+    createProfile: 'Create profile for “{name}”',
+    createWithBooking: 'New client? Enter their name and optional contact details. The profile is saved when you confirm this booking.',
+    profileSelected: 'Existing profile selected. Contact details below apply to this booking.',
+    invalidBooking: 'Enter a valid date, time and player count (1–64).',
+    invalidEmail: 'Enter a valid email address or leave it empty.',
+    discountChanged: 'This discount no longer applies. Choose an available discount or no discount.',
+    discountsHelp: '{count} offers match this game, date, time and player count. Customer usage limits are checked when confirming.',
+    discountValue: 'Unique discount value', noGames: 'No games available at this shop',
+    durationHelp: 'This staff booking reserves the game runtime shown below. Check the shop, time, players and total before confirming.',
+  },
+  vi: {
+    bookingType: 'Loại đặt chỗ', customerBooking: 'Đặt chỗ theo hồ sơ khách', shop: 'Cửa hàng',
+    searchCustomer: 'Tìm theo tên, điện thoại, email hoặc nhập tên khách mới',
+    createProfile: 'Tạo hồ sơ cho “{name}”',
+    createWithBooking: 'Khách mới? Nhập tên và thông tin liên hệ nếu có. Hồ sơ được lưu khi xác nhận đặt chỗ này.',
+    profileSelected: 'Đã chọn hồ sơ có sẵn. Thông tin liên hệ bên dưới áp dụng cho lượt đặt chỗ này.',
+    invalidBooking: 'Nhập ngày, giờ và số người chơi hợp lệ (1–64).',
+    invalidEmail: 'Nhập email hợp lệ hoặc để trống.',
+    discountChanged: 'Ưu đãi này không còn áp dụng. Chọn ưu đãi khác hoặc không giảm giá.',
+    discountsHelp: '{count} ưu đãi phù hợp với trò chơi, ngày, giờ và số người. Giới hạn sử dụng theo khách được kiểm tra khi xác nhận.',
+    discountValue: 'Giá trị giảm giá riêng', noGames: 'Cửa hàng chưa có trò chơi khả dụng',
+    durationHelp: 'Lượt đặt chỗ của nhân viên giữ chỗ theo thời lượng trò chơi bên dưới. Kiểm tra cửa hàng, giờ, số người và tổng tiền trước khi xác nhận.',
+  },
+} as const

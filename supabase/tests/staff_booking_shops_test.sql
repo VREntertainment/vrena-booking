@@ -1,0 +1,41 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+select no_plan();
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+insert into auth.users(id,email) values ('85000000-0000-4000-8000-000000000001','booking-admin@example.invalid');
+insert into public.profiles(id,full_name,role) values ('85000000-0000-4000-8000-000000000001','Booking test admin','admin') on conflict(id) do update set role='admin';
+insert into auth.mfa_factors(id,user_id,factor_type,status,secret,created_at,updated_at) values ('85000000-0000-4000-8000-000000000002','85000000-0000-4000-8000-000000000001','totp','verified','LOCAL-TEST-ONLY',now(),now());
+insert into public.staff_games(id,slug,name,game_type,duration_minutes,max_players_per_arena,available_arena_ids,active)
+values ('85000000-0000-4000-8000-000000000003','city-z','City Z fixture','shooting',45,6,array['arena-1','arena-2'],true),
+('85000000-0000-4000-8000-000000000004','booking-hado-fixture','Ha Do fixture','shooting',20,4,array['arena-1','arena-2'],true)
+on conflict(slug) do update set duration_minutes=excluded.duration_minutes,active=true;
+create temp table booking_results(label text, result jsonb);
+grant all on booking_results to authenticated;
+set local role authenticated;
+select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',true);
+select throws_ok($q$select public.create_staff_order_with_payments(null,'Blocked client',null,null,(select id from public.staff_games where slug='city-z'),current_date+61,'16:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','Staff access required.','AAL1 cannot create a booking or profile');
+select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal2"}',true);
+insert into booking_results values ('cafe',public.create_staff_order_with_payments(null,'Inline client fixture',null,null,(select id from public.staff_games where slug='city-z'),current_date+61,'16:00',1,'cafe:arena-1',null,'confirmed'));
+select is((select venue_key from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='cafe')),'cafe-des-stagiaires','Cafe shop is saved on session');
+select is((select (result->>'total')::int from booking_results where label='cafe'),240000,'Cafe quote uses its own tariff');
+select is((select count(*)::int from public.profiles where full_name='Inline client fixture'),1,'One client profile is created with the booking');
+select is((select count(*)::int from public.session_participants where session_id=(select (result->>'session_id')::uuid from booking_results where label='cafe')),1,'New client is attached to the session');
+select throws_ok($q$select public.create_staff_order_with_payments(null,'Must roll back',null,null,(select id from public.staff_games where slug='city-z'),current_date+61,'16:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','This arena is already booked at the selected time. Choose another arena or time.','Occupied arena is rejected');
+select is((select count(*)::int from public.profiles where full_name='Must roll back'),0,'Failed booking leaves no orphan profile');
+select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='booking-hado-fixture'),current_date+61,'17:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','This game is not available at the selected shop.','Ha Do game cannot be booked at Cafe');
+insert into booking_results values ('guest',public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='booking-hado-fixture'),current_date+61,'16:00',1,'arena-1',null,'confirmed'));
+select is((select venue_key from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='guest')),'ha-do-centrosa','Ha Do booking succeeds alongside Cafe booking');
+select ok((select result->>'customer_id' is null from booking_results where label='guest'),'Guest has no profile');
+select is((select count(*)::int from public.session_participants where session_id=(select (result->>'session_id')::uuid from booking_results where label='guest')),0,'Guest has no player participant');
+insert into booking_results values ('existing',public.create_staff_order_with_payments((select (result->>'customer_id')::uuid from booking_results where label='cafe'),'Inline client fixture',null,null,(select id from public.staff_games where slug='city-z'),current_date+61,'17:00',1,'cafe:arena-1',null,'confirmed'));
+select is((select count(*)::int from public.profiles where full_name='Inline client fixture'),1,'Existing profile is reused');
+select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+62,'09:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','Selected time is outside opening hours.','Cafe opening hours are enforced');
+insert into booking_results values ('contact',public.create_staff_order_with_payments(null,'Contact fixture','+84900009985','booking-fixture@example.invalid',(select id from public.staff_games where slug='city-z'),current_date+62,'16:00',1,'cafe:arena-1',null,'confirmed'));
+select throws_ok($q$select public.create_staff_order_with_payments(null,'Duplicate contact','0900009985',null,(select id from public.staff_games where slug='city-z'),current_date+62,'17:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','A profile already uses these contact details. Select the existing client from the name dropdown.','Equivalent phone formatting does not create duplicate profiles');
+select throws_ok($q$select public.create_staff_order_with_payments(null,'Duplicate email',null,'BOOKING-FIXTURE@EXAMPLE.INVALID',(select id from public.staff_games where slug='city-z'),current_date+62,'17:00',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','A profile already uses these contact details. Select the existing client from the name dropdown.','Email matching ignores case');
+reset role;
+select ok((select encrypted_password is null and email_confirmed_at is null from auth.users where id=(select (result->>'customer_id')::uuid from booking_results where label='cafe')),'Inline profile has no password or verified email');
+select is((select count(*)::int from auth.users where raw_user_meta_data->>'full_name'='Must roll back'),0,'Failed booking rolls back Auth identity too');
+select * from finish();
+rollback;

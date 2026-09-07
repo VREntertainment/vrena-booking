@@ -543,8 +543,8 @@
 
 .app .staff-price-lines {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 10px;
+  grid-template-columns: minmax(85px, 0.75fr) minmax(0, 1.25fr);
+  gap: 10px 14px;
   align-items: center;
   border-radius: 8px;
   background: var(--vrena-surface-warm);
@@ -11513,3 +11513,23 @@
 .app .staff-visit-editor label { min-width: 0; }
 .app .staff-orders-filters { align-items: end; margin-bottom: 12px; }
 .app .staff-orders-filters input[type="date"] { min-width: 0; }
+
+.app .staff-price-lines > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  line-height: 1.4;
+}
+.app .staff-price-lines > span { min-width: 0; line-height: 1.4; }
+.app .staff-customer-name-field.full { grid-column: 1 / -1; }
+.app .staff-grid > .staff-card,
+.app .staff-readonly-fieldset .compact-form-grid,
+.app .staff-readonly-fieldset .compact-form-grid > * { min-width: 0; }
+
+@media (max-width: 600px) {
+  .app .staff-readonly-fieldset .compact-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .app .staff-payment-split-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .staff-payment-split-row > button { grid-column: 1 / -1; justify-self: end; }
+  .app .staff-payment-split-row > input,
+  .app .staff-payment-split-row > select { min-width: 0; }
+}
