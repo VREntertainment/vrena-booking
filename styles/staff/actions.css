@@ -307,3 +307,6 @@
   min-height: 32px; padding: 5px 8px; border: 0; background: transparent; color: var(--vrena-cta-tertiary-ink); box-shadow: none;
 }
 .app .staff-console .staff-row-actions button.staff-order-tertiary:disabled { opacity: .5; }
+.app .staff-console .staff-row-actions button.staff-order-tertiary:not(.primary):not(.danger):disabled {
+  color: var(--vrena-neutral-500); opacity: .65; cursor: not-allowed;
+}
