@@ -27,7 +27,8 @@
     "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/*.test.ts lib/security/*.test.ts docs/*.test.js",
-    "check": "npm run lint && npm run typecheck && npm run verify:palette && npm run test:unit",
+    "check": "npm run lint && npm run typecheck && npm run check:architecture && npm run verify:palette && npm run test:unit",
+    "check:architecture": "node scripts/check-module-boundaries.mjs",
     "test:services": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-local-services.mjs"
   },
   "dependencies": {

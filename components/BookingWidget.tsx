@@ -1,41 +1,266 @@
 'use client'
 
+import { createTournamentActions } from '../lib/booking/tournamentActions'
+
+import { CAFE_SOFT_OPENING_DATE, availableSessionTimes, cafeTicketTimes } from '../lib/booking/availability'
+import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking, writePendingTicketAccountBooking } from '../lib/booking/pendingAccountBooking'
+
+import { useTicketCheckout } from '../hooks/useTicketCheckout'
+import { getSupabase } from '../lib/booking/client'
+
 import { buildTicketBookingRequest } from '../lib/ticketBookingRequest'
 
+import {
+  Bold,
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Italic,
+  Lock,
+  MessageSquare,
+  RefreshCw,
+  Save,
+  Send,
+  Share,
+  Strikethrough,
+  Underline,
+  UserCheck,
+  UserMinus,
+  X,
+} from 'lucide-react'
 import NextImage from 'next/image'
-import { Bold, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Crown, Italic, Lock, MessageSquare, RefreshCw, Save, Send, Share, Strikethrough, Underline, UserCheck, UserMinus, X } from 'lucide-react'
-import { ChangeEvent, FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ChangeEvent,
+  FormEvent,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
-import { CLUB_LIST_SELECT, CLUB_LIST_SELECT_BASE, CLUB_LIST_WITH_MEMBERS_SELECT, CLUB_LIST_WITH_MEMBERS_SELECT_BASE, CLUB_MEMBER_SELECT, CLUB_MEMBER_SELECT_BASE, CLUB_MESSAGE_SELECT, CLUB_PUBLIC_SELECT, OPTIONAL_SESSION_METADATA_COLUMNS, SESSION_CARD_PARTICIPANT_SELECT, SESSION_CARD_SELECT, SESSION_CARD_SELECT_BASE, SESSION_MESSAGE_SELECT, SESSION_SELECT, SESSION_SELECT_BASE, WAITLIST_POSITION_SELECT, WAITLIST_SELECT, avatarColors, avatarTextColors, clubThemeColors, games, isEscapeSession, selectedTicketService, ticketMaxCustomerDurationMinutes, ticketServices, type GameId, type TicketType } from '../lib/bookingStaticData'
-import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
-import { getInitialLanguage } from '../lib/i18n/detectLanguage'
+import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
+import {
+  canUseWebPush,
+  downloadSessionCalendarFile,
+  notifyBookingInvite,
+  notifyBookingSession,
+  registerReminderServiceWorker,
+  requestBrowserReminderPermission,
+  shareBookingLink,
+  urlBase64ToUint8Array,
+} from '../lib/bookingBrowserActions'
+import {
+  CLUB_LIST_SELECT,
+  CLUB_LIST_SELECT_BASE,
+  CLUB_LIST_WITH_MEMBERS_SELECT,
+  CLUB_LIST_WITH_MEMBERS_SELECT_BASE,
+  CLUB_MEMBER_SELECT,
+  CLUB_MEMBER_SELECT_BASE,
+  CLUB_MESSAGE_SELECT,
+  CLUB_PUBLIC_SELECT,
+  OPTIONAL_SESSION_METADATA_COLUMNS,
+  SESSION_CARD_PARTICIPANT_SELECT,
+  SESSION_CARD_SELECT,
+  SESSION_CARD_SELECT_BASE,
+  SESSION_MESSAGE_SELECT,
+  SESSION_SELECT,
+  SESSION_SELECT_BASE,
+  WAITLIST_POSITION_SELECT,
+  WAITLIST_SELECT,
+  avatarColors,
+  avatarTextColors,
+  clubThemeColors,
+  games,
+  isEscapeSession,
+  selectedTicketService,
+  ticketMaxCustomerDurationMinutes,
+  ticketServices,
+  type GameId,
+  type TicketType,
+} from '../lib/bookingStaticData'
+import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
+import {
+  ANONYMOUS_MASK_COLOR,
+  ANONYMOUS_MASK_EMOJI,
+  ANONYMOUS_MASK_TEXT_COLOR,
+  BlockedTime,
+  BookingType,
+  CLOSE_MINUTES,
+  ChallengeStatus,
+  Club,
+  ClubListPageRow,
+  ClubMember,
+  ClubMemberRole,
+  ClubMessage,
+  ClubRole,
+  ClubSessionScope,
+  ClubTab,
+  DEFAULT_APP_URL,
+  FriendConnection,
+  LEADERBOARD_PAGE_SIZE,
+  MessageTranslationResponse,
+  OPEN_MINUTES,
+  PROFILE_SELECT,
+  Participant,
+  ParticipantPaymentSplit,
+  ParticipantPaymentSplitDraft,
+  Profile,
+  ProfileGender,
+  QualificationRule,
+  RealtimeRefreshTask,
+  SESSION_LOAD_BATCH_DAYS,
+  Session,
+  SessionInvite,
+  SessionListPageResult,
+  SessionMessage,
+  SessionMessagePageState,
+  StaffGameGuide,
+  TIME_STEP_MINUTES,
+  TicketBookingConfirmation,
+  TicketStatus,
+  TotpEnrollment,
+  TotpFactor,
+  TournamentAuditLog,
+  TournamentData,
+  TournamentEditor,
+  TournamentFormat,
+  TournamentMatch,
+  TournamentPool,
+  TournamentPoolEntry,
+  WaitlistEntry,
+  addDays,
+  addDaysToDateValue,
+  anonymousCallsignForId,
+  appRedirectUrl,
+  arenasUsedBySession,
+  authDebug,
+  bestOfLabel,
+  calculatePoolStandings,
+  cleanHexColor,
+  cleanPasswordRecoveryUrl,
+  clubMemberCount,
+  clubMembers,
+  clubRoleForProfile,
+  compactDisplayName,
+  compactInitials,
+  displayName,
+  finiteNumber,
+  formatCalendarWeekRange,
+  formatDayButton,
+  formatShortDate,
+  formatSpeedrunDuration,
+  formatTicketFormulaPrice,
+  formatVnd,
+  generateInviteCode,
+  isBestSessionPerformer,
+  isBirthdayToday,
+  isChallengeSession,
+  isHexColor,
+  isPastSession,
+  isTicketSession,
+  isUpcomingSession,
+  leaderboardPlayerFromStaffProfile,
+  limitDisplayName,
+  limitMotto,
+  localDateString,
+  maxDateValue,
+  mergeClubRecords,
+  mergeCurrentUserClubMembership,
+  minutesToTime,
+  newParticipantPaymentSplit,
+  normalizeClubListPageRow,
+  normalizeParticipantPaymentSplits,
+  normalizePrivateCode,
+  normalizeProfileGender,
+  normalizeSearchValue,
+  participantPaymentSplitTotal,
+  participantScore,
+  passwordRecoveryUrlParams,
+  paymentSplitsFromParticipant,
+  percentValue,
+  playerCardLabel,
+  rangesOverlap,
+  resolveCountryCode,
+  scheduleDeferredWork,
+  schedulePostEffectStateUpdate,
+  seatsLeft,
+  sessionBestPerformer,
+  sessionCoverGame,
+  sessionStartDate,
+  sortSessionsByStart,
+  splitPhoneNumber,
+  startOfWeekDateValue,
+  ticketArenaCountForPlayers,
+  ticketDurationForPlayers,
+  ticketPricingSummary,
+  ticketTypeDescription,
+  ticketTypeLabel,
+  ticketUnitFormulaText,
+  timeToMinutes,
+  upcomingBatchEndForDate,
+  validAvatarInitials,
+  weekDaysFromStart,
+} from '../lib/bookingWidgetDomain'
 import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/googleAnalytics'
+import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
+import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
+import { getInitialLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
-import { canUseWebPush, downloadSessionCalendarFile, notifyBookingInvite, notifyBookingSession, registerReminderServiceWorker, requestBrowserReminderPermission, shareBookingLink, urlBase64ToUint8Array } from '../lib/bookingBrowserActions'
-import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
-import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
-import { currentUserLeaderboardPlayer, initialLeaderboardQuery, isLeaderboardCriterion, isMissingPagedLeaderboardFunction, leaderboardPlayerFromRpcRow, leaderboardRpcArgs, type LeaderboardQuery, type LeaderboardRpcRow } from '../lib/leaderboard'
-import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
-import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
-import { isPendingPhoneAccountSetup, normalizePhoneSetupEmail } from '../lib/phoneAccountSetup'
+import {
+  currentUserLeaderboardPlayer,
+  initialLeaderboardQuery,
+  isLeaderboardCriterion,
+  isMissingPagedLeaderboardFunction,
+  leaderboardPlayerFromRpcRow,
+  leaderboardRpcArgs,
+  type LeaderboardQuery,
+  type LeaderboardRpcRow,
+} from '../lib/leaderboard'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
+import { isPendingPhoneAccountSetup, normalizePhoneSetupEmail } from '../lib/phoneAccountSetup'
+import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
+import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import type { RateLimitAction } from '../lib/security/rateLimit'
-import { vrenaPalette } from '../lib/theme/vrenaPalette'
 import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { getStaffKioskOperator, setStaffKioskOperatorToken, type StaffKioskOperator } from '../lib/supabase/client'
-import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
-import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
-import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/googleAnalytics'
+import { vrenaPalette } from '../lib/theme/vrenaPalette'
+import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import AppLoadingState from './AppLoadingState'
-import DocumentLanguage from './DocumentLanguage'
 import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
 import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
-import { ARENA_COUNT, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, SESSION_LOAD_BATCH_DAYS, LEADERBOARD_PAGE_SIZE, DEFAULT_APP_URL, TicketStatus, BookingType, ChallengeStatus, ClubRole, ClubMemberRole, ClubTab, ClubSessionScope, ParticipantPaymentSplit, ParticipantPaymentSplitDraft, StaffGameGuide, TicketBookingConfirmation, Profile, TotpFactor, TotpEnrollment, TicketLoyaltyRedemption, TicketLoyaltyEarnQuote, TicketDiscountQuote, ANONYMOUS_MASK_EMOJI, ANONYMOUS_MASK_COLOR, ANONYMOUS_MASK_TEXT_COLOR, ProfileGender, PROFILE_SELECT, normalizeProfileGender, normalizePrivateCode, Participant, WaitlistEntry, FriendConnection, SessionInvite, SessionMessage, SessionMessagePageState, ClubMessage, MessageTranslationResponse, TournamentFormat, QualificationRule, MatchStage, RealtimeRefreshTask, Session, BlockedTime, SessionListPageResult, ClubMember, Club, ClubListPageRow, TournamentEditor, TournamentPool, TournamentPoolEntry, TournamentMatch, TournamentData, TournamentAuditLog, TournamentMatchInsert, minutesToTime, timeToMinutes, rangesOverlap, localDateString, generateInviteCode, arenasUsedBySession, isTicketSession, isChallengeSession, ticketTypeLabel, ticketTypeDescription, formatVnd, formatTicketFormulaPrice, newParticipantPaymentSplit, normalizeParticipantPaymentSplits, participantPaymentSplitTotal, paymentSplitsFromParticipant, ticketPricingSummary, ticketDurationForPlayers, ticketArenaCountForPlayers, ticketUnitFormulaText, clampTicketLoyaltyRedemption, isBirthdayToday, resolveCountryCode, splitPhoneNumber, displayName, limitDisplayName, compactDisplayName, playerCardLabel, anonymousCallsignForId, finiteNumber, leaderboardPlayerFromStaffProfile, compactInitials, validAvatarInitials, limitMotto, isHexColor, cleanHexColor, normalizeSearchValue, addDays, addDaysToDateValue, maxDateValue, upcomingBatchEndForDate, startOfWeekDateValue, weekDaysFromStart, formatDayButton, formatShortDate, formatCalendarWeekRange, sessionStartDate, isPastSession, isUpcomingSession, sortSessionsByStart, seatsLeft, sessionCoverGame, participantScore, sessionBestPerformer, isBestSessionPerformer, percentValue, formatSpeedrunDuration, bestOfLabel, authDebug, eligibleTournamentParticipants, shuffleItems, matchWinnerFromSeries, matchLoser, hasDuplicateMatchPlayers, knockoutStageForCount, qualificationCount, calculatePoolStandings, buildKnockoutRows, appRedirectUrl, passwordRecoveryUrlParams, cleanPasswordRecoveryUrl, clubMembers, clubMemberCount, normalizeClubListPageRow, mergeCurrentUserClubMembership, mergeClubRecords, clubRoleForProfile, scheduleDeferredWork, schedulePostEffectStateUpdate } from '../lib/bookingWidgetDomain'
-import { BookingProfileView, BookingSessionsPanel, BirthdayPopupModal, ChampionLoginModal, CheckInModal, ClubsView, CreateSessionView, FirstLoginTour, GameGuideModal, InvitePopupModal, LeaderboardPanel, LoginPromptModal, PlayerProfileModal, RichNotesEditor, ShortDateInput, StaffConsole, TariffPaymentModal, TicketBookingView, type ClubVisibility, type ClubVisibilityFilter, type SessionTimeScope } from './BookingWidgetSurfaces'
+import {
+  BirthdayPopupModal,
+  BookingProfileView,
+  BookingSessionsPanel,
+  ChampionLoginModal,
+  CheckInModal,
+  ClubsView,
+  CreateSessionView,
+  FirstLoginTour,
+  GameGuideModal,
+  InvitePopupModal,
+  LeaderboardPanel,
+  LoginPromptModal,
+  PlayerProfileModal,
+  RichNotesEditor,
+  ShortDateInput,
+  StaffConsole,
+  TariffPaymentModal,
+  TicketBookingView,
+  type ClubVisibility,
+  type ClubVisibilityFilter,
+  type SessionTimeScope,
+} from './BookingWidgetSurfaces'
 import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
+import DocumentLanguage from './DocumentLanguage'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
 import type { AuthMode } from './ProfileAuthView'
@@ -59,18 +284,6 @@ const CLUB_MESSAGE_LIMIT = 30
 
 const SESSION_MESSAGE_PAGE_SIZE = 30
 const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
-const CAFE_SOFT_OPENING_DATE = '2026-08-31'
-const CAFE_OPEN_MINUTES = 16 * 60
-const CAFE_CLOSE_MINUTES = 22 * 60
-const PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY = 'vrena.ticket.pending-account-booking.v1'
-const PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS = 30 * 60 * 1000
-
-let supabaseClientPromise: Promise<typeof import('../lib/supabase/client').supabase> | null = null
-
-function getSupabase() {
-  supabaseClientPromise ??= import('../lib/supabase/client').then((module) => module.supabase)
-  return supabaseClientPromise
-}
 
 type BookingWidgetProps = {
   embedded?: boolean
@@ -89,73 +302,12 @@ type ActionToast = {
   message: string
 }
 
-type PendingTicketAccountBooking = {
-  authMode: 'login' | 'create'
-  createdAt: number
-  ticketType: TicketType
-  date: string
-  time: string
-  players: number
-  duration: number
-  specialNote: string
-}
-
 const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
 const NAVIGATION_COLLAPSE_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
 const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
 
 function isBookingAppView(value: unknown): value is AppView {
   return typeof value === 'string' && bookingAppViews.includes(value as AppView)
-}
-
-function readPendingTicketAccountBooking(): PendingTicketAccountBooking | null {
-  if (typeof window === 'undefined') return null
-
-  try {
-    const storedValue = window.sessionStorage.getItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
-    if (!storedValue) return null
-
-    const candidate = JSON.parse(storedValue) as Partial<PendingTicketAccountBooking>
-    const isTicketType = candidate.ticketType === 'individual' || candidate.ticketType === 'birthday' || candidate.ticketType === 'corporate'
-    const isValid = (candidate.authMode === 'login' || candidate.authMode === 'create')
-      && isTicketType
-      && typeof candidate.createdAt === 'number'
-      && Date.now() - candidate.createdAt <= PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS
-      && typeof candidate.date === 'string'
-      && typeof candidate.time === 'string'
-      && typeof candidate.players === 'number'
-      && Number.isInteger(candidate.players)
-      && candidate.players > 0
-      && typeof candidate.duration === 'number'
-      && Number.isInteger(candidate.duration)
-      && candidate.duration > 0
-      && typeof candidate.specialNote === 'string'
-
-    if (!isValid) {
-      window.sessionStorage.removeItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
-      return null
-    }
-
-    return candidate as PendingTicketAccountBooking
-  } catch {
-    return null
-  }
-}
-
-function writePendingTicketAccountBooking(booking: PendingTicketAccountBooking) {
-  try {
-    window.sessionStorage.setItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY, JSON.stringify(booking))
-  } catch {
-    // The current in-memory handoff still works when browser storage is unavailable.
-  }
-}
-
-function clearPendingTicketAccountBooking() {
-  try {
-    window.sessionStorage.removeItem(PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY)
-  } catch {
-    // Nothing else is needed when browser storage is unavailable.
-  }
 }
 
 function bookingUpdateKind(session: Pick<Session, 'booking_type'>) {
@@ -342,16 +494,6 @@ export default function WidgetPage({
   const [isBookingTickets, setIsBookingTickets] = useState(false)
   const bookingTicketsInFlightRef = useRef(false)
   const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
-  const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(false)
-  const [ticketLoyaltyPointsToRedeem, setTicketLoyaltyPointsToRedeem] = useState('')
-  const [ticketLoyaltyRedemption, setTicketLoyaltyRedemption] = useState<TicketLoyaltyRedemption | null>(null)
-  const [ticketLoyaltyEarnQuote, setTicketLoyaltyEarnQuote] = useState<TicketLoyaltyEarnQuote | null>(null)
-  const [isLoadingTicketLoyalty, setIsLoadingTicketLoyalty] = useState(false)
-  const [ticketDiscountCode, setTicketDiscountCode] = useState('')
-  const [ticketDiscountQuote, setTicketDiscountQuote] = useState<TicketDiscountQuote | null>(null)
-  const [ticketAutomaticDiscountQuote, setTicketAutomaticDiscountQuote] = useState<TicketDiscountQuote | null>(null)
-  const [ticketDiscountStatus, setTicketDiscountStatus] = useState('')
-  const [isCheckingTicketDiscount, setIsCheckingTicketDiscount] = useState(false)
   const [ticketAvailabilitySearchTick, setTicketAvailabilitySearchTick] = useState(0)
   const [gameGuideOpen, setGameGuideOpen] = useState(false)
   const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
@@ -4130,82 +4272,11 @@ export default function WidgetPage({
     }
   }, [clubSearch, isClubSearchOpen, isSearchOpen, search, selectedSessionDate])
 
-  const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => {
-    if (!date) return []
+  const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => (
+    availableSessionTimes({ date, duration, arenaCount, excludeSessionId, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
+  ), [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
 
-    const now = new Date()
-    const today = localDateString(now)
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
-
-    const options: Array<{ value: string; label: string; remaining: number }> = []
-    const latestStart = CLOSE_MINUTES - duration
-
-    for (let start = OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
-      const end = start + duration
-
-      if (date === today && start <= nowMinutes) continue
-
-      const activeSessionArenas = sessions
-        .filter((session) => (
-          session.status === 'open'
-          && session.date === date
-          && session.id !== excludeSessionId
-          && (session.venue_key || 'ha-do-centrosa') === 'ha-do-centrosa'
-        ))
-        .filter((session) =>
-          rangesOverlap(
-            start,
-            end,
-            timeToMinutes(session.start_time),
-            timeToMinutes(session.start_time) + session.duration_minutes
-          )
-        )
-        .reduce((total, session) => total + arenasUsedBySession(session), 0)
-
-      const activeBlockedArenas = blockedTimes
-        .filter((blocked) => blocked.date === date)
-        .filter((blocked) =>
-          rangesOverlap(start, end, timeToMinutes(blocked.start_time), timeToMinutes(blocked.end_time))
-        )
-        .reduce((total, blocked) => total + blocked.arenas_used, 0)
-
-      const remaining = ARENA_COUNT - activeSessionArenas - activeBlockedArenas
-
-      if (remaining >= arenaCount) {
-        options.push({
-          value: minutesToTime(start),
-          label: `${minutesToTime(start)}-${minutesToTime(end)} (${remaining} ${remaining > 1 ? text.arenasAvailable : text.arenaAvailable})`,
-          remaining,
-        })
-      }
-    }
-
-    return options
-  }, [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
-
-  const getCafeSoftOpeningTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => {
-    if (!date || date < CAFE_SOFT_OPENING_DATE) return []
-
-    const now = new Date()
-    const today = localDateString(now)
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
-    const latestStart = CAFE_CLOSE_MINUTES - duration
-    const options: Array<{ value: string; label: string; remaining: number }> = []
-
-    for (let start = CAFE_OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
-      if (date === today && start <= nowMinutes) continue
-
-      const end = start + duration
-      const endLabel = minutesToTime(end)
-      options.push({
-        value: minutesToTime(start),
-        label: `${minutesToTime(start)}-${endLabel}`,
-        remaining: arenaCount,
-      })
-    }
-
-    return options
-  }, [])
+  const getCafeSoftOpeningTimeOptions = cafeTicketTimes
 
   const getTicketTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => (
     isHaDoBookingVenue
@@ -4309,47 +4380,37 @@ export default function WidgetPage({
   const challengeTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
-  const currentTicketPricing = ticketPricingSummary(ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount, bookingVenue)
-  const currentTicketUnitPrice = currentTicketPricing.unitPrice
-  const isSpecialTicketType = ticketType !== 'individual'
-  const ticketVoucherDiscountAmount = isHaDoBookingVenue
-    ? Math.max(0, Math.floor(Number(ticketDiscountQuote?.discount_amount ?? 0) || 0))
-    : 0
-  const ticketAutomaticDiscountAmount = isHaDoBookingVenue
-    ? Math.max(0, Math.floor(Number(ticketAutomaticDiscountQuote?.discount_amount ?? 0) || 0))
-    : 0
-  const ticketBuiltInDiscountAmount = Math.max(0, Math.floor(Number(currentTicketPricing.discountAmount ?? 0) || 0))
-  const activeTicketAutomaticDiscountAmount = Math.max(ticketBuiltInDiscountAmount, ticketAutomaticDiscountAmount)
-  const activeTicketDiscountAmount = isSpecialTicketType ? 0 : Math.max(activeTicketAutomaticDiscountAmount, ticketVoucherDiscountAmount)
-  const activeTicketDiscountSource: 'automatic' | 'voucher' = ticketVoucherDiscountAmount > activeTicketAutomaticDiscountAmount ? 'voucher' : 'automatic'
-  const currentTicketPriceBeforeLoyalty = isSpecialTicketType ? 0 : Math.max(0, currentTicketPricing.grossPrice - activeTicketDiscountAmount)
-  const ticketLoyaltyBalance = Math.max(
-    0,
-    Math.floor(Number(ticketLoyaltyRedemption?.loyalty_points_total ?? profile?.loyalty_points_total ?? 0) || 0)
-  )
-  const ticketLoyaltyRedeemValue = Math.max(0, Math.floor(Number(ticketLoyaltyRedemption?.redeem_value_vnd_per_point ?? 0) || 0))
-  const canUseTicketLoyaltyPoints = !isSpecialTicketType && isHaDoBookingVenue
-  const requestedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
-    ? Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
-    : 0
-  const maxTicketLoyaltyPoints = clampTicketLoyaltyRedemption(
-    ticketLoyaltyBalance,
+  const {
+    ticketUseLoyaltyPoints,
+    ticketLoyaltyPointsToRedeem,
+    isLoadingTicketLoyalty,
+    ticketDiscountCode,
+    ticketDiscountQuote,
+    ticketDiscountStatus,
+    isCheckingTicketDiscount,
+    setTicketUseLoyaltyPoints,
+    setTicketLoyaltyPointsToRedeem,
+    setTicketLoyaltyRedemption,
+    setTicketDiscountCode,
+    setTicketDiscountQuote,
+    setTicketAutomaticDiscountQuote,
+    setTicketDiscountStatus,
+    currentTicketPricing,
+    currentTicketUnitPrice,
+    isSpecialTicketType,
+    activeTicketDiscountAmount,
+    activeTicketDiscountSource,
     ticketLoyaltyBalance,
     ticketLoyaltyRedeemValue,
-    currentTicketPriceBeforeLoyalty
-  )
-  const appliedTicketLoyaltyPoints = ticketUseLoyaltyPoints && canUseTicketLoyaltyPoints
-    ? clampTicketLoyaltyRedemption(
-      requestedTicketLoyaltyPoints,
-      ticketLoyaltyBalance,
-      ticketLoyaltyRedeemValue,
-      currentTicketPriceBeforeLoyalty
-    )
-    : 0
-  const ticketLoyaltyDiscountAmount = isSpecialTicketType ? 0 : appliedTicketLoyaltyPoints * ticketLoyaltyRedeemValue
-  const currentTicketTotalPrice = isSpecialTicketType ? 0 : Math.max(0, currentTicketPriceBeforeLoyalty - ticketLoyaltyDiscountAmount)
-  const estimatedTicketLoyaltyPointsEarned = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_points ?? 0) || 0))
-  const estimatedTicketLoyaltyReductionValue = Math.max(0, Math.floor(Number(ticketLoyaltyEarnQuote?.estimated_reduction_vnd ?? 0) || 0))
+    maxTicketLoyaltyPoints,
+    appliedTicketLoyaltyPoints,
+    ticketLoyaltyDiscountAmount,
+    currentTicketTotalPrice,
+    estimatedTicketLoyaltyPointsEarned,
+    estimatedTicketLoyaltyReductionValue,
+    ticketDiscountCodeInvalidText,
+    ticketDiscountCodeCheckingText
+  } = useTicketCheckout({ ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount, bookingVenue, isHaDoBookingVenue, activeView, profile, text })
   const gameGuideGames = useMemo(() => {
     if (!gameGuideGameId) return publicGameGuideCatalog
     const focusedGame = publicGameGuideCatalog.find((game) => game.id === gameGuideGameId)
@@ -4395,139 +4456,6 @@ export default function WidgetPage({
       }
     })
   }, [activeTicketDuration, ticketDurationOptions, ticketTime])
-
-  const ticketDiscountCodeInvalidText = text.ticketDiscountCodeInvalid
-  const ticketDiscountCodeAppliedText = text.ticketDiscountCodeApplied
-  const ticketDiscountBestReductionText = text.ticketDiscountBestReductionMessage
-  const ticketDiscountCodeCheckingText = text.ticketDiscountCodeChecking
-
-  useEffect(() => {
-    if (!isHaDoBookingVenue || isSpecialTicketType || !ticketDate || currentTicketPricing.grossPrice <= 0) {
-      return schedulePostEffectStateUpdate(() => setTicketAutomaticDiscountQuote(null))
-    }
-
-    let active = true
-    void getSupabase()
-      .then((client) => client.rpc('ticket_automatic_discount_quote', {
-        p_booking_date: ticketDate,
-        p_game_id: activeTicketService.defaultGame,
-        p_player_count: ticketPlayers,
-        p_start_time: ticketTime ? `${ticketTime}:00` : null,
-        p_subtotal: currentTicketPricing.grossPrice,
-        p_ticket_type: ticketType,
-        p_unit_price: currentTicketUnitPrice,
-      }))
-      .then(({ data, error }) => {
-        if (!active) return
-        if (error) {
-          setTicketAutomaticDiscountQuote(null)
-          return
-        }
-
-        const row = Array.isArray(data) ? data[0] : null
-        const discountAmount = Math.max(0, Math.floor(Number(row?.discount_amount ?? 0) || 0))
-        setTicketAutomaticDiscountQuote(row && discountAmount > 0
-          ? {
-            discount_rule_id: String(row.discount_rule_id || ''),
-            discount_name: String(row.discount_name || ''),
-            discount_amount: discountAmount,
-          }
-          : null)
-      })
-      .catch(() => {
-        if (active) setTicketAutomaticDiscountQuote(null)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isHaDoBookingVenue, isSpecialTicketType, ticketDate, ticketPlayers, ticketTime, ticketType])
-
-  useEffect(() => {
-    const normalizedCode = ticketDiscountCode.trim().toUpperCase()
-
-    if (!isHaDoBookingVenue || isSpecialTicketType || !normalizedCode) {
-      return schedulePostEffectStateUpdate(() => {
-        setTicketDiscountQuote(null)
-        if (!isHaDoBookingVenue || isSpecialTicketType) setTicketDiscountCode('')
-        setTicketDiscountStatus('')
-        setIsCheckingTicketDiscount(false)
-      })
-    }
-
-    let active = true
-    const timeoutId = window.setTimeout(() => {
-      setIsCheckingTicketDiscount(true)
-      void getSupabase()
-        .then((client) => client.rpc('ticket_discount_code_quote', {
-          p_code: normalizedCode,
-          p_booking_date: ticketDate,
-          p_game_id: activeTicketService.defaultGame,
-          p_player_count: ticketPlayers,
-          p_start_time: ticketTime ? `${ticketTime}:00` : null,
-          p_subtotal: currentTicketPricing.grossPrice,
-          p_ticket_type: ticketType,
-          p_unit_price: currentTicketUnitPrice,
-        }))
-        .then(({ data, error }) => {
-          if (!active) return
-          if (error) {
-            setTicketDiscountQuote(null)
-            setTicketDiscountStatus(error.message || ticketDiscountCodeInvalidText)
-            return
-          }
-
-          const row = Array.isArray(data) ? data[0] : null
-          const discountAmount = Math.max(0, Math.floor(Number(row?.discount_amount ?? 0) || 0))
-          if (!row || discountAmount <= 0) {
-            setTicketDiscountQuote(null)
-            setTicketDiscountStatus(ticketDiscountCodeInvalidText)
-            return
-          }
-
-          setTicketDiscountQuote({
-            discount_code: String(row.discount_code || normalizedCode),
-            discount_name: String(row.discount_name || ''),
-            discount_amount: discountAmount,
-          })
-          setTicketDiscountStatus(ticketAutomaticDiscountAmount > 0 && discountAmount <= ticketAutomaticDiscountAmount
-            ? ticketDiscountBestReductionText
-            : ticketDiscountCodeAppliedText.replace('{amount}', formatVnd(discountAmount)))
-        })
-        .catch(() => {
-          if (!active) return
-          setTicketDiscountQuote(null)
-          setTicketDiscountStatus(ticketDiscountCodeInvalidText)
-        })
-        .finally(() => {
-          if (active) setIsCheckingTicketDiscount(false)
-        })
-    }, 300)
-
-    return () => {
-      active = false
-      window.clearTimeout(timeoutId)
-    }
-  }, [activeTicketService.defaultGame, currentTicketPricing.grossPrice, currentTicketUnitPrice, isHaDoBookingVenue, isSpecialTicketType, ticketAutomaticDiscountAmount, ticketDate, ticketDiscountBestReductionText, ticketDiscountCode, ticketDiscountCodeAppliedText, ticketDiscountCodeInvalidText, ticketPlayers, ticketTime, ticketType])
-
-  useEffect(() => {
-    if (!ticketUseLoyaltyPoints) return
-    if (maxTicketLoyaltyPoints <= 0) {
-      return schedulePostEffectStateUpdate(() => {
-        setTicketUseLoyaltyPoints(false)
-        setTicketLoyaltyPointsToRedeem('')
-      })
-    }
-
-    const requestedPoints = Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
-    if (requestedPoints > maxTicketLoyaltyPoints) {
-      return schedulePostEffectStateUpdate(() => {
-        setTicketLoyaltyPointsToRedeem(String(maxTicketLoyaltyPoints))
-      })
-    }
-
-    return undefined
-  }, [maxTicketLoyaltyPoints, ticketLoyaltyPointsToRedeem, ticketUseLoyaltyPoints])
 
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
   const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
@@ -4801,94 +4729,6 @@ function handleSessionDateChange(value: string) {
     setActiveView('profile')
     setTourReplayNonce((value) => value + 1)
   }
-
-  useEffect(() => {
-    let active = true
-
-    if (!profile || activeView !== 'tickets' || isSpecialTicketType) {
-      return schedulePostEffectStateUpdate(() => {
-        setTicketLoyaltyRedemption(null)
-        setTicketLoyaltyEarnQuote(null)
-        setTicketUseLoyaltyPoints(false)
-        setTicketLoyaltyPointsToRedeem('')
-        setIsLoadingTicketLoyalty(false)
-      })
-    }
-
-    schedulePostEffectStateUpdate(() => setIsLoadingTicketLoyalty(true))
-    void getSupabase()
-      .then((client) => client.rpc('ticket_loyalty_redemption_settings', {
-        p_booking_date: ticketDate,
-        p_game_id: activeTicketService.defaultGame,
-      }))
-      .then(({ data, error }) => {
-        if (!active) return
-        if (error) {
-          setTicketLoyaltyRedemption(null)
-          setTicketUseLoyaltyPoints(false)
-          setTicketLoyaltyPointsToRedeem('')
-          return
-        }
-
-        const row = Array.isArray(data) ? data[0] : null
-        const pointsTotal = Math.max(0, Math.floor(Number(row?.loyalty_points_total ?? profile.loyalty_points_total ?? 0) || 0))
-        const redeemValue = Math.max(0, Math.floor(Number(row?.redeem_value_vnd_per_point ?? 0) || 0))
-        setTicketLoyaltyRedemption({
-          loyalty_points_total: pointsTotal,
-          redeem_value_vnd_per_point: redeemValue,
-        })
-      })
-      .catch(() => {
-        if (!active) return
-        setTicketLoyaltyRedemption(null)
-        setTicketUseLoyaltyPoints(false)
-        setTicketLoyaltyPointsToRedeem('')
-      })
-      .finally(() => {
-        if (active) setIsLoadingTicketLoyalty(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [activeTicketService.defaultGame, activeView, isSpecialTicketType, profile, ticketDate])
-
-  useEffect(() => {
-    let active = true
-
-    if (activeView !== 'tickets' || isSpecialTicketType) {
-      return schedulePostEffectStateUpdate(() => setTicketLoyaltyEarnQuote(null))
-    }
-
-    void getSupabase()
-      .then((client) => client.rpc('ticket_loyalty_earn_quote', {
-        p_booking_date: ticketDate,
-        p_game_id: activeTicketService.defaultGame,
-        p_paid_total: currentTicketTotalPrice,
-        p_player_count: ticketPlayers,
-      }))
-      .then(({ data, error }) => {
-        if (!active) return
-        if (error) {
-          setTicketLoyaltyEarnQuote(null)
-          return
-        }
-
-        const row = Array.isArray(data) ? data[0] : null
-        setTicketLoyaltyEarnQuote({
-          estimated_points: Math.max(0, Math.floor(Number(row?.estimated_points ?? 0) || 0)),
-          estimated_reduction_vnd: Math.max(0, Math.floor(Number(row?.estimated_reduction_vnd ?? 0) || 0)),
-          redeem_value_vnd_per_point: Math.max(0, Math.floor(Number(row?.redeem_value_vnd_per_point ?? 0) || 0)),
-        })
-      })
-      .catch(() => {
-        if (active) setTicketLoyaltyEarnQuote(null)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [activeTicketService.defaultGame, activeView, currentTicketTotalPrice, isSpecialTicketType, ticketDate, ticketPlayers])
 
   function handleMaxPlayersChange(value: number) {
     setSessionMaxPlayers(value)
@@ -8418,402 +8258,36 @@ function handleSessionDateChange(value: string) {
     return stage.replace('_', ' ')
   }
 
-  async function addTournamentEditor(session: Session, selectedEditor?: Profile) {
-    if (!isSessionCreator(session)) {
-      setCreateStatus(text.tournamentControlOnly)
-      return
-    }
-
-    const email = tournamentEditorEmail.trim().toLowerCase()
-    if (!email && !selectedEditor) return
-
-    setBusyTournamentId(session.id)
-    const profileLookup = selectedEditor
-      ? { data: selectedEditor, error: null }
-      : await (await getSupabase()).rpc('public_profile_search', {
-        p_search: email,
-        p_limit: 1,
-      }).then(({ data, error }) => ({ data: (data ?? [])[0] as Profile | undefined, error }))
-
-    const editorProfile = profileLookup.data
-    if (profileLookup.error || !editorProfile) {
-      setCreateStatus(profileLookup.error?.message || text.editorNotFound)
-      setBusyTournamentId('')
-      return
-    }
-
-    const display = compactDisplayName(displayName(editorProfile), text.player)
-    const { error } = await (await getSupabase()).from('tournament_editors').upsert({
-      session_id: session.id,
-      profile_id: editorProfile.id,
-      display_name: display,
-      ...avatarFields(editorProfile),
-    }, { onConflict: 'session_id,profile_id' })
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusyTournamentId('')
-      return
-    }
-
-    setTournamentEditorEmail('')
-    setTournamentEditorResults([])
-    await loadTournamentData()
-    setCreateStatus(text.profileSaved)
-    setBusyTournamentId('')
-  }
-
-  async function setupTournamentPools(session: Session) {
-    if (tournamentLocked(session)) {
-      setCreateStatus(text.tournamentLockedAction)
-      return
-    }
-
-    if (!canEditTournamentSession(session)) {
-      setCreateStatus(text.tournamentControlOnly)
-      return
-    }
-
-    const participants = eligibleTournamentParticipants(session)
-    if (participants.length < 2) {
-      setCreateStatus(text.noTournamentData)
-      return
-    }
-
-    setBusyTournamentId(session.id)
-    const softDeleteResult = await softDeleteTournamentRecords(session.id, true, 'Tournament pools regenerated')
-    if (softDeleteResult.error) {
-      setCreateStatus(softDeleteResult.error.message)
-      setBusyTournamentId('')
-      return
-    }
-
-    const format = session.tournament_format || 'pool_to_final'
-    const seededParticipants = shuffleItems(participants)
-    const poolCount = format === 'single_elimination'
-      ? 1
-      : Math.max(1, Math.ceil(seededParticipants.length / tournamentPoolSize))
-    const poolRows = Array.from({ length: poolCount }, (_, index) => ({
-      session_id: session.id,
-      name: format === 'single_elimination' ? 'Knockout' : `Pool ${String.fromCharCode(65 + index)}`,
-      sort_order: index + 1,
-    }))
-
-    const { data: pools, error: poolError } = await (await getSupabase())
-      .from('tournament_pools')
-      .insert(poolRows)
-      .select('id, session_id, name, sort_order')
-
-    if (poolError || !pools) {
-      setCreateStatus(poolError?.message || text.createError)
-      setBusyTournamentId('')
-      return
-    }
-
-    const entries = seededParticipants.map((participant, index) => {
-      const pool = pools[index % pools.length]
-      return {
-        session_id: session.id,
-        pool_id: pool.id,
-        participant_id: participant.id,
-        profile_id: participant.profile_id,
-        seed: index + 1,
-      }
-    })
-
-    const { error } = await (await getSupabase()).from('tournament_pool_entries').insert(entries)
-    if (error) {
-      setCreateStatus(error.message)
-      setBusyTournamentId('')
-      return
-    }
-
-    await loadTournamentData()
-    setCreateStatus(text.tournamentSetup)
-    setBusyTournamentId('')
-  }
-
-  async function generateTournamentMatches(session: Session) {
-    if (tournamentLocked(session)) {
-      setCreateStatus(text.tournamentLockedAction)
-      return
-    }
-
-    if (!canEditTournamentSession(session)) {
-      setCreateStatus(text.tournamentControlOnly)
-      return
-    }
-
-    const data = tournamentForSession(session.id)
-    if (!data.pools.length || !data.poolEntries.length) {
-      setCreateStatus(text.noTournamentData)
-      return
-    }
-
-    setBusyTournamentId(session.id)
-    const softDeleteResult = await softDeleteTournamentRecords(session.id, false, 'Tournament matches regenerated')
-    if (softDeleteResult.error) {
-      setCreateStatus(softDeleteResult.error.message)
-      setBusyTournamentId('')
-      return
-    }
-
-    const bestOf = session.best_of || 1
-    const format = session.tournament_format || 'pool_to_final'
-    const matchRows: TournamentMatchInsert[] = format === 'single_elimination'
-      ? buildKnockoutRows(session.id, data.poolEntries.map((entry) => entry.participant_id), 'custom', 1, bestOf)
-      : data.pools.flatMap((pool) => {
-      const poolEntries = data.poolEntries.filter((entry) => entry.pool_id === pool.id)
-      const rows: TournamentMatchInsert[] = []
-      let matchNumber = 1
-
-      for (let i = 0; i < poolEntries.length; i += 1) {
-        for (let j = i + 1; j < poolEntries.length; j += 1) {
-          rows.push({
-            session_id: session.id,
-            pool_id: pool.id,
-            stage: 'pool',
-            round: 1,
-            match_number: matchNumber,
-            participant_a_id: poolEntries[i].participant_id,
-            participant_b_id: poolEntries[j].participant_id,
-            status: 'waiting',
-            arena_number: null,
-            queue_position: matchNumber,
-            best_of: bestOf,
-          })
-          matchNumber += 1
-        }
-      }
-
-      return rows
-    })
-
-    if (!matchRows.length) {
-      setCreateStatus(text.noTournamentData)
-      setBusyTournamentId('')
-      return
-    }
-
-    const { error } = await (await getSupabase()).from('tournament_matches').insert(matchRows)
-    if (error) {
-      setCreateStatus(error.message)
-      setBusyTournamentId('')
-      return
-    }
-
-    await logTournamentAudit(session.id, 'Tournament matches generated', null, { format, bestOf, matchCount: matchRows.length })
-    await loadTournamentData()
-    setCreateStatus(text.tournamentGenerateMatches)
-    setBusyTournamentId('')
-  }
-
-  async function updateTournamentPoolEntry(entry: TournamentPoolEntry, changes: Partial<TournamentPoolEntry>) {
-    const { error } = await (await getSupabase())
-      .from('tournament_pool_entries')
-      .update({
-        pool_id: changes.pool_id ?? entry.pool_id,
-        team_label: changes.team_label ?? entry.team_label ?? null,
-      })
-      .eq('id', entry.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      return
-    }
-
-    await logTournamentAudit(entry.session_id, 'Pool entry edited', entry as unknown as Record<string, unknown>, changes as Record<string, unknown>)
-    await loadTournamentData()
-  }
-
-  async function updateTournamentMatch(match: TournamentMatch, changes: Partial<TournamentMatch>) {
-    const nextA = changes.participant_a_id ?? match.participant_a_id
-    const nextB = changes.participant_b_id ?? match.participant_b_id
-    if (hasDuplicateMatchPlayers({ participant_a_id: nextA, participant_b_id: nextB })) {
-      setCreateStatus(text.duplicateMatchPlayer)
-      return
-    }
-
-    const scoreA = changes.score_a ?? match.score_a
-    const scoreB = changes.score_b ?? match.score_b
-    const draft = {
-      ...match,
-      ...changes,
-      participant_a_id: nextA,
-      participant_b_id: nextB,
-      score_a: scoreA,
-      score_b: scoreB,
-      wins_a: changes.wins_a ?? match.wins_a,
-      wins_b: changes.wins_b ?? match.wins_b,
-      best_of: changes.best_of ?? match.best_of,
-    }
-    const autoWinner = matchWinnerFromSeries(draft)
-    const winner = changes.winner_participant_id ?? autoWinner ?? match.winner_participant_id
-    const loser = matchLoser(draft, winner || null)
-    const { error } = await (await getSupabase())
-      .from('tournament_matches')
-      .update({
-        participant_a_id: nextA,
-        participant_b_id: nextB,
-        score_a: scoreA,
-        score_b: scoreB,
-        wins_a: changes.wins_a ?? match.wins_a ?? null,
-        wins_b: changes.wins_b ?? match.wins_b ?? null,
-        winner_participant_id: winner || null,
-        loser_participant_id: loser || null,
-        status: changes.status ?? (winner ? 'completed' : match.status === 'completed' ? 'waiting' : match.status),
-        arena_number: changes.arena_number ?? match.arena_number ?? null,
-        queue_position: changes.queue_position ?? match.queue_position ?? null,
-      })
-      .eq('id', match.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      return
-    }
-
-    await logTournamentAudit(match.session_id, 'Match edited', match as unknown as Record<string, unknown>, changes as Record<string, unknown>)
-    await loadTournamentData()
-  }
-
-  async function advanceTournamentRound(session: Session) {
-    if (tournamentLocked(session)) {
-      setCreateStatus(text.tournamentLockedAction)
-      return
-    }
-
-    if (!canEditTournamentSession(session)) {
-      setCreateStatus(text.tournamentControlOnly)
-      return
-    }
-
-    const data = tournamentForSession(session.id)
-    const format = session.tournament_format || 'pool_to_final'
-    const bestOf = session.best_of || 1
-    let qualified: string[] = []
-
-    if (format === 'pool_to_final' || format === 'pool_to_semifinal' || format === 'pool_only' || format === 'leaderboard') {
-      const perPool = qualificationCount(session.qualification_rule, session.custom_qualifiers || 2)
-      qualified = data.pools.flatMap((pool) => poolStandingsForSession(session, pool).slice(0, perPool).map((standing) => standing.participantId))
-      if (format === 'pool_only' || format === 'leaderboard') {
-        setCreateStatus(text.tournamentPoolFinal)
-        return
-      }
-    } else {
-      const latestRound = Math.max(1, ...data.matches.map((match) => match.round))
-      qualified = data.matches
-        .filter((match) => match.round === latestRound && match.winner_participant_id)
-        .map((match) => match.winner_participant_id as string)
-    }
-
-    qualified = Array.from(new Set(qualified)).filter(Boolean)
-
-    if (qualified.length < 2) {
-      setCreateStatus(text.noTournamentData)
-      return
-    }
-
-    const existingKnockout = data.matches.some((match) => match.stage !== 'pool')
-    const nextRound = existingKnockout ? Math.max(1, ...data.matches.map((match) => match.round)) + 1 : 2
-    const desired = format === 'pool_to_final' ? qualified.slice(0, 2) : qualified
-    const stage: MatchStage = format === 'pool_to_final' ? 'final' : knockoutStageForCount(desired.length)
-    const matchRows = buildKnockoutRows(session.id, desired, stage, nextRound, bestOf)
-
-    const { error } = await (await getSupabase()).from('tournament_matches').insert(matchRows)
-    if (error) {
-      setCreateStatus(error.message)
-      return
-    }
-
-    await logTournamentAudit(session.id, 'Round advanced', null, { qualified: desired, stage, round: nextRound })
-    await loadTournamentData()
-    setCreateStatus(text.tournamentNextRound)
-  }
-
-  async function finishTournament(session: Session) {
-    if (!canEditTournamentSession(session)) {
-      setCreateStatus(text.tournamentControlOnly)
-      return
-    }
-
-    const data = tournamentForSession(session.id)
-    const finalMatch = [...data.matches].reverse().find((match) => match.stage === 'final' && match.winner_participant_id)
-    const thirdMatch = [...data.matches].reverse().find((match) => match.stage === 'third_place' && match.winner_participant_id)
-    const semifinalLosers = data.matches
-      .filter((match) => match.stage === 'semifinal' && match.loser_participant_id)
-      .map((match) => match.loser_participant_id as string)
-
-    const standingsPodium = data.pools
-      .flatMap((pool) => poolStandingsForSession(session, pool))
-      .sort((a, b) => b.points - a.points || b.scoreDifference - a.scoreDifference || b.scoreFor - a.scoreFor)
-      .map((standing) => standing.participantId)
-
-    const first = finalMatch?.winner_participant_id || standingsPodium[0] || null
-    const second = finalMatch ? matchLoser(finalMatch, first) : standingsPodium.find((id) => id !== first) || null
-    const third = thirdMatch?.winner_participant_id || semifinalLosers.find((id) => id !== second && id !== first) || standingsPodium.find((id) => id !== first && id !== second) || null
-
-    if (!first) {
-      setCreateStatus(text.tournamentFinishNeedsFinal)
-      return
-    }
-
-    if (first) await (await getSupabase()).from('session_participants').update({ placement: 1 }).eq('id', first)
-    if (second) await (await getSupabase()).from('session_participants').update({ placement: 2 }).eq('id', second)
-    if (third) await (await getSupabase()).from('session_participants').update({ placement: 3 }).eq('id', third)
-    await (await getSupabase()).from('sessions').update({ status: 'completed', tournament_locked: true }).eq('id', session.id)
-
-    await logTournamentAudit(session.id, 'Tournament finished', null, { first, second, third })
-    await loadSessions()
-    await loadTournamentData()
-    setCreateStatus(text.tournamentFinished)
-  }
-
-  async function createThirdPlaceMatch(session: Session) {
-    if (!canEditTournamentSession(session) || !session.enable_third_place_match) return
-    const data = tournamentForSession(session.id)
-    if (data.matches.some((match) => match.stage === 'third_place')) return
-
-    const losers = data.matches
-      .filter((match) => match.stage === 'semifinal' && match.loser_participant_id)
-      .map((match) => match.loser_participant_id as string)
-
-    if (losers.length < 2 || new Set(losers).size < 2) return
-
-    const { error } = await (await getSupabase()).from('tournament_matches').insert({
-      session_id: session.id,
-      pool_id: null,
-      stage: 'third_place',
-      round: Math.max(1, ...data.matches.map((match) => match.round)) + 1,
-      match_number: 1,
-      participant_a_id: losers[0],
-      participant_b_id: losers[1],
-      status: 'waiting',
-      queue_position: 99,
-      best_of: session.best_of || 1,
-    })
-
-    if (!error) {
-      await logTournamentAudit(session.id, 'Bronze match created', null, { participants: losers.slice(0, 2) })
-      await loadTournamentData()
-    }
-  }
-
-  async function claimPrize(participant: Participant, claimed: boolean) {
-    const { error } = await (await getSupabase())
-      .from('session_participants')
-      .update({
-        prize_claimed: claimed,
-        prize_claimed_at: claimed ? new Date().toISOString() : null,
-      })
-      .eq('id', participant.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      return
-    }
-
-    await loadSessions()
-  }
+  const {
+    addTournamentEditor,
+    setupTournamentPools,
+    generateTournamentMatches,
+    updateTournamentPoolEntry,
+    updateTournamentMatch,
+    advanceTournamentRound,
+    finishTournament,
+    createThirdPlaceMatch,
+    claimPrize
+  } = createTournamentActions({
+    text,
+    tournamentEditorEmail,
+    tournamentPoolSize,
+    isSessionCreator,
+    tournamentLocked,
+    canEditTournamentSession,
+    tournamentForSession,
+    poolStandingsForSession,
+    editorDisplayName: (editorProfile) => compactDisplayName(displayName(editorProfile), text.player),
+    avatarFields,
+    softDeleteTournamentRecords,
+    loadTournamentData,
+    loadSessions,
+    logTournamentAudit,
+    setCreateStatus,
+    setBusyTournamentId,
+    setTournamentEditorEmail,
+    setTournamentEditorResults
+  })
 
   async function shareCurrentUserStats(contextLabel = '') {
     let shareStats = playerStats

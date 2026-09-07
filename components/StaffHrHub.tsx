@@ -1,14 +1,76 @@
 'use client'
 
-import type { StaffEmployeeProfile, StaffHrSetupOptionType, StaffLeaveRequest, StaffProfile, StaffScheduleShift, StaffShiftTemplate, StaffShiftTemplateId } from '../lib/staff/types'
-import type { StaffHrModel } from '../lib/staff/hrModel'
-import { Ban, CalendarCheck2, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheckBig, Clock3, Coins, Copy, Download, ExternalLink, FileCheck2, FileSpreadsheet, KeyRound, Landmark, ListChecks, Pencil, Plus, ReceiptText, RefreshCw, Save, Search, Send, Settings2, Smartphone, TimerReset, UserPlus, UserRound, WalletCards, X } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { dateFromInput, hoursLabel, normalizeTime, rangeLabel, shortDateLabel, staffDateLabel } from '../lib/staff/dates'
+import { dongDigits, formatDongInput, formatVnd, formatVndCompact, parseDong } from '../lib/staff/formatting'
+import { normalizeHrAdjustmentStatus, normalizeHrAdjustmentType, normalizePayrollPayCycle, normalizePayrollStatus, normalizeStaffContractStatus, normalizeStaffEmploymentType } from '../lib/staff/hrSettings'
+import {
+  staffContractStatuses,
+  staffEmploymentTypes,
+  staffGenderOptions,
+  staffHrAdjustmentStatuses,
+  staffHrAdjustmentTypes,
+  staffHrSetupOptionTypes,
+  staffHrTabs,
+  staffPayrollPayCycles,
+  staffProfilePhotoTypes,
+  staffShiftStatuses,
+} from '../lib/staff/options'
+import { emptyStaffPayrollCalculation, isPaidLeaveForEmployee, leaveHoursInsidePeriod } from '../lib/staff/payroll'
+import { customerName } from '../lib/staff/profiles'
+import { ButtonIconText } from './BookingWidgetUi'
+import { StaffPickerField } from './staff/StaffPickerField'
+import { StaffRoleAvatar } from './staff/StaffRoleAvatar'
+
+import { employeeHomeLocation } from '@/lib/staffCostAllocation'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
+import {
+  Ban,
+  CalendarCheck2,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheckBig,
+  Clock3,
+  Coins,
+  Copy,
+  Download,
+  ExternalLink,
+  FileCheck2,
+  FileSpreadsheet,
+  KeyRound,
+  Landmark,
+  ListChecks,
+  Pencil,
+  Plus,
+  ReceiptText,
+  RefreshCw,
+  Save,
+  Search,
+  Send,
+  Settings2,
+  Smartphone,
+  TimerReset,
+  UserPlus,
+  UserRound,
+  WalletCards,
+  X,
+} from 'lucide-react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { StaffHrModel } from '../lib/staff/hrModel'
+import type {
+  StaffEmployeeProfile,
+  StaffHrSetupOptionType,
+  StaffLeaveRequest,
+  StaffProfile,
+  StaffScheduleShift,
+  StaffShiftTemplate,
+  StaffShiftTemplateId,
+} from '../lib/staff/types'
 import { PhoneNumberInput } from './CountryCodePicker'
-import { employeeHomeLocation } from '@/lib/staffCostAllocation'
 import { StaffCostAssignments, StaffCostReport, type StaffCostReportRow } from './StaffCostAssignments'
 import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 
@@ -26,7 +88,7 @@ type StaffPeriodRangePickerProps = {
   endLabel: string
   onEndChange: (value: string) => void
   onStartChange: (value: string) => void
-  PickerField: StaffHrModel['StaffPickerField']
+  PickerField: typeof StaffPickerField
   start: string
   startLabel: string
 }
@@ -561,9 +623,6 @@ function hrModuleIcon(tab: string) {
 
 export default function StaffHrHub({ model }: StaffHrHubProps) {
   const {
-    ButtonIconText,
-    StaffPickerField,
-    StaffRoleAvatar,
     approveAttendancePeriod,
     approvePayrollRun,
     applyShiftTemplate,
@@ -579,9 +638,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     canAccessZaloSettings,
     canManageEmployeeKioskPins,
     canManageAttendance,
-    customerName,
-    dateFromInput,
-    dongDigits,
     downloadEmployeePayslip,
     downloadPayrollExcel,
     draggingShiftId,
@@ -603,16 +659,11 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     employeeKioskPinVisibleValue,
     employeePayrollSummary,
     employeeProfileById,
-    emptyStaffPayrollCalculation,
     firstEmployeeStaffProfileId,
     firstScheduleStaffProfileId,
-    formatDongInput,
-    formatVnd,
-    formatVndCompact,
     generateEmployeeKioskPin,
     generatePayrollRun,
     handleHrDocumentUpload,
-    hoursLabel,
     hrAdjustmentForm,
     hrContractTypeOptions,
     hrDepartmentOptions,
@@ -626,18 +677,8 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     hrSetupOptions,
     hrTab,
     isOwnerOrAdmin,
-    isPaidLeaveForEmployee,
     canRevealEmployeeKioskPin,
-    leaveHoursInsidePeriod,
     leaveRequests,
-    normalizeHrAdjustmentStatus,
-    normalizeHrAdjustmentType,
-    normalizePayrollPayCycle,
-    normalizePayrollStatus,
-    normalizeStaffContractStatus,
-    normalizeStaffEmploymentType,
-    normalizeTime,
-    parseDong,
     payrollItems,
     payrollPeriodEnd,
     payrollPeriodStart,
@@ -645,7 +686,6 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     payrollRuns,
     periodHrAdjustments,
     profileById,
-    rangeLabel,
     resolvedLanguage,
     costAssignments,
     reloadCostAssignments,
@@ -682,21 +722,9 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     setShiftForm,
     sharedText,
     shiftForm,
-    shortDateLabel,
     shiftAttendanceRange,
     shiftWarningsById,
-    staffContractStatuses,
-    staffDateLabel,
-    staffEmploymentTypes,
-    staffGenderOptions,
-    staffHrAdjustmentStatuses,
-    staffHrAdjustmentTypes,
-    staffHrSetupOptionTypes,
-    staffHrTabs,
     staffPayrollCalculations,
-    staffPayrollPayCycles,
-    staffProfilePhotoTypes,
-    staffShiftStatuses,
     startShiftForCell,
     syncPayrollDraft,
     text,
@@ -846,7 +874,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
         label,
         employees: employees.sort((left, right) => customerName(left, text).localeCompare(customerName(right, text))),
       }))
-  }, [customerName, employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
+  }, [employeeCopy.unassigned, employeeProfileById, filteredEmployeeProfileOptions, text])
   const selectedEmployeeOutsideFilters = Boolean(selectedEmployeeStaffProfile)
     && !filteredEmployeeProfileOptions.some((staffProfile) => staffProfile.id === selectedEmployeeStaffId)
   const firstFilteredEmployeeProfile = filteredEmployeeProfileOptions[0]
@@ -882,12 +910,12 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     const activeTokens = new Set((hrOptionsByType.get('employment_type') || []).map((option) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffEmploymentTypes.filter((value: string) => activeTokens.has(value))
     return filtered.length > 0 ? filtered : staffEmploymentTypes
-  }, [hrOptionsByType, staffEmploymentTypes])
+  }, [hrOptionsByType])
   const enabledContractStatuses = useMemo(() => {
     const activeTokens = new Set((hrOptionsByType.get('contract_status') || []).map((option) => String(option.name).toLowerCase().replace(/[-\s]+/g, '_')))
     const filtered = staffContractStatuses.filter((value: string) => activeTokens.has(value))
     return filtered.length > 0 ? filtered : staffContractStatuses
-  }, [hrOptionsByType, staffContractStatuses])
+  }, [hrOptionsByType])
 
   const employeeKioskEligible = isStaffKioskEligibleDepartment(employeeForm.department)
   const visibleEmployeeSectionIds: EmployeeProfileSectionId[] = employeeKioskEligible
@@ -1016,7 +1044,7 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     const rows = Array.from(rowByTemplateId.values())
     if (customRow.shiftsByDate.size > 0) rows.push(customRow)
     return rows
-  }, [customerName, effectiveShiftTemplates, normalizeTime, profileById, scheduleCopy.customShift, scheduleCopy.customShiftHelp, text, weekScheduleShifts])
+  }, [effectiveShiftTemplates, profileById, scheduleCopy.customShift, scheduleCopy.customShiftHelp, text, weekScheduleShifts])
 
   function prepareShiftEditor(template: StaffShiftTemplate | null, shiftDate: string) {
     if (!canManageAttendance || !template) return

@@ -1,123 +1,279 @@
 'use client'
 
+import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { staffBookingCopy } from '../lib/staff/bookingCopy'
+import { individualTicketUnitPrice } from '../lib/ticketTariffs'
+
+import {
+  cleanGuideTextMap,
+  defaultGameGuideMaps,
+  formatStaffDuration,
+  guideTextMapWithDefaults,
+  guideTextValue,
+  isMissingStaffAudienceColumnError,
+  normalizeGuideLanguage,
+  normalizeGuideTextMap,
+  normalizeStaffAudience,
+  parseStaffArenaIds,
+  parseStaffDuration,
+  safeStorageFileName,
+  slugify,
+  staffAudienceLabel,
+} from '../lib/staff/catalog'
+import {
+  addMinutesToTime,
+  attendanceDateKeys,
+  attendanceDateRange,
+  attendanceRangeLength,
+  attendanceWeekRange,
+  durationTimeValue,
+  endOfMonth,
+  hoursLabel,
+  localDateTimeIso,
+  minutesBetween,
+  minutesBetweenTimes,
+  normalizeTime,
+  parseMinutesTime,
+  previousPeriodRange,
+  rangeLabel,
+  reportPresetRange,
+  shortDateLabel,
+  staffDateLabel,
+  startOfMonth,
+  startOfWeek,
+  timeValueFromIso,
+  todayString,
+} from '../lib/staff/dates'
+import { isStaffHrPermissionDenied, isStaffHrSchemaUnavailable, rpcFunctionMissing } from '../lib/staff/errors'
+import {
+  decimalInput,
+  dongDigits,
+  formatDongInput,
+  formatPercentInput,
+  formatVnd,
+  formatVndCompact,
+  parseDong,
+  parsePercentInput,
+  resolveStaffConsoleLanguage,
+} from '../lib/staff/formatting'
+import { defaultBookingForm, defaultCustomerInviteForm, defaultDiscountForm, defaultGameForm, defaultLoyaltyForm, defaultPriceForm } from '../lib/staff/forms'
+import {
+  defaultAttendanceLogForm,
+  defaultAttendanceSettings,
+  defaultEmployeeForm,
+  defaultHrAdjustmentForm,
+  defaultHrSettings,
+  defaultHrSetupForm,
+  defaultLeaveForm,
+  defaultPayrollRunForm,
+  defaultShiftForm,
+  defaultStaffShiftTemplates,
+  minutesSetting,
+  normalizeAttendanceSettings,
+  normalizeHrAdjustmentStatus,
+  normalizeHrAdjustmentType,
+  normalizeHrSettings,
+  normalizePayrollPayCycle,
+  normalizeStaffContractStatus,
+  normalizeStaffEmploymentType,
+  normalizeStaffGender,
+  normalizeStaffShiftTemplates,
+} from '../lib/staff/hrSettings'
+import {
+  operationBookingKind,
+  operationParticipantName,
+  operationSessionChanges,
+  orderChanges,
+  sessionBookedPlayers,
+  sessionCapacity,
+  sessionCheckedInCount,
+  sessionGameName,
+  sessionKindLabel,
+  sessionStaffGame,
+} from '../lib/staff/operations'
+import {
+  accountantExportFormats,
+  accountantExportLanguages,
+  accountantExportReports,
+  accountantExportStores,
+  assignableWebAppRoleOptions,
+  dayTypes,
+  discountTypes,
+  emptyStaffDailySeries,
+  emptyStaffOrders,
+  emptyStaffPayments,
+  gameTypes,
+  loyaltyCalculationTypes,
+  orderStatuses,
+  paymentMethods,
+  roleFilterOptions,
+  roleSortOptions,
+  staffArenaOptions,
+  staffAttendanceStatuses,
+  staffAttendanceTabs,
+  staffAudienceOptions,
+  staffCommerceTabs,
+  staffCvMaxBytes,
+  staffCvTypes,
+  staffDiscountDayScopes,
+  staffDiscountTicketTypes,
+  staffGameImageBucket,
+  staffGameImageMaxBytes,
+  staffGameImageTypes,
+  staffHrDocumentBucket,
+  staffHrSetupOptionTypes,
+  staffLeaveTypes,
+  staffProfileAvatarSelect,
+  staffProfilePhotoMaxBytes,
+  staffProfilePhotoTypes,
+  staffProfileSelect,
+  staffShiftStatuses,
+  staffTabGroups,
+} from '../lib/staff/options'
+import { newPaymentSplit, normalizePaymentSplits, paymentSplitTotal, paymentStatusFromAmount, paymentStatusLabel, staffOrderEditDraft } from '../lib/staff/payments'
+import {
+  adjustmentAppliesToPeriod,
+  approvedAttendanceMinutes,
+  calculateStaffPayroll,
+  employeePayrollTypeForPeriod,
+  employeeRate,
+  emptyStaffPayrollCalculation,
+  isPaidLeaveForEmployee,
+  leaveHoursInsidePeriod,
+  normalizeEmployeePayrollType,
+} from '../lib/staff/payroll'
+import {
+  calculateDiscount,
+  calculateManualDiscount,
+  discountMatchesContext,
+  discountValueUnit,
+  formatDiscountRuleConditions,
+  formatDiscountRuleValue,
+  loyaltyCalculationLabel,
+  manualDiscountLabel,
+  selectPricingRule,
+} from '../lib/staff/pricing'
+import {
+  customerName,
+  customerSearchText,
+  deletedRecordActorLabel,
+  isDemoProfile,
+  normalizeStaffSearchValue,
+  roleLabel,
+  staffProfileFromEmployee,
+  staffRoleName,
+  staffRoleSortName,
+  storedRoleValue,
+} from '../lib/staff/profiles'
+import {
+  accountantFormula,
+  downloadCsv,
+  downloadExcel,
+  downloadPdf,
+  excelColumnName,
+  orderPaymentLabel,
+  paymentPieItems,
+  reportPdfLines,
+  staffOrderExportRows,
+  staffReportRows,
+} from '../lib/staff/reportExports'
+import { shiftConflictWarnings } from '../lib/staff/scheduling'
+import { StaffOperationPlayerSearch } from './staff/StaffOperationPlayerSearch'
+import { StaffPickerField } from './staff/StaffPickerField'
+import { StaffRoleAvatar } from './staff/StaffRoleAvatar'
+
+
+import { bookingDurationCopy } from '../lib/bookingDurationCopy'
+import { addDays, dateFromInput, orderedRange } from '../lib/staff/dates'
+import {
+  buildChartAreaPath,
+  buildDailySeries,
+  buildHourlyRevenue,
+  buildLineChartPath,
+  buildSmoothLineChartPath,
+  buildStaffReport,
+  buildWeekdayRevenue,
+  conicStops,
+  emptyStaffReport,
+  mergeOrderPayments,
+  orderPaidAmount,
+  paymentMapFromRows,
+  percentChange,
+  staffOrdersPageFromRpc,
+  staffReportSnapshotFromRpc,
+} from '../lib/staff/reporting'
+import { visitCopy, visitProgress } from '../lib/staffVisit'
 import StaffOrderPaymentForm, { type OrderPaymentEntry } from './StaffOrderPaymentForm'
 import StaffVisitParticipantEditor from './StaffVisitParticipantEditor'
-import { visitCopy, visitProgress } from '../lib/staffVisit'
-import { bookingDurationCopy } from '../lib/bookingDurationCopy'
-import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
-import { individualTicketUnitPrice } from '../lib/ticketTariffs'
-import { staffBookingCopy } from '../lib/staff/bookingCopy'
-import {
-  buildStaffReport,
-  buildDailySeries,
-  emptyStaffReport,
-  buildWeekdayRevenue,
-  buildHourlyRevenue,
-  buildSmoothLineChartPath,
-  buildChartAreaPath,
-  buildLineChartPath,
-  conicStops,
-  staffReportSnapshotFromRpc,
-  staffOrdersPageFromRpc,
-  percentChange,
-  mergeOrderPayments,
-  paymentMapFromRows,
-  staffOrderPaymentRows,
-  orderPaidAmount,
-} from '../lib/staff/reporting'
-import {
-  dateInputValue,
-  dateFromInput,
-  addDays,
-  orderedRange,
-} from '../lib/staff/dates'
 
+import { staffConsoleText } from '../lib/staff/copy'
 import type {
-  StaffTab,
-  StaffTabGroupId,
-  StaffCommerceTab,
-  StaffAttendanceTab,
-  StaffHrTab,
-  StaffScheduleScope,
-  StaffOperationScope,
-  StaffRole,
-  StaffRoleSort,
-  StaffReportChartMode,
-  StaffReportView,
-  StaffReportRangePreset,
   AccountantExportFormat,
-  StaffShiftTemplateId,
-  StaffShiftTemplate,
-  StaffEmploymentType,
   AccountantExportReportId,
-  StaffPaymentMethod,
-  StaffDiscountValueUnit,
-  StaffDiscountDayScope,
-  StaffDiscountTicketType,
-  StaffAudience,
-  StaffGuideTextMap,
-  PaymentSplitDraft,
-  PaymentSplitPayload,
-  StaffProfile,
-  StaffGame,
-  StaffPriceRule,
-  StaffDiscount,
-  StaffLoyaltyRule,
-  StaffShiftStatus,
-  StaffAttendanceStatus,
-  StaffLeaveType,
-  StaffLeaveStatus,
-  StaffGender,
-  StaffContractStatus,
-  StaffHrSetupOptionType,
-  StaffHrAdjustmentType,
-  StaffHrAdjustmentStatus,
-  StaffPayrollStatus,
-  StaffPayrollPayCycle,
-  StaffHrDocumentType,
-  StaffScheduleShift,
-  StaffAttendanceLog,
-  StaffLeaveRequest,
-  StaffEmployeeProfile,
-  StaffAttendanceSettings,
-  StaffHrSettings,
-  StaffHrSetupOption,
-  StaffHrAdjustment,
-  StaffPayrollRun,
-  StaffPayrollItem,
-  StaffPayrollSourceSnapshot,
-  StaffHrDocument,
-  StaffPayrollCalculation,
-  StaffOrder,
-  StaffOrderEditDraft,
-  StaffOrderPayment,
-  StaffSessionParticipant,
-  StaffOperationSession,
-  StaffDeleteSessionDraft,
-  RoleSaveFeedback,
-  StaffProfileDeleteDraft,
-  StaffAuditLog,
-  SoftDeletedRecord,
-  StaffDataKey,
-  StaffReportSummary,
-  StaffDailyPoint,
-  StaffReportSnapshot,
   BookingForm,
   CustomerInviteForm,
   CustomerTemporaryAccess,
-  StaffConsoleProps,
+  PaymentSplitDraft,
+  RoleSaveFeedback,
+  SoftDeletedRecord,
+  StaffAttendanceLog,
+  StaffAttendanceSettings,
+  StaffAttendanceStatus,
+  StaffAttendanceTab,
+  StaffAudience,
+  StaffAuditLog,
+  StaffCommerceTab,
   StaffConsoleLanguage,
-  StaffPickerFieldProps,
+  StaffConsoleProps,
+  StaffDataKey,
+  StaffDeleteSessionDraft,
+  StaffDiscount,
+  StaffDiscountDayScope,
+  StaffDiscountTicketType,
+  StaffDiscountValueUnit,
+  StaffEmployeeProfile,
+  StaffGame,
+  StaffHrAdjustment,
+  StaffHrAdjustmentStatus,
+  StaffHrDocument,
+  StaffHrDocumentType,
+  StaffHrSettings,
+  StaffHrSetupOption,
+  StaffHrSetupOptionType,
+  StaffHrTab,
+  StaffLeaveRequest,
+  StaffLeaveStatus,
+  StaffLeaveType,
+  StaffLoyaltyRule,
+  StaffOperationScope,
+  StaffOperationSession,
+  StaffOrder,
+  StaffOrderEditDraft,
+  StaffOrderPayment,
+  StaffPaymentMethod,
+  StaffPayrollCalculation,
+  StaffPayrollItem,
+  StaffPayrollRun,
+  StaffPayrollSourceSnapshot,
+  StaffPriceRule,
+  StaffProfile,
+  StaffProfileDeleteDraft,
+  StaffReportChartMode,
+  StaffReportRangePreset,
+  StaffReportSnapshot,
+  StaffReportView,
+  StaffRole,
+  StaffRoleSort,
+  StaffScheduleScope,
+  StaffScheduleShift,
+  StaffSessionParticipant,
+  StaffShiftStatus,
+  StaffShiftTemplate,
+  StaffShiftTemplateId,
+  StaffTab,
 } from '../lib/staff/types'
 export type { StaffProfile } from '../lib/staff/types'
-import {
-  staffConsoleText,
-  type StaffConsoleCopy,
-} from '../lib/staff/copy'
 
-import { summarizeOperationMoney } from '../lib/staffOperationMoney'
-import dynamic from 'next/dynamic'
-import NextImage from 'next/image'
 import {
   Ban,
   CalendarDays,
@@ -142,31 +298,31 @@ import {
   UserX,
   X,
 } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { ChangeEvent, ReactNode } from 'react'
-import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
+import { hasCompleteHistoricalAccountantLayout, historicalAccountantCategory, historicalAccountantPlacement, sortHistoricalAccountantRows } from '../lib/historicalAccountantPayroll'
+import { calculatePayrollTaxBases, progressivePitExcelFormula } from '../lib/hrPayrollPolicy'
+import { languageOptions } from '../lib/i18n/languages'
 import { uiText } from '../lib/i18n/translations'
 import { normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
 import type { RateLimitAction } from '../lib/security/rateLimit'
-import { isStaffAdminEmail as isAdminEmail, isStaffAdminOnlyEmail as isAdminOnlyEmail, isStaffOwnerEmail as isOwnerEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 import { allocateStaffCompanyCost, employeeHomeLocation, type StaffCostAssignment } from '../lib/staffCostAllocation'
-import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
-import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import type { StaffEmployeeRecordEmploymentType } from '../lib/staffEmployeeRecord'
 import { isStaffKioskEligibleDepartment } from '../lib/staffKioskDirectory'
-import { calculatePayrollTaxBases, calculateProgressivePit, progressivePitExcelFormula } from '../lib/hrPayrollPolicy'
-import { hasCompleteHistoricalAccountantLayout, historicalAccountantCategory, historicalAccountantPlacement, sortHistoricalAccountantRows } from '../lib/historicalAccountantPayroll'
-import { employeeBonusPercentageForPeriod, employeeSalaryPercentageForPeriod } from '../lib/staffPayrollProbation'
-import { calculateTimesheetBasePay, isMealAllowanceEligible, payrollFallbackPeriodBasis, resolveEmployeePayrollCalendar } from '../lib/staffPayrollPeriod'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings, requiresStaffKioskPin } from '../lib/staffKioskScope'
+import { summarizeOperationMoney } from '../lib/staffOperationMoney'
+import { isStaffAdminEmail as isAdminEmail, staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
+import { getStaffKioskOperatorToken, STAFF_KIOSK_HEADER, supabase } from '../lib/supabase/client'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
-import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
-import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
-import type { StaffQrAnalyticsSnapshot } from './StaffQrAnalytics'
 import AppLoadingState from './AppLoadingState'
 import { PhoneNumberInput } from './CountryCodePicker'
-import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
+import type { StaffAchievementAward } from './StaffAchievementAwardPanel'
 import { staffKioskCopy } from './StaffKioskGate'
+import StaffPlayerAchievementProfile from './StaffPlayerAchievementProfile'
+import type { StaffPlayerInsightsSnapshot } from './StaffPlayerInsights'
+import type { StaffQrAnalyticsSnapshot } from './StaffQrAnalytics'
 
 const StaffReportDateRangeModal = dynamic(() => import('./StaffReportDateRangeModal'), {
   ssr: false,
@@ -191,2225 +347,6 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
       <span>{children}</span>
     </span>
   )
-}
-
-const staffTabGroups: Array<{ id: StaffTabGroupId; tabs: StaffTab[] }> = [
-  { id: 'operate', tabs: ['new', 'clientProfile', 'today', 'orders'] },
-  { id: 'reports', tabs: ['report'] },
-  { id: 'team', tabs: ['attendance', 'hr', 'roles'] },
-  { id: 'setup', tabs: ['games', 'prices', 'discounts'] },
-  { id: 'admin', tabs: ['restore'] },
-]
-
-const emptyStaffOrders: StaffOrder[] = []
-const emptyStaffPayments: StaffOrderPayment[] = []
-const emptyStaffDailySeries: StaffDailyPoint[] = []
-
-const staffDiscountDayScopes: StaffDiscountDayScope[] = ['all', 'weekday', 'weekend', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-const staffDiscountTicketTypes: StaffDiscountTicketType[] = ['all', 'individual', 'birthday', 'corporate']
-
-const accountantExportReports = [
-  { id: 'sales_revenue', fileBase: 'Sales_Revenue_Report', label: { en: 'Sales revenue', vi: 'Doanh thu bán hàng' } },
-  { id: 'einvoice_reconciliation', fileBase: 'EInvoice_Reconciliation', label: { en: 'E-invoice reconciliation', vi: 'Đối soát hóa đơn điện tử' } },
-  { id: 'payments_reconciliation', fileBase: 'Payments_Reconciliation', label: { en: 'Payments reconciliation', vi: 'Đối soát thanh toán' } },
-  { id: 'refunds_adjustments', fileBase: 'Refunds_Adjustments', label: { en: 'Refunds and adjustments', vi: 'Hoàn tiền và điều chỉnh' } },
-  { id: 'discounts_vouchers', fileBase: 'Discounts_Vouchers', label: { en: 'Discounts and vouchers', vi: 'Ưu đãi và voucher' } },
-  { id: 'daily_cash_closing', fileBase: 'Daily_Cash_Closing', label: { en: 'Daily cash closing', vi: 'Chốt quỹ hằng ngày' } },
-  { id: 'expenses_purchases', fileBase: 'Expenses_Purchases', label: { en: 'Expenses and purchases', vi: 'Chi phí và mua hàng' } },
-  { id: 'vat_input_output', fileBase: 'VAT_Input_Output_Summary', label: { en: 'VAT input/output summary', vi: 'Tóm tắt VAT đầu vào/đầu ra' } },
-  { id: 'payroll_staff', fileBase: 'Payroll_Staff_Report', label: { en: 'Payroll and staff', vi: 'Lương và nhân sự' } },
-  { id: 'inventory_movement', fileBase: 'Inventory_Movement', label: { en: 'Inventory movement', vi: 'Biến động tồn kho' } },
-  { id: 'deferred_revenue_bookings', fileBase: 'Deferred_Revenue_Bookings', label: { en: 'Deferred revenue bookings', vi: 'Doanh thu chưa thực hiện' } },
-  { id: 'accountant_journal', fileBase: 'Accountant_Journal_Export', label: { en: 'Accountant journal', vi: 'Bút toán kế toán' } },
-  { id: 'audit_trail', fileBase: 'Audit_Trail', label: { en: 'Audit trail', vi: 'Nhật ký kiểm toán' } },
-] satisfies Array<{
-  id: AccountantExportReportId
-  fileBase: string
-  label: Record<StaffConsoleLanguage, string>
-}>
-
-const accountantExportFormats: AccountantExportFormat[] = ['excel', 'csv']
-const accountantExportLanguages: StaffConsoleLanguage[] = ['vi', 'en']
-const accountantExportStores = [
-  { id: 'all', label: { en: 'All stores', vi: 'Tất cả cơ sở' } },
-  { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
-] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
-const defaultStaffShiftTemplates = [
-  { id: 'opening', start_time: '09:00', end_time: '13:00', break_minutes: '0', shift_role: 'Staff' },
-  { id: 'afternoon', start_time: '13:00', end_time: '18:00', break_minutes: '30', shift_role: 'Staff' },
-  { id: 'evening', start_time: '18:00', end_time: '22:00', break_minutes: '0', shift_role: 'Staff' },
-  { id: 'full_day', start_time: '09:00', end_time: '18:00', break_minutes: '60', shift_role: 'Staff' },
-] satisfies StaffShiftTemplate[]
-
-function normalizeStaffShiftTemplates(value: unknown, standardBreakMinutes = 60): StaffShiftTemplate[] {
-  const source = Array.isArray(value) ? value : []
-  return defaultStaffShiftTemplates.map((fallback) => {
-    const incoming = source.find((item) => {
-      if (!item || typeof item !== 'object') return false
-      return (item as Partial<StaffShiftTemplate>).id === fallback.id
-    }) as Partial<StaffShiftTemplate> | undefined
-    const startTime = normalizeTime(incoming?.start_time) || fallback.start_time
-    const endTime = normalizeTime(incoming?.end_time) || fallback.end_time
-    const rawBreakMinutes = incoming?.break_minutes ?? fallback.break_minutes ?? standardBreakMinutes
-    const parsedBreakMinutes = Number(rawBreakMinutes)
-    const fallbackBreakMinutes = Number(fallback.break_minutes)
-    const breakMinutes = Number.isFinite(parsedBreakMinutes)
-      ? Math.max(0, Math.round(parsedBreakMinutes))
-      : Number.isFinite(fallbackBreakMinutes)
-        ? Math.max(0, Math.round(fallbackBreakMinutes))
-        : Math.max(0, Math.round(Number(standardBreakMinutes) || 0))
-    return {
-      id: fallback.id,
-      start_time: startTime,
-      end_time: endTime,
-      break_minutes: String(breakMinutes),
-      shift_role: 'Staff',
-    }
-  })
-}
-
-function minutesSetting(value: unknown, fallback = 0) {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : fallback
-}
-
-function resolveStaffConsoleLanguage(language?: string): StaffConsoleLanguage {
-  return language === 'vi' ? 'vi' : 'en'
-}
-
-const todayString = () => {
-  const date = new Date()
-  return dateInputValue(date)
-}
-
-const shortDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
-const staffDateFormatter = new Intl.DateTimeFormat('en', { month: 'short', day: '2-digit' })
-
-function addMonths(value: string, months: number) {
-  const date = dateFromInput(value)
-  date.setMonth(date.getMonth() + months)
-  return dateInputValue(date)
-}
-
-function daysBetween(start: string, end: string) {
-  return Math.round((dateFromInput(end).getTime() - dateFromInput(start).getTime()) / 86400000)
-}
-
-function startOfWeek(value: string) {
-  const date = dateFromInput(value)
-  const weekday = date.getDay()
-  const diff = weekday === 0 ? -6 : 1 - weekday
-  date.setDate(date.getDate() + diff)
-  return dateInputValue(date)
-}
-
-function startOfMonth(value: string) {
-  const date = dateFromInput(value)
-  return dateInputValue(new Date(date.getFullYear(), date.getMonth(), 1))
-}
-
-function endOfMonth(value: string) {
-  const date = dateFromInput(value)
-  return dateInputValue(new Date(date.getFullYear(), date.getMonth() + 1, 0))
-}
-
-function previousPeriodRange(start: string, end: string) {
-  const [from, to] = orderedRange(start, end)
-  const periodDays = Math.max(1, daysBetween(from, to) + 1)
-  const previousEnd = addDays(from, -1)
-  const previousStart = addDays(previousEnd, -(periodDays - 1))
-  return [previousStart, previousEnd] as const
-}
-
-function reportPresetRange(preset: StaffReportRangePreset, anchor = todayString()) {
-  if (preset === 'today') return [anchor, anchor] as const
-  if (preset === 'yesterday') {
-    const yesterday = addDays(anchor, -1)
-    return [yesterday, yesterday] as const
-  }
-  if (preset === 'this_week') {
-    const start = startOfWeek(anchor)
-    return [start, addDays(start, 6)] as const
-  }
-  if (preset === 'last_week') {
-    const end = addDays(startOfWeek(anchor), -1)
-    return [addDays(end, -6), end] as const
-  }
-  if (preset === 'this_month') return [startOfMonth(anchor), endOfMonth(anchor)] as const
-  if (preset === 'last_month') {
-    const previousMonth = addMonths(startOfMonth(anchor), -1)
-    return [startOfMonth(previousMonth), endOfMonth(previousMonth)] as const
-  }
-  if (preset === 'last_60') return [addDays(anchor, -59), anchor] as const
-  if (preset === 'last_90') return [addDays(anchor, -89), anchor] as const
-  return [addDays(anchor, -29), anchor] as const
-}
-
-function shortDateLabel(value: string) {
-  return shortDateFormatter.format(dateFromInput(value))
-}
-
-function staffDateLabel(value: string) {
-  return value ? staffDateFormatter.format(dateFromInput(value)) : ''
-}
-
-function rangeLabel(start: string, end: string) {
-  return start === end ? shortDateLabel(start) : `${shortDateLabel(start)} - ${shortDateLabel(end)}`
-}
-
-function attendanceWeekRange(anchor: string) {
-  const start = startOfWeek(anchor)
-  return [start, addDays(start, 6)] as const
-}
-
-function attendanceDateRange(start: string, end: string) {
-  const normalizedStart = start || todayString()
-  const normalizedEnd = end || normalizedStart
-  const [orderedStart, orderedEnd] = normalizedStart <= normalizedEnd
-    ? [normalizedStart, normalizedEnd]
-    : [normalizedEnd, normalizedStart]
-  const maxEnd = addDays(orderedStart, 30)
-  return [orderedStart, orderedEnd > maxEnd ? maxEnd : orderedEnd] as const
-}
-
-function attendanceRangeLength(start: string, end: string) {
-  const startTime = dateFromInput(start).getTime()
-  const endTime = dateFromInput(end).getTime()
-  if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return 7
-  return Math.max(1, Math.min(31, Math.round((endTime - startTime) / 86400000) + 1))
-}
-
-function attendanceDateKeys(start: string, end: string) {
-  const dayCount = attendanceRangeLength(start, end)
-  return Array.from({ length: dayCount }, (_, index) => addDays(start, index))
-}
-
-function localDateTimeIso(dateValue: string, timeValue: string) {
-  const normalized = normalizeTime(timeValue) || '00:00'
-  return new Date(`${dateValue}T${normalized}:00`).toISOString()
-}
-
-function timeValueFromIso(value?: string | null) {
-  if (!value) return ''
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return normalizeTime(value)
-  return `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`
-}
-
-function parseMinutesTime(value?: string | null) {
-  const [hour, minute] = normalizeTime(value).split(':').map(Number)
-  return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : 0
-}
-
-function durationTimeValue(minutes: number) {
-  const safeMinutes = Math.max(0, Math.min(23 * 60 + 59, Math.round(Number(minutes) || 0)))
-  const hours = Math.floor(safeMinutes / 60)
-  const minute = safeMinutes % 60
-  return `${String(hours).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-}
-
-function minutesBetweenTimes(start?: string | null, end?: string | null, breakMinutes = 0) {
-  const startMinutes = parseMinutesTime(start)
-  let endMinutes = parseMinutesTime(end)
-  if (endMinutes < startMinutes) endMinutes += 24 * 60
-  return Math.max(0, endMinutes - startMinutes - breakMinutes)
-}
-
-function minutesBetween(startIso?: string | null, endIso?: string | null, breakMinutes = 0) {
-  if (!startIso || !endIso) return 0
-  const start = Date.parse(startIso)
-  const end = Date.parse(endIso)
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0
-  return Math.max(0, Math.round((end - start) / 60000) - breakMinutes)
-}
-
-function hoursLabel(minutes: number) {
-  const hours = minutes / 60
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`
-}
-
-function activeShift(shift: StaffScheduleShift) {
-  return shift.status !== 'cancelled'
-}
-
-function timeRangesOverlap(
-  leftStart: string | null | undefined,
-  leftEnd: string | null | undefined,
-  rightStart: string | null | undefined,
-  rightEnd: string | null | undefined
-) {
-  const leftStartMinutes = parseMinutesTime(leftStart)
-  let leftEndMinutes = parseMinutesTime(leftEnd)
-  const rightStartMinutes = parseMinutesTime(rightStart)
-  let rightEndMinutes = parseMinutesTime(rightEnd)
-  if (leftEndMinutes <= leftStartMinutes) leftEndMinutes += 24 * 60
-  if (rightEndMinutes <= rightStartMinutes) rightEndMinutes += 24 * 60
-  return leftStartMinutes < rightEndMinutes && rightStartMinutes < leftEndMinutes
-}
-
-function shiftConflictWarnings(
-  shift: StaffScheduleShift,
-  shifts: StaffScheduleShift[],
-  requests: StaffLeaveRequest[],
-  settings: StaffAttendanceSettings,
-  text: StaffConsoleCopy
-) {
-  if (!activeShift(shift)) return []
-  const warnings: string[] = []
-  const hasOverlap = shifts.some((item) => (
-    item.id !== shift.id
-    && activeShift(item)
-    && item.staff_profile_id === shift.staff_profile_id
-    && item.shift_date === shift.shift_date
-    && timeRangesOverlap(shift.start_time, shift.end_time, item.start_time, item.end_time)
-  ))
-  if (hasOverlap) warnings.push(text.messages.planningConflictOverlap)
-
-  const hasApprovedLeave = requests.some((item) => (
-    item.status === 'approved'
-    && item.staff_profile_id === shift.staff_profile_id
-    && item.start_date <= shift.shift_date
-    && item.end_date >= shift.shift_date
-  ))
-  if (hasApprovedLeave) warnings.push(text.messages.planningConflictLeave)
-
-  const scheduledMinutes = shifts
-    .filter((item) => activeShift(item) && item.staff_profile_id === shift.staff_profile_id && item.shift_date === shift.shift_date)
-    .reduce((sum, item) => sum + minutesBetweenTimes(item.start_time, item.end_time, item.break_minutes), 0)
-  if (settings.standard_daily_minutes > 0 && scheduledMinutes > settings.standard_daily_minutes) {
-    warnings.push(text.messages.planningConflictDailyLimit)
-  }
-
-  return Array.from(new Set(warnings))
-}
-
-function normalizeStaffGender(value: string | null | undefined): StaffGender | '' {
-  return staffGenderOptions.includes(value as StaffGender) ? (value as StaffGender) : ''
-}
-
-function normalizeStaffContractStatus(value: string | null | undefined): StaffContractStatus {
-  return staffContractStatuses.includes(value as StaffContractStatus) ? (value as StaffContractStatus) : 'active'
-}
-
-function normalizeHrAdjustmentType(value: string | null | undefined): StaffHrAdjustmentType {
-  return staffHrAdjustmentTypes.includes(value as StaffHrAdjustmentType) ? (value as StaffHrAdjustmentType) : 'bonus'
-}
-
-function normalizeHrAdjustmentStatus(value: string | null | undefined): StaffHrAdjustmentStatus {
-  return staffHrAdjustmentStatuses.includes(value as StaffHrAdjustmentStatus) ? (value as StaffHrAdjustmentStatus) : 'pending'
-}
-
-function normalizePayrollStatus(value: string | null | undefined): StaffPayrollStatus {
-  return staffPayrollStatuses.includes(value as StaffPayrollStatus) ? (value as StaffPayrollStatus) : 'draft'
-}
-
-function normalizePayrollPayCycle(value: string | null | undefined): StaffPayrollPayCycle {
-  return staffPayrollPayCycles.includes(value as StaffPayrollPayCycle) ? (value as StaffPayrollPayCycle) : 'monthly'
-}
-
-function decimalInput(value: string | number | null | undefined) {
-  const amount = Number(String(value ?? '').replace(/[^\d.]/g, ''))
-  return Number.isFinite(amount) ? Math.max(0, amount) : 0
-}
-
-function isStaffHrSchemaUnavailable(error?: { code?: string; message?: string } | null) {
-  if (!error) return false
-  const message = (error.message || '').toLowerCase()
-  return (
-    error.code === '42P01' ||
-    error.code === '42703' ||
-    message.includes('schema cache')
-  )
-}
-
-function isStaffHrPermissionDenied(error?: { code?: string; message?: string } | null) {
-  if (!error) return false
-  return error.code === '42501' || (error.message || '').toLowerCase().includes('permission denied')
-}
-
-function dateWithinRange(value: string | null | undefined, start: string, end: string) {
-  return Boolean(value && value >= start && value <= end)
-}
-
-function adjustmentAppliesToPeriod(adjustment: StaffHrAdjustment, start: string, end: string) {
-  if (adjustment.period_start && adjustment.period_end) {
-    return adjustment.period_start <= end && adjustment.period_end >= start
-  }
-  return dateWithinRange(adjustment.effective_date, start, end)
-}
-
-function employeeRate(value: number | null | undefined, fallback: number) {
-  const rate = Number(value)
-  return Number.isFinite(rate) && rate > 0 ? rate : fallback
-}
-
-function employeeRestPeriodMinutes(employee: StaffEmployeeProfile | undefined, settings: StaffHrSettings) {
-  return Math.max(0, Number(settings.rest_period_minutes) || 0)
-}
-
-function normalizeEmployeePayrollType(value: string | null | undefined): 'hourly' | 'monthly' | 'manager' {
-  return value === 'monthly' || value === 'manager' ? value : 'hourly'
-}
-
-function employeePayrollTypeForPeriod(employee: StaffEmployeeProfile | undefined, periodEnd: string) {
-  const probationEnd = employee?.probation_end_date || ''
-  const laborStart = employee?.labor_start_date || ''
-  const probationApplies = Boolean(
-    (employee?.probation_start_date && periodEnd >= employee.probation_start_date) &&
-    (!probationEnd || periodEnd <= probationEnd) &&
-    (!laborStart || periodEnd < laborStart)
-  )
-  return probationApplies
-    ? normalizeEmployeePayrollType(employee?.probation_payroll_type)
-    : normalizeEmployeePayrollType(employee?.labor_payroll_type)
-}
-
-function shiftStartDateTime(shift: StaffScheduleShift) {
-  return new Date(`${shift.shift_date}T${normalizeTime(shift.start_time) || '00:00'}:00`).getTime()
-}
-
-function shiftEndDateTime(shift: StaffScheduleShift) {
-  const start = shiftStartDateTime(shift)
-  const minutes = minutesBetweenTimes(shift.start_time, shift.end_time, 0)
-  return start + minutes * 60000
-}
-
-function countRestPeriodWarnings(shifts: StaffScheduleShift[], restPeriodMinutes: number) {
-  if (restPeriodMinutes <= 0) return 0
-  const activeShifts = shifts.filter(activeShift).sort((left, right) => shiftStartDateTime(left) - shiftStartDateTime(right))
-  return activeShifts.reduce((count, shift, index) => {
-    const previous = activeShifts[index - 1]
-    if (!previous) return count
-    const gapMinutes = Math.round((shiftStartDateTime(shift) - shiftEndDateTime(previous)) / 60000)
-    return gapMinutes >= 0 && gapMinutes < restPeriodMinutes ? count + 1 : count
-  }, 0)
-}
-
-function leaveHoursInsidePeriod(leave: StaffLeaveRequest, periodStart: string, periodEnd: string) {
-  const overlapStart = leave.start_date > periodStart ? leave.start_date : periodStart
-  const overlapEnd = leave.end_date < periodEnd ? leave.end_date : periodEnd
-  if (overlapStart > overlapEnd) return 0
-  const requestDays = Math.max(1, daysBetween(leave.start_date, leave.end_date) + 1)
-  const overlapDays = Math.max(1, daysBetween(overlapStart, overlapEnd) + 1)
-  return Math.max(0, Number(leave.hours) || 0) * overlapDays / requestDays
-}
-
-function leaveSalaryUnitsInsidePeriod(
-  leave: StaffLeaveRequest,
-  employee: StaffEmployeeProfile | undefined,
-  periodStart: string,
-  periodEnd: string,
-  standardDailyHours: number,
-) {
-  const overlapStart = leave.start_date > periodStart ? leave.start_date : periodStart
-  const overlapEnd = leave.end_date < periodEnd ? leave.end_date : periodEnd
-  if (overlapStart > overlapEnd) return 0
-  const requestDays = Math.max(1, daysBetween(leave.start_date, leave.end_date) + 1)
-  const paidDayFraction = (Math.max(0, Number(leave.hours) || 0) / requestDays) / Math.max(1, standardDailyHours)
-  let salaryUnits = 0
-  let date = overlapStart
-  while (date <= overlapEnd) {
-    salaryUnits += paidDayFraction * employeeSalaryPercentageForPeriod(employee, date)
-    date = addDays(date, 1)
-  }
-  return salaryUnits
-}
-
-function isPaidLeaveForEmployee(leave: StaffLeaveRequest, employee: StaffEmployeeProfile | undefined) {
-  if (employeePayrollTypeForPeriod(employee, leave.end_date) === 'hourly') return false
-  return leave.leave_type === 'annual' || leave.leave_type === 'public_holiday'
-}
-
-function approvedAttendanceMinutes(log: StaffAttendanceLog) {
-  const approvedMinutes = Math.max(0, Number(log.regular_minutes) || 0) + Math.max(0, Number(log.overtime_minutes) || 0)
-  if (approvedMinutes > 0) return approvedMinutes
-  return minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes)
-}
-
-function calculateStaffPayroll(
-  staffProfileId: string,
-  employee: StaffEmployeeProfile | undefined,
-  shifts: StaffScheduleShift[],
-  logs: StaffAttendanceLog[],
-  leaves: StaffLeaveRequest[],
-  adjustments: StaffHrAdjustment[],
-  settings: StaffHrSettings,
-  attendanceSettings: StaffAttendanceSettings,
-  periodStart: string,
-  periodEnd: string,
-  periodReference?: StaffPayrollSourceSnapshot,
-): StaffPayrollCalculation {
-  const employeeShifts = shifts.filter((shift) => (
-    shift.staff_profile_id === staffProfileId &&
-    shift.shift_date >= periodStart &&
-    shift.shift_date <= periodEnd &&
-    ['published', 'completed'].includes(shift.status)
-  ))
-  const employeeLogs = logs.filter((log) => (
-    log.staff_profile_id === staffProfileId &&
-    log.work_date >= periodStart &&
-    log.work_date <= periodEnd &&
-    log.approval_status === 'approved'
-  ))
-  const employeeLeaves = leaves.filter((leave) => (
-    leave.staff_profile_id === staffProfileId &&
-    leave.status === 'approved' &&
-    leave.end_date >= periodStart &&
-    leave.start_date <= periodEnd &&
-    isPaidLeaveForEmployee(leave, employee)
-  ))
-  const employeeAdjustments = adjustments.filter((adjustment) => (
-    adjustment.profile_id === staffProfileId &&
-    ['approved', 'paid'].includes(adjustment.status) &&
-    adjustmentAppliesToPeriod(adjustment, periodStart, periodEnd)
-  ))
-
-  const scheduledMinutes = employeeShifts.reduce((sum, shift) => sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes), 0)
-  const workedMinutes = employeeLogs.reduce((sum, log) => sum + approvedAttendanceMinutes(log), 0)
-  const regularMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.regular_minutes) || 0), 0)
-  const computedOvertimeMinutes = scheduledMinutes > 0
-    ? Math.max(0, workedMinutes - (regularMinutes || Math.min(workedMinutes, scheduledMinutes)))
-    : 0
-  const overtimeMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.overtime_minutes) || 0), 0) || computedOvertimeMinutes
-  const nightMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.night_minutes) || 0), 0)
-  const holidayMinutes = employeeLogs.reduce((sum, log) => sum + Math.max(0, Number(log.holiday_minutes) || 0), 0)
-  const paidLeaveHours = employeeLeaves.reduce((sum, leave) => sum + leaveHoursInsidePeriod(leave, periodStart, periodEnd), 0)
-  const workedDates = Array.from(new Set(employeeLogs.filter((log) => approvedAttendanceMinutes(log) > 0).map((log) => log.work_date)))
-  const workedDays = workedDates.length
-  const payrollType = employeePayrollTypeForPeriod(employee, periodEnd)
-  const companyStandardDailyMinutes = Math.max(
-    1,
-    Math.round((Math.max(0, settings.standard_monthly_hours) * 60) / Math.max(1, settings.standard_monthly_days)),
-  )
-  const employeePayrollCalendar = resolveEmployeePayrollCalendar({
-    department: employee?.department,
-    payrollType,
-    companyWeeklyRestDays: attendanceSettings.weekly_rest_days,
-    companyStandardDailyMinutes,
-  })
-  const fallbackPeriodBasis = payrollFallbackPeriodBasis({
-    periodStart,
-    periodEnd,
-    standardMonthlyDays: settings.standard_monthly_days,
-    standardMonthlyHours: settings.standard_monthly_hours,
-    weeklyRestDays: employeePayrollCalendar.weeklyRestDays,
-    standardDailyMinutes: employeePayrollCalendar.standardDailyMinutes,
-  })
-  const standardDailyHours = fallbackPeriodBasis.standardDailyMinutes / 60
-  const paidLeaveDays = paidLeaveHours / standardDailyHours
-  const annualEntitlement = Math.max(0, Number(employee?.contract_status === 'ended' ? 0 : settings.annual_leave_days) || 0)
-  const leaveBalanceDays = Math.max(0, annualEntitlement - paidLeaveDays)
-  const periodStandardDays = Math.max(1, fallbackPeriodBasis.workingDays)
-  const periodStandardMinutes = Math.max(1, fallbackPeriodBasis.standardMinutes)
-  const payrollBasis = 'working_calendar'
-  const payPercentage = employeeSalaryPercentageForPeriod(employee, periodEnd)
-  const bonusPercentage = employeeBonusPercentageForPeriod(employee, periodEnd)
-  const hourlyRate = (employee?.hourly_rate_vnd || (employee?.base_salary_vnd ? employee.base_salary_vnd / Math.max(1, periodStandardMinutes / 60) : 0)) * payPercentage
-  const monthlyBasePay = payrollType !== 'hourly' ? Math.max(0, Number(employee?.base_salary_vnd) || 0) : 0
-  const baseWorkedMinutes = regularMinutes > 0 ? regularMinutes : Math.max(0, workedMinutes - overtimeMinutes)
-  const salaryPaidDays = Math.min(periodStandardDays, workedDays + paidLeaveDays)
-  const rawSalaryPaidDays = workedDays + paidLeaveDays
-  const weightedWorkedDays = workedDates.reduce(
-    (sum, workDate) => sum + employeeSalaryPercentageForPeriod(employee, workDate),
-    0,
-  )
-  const weightedLeaveDays = employeeLeaves.reduce(
-    (sum, leave) => sum + leaveSalaryUnitsInsidePeriod(leave, employee, periodStart, periodEnd, standardDailyHours),
-    0,
-  )
-  const weightedSalaryPaidDays = (weightedWorkedDays + weightedLeaveDays) * Math.min(
-    1,
-    periodStandardDays / Math.max(1, rawSalaryPaidDays),
-  )
-  const salaryPaidMinutes = monthlyBasePay > 0
-    ? Math.round(weightedSalaryPaidDays * periodStandardMinutes / periodStandardDays)
-    : baseWorkedMinutes + Math.round(paidLeaveHours * 60)
-  const hourlyBasePay = calculateTimesheetBasePay({
-    payrollType,
-    monthlyBasePay,
-    hourlyRate,
-    periodStandardDays,
-    salaryPaidDays,
-    weightedSalaryPaidDays,
-    baseWorkedMinutes,
-  })
-  const overtimeMultiplier = Math.max(0, Number(settings.normal_overtime_multiplier) || 0)
-  const nightMultiplier = Math.max(0, Number(settings.night_overtime_multiplier) || 0)
-  const holidayMultiplier = Math.max(0, Number(settings.holiday_overtime_multiplier) || 0)
-  const categorizedHolidayMinutes = Math.min(holidayMinutes, overtimeMinutes)
-  const categorizedNightMinutes = Math.min(nightMinutes, Math.max(0, overtimeMinutes - categorizedHolidayMinutes))
-  const categorizedRegularOvertimeMinutes = Math.max(0, overtimeMinutes - categorizedHolidayMinutes - categorizedNightMinutes)
-  const legalNightOvertimeMultiplier = overtimeMultiplier + settings.night_work_bonus_rate / 100 + settings.night_overtime_extra_rate / 100
-  const overtimePay = Math.round(
-    (categorizedRegularOvertimeMinutes / 60) * hourlyRate * overtimeMultiplier +
-    (categorizedNightMinutes / 60) * hourlyRate * (legalNightOvertimeMultiplier || nightMultiplier) +
-    (categorizedHolidayMinutes / 60) * hourlyRate * holidayMultiplier
-  )
-  const lunchAllowance = settings.lunch_allowance_vnd
-  const mealDays = new Set(employeeLogs
-    .filter((log) => isMealAllowanceEligible(payrollType, approvedAttendanceMinutes(log), employeePayrollCalendar.standardDailyMinutes))
-    .map((log) => log.work_date)).size
-  const autoLunchAllowance = Math.round(Math.max(0, lunchAllowance) * mealDays)
-  const otherAllowances = employeeAdjustments
-    .filter((item) => ['allowance', 'lunch_allowance'].includes(item.adjustment_type))
-    .reduce((sum, item) => sum + item.amount_vnd, 0)
-  const allowances = autoLunchAllowance + otherAllowances
-  const recurringBonus = Math.round(Math.max(0, Number(employee?.monthly_bonus_vnd) || 0) * bonusPercentage)
-  const bonuses = recurringBonus + employeeAdjustments
-    .filter((item) => ['bonus', 'commission'].includes(item.adjustment_type))
-    .reduce((sum, item) => sum + Math.round(item.amount_vnd * bonusPercentage), 0)
-  const advances = employeeAdjustments
-    .filter((item) => ['advance', 'debt', 'debt_repayment'].includes(item.adjustment_type))
-    .reduce((sum, item) => sum + item.amount_vnd, 0)
-  const deductions = employeeAdjustments
-    .filter((item) => item.adjustment_type === 'deduction')
-    .reduce((sum, item) => sum + item.amount_vnd, 0)
-  const basePay = Math.max(0, hourlyBasePay)
-  const grossIncome = Math.max(0, basePay + overtimePay + allowances + bonuses)
-  const employeeContributionRate = Math.max(0,
-    Number(settings.employee_social_insurance_rate) +
-    Number(settings.employee_health_insurance_rate) +
-    Number(settings.employee_unemployment_insurance_rate),
-  )
-  const employerContributionRate = Math.max(0,
-    Number(settings.employer_social_insurance_rate) +
-    Number(settings.employer_health_insurance_rate) +
-    Number(settings.employer_unemployment_insurance_rate) +
-    Number(settings.employer_trade_union_rate),
-  )
-  const contributionBase = settings.social_insurance_enabled && employee?.social_insurance_enrolled && normalizeStaffContractStatus(employee?.contract_status) === 'active'
-    ? Math.max(0, Number(employee?.social_insurance_salary_vnd) || Number(employee?.base_salary_vnd) || 0)
-    : 0
-  const calculatedEmployeeContributions = Math.round(contributionBase * employeeContributionRate / 100)
-  const employeeContributions = periodReference
-    ? Math.max(0, Number(periodReference.employee_insurance_vnd) || 0)
-    : calculatedEmployeeContributions
-  const employerContributions = Math.round(contributionBase * employerContributionRate / 100)
-  const taxBases = calculatePayrollTaxBases({
-    grossIncome,
-    mealAllowance: autoLunchAllowance,
-    overtimePay,
-    employeeContributions,
-    personalDeduction: settings.personal_deduction_vnd,
-    dependentDeduction: Math.max(0, Number(employee?.dependents_count) || 0) * settings.dependent_deduction_vnd,
-  })
-  const employeePitRate = Math.max(
-    0,
-    Number(periodReference?.source_payload?.pit_rate_percent) || Number(employee?.pit_withholding_rate) || 0,
-  )
-  const pitWithheld = !settings.personal_income_tax_enabled
-    ? 0
-    : employeePitRate > 0
-      ? Math.round(taxBases.shortTermWithholdingBase * employeePitRate / 100)
-      : calculateProgressivePit(taxBases.progressiveTaxableIncome, settings.pit_brackets)
-  const netIncome = Math.max(0, grossIncome - employeeContributions - pitWithheld - deductions - advances)
-  const companyCost = Math.max(0, grossIncome + employerContributions)
-
-  return {
-    profileId: staffProfileId,
-    scheduledMinutes,
-    periodStandardMinutes,
-    periodStandardDays,
-    payrollBasis,
-    workedMinutes,
-    workedDays,
-    mealDays,
-    salaryPaidDays,
-    regularMinutes,
-    salaryPaidMinutes,
-    overtimeMinutes,
-    nightMinutes,
-    holidayMinutes,
-    paidLeaveHours,
-    paidLeaveDays,
-    leaveBalanceDays,
-    restWarningCount: countRestPeriodWarnings(employeeShifts, employeeRestPeriodMinutes(employee, settings)),
-    hourlyRate,
-    basePay,
-    overtimePay,
-    mealAllowance: autoLunchAllowance,
-    otherAllowances,
-    allowances,
-    bonuses,
-    advances,
-    deductions,
-    contributionBase,
-    employeeContributions,
-    employerContributions,
-    pitWithheld,
-    grossIncome,
-    netIncome,
-    companyCost,
-  }
-}
-
-function emptyStaffPayrollCalculation(profileId = ''): StaffPayrollCalculation {
-  return {
-    profileId,
-    scheduledMinutes: 0,
-    periodStandardMinutes: 0,
-    periodStandardDays: 0,
-    payrollBasis: 'working_calendar',
-    workedMinutes: 0,
-    workedDays: 0,
-    mealDays: 0,
-    salaryPaidDays: 0,
-    regularMinutes: 0,
-    salaryPaidMinutes: 0,
-    overtimeMinutes: 0,
-    nightMinutes: 0,
-    holidayMinutes: 0,
-    paidLeaveHours: 0,
-    paidLeaveDays: 0,
-    leaveBalanceDays: 0,
-    restWarningCount: 0,
-    hourlyRate: 0,
-    basePay: 0,
-    overtimePay: 0,
-    mealAllowance: 0,
-    otherAllowances: 0,
-    allowances: 0,
-    bonuses: 0,
-    advances: 0,
-    deductions: 0,
-    contributionBase: 0,
-    employeeContributions: 0,
-    employerContributions: 0,
-    pitWithheld: 0,
-    grossIncome: 0,
-    netIncome: 0,
-    companyCost: 0,
-  }
-}
-
-const staffTimeOptions = Array.from({ length: 96 }, (_, index) => {
-  const hour = Math.floor(index / 4)
-  const minute = String((index % 4) * 15).padStart(2, '0')
-  return `${String(hour).padStart(2, '0')}:${minute}`
-})
-
-function normalizeTypedStaffTime(value: string) {
-  const trimmed = value.trim().toLowerCase().replace(/[h.]/, ':')
-  const colonMatch = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/)
-  if (colonMatch) return `${colonMatch[1].padStart(2, '0')}:${colonMatch[2]}`
-
-  const compactMatch = trimmed.match(/^([01]?\d|2[0-3])([0-5]\d)$/)
-  if (compactMatch) return `${compactMatch[1].padStart(2, '0')}:${compactMatch[2]}`
-
-  const hourMatch = trimmed.match(/^([01]?\d|2[0-3])$/)
-  if (hourMatch) return `${hourMatch[1].padStart(2, '0')}:00`
-
-  return ''
-}
-
-function normalizeTypedStaffDuration(value: string) {
-  const trimmed = value.trim().toLowerCase()
-  const decimalMatch = trimmed.match(/^(\d{1,2})(?:[.,](\d{1,2}))$/)
-  if (decimalMatch) {
-    const hours = Number(decimalMatch[1])
-    const fraction = Number(`0.${decimalMatch[2]}`)
-    if (Number.isFinite(hours) && Number.isFinite(fraction)) {
-      return durationTimeValue((hours * 60) + Math.round(fraction * 60))
-    }
-  }
-
-  return normalizeTypedStaffTime(value)
-}
-
-function StaffPickerField({ ariaLabel, type, value, mode = 'clock', placeholder, inputRef, onChange }: StaffPickerFieldProps) {
-  const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
-  const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
-  const [timeOpen, setTimeOpen] = useState(false)
-  const [timeDraft, setTimeDraft] = useState<string | null>(null)
-  const timePickerRef = useRef<HTMLSpanElement | null>(null)
-
-  useEffect(() => {
-    if (!timeOpen) return
-
-    function handlePointerDown(event: PointerEvent) {
-      if (timePickerRef.current?.contains(event.target as Node)) return
-      setTimeOpen(false)
-      setTimeDraft(null)
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-      setTimeOpen(false)
-      setTimeDraft(null)
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [timeOpen])
-
-  if (type === 'time') {
-    const normalizedTime = normalizeTime(value)
-    const manualTime = timeDraft ?? normalizedTime
-
-    const commitManualTime = () => {
-      if (timeDraft === null) return
-      const normalizedDraft = mode === 'duration'
-        ? normalizeTypedStaffDuration(timeDraft)
-        : normalizeTypedStaffTime(timeDraft)
-      if (normalizedDraft) onChange(normalizedDraft)
-      setTimeDraft(null)
-      setTimeOpen(false)
-    }
-
-    return (
-      <span ref={timePickerRef} className={displayValue ? 'staff-picker-shell staff-time-picker' : 'staff-picker-shell staff-time-picker placeholder'}>
-        <button
-          aria-expanded={timeOpen}
-          aria-label={ariaLabel}
-          className="staff-time-trigger"
-          type="button"
-          onClick={() => {
-            setTimeOpen((open) => !open)
-            setTimeDraft(null)
-          }}
-        >
-          <span className="staff-picker-display">{displayValue || fallback}</span>
-        </button>
-        {timeOpen ? (
-          <span className="staff-time-panel">
-            <input
-              aria-label={`${ariaLabel}: type a specific time`}
-              autoFocus
-              className="staff-time-manual"
-              inputMode="numeric"
-              placeholder="HH:mm"
-              value={manualTime}
-              onBlur={commitManualTime}
-              onChange={(event) => setTimeDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  commitManualTime()
-                }
-              }}
-            />
-            <span aria-label={ariaLabel} className="staff-time-option-list" role="listbox">
-              {staffTimeOptions.map((option) => (
-                <button
-                  aria-selected={normalizedTime === option}
-                  className={normalizedTime === option ? 'staff-time-option active' : 'staff-time-option'}
-                  key={option}
-                  role="option"
-                  type="button"
-                  onClick={() => {
-                    onChange(option)
-                    setTimeDraft(null)
-                    setTimeOpen(false)
-                  }}
-                  onMouseDown={(event) => event.preventDefault()}
-                >
-                  {option}
-                </button>
-              ))}
-            </span>
-          </span>
-        ) : null}
-      </span>
-    )
-  }
-
-  return (
-    <span className={displayValue ? 'staff-picker-shell' : 'staff-picker-shell placeholder'}>
-      <input
-        aria-label={ariaLabel}
-        className="staff-picker-native"
-        ref={inputRef}
-        type={type}
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value)
-          event.currentTarget.blur()
-        }}
-      />
-      <span className="staff-picker-display">{displayValue || fallback}</span>
-    </span>
-  )
-}
-
-function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
-  return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    payment_method: method,
-    amount,
-  }
-}
-
-const defaultBookingForm = (): BookingForm => ({
-  guestBooking: false,
-  venueKey: 'ha-do-centrosa',
-  customerId: '',
-  customerName: '',
-  customerPhone: '',
-  customerEmail: '',
-  gameId: '',
-  date: todayString(),
-  time: '09:00',
-  players: 1,
-  arenaId: 'arena-1',
-  discountId: '',
-  manualDiscountType: '',
-  manualDiscountValue: 0,
-  paymentSplits: [newPaymentSplit('cash')],
-  orderStatus: 'confirmed',
-  invoiceRequired: false,
-  companyName: '',
-  taxCode: '',
-  invoiceEmail: '',
-  invoiceAddress: '',
-  note: '',
-})
-
-const defaultCustomerInviteForm = (): CustomerInviteForm => ({
-  fullName: '',
-  email: '',
-  phone: '',
-  nickname: '',
-})
-
-const defaultGameForm = () => ({
-  id: '',
-  slug: '',
-  name: '',
-  game_type: 'shooting' as StaffGame['game_type'],
-  duration_minutes: 20,
-  max_players_per_arena: 4,
-  number_of_rounds: 1,
-  escape_chapter_count: 1,
-  description: '',
-  audience: [] as StaffAudience[],
-  guide_language: 'en' as LanguageCode,
-  guide_summary: {} as StaffGuideTextMap,
-  guide_rules: {} as StaffGuideTextMap,
-  guide_tips: {} as StaffGuideTextMap,
-  image_url: '',
-  active: true,
-  available_arena_ids: 'arena-1, arena-2',
-})
-
-const defaultPriceForm = () => ({
-  id: '',
-  rule_name: '',
-  game_id: '',
-  day_type: 'weekday' as StaffPriceRule['day_type'],
-  time_start: '09:00',
-  time_end: '18:00',
-  price_per_player: '200000',
-  price_per_arena_slot: '',
-  valid_from: todayString(),
-  valid_until: '',
-  active: true,
-})
-
-const defaultDiscountForm = () => ({
-  id: '',
-  code: '',
-  name: '',
-  game_id: '',
-  price_rule_id: '',
-  min_players: '',
-  max_players: '',
-  day_scope: 'all' as StaffDiscountDayScope,
-  time_start: '',
-  time_end: '',
-  ticket_type: 'all' as StaffDiscountTicketType,
-  min_order_total: 0,
-  max_discount_amount: '',
-  per_customer_limit: '',
-  discount_type: 'percentage' as StaffDiscount['discount_type'],
-  value: 10,
-  valid_from: todayString(),
-  valid_until: '',
-  max_uses: '',
-  active: true,
-})
-
-const defaultLoyaltyForm = () => ({
-  id: '',
-  rule_name: '',
-  game_id: '',
-  calculation_type: 'per_vnd_spent' as StaffLoyaltyRule['calculation_type'],
-  points_value: 1,
-  spend_amount: 100000,
-  min_order_total: 0,
-  redeem_value_vnd_per_point: 0,
-  earn_trigger: 'session_payment_confirmed' as StaffLoyaltyRule['earn_trigger'],
-  rounding_rule: 'floor_whole_points' as StaffLoyaltyRule['rounding_rule'],
-  point_expiry_days: '365',
-  valid_from: todayString(),
-  valid_until: '',
-  active: true,
-  notes: '',
-})
-
-const defaultAttendanceSettings = (): StaffAttendanceSettings => ({
-  id: 'default',
-  location: 'VRena',
-  standard_daily_minutes: 480,
-  standard_weekly_minutes: 2880,
-  standard_break_minutes: 60,
-  overtime_monthly_cap_minutes: 2400,
-  overtime_yearly_cap_minutes: 12000,
-  night_start: '22:00',
-  night_end: '06:00',
-  annual_leave_days: 12,
-  half_day_enabled: true,
-  half_day_min_minutes: 0,
-  half_day_max_minutes: 270,
-  count_late_early_on_half_day: false,
-  late_arrival_enabled: true,
-  late_after_minutes: 5,
-  early_leave_enabled: true,
-  early_leave_before_minutes: 5,
-  overtime_before_shift_enabled: false,
-  overtime_before_shift_minutes: 10,
-  overtime_after_shift_enabled: false,
-  overtime_after_shift_minutes: 10,
-  single_clock_for_consecutive_shifts: true,
-  work_week_start: 1,
-  weekly_rest_days: [0],
-  shift_templates: normalizeStaffShiftTemplates(defaultStaffShiftTemplates, 60),
-  updated_by: null,
-  updated_at: null,
-})
-
-function normalizeAttendanceSettings(value?: Partial<StaffAttendanceSettings> | null): StaffAttendanceSettings {
-  const fallback = defaultAttendanceSettings()
-  const standardBreakMinutes = minutesSetting(value?.standard_break_minutes, fallback.standard_break_minutes)
-  return {
-    ...fallback,
-    ...(value || {}),
-    location: String(value?.location || fallback.location),
-    standard_daily_minutes: minutesSetting(value?.standard_daily_minutes, fallback.standard_daily_minutes),
-    standard_weekly_minutes: minutesSetting(value?.standard_weekly_minutes, fallback.standard_weekly_minutes),
-    standard_break_minutes: standardBreakMinutes,
-    overtime_monthly_cap_minutes: minutesSetting(value?.overtime_monthly_cap_minutes, fallback.overtime_monthly_cap_minutes),
-    overtime_yearly_cap_minutes: minutesSetting(value?.overtime_yearly_cap_minutes, fallback.overtime_yearly_cap_minutes),
-    night_start: normalizeTime(value?.night_start) || fallback.night_start,
-    night_end: normalizeTime(value?.night_end) || fallback.night_end,
-    annual_leave_days: Math.max(0, Number(value?.annual_leave_days ?? fallback.annual_leave_days) || 0),
-    half_day_enabled: value?.half_day_enabled ?? fallback.half_day_enabled,
-    half_day_min_minutes: minutesSetting(value?.half_day_min_minutes, fallback.half_day_min_minutes),
-    half_day_max_minutes: minutesSetting(value?.half_day_max_minutes, fallback.half_day_max_minutes),
-    count_late_early_on_half_day: value?.count_late_early_on_half_day ?? fallback.count_late_early_on_half_day,
-    late_arrival_enabled: value?.late_arrival_enabled ?? fallback.late_arrival_enabled,
-    late_after_minutes: minutesSetting(value?.late_after_minutes, fallback.late_after_minutes),
-    early_leave_enabled: value?.early_leave_enabled ?? fallback.early_leave_enabled,
-    early_leave_before_minutes: minutesSetting(value?.early_leave_before_minutes, fallback.early_leave_before_minutes),
-    overtime_before_shift_enabled: value?.overtime_before_shift_enabled ?? fallback.overtime_before_shift_enabled,
-    overtime_before_shift_minutes: minutesSetting(value?.overtime_before_shift_minutes, fallback.overtime_before_shift_minutes),
-    overtime_after_shift_enabled: value?.overtime_after_shift_enabled ?? fallback.overtime_after_shift_enabled,
-    overtime_after_shift_minutes: minutesSetting(value?.overtime_after_shift_minutes, fallback.overtime_after_shift_minutes),
-    single_clock_for_consecutive_shifts: value?.single_clock_for_consecutive_shifts ?? fallback.single_clock_for_consecutive_shifts,
-    work_week_start: Math.min(6, Math.max(0, Math.round(Number(value?.work_week_start ?? fallback.work_week_start) || 0))),
-    weekly_rest_days: Array.isArray(value?.weekly_rest_days)
-      ? value.weekly_rest_days.map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
-      : fallback.weekly_rest_days,
-    shift_templates: normalizeStaffShiftTemplates(value?.shift_templates, standardBreakMinutes),
-    updated_by: value?.updated_by ?? fallback.updated_by,
-    updated_at: value?.updated_at ?? fallback.updated_at,
-  }
-}
-
-const defaultHrSettings = (): StaffHrSettings => ({
-  id: 'default',
-  currency: 'VND',
-  standard_monthly_days: 26,
-  standard_monthly_hours: 169,
-  rest_period_minutes: 660,
-  normal_overtime_multiplier: 1.5,
-  night_overtime_multiplier: 2,
-  holiday_overtime_multiplier: 3,
-  lunch_allowance_vnd: 35000,
-  annual_leave_days: 12,
-  employee_contribution_rate: 10.5,
-  employer_contribution_rate: 21.5,
-  pit_withholding_rate: 10,
-  policy_version: 'VN-2026.1',
-  effective_from: '2026-01-01',
-  policy_status: 'active',
-  legal_source_url: 'https://vanban.chinhphu.vn/?classid=1&docid=198540&pageid=27160&typegroupid=3',
-  legal_reviewed_on: '2026-08-05',
-  personal_deduction_vnd: 15500000,
-  dependent_deduction_vnd: 6200000,
-  short_term_pit_rate: 10,
-  pit_brackets: [
-    { up_to: 10000000, rate: 5 },
-    { up_to: 30000000, rate: 10 },
-    { up_to: 60000000, rate: 20 },
-    { up_to: 100000000, rate: 30 },
-    { up_to: null, rate: 35 },
-  ],
-  employee_social_insurance_rate: 8,
-  employee_health_insurance_rate: 1.5,
-  employee_unemployment_insurance_rate: 1,
-  employer_social_insurance_rate: 17.5,
-  employer_health_insurance_rate: 3,
-  employer_unemployment_insurance_rate: 1,
-  employer_trade_union_rate: 2,
-  night_work_bonus_rate: 30,
-  night_overtime_extra_rate: 20,
-  leave_accrual_days_per_month: 1,
-  leave_qualifying_worked_days: 16,
-  leave_join_cutoff_day: 15,
-  leave_exit_cutoff_day: 17,
-  leave_carry_forward_month: 3,
-  leave_carry_forward_day: 31,
-  pay_period_start_day: 1,
-  auto_create_payroll_runs: false,
-  auto_update_payroll_daily: false,
-  personal_income_tax_enabled: true,
-  social_insurance_enabled: true,
-  last_auto_payroll_sync_on: null,
-  payslip_note: '',
-  updated_by: null,
-  updated_at: null,
-})
-
-function normalizeHrSettings(value?: Partial<StaffHrSettings> | null): StaffHrSettings {
-  const fallback = defaultHrSettings()
-  return {
-    ...fallback,
-    ...(value || {}),
-    currency: String(value?.currency || fallback.currency),
-    standard_monthly_days: Math.max(1, Number(value?.standard_monthly_days ?? fallback.standard_monthly_days) || fallback.standard_monthly_days),
-    standard_monthly_hours: Math.max(1, Number(value?.standard_monthly_hours ?? fallback.standard_monthly_hours) || fallback.standard_monthly_hours),
-    rest_period_minutes: minutesSetting(value?.rest_period_minutes, fallback.rest_period_minutes),
-    normal_overtime_multiplier: Math.max(0, Number(value?.normal_overtime_multiplier ?? fallback.normal_overtime_multiplier) || 0),
-    night_overtime_multiplier: Math.max(0, Number(value?.night_overtime_multiplier ?? fallback.night_overtime_multiplier) || 0),
-    holiday_overtime_multiplier: Math.max(0, Number(value?.holiday_overtime_multiplier ?? fallback.holiday_overtime_multiplier) || 0),
-    lunch_allowance_vnd: Math.max(0, Number(value?.lunch_allowance_vnd ?? fallback.lunch_allowance_vnd) || 0),
-    annual_leave_days: Math.max(0, Number(value?.annual_leave_days ?? fallback.annual_leave_days) || 0),
-    employee_contribution_rate: Math.max(0, Number(value?.employee_contribution_rate ?? fallback.employee_contribution_rate) || 0),
-    employer_contribution_rate: Math.max(0, Number(value?.employer_contribution_rate ?? fallback.employer_contribution_rate) || 0),
-    pit_withholding_rate: Math.max(0, Number(value?.pit_withholding_rate ?? fallback.pit_withholding_rate) || 0),
-    policy_version: String(value?.policy_version || fallback.policy_version),
-    effective_from: String(value?.effective_from || fallback.effective_from),
-    policy_status: ['draft', 'active', 'retired'].includes(String(value?.policy_status)) ? value?.policy_status as StaffHrSettings['policy_status'] : fallback.policy_status,
-    legal_source_url: value?.legal_source_url ?? fallback.legal_source_url,
-    legal_reviewed_on: value?.legal_reviewed_on ?? fallback.legal_reviewed_on,
-    personal_deduction_vnd: Math.max(0, Number(value?.personal_deduction_vnd ?? fallback.personal_deduction_vnd) || 0),
-    dependent_deduction_vnd: Math.max(0, Number(value?.dependent_deduction_vnd ?? fallback.dependent_deduction_vnd) || 0),
-    short_term_pit_rate: Math.max(0, Number(value?.short_term_pit_rate ?? fallback.short_term_pit_rate) || 0),
-    pit_brackets: Array.isArray(value?.pit_brackets) && value.pit_brackets.length > 0
-      ? value.pit_brackets.map((bracket) => ({ up_to: bracket.up_to == null ? null : Math.max(0, Number(bracket.up_to) || 0), rate: Math.max(0, Number(bracket.rate) || 0) }))
-      : fallback.pit_brackets,
-    employee_social_insurance_rate: Math.max(0, Number(value?.employee_social_insurance_rate ?? fallback.employee_social_insurance_rate) || 0),
-    employee_health_insurance_rate: Math.max(0, Number(value?.employee_health_insurance_rate ?? fallback.employee_health_insurance_rate) || 0),
-    employee_unemployment_insurance_rate: Math.max(0, Number(value?.employee_unemployment_insurance_rate ?? fallback.employee_unemployment_insurance_rate) || 0),
-    employer_social_insurance_rate: Math.max(0, Number(value?.employer_social_insurance_rate ?? fallback.employer_social_insurance_rate) || 0),
-    employer_health_insurance_rate: Math.max(0, Number(value?.employer_health_insurance_rate ?? fallback.employer_health_insurance_rate) || 0),
-    employer_unemployment_insurance_rate: Math.max(0, Number(value?.employer_unemployment_insurance_rate ?? fallback.employer_unemployment_insurance_rate) || 0),
-    employer_trade_union_rate: Math.max(0, Number(value?.employer_trade_union_rate ?? fallback.employer_trade_union_rate) || 0),
-    night_work_bonus_rate: Math.max(0, Number(value?.night_work_bonus_rate ?? fallback.night_work_bonus_rate) || 0),
-    night_overtime_extra_rate: Math.max(0, Number(value?.night_overtime_extra_rate ?? fallback.night_overtime_extra_rate) || 0),
-    leave_accrual_days_per_month: Math.max(0, Number(value?.leave_accrual_days_per_month ?? fallback.leave_accrual_days_per_month) || 0),
-    leave_qualifying_worked_days: Math.max(0, Math.round(Number(value?.leave_qualifying_worked_days ?? fallback.leave_qualifying_worked_days) || 0)),
-    leave_join_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_join_cutoff_day ?? fallback.leave_join_cutoff_day) || 1))),
-    leave_exit_cutoff_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_exit_cutoff_day ?? fallback.leave_exit_cutoff_day) || 1))),
-    leave_carry_forward_month: Math.min(12, Math.max(1, Math.round(Number(value?.leave_carry_forward_month ?? fallback.leave_carry_forward_month) || 1))),
-    leave_carry_forward_day: Math.min(31, Math.max(1, Math.round(Number(value?.leave_carry_forward_day ?? fallback.leave_carry_forward_day) || 1))),
-    pay_period_start_day: Math.min(28, Math.max(1, Math.round(Number(value?.pay_period_start_day ?? fallback.pay_period_start_day) || 1))),
-    auto_create_payroll_runs: value?.auto_create_payroll_runs ?? fallback.auto_create_payroll_runs,
-    auto_update_payroll_daily: value?.auto_update_payroll_daily ?? fallback.auto_update_payroll_daily,
-    personal_income_tax_enabled: value?.personal_income_tax_enabled ?? fallback.personal_income_tax_enabled,
-    social_insurance_enabled: value?.social_insurance_enabled ?? fallback.social_insurance_enabled,
-    last_auto_payroll_sync_on: value?.last_auto_payroll_sync_on ?? fallback.last_auto_payroll_sync_on,
-    payslip_note: value?.payslip_note ?? fallback.payslip_note,
-    updated_by: value?.updated_by ?? fallback.updated_by,
-    updated_at: value?.updated_at ?? fallback.updated_at,
-  }
-}
-
-const defaultShiftForm = (settings?: StaffAttendanceSettings) => ({
-  id: '',
-  staff_profile_id: '',
-  location: settings?.location || 'VRena',
-  shift_role: 'Staff',
-  shift_date: todayString(),
-  start_time: '09:00',
-  end_time: '18:00',
-  break_minutes: String(settings?.standard_break_minutes ?? 60),
-  status: 'published' as StaffShiftStatus,
-  notes: '',
-})
-
-const defaultAttendanceLogForm = () => ({
-  id: '',
-  staff_profile_id: '',
-  shift_id: '',
-  work_date: todayString(),
-  clock_in_time: '09:00',
-  clock_out_time: '18:00',
-  break_minutes: '60',
-  status: 'present' as StaffAttendanceStatus,
-  regular_minutes: '8',
-  overtime_minutes: '0',
-  night_minutes: '0',
-  holiday_minutes: '0',
-  manager_note: '',
-})
-
-const defaultLeaveForm = () => ({
-  id: '',
-  staff_profile_id: '',
-  leave_type: 'annual' as StaffLeaveType,
-  start_date: todayString(),
-  end_date: todayString(),
-  hours: '8',
-  reason: '',
-})
-
-const defaultEmployeeForm = () => ({
-  profile_id: '',
-  employee_code: '',
-  attendance_number: '',
-  legal_name: '',
-  personal_phone: '',
-  personal_email: '',
-  national_id: '',
-  date_of_birth: '',
-  gender: '',
-  address: '',
-  department: '',
-  job_title: '',
-  employment_type: 'part_time' as StaffEmploymentType,
-  main_work_location: '',
-  payroll_location: '',
-  contract_status: 'active' as StaffContractStatus,
-  contract_type: '',
-  contract_start_date: '',
-  contract_end_date: '',
-  probation_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
-  labor_payroll_type: 'hourly' as 'hourly' | 'monthly' | 'manager',
-  probation_salary_percentage: '85',
-  probation_bonus_percentage: '100',
-  probation_start_date: '',
-  probation_end_date: '',
-  labor_start_date: '',
-  labor_end_date: '',
-  start_date: '',
-  end_date: '',
-  base_salary_vnd: '',
-  hourly_rate_vnd: '',
-  monthly_bonus_vnd: '',
-  lunch_allowance_vnd: '',
-  rest_period_hours: '',
-  overtime_rate_multiplier: '',
-  night_rate_multiplier: '',
-  holiday_rate_multiplier: '',
-  employee_contribution_rate: '',
-  employer_contribution_rate: '',
-  pit_withholding_rate: '',
-  dependents_count: '0',
-  bank_name: '',
-  bank_account_number: '',
-  tax_code: '',
-  social_insurance_number: '',
-  social_insurance_enrolled: false,
-  social_insurance_salary_vnd: '',
-  emergency_contact: '',
-  emergency_contact_name: '',
-  emergency_contact_relationship: '',
-  emergency_contact_phone: '',
-  google_drive_folder_url: '',
-  payroll_note: '',
-  profile_photo_path: '',
-  cv_document_path: '',
-  active: true,
-  kiosk_access_role: '' as '' | 'manager' | 'staff',
-  kiosk_pin_configured_at: '',
-})
-
-const defaultHrAdjustmentForm = (profileId = '', type: StaffHrAdjustmentType = 'bonus') => ({
-  id: '',
-  profile_id: profileId,
-  adjustment_type: type,
-  title: '',
-  amount_vnd: '',
-  effective_date: todayString(),
-  period_start: startOfMonth(todayString()),
-  period_end: endOfMonth(todayString()),
-  status: 'pending' as StaffHrAdjustmentStatus,
-  notes: '',
-})
-
-const defaultPayrollRunForm = () => ({
-  id: '',
-  code: `PAY-${todayString().slice(0, 7).replace('-', '')}`,
-  name: `Payroll ${todayString().slice(0, 7)}`,
-  pay_cycle: 'monthly' as StaffPayrollPayCycle,
-  period_start: startOfMonth(todayString()),
-  period_end: endOfMonth(todayString()),
-  notes: '',
-})
-
-const defaultHrSetupForm = (): Record<StaffHrSetupOptionType, string> => ({
-  department: '',
-  job_title: '',
-  location: '',
-  contract_status: '',
-  contract_type: '',
-  employment_type: '',
-  payroll_template: '',
-  allowance: '',
-  deduction: '',
-})
-
-const paymentMethods = ['cash', 'bank_transfer'] as const
-const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
-const gameTypes = ['shooting', 'escape', 'tournament', 'other'] as const
-const dayTypes = ['weekday', 'weekend', 'holiday', 'custom'] as const
-const discountTypes = ['percentage', 'fixed_amount', 'free_ticket', 'birthday', 'resident', 'group'] as const
-const loyaltyCalculationTypes = ['per_vnd_spent', 'per_booking', 'per_player', 'per_visit'] as const
-const staffCommerceTabs: StaffCommerceTab[] = ['discounts', 'vouchers', 'loyalty']
-const staffAttendanceTabs: StaffAttendanceTab[] = ['schedule', 'clock', 'timesheet', 'leave', 'settings']
-const staffHrTabs: StaffHrTab[] = ['employees', 'schedule', 'timesheet', 'payroll', 'adjustments', 'advances', 'zalo', 'settings']
-const staffShiftStatuses: StaffShiftStatus[] = ['draft', 'published', 'completed', 'cancelled']
-const staffAttendanceStatuses: StaffAttendanceStatus[] = ['present', 'late', 'absent', 'no_show', 'leave', 'holiday']
-const staffLeaveTypes: StaffLeaveType[] = ['annual', 'sick', 'unpaid', 'personal', 'public_holiday']
-const staffEmploymentTypes: StaffEmploymentType[] = ['full_time', 'part_time', 'probation_full_time', 'probation_part_time', 'contractor', 'intern']
-const staffGenderOptions: StaffGender[] = ['female', 'male', 'non_binary', 'prefer_not_to_say', 'other']
-const staffContractStatuses: StaffContractStatus[] = ['active', 'probation', 'suspended', 'ended', 'draft']
-const staffHrSetupOptionTypes: StaffHrSetupOptionType[] = ['location', 'department', 'job_title', 'contract_status', 'contract_type', 'employment_type', 'payroll_template', 'allowance', 'deduction']
-const staffHrAdjustmentTypes: StaffHrAdjustmentType[] = ['bonus', 'commission', 'allowance', 'lunch_allowance', 'deduction', 'advance', 'debt', 'debt_repayment']
-const staffHrAdjustmentStatuses: StaffHrAdjustmentStatus[] = ['draft', 'pending', 'approved', 'rejected', 'paid', 'cancelled']
-const staffPayrollStatuses: StaffPayrollStatus[] = ['draft', 'pending', 'approved', 'paid', 'cancelled']
-const staffPayrollPayCycles: StaffPayrollPayCycle[] = ['monthly', 'semi_monthly', 'weekly', 'custom']
-const assignableWebAppRoleOptions: StaffRole[] = ['owner', 'admin', 'cashier', 'viewer', 'player']
-const roleFilterOptions: Array<StaffRole | 'all'> = ['all', 'owner', 'admin', 'cashier', 'viewer', 'employee', 'player']
-const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'created_desc', 'role_desc', 'role_asc', 'email_asc']
-const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, birthday, is_seed_demo, seed_batch'
-const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
-const staffGameImageBucket = 'staff-game-images'
-const staffGameImageMaxBytes = 2 * 1024 * 1024
-const staffGameImageTypes = ['image/jpeg', 'image/png', 'image/webp']
-const staffHrDocumentBucket = 'staff-hr-documents'
-const staffProfilePhotoMaxBytes = 2 * 1024 * 1024
-const staffCvMaxBytes = 10 * 1024 * 1024
-const staffProfilePhotoTypes = ['image/jpeg', 'image/png', 'image/webp']
-const staffCvTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-
-function normalizeStaffEmploymentType(value: StaffEmploymentType | string | null | undefined): StaffEmploymentType {
-  if (value === 'probation') return 'probation_part_time'
-  return staffEmploymentTypes.includes(value as StaffEmploymentType) ? (value as StaffEmploymentType) : 'part_time'
-}
-
-const staffAudienceOptions: StaffAudience[] = [
-  'family_friendly',
-  'scary',
-  'fun',
-  'quest',
-  'teamwork',
-  'beginner_friendly',
-  'competitive',
-]
-const staffArenaOptions = [
-  { id: 'arena-1', label: 'Arena 1' },
-  { id: 'arena-2', label: 'Arena 2' },
-]
-const defaultStaffArenaIds = staffArenaOptions.map((arena) => arena.id)
-
-function normalizeStaffAudienceToken(value: string): StaffAudience | null {
-  const token = value
-    .trim()
-    .replace(/^["']|["']$/g, '')
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_')
-
-  if (!token) return null
-  if (token === 'familyfriendly' || token === 'family_friendly' || token === 'family') return 'family_friendly'
-  if (token === 'beginnerfriendly' || token === 'beginner_friendly' || token === 'beginner') return 'beginner_friendly'
-  if (token === 'scary' || token === 'hard') return 'scary'
-  if (token === 'fun' || token === 'medium') return 'fun'
-  if (token === 'quest') return 'quest'
-  if (token === 'teamwork' || token === 'team') return 'teamwork'
-  if (token === 'competitive') return 'competitive'
-  if (token === 'easy') return 'family_friendly'
-  return null
-}
-
-function normalizeStaffAudienceItems(value?: StaffAudience[] | string[] | string | null): string[] {
-  if (Array.isArray(value)) return value.map((item) => String(item))
-  if (typeof value !== 'string') return []
-
-  const trimmed = value.trim()
-  if (!trimmed) return []
-
-  try {
-    const parsed = JSON.parse(trimmed) as unknown
-    if (Array.isArray(parsed)) return parsed.map((item) => String(item))
-    if (typeof parsed === 'string') return [parsed]
-  } catch {
-    // Postgres array strings and legacy comma text are handled below.
-  }
-
-  return trimmed
-    .replace(/^\{|\}$/g, '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function normalizeStaffAudience(value?: StaffAudience[] | string[] | string | null, legacyDifficulty?: string | null): StaffAudience[] {
-  const validOptions = new Set<StaffAudience>(staffAudienceOptions)
-  const selected = normalizeStaffAudienceItems(value).reduce<StaffAudience[]>((items, item) => {
-    const audience = normalizeStaffAudienceToken(item)
-    if (audience && validOptions.has(audience) && !items.includes(audience)) items.push(audience)
-    return items
-  }, [])
-
-  if (selected.length) return selected
-
-  const legacyAudience = normalizeStaffAudienceItems(legacyDifficulty).reduce<StaffAudience[]>((items, item) => {
-    const audience = normalizeStaffAudienceToken(item)
-    if (audience && validOptions.has(audience) && !items.includes(audience)) items.push(audience)
-    return items
-  }, [])
-  if (legacyAudience.length) return legacyAudience
-
-  const legacy = (legacyDifficulty || '').toLowerCase()
-  if (legacy.includes('family')) return ['family_friendly']
-  if (legacy.includes('scary') || legacy.includes('hard')) return ['scary']
-  if (legacy.includes('beginner')) return ['beginner_friendly']
-  if (legacy.includes('quest')) return ['quest']
-  if (legacy.includes('team')) return ['teamwork']
-  if (legacy.includes('competitive')) return ['competitive']
-  if (legacy.includes('fun') || legacy.includes('medium')) return ['fun']
-  if (legacy.includes('easy')) return ['family_friendly', 'fun']
-  return []
-}
-
-function staffAudienceLabel(value?: StaffAudience[] | string[] | string | null, legacyDifficulty?: string | null, text: StaffConsoleCopy = staffConsoleText.en) {
-  const audience = normalizeStaffAudience(value, legacyDifficulty)
-  return audience.map((item) => text.audienceOptions[item]).join(', ')
-}
-
-function isMissingStaffAudienceColumnError(message: string) {
-  const normalized = message.toLowerCase()
-  return normalized.includes('audience') && (normalized.includes('schema cache') || normalized.includes('column'))
-}
-
-function normalizeGuideLanguage(value?: string | null): LanguageCode {
-  return languageOptions.includes(value as LanguageCode) ? value as LanguageCode : 'en'
-}
-
-function normalizeGuideTextMap(value?: unknown): StaffGuideTextMap {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
-    const item = (value as Record<string, unknown>)[language]
-    if (typeof item === 'string' && item.trim()) {
-      guideText[language] = item
-    }
-    return guideText
-  }, {})
-}
-
-function cleanGuideTextMap(value: StaffGuideTextMap): StaffGuideTextMap {
-  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
-    const item = value[language]?.trim()
-    if (item) guideText[language] = item
-    return guideText
-  }, {})
-}
-
-function guideTextValue(value: StaffGuideTextMap, language: LanguageCode) {
-  return value[language] || ''
-}
-
-function guideTextForEditing(value: string) {
-  return value
-    .split('|')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .join('\n')
-}
-
-function defaultGameGuideMaps(slug: string, gameType: StaffGame['game_type']) {
-  const isMiniBlockTowers = slug === 'mini-block-towers'
-  const isEscape = gameType === 'escape'
-
-  return languageOptions.reduce<{
-    guide_summary: StaffGuideTextMap
-    guide_rules: StaffGuideTextMap
-    guide_tips: StaffGuideTextMap
-  }>((guides, language) => {
-    const text = uiText[language]
-    const summary = isMiniBlockTowers
-      ? text.gameGuideBlockTowersSummary
-      : isEscape
-        ? text.gameGuideEscapeSummary
-        : text.gameGuideFpsSummary
-    const rules = isEscape
-      ? ''
-      : isMiniBlockTowers
-        ? text.gameGuideBlockTowersRules
-        : text.gameGuideFpsRules
-    const tips = isMiniBlockTowers
-      ? text.gameGuideBlockTowersTips
-      : isEscape
-        ? text.gameGuideEscapeTips
-        : text.gameGuideFpsTips
-
-    guides.guide_summary[language] = guideTextForEditing(summary)
-    if (rules.trim()) guides.guide_rules[language] = guideTextForEditing(rules)
-    guides.guide_tips[language] = guideTextForEditing(tips)
-    return guides
-  }, { guide_summary: {}, guide_rules: {}, guide_tips: {} })
-}
-
-function guideTextMapWithDefaults(value: unknown, defaults: StaffGuideTextMap) {
-  const savedGuideText = normalizeGuideTextMap(value)
-  return languageOptions.reduce<StaffGuideTextMap>((guideText, language) => {
-    guideText[language] = savedGuideText[language] || defaults[language] || ''
-    return guideText
-  }, {})
-}
-
-function parseStaffArenaIds(value?: string | null) {
-  const knownArenaIds = new Set(defaultStaffArenaIds)
-  const arenaIds = (value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item) => knownArenaIds.has(item))
-
-  return arenaIds.length ? arenaIds : defaultStaffArenaIds
-}
-
-function roleLabel(role?: string | null, email?: string | null): StaffRole {
-  const normalizedRole = role?.toLowerCase()
-  if (normalizedRole === 'employee' || normalizedRole === 'manager' || normalizedRole === 'staff') return 'employee'
-  const rank = staffRank(role, email)
-  if (rank >= 120) return 'owner'
-  if (rank >= 100) return 'admin'
-  if (normalizedRole === 'cashier') return 'cashier'
-  if (rank >= 20) return 'viewer'
-  return 'player'
-}
-
-function storedRoleValue(role?: string | null, email?: string | null): StaffRole {
-  const normalized = (role || '').toLowerCase()
-  if (isOwnerEmail(email)) return 'owner'
-  if (isAdminOnlyEmail(email) && (normalized === 'super_admin' || normalized === 'owner')) return 'admin'
-  if (normalized === 'super_admin') return 'owner'
-  if (normalized === 'manager' || normalized === 'staff') return 'employee'
-  if (normalized === 'employee') return 'employee'
-  return assignableWebAppRoleOptions.includes(normalized as StaffRole) ? normalized as StaffRole : 'player'
-}
-
-function isDemoProfile(profile: StaffProfile) {
-  const email = (profile.email || '').toLowerCase()
-  const fullName = (profile.full_name || '').toLowerCase()
-  const nickname = (profile.nickname || '').toLowerCase()
-  return Boolean(
-    profile.is_seed_demo ||
-    profile.seed_batch ||
-    email.includes('@vrena.demo') ||
-    email.includes('.demo') ||
-    email.startsWith('softlaunch-') ||
-    /^demo(\s|-|_)/.test(fullName) ||
-    /^demo(\s|-|_)/.test(nickname)
-  )
-}
-
-function staffRoleName(role: StaffRole, text: StaffConsoleCopy = staffConsoleText.en) {
-  return text.roles[role]
-}
-
-function staffRoleSortName(sort: StaffRoleSort, text: StaffConsoleCopy = staffConsoleText.en) {
-  return text.roleSorts[sort]
-}
-
-function formatVnd(value: number) {
-  return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
-}
-
-function formatVndCompact(value: number) {
-  const amount = Math.max(0, Number(value) || 0)
-  if (amount >= 1000000) {
-    const millions = amount / 1000000
-    return `${Number(millions.toFixed(millions >= 10 || Number.isInteger(millions) ? 0 : 1)).toLocaleString('vi-VN')}M`
-  }
-  if (amount >= 1000) return `${Math.round(amount / 1000).toLocaleString('vi-VN')}k`
-  return `${amount.toLocaleString('vi-VN')} đ`
-}
-
-function dongDigits(value: string | number | null | undefined) {
-  return String(value ?? '').replace(/\D/g, '')
-}
-
-function parseDong(value: string | number | null | undefined) {
-  const digits = dongDigits(value)
-  return digits ? Number(digits) : 0
-}
-
-function formatDongInput(value: string | number | null | undefined) {
-  const amount = parseDong(value)
-  return amount > 0 ? formatVnd(amount) : ''
-}
-
-function discountValueUnit(type: StaffDiscount['discount_type']): StaffDiscountValueUnit {
-  return type === 'fixed_amount' ? 'fixed_amount' : 'percentage'
-}
-
-function parsePercentInput(value: string | number | null | undefined) {
-  const rawValue = String(value ?? '').replace(/[^\d.]/g, '')
-  const amount = Number(rawValue)
-  if (!Number.isFinite(amount)) return 0
-  return Math.min(100, Math.max(0, amount))
-}
-
-function formatPercentInput(value: string | number | null | undefined) {
-  const amount = parsePercentInput(value)
-  if (amount <= 0) return ''
-  return Number.isInteger(amount) ? String(amount) : String(Number(amount.toFixed(2)))
-}
-
-function normalizePaymentSplits(splits: PaymentSplitDraft[]): PaymentSplitPayload[] {
-  return splits
-    .map((split) => ({
-      payment_method: split.payment_method,
-      amount: parseDong(split.amount),
-    }))
-    .filter((split) => split.amount > 0)
-}
-
-function paymentSplitTotal(splits: PaymentSplitPayload[]) {
-  return splits.reduce((sum, split) => sum + split.amount, 0)
-}
-
-function paymentStatusFromAmount(total: number, paidTotal: number): StaffOrder['payment_status'] {
-  if (total <= 0) return 'paid'
-  if (paidTotal <= 0) return 'unpaid'
-  return paidTotal >= total ? 'paid' : 'partially_paid'
-}
-
-function normalizeTime(value: string | null | undefined) {
-  return (value || '').slice(0, 5)
-}
-
-function staffOrderEditDraft(order: StaffOrder): StaffOrderEditDraft {
-  return {
-    orderId: order.id,
-    gameId: order.game_id || '',
-    bookingDate: order.booking_date,
-    bookingTime: normalizeTime(order.booking_time),
-    total: String(order.total),
-  }
-}
-
-function operationBookingKind(session: Pick<StaffOperationSession, 'booking_type'>) {
-  return session.booking_type === 'ticket' ? 'ticket' : 'session'
-}
-
-function operationSessionChanges(session: StaffOperationSession, patch: Partial<StaffOperationSession>) {
-  const rows: Array<[string, unknown, unknown]> = [
-    ['Name', session.name, patch.name],
-    ['Date', session.date, patch.date],
-    ['Time', normalizeTime(session.start_time), patch.start_time ? normalizeTime(patch.start_time) : undefined],
-    ['Duration', session.duration_minutes, patch.duration_minutes],
-    ['Max players', session.max_players, patch.max_players],
-    ['Arena count', session.arena_count, patch.arena_count],
-    ['Visibility', session.visibility, patch.visibility],
-    ['Status', session.status, patch.status],
-    ['Game', session.confirmed_game_id, patch.confirmed_game_id],
-  ]
-
-  return rows
-    .filter(([, , after]) => after !== undefined)
-    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
-    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
-}
-
-function orderChanges(order: StaffOrder, patch: Partial<StaffOrder>, games: StaffGame[] = []) {
-  const gameName = (gameId: string | null | undefined) => (
-    games.find((game) => game.id === gameId)?.name || gameId || ''
-  )
-  const rows: Array<[string, unknown, unknown]> = [
-    ['Payment status', order.payment_status, patch.payment_status],
-    ['Order status', order.order_status, patch.order_status],
-    ['Total', order.total, patch.total],
-    ['Game', gameName(order.game_id), patch.game_id === undefined ? undefined : gameName(patch.game_id)],
-    ['Customer name', order.customer_name, patch.customer_name],
-    ['Customer phone', order.customer_phone, patch.customer_phone],
-    ['Customer email', order.customer_email, patch.customer_email],
-    ['Date', order.booking_date, patch.booking_date],
-    ['Time', normalizeTime(order.booking_time), patch.booking_time ? normalizeTime(patch.booking_time) : undefined],
-  ]
-
-  return rows
-    .filter(([, , after]) => after !== undefined)
-    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
-    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
-}
-
-function parseStaffDuration(value: string | number | null | undefined) {
-  if (value === null || value === undefined || value === '') return null
-  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? Math.floor(value) : null
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  if (/^\d+$/.test(trimmed)) return Math.floor(Number(trimmed))
-  const parts = trimmed.split(':').map((part) => Number(part))
-  if (parts.some((part) => !Number.isFinite(part) || part < 0)) return null
-  if (parts.length === 2) return Math.floor(parts[0] * 60 + parts[1])
-  if (parts.length === 3) return Math.floor(parts[0] * 3600 + parts[1] * 60 + parts[2])
-  return null
-}
-
-function formatStaffDuration(value: number | null | undefined) {
-  const seconds = Number(value)
-  if (!Number.isFinite(seconds) || seconds <= 0) return ''
-  const wholeSeconds = Math.floor(seconds)
-  const hours = Math.floor(wholeSeconds / 3600)
-  const minutes = Math.floor((wholeSeconds % 3600) / 60)
-  const remainingSeconds = wholeSeconds % 60
-  const minuteText = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes)
-  return hours > 0
-    ? `${hours}:${minuteText}:${String(remainingSeconds).padStart(2, '0')}`
-    : `${minuteText}:${String(remainingSeconds).padStart(2, '0')}`
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || `game-${Date.now()}`
-}
-
-function safeStorageFileName(value: string) {
-  const extension = value.includes('.') ? value.split('.').pop() || '' : ''
-  const baseName = value.replace(/\.[^.]+$/, '')
-  const safeBase = baseName
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'file'
-  return extension ? `${safeBase}.${extension.toLowerCase()}` : safeBase
-}
-
-function dayTypeFor(dateValue: string): 'weekday' | 'weekend' {
-  const day = new Date(`${dateValue}T12:00:00`).getDay()
-  return day === 0 || day === 6 ? 'weekend' : 'weekday'
-}
-
-function isDateInRange(dateValue: string, from: string, until: string | null) {
-  return dateValue >= from && (!until || dateValue <= until)
-}
-
-function isTimeInRule(timeValue: string, rule: StaffPriceRule) {
-  const time = normalizeTime(timeValue)
-  const start = normalizeTime(rule.time_start)
-  const end = normalizeTime(rule.time_end)
-  return (!start || time >= start) && (!end || time < end)
-}
-
-function weekdayScopeFor(dateValue: string): StaffDiscountDayScope {
-  const day = new Date(`${dateValue}T12:00:00`).getDay()
-  return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][day] as StaffDiscountDayScope
-}
-
-function isDayInDiscountScope(dateValue: string, scope: StaffDiscountDayScope) {
-  if (scope === 'all') return true
-  const weekday = weekdayScopeFor(dateValue)
-  if (scope === 'weekday') return !['sun', 'sat'].includes(weekday)
-  if (scope === 'weekend') return ['sun', 'sat'].includes(weekday)
-  return weekday === scope
-}
-
-function isTimeInDiscount(timeValue: string, discount: Pick<StaffDiscount, 'time_start' | 'time_end'>) {
-  const time = normalizeTime(timeValue)
-  const start = normalizeTime(discount.time_start)
-  const end = normalizeTime(discount.time_end)
-  if (!start && !end) return true
-  if (!time) return false
-  if (start && end && start > end) return time >= start || time < end
-  return (!start || time >= start) && (!end || time < end)
-}
-
-function discountMatchesContext(
-  discount: StaffDiscount,
-  context: {
-    date: string
-    gameId: string | null
-    players: number
-    priceRuleId?: string | null
-    subtotal: number
-    ticketType?: StaffDiscountTicketType
-    time: string
-  },
-) {
-  if (!discount.active) return false
-  if (discount.max_uses !== null && discount.used_count >= discount.max_uses) return false
-  if (discount.game_id && discount.game_id !== context.gameId) return false
-  if (discount.price_rule_id && discount.price_rule_id !== context.priceRuleId) return false
-  if (!isDateInRange(context.date, discount.valid_from, discount.valid_until)) return false
-  if (!isDayInDiscountScope(context.date, discount.day_scope || 'all')) return false
-  if (!isTimeInDiscount(context.time, discount)) return false
-  if (discount.min_players !== null && context.players < discount.min_players) return false
-  if (discount.max_players !== null && context.players > discount.max_players) return false
-  if ((discount.min_order_total ?? 0) > 0 && context.subtotal < discount.min_order_total) return false
-  if (discount.ticket_type && discount.ticket_type !== 'all' && discount.ticket_type !== context.ticketType) return false
-  return true
-}
-
-function selectPricingRule(rules: StaffPriceRule[], gameId: string, dateValue: string, timeValue: string) {
-  const dayType = dayTypeFor(dateValue)
-  return rules
-    .filter((rule) => {
-      if (!rule.active) return false
-      if (rule.game_id && rule.game_id !== gameId) return false
-      if (!isDateInRange(dateValue, rule.valid_from, rule.valid_until)) return false
-      if (rule.day_type !== 'custom' && rule.day_type !== 'holiday' && rule.day_type !== dayType) return false
-      return isTimeInRule(timeValue, rule)
-    })
-    .sort((left, right) => {
-      if (left.game_id && !right.game_id) return -1
-      if (!left.game_id && right.game_id) return 1
-      if (left.day_type === 'custom' && right.day_type !== 'custom') return -1
-      if (left.day_type !== 'custom' && right.day_type === 'custom') return 1
-      return right.valid_from.localeCompare(left.valid_from)
-    })[0] || null
-}
-
-function calculateDiscount(discount: StaffDiscount | null, subtotal: number, unitPrice: number) {
-  if (!discount) return 0
-  let amount = 0
-  if (discount.discount_type === 'fixed_amount') amount = discount.value
-  if (discount.discount_type === 'free_ticket') amount = unitPrice
-  if (['percentage', 'birthday', 'resident', 'group'].includes(discount.discount_type)) {
-    amount = subtotal * Math.min(discount.value, 100) / 100
-  }
-
-  if (discount.max_discount_amount !== null) {
-    amount = Math.min(amount, discount.max_discount_amount)
-  }
-
-  return Math.min(subtotal, Math.max(0, Math.round(amount)))
-}
-
-function formatDiscountRuleValue(discount: Pick<StaffDiscount, 'discount_type' | 'value'>, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (discount.discount_type === 'fixed_amount') return formatVnd(discount.value)
-  if (discount.discount_type === 'free_ticket') return text.discountTypes.free_ticket
-  return `${formatPercentInput(discount.value) || '0'}%`
-}
-
-function formatDiscountRuleConditions(
-  discount: StaffDiscount,
-  gameName: string,
-  priceRuleName: string,
-  text: StaffConsoleCopy = staffConsoleText.en,
-) {
-  const conditions = [gameName, priceRuleName]
-  if (discount.min_players !== null || discount.max_players !== null) {
-    conditions.push(`${discount.min_players ?? 1}-${discount.max_players ?? text.any} ${text.labels.players}`)
-  }
-  conditions.push(text.discountDayScopes[discount.day_scope || 'all'])
-  if (discount.time_start || discount.time_end) {
-    conditions.push(`${normalizeTime(discount.time_start) || '00:00'}-${normalizeTime(discount.time_end) || '24:00'}`)
-  }
-  if (discount.ticket_type && discount.ticket_type !== 'all') {
-    conditions.push(text.discountTicketTypes[discount.ticket_type])
-  }
-  if ((discount.min_order_total ?? 0) > 0) {
-    conditions.push(`${text.labels.minimumSpend} ${formatVnd(discount.min_order_total)}`)
-  }
-  if (discount.max_discount_amount !== null) {
-    conditions.push(`${text.labels.maxDiscountAmount} ${formatVnd(discount.max_discount_amount)}`)
-  }
-  if (discount.per_customer_limit !== null) {
-    conditions.push(`${text.labels.perCustomerLimit} ${discount.per_customer_limit}`)
-  }
-  return conditions.join(' · ')
-}
-
-function calculateManualDiscount(type: BookingForm['manualDiscountType'], value: number, subtotal: number) {
-  if (!type || value <= 0) return 0
-  const amount = type === 'percentage'
-    ? subtotal * Math.min(value, 100) / 100
-    : value
-  return Math.min(subtotal, Math.max(0, Math.round(amount)))
-}
-
-function manualDiscountLabel(type: BookingForm['manualDiscountType'], value: number, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (!type || value <= 0) return ''
-  return type === 'percentage'
-    ? `${text.labels.uniqueDiscount} · ${Math.min(value, 100)}%`
-    : `${text.labels.uniqueDiscount} · ${formatVnd(value)}`
-}
-
-function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], text: StaffConsoleCopy = staffConsoleText.en) {
-  return text.loyaltyCalculation[type]
-}
-
-function customerName(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (profile.anonymous_mode) return profile.nickname || profile.anonymous_callsign || text.customerFallback
-  return profile.nickname || profile.full_name || profile.phone || profile.email || text.customerFallback
-}
-
-function staffProfileFromEmployee(employee: StaffEmployeeProfile, profilePhotoUrl = ''): StaffProfile {
-  const fullName = employee.legal_name?.trim() || employee.employee_code?.trim() || 'Employee'
-  const initials = fullName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(-2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('')
-
-  return {
-    id: employee.profile_id,
-    created_at: employee.created_at,
-    full_name: fullName,
-    email: employee.personal_email,
-    phone: employee.personal_phone,
-    avatar_url: profilePhotoUrl || null,
-    avatar_initials: initials || 'E',
-    avatar_color: employee.kiosk_access_role === 'manager' ? vrenaPalette.purple[100] : vrenaPalette.cyan[50],
-    avatar_text_color: employee.kiosk_access_role === 'manager' ? vrenaPalette.purple[700] : vrenaPalette.cyan[800],
-    role: employee.kiosk_access_role === 'manager' ? 'manager' : 'staff',
-  }
-}
-
-function deletedRecordActorLabel(record: SoftDeletedRecord) {
-  const name = record.deleted_by_name?.trim() || ''
-  const contact = record.deleted_by_email?.trim() || record.deleted_by_phone?.trim() || ''
-  if (name && contact && name !== contact) return `${name} · ${contact}`
-  return name || contact || record.deleted_by || ''
-}
-
-function normalizeStaffSearchValue(value: string | null | undefined) {
-  return (value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[đĐ]/g, 'd')
-    .toLowerCase()
-}
-
-function customerSearchText(profile: StaffProfile, text: StaffConsoleCopy = staffConsoleText.en) {
-  return normalizeStaffSearchValue([
-    customerName(profile, text),
-    profile.full_name || '',
-    profile.nickname || '',
-    profile.phone || '',
-    profile.email || '',
-  ].join(' '))
-}
-
-function StaffOperationPlayerSearch({
-  disabled,
-  onQueryChange,
-  onSelect,
-  profiles,
-  query,
-  selectedProfileId,
-  text,
-}: {
-  disabled: boolean
-  onQueryChange: (value: string) => void
-  onSelect: (profile: StaffProfile | null) => void
-  profiles: StaffProfile[]
-  query: string
-  selectedProfileId: string
-  text: StaffConsoleCopy
-}) {
-  const selectedProfile = selectedProfileId ? profiles.find((profile) => profile.id === selectedProfileId) || null : null
-  const normalizedQuery = normalizeStaffSearchValue(query.trim())
-  const suggestions = useMemo(() => {
-    if (normalizedQuery.length < 1) return []
-
-    return profiles
-      .filter((profile) => !isDemoProfile(profile) && customerSearchText(profile, text).includes(normalizedQuery))
-      .sort((left, right) => {
-        const leftName = normalizeStaffSearchValue(customerName(left, text))
-        const rightName = normalizeStaffSearchValue(customerName(right, text))
-        const leftStarts = leftName.startsWith(normalizedQuery) ? 0 : 1
-        const rightStarts = rightName.startsWith(normalizedQuery) ? 0 : 1
-        return leftStarts - rightStarts
-          || leftName.localeCompare(rightName)
-          || (left.phone || '').localeCompare(right.phone || '')
-          || (left.email || '').localeCompare(right.email || '')
-      })
-      .slice(0, 10)
-  }, [normalizedQuery, profiles, text])
-
-  return (
-    <div className="staff-operation-add-player-picker">
-      <input
-        autoComplete="off"
-        disabled={disabled}
-        onChange={(event) => {
-          const nextValue = event.target.value
-          onQueryChange(nextValue)
-          if (selectedProfile && nextValue !== customerName(selectedProfile, text)) onSelect(null)
-        }}
-        placeholder={text.labels.customerProfile}
-        type="search"
-        value={query}
-      />
-      {normalizedQuery.length >= 1 && (
-        <div className="staff-operation-player-results" role="listbox">
-          {suggestions.map((profile) => {
-            const isSelected = profile.id === selectedProfileId
-            return (
-              <button
-                aria-selected={isSelected}
-                className="staff-operation-player-result"
-                key={profile.id}
-                onClick={() => {
-                  onSelect(profile)
-                  onQueryChange(customerName(profile, text))
-                }}
-                role="option"
-                type="button"
-              >
-                <span>{customerName(profile, text)}</span>
-                <small>{[profile.phone, profile.email].filter(Boolean).join(' · ') || profile.profile_motto || text.noContact}</small>
-              </button>
-            )
-          })}
-          {suggestions.length === 0 && <p className="staff-operation-player-empty">{text.noUsersFound}</p>}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function staffRoleAvatarInitials(value: string) {
-  const cleaned = value.trim()
-  if (!cleaned || cleaned === '?') return 'PL'
-  const words = cleaned.split(/\s+/).filter(Boolean)
-  const letters = words.length > 1
-    ? words.slice(0, 2).map((word) => Array.from(word)[0] || '').join('')
-    : Array.from(cleaned).slice(0, 2).join('')
-  return letters.toUpperCase() || 'PL'
-}
-
-function shouldSkipStaffImageOptimization(source: string | null | undefined) {
-  const normalizedSource = source?.trim().toLowerCase() || ''
-  return normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:') || normalizedSource.includes('/storage/v1/object/sign/') || /\.gif($|\?)/.test(normalizedSource)
-}
-
-function StaffRoleAvatar({ profile, text }: { profile: StaffProfile; text: StaffConsoleCopy }) {
-  const [failedImageUrl, setFailedImageUrl] = useState('')
-  const name = customerName(profile, text)
-  const imageUrl = profile.anonymous_mode ? '' : profile.avatar_url?.trim() || ''
-  const shouldUseImage = Boolean(imageUrl && failedImageUrl !== imageUrl)
-  const emoji = profile.anonymous_mode ? '🎭' : profile.avatar_emoji?.trim()
-  const initials = profile.anonymous_mode || profile.avatar_initials?.trim() === '?' ? '' : profile.avatar_initials?.trim()
-  const style = {
-    background: profile.anonymous_mode ? vrenaPalette.neutral[950] : profile.avatar_color || vrenaPalette.purple[500],
-    color: profile.anonymous_mode ? vrenaPalette.white : profile.avatar_text_color || vrenaPalette.white,
-  }
-
-  return (
-    <span aria-hidden="true" className="player-avatar staff-role-avatar" style={style}>
-      {shouldUseImage ? (
-        <span
-          className="avatar-photo"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-        >
-          <NextImage
-            alt=""
-            fill
-            loading="lazy"
-            sizes="64px"
-            src={imageUrl}
-            style={{
-              objectFit: 'cover',
-              objectPosition: 'center',
-            }}
-            unoptimized={shouldSkipStaffImageOptimization(imageUrl)}
-            onError={() => setFailedImageUrl(imageUrl)}
-          />
-        </span>
-      ) : (
-        <span className={emoji ? 'avatar-emoji' : 'avatar-text'}>
-          {emoji || staffRoleAvatarInitials(initials || name)}
-        </span>
-      )}
-    </span>
-  )
-}
-
-function paymentMethodLabel(value: string, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (value === 'split') return text.split
-  if (value === 'unpaid') return text.unpaid
-  if (value === 'cash' || value === 'bank_transfer') return text.paymentMethods[value]
-  return value.replace(/_/g, ' ')
-}
-
-function paymentStatusLabel(value: StaffOrder['payment_status'], text: StaffConsoleCopy = staffConsoleText.en) {
-  if (value === 'unpaid') return text.unpaid
-  if (value === 'paid') return text.orderStatuses.paid
-  if (value === 'partially_paid') return text.orderStatuses.partially_paid
-  if (value === 'refunded') return text.orderStatuses.refunded
-  return value
-}
-
-function addMinutesToTime(value: string, minutes: number) {
-  const [hours, mins] = normalizeTime(value).split(':').map(Number)
-  const total = (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(mins) ? mins : 0) + minutes
-  const normalized = ((total % 1440) + 1440) % 1440
-  return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`
-}
-
-function ticketTypeName(value: string | null | undefined, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (value === 'birthday' || value === 'corporate' || value === 'individual') return text.ticketTypes[value]
-  return text.labels.ticketBookings
-}
-
-function sessionKindLabel(session: StaffOperationSession, text: StaffConsoleCopy = staffConsoleText.en) {
-  if (session.booking_type === 'ticket') return `${text.labels.ticketBookings} · ${ticketTypeName(session.ticket_type, text)}`
-  if (session.visibility === 'private') return text.labels.privateSession
-  return text.labels.communitySession
-}
-
-function sessionGameName(session: StaffOperationSession, games: StaffGame[], text: StaffConsoleCopy = staffConsoleText.en) {
-  const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
-  return games.find((game) => game.slug === gameId || game.id === gameId)?.name || text.gameFallback
-}
-
-function sessionStaffGame(session: StaffOperationSession, games: StaffGame[]) {
-  const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
-  return games.find((game) => game.slug === gameId || game.id === gameId) || null
-}
-
-function operationParticipantName(participant: StaffSessionParticipant, text: StaffConsoleCopy = staffConsoleText.en) {
-  return participant.display_name || text.customerFallback
-}
-
-function sessionBookedPlayers(session: StaffOperationSession, order?: StaffOrder) {
-  return Math.max(
-    Number(order?.players_count || 0),
-    Number(session.ticket_player_count || 0),
-    session.session_participants?.length || 0
-  )
-}
-
-function sessionCapacity(session: StaffOperationSession, order?: StaffOrder) {
-  return Math.max(Number(session.max_players || 0), sessionBookedPlayers(session, order))
-}
-
-function sessionCheckedInCount(session: StaffOperationSession) {
-  return (session.session_participants || []).filter((participant) => participant.checked_in).length
-}
-
-async function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>>; description?: string }>, text: StaffConsoleCopy = staffConsoleText.en) {
-  const { downloadExcelFile } = await import('../lib/staffDownloadFiles')
-  downloadExcelFile(filename, sections, text.noData)
-}
-
-function accountantFormula(formula: string, result: string | number = '', numberFormat?: 'currency' | 'decimal' | 'integer' | 'percent') {
-  return { __xlsxFormula: true, formula: formula.replace(/^=/, ''), result, numberFormat }
-}
-
-function excelColumnName(index: number) {
-  let column = ''
-  let value = index
-  while (value > 0) {
-    const remainder = (value - 1) % 26
-    column = String.fromCharCode(65 + remainder) + column
-    value = Math.floor((value - 1) / 26)
-  }
-  return column
-}
-
-async function downloadCsv(filename: string, rows: Array<Record<string, unknown>>, text: StaffConsoleCopy = staffConsoleText.en) {
-  const { downloadCsvFile } = await import('../lib/staffDownloadFiles')
-  downloadCsvFile(filename, rows, text.noData)
-}
-
-async function downloadPdf(filename: string, lines: string[], text: StaffConsoleCopy = staffConsoleText.en) {
-  const { downloadPdfFile } = await import('../lib/staffDownloadFiles')
-  downloadPdfFile(filename, lines, text.reportTitleFallback)
-}
-
-function staffReportRows(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
-  return [
-    { metric: text.labels.totalSales, value: formatVnd(report.totalSales) },
-    { metric: text.labels.totalPaid, value: formatVnd(report.totalPaid) },
-    { metric: text.unpaid, value: formatVnd(report.unpaidAmount) },
-    { metric: text.labels.cash, value: formatVnd(report.cashTotal) },
-    { metric: text.labels.bankTransfer, value: formatVnd(report.bankTransferTotal) },
-    { metric: text.labels.bookings, value: report.bookings },
-    { metric: text.labels.players, value: report.players },
-    { metric: text.labels.cancelled, value: report.cancelled },
-    { metric: text.labels.noShows, value: report.noShows },
-    { metric: text.labels.discounts, value: formatVnd(report.discounts) },
-    { metric: text.labels.bestSellingGame, value: report.bestSellingGame },
-  ]
-}
-
-function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
-  const payments = staffOrderPaymentRows(order, paymentsByOrderId)
-  if (payments.length === 0) return paymentMethodLabel(order.payment_method, text)
-  return payments
-    .map((payment) => `${paymentMethodLabel(payment.payment_method, text)} ${formatVnd(payment.amount)}`)
-    .join(' + ')
-}
-
-function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
-  return orders.map((order) => ({
-    order_number: order.order_number,
-    date: order.booking_date,
-    time: normalizeTime(order.booking_time),
-    customer: order.customer_name || order.customer_phone || order.customer_email || text.walkIn,
-    game: games.find((game) => game.id === order.game_id)?.name || '',
-    players: order.players_count,
-    subtotal: formatVnd(order.subtotal),
-    discount: formatVnd(order.discount_total),
-    total: formatVnd(order.total),
-    payment_method: orderPaymentLabel(order, paymentsByOrderId, text),
-    paid_amount: formatVnd(orderPaidAmount(order, paymentsByOrderId)),
-    payment_status: paymentStatusLabel(order.payment_status, text),
-    order_status: text.orderStatuses[order.order_status],
-  }))
-}
-
-function reportPdfLines(
-  title: string,
-  report: StaffReportSummary,
-  orders: StaffOrder[],
-  games: StaffGame[],
-  paymentsByOrderId: Map<string, StaffOrderPayment[]>,
-  text: StaffConsoleCopy = staffConsoleText.en
-) {
-  return [
-    title,
-    ...staffReportRows(report, text).map((row) => `${row.metric}: ${row.value}`),
-    '',
-    text.labels.orders,
-    ...staffOrderExportRows(orders, games, paymentsByOrderId, text).slice(0, 28).map((order) => (
-      `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.game} | ${order.total} | ${order.payment_method}`
-    )),
-  ]
-}
-
-function paymentPieItems(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
-  return [
-    { label: text.labels.cash, value: report.cashTotal },
-    { label: text.labels.bankTransfer, value: report.bankTransferTotal },
-    { label: text.unpaid, value: report.unpaidAmount },
-  ]
-}
-
-function rpcFunctionMissing(error: { code?: string; message?: string } | null | undefined) {
-  const message = error?.message?.toLowerCase() || ''
-  return error?.code === '42883'
-    || error?.code === 'PGRST202'
-    || message.includes('could not find the function')
-    || (message.includes('function') && message.includes('does not exist'))
 }
 
 export default function StaffConsole({ profile, authEmail, language, mode = 'staff', kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
@@ -2528,9 +465,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [hrAdjustmentForm, setHrAdjustmentForm] = useState(() => defaultHrAdjustmentForm())
   const [payrollRunForm, setPayrollRunForm] = useState(() => defaultPayrollRunForm())
   const [hrSetupForm, setHrSetupForm] = useState<Record<StaffHrSetupOptionType, string>>(() => defaultHrSetupForm())
-  const [hrSearch, setHrSearch] = useState('')
-  const [hrStatusFilter, setHrStatusFilter] = useState<StaffContractStatus | 'all'>('all')
-  const [hrDepartmentFilter, setHrDepartmentFilter] = useState('all')
   const [reportStart, setReportStart] = useState(todayString())
   const [reportEnd, setReportEnd] = useState(todayString())
   const [operationsDate, setOperationsDate] = useState(todayString())
@@ -2871,26 +805,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const hrLocationOptions = hrOptionsByType.get('location') || []
   const hrJobTitleOptions = hrOptionsByType.get('job_title') || []
   const hrContractTypeOptions = hrOptionsByType.get('contract_type') || []
-  const filteredHrStaffProfiles = useMemo(() => {
-    const query = normalizeStaffSearchValue(hrSearch)
-    return visibleAllStaffProfileOptions.filter((staffProfile) => {
-      const employee = employeeProfileById.get(staffProfile.id)
-      if (hrStatusFilter !== 'all' && normalizeStaffContractStatus(employee?.contract_status) !== hrStatusFilter) return false
-      if (hrDepartmentFilter !== 'all' && (employee?.department || '') !== hrDepartmentFilter) return false
-      if (!query) return true
-      return [
-        customerName(staffProfile, text),
-        staffProfile.email || '',
-        staffProfile.phone || '',
-        employee?.employee_code || '',
-        employee?.attendance_number || '',
-        employee?.legal_name || '',
-        employee?.job_title || '',
-        employee?.department || '',
-        employee?.main_work_location || '',
-      ].some((value) => normalizeStaffSearchValue(value).includes(query))
-    })
-  }, [employeeProfileById, hrDepartmentFilter, hrSearch, hrStatusFilter, text, visibleAllStaffProfileOptions])
   const payrollPeriodStart = payrollRunForm.period_start || startOfMonth(todayString())
   const payrollPeriodEnd = payrollRunForm.period_end || endOfMonth(payrollPeriodStart)
   const staffPayrollCalculations = useMemo(() => {
@@ -8297,13 +6211,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {currentTabReady && currentTab === 'hr' && (
         <StaffHrHub
           model={{
-            ButtonIconText,
-            StaffPickerField,
-            StaffRoleAvatar,
             approvePayrollRun,
             approveAttendancePeriod,
             applyShiftTemplate,
-            attendanceGridStyle,
             attendanceLogs,
             attendanceScheduleScopeOptions,
             attendanceSettings,
@@ -8316,9 +6226,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             canAccessZaloSettings,
             canManageEmployeeKioskPins,
             canManageAttendance,
-            customerName,
-            dateFromInput,
-            dongDigits,
             downloadEmployeePayslip,
             downloadPayrollExcel,
             draggingShiftId,
@@ -8338,48 +6245,28 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             employeeKioskPinSaveConfirmation,
             employeeKioskPinLoading,
             employeeKioskPinVisibleValue,
-            employeeFormForProfile,
             employeePayrollSummary,
             employeeProfileById,
-            emptyStaffPayrollCalculation,
-            filteredHrStaffProfiles,
             firstEmployeeStaffProfileId,
             firstScheduleStaffProfileId,
-            formatDongInput,
-            formatVnd,
-            formatVndCompact,
             generateEmployeeKioskPin,
             generatePayrollRun,
             handleHrDocumentUpload,
-            hoursLabel,
             hrAdjustmentForm,
             hrContractTypeOptions,
-            hrDepartmentFilter,
             hrDepartmentOptions,
             hrDocumentUploading,
             hrJobTitleOptions,
             hrLocationOptions,
             hrOptionsByType,
             hrPayrollTotals,
-            hrSearch,
             hrSettings,
             hrSetupForm,
             hrSetupOptions,
-            hrStatusFilter,
             hrTab,
             isOwnerOrAdmin,
-            isPaidLeaveForEmployee,
             canRevealEmployeeKioskPin,
-            leaveHoursInsidePeriod,
             leaveRequests,
-            normalizeHrAdjustmentStatus,
-            normalizeHrAdjustmentType,
-            normalizePayrollPayCycle,
-            normalizePayrollStatus,
-            normalizeStaffContractStatus,
-            normalizeStaffEmploymentType,
-            normalizeTime,
-            parseDong,
             payrollItems,
             payrollPeriodEnd,
             payrollPeriodStart,
@@ -8387,9 +6274,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             payrollRuns,
             periodHrAdjustments,
             profileById,
-            rangeLabel,
             resolvedLanguage,
-            roleLabel,
             costAssignments,
             reloadCostAssignments: () => loadHrData(true),
             staffCostAllocations,
@@ -8417,11 +6302,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             setAttendanceRange,
             setDraggingShiftId,
             setHrAdjustmentForm,
-            setHrDepartmentFilter,
-            setHrSearch,
             setHrSettings,
             setHrSetupForm,
-            setHrStatusFilter,
             setHrTab,
             setStatus,
             setPayrollRunForm,
@@ -8429,22 +6311,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             sharedText,
             shiftForm,
             shiftAttendanceRange,
-            shortDateLabel,
             shiftWarningsById,
-            staffContractStatuses,
-            staffCvTypes,
-            staffDateLabel,
-            staffEmploymentTypes,
-            staffGenderOptions,
-            staffHrAdjustmentStatuses,
-            staffHrAdjustmentTypes,
-            staffHrSetupOptionTypes,
-            staffHrTabs,
             staffPayrollCalculations,
-            staffPayrollPayCycles,
-            staffProfilePhotoTypes,
-            staffShiftStatuses,
-            staffRoleName,
             startShiftForCell,
             syncPayrollDraft,
             text,
@@ -8452,7 +6320,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             updateHrAdjustmentStatus,
             updateShiftStatus,
             visibleAllStaffProfileOptions,
-            visibleAttendanceShifts,
             visibleScheduleAttendanceShifts,
             visibleScheduleStaffProfileOptions,
             visibleStaffProfileOptions,

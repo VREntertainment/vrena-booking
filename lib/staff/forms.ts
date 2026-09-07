@@ -1,0 +1,122 @@
+import type { LanguageCode } from '../i18n/languages.ts'
+import { todayString } from './dates.ts'
+import { newPaymentSplit } from './payments.ts'
+import type {
+  BookingForm,
+  CustomerInviteForm,
+  StaffAudience,
+  StaffDiscount,
+  StaffDiscountDayScope,
+  StaffDiscountTicketType,
+  StaffGame,
+  StaffGuideTextMap,
+  StaffLoyaltyRule,
+  StaffPriceRule,
+} from './types.ts'
+
+export const defaultBookingForm = (): BookingForm => ({
+  guestBooking: false,
+  venueKey: 'ha-do-centrosa',
+  customerId: '',
+  customerName: '',
+  customerPhone: '',
+  customerEmail: '',
+  gameId: '',
+  date: todayString(),
+  time: '09:00',
+  players: 1,
+  arenaId: 'arena-1',
+  discountId: '',
+  manualDiscountType: '',
+  manualDiscountValue: 0,
+  paymentSplits: [newPaymentSplit('cash')],
+  orderStatus: 'confirmed',
+  invoiceRequired: false,
+  companyName: '',
+  taxCode: '',
+  invoiceEmail: '',
+  invoiceAddress: '',
+  note: '',
+})
+
+export const defaultCustomerInviteForm = (): CustomerInviteForm => ({
+  fullName: '',
+  email: '',
+  phone: '',
+  nickname: '',
+})
+
+export const defaultGameForm = () => ({
+  id: '',
+  slug: '',
+  name: '',
+  game_type: 'shooting' as StaffGame['game_type'],
+  duration_minutes: 20,
+  max_players_per_arena: 4,
+  number_of_rounds: 1,
+  escape_chapter_count: 1,
+  description: '',
+  audience: [] as StaffAudience[],
+  guide_language: 'en' as LanguageCode,
+  guide_summary: {} as StaffGuideTextMap,
+  guide_rules: {} as StaffGuideTextMap,
+  guide_tips: {} as StaffGuideTextMap,
+  image_url: '',
+  active: true,
+  available_arena_ids: 'arena-1, arena-2',
+})
+
+export const defaultPriceForm = () => ({
+  id: '',
+  rule_name: '',
+  game_id: '',
+  day_type: 'weekday' as StaffPriceRule['day_type'],
+  time_start: '09:00',
+  time_end: '18:00',
+  price_per_player: '200000',
+  price_per_arena_slot: '',
+  valid_from: todayString(),
+  valid_until: '',
+  active: true,
+})
+
+export const defaultDiscountForm = () => ({
+  id: '',
+  code: '',
+  name: '',
+  game_id: '',
+  price_rule_id: '',
+  min_players: '',
+  max_players: '',
+  day_scope: 'all' as StaffDiscountDayScope,
+  time_start: '',
+  time_end: '',
+  ticket_type: 'all' as StaffDiscountTicketType,
+  min_order_total: 0,
+  max_discount_amount: '',
+  per_customer_limit: '',
+  discount_type: 'percentage' as StaffDiscount['discount_type'],
+  value: 10,
+  valid_from: todayString(),
+  valid_until: '',
+  max_uses: '',
+  active: true,
+})
+
+export const defaultLoyaltyForm = () => ({
+  id: '',
+  rule_name: '',
+  game_id: '',
+  calculation_type: 'per_vnd_spent' as StaffLoyaltyRule['calculation_type'],
+  points_value: 1,
+  spend_amount: 100000,
+  min_order_total: 0,
+  redeem_value_vnd_per_point: 0,
+  earn_trigger: 'session_payment_confirmed' as StaffLoyaltyRule['earn_trigger'],
+  rounding_rule: 'floor_whole_points' as StaffLoyaltyRule['rounding_rule'],
+  point_expiry_days: '365',
+  valid_from: todayString(),
+  valid_until: '',
+  active: true,
+  notes: '',
+})

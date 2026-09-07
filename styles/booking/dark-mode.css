@@ -1,0 +1,287 @@
+/* Final booking-app dark-mode guard after the late player-surface refinements. */
+@media (prefers-color-scheme: dark) {
+  body:has(.app) {
+    background-color: var(--vrena-neutral-950);
+  }
+
+  .app {
+    --player-bg: var(--vrena-neutral-950);
+    --player-text: var(--vrena-neutral-50);
+    --player-surface: color-mix(in srgb, var(--vrena-neutral-900) 94%, transparent);
+    --player-surface-soft: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-surface-raised: var(--vrena-neutral-900);
+    --player-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    --player-border-strong: color-mix(in srgb, var(--vrena-purple-400) 32%, transparent);
+    --player-text-muted: var(--vrena-neutral-400);
+    --player-field-bg: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-field-bg-soft: color-mix(in srgb, var(--vrena-neutral-800) 90%, transparent);
+    --player-field-panel: var(--vrena-neutral-900);
+    --player-field-border: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    --player-field-border-strong: color-mix(in srgb, var(--vrena-white) 26%, transparent);
+    --player-field-text: var(--vrena-neutral-50);
+    --player-field-placeholder: var(--vrena-neutral-500);
+    --player-control-hover: color-mix(in srgb, var(--vrena-purple-400) 16%, transparent);
+    --player-control-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 4%, transparent);
+    --player-shadow: 0 14px 34px color-mix(in srgb, var(--vrena-neutral-950) 25%, transparent);
+    --player-shadow-soft: 0 8px 22px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+    background: var(--player-bg) !important;
+    background-color: var(--player-bg) !important;
+    color: var(--player-text);
+  }
+
+  .app main,
+  .app-route-loader {
+    background: var(--player-bg) !important;
+    background-color: var(--player-bg) !important;
+    color: var(--player-text);
+  }
+
+  .app .compact-session-card,
+  .app .ticket-service-card,
+  .app .current-rank-card,
+  .app .hall-gallery-card,
+  .app .leaderboard-row,
+  .app .profile-photo-panel,
+  .app .game-card,
+  .app .player-profile-panel,
+  .app .staff-player-card-editor,
+  .app .score-context-card,
+  .app .ticket-price-summary > div,
+  .app .ticket-confirmation-grid span,
+  .app .ticket-session-summary span {
+    background: var(--player-surface-raised) !important;
+    background-color: var(--player-surface-raised) !important;
+    border-color: var(--player-border);
+    color: var(--player-text);
+  }
+
+  .app .ticket-explainer,
+  .app .ticket-fast-path-summary,
+  .app .profile-account-form .profile-account-hero,
+  .app .profile-account-form .country-phone-field,
+  .app .profile-account-form .email-field,
+  .app .profile-account-form .name-field,
+  .app .profile-account-form .nickname-field,
+  .app .profile-account-form .birthday-field,
+  .app .profile-account-form .gender-field,
+  .app .profile-account-form .motto-field,
+  .app .profile-account-form .profile-consent-panel,
+  .app .profile-account-form .marketing-consent-field,
+  .app .profile-security-panel,
+  .app .mfa-security-card,
+  .app .mfa-enroll-panel,
+  .app .mfa-challenge-panel {
+    color: var(--player-text);
+  }
+
+  .app .section-copy,
+  .app .notes,
+  .app .field-help,
+  .app .clubs-section .club-empty-state span,
+  .app .clubs-section .club-create-copy span,
+  .app .clubs-section .club-private-note,
+  .app .clubs-section .club-card .player > span,
+  .app .clubs-section .club-card-more-members {
+    color: var(--player-text-muted);
+  }
+
+  .app .clubs-section .club-create-copy strong,
+  .app .clubs-section .club-list-group-head h3,
+  .app .clubs-section .club-empty-state strong,
+  .app .clubs-section .club-card-main h3,
+  .app .clubs-section .club-card-signal strong {
+    color: var(--player-text);
+  }
+
+  .app .profile-chip,
+  .app .contact-channel,
+  .app .sessions-section .session-retention-card {
+    background: var(--player-surface-raised) !important;
+    border-color: var(--player-border) !important;
+    color: var(--player-text) !important;
+  }
+
+  .app .contact-channel {
+    border-color: color-mix(in srgb, var(--vrena-white) 42%, transparent) !important;
+  }
+
+  .app .contact-channel:hover {
+    border-color: color-mix(in srgb, var(--vrena-white) 72%, transparent) !important;
+  }
+
+  .app .profile-chip strong,
+  .app .shop-contact strong,
+  .app .contact-channels > strong,
+  .app .contact-channel span,
+  .app .sessions-section .compact-session-title-row h3,
+  .app .sessions-section .session-retention-card-copy strong {
+    color: var(--player-text) !important;
+  }
+
+  .app .profile-chip span:not(.avatar-text):not(.avatar-emoji):not(.avatar-photo),
+  .app .hall-gallery-copy p,
+  .app .sessions-section .session-retention-card-copy span {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .tab {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .sidebar-gallery-tab {
+    color: var(--player-text-muted) !important;
+  }
+
+  .app .tab.active {
+    background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent) !important;
+    color: var(--player-text) !important;
+  }
+
+  .app .language-picker > button,
+  .app .share-button.app-share {
+    color: var(--player-text) !important;
+  }
+
+  .app .link-button,
+  .app .hall-gallery-link,
+  .app .session-tariff-link,
+  .app .tariff-payment-section a,
+  .app .ticket-account-value-note,
+  .app .ticket-game-guide-link,
+  .app .ticket-tariff-link,
+  .app .game-guide-link,
+  .app .profile-legal-panel .legal-links .link-button,
+  .app .message-translation-toggle,
+  .app .message-translation-status svg,
+  .app .guest-ticket-country-list span,
+  .app .player-name-line small {
+    color: var(--vrena-orange-300) !important;
+  }
+
+  .app .game-guide-link,
+  .app .hall-gallery-link,
+  .app .session-tariff-link,
+  .app .ticket-account-value-note,
+  .app .ticket-quick-actions .game-guide-link,
+  .app .ticket-quick-actions .session-tariff-link {
+    background: color-mix(in srgb, var(--vrena-orange-400) 12%, transparent) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 28%, transparent) !important;
+  }
+
+  .app .ticket-pill,
+  .app .ticket-session-label,
+  .app .host-pill {
+    background: color-mix(in srgb, var(--vrena-orange-400) 14%, transparent) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 24%, transparent) !important;
+    color: var(--vrena-orange-300) !important;
+  }
+
+  .app .compact-session-card-expanded,
+  .app .leaderboard-row.current-user,
+  .app .current-rank-card,
+  .app .hall-gallery-card,
+  .app .score-context-card,
+  .app .ticket-service-card.active,
+  .app .ticket-explainer,
+  .app .ticket-fast-path-summary,
+  .app .profile-account-form .profile-account-hero {
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--vrena-orange-300) 10%, transparent), color-mix(in srgb, var(--vrena-orange-600) 10%, transparent)),
+      var(--player-surface-raised) !important;
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 24%, transparent) !important;
+  }
+
+  .app input:focus,
+  .app select:focus,
+  .app textarea:focus,
+  .app .date-input-shell:focus-within,
+  .app .rich-note-editor:focus {
+    border-color: color-mix(in srgb, var(--vrena-orange-300) 50%, transparent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-orange-400) 14%, transparent) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) and (min-width: 961px) {
+  .app .tickets-section::after {
+    opacity: 0.4;
+    filter: saturate(0.9) contrast(0.9) brightness(0.68);
+    mix-blend-mode: normal;
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.82) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.56) 34%, rgb(var(--vrena-neutral-950-rgb) / 0.2) 62%, transparent 84%);
+    mask-image: radial-gradient(ellipse at 70% 50%, rgb(var(--vrena-neutral-950-rgb) / 0.82) 0%, rgb(var(--vrena-neutral-950-rgb) / 0.56) 34%, rgb(var(--vrena-neutral-950-rgb) / 0.2) 62%, transparent 84%);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .action-toast,
+  .action-toast {
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: color-mix(in srgb, var(--vrena-neutral-900) 88%, var(--vrena-orange-400));
+    color: var(--vrena-neutral-50);
+    box-shadow: 0 18px 48px color-mix(in srgb, var(--vrena-neutral-950) 46%, transparent);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (max-width: 960px) {
+  @supports selector(.app .tabs:has(.tab.active)) {
+    .app .tabs::before {
+      border-color: color-mix(in srgb, var(--vrena-orange-300) 22%, transparent);
+      background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-950) 28%, transparent);
+    }
+
+    .app .tabs .tab.active {
+      background: transparent !important;
+      color: var(--player-text) !important;
+    }
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 961px) {
+  .app .tabs .tab {
+    transition:
+      color 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .app .tabs .tab:hover,
+  .app .tabs .tab:focus-visible {
+    background: color-mix(in srgb, var(--vrena-neutral-500) 13%, transparent) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-neutral-950) 7%, transparent) !important;
+    color: var(--vrena-neutral-600) !important;
+    transform: translateY(-1px);
+  }
+
+  .app .tabs .tab.active:hover,
+  .app .tabs .tab.active:focus-visible {
+    background: color-mix(in srgb, var(--vrena-neutral-500) 18%, var(--player-surface-soft)) !important;
+    color: var(--vrena-neutral-700) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) and (hover: hover) and (pointer: fine) and (min-width: 961px) {
+  .app .tabs .tab:hover,
+  .app .tabs .tab:focus-visible {
+    background: color-mix(in srgb, var(--vrena-neutral-400) 16%, transparent) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 8%, transparent) !important;
+    color: var(--vrena-neutral-300) !important;
+  }
+
+  .app .tabs .tab.active:hover,
+  .app .tabs .tab.active:focus-visible {
+    background: color-mix(in srgb, var(--vrena-neutral-400) 16%, var(--player-surface-soft)) !important;
+    color: var(--vrena-neutral-200) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 961px) {
+  .app .tabs .tab {
+    transition: none;
+  }
+
+  .app .tabs .tab:hover,
+  .app .tabs .tab:focus-visible {
+    transform: none;
+  }
+}

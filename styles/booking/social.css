@@ -1,0 +1,1184 @@
+.app .score-line span {
+  color: var(--vrena-neutral-600);
+  font-weight: 800;
+}
+
+.app .score-line.total-line {
+  border-top: 1px solid var(--vrena-neutral-300);
+  padding-top: 4px;
+}
+
+.app .total-score-summary .score-line.total-line {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.app .score-value {
+  min-width: 58px;
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-950);
+  font: inherit;
+  font-weight: 900;
+  text-align: right;
+}
+
+.app .score-value.editable {
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-white);
+  cursor: pointer;
+}
+
+.app .score-value:disabled {
+  opacity: 1;
+}
+
+.app .inline-score-input {
+  width: 84px;
+  min-height: 34px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 4px 8px;
+  color: var(--vrena-neutral-950);
+  font: inherit;
+  font-weight: 900;
+  text-align: right;
+}
+
+.app .reminder-strip, .app .waitlist-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  background: var(--vrena-neutral-100);
+}
+
+.app .reminder-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .reminder-strip-head .small-button {
+  width: auto;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.app .reminder-strip > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  text-align: left;
+}
+
+.app .reminder-strip small {
+  color: var(--vrena-neutral-600);
+  font-weight: 700;
+}
+
+.app .push-reminder-status {
+  display: block;
+}
+
+@media (max-width: 520px) {
+  .app .reminder-strip-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.app .waitlist-position {
+  margin: 0;
+}
+
+.app .network-panel, .app .session-comms {
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+}
+
+.app .invite-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.app .invite-chip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 132px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  text-align: left;
+}
+
+.app .invite-chip small {
+  grid-column: 2;
+  color: var(--vrena-purple-500);
+  font-weight: 800;
+}
+
+.app .network-head {
+  align-items: center;
+}
+
+.app .network-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.app .session-network-share,
+.app .session-invite-share {
+  width: 36px;
+  height: 36px;
+}
+
+.app .session-network-share .share-symbol-icon,
+.app .session-invite-share .share-symbol-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.app .session-invite-modal {
+  width: min(520px, 100%);
+  max-height: min(680px, calc(100vh - 36px));
+  overflow: hidden;
+}
+
+.app .session-invite-modal-head {
+  padding-right: 34px;
+}
+
+.app .session-invite-modal-head h3 {
+  margin: 0;
+}
+
+.app .session-invite-modal-head p {
+  margin: 4px 0 0;
+}
+
+.app .session-invite-share {
+  margin: 4px 0 8px;
+}
+
+.app .invite-search-results {
+  display: grid;
+  gap: 7px;
+  max-height: min(390px, 52vh);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.app .invite-result-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.app .invite-result-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.app .invite-result-copy strong,
+.app .invite-result-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .invite-result-copy small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.app .invite-result-row > small {
+  color: var(--vrena-purple-500);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .message-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.app .club-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.app .club-message-channels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app .club-message-channel {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+  border: 1px solid var(--vrena-neutral-200);
+  border-radius: 8px;
+  background: var(--vrena-white);
+}
+
+.app .message-channel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .message-channel-head small,
+.app .character-count {
+  color: var(--vrena-neutral-600);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.app .club-message-compose {
+  align-items: stretch;
+}
+
+.app .club-message-compose textarea {
+  min-height: 58px;
+  resize: vertical;
+}
+
+.app .club-message-send-button {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  min-width: 56px;
+  padding: 0;
+}
+
+.app .character-count {
+  justify-self: end;
+}
+
+.app .character-count.over-limit {
+  color: var(--vrena-red-700);
+}
+
+.app .club-message-list {
+  max-height: 170px;
+}
+
+.app .message-list {
+  display: grid;
+  gap: 6px;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.app .load-earlier-messages {
+  justify-self: start;
+}
+
+.app .message-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app .message-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--vrena-neutral-300);
+}
+
+.app .message-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app .session-message {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  padding: 7px;
+  border: 1px solid var(--vrena-neutral-200);
+  border-radius: 8px;
+  background: var(--vrena-white);
+}
+
+.app .session-message.announcement {
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
+}
+
+.app .session-message.own-message {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-left: clamp(18px, 8vw, 72px);
+  border-color: var(--vrena-neutral-300);
+  background: var(--vrena-neutral-50);
+}
+
+.app .session-message.announcement.own-message {
+  border-color: var(--vrena-purple-200);
+  background: var(--vrena-purple-50);
+}
+
+.app .session-message.own-message .message-avatar {
+  grid-column: 2;
+}
+
+.app .session-message .message-body {
+  min-width: 0;
+}
+
+.app .session-message.own-message .message-body {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.app .session-message p {
+  margin: 2px 0 0;
+  color: var(--vrena-neutral-700);
+}
+
+.app .message-translation-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.app .message-translation-row.loading {
+  opacity: 0.7;
+}
+
+.app .message-translation-status,
+.app .message-translation-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app .message-translation-status svg {
+  color: var(--vrena-accent-text);
+  flex: 0 0 auto;
+}
+
+.app .message-translation-toggle {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--vrena-accent-text);
+  padding: 0;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.app .message-translation-toggle:hover,
+.app .message-translation-toggle:focus-visible {
+  color: var(--vrena-purple-700);
+  text-decoration: underline;
+}
+
+.app .session-message.own-message p {
+  text-align: right;
+}
+
+.app .session-message.own-message .message-translation-row {
+  justify-content: flex-end;
+}
+
+.app .message-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app .session-message.own-message .message-meta-row {
+  justify-content: flex-end;
+}
+
+.app .moderation-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.app .moderation-badge.pending {
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-800);
+}
+
+.app .moderation-badge.rejected {
+  background: var(--vrena-red-100);
+  color: var(--vrena-orange-800);
+}
+
+.app .moderation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.app .follow-button {
+  margin-top: 8px;
+}
+
+.app .club-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: end center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 34%, transparent);
+}
+
+.app .club-drawer {
+  width: min(860px, 100%);
+  max-height: min(78vh, 760px);
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 14px 14px 8px 8px;
+  background: var(--vrena-white);
+  padding: 16px;
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--vrena-neutral-900) 22%, transparent);
+  animation: drawerUp 180ms ease-out;
+}
+
+.app .club-page {
+  gap: 12px;
+  width: min(980px, 100%);
+}
+
+.app .club-hero {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, var(--club-theme-soft, color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent)), color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent)),
+    var(--vrena-neutral-100);
+}
+
+.app .club-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app .club-hero.has-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--vrena-neutral-950) 76%, transparent), color-mix(in srgb, var(--vrena-neutral-950) 20%, transparent));
+}
+
+.app .club-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 156px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.app .club-hero.has-banner .club-hero-content,
+.app .club-hero.has-banner .club-hero-content .row-meta span,
+.app .club-hero.has-banner .club-motto {
+  color: var(--vrena-white);
+}
+
+.app .club-banner-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  padding: 16px;
+  text-align: center;
+  color: var(--vrena-neutral-600);
+}
+
+.app .club-banner-empty strong {
+  color: var(--vrena-neutral-950);
+  font-size: 18px;
+}
+
+.app .club-banner-empty span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .club-motto {
+  color: var(--club-theme, var(--vrena-mode-accent));
+  font-weight: 900;
+}
+
+.app .club-description {
+  border-left: 3px solid var(--club-theme, var(--vrena-mode-accent));
+  padding-left: 10px;
+}
+
+.app .club-invite-box,
+.app .club-member-row {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 10px;
+  background: var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent));
+}
+
+.app .club-invite-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.app .club-invite-box span {
+  color: var(--vrena-neutral-600);
+  font-weight: 800;
+}
+
+.app .club-invite-box strong {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+
+.app .club-page-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.app .club-tab-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.app .club-hall-panel .leaderboard-section {
+  box-shadow: none;
+}
+
+.app .club-hall-panel .compact-leaderboard-head,
+.app .club-tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.app .club-member-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .club-member-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(132px, auto) auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+}
+
+.app .club-member-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app .club-member-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .club-settings-grid textarea {
+  min-height: 82px;
+}
+
+.app .club-banner-field {
+  display: grid;
+  gap: 7px;
+}
+
+.app .club-banner-upload {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  overflow: hidden;
+  border: 1px dashed color-mix(in srgb, var(--vrena-cyan-700) 34%, transparent);
+  border-radius: 10px;
+  background: var(--club-theme-faint, color-mix(in srgb, var(--vrena-cyan-700) 7%, transparent));
+  color: var(--vrena-neutral-600);
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .club-banner-upload img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.app .club-banner-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.app .compact-segmented {
+  width: fit-content;
+}
+
+.app .drawer-handle {
+  justify-self: center;
+  width: 46px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+}
+
+.app .drawer-block {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 12px;
+}
+
+.app .club-action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app .club-action-row .create-button {
+  width: auto;
+  min-width: min(220px, 100%);
+  margin-top: 0;
+}
+
+.app .club-action-row .club-leave-button {
+  background: color-mix(in srgb, var(--vrena-red-700) 8%, transparent);
+  color: var(--vrena-red-700);
+  border-color: color-mix(in srgb, var(--vrena-red-700) 24%, transparent);
+}
+
+.app .drawer-days {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.app .club-session-preview {
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 8px;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.app .club-session-preview:hover {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--vrena-neutral-900) 8%, transparent);
+  transform: translateY(-1px);
+}
+
+.app .club-session-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+}
+
+.app .club-session-actions {
+  align-self: center;
+}
+
+@keyframes drawerUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.app .modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 4%, transparent);
+  color: var(--vrena-neutral-600);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.app .modal-close:hover {
+  background: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  color: var(--vrena-neutral-950);
+}
+
+.app .modal-close:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 34%, transparent);
+  outline-offset: 2px;
+}
+
+.app .modal-close svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.app .list {
+  display: grid;
+  gap: 10px;
+}
+
+.app .session {
+  display: grid;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--vrena-white);
+  transform-origin: top center;
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 260ms cubic-bezier(0.18, 0.82, 0.24, 1);
+}
+
+@supports (content-visibility: auto) {
+  .app .list > .session, .app .mini-session-list > .mini-session, .app .club-list > .club-card, .app .message-list > .session-message, .app .club-session-preview {
+    content-visibility: auto;
+    contain-intrinsic-size: 160px;
+  }
+
+  .app .list > .session {
+    contain-intrinsic-size: 180px;
+  }
+
+  .app .list > .expanded-session {
+    contain-intrinsic-size: 760px;
+  }
+
+  .app .mini-session-list > .mini-session {
+    contain-intrinsic-size: 96px;
+  }
+
+  .app .club-list > .club-card {
+    contain-intrinsic-size: 260px;
+  }
+
+  .app .message-list > .session-message {
+    contain-intrinsic-size: 72px;
+  }
+}
+
+.app .session:last-child {
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+}
+
+.app .expanded-session {
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--vrena-neutral-900) 8%, transparent);
+  animation: sessionShellBloom 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
+}
+
+.app .sub-tabs {
+  display: inline-flex;
+  width: fit-content;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 999px;
+  background: var(--vrena-white);
+}
+
+.app .sub-tabs button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--vrena-neutral-950);
+  font-weight: 800;
+}
+
+.app .sub-tabs button.active {
+  background: var(--vrena-neutral-950);
+  color: var(--vrena-white);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-900) 14%, transparent);
+}
+
+.app .sub-tabs.club-page-tabs {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 8px;
+}
+
+.app .session-tariff-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin: 10px 0 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-bg-soft);
+  color: var(--vrena-accent-text);
+  padding: 8px 11px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.app .tariff-payment-modal {
+  width: min(560px, 100%);
+  max-height: min(82vh, 680px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.app .tariff-payment-modal h3 {
+  margin: 0;
+  padding: 20px 56px 4px 20px;
+}
+
+.app .tariff-payment-scroll {
+  display: grid;
+  gap: 12px;
+  max-height: calc(min(82vh, 680px) - 64px);
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  overscroll-behavior: contain;
+}
+
+.app .tariff-payment-section {
+  display: grid;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-bg-soft);
+  padding: 12px;
+}
+
+.app .tariff-payment-section p,
+.app .tariff-payment-disclaimer p {
+  margin: 0;
+  color: var(--vrena-neutral-600);
+  line-height: 1.45;
+}
+
+.app .tariff-payment-section h4 {
+  margin: 0;
+  color: var(--vrena-neutral-950);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.app .tariff-payment-section a {
+  color: var(--vrena-accent-text);
+  font-weight: 900;
+}
+
+.app .tariff-payment-disclaimer {
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  padding-top: 12px;
+}
+
+.app .tariff-payment-disclaimer p {
+  font-size: 0.9em;
+  font-style: italic;
+  line-height: 1.38;
+}
+
+.app .compact-session-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 8px;
+  touch-action: manipulation;
+  max-height: 220px;
+  opacity: 1;
+  overflow: hidden;
+  transform: translateY(0) scale(1);
+  transition:
+    max-height 280ms cubic-bezier(0.18, 0.82, 0.24, 1),
+    opacity 180ms ease,
+    transform 280ms cubic-bezier(0.18, 0.82, 0.24, 1),
+    margin 280ms cubic-bezier(0.18, 0.82, 0.24, 1);
+}
+
+.app .compact-session-card-hidden {
+  max-height: 0;
+  margin: -6px 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.975);
+}
+
+.app .compact-session-card-expanded {
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+}
+
+.app .compact-session-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--vrena-cyan-700) 35%, transparent);
+  outline-offset: 4px;
+}
+
+.app .session-highlighted .compact-session-card {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 62%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent),
+    0 18px 42px color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
+  animation: sessionTargetPulse 1400ms ease-in-out 2;
+}
+
+@keyframes sessionTargetPulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 960px) {
+  .app .profile-security-panel .account-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app .action-toast,
+  .action-toast {
+    animation: none;
+  }
+
+  .app .session-highlighted .compact-session-card {
+    animation: none;
+  }
+
+  .app .calendar-session-popover {
+    transition: none;
+  }
+
+  @supports selector(.app .tabs:has(.tab.active)) {
+    .app .tabs::before {
+      transition: none;
+    }
+  }
+}
+
+.app .compact-session-image {
+  width: 58px;
+  height: 58px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--vrena-neutral-950);
+}
+
+.app .compact-session-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .compact-session-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app .compact-session-title-row h3 {
+  min-width: 0;
+  margin: 0;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+  font-size: 18px;
+}
+
+.app .compact-meta {
+  gap: 5px;
+}
+
+.app .soft-opening-pill {
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-900);
+}
+
+.app .ticket-pill, .app .ticket-session-label {
+  background: var(--vrena-cyan-50);
+  color: var(--vrena-cyan-800);
+}
+
+.app .challenge-pill, .app .challenge-session-label {
+  background: var(--vrena-yellow-100);
+  color: var(--vrena-yellow-900);
+}
+
+.app .ticket-session-label, .app .challenge-session-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--vrena-cyan-800) 16%, transparent);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.app .tickets-section {
+  display: grid;
+  gap: 12px;
+}
+
+.app .ticket-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.app .ticket-quick-actions .game-guide-link,
+.app .ticket-quick-actions .session-tariff-link {
+  width: auto;
+  min-height: 38px;
+  margin: 0;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.app .ticket-explainer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
+}
+
+.app .ticket-explainer strong {
+  color: var(--vrena-neutral-950);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.app .ticket-explainer span {
+  flex: 1 1 360px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+.app .ticket-game-guide-link {
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.app .ticket-tariff-link {
+  width: 100%;
+  min-height: 38px;
+  margin: 0;
+  justify-content: flex-start;
+  padding: 8px 11px;
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vrena-neutral-100) 78%, transparent);
+  color: var(--vrena-accent-text);
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.app .guest-ticket-modal {
+  width: min(460px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 48px 18px 18px;
+}

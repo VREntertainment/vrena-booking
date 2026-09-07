@@ -1,0 +1,110 @@
+/* Dated employee cost assignments and payroll attribution. */
+.app .staff-cost-assignments { min-width: 0; width: 100%; padding: 20px 0; border-top: 1px solid var(--staff-modern-border); }
+.app .staff-cost-assignments h3, .app .staff-cost-assignments h4 { margin: 0 0 8px; }
+.app .staff-cost-assignments p { margin: 8px 0; line-height: 1.5; }
+.app .staff-cost-assignment-list { list-style: none; padding: 0; }
+.app .staff-cost-assignment-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--staff-modern-border); }
+.app .staff-cost-assignment-list p { margin: 4px 0; overflow-wrap: anywhere; }
+.app .staff-cost-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.app .staff-cost-totals > div { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--staff-modern-border); border-radius: 12px; }
+.app .staff-cost-totals strong { font-size: 20px; overflow-wrap: anywhere; }
+.app .staff-cost-table-scroll { max-width: 100%; overflow-x: auto; margin-top: 16px; }
+.app .staff-cost-table-scroll table { width: 100%; min-width: 600px; border-collapse: collapse; }
+.app .staff-cost-table-scroll th, .app .staff-cost-table-scroll td { text-align: left; padding: 10px; border-bottom: 1px solid var(--staff-modern-border); }
+
+/* Keep the operating queue ahead of optional financial detail on mobile. */
+.app .staff-operations-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.app .staff-operations-money {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--vrena-line-warm);
+  border-radius: 12px;
+  background: var(--vrena-surface);
+}
+
+.app .staff-operations-money > summary {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app .staff-operations-money > summary span {
+  display: block;
+  margin-top: 3px;
+  color: var(--vrena-accent-text);
+}
+
+.app .staff-operations-money-grid {
+  margin-top: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app .staff-operations-money > p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app .staff-operation-reconcile {
+  color: var(--vrena-status-warning-ink);
+}
+
+@media (max-width: 720px) {
+  .app .staff-operations-summary,
+  .app .staff-operations-money-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .app .staff-operations-summary > div {
+    min-height: 0;
+    padding: 8px 10px;
+  }
+
+  .app .staff-operations-summary strong {
+    font-size: 20px;
+  }
+}
+
+/* Keep visit progress and the explicit save action readable at every staff viewport. */
+.app .staff-visit-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.app .staff-visit-checklist > strong { flex-basis: 100%; }
+.app .staff-visit-editor fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.app .staff-visit-editor button[type="submit"] { margin-top: 12px; }
+.app .staff-visit-editor label { min-width: 0; }
+.app .staff-orders-filters { align-items: end; margin-bottom: 12px; }
+.app .staff-orders-filters input[type="date"] { min-width: 0; }
+
+.app .staff-price-lines > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  line-height: 1.4;
+}
+.app .staff-price-lines > span { min-width: 0; line-height: 1.4; }
+.app .staff-customer-name-field.full { grid-column: 1 / -1; }
+.app .staff-grid > .staff-card,
+.app .staff-readonly-fieldset .compact-form-grid,
+.app .staff-readonly-fieldset .compact-form-grid > * { min-width: 0; }
+
+@media (max-width: 600px) {
+  .app .staff-readonly-fieldset .compact-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .app .staff-payment-split-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .staff-payment-split-row > button { grid-column: 1 / -1; justify-self: end; }
+  .app .staff-payment-split-row > input,
+  .app .staff-payment-split-row > select { min-width: 0; }
+}
