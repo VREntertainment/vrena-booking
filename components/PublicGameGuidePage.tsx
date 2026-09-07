@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import DocumentLanguage from './DocumentLanguage'
+import GameGuideCategory from './GameGuideCategory'
 import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import Link from 'next/link'
 import type { TranslationMap } from '../lib/i18n/base'
@@ -98,7 +99,7 @@ export default function PublicGameGuidePage({
                   <div className="game-guide-card-head">
                     <div>
                       <h2>{game.title}</h2>
-                      <span>{game.category}</span>
+                      <GameGuideCategory gameId={game.id} category={game.category} />
                     </div>
                     <div className="game-guide-facts">
                       <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
