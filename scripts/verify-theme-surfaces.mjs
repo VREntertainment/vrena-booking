@@ -1,11 +1,11 @@
 import { chromium } from '@playwright/test'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readStylesheet } from './read-stylesheet.mjs'
 
 const root = new URL('..', import.meta.url)
-const tokensCss = await readFile(new URL('styles/vrena-tokens.css', root), 'utf8')
-const globalsCss = await readFile(new URL('app/globals.css', root), 'utf8')
-const css = `${tokensCss}\n${globalsCss.replace(/^@import .*$/gm, '')}`
+const css = await readStylesheet(fileURLToPath(new URL('app/globals.css', root)))
 const outputDir = process.env.THEME_AUDIT_OUTPUT_DIR || '/tmp/vrena-theme-audit'
 const baseUrl = process.env.THEME_AUDIT_BASE_URL || ''
 

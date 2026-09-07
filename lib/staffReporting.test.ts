@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { addDays } from './staff/dates.ts'
 import { buildDailySeries, buildStaffReport, mergeOrderPayments, orderPaidAmount, paymentMapFromRows, staffReportSnapshotFromRpc } from './staff/reporting.ts'
 import type { StaffOrder, StaffOrderPayment } from './staff/types'
+import { staffOrderExportRows } from './staff/reportExports.ts'
+import { staffConsoleText } from './staff/copy.ts'
 
 function order(overrides: Partial<StaffOrder> = {}): StaffOrder {
   return {
@@ -19,6 +21,20 @@ function order(overrides: Partial<StaffOrder> = {}): StaffOrder {
 function payment(id: string, amount: number, method: StaffOrderPayment['payment_method'], orderId = 'order-1'): StaffOrderPayment {
   return { id, order_id: orderId, amount, payment_method: method, created_by: null, created_at: '' }
 }
+
+test('English and Vietnamese report exports preserve recorded split payments and customer fallbacks', () => {
+  const payments = paymentMapFromRows([payment('cash', 100000, 'cash'), payment('bank', 200000, 'bank_transfer')])
+  for (const text of [staffConsoleText.en, staffConsoleText.vi]) {
+    const [row] = staffOrderExportRows([order({ customer_phone: '0900000000' })], [], payments, text)
+    assert.equal(row.customer, '0900000000')
+    assert.equal(row.game, '')
+    assert.match(row.paid_amount, /300\.000/)
+    assert.match(row.total, /440\.000/)
+    assert.ok(row.payment_method.includes(text.paymentMethods.cash))
+    assert.ok(row.payment_method.includes(text.paymentMethods.bank_transfer))
+    assert.match(row.payment_method, /100\.000.*\+.*200\.000/)
+  }
+})
 
 test('report totals preserve split payments and remaining balances after extraction', () => {
   const payments = paymentMapFromRows([payment('cash', 100000, 'cash'), payment('bank', 200000, 'bank_transfer')])

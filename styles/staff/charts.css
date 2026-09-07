@@ -1,0 +1,846 @@
+.app .staff-checkbox-row span {
+  min-width: max-content;
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+}
+
+.app .staff-employee-active-row {
+  align-self: start;
+  width: max-content;
+}
+
+.app .staff-attendance-settings {
+  max-width: 980px;
+}
+
+.app .staff-standard-shifts {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  overflow: visible;
+  position: relative;
+}
+
+.app .staff-standard-shifts > strong {
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+}
+
+.app .staff-standard-shift-row {
+  align-items: end;
+  background: var(--vrena-neutral-50);
+  border: 1px solid var(--vrena-neutral-300);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(92px, 0.75fr) repeat(3, minmax(110px, 1fr));
+  padding: 8px;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.app .staff-standard-shift-row:focus-within {
+  z-index: 100;
+}
+
+.app .staff-standard-shift-row > strong {
+  align-self: center;
+  color: var(--vrena-neutral-950);
+  font-size: 13px;
+}
+
+.app .staff-attendance-table td,
+.app .staff-attendance-table th {
+  white-space: nowrap;
+}
+
+.app .staff-report-graphics {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.app .staff-report-revenue-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.62fr) minmax(360px, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .staff-report-sales-graph {
+  grid-row: span 2;
+}
+
+.app .staff-report-graph {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 10px;
+}
+
+.app .staff-report-graph-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: start;
+}
+
+.app .staff-report-graph-actions {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.app .staff-chart-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 999px;
+  background: var(--vrena-neutral-100);
+}
+
+.app .staff-chart-mode button {
+  border-radius: 999px;
+  background: transparent;
+  color: var(--vrena-neutral-600);
+  border-color: transparent;
+}
+
+.app .staff-report-graph-head h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.app .staff-report-graph-head span,
+.app .staff-comparison-list small,
+.app .staff-report-bar-group small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-report-compare-label {
+  border-radius: 999px;
+  background: var(--vrena-surface-warm);
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.app .staff-report-bars {
+  min-height: 190px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(62px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.app .staff-report-bar-group {
+  display: grid;
+  grid-template-rows: 130px auto auto;
+  gap: 5px;
+  min-width: 62px;
+  text-align: center;
+}
+
+.app .staff-report-bar-track {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 4px;
+  min-height: 130px;
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  padding: 6px;
+}
+
+.app .staff-report-bar {
+  width: 16px;
+  min-height: 4px;
+  border-radius: 999px 999px 4px 4px;
+  animation: staffBarRise 520ms ease both;
+  transform-origin: bottom;
+  transition: height 180ms ease;
+}
+
+.app .staff-report-bar.current {
+  background: var(--vrena-progress-gradient);
+}
+
+.app .staff-report-bar.compare {
+  background: var(--vrena-neutral-400);
+}
+
+.app .staff-weekday-bars {
+  min-height: 220px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  gap: 8px;
+  align-items: end;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.app .staff-weekday-bar-group {
+  display: grid;
+  grid-template-rows: 150px auto auto;
+  gap: 5px;
+  min-width: 44px;
+  text-align: center;
+}
+
+.app .staff-weekday-bar-track {
+  display: grid;
+  align-items: end;
+  min-height: 150px;
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  padding: 6px 4px;
+}
+
+.app .staff-weekday-bar-pair {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.app .staff-weekday-bar {
+  width: 18px;
+  min-height: 4px;
+  border-radius: 999px 999px 4px 4px;
+  animation: staffBarRise 520ms ease both;
+  transform-origin: bottom;
+  transition: height 180ms ease;
+}
+
+.app .staff-weekday-bar.current {
+  background: linear-gradient(180deg, var(--vrena-blue-700), var(--vrena-blue-700));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+}
+
+.app .staff-weekday-bar.compare {
+  background: var(--vrena-orange-500);
+  opacity: 0.78;
+}
+
+.app .staff-weekday-bar-group strong {
+  font-size: 12px;
+}
+
+.app .staff-weekday-bar-group small {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-comparison-list,
+.app .staff-payment-mix {
+  display: grid;
+  gap: 7px;
+}
+
+.app .staff-comparison-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.app .staff-comparison-list small {
+  grid-column: 2;
+}
+
+.app .staff-payment-row {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-payment-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .staff-payment-track {
+  overflow: hidden;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--vrena-surface-warm);
+}
+
+.app .staff-payment-track span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--vrena-progress-gradient);
+  transition: width 180ms ease;
+}
+
+.app .staff-report-curve-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-report-curve {
+  width: 100%;
+  min-height: 190px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--vrena-neutral-100), var(--vrena-surface-warm));
+}
+
+.app .staff-report-curve-fill {
+  fill: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
+}
+
+.app .staff-report-curve-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: staffCurveDraw 780ms ease forwards;
+}
+
+.app .staff-report-curve-line.current {
+  stroke: url(#staffReportCurveGradient);
+}
+
+.app .staff-report-curve-line.compare {
+  stroke: var(--vrena-neutral-400);
+  stroke-width: 3;
+}
+
+.app .staff-report-curve-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-report-curve-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app .staff-report-curve-legend i {
+  width: 16px;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.app .staff-report-curve-legend i.current {
+  background: var(--vrena-progress-gradient);
+}
+
+.app .staff-report-curve-legend i.compare {
+  background: var(--vrena-neutral-400);
+}
+
+.app .staff-report-curve-legend i.hourly-compare {
+  background: var(--vrena-orange-500);
+}
+
+.app .staff-hourly-chart-wrap {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app .staff-hourly-chart {
+  width: 100%;
+  min-height: 230px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--vrena-neutral-100), var(--vrena-surface-warm));
+  overflow: visible;
+}
+
+.app .staff-hourly-grid {
+  stroke: color-mix(in srgb, var(--vrena-neutral-950) 13%, transparent);
+  stroke-width: 0.45;
+}
+
+.app .staff-hourly-grid-label {
+  fill: var(--vrena-neutral-600);
+  font-size: 3px;
+  font-weight: 800;
+}
+
+.app .staff-hourly-area {
+  opacity: 0.72;
+}
+
+.app .staff-hourly-area.current {
+  fill: url(#staffHourlyCurrentArea);
+}
+
+.app .staff-hourly-area.compare {
+  fill: url(#staffHourlyCompareArea);
+}
+
+.app .staff-hourly-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: staffCurveDraw 780ms ease forwards;
+}
+
+.app .staff-hourly-line.current {
+  stroke: var(--vrena-blue-700);
+}
+
+.app .staff-hourly-line.compare {
+  stroke: var(--vrena-orange-500);
+  stroke-width: 2.6;
+}
+
+.app .staff-hourly-axis {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app .staff-hourly-axis span:last-child {
+  text-align: right;
+}
+
+.app .staff-report-pie-wrap {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.55fr) minmax(180px, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.app .staff-report-pie {
+  width: min(100%, 184px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-inline: auto;
+  box-shadow: inset 0 0 0 18px color-mix(in srgb, var(--vrena-white) 68%, transparent);
+  animation: staffPieSpin 640ms ease both;
+}
+
+.app .staff-report-pie span {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: inherit;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .staff-player-card-editor {
+  display: grid;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-bg-soft);
+  padding: 12px;
+}
+
+.app .staff-player-card-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app .staff-player-card-editor-head strong,
+.app .staff-player-card-editor-head span {
+  display: block;
+}
+
+.app .staff-player-card-editor-head strong {
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.app .staff-player-card-editor-head span {
+  margin-top: 3px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-player-card-editor-head svg {
+  flex: 0 0 auto;
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-player-card-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-player-card-editor-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-player-card-editor-grid label > span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-player-card-editor-grid input,
+.app .staff-player-card-editor-grid select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.app .staff-player-card-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app .staff-player-card-editor-actions button {
+  min-height: 40px;
+}
+
+.app .staff-player-card-editor-actions > span {
+  min-width: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 960px) {
+  .app .staff-mode-backdrop {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: color-mix(in srgb, var(--vrena-neutral-950) 42%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .app .staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-role-row,
+  .app .staff-restore-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-role-primary-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(108px, max-content);
+  }
+
+  .app .staff-role-delete-button {
+    min-width: 108px;
+    padding-inline: 10px;
+  }
+
+  .app .staff-role-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-customer-invite-copy,
+  .app .staff-customer-invite-form,
+  .app .staff-customer-phone-account-setup,
+  .app .staff-achievement-award-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-customer-temporary-access {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-customer-temporary-access > button {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .app .staff-card .staff-customer-invite-form > button.primary {
+    justify-self: stretch;
+  }
+
+  .app .staff-profile-combobox {
+    max-width: none;
+  }
+
+  .app .staff-profile-selector-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .app .staff-achievement-editor-toolbar {
+    padding: 10px;
+  }
+
+  .app .staff-achievement-award-actions {
+    justify-content: stretch;
+  }
+
+  .app .staff-achievement-award-actions button {
+    flex: 1 1 160px;
+  }
+
+  .app .staff-summary-card {
+    position: static;
+  }
+
+  .app .staff-report-head {
+    display: grid;
+  }
+
+  .app .staff-report-filters {
+    justify-items: stretch;
+  }
+
+  .app .staff-report-filter-row,
+  .app .staff-report-compare-row {
+    justify-content: flex-start;
+  }
+
+  .app .staff-report-date-actions,
+  .app .staff-report-compare-actions,
+  .app .staff-report-export-actions {
+    width: 100%;
+  }
+
+  .app .staff-report-date-actions,
+  .app .staff-report-compare-actions {
+    justify-content: flex-start;
+  }
+
+  .app .staff-report-export-actions {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .app .staff-report-export-actions > button {
+    flex: 1 1 118px;
+  }
+
+  .app .staff-report-range-button {
+    flex: 1 1 210px;
+  }
+
+  .app .staff-accountant-export {
+    width: 100%;
+  }
+
+  .app .staff-accountant-export > button {
+    width: 100%;
+  }
+
+  .app .staff-accountant-export-panel {
+    position: static;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app .staff-accountant-export-grid,
+  .app .staff-accountant-report-list {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-filter-row input,
+  .app .staff-report-compare-row input,
+  .app .staff-report-filter-row .staff-picker-shell,
+  .app .staff-report-compare-row .staff-picker-shell {
+    flex: 1 1 150px;
+  }
+
+  .app .staff-report-date-modal-head,
+  .app .staff-report-date-modal-body {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-mode,
+  .app .staff-report-active-range-head {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-active-range-head {
+    display: grid;
+    justify-items: start;
+  }
+
+  .app .staff-report-date-presets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+    padding-right: 0;
+    padding-bottom: 10px;
+  }
+
+  .app .staff-report-calendar-months {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-date-compare-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-operations-actions {
+    justify-content: flex-start;
+  }
+
+  .app .staff-operations-actions label {
+    flex: 1 1 170px;
+  }
+
+  .app .staff-operations-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-attendance-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .staff-standard-shift-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-planning-toolbar {
+    align-items: stretch;
+  }
+
+  .app .staff-planning-toolbar label,
+  .app .staff-planning-actions,
+  .app .staff-planning-scope,
+  .app .staff-planning-actions button {
+    flex: 1 1 100%;
+  }
+
+  .app .staff-planning-grid {
+    min-width: 900px;
+  }
+
+  .app .staff-attendance-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-employee-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-attendance-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-attendance-row-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .app .staff-attendance-actions {
+    justify-content: flex-start;
+  }
+
+  .app .staff-operation-session {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .app .staff-operation-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .app .staff-operation-field-grid,
+  .app .staff-operation-field-grid.compact,
+  .app .staff-operation-chapters {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-operation-add-player {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-graphics {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-revenue-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-report-sales-graph {
+    grid-row: auto;
+  }
+
+  .app .staff-report-bars {
+    grid-auto-columns: minmax(58px, 72px);
+  }
+
+  .app .staff-weekday-bars {
+    grid-template-columns: repeat(7, minmax(52px, 1fr));
+  }
+
+  .app .staff-hourly-chart {
+    min-height: 210px;
+  }
+
+  .app .staff-report-graph-head {
+    display: grid;
+  }
+
+  .app .staff-report-graph-actions {
+    justify-items: start;
+  }
+
+  .app .staff-report-pie-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-manual-discount > div {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-game-guide-head {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .app .staff-game-guide-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .app .staff-game-media-row {
+    grid-template-columns: 1fr;
+  }
+}

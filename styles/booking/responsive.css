@@ -1,0 +1,1745 @@
+.app .achievement-confetti-dot.dot-three {
+  right: 23%;
+  bottom: 18%;
+  width: 20px;
+  height: 20px;
+  background: var(--vrena-mode-accent);
+  animation-delay: 320ms;
+}
+
+@keyframes achievementLineDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes achievementShine {
+  0% { opacity: 0; transform: translateX(-120%); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(120%); }
+}
+
+@keyframes achievementPulse {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.025); box-shadow: 0 18px 44px color-mix(in srgb, var(--vrena-cyan-700) 22%, transparent); }
+}
+
+@keyframes achievementGlitch {
+  0%, 92%, 100% { filter: none; transform: translateX(0); }
+  94% { filter: hue-rotate(40deg); transform: translateX(-1px); }
+  96% { filter: hue-rotate(-30deg); transform: translateX(1px); }
+}
+
+@keyframes achievementBadgePop {
+  0% { opacity: 0; transform: translateY(16px) rotate(-4deg) scale(0.72); }
+  68% { opacity: 1; transform: translateY(0) rotate(2deg) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes achievementGlowPop {
+  0% { opacity: 0; transform: scale(0.72); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes achievementConfettiFloat {
+  from { transform: translateY(0) rotate(0); }
+  to { transform: translateY(-12px) rotate(18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app .return-mission-character,
+  .app .return-mission-character::after,
+  .app .return-mission-character img,
+  .app .achievement-chart-line,
+  .app .achievement-card::after,
+  .app .achievement-sparked,
+  .app .achievement-secret-mark,
+  .app .achievement-unlock-stage::before,
+  .app .achievement-unlock-badge,
+  .app .achievement-unlock-badge-stack,
+  .app .achievement-confetti-dot {
+    animation: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .app .return-mission-card {
+    padding: 22px;
+  }
+
+  .app .return-mission-head {
+    min-height: 160px;
+    padding-right: 170px;
+  }
+
+  .app .return-mission-character {
+    top: -24px;
+    right: 8px;
+    width: 168px;
+    height: 212px;
+  }
+
+  .app .return-mission-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .achievement-insights-grid {
+    grid-template-columns: 1.35fr 1fr 1fr;
+  }
+
+  .app .achievement-rewards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app .achievement-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app .achievement-grid {
+    grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+  }
+
+  .app .achievement-detail-sheet {
+    left: 50%;
+    right: auto;
+    bottom: 50%;
+    width: min(720px, calc(100vw - 40px));
+    grid-template-columns: 240px minmax(0, 1fr);
+    transform: translate(-50%, 50%);
+  }
+
+  .app .achievement-unlock-sheet {
+    width: min(900px, calc(100vw - 48px));
+    max-height: min(780px, calc(100dvh - 48px));
+    grid-template-columns: 330px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    border-radius: 28px;
+  }
+
+  .app .achievement-unlock-stage {
+    min-height: 100%;
+    padding: 42px 32px;
+  }
+
+  .app .achievement-unlock-badge-stack {
+    width: min(246px, 24vw);
+  }
+
+  .app .achievement-unlock-copy {
+    align-content: center;
+    padding: 34px 36px;
+  }
+
+  .app .achievement-unlock-copy h3 {
+    font-size: clamp(34px, 4vw, 48px);
+  }
+
+  .app .achievement-unlock-batch .achievement-unlock-copy {
+    align-content: start;
+  }
+
+  .app .achievement-unlock-list {
+    max-height: 280px;
+  }
+
+  .app .achievement-unlock-share-panel {
+    bottom: -34px;
+    margin-inline: -6px;
+    padding: 16px 6px 6px;
+  }
+
+  .app .achievement-rank-list-sheet {
+    width: min(460px, calc(100vw - 40px));
+    grid-template-columns: 1fr;
+  }
+
+  .app .achievement-detail-badge {
+    width: 100%;
+  }
+
+  .app .retention-achievement-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .retention-detail-badge {
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .return-mission-card {
+    border-color: color-mix(in srgb, var(--vrena-orange-400) 48%, var(--vrena-neutral-700));
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-orange-600) 16%, transparent), transparent 35%),
+      radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--vrena-cyan-500) 9%, transparent), transparent 42%),
+      var(--vrena-neutral-900);
+    box-shadow:
+      0 24px 58px color-mix(in srgb, var(--vrena-neutral-950) 48%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--vrena-white) 8%, transparent);
+  }
+
+  .app .return-mission-copy h2 {
+    color: var(--player-text);
+  }
+
+  .app .return-mission-copy p,
+  .app .return-mission-meta {
+    color: var(--vrena-neutral-300);
+  }
+
+  .app .return-mission-copy > span,
+  .app .return-mission-step.complete,
+  .app .return-mission-meta svg {
+    color: var(--vrena-orange-300);
+  }
+
+  .app .return-mission-saved-icon {
+    border-color: color-mix(in srgb, var(--vrena-orange-400) 74%, var(--vrena-yellow-500));
+    background: color-mix(in srgb, var(--vrena-orange-600) 16%, var(--vrena-neutral-900));
+    color: var(--vrena-orange-300);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--vrena-orange-600) 20%, transparent);
+  }
+
+  .app .return-mission-path::before,
+  .app .return-mission-meta {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+  }
+
+  .app .return-mission-path::before {
+    background: color-mix(in srgb, var(--vrena-white) 14%, transparent);
+  }
+
+  .app .return-mission-node {
+    border-color: color-mix(in srgb, var(--vrena-white) 16%, transparent);
+    background: var(--vrena-neutral-900);
+    color: var(--vrena-neutral-400);
+    box-shadow: 0 7px 18px color-mix(in srgb, var(--vrena-neutral-950) 38%, transparent);
+  }
+
+  .app .return-mission-step {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .return-mission-step.current {
+    color: var(--vrena-orange-300);
+  }
+
+  .app .return-mission-step.complete .return-mission-node,
+  .app .return-mission-step.current .return-mission-node {
+    border-color: var(--vrena-orange-400);
+    background: color-mix(in srgb, var(--vrena-orange-600) 16%, var(--vrena-neutral-900));
+    color: var(--vrena-orange-300);
+  }
+
+  .app .return-mission-step.current .return-mission-node {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--vrena-orange-600) 17%, transparent);
+  }
+
+  .app .return-mission-relief.available {
+    border-color: color-mix(in srgb, var(--vrena-cyan-300) 30%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 9%, var(--vrena-neutral-900));
+    color: var(--vrena-cyan-300);
+  }
+
+  .app .return-mission-relief.protecting {
+    border-color: color-mix(in srgb, var(--vrena-orange-400) 52%, transparent);
+    background: color-mix(in srgb, var(--vrena-orange-600) 15%, var(--vrena-neutral-900));
+    color: var(--vrena-orange-300);
+    box-shadow: 0 9px 22px color-mix(in srgb, var(--vrena-orange-600) 18%, transparent);
+  }
+
+  .app .return-mission-relief.used {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 5%, var(--vrena-neutral-900));
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .return-mission-status {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-rank-card,
+  .app .achievement-progress-card,
+  .app .achievement-collection-card,
+  .app .achievement-detail-sheet {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background:
+      radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent), transparent 34%),
+      linear-gradient(180deg, var(--vrena-neutral-900) 0%, var(--vrena-neutral-900) 100%);
+    color: var(--player-text);
+    box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 24%, transparent);
+  }
+
+  .app .achievement-rank-ring::after {
+    background: var(--vrena-neutral-900);
+  }
+
+  .app .achievement-unlock-sheet {
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 42%, transparent);
+    background:
+      radial-gradient(circle at 12% 2%, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), transparent 36%),
+      var(--vrena-neutral-900);
+  }
+
+  .app .achievement-unlock-copy .achievement-tier-pill {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 34%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent);
+    color: var(--vrena-cyan-300);
+  }
+
+  .app .achievement-unlock-copy > strong {
+    color: var(--vrena-cyan-300);
+  }
+
+  .app .achievement-unlock-copy > .compact-notice,
+  .app .achievement-unlock-list > button {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 6%, transparent);
+    color: var(--player-text);
+  }
+
+  .app .achievement-unlock-list > button:hover,
+  .app .achievement-unlock-list > button.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 46%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 13%, var(--vrena-neutral-900));
+  }
+
+  .app .achievement-unlock-list-copy strong {
+    color: var(--player-text);
+  }
+
+  .app .achievement-unlock-list-copy small,
+  .app .achievement-dismiss-button {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-unlock-share-panel {
+    background: linear-gradient(180deg, transparent, var(--vrena-neutral-900) 18%);
+  }
+
+  .app .achievement-rank-copy strong,
+  .app .achievement-rank-list strong,
+  .app .achievement-section-head h3,
+  .app .achievement-summary-card strong,
+  .app .achievement-insight-card strong,
+  .app .achievement-reward-card strong,
+  .app .achievement-recent-item strong,
+  .app .achievement-chart-labels strong,
+  .app .achievement-card-body strong,
+  .app .achievement-detail-copy h3,
+  .app .achievement-detail-list dd {
+    color: var(--player-text);
+  }
+
+  .app .achievement-rank-copy > span,
+  .app .achievement-rank-copy small,
+  .app .achievement-section-head .muted,
+  .app .achievement-summary-card span,
+  .app .achievement-insight-card small,
+  .app .achievement-reward-card small,
+  .app .achievement-recent-item small,
+  .app .achievement-chart-labels span,
+  .app .achievement-card-body small,
+  .app .achievement-detail-list dt {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-summary-card,
+  .app .achievement-rank-list span,
+  .app .achievement-insight-card,
+  .app .achievement-reward-card,
+  .app .achievement-recent-item,
+  .app .achievement-card,
+  .app .achievement-filter-bar button,
+  .app .retention-achievement-card {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--player-text);
+  }
+
+  .app .achievement-summary-progress-card {
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
+  }
+
+  .app .achievement-spotlight-card {
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
+  }
+
+  .app .achievement-streak-card {
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 18%, transparent), transparent 42%),
+      var(--vrena-neutral-800);
+  }
+
+  .app .achievement-reward-card.reward-unlocked {
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 34%, transparent);
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-yellow-500) 18%, transparent), transparent 45%),
+      var(--vrena-neutral-800);
+  }
+
+  .app .achievement-filter-bar button.active {
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: var(--vrena-bg);
+    color: var(--player-text);
+  }
+
+  .app .achievement-rank-list-button {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    color: var(--vrena-purple-100);
+  }
+
+  .app .achievement-share-button {
+    border-color: color-mix(in srgb, var(--vrena-yellow-500) 28%, transparent);
+    background: color-mix(in srgb, var(--vrena-yellow-500) 16%, transparent);
+    color: var(--vrena-orange-300);
+  }
+
+  .app .achievement-rank-list span.active {
+    border-color: color-mix(in srgb, var(--vrena-cyan-700) 36%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-700) 18%, transparent);
+    color: var(--vrena-purple-100);
+  }
+
+  .app .achievement-locked,
+  .app .retention-locked {
+    background: var(--vrena-neutral-900);
+  }
+
+  .app .retention-locked .retention-achievement-icon {
+    background: var(--vrena-neutral-700);
+    color: var(--vrena-neutral-50);
+  }
+
+  .app .retention-locked.retention-detail-badge {
+    border-color: color-mix(in srgb, var(--vrena-white) 18%, transparent);
+    background: linear-gradient(145deg, var(--vrena-neutral-700), var(--vrena-neutral-800));
+    color: var(--vrena-neutral-50);
+    box-shadow: 0 16px 38px color-mix(in srgb, var(--vrena-neutral-950) 34%, transparent);
+  }
+
+  .app .achievement-xp-track,
+  .app .achievement-mini-progress {
+    background: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+  }
+
+  .app .achievement-chart svg {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vrena-cyan-700) 16%, transparent), color-mix(in srgb, var(--vrena-cyan-500) 8%, transparent));
+  }
+
+  .app .achievement-detail-list div {
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+  }
+
+  .app .achievement-path span {
+    border-color: color-mix(in srgb, var(--vrena-white) 10%, transparent);
+    background: color-mix(in srgb, var(--vrena-white) 6%, transparent);
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-secret {
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent) 0 8px, transparent 8px 16px),
+      linear-gradient(180deg, var(--vrena-neutral-800), var(--vrena-neutral-900));
+  }
+
+  .app .retention-achievements-card {
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--vrena-cyan-500) 16%, transparent), transparent 30%),
+      linear-gradient(180deg, var(--vrena-neutral-900) 0%, var(--vrena-neutral-900) 100%);
+  }
+
+  .app .retention-achievement-copy strong {
+    color: var(--player-text);
+  }
+
+  .app .retention-achievement-copy small {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-summary-action:hover,
+  .app .achievement-summary-action:focus-visible {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 46%, transparent);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--vrena-neutral-950) 34%, transparent);
+  }
+
+  .app .achievement-summary-detail-head h3,
+  .app .achievement-summary-detail-row strong {
+    color: var(--player-text);
+  }
+
+  .app .achievement-summary-detail-head .muted,
+  .app .achievement-summary-detail-row small {
+    color: var(--vrena-neutral-400);
+  }
+
+  .app .achievement-summary-detail-icon,
+  .app .achievement-summary-row-icon,
+  .app .achievement-summary-row-meta span {
+    border-color: color-mix(in srgb, var(--vrena-cyan-400) 24%, transparent);
+    background: color-mix(in srgb, var(--vrena-cyan-500) 14%, transparent);
+    color: var(--vrena-cyan-200);
+  }
+
+  .app .achievement-summary-detail-row {
+    border-color: color-mix(in srgb, var(--vrena-white) 12%, transparent);
+    background: var(--vrena-neutral-800);
+  }
+
+  .app .achievement-summary-game-art {
+    background: var(--vrena-neutral-900);
+  }
+
+  .app .achievement-share-actions .achievement-zalo-button {
+    border-color: color-mix(in srgb, var(--vrena-zalo) 62%, var(--vrena-white));
+    background: color-mix(in srgb, var(--vrena-zalo) 18%, var(--vrena-neutral-900));
+    color: var(--vrena-blue-300);
+  }
+
+  .app .achievement-share-actions .achievement-zalo-button:hover,
+  .app .achievement-share-actions .achievement-zalo-button:focus-visible {
+    border-color: color-mix(in srgb, var(--vrena-zalo) 76%, var(--vrena-white));
+    background: color-mix(in srgb, var(--vrena-zalo) 28%, var(--vrena-neutral-900));
+  }
+
+  .app .achievement-unlock-copy h3 {
+    color: var(--vrena-orange-300);
+  }
+}
+
+@media (max-width: 960px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px)) auto;
+    width: 100%;
+    max-width: 100vw;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: clip;
+    overflow-y: visible;
+    --mobile-header-height: 108px;
+  }
+
+  .app aside {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+    height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
+    min-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
+    max-height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
+    width: 100%;
+    max-width: 100vw;
+    overflow: clip visible;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 8px calc(12px + env(safe-area-inset-left, 0px));
+    display: grid;
+    grid-template-columns: 44px auto auto minmax(0, 1fr) auto;
+    grid-template-rows: 42px 42px;
+    grid-template-areas:
+      "profile lang share . logo"
+      "tabs tabs tabs tabs tabs";
+    align-items: center;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .app aside > div:first-of-type, .app .app-title-row {
+    display: contents;
+  }
+
+  .app aside > div:first-of-type > .muted {
+    display: none;
+  }
+
+  .app main {
+    height: auto;
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: clip;
+    overflow-y: visible;
+    padding: 12px;
+  }
+
+  .app .message-list {
+    max-height: 202px;
+  }
+
+  .app .session-message.own-message {
+    margin-left: 18px;
+  }
+
+  .app h1 {
+    font-size: 26px;
+  }
+
+  .app .brand-logo {
+    grid-area: logo;
+    justify-self: end;
+    width: 92px;
+    max-width: 92px;
+  }
+
+  .app .language-picker {
+    grid-area: lang;
+    justify-self: start;
+  }
+
+  .app .language-menu {
+    position: fixed;
+    top: calc(55px + env(safe-area-inset-top, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    --language-menu-x: 0px;
+    flex-wrap: nowrap;
+    width: auto;
+    max-width: none;
+    overflow-x: auto;
+    border-radius: 999px;
+  }
+
+  .app .language-picker > button {
+    min-width: 50px;
+    min-height: 40px;
+    padding: 7px 11px;
+  }
+
+  .app h2 {
+    font-size: 18px;
+  }
+
+  .app h3 {
+    font-size: 20px;
+  }
+
+  .app .profile-chip {
+    grid-area: profile;
+    grid-template-columns: 42px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .app .profile-chip > div:not(.avatar) {
+    display: none;
+  }
+
+  .app .profile-chip .avatar {
+    width: var(--avatar-sm);
+    height: var(--avatar-sm);
+  }
+
+  .app .tabs {
+    grid-area: tabs;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    box-sizing: border-box;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  @supports selector(.app .tabs:has(.tab.active)) {
+    .app .tabs {
+      --mobile-tab-gap: 6px;
+      --mobile-tab-height: 42px;
+      --mobile-tab-indicator-width: calc((100% - 18px) / 4);
+      gap: var(--mobile-tab-gap);
+      isolation: isolate;
+      position: relative;
+    }
+
+    .app .tabs::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      width: var(--mobile-tab-indicator-width);
+      height: var(--mobile-tab-height);
+      border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+      border-radius: 8px;
+      background: var(--vrena-surface-warm);
+      box-shadow: 0 10px 22px color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+      pointer-events: none;
+      transition:
+        left 220ms cubic-bezier(0.18, 0.82, 0.24, 1),
+        background-color 160ms ease,
+        border-color 160ms ease;
+    }
+
+    .app .tabs:has(.tab:nth-child(2).active)::before {
+      left: calc(25% + 1.5px);
+    }
+
+    .app .tabs:has(.tab:nth-child(3).active)::before {
+      left: calc(50% + 3px);
+    }
+
+    .app .tabs:has(.tab:nth-child(4).active)::before {
+      left: calc(75% + 4.5px);
+    }
+
+    .app .tabs:has(.sidebar-staff-tab.active)::before {
+      display: none;
+    }
+
+    .app .tabs .tab {
+      position: relative;
+      z-index: 1;
+    }
+
+    .app .tabs .tab.active {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      color: var(--player-text);
+    }
+  }
+
+  .app .sidebar-staff-tab {
+    display: none !important;
+  }
+
+  .app .sidebar-gallery-tab {
+    display: none !important;
+  }
+
+  .app .mobile-staff-profile-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app .app-share {
+    grid-area: share;
+    justify-self: center;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .app .app-share .share-symbol-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .app .tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    text-align: center;
+    min-height: 42px;
+    padding: 9px 8px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .app .staff-payment-split-row,
+  .app .payment-split-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .payment-split-row .amount-field {
+    grid-column: 1;
+  }
+
+  .app .shop-contact {
+    display: none;
+  }
+
+  .app .ticket-mobile-contact {
+    display: grid;
+    gap: 8px;
+    justify-items: stretch;
+    margin-top: 2px;
+    padding: 12px 0 14px;
+    border-bottom: 1px solid var(--player-border);
+  }
+
+  .app .ticket-mobile-contact > strong {
+    text-align: left;
+  }
+
+  .app .ticket-mobile-contact .contact-channel-buttons {
+    width: 100%;
+  }
+
+  .app .profile-mobile-contact {
+    display: grid;
+    gap: 7px;
+    border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+    margin-top: 16px;
+    padding-top: 14px;
+    font-size: 13px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .app .profile-mobile-contact a {
+    color: var(--vrena-accent-text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .app .section {
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: none;
+  }
+
+  .app .ticket-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-fast-path-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-fast-path-summary .small-button {
+    width: 100%;
+  }
+
+  .app .guest-ticket-contact {
+    grid-template-areas:
+      "copy"
+      "phone"
+      "name"
+      "hint"
+      "login";
+    grid-template-columns: 1fr;
+  }
+
+  .app .guest-ticket-contact p {
+    grid-column: auto;
+  }
+
+  .app .guest-ticket-contact .link-button {
+    justify-self: start;
+  }
+
+  .app .ticket-service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-control-arenas {
+    grid-column: span 2;
+  }
+
+  .app .ticket-price-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .ticket-confirmation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .ticket-loyalty-redemption {
+    grid-template-columns: 1fr;
+  }
+
+  .app .sessions-section {
+    padding: 0;
+  }
+
+  .app .club-drawer-backdrop {
+    align-items: end;
+    padding: 0 10px 14px;
+  }
+
+  .app .club-drawer {
+    max-height: calc(100vh - 86px);
+    border-radius: 18px 18px 10px 10px;
+    padding: 12px;
+  }
+
+  .app .club-hero,
+  .app .club-hero-content {
+    min-height: 136px;
+  }
+
+  .app .club-hero-content {
+    display: grid;
+    align-content: end;
+    padding: 12px;
+  }
+
+  .app .club-page-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .club-message-channels {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-message-list {
+    max-height: 150px;
+  }
+
+  .app .club-invite-box {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-member-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .app .club-member-row select,
+  .app .club-member-row button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .club-banner-upload {
+    min-height: 112px;
+  }
+
+  .app .club-banner-upload img {
+    height: 132px;
+  }
+
+  .app .player-profile-panel {
+    width: 100%;
+    max-height: calc(100vh - 86px);
+    border-radius: 18px 18px 10px 10px;
+    align-self: end;
+  }
+
+  .app .player-profile-panel .stats > span {
+    flex: 0 0 108px;
+  }
+
+  .app .player-profile-panel .stats > .score-stat-card {
+    flex-basis: 174px;
+  }
+
+  .app .player-profile-panel .stats > .split-stat-card {
+    flex-basis: 148px;
+  }
+
+  .app .section-head, .app .join-row {
+    display: grid;
+  }
+
+  .app .section-copy {
+    display: none;
+  }
+
+ .app .sessions-section {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .app .sessions-filter-head {
+    display: block;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+
+  .app .sessions-filter-head .section-copy {
+    display: none !important;
+  }
+
+  .app .sessions-section .sub-tabs {
+    margin-top: 0 !important;
+  }
+
+  .app .sessions-section .list {
+    margin-top: 0;
+  }
+
+  .app .search-shell {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 6px);
+    right: max(12px, env(safe-area-inset-right, 0px));
+    z-index: 25;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  .app .mobile-search-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border: 1px solid color-mix(in srgb, var(--vrena-cyan-700) 20%, transparent);
+    border-radius: 999px;
+    background: var(--vrena-white);
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
+    color: var(--vrena-neutral-950);
+    font-size: 20px;
+    pointer-events: auto;
+  }
+
+  .app .search-shell.open .mobile-search-toggle {
+    color: var(--vrena-neutral-950);
+  }
+
+  .app .mobile-search-toggle svg {
+    display: block;
+    color: currentColor;
+    opacity: 1;
+  }
+
+  .app .search {
+    display: none;
+    width: min(100vw - 76px, 440px);
+    max-width: none;
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
+    pointer-events: auto;
+  }
+
+  .app .search-shell.open {
+    left: max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  .app .search-shell.open .search {
+    display: block;
+  }
+
+  .app .search-close {
+    display: none;
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--vrena-neutral-900) 16%, transparent);
+    pointer-events: auto;
+  }
+
+  .app .search-shell.open .search-close {
+    display: inline-grid;
+  }
+
+  .app .day-strip {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height) + 58px);
+    left: 0;
+    right: 0;
+    z-index: 24;
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    padding: 8px 12px 10px;
+    border-width: 1px 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--vrena-white) 96%, transparent);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--vrena-neutral-900) 12%, transparent);
+  }
+
+  .app .sessions-section:has(.day-strip) .sub-tabs {
+    margin-top: 62px !important;
+  }
+
+  .app .day-chip {
+    min-width: 54px;
+    min-height: 44px;
+    padding: 6px 9px;
+  }
+
+  .app .drawer-days {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    border-width: 1px;
+    border-radius: 999px;
+  }
+
+  .app .session {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .app .confirm-game-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .app .sub-tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app .sub-tabs button {
+    padding-inline: 8px;
+  }
+
+  .app .leaderboard-head {
+    display: grid;
+  }
+
+  .app .leaderboard-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .app .leaderboard-controls label {
+    min-width: 0;
+  }
+
+  .app .leaderboard-controls label:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .app .leaderboard-controls select {
+    min-width: 0;
+  }
+
+  .app .leaderboard-search {
+    display: block;
+    width: 100%;
+  }
+
+  .app .hall-gallery-card {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .app .hall-gallery-copy {
+    gap: 8px;
+  }
+
+  .app .hall-gallery-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app .hall-gallery-strip .hall-gallery-photo-button {
+    flex: 0 0 clamp(176px, 68vw, 286px);
+    scroll-snap-align: start;
+  }
+
+  .app .hall-gallery-strip img {
+    flex: none;
+  }
+
+  .app .hall-gallery-viewer-backdrop {
+    align-items: center;
+    justify-items: center;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+    background: color-mix(in srgb, var(--vrena-neutral-950) 84%, transparent);
+  }
+
+  .app .hall-gallery-viewer {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--vrena-white);
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .app .hall-gallery-viewer figure {
+    height: 100%;
+  }
+
+  .app .hall-gallery-viewer figure img {
+    width: auto;
+    max-width: min(100%, calc(100vw - 34px));
+    max-height: min(78svh, calc(100svh - 128px));
+    border-radius: 10px;
+  }
+
+  .app .hall-gallery-viewer-close,
+  .app .hall-gallery-viewer-nav {
+    background: color-mix(in srgb, var(--vrena-neutral-950) 58%, transparent);
+    border-color: color-mix(in srgb, var(--vrena-white) 24%, transparent);
+    color: var(--vrena-white);
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--vrena-neutral-950) 28%, transparent);
+  }
+
+  .app .hall-gallery-viewer-close {
+    top: 10px;
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    width: 40px;
+    height: 40px;
+  }
+
+  .app .hall-gallery-viewer-nav {
+    top: 50%;
+    width: 42px;
+    height: 42px;
+  }
+
+  .app .hall-gallery-viewer-nav.previous {
+    left: calc(10px + env(safe-area-inset-left, 0px));
+  }
+
+  .app .hall-gallery-viewer-nav.next {
+    right: calc(10px + env(safe-area-inset-right, 0px));
+  }
+
+  .app .leaderboard-club-pin {
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 190px);
+  }
+
+  .app .leaderboard-club-pin button {
+    grid-column: 2;
+  }
+
+  .app .current-rank-card {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .app .leaderboard-row {
+    grid-template-columns: 40px calc(var(--avatar-sm) + 8px) minmax(0, 1fr);
+    align-items: start;
+    padding-top: 18px;
+  }
+
+  .app .leaderboard-metric {
+    grid-column: 3;
+    justify-items: start;
+  }
+
+  .app .leaderboard-metric span {
+    text-align: left;
+  }
+
+  .app .compact-session-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+  }
+
+  .app .compact-session-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .app .compact-session-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: stretch;
+    gap: 7px;
+  }
+
+  .app .compact-session-actions .compact-code {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .compact-session-actions .compact-join, .app .compact-session-actions .compact-expand {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .app .desktop-session-share {
+    display: none;
+  }
+
+  .app .expanded-mobile-share {
+    display: inline-grid;
+  }
+
+  .app .club-session-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .app .club-session-actions {
+    grid-column: 1 / -1;
+  }
+
+  .app .session-expanded {
+    gap: 10px;
+  }
+
+  .app .session-top {
+    display: grid;
+    gap: 8px;
+  }
+
+  .app .row-meta {
+    gap: 5px;
+  }
+
+  .app .row-meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--vrena-surface-warm);
+    font-size: 12px;
+  }
+
+  .app .pill {
+    width: fit-content;
+  }
+
+  .app .players {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .app input, .app select, .app textarea, .app .country-button, .app .date-input-shell, .app .rich-note-editor {
+    min-height: 44px;
+  }
+
+  .app .session-timing-row {
+    --session-timing-control-height: 44px;
+  }
+
+  .app .calendar-panel {
+    padding: 10px;
+  }
+
+  .app .calendar-scroll {
+    max-height: 66vh;
+  }
+
+  .app .calendar-days {
+    grid-template-columns: repeat(7, minmax(132px, 1fr));
+    min-width: 924px;
+  }
+
+  .app .calendar-time-column {
+    flex-basis: 58px;
+  }
+
+  .app .calendar-time-label,
+  .app .calendar-slot {
+    height: 26px;
+    min-height: 26px;
+  }
+
+  .app .form-grid, .app .profile-form, .app .compact-form-grid, .app .session-mode-row, .app .session-timing-row, .app .session-capacity-row, .app .tournament-grid, .app .queue-board, .app .match-list {
+    gap: 9px;
+  }
+
+  .app .club-action-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .app .club-action-row .create-button, .app .club-action-row button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app .club-action-row .create-button:only-child, .app .club-action-row button:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .app .players:not(:has(.result-player)) {
+    grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  }
+
+  .app .player {
+    grid-template-columns: minmax(0, 1fr);
+    font-size: 13px;
+  }
+
+  .app .result-player .checkin-mini, .app .result-player .remove-player {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .score-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .podium-pyramid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .app .podium-player {
+    min-height: 68px;
+    padding: 6px 4px;
+  }
+
+  .app .podium-rank-1 {
+    min-height: 82px;
+    transform: translateY(-6px);
+  }
+
+  .app .manage-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .app .manage-row button {
+    width: 100%;
+  }
+
+  .app .compact-head {
+    gap: 10px;
+  }
+
+  .app .game-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 2px 2px 8px;
+    margin-inline: -2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app .game-strip .strip-game-card-shell {
+    flex: 0 0 156px;
+    scroll-snap-align: start;
+  }
+
+  .app .game-strip .game-card {
+    min-height: 100%;
+  }
+
+  .app .game-strip .game-card img {
+    aspect-ratio: 1;
+  }
+
+  .app .game-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app .game-picker .game-card {
+    padding: 7px;
+  }
+
+  .app .game-picker-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .app .game-picker .game-card span, .app .game-strip .game-card span {
+    font-size: 13px;
+  }
+
+  .app .join-row input, .app .join-row button, .app .action-row button, .app .create-button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .app .join-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .app .join-row input {
+    grid-column: 1 / -1;
+  }
+
+  .app .join-row .share-icon-button {
+    width: 48px;
+    min-height: 48px;
+  }
+
+  .app .profile-photo-panel {
+    grid-template-columns: 70px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .app .profile-photo-preview {
+    --avatar-size: var(--avatar-lg);
+    --avatar-emoji-size: var(--avatar-lg-emoji);
+    --avatar-text-size: var(--avatar-lg-text);
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    font-size: 24px;
+  }
+
+  .app .form-grid, .app .profile-form, .app .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .app .compact-form-grid, .app .session-mode-row, .app .session-timing-row, .app .session-capacity-row, .app .queue-board, .app .match-list, .app .tournament-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .standing-row {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+
+  .app .standing-row small {
+    grid-column: 2;
+  }
+
+  .app .country-field, .app .phone-field, .app .email-field, .app .name-field, .app .birthday-field, .app .nickname-field, .app .motto-field, .app .consent-field, .app .password-field, .app .captcha-field {
+    grid-column: 1;
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .app {
+    --mobile-header-height: 108px;
+  }
+
+  .app .rank-mini,
+  .app .leaderboard-share-button {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-self: start;
+  }
+
+  .app aside {
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
+  }
+
+  .app main {
+    padding: 10px;
+  }
+
+  .app h1 {
+    font-size: 24px;
+  }
+
+  .app .brand-logo {
+    width: 86px;
+    max-width: 86px;
+  }
+
+  .app .muted {
+    font-size: 12px;
+  }
+
+  .app .club-message-compose {
+    grid-template-columns: 1fr;
+  }
+
+  .app .club-message-compose button {
+    width: 100%;
+  }
+
+  .app .tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .app .tab {
+    font-size: 12px;
+    min-height: 40px;
+    padding: 8px 3px;
+  }
+
+  .app .ticket-service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app .sub-tabs button {
+    min-height: 38px;
+    padding: 6px 5px;
+    font-size: 12px;
+  }
+
+  .app .calendar-toolbar {
+    align-items: flex-start;
+  }
+
+  .app .calendar-toolbar strong {
+    font-size: 16px;
+  }
+
+  .app .calendar-toolbar span {
+    font-size: 12px;
+  }
+
+  .app .calendar-nav button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+
+  .app .calendar-days {
+    grid-template-columns: repeat(7, minmax(118px, 1fr));
+    min-width: 826px;
+  }
+
+  .app .calendar-day-header {
+    min-height: 50px;
+    padding: 7px;
+  }
+
+  .app .calendar-session-block {
+    left: 4px;
+    right: 4px;
+    padding: 5px;
+  }
+
+  .app .current-rank-card {
+    grid-template-columns: 1fr auto;
+  }
+
+  .app .current-rank-link {
+    grid-template-columns: 1fr auto;
+  }
+
+  .app .current-rank-link small {
+    grid-column: 1 / -1;
+  }
+
+  .app .player-game-carousel {
+    grid-auto-columns: 88%;
+  }
+
+  .app .player-game-stat-grid {
+    gap: 6px;
+  }
+
+  .app .player-game-stat-grid > div {
+    min-height: 50px;
+    padding: 6px 7px;
+  }
+
+  .app .leaderboard-club-pin {
+    grid-template-columns: 1fr;
+  }
+
+  .app .leaderboard-club-pin button {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .app .challenge-form-grid,
+  .app .compact-challenge-card {
+    grid-template-columns: 1fr;
+  }
+
+  .app .challenge-sent-pill {
+    justify-self: start;
+  }
+
+  .app .leaderboard-controls {
+    gap: 8px;
+  }
+
+  .app .leaderboard-controls label {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .app .leaderboard-controls select {
+    min-height: 42px;
+    padding-inline: 10px 28px;
+    font-size: 14px;
+  }
+
+  .app .hall-gallery-card {
+    padding: 9px;
+  }
+
+  .app .hall-gallery-copy h3 {
+    font-size: 17px;
+  }
+
+  .app .hall-gallery-copy p {
+    font-size: 12px;
+  }
+
+  .app .leaderboard-row {
+    grid-template-columns: 34px calc(var(--avatar-sm) + 6px) minmax(0, 1fr);
+    gap: 8px;
+    padding: 18px 8px 8px;
+  }
+
+  .app .leaderboard-rank {
+    font-size: 15px;
+  }
+
+  .app .leaderboard-metric strong {
+    font-size: 19px;
+  }
+
+  .app .session h3 {
+    font-size: 18px;
+  }
+
+  .app .compact-session-title-row h3 {
+    font-size: 17px;
+  }
+
+  .app .compact-session-actions {
+    gap: 6px;
+  }
+
+  .app .compact-session-actions .compact-join, .app .compact-session-actions .compact-expand {
+    min-height: 40px;
+    padding-inline: 9px;
+  }
+
+  .app .club-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app .game-strip .game-card {
+    flex-basis: 142px;
+  }
+
+  .app .game-card strong {
+    font-size: 11px;
+  }
+
+  .app .public-leaderboard .podium-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .app .public-leaderboard .podium-player {
+    min-height: 84px;
+    padding: 6px 4px;
+  }
+
+  .app .public-leaderboard .podium-player.place-1 {
+    min-height: 108px;
+  }
+
+  .app .public-leaderboard .podium-player.place-2 {
+    min-height: 94px;
+  }
+
+  .app .public-leaderboard .podium-player.place-3 {
+    min-height: 82px;
+  }
+
+  .app .public-leaderboard .podium-player .player-avatar {
+    --avatar-size: var(--avatar-sm);
+    --avatar-emoji-size: var(--avatar-sm-emoji);
+    --avatar-text-size: var(--avatar-sm-text);
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    min-width: var(--avatar-size);
+    min-height: var(--avatar-size);
+  }
+
+  .app .public-leaderboard .podium-player strong {
+    font-size: 11px;
+  }
+
+  .app .public-leaderboard .podium-player small {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,907 @@
+/* Lean session list: open layout, fewer nested boxes, faster scanning. */
+.app .sessions-section {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 16px;
+}
+
+.app .sessions-filter-head {
+  align-items: start;
+  gap: 16px;
+  padding: 0 0 8px;
+}
+
+.app .sessions-section .list {
+  gap: 6px;
+  border-top: 0;
+}
+
+.app .sessions-section .session {
+  gap: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .session:last-child {
+  border-bottom: 0;
+}
+
+.app .sessions-section .compact-session-card {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 80px;
+  padding: 12px 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition:
+    background-color 160ms ease,
+    transform 180ms ease;
+}
+
+.app .sessions-section .compact-session-card:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--player-surface-soft) 58%, transparent) !important;
+}
+
+.app .sessions-section .session-retention-card {
+  --session-retention-accent: var(--vrena-mode-accent);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  align-self: start;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px 10px;
+  border-bottom: 0;
+  border-radius: 8px;
+  box-sizing: border-box;
+  overflow: visible;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--session-retention-accent) 9%, transparent),
+      transparent 68%
+    );
+}
+
+.app .sessions-section .session-retention-card-tickets {
+  --session-retention-accent: var(--vrena-blue-600);
+}
+
+.app .sessions-section .session-retention-card-create {
+  --session-retention-accent: var(--vrena-purple-500);
+}
+
+.app .sessions-section .session-retention-card-share {
+  --session-retention-accent: var(--vrena-green-800);
+}
+
+.app .sessions-section .session-retention-card-guide {
+  --session-retention-accent: var(--vrena-purple-500);
+}
+
+.app .sessions-section .session-retention-card-today {
+  --session-retention-accent: var(--vrena-yellow-600);
+}
+
+.app .sessions-section .session-retention-card-clubs {
+  --session-retention-accent: var(--vrena-red-500);
+}
+
+.app .sessions-section .session-retention-card-leaderboard {
+  --session-retention-accent: var(--vrena-cyan-700);
+}
+
+.app .sessions-section .session-retention-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--session-retention-accent) 15%, var(--player-surface-soft));
+  color: var(--session-retention-accent);
+}
+
+.app .sessions-section .session-retention-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.app .sessions-section .session-retention-card-copy strong {
+  color: var(--player-text);
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.18;
+}
+
+.app .sessions-section .session-retention-card-copy span {
+  color: var(--player-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.app .sessions-section .session-retention-card-cta {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--session-retention-accent) 26%, var(--player-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--session-retention-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--session-retention-accent) 82%, var(--player-text));
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.app .sessions-section .session-retention-card-cta:hover {
+  background: color-mix(in srgb, var(--session-retention-accent) 14%, transparent);
+  transform: none;
+}
+
+.app .sessions-section .compact-session-card-expanded {
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .compact-session-image {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+}
+
+.app .sessions-section .ticket-session-row {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--vrena-blue-600) 8%, transparent),
+      transparent 34%
+    ) !important;
+  border-radius: 8px !important;
+}
+
+.app .sessions-section .ticket-session-card {
+  position: relative;
+}
+
+.app .sessions-section .ticket-session-card::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto 12px -10px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--vrena-progress-gradient);
+}
+
+.app .sessions-section .ticket-session-visual {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px dashed color-mix(in srgb, var(--vrena-blue-600) 44%, var(--player-border));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-blue-600) 16%, var(--player-surface-soft)), color-mix(in srgb, var(--vrena-mode-accent) 10%, var(--player-surface)));
+  color: var(--vrena-blue-700);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-white) 48%, transparent);
+}
+
+.app .sessions-section .ticket-session-visual::before,
+.app .sessions-section .ticket-session-visual::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--player-bg);
+  transform: translateY(-50%);
+}
+
+.app .sessions-section .ticket-session-visual::before {
+  left: -5px;
+}
+
+.app .sessions-section .ticket-session-visual::after {
+  right: -5px;
+}
+
+.app .sessions-section .compact-session-title-row {
+  gap: 8px;
+  row-gap: 4px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.app .sessions-section .compact-session-title-row h3 {
+  flex: 1 1 auto;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.app .sessions-section .row-meta,
+.app .sessions-section .compact-meta {
+  gap: 9px;
+  row-gap: 3px;
+}
+
+.app .sessions-section .row-meta span,
+.app .sessions-section .compact-meta span,
+.app .sessions-section .pill,
+.app .sessions-section .status-pill,
+.app .sessions-section .host-pill {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--player-text-muted);
+  font-size: 11.5px;
+  font-weight: 720;
+  letter-spacing: 0;
+}
+
+.app .sessions-section .pill.ok {
+  color: color-mix(in srgb, var(--vrena-accent-text) 78%, var(--player-text-muted));
+}
+
+.app .sessions-section .pill.private {
+  color: color-mix(in srgb, var(--vrena-yellow-700) 78%, var(--player-text-muted));
+}
+
+.app .sessions-section .pill.session-visibility-open {
+  color: var(--vrena-green-900);
+}
+
+@media (prefers-color-scheme: light) {
+  .app .sessions-section .host-pill {
+    color: var(--vrena-purple-600);
+  }
+}
+
+.app .sessions-section .pill.session-visibility-private {
+  color: var(--vrena-red-700);
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .sessions-section .pill.session-visibility-open {
+    color: var(--vrena-green-500);
+  }
+
+  .app .sessions-section .pill.session-visibility-private {
+    color: var(--vrena-red-400);
+  }
+}
+
+.app .sessions-section .ticket-pill,
+.app .sessions-section .challenge-pill,
+.app .sessions-section .soft-opening-pill {
+  color: color-mix(in srgb, var(--vrena-accent-text) 82%, var(--player-text-muted));
+}
+
+.app .sessions-section .compact-game-guide-link,
+.app .sessions-section .confirm-game-guide-link {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vrena-accent-text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.app .sessions-section .session-tariff-link {
+  min-height: auto;
+  margin: 2px 18px 4px 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--vrena-accent-text);
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs {
+  width: fit-content;
+  gap: 20px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs button {
+  min-height: 32px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--player-text-muted);
+  padding: 5px 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .sub-tabs button.active {
+  border-bottom-color: var(--vrena-accent-text) !important;
+  color: var(--vrena-neutral-950);
+}
+
+@media (min-width: 961px) {
+  .app .sessions-section .day-strip {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: 100%;
+    max-width: 100%;
+    margin: -4px 0 6px;
+    border-radius: 14px;
+  }
+}
+
+.app .sessions-section .compact-session-actions {
+  gap: 7px;
+  flex-wrap: nowrap;
+}
+
+.app .sessions-section .compact-join {
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.app .sessions-section .compact-join.primary {
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  box-shadow: 0 10px 22px var(--vrena-cta-shadow);
+}
+
+.app .sessions-section .compact-expand,
+.app .sessions-section .compact-session-actions .compact-expand {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--player-text-muted) !important;
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .compact-expand:hover {
+  color: var(--vrena-accent-text) !important;
+  transform: none;
+}
+
+.app .sessions-section .compact-share {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  color: var(--player-text-muted);
+}
+
+.app .sessions-section .session-expanded {
+  gap: 10px;
+  padding: 0 10px 14px 80px;
+}
+
+.app .sessions-section .reminder-strip {
+  gap: 10px;
+  padding: 14px 16px;
+  border: 0 !important;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--vrena-mode-accent) 9%, transparent), transparent 58%),
+    color-mix(in srgb, var(--player-surface-soft) 72%, transparent);
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.app .sessions-section .reminder-strip-head {
+  align-items: center;
+  min-width: 0;
+}
+
+.app .sessions-section .reminder-strip-head .small-button {
+  flex: 0 0 auto;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.app .sessions-section .reminder-strip > button {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--player-surface) 88%, var(--player-surface-soft) 12%) !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .reminder-strip > button span,
+.app .sessions-section .reminder-strip > button small {
+  min-width: 0;
+}
+
+.app .sessions-section .reminder-strip > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .sessions-section .notes-block,
+.app .sessions-section .manage-row,
+.app .sessions-section .confirm-game-panel,
+.app .sessions-section .invite-code,
+.app .sessions-section .network-panel,
+.app .sessions-section .session-comms,
+.app .sessions-section .ticket-session-summary {
+  padding: 10px 0 0;
+  border: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .confirm-game-panel {
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+}
+
+.app .sessions-section .network-panel .section-head {
+  margin: 0;
+}
+
+.app .sessions-section .network-actions {
+  margin-left: auto;
+}
+
+.app .sessions-section .invite-chip {
+  min-width: 126px;
+  border: 0 !important;
+  background: var(--player-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+.app .sessions-section .players {
+  padding-top: 10px;
+  border-top: 0;
+  align-items: start;
+  gap: 14px 18px;
+}
+
+.app .sessions-section .players:has(.result-player) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 104px));
+  justify-content: start;
+}
+
+.app .sessions-section .result-player {
+  width: 104px;
+  max-width: 104px;
+  grid-auto-rows: max-content;
+  gap: 6px;
+}
+
+.app .sessions-section .result-player > .player-name-line {
+  min-height: 42px;
+  align-content: start;
+}
+
+.app .sessions-section .result-player > .private-payment {
+  display: -webkit-box;
+  min-height: 42px;
+  line-height: 1.2;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.app .sessions-section .result-player > .checkin-mini,
+.app .sessions-section .result-player > .remove-player {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 10px;
+}
+
+@media (min-width: 961px) {
+  .app.console-workspace,
+  .app.player-workspace {
+    transition: grid-template-columns 180ms ease;
+  }
+
+  .app.navigation-collapsed {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
+  .app .console-sidebar {
+    position: relative;
+  }
+
+  .app .console-sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -15px;
+    z-index: 45;
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+    border-radius: 999px;
+    background: var(--vrena-white);
+    color: var(--vrena-neutral-700);
+    padding: 0;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+    transform: translateY(-50%);
+  }
+
+  .app .console-sidebar-toggle:hover {
+    border-color: color-mix(in srgb, var(--vrena-cyan-700) 36%, transparent);
+    color: var(--vrena-cyan-700);
+  }
+
+  .app .console-sidebar-collapsed {
+    align-items: center;
+    gap: 14px;
+    padding: 18px 12px;
+    overflow: visible;
+  }
+
+  .app .console-sidebar-collapsed > div:first-of-type,
+  .app .console-sidebar-collapsed .app-title-row {
+    width: 100%;
+  }
+
+  .app .console-sidebar-collapsed .app-title-row {
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo {
+    width: 38px;
+    max-width: 38px;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo-full,
+  .app .console-sidebar-collapsed .app-share,
+  .app .console-sidebar-collapsed > div:first-of-type > .muted,
+  .app .console-sidebar-collapsed .profile-chip > div:not(.avatar),
+  .app .console-sidebar-collapsed .sidebar-tab-label,
+  .app .console-sidebar-collapsed .shop-contact {
+    display: none;
+  }
+
+  .app .console-sidebar-collapsed .brand-logo-mark {
+    display: block;
+  }
+
+  .app .console-sidebar-collapsed .language-picker {
+    display: block;
+  }
+
+  .app .console-sidebar-collapsed .language-picker > button {
+    min-width: 44px;
+    padding-inline: 8px;
+  }
+
+  .app .console-sidebar-collapsed .language-menu {
+    top: 0;
+    left: calc(100% + 10px);
+    --language-menu-x: 0px;
+  }
+
+  .app .console-sidebar-collapsed .profile-chip {
+    grid-template-columns: 44px;
+    justify-content: center;
+    width: 48px;
+    padding: 2px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app .console-sidebar-collapsed .tabs {
+    width: 100%;
+  }
+
+  .app .console-sidebar-collapsed .tab {
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 9px;
+  }
+
+  .app .console-sidebar-collapsed .sidebar-tab-icon {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .app .tabs {
+    gap: 3px;
+  }
+
+  .app .tab {
+    justify-content: flex-start;
+    gap: 10px;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--player-text-muted);
+    padding: 9px 10px;
+    text-align: left;
+  }
+
+  .app .sidebar-tab-icon {
+    display: inline-flex;
+    flex: 0 0 20px;
+    width: 20px;
+    color: currentColor;
+  }
+
+  .app .sidebar-tab-label {
+    min-width: 0;
+  }
+
+  .app .tab.active {
+    background: color-mix(in srgb, var(--player-surface-soft) 72%, transparent) !important;
+    color: var(--vrena-neutral-950);
+  }
+}
+
+@media (max-width: 720px) {
+  .app .tabs {
+    gap: 4px;
+  }
+
+  @supports selector(.app .tabs:has(.tab.active)) {
+    .app .tabs {
+      --mobile-tab-gap: 4px;
+      --mobile-tab-height: 38px;
+      --mobile-tab-indicator-width: calc((100% - 12px) / 4);
+    }
+
+    .app .tabs:has(.tab:nth-child(2).active)::before {
+      left: calc(25% + 1px);
+    }
+
+    .app .tabs:has(.tab:nth-child(3).active)::before {
+      left: calc(50% + 2px);
+    }
+
+    .app .tabs:has(.tab:nth-child(4).active)::before {
+      left: calc(75% + 3px);
+    }
+  }
+
+  .app .tab {
+    min-height: 38px;
+    border-color: color-mix(in srgb, var(--player-border) 72%, transparent);
+    padding: 7px 6px;
+    box-shadow: none;
+  }
+
+  .app .sessions-filter-head {
+    gap: 10px;
+  }
+
+  .app .sessions-section {
+    gap: 12px;
+  }
+
+  .app .sessions-section .list {
+    gap: 10px;
+  }
+
+  .app .sessions-section .compact-session-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    padding: 12px 0 !important;
+  }
+
+  .app .sessions-section .compact-session-image {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+  }
+
+  .app .sessions-section .ticket-session-visual {
+    width: 52px;
+    height: 52px;
+  }
+
+  .app .sessions-section .compact-session-title-row {
+    gap: 3px 8px;
+  }
+
+  .app .sessions-section .compact-session-title-row h3 {
+    flex-basis: 100%;
+    font-size: 15.5px;
+    line-height: 1.18;
+  }
+
+  .app .sessions-section .session-kind-normal {
+    display: none;
+  }
+
+  .app .sessions-section .row-meta,
+  .app .sessions-section .compact-meta {
+    gap: 7px;
+    row-gap: 2px;
+  }
+
+  .app .sessions-section .row-meta span,
+  .app .sessions-section .compact-meta span,
+  .app .sessions-section .pill,
+  .app .sessions-section .status-pill,
+  .app .sessions-section .host-pill {
+    font-size: 11.5px;
+    line-height: 1.15;
+  }
+
+  .app .sessions-section .session-retention-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 9px 11px;
+    padding: 13px 10px;
+  }
+
+  .app .sessions-section .session-retention-card-cta {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 32px;
+    padding: 6px 11px;
+  }
+
+  .app .sessions-section .compact-session-actions {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    padding-left: 0;
+  }
+
+  .app .sessions-section .compact-session-actions .compact-code {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .app .sessions-section .compact-session-actions .compact-join {
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding-inline: 12px;
+  }
+
+  .app .sessions-section .desktop-session-share {
+    display: inline-grid;
+  }
+
+  .app .sessions-section .compact-share {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .app .sessions-section .compact-expand,
+  .app .sessions-section .compact-session-actions .compact-expand {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .app .sessions-section .compact-share .share-symbol-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .app .sessions-section .session-expanded {
+    padding: 0 0 12px;
+  }
+
+  .app .sessions-section .reminder-strip {
+    padding: 14px 12px;
+  }
+
+  .app .sessions-section .reminder-strip-head {
+    display: grid;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .app .sessions-section .reminder-strip-head .small-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .app .sessions-section .reminder-strip > button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    align-items: start;
+  }
+
+  .app .sessions-section .reminder-strip > button small {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .app .sessions-section .confirm-game-panel {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .app .sessions-section .network-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .app .sessions-section .network-head .muted {
+    display: none;
+  }
+
+  .app .sessions-section .network-actions {
+    margin-left: 0;
+  }
+
+  .app .sessions-section .players {
+    gap: 8px;
+  }
+}
+
+@media (prefers-color-scheme: dark) and (min-width: 961px) {
+  .app .console-sidebar-toggle {
+    border-color: color-mix(in srgb, var(--vrena-white) 16%, transparent);
+    background: var(--vrena-neutral-800);
+    color: var(--vrena-neutral-200);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--vrena-neutral-950) 38%, transparent);
+  }
+
+  .app .tab.active {
+    color: var(--player-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app.console-workspace {
+    transition: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .app .sessions-section .sub-tabs button.active {
+    color: var(--player-text);
+  }
+}

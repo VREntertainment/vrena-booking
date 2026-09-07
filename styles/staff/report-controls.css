@@ -1,0 +1,824 @@
+.app .staff-order-date-cell {
+  min-width: 145px;
+}
+
+.app .staff-order-edit-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  padding: 2px 3px;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+}
+
+.app .staff-order-edit-trigger svg {
+  flex: 0 0 auto;
+  color: var(--vrena-neutral-400);
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease;
+}
+
+.app .staff-order-edit-trigger:hover,
+.app .staff-order-edit-trigger:focus-visible {
+  background: color-mix(in srgb, var(--vrena-purple-500) 8%, transparent);
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-order-edit-trigger:hover svg,
+.app .staff-order-edit-trigger:focus-visible svg {
+  color: currentColor;
+  opacity: 1;
+}
+
+.app .staff-order-row select,
+.app .staff-order-row input {
+  min-height: 36px;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-order-row select {
+  width: 100%;
+  min-width: 132px;
+}
+
+.app .staff-order-date-fields {
+  display: grid;
+  gap: 5px;
+  min-width: 138px;
+}
+
+.app .staff-order-date-fields input {
+  width: 100%;
+}
+
+.app .staff-order-total-field {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 126px;
+}
+
+.app .staff-order-total-field input {
+  width: 100%;
+}
+
+.app .staff-order-edit-error-row td {
+  border-bottom-color: color-mix(in srgb, var(--vrena-red-700) 20%, transparent);
+  background: color-mix(in srgb, var(--vrena-red-700) 8%, transparent);
+  color: var(--vrena-red-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app .staff-row-actions button,
+.app .staff-report-filter-row button,
+.app .staff-report-export-actions > button,
+.app .staff-report-export-actions > .staff-accountant-export > button,
+.app .staff-chart-mode button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.app .staff-chart-mode button.active,
+.app .staff-report-export-actions > .staff-accountant-export > button,
+.app .staff-accountant-download.primary {
+  background: var(--vrena-cta-primary);
+  border-color: transparent;
+  color: var(--vrena-cta-primary-ink);
+}
+
+.app .staff-chart-mode button.active {
+  box-shadow: none;
+}
+
+.app .staff-report-date-actions > button,
+.app .staff-report-compare-actions > button,
+.app .staff-report-export-actions > button {
+  border-color: color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.app .staff-report-filters {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  min-width: 0;
+}
+
+.app .staff-report-filters input,
+.app .staff-report-filters .staff-picker-shell {
+  width: auto;
+  min-width: 140px;
+}
+
+.app .staff-report-filter-row,
+.app .staff-report-compare-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.app .staff-report-date-actions,
+.app .staff-report-compare-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.app .staff-report-date-actions {
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 12px;
+  background: var(--vrena-bg-soft);
+}
+
+.app .staff-report-compare-actions {
+  padding-left: 2px;
+}
+
+.app .staff-report-export-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+}
+
+.app .staff-accountant-export {
+  position: relative;
+  display: inline-flex;
+}
+
+.app .staff-accountant-export > button.active {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 14%, transparent);
+}
+
+.app .staff-accountant-export-panel {
+  position: absolute;
+  z-index: 70;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(860px, calc(100vw - 40px));
+  max-height: min(78vh, 660px);
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  text-align: left;
+}
+
+.app .staff-accountant-export-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+}
+
+.app .staff-accountant-export-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.app .staff-accountant-export-head strong {
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.app .staff-accountant-export-head span,
+.app .staff-accountant-report-list span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-accountant-export-panel button {
+  min-height: 32px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-accountant-export-head button.staff-accountant-export-close {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vrena-neutral-600);
+  font-size: 24px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.app .staff-accountant-export-head button.staff-accountant-export-close:hover {
+  background: var(--vrena-surface-warm);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-accountant-export-grid {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-bg-soft);
+}
+
+.app .staff-accountant-export-grid label {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.app .staff-accountant-export-grid select,
+.app .staff-accountant-export-grid .staff-report-range-button {
+  min-height: 36px;
+  border-radius: 8px;
+}
+
+.app .staff-accountant-export-grid .staff-report-range-button {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.app .staff-accountant-export-check {
+  min-height: 36px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.app .staff-accountant-report-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 10px;
+}
+
+.app .staff-accountant-report-heading strong {
+  font-size: 13px;
+}
+
+.app .staff-accountant-report-heading span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-accountant-export-check input {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+
+.app .staff-accountant-report-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: min(42vh, 300px);
+  overflow: auto;
+  padding: 2px 2px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--vrena-neutral-950) 26%, transparent) transparent;
+}
+
+.app .staff-accountant-report-list button {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  justify-items: stretch;
+  min-height: 54px;
+  padding: 9px 40px 9px 12px;
+  border-radius: 8px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  text-align: left;
+}
+
+.app .staff-accountant-report-list button strong {
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 760;
+}
+
+.app .staff-accountant-report-list button span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-accountant-report-list button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--vrena-neutral-600) 34%, transparent);
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.app .staff-accountant-report-list button.active {
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 48%, transparent);
+  background: var(--vrena-blue-50);
+  color: var(--vrena-neutral-950);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-blue-600) 9%, transparent);
+}
+
+.app .staff-accountant-report-list button.active::after {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  border-color: var(--vrena-blue-600);
+  background: var(--vrena-blue-600);
+  color: var(--vrena-white);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-accountant-download.primary {
+  width: 100%;
+  color: var(--vrena-white);
+  min-height: 38px;
+  border-radius: 9px;
+  font-weight: 780;
+}
+
+.app .staff-report-compare-row {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.app .staff-report-compare-row > span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-compare-toggle {
+  position: relative;
+  width: auto;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  padding: 5px 10px 5px 7px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.app .staff-compare-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.app .staff-compare-toggle.active {
+  border-color: color-mix(in srgb, var(--vrena-blue-600) 38%, transparent);
+  background: var(--vrena-blue-50);
+  color: var(--vrena-blue-700);
+}
+
+.app .staff-compare-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--vrena-neutral-300);
+  transition: background 160ms ease;
+}
+
+.app .staff-compare-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--vrena-white);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--vrena-neutral-950) 22%, transparent);
+  transition: transform 160ms ease;
+}
+
+.app .staff-compare-toggle.active .staff-compare-switch {
+  background: var(--vrena-blue-600);
+}
+
+.app .staff-compare-toggle.active .staff-compare-switch::after {
+  transform: translateX(12px);
+}
+
+.app .staff-report-range-button {
+  min-height: 36px;
+  min-width: 156px;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  color: var(--vrena-neutral-950);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.app .staff-report-range-button span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.app .staff-report-range-button span svg {
+  flex: 0 0 auto;
+}
+
+.app .staff-report-range-button strong {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.app .staff-report-range-button.compact {
+  min-width: 190px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.app .staff-report-range-button.compact strong {
+  justify-self: end;
+}
+
+.app .login-modal.staff-report-date-modal {
+  width: min(1040px, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
+  max-height: min(86vh, 920px);
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 14px;
+}
+
+.app .staff-report-date-modal-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+  align-items: start;
+  gap: 12px;
+  padding-right: 40px;
+}
+
+.app .staff-report-date-modal-head h3 {
+  margin: 0 0 4px;
+}
+
+.app .staff-report-date-modal-head p {
+  margin: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-report-date-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.app .staff-report-date-mode button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-height: 54px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.app .staff-report-date-mode button.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 48%, transparent);
+  background: var(--vrena-blue-50);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
+}
+
+.app .staff-report-date-mode button.compare.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-500) 55%, transparent);
+  background: var(--vrena-blue-50);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-500) 10%, transparent);
+}
+
+.app .staff-report-date-mode button:disabled {
+  opacity: 0.55;
+}
+
+.app .staff-report-date-mode button span {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.app .staff-report-date-mode button strong {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.app .staff-report-date-modal-body {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.34fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.app .staff-report-date-presets {
+  display: grid;
+  align-content: start;
+  border-right: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-right: 10px;
+}
+
+.app .staff-report-date-presets button {
+  min-height: 38px;
+  justify-content: flex-start;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--vrena-neutral-600);
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.app .staff-report-date-presets button.active {
+  background: var(--vrena-blue-50);
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-report-date-main {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app .staff-report-active-range-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app .staff-report-active-range-head > strong {
+  font-size: 13px;
+}
+
+.app .staff-report-calendar-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.app .staff-report-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.app .staff-report-calendar-legend i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.app .staff-report-calendar-legend i.reference {
+  background: var(--vrena-blue-700);
+}
+
+.app .staff-report-calendar-legend i.compare {
+  border: 2px solid var(--vrena-mode-accent);
+  background: var(--vrena-white);
+}
+
+.app .staff-report-date-inputs,
+.app .staff-report-date-compare-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-report-date-inputs label,
+.app .staff-report-date-compare-fields label {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-report-date-inputs label > span,
+.app .staff-report-date-compare-fields label > span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-report-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.app .staff-report-calendar-nav button {
+  width: 28px;
+  min-height: 28px;
+  border-radius: 999px;
+  line-height: 1;
+  padding: 0;
+}
+
+.app .staff-report-calendar-nav span {
+  min-width: 190px;
+  color: var(--vrena-neutral-950);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .staff-report-calendar-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.app .staff-report-calendar-month {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .staff-report-calendar-month h4 {
+  margin: 0;
+  text-align: center;
+}
+
+.app .staff-report-calendar-weekdays,
+.app .staff-report-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.app .staff-report-calendar-weekdays span {
+  color: var(--vrena-neutral-500);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app .staff-report-calendar-day {
+  aspect-ratio: 1;
+  min-height: 30px;
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  background: var(--vrena-neutral-100);
+  color: var(--vrena-neutral-950);
+  padding: 0;
+}
+
+.app .staff-report-calendar-day.outside {
+  opacity: 0.35;
+}
+
+.app .staff-report-calendar-day.in-range {
+  background: var(--vrena-blue-100);
+}
+
+.app .staff-report-calendar-day.range-edge {
+  background: var(--vrena-blue-700);
+  color: var(--vrena-white);
+}
+
+.app .staff-report-calendar-day.compare-range {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vrena-cyan-500) 36%, transparent);
+}
+
+.app .staff-report-calendar-day.compare-edge {
+  box-shadow: inset 0 0 0 2px var(--vrena-mode-accent);
+}
+
+.app .staff-report-date-compare {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 10px;
+}
+
+.app .staff-report-date-compare-fields {
+  grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.app .staff-report-date-compare-fields p {
+  margin: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-report-date-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.app .staff-report-date-modal-actions button {
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+.app .staff-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-summary-grid > div {
+  display: grid;
+  gap: 4px;
+  min-height: 62px;
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  padding: 10px;
+}

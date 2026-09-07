@@ -1,0 +1,373 @@
+.app .staff-summary-grid strong {
+  font-size: 17px;
+}
+
+.app .staff-operations-card .staff-card-heading p {
+  margin: 2px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app .staff-operations-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.app .staff-operations-actions label {
+  display: grid;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.app .staff-operations-actions button {
+  min-height: var(--staff-control-height);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app .staff-operations-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.app .staff-operations-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-operation-session {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  padding: 10px;
+}
+
+.app .staff-operation-time {
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+}
+
+.app .staff-operation-time strong {
+  font-size: 17px;
+}
+
+.app .staff-operation-time span,
+.app .staff-operation-meta span,
+.app .staff-operation-order span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-operation-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-operation-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.app .staff-operation-title-row strong {
+  font-size: 16px;
+}
+
+.app .staff-operation-title-row span {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-cyan-500) 12%, transparent);
+  color: var(--vrena-green-700);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 8px;
+}
+
+.app .staff-operation-meta,
+.app .staff-operation-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+}
+
+.app .staff-operation-order {
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 6px;
+}
+
+.app .staff-operation-actions {
+  justify-content: flex-end;
+  max-width: 240px;
+}
+
+.app .staff-operation-scope-tabs {
+  margin: 0;
+}
+
+.app .staff-operation-edit-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 10px;
+}
+
+.app .staff-operation-edit-section {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-operation-edit-section > strong {
+  font-size: 13px;
+}
+
+.app .staff-operation-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-operation-field-grid.compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.app .staff-operation-field-grid label,
+.app .staff-operation-chapters label {
+  display: grid;
+  gap: 4px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-operation-field-grid input,
+.app .staff-operation-field-grid select,
+.app .staff-operation-add-player input,
+.app .staff-operation-chapters input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 7px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.app .staff-operation-field-grid input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+
+.app .staff-operation-add-player {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  position: relative;
+  z-index: 3;
+}
+
+.app .staff-operation-add-player-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.app .staff-operation-add-player-picker input[type="search"] {
+  padding-right: 12px;
+}
+
+.app .staff-operation-player-results {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  padding: 5px;
+}
+
+.app .staff-operation-player-result {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-950);
+  padding: 7px 9px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .staff-operation-player-result:hover,
+.app .staff-operation-player-result:focus-visible,
+.app .staff-operation-player-result[aria-selected="true"] {
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-operation-player-result span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-operation-player-result small,
+.app .staff-operation-player-empty {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+.app .staff-operation-player-empty {
+  margin: 0;
+  padding: 9px;
+}
+
+.app .staff-operation-participants {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-operation-participant {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.app .staff-operation-participant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .staff-operation-chapters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-operation-chapters > span {
+  grid-column: 1 / -1;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-operations-orders {
+  border-top: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+  padding-top: 8px;
+}
+
+.app .staff-operations-orders summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.app .staff-attendance-card {
+  gap: 7px;
+  padding: 10px;
+  --staff-control-height: 36px;
+}
+
+.app .staff-attendance-card > .staff-card-heading {
+  margin-bottom: 0;
+}
+
+.app .staff-attendance-range {
+  margin: 2px 0 6px;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.app .staff-attendance-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.app .staff-attendance-summary > div {
+  min-height: 50px;
+  border-radius: 7px;
+  padding: 8px 9px;
+}
+
+.app .staff-attendance-summary span {
+  font-size: 12px;
+}
+
+.app .staff-attendance-summary strong {
+  font-size: 16px;
+}
+
+.app .staff-attendance-actions {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.app .staff-attendance-actions label {
+  flex: 0 1 170px;
+  min-width: 148px;
+  gap: 2px;
+}
+
+.app .staff-attendance-actions button {
+  min-height: 36px;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.app .staff-attendance-tabs {
+  margin: 8px 0;
+  gap: 5px;
+}
+
+.app .staff-attendance-tabs button {
+  min-height: 34px;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 13px;
+}
+
+.app .staff-planning-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 7px;
+  background: var(--vrena-white);
+  padding: 8px;
+}

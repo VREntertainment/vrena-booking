@@ -1,0 +1,1154 @@
+/* Staff Console route styles. Imported only by /staff and /admin so public/player routes do not pay for Staff Console CSS at first render. */
+@keyframes staffBarRise {
+  from {
+    transform: scaleY(0.08);
+    opacity: 0.5;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes staffCurveDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes staffPieSpin {
+  from {
+    transform: rotate(-16deg) scale(0.94);
+    opacity: 0.65;
+  }
+  to {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.app .staff-console {
+  display: grid;
+  gap: 10px;
+}
+
+.app .staff-role-pill {
+  align-self: start;
+  border-radius: 999px;
+  background: var(--vrena-blue-100);
+  color: var(--vrena-green-700);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.app .staff-console-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-tab-categories {
+  display: none;
+}
+
+.app .staff-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+  padding-bottom: 2px;
+}
+
+.app .staff-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app .staff-tab-group-label {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app .staff-tab-group-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app .staff-tabs button,
+.app .staff-tab-categories button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  padding: 7px 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.app .staff-tabs button.active,
+.app .staff-tab-categories button.active {
+  background: var(--vrena-selection-bg);
+  border-color: var(--vrena-selection-border);
+  color: var(--vrena-selection-ink);
+}
+
+.app .staff-commerce-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: stretch;
+}
+
+.app .staff-commerce-switcher button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  text-align: center;
+  white-space: normal;
+}
+
+.app .staff-commerce-switcher button.active {
+  background: var(--vrena-selection-bg);
+  border-color: var(--vrena-selection-border);
+  color: var(--vrena-selection-ink);
+}
+
+.app .staff-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app .staff-card-heading h3 {
+  margin: 0;
+}
+
+.app .staff-calendar-shortcut {
+  width: auto;
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--vrena-cta-primary);
+  color: var(--vrena-cta-primary-ink);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.app .staff-link-button {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--vrena-mode-accent);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  box-shadow: none;
+}
+
+.app .staff-link-button:hover {
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-readonly-note {
+  margin: 0 0 6px;
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-readonly-fieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.app .staff-readonly-fieldset:disabled {
+  opacity: 1;
+}
+
+.app .staff-readonly-fieldset:disabled input,
+.app .staff-readonly-fieldset:disabled select,
+.app .staff-readonly-fieldset:disabled textarea,
+.app .staff-readonly-fieldset:disabled button {
+  cursor: not-allowed;
+}
+
+.app .staff-mode-panel {
+  display: grid;
+  gap: 12px;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 36px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 12px;
+  background: var(--vrena-white);
+  padding: 18px;
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+}
+
+.app .staff-mode-panel h2,
+.app .staff-mode-panel p {
+  margin: 0;
+}
+
+.app .staff-mode-panel p {
+  color: var(--vrena-neutral-600);
+}
+
+.app .staff-mode-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app .staff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.app .staff-card {
+  display: grid;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  padding: 12px;
+  --staff-control-height: 40px;
+}
+
+.app .staff-card .compact-form-grid > label {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+.app .staff-card .compact-form-grid > .checkbox-row {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  gap: 7px;
+  min-height: 32px;
+}
+
+.app .staff-card .compact-form-grid > .checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--vrena-mode-accent);
+}
+
+.app .staff-card .compact-form-grid > .staff-guest-booking-toggle {
+  width: 100%;
+  justify-self: stretch;
+  align-items: flex-start;
+  border: 1px solid color-mix(in srgb, var(--vrena-mode-accent) 34%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-mode-accent) 7%, var(--vrena-white));
+  padding: 10px;
+}
+
+.app .staff-guest-booking-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.app .staff-guest-booking-copy strong {
+  color: var(--vrena-neutral-900);
+  font-size: 13px;
+}
+
+.app .staff-guest-booking-copy small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .staff-card .compact-form-grid > .staff-customer-name-field {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .staff-card input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), .app .staff-card select {
+  display: block;
+  height: var(--staff-control-height);
+  min-height: var(--staff-control-height);
+  padding-block: 0;
+  padding-inline: 10px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.app .staff-card input[type="date"], .app .staff-card input[type="time"] {
+  line-height: var(--staff-control-height);
+}
+
+.app .staff-customer-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  padding: 5px;
+}
+
+.app .staff-customer-suggestion {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-950);
+  padding: 7px 9px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.app .staff-customer-suggestion:hover,
+.app .staff-customer-suggestion:focus-visible,
+.app .staff-customer-suggestion[aria-selected="true"] {
+  background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-customer-suggestion span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-customer-suggestion small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app .staff-picker-shell {
+  position: relative;
+  width: 100%;
+  height: var(--staff-control-height);
+  min-height: var(--staff-control-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  color: var(--vrena-neutral-950);
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.app .staff-picker-shell.placeholder {
+  color: var(--vrena-neutral-500);
+}
+
+.app .staff-picker-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  appearance: none;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.app .staff-picker-native::-webkit-date-and-time-value {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.app .staff-picker-display {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.app .staff-picker-shell:focus-within {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 58%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vrena-cyan-700) 12%, transparent);
+}
+
+.app .staff-picker-shell.staff-time-picker {
+  overflow: visible;
+  z-index: 30;
+}
+
+.app .staff-picker-shell.staff-time-picker:focus-within {
+  z-index: 110;
+}
+
+.app .staff-time-trigger {
+  width: 100%;
+  min-height: var(--staff-control-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app .staff-time-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 190px;
+  max-height: 260px;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  border-radius: 10px;
+  background: var(--vrena-white);
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+}
+
+.app .staff-time-manual {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 16%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  color: var(--vrena-neutral-950);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.app .staff-time-option-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 190px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.app .staff-time-option {
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vrena-neutral-950);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app .staff-time-option:hover, .app .staff-time-option.active {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 28%, transparent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent);
+  color: var(--vrena-mode-accent);
+}
+
+.app .staff-label-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.app .staff-label-line small {
+  color: var(--vrena-neutral-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.app .staff-form-section-label {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+.app .staff-card-wide {
+  min-width: 0;
+}
+
+.app .staff-summary-card {
+  position: sticky;
+  top: 12px;
+}
+
+.app .staff-price-lines {
+  display: grid;
+  grid-template-columns: minmax(85px, 0.75fr) minmax(0, 1.25fr);
+  gap: 10px 14px;
+  align-items: center;
+  border-radius: 8px;
+  background: var(--vrena-surface-warm);
+  padding: 10px;
+}
+
+.app .staff-price-lines span,
+.app .staff-table span,
+.app .staff-list-item span,
+.app .staff-summary-grid span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+}
+
+.app .staff-price-lines strong:last-child {
+  color: var(--vrena-mode-accent);
+  font-size: 18px;
+}
+
+.app .staff-note-field {
+  display: grid;
+  gap: 4px;
+}
+
+.app .staff-manual-discount {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-manual-discount > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.55fr);
+  gap: 6px;
+}
+
+.app .staff-discount-value-field {
+  min-width: 0;
+}
+
+.app .staff-discount-value-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, 0.36fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.app .staff-discount-value-control input,
+.app .staff-discount-value-control select {
+  min-width: 0;
+}
+
+.app .staff-payment-splits,
+.app .staff-payment-split-list {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-payment-split-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 1fr) auto;
+  gap: 6px;
+  align-items: end;
+}
+
+.app .staff-field-label {
+  display: block;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.app .staff-game-photo-field {
+  display: grid;
+  gap: 5px;
+}
+
+.app .staff-game-media-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(180px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.app .staff-game-settings-panel {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+
+.app .staff-game-guide-editor {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  padding: 10px;
+}
+
+.app .staff-game-guide-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app .staff-game-guide-head small {
+  display: block;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.app .staff-game-guide-head label {
+  display: grid;
+  gap: 4px;
+  min-width: min(180px, 100%);
+}
+
+.app .staff-game-guide-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.app .staff-game-guide-fields label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app .staff-game-guide-fields textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.app .staff-arena-options {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-audience-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.app .staff-audience-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+  padding: 6px 9px;
+}
+
+.app .staff-audience-summary::-webkit-details-marker {
+  display: none;
+}
+
+.app .staff-audience-summary::after {
+  content: "⌄";
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+.app .staff-audience-menu[open] .staff-audience-summary::after {
+  transform: rotate(180deg);
+}
+
+.app .staff-audience-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app .staff-audience-chip,
+.app .staff-audience-placeholder {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  min-height: 22px;
+  padding: 2px 7px;
+}
+
+.app .staff-audience-chip {
+  background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
+  color: var(--vrena-purple-600);
+}
+
+.app .staff-audience-placeholder {
+  color: var(--vrena-neutral-600);
+}
+
+.app .staff-audience-dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 5px;
+  max-height: 226px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-white);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--vrena-neutral-950) 14%, transparent);
+  padding: 6px;
+}
+
+.app .staff-audience-option,
+.app .staff-arena-option,
+.app .staff-game-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
+  font-weight: 900;
+  padding: 7px 9px;
+}
+
+.app .staff-audience-option input,
+.app .staff-arena-option input,
+.app .staff-game-active-toggle input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 auto;
+}
+
+.app .staff-audience-option input:disabled,
+.app .staff-arena-option input:disabled {
+  opacity: 0.55;
+}
+
+.app .staff-game-photo-upload {
+  position: relative;
+  display: grid;
+  width: min(100%, 260px);
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px dashed color-mix(in srgb, var(--vrena-cyan-700) 38%, transparent);
+  border-radius: 8px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--vrena-cyan-600) 8%, transparent), color-mix(in srgb, var(--vrena-cyan-700) 10%, transparent));
+  color: var(--vrena-neutral-600);
+  cursor: pointer;
+  justify-self: start;
+  text-align: center;
+}
+
+.app .staff-game-photo-upload.has-image {
+  border-style: solid;
+}
+
+.app .staff-game-photo-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+}
+
+.app .staff-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app .staff-list-head h3 {
+  margin: 0;
+}
+
+.app .staff-list-head button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.app .staff-game-photo-upload > span {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+}
+
+.app .staff-game-photo-upload strong {
+  color: var(--vrena-neutral-950);
+}
+
+.app .staff-game-photo-upload small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .staff-game-photo-upload em {
+  position: absolute;
+  inset: auto 10px 10px auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vrena-neutral-950) 76%, transparent);
+  color: var(--vrena-white);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  padding: 5px 8px;
+}
+
+.app .staff-game-photo-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.app .checkbox-row.staff-game-active-toggle input {
+  width: 16px;
+}
+
+.app .staff-list-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  background: var(--vrena-neutral-50);
+  color: var(--vrena-neutral-950);
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.app .staff-list-item:hover {
+  border-color: color-mix(in srgb, var(--vrena-cyan-700) 30%, transparent);
+}
+
+.app .staff-role-list,
+.app .staff-restore-list {
+  display: grid;
+  gap: 8px;
+}
+
+.app .staff-role-help-modal {
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.app .staff-account-delete-modal {
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.app .staff-account-delete-warning {
+  border: 1px solid color-mix(in srgb, var(--vrena-red-700) 18%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-red-50);
+  color: var(--vrena-red-800);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app .staff-role-help-list {
+  display: grid;
+  gap: 6px;
+}
+
+.app .staff-role-help-item {
+  display: grid;
+  gap: 3px;
+  border: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 10%, transparent);
+  border-radius: 8px;
+  background: var(--vrena-neutral-50);
+  padding: 8px;
+}
+
+.app .staff-role-help-item span {
+  color: var(--vrena-neutral-600);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.app .staff-customer-invite-panel {
+  display: grid;
+  gap: 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.app .staff-client-profile-page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app .staff-card.staff-customer-invite-panel {
+  border: 1px solid var(--staff-modern-border, color-mix(in srgb, var(--vrena-neutral-950) 12%, transparent));
+  border-radius: 8px;
+  background: var(--staff-modern-surface, var(--vrena-white));
+  padding: 12px;
+  margin: 0;
+}
+
+.app .staff-customer-invite-copy {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.app .staff-customer-invite-copy strong {
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.app .staff-customer-invite-copy span {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.app .staff-customer-invite-form {
+  --staff-invite-control-height: 40px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  align-items: end;
+}
+
+.app .staff-customer-invite-form label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+
+.app .staff-customer-invite-form .staff-field-label {
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.app .staff-card .staff-customer-invite-form input:not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
+  box-sizing: border-box;
+  height: var(--staff-invite-control-height);
+  min-height: var(--staff-invite-control-height);
+  padding: 7px 10px;
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.app .staff-customer-invite-form .staff-phone-control {
+  height: var(--staff-invite-control-height);
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 7px;
+  align-items: stretch;
+}
+
+.app .staff-customer-invite-form .staff-phone-control .country-picker,
+.app .staff-customer-invite-form .staff-phone-control .country-button {
+  height: 100%;
+}
+
+.app .staff-customer-invite-form .staff-phone-control .country-button {
+  min-height: var(--staff-invite-control-height);
+  padding-block: 7px;
+}
+
+.app .staff-customer-phone-account-setup {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 7px;
+  align-items: end;
+  border: 1px solid color-mix(in srgb, var(--vrena-blue-600) 22%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vrena-blue-50) 74%, var(--vrena-white));
+  padding: 9px;
+}
+
+.app .staff-customer-temporary-access {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: center;
+  margin-top: 5px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--vrena-purple-500) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vrena-purple-500) 7%, var(--staff-modern-surface, var(--vrena-white)));
+}
+
+.app .staff-customer-temporary-access > span,
+.app .staff-customer-temporary-access > small,
+.app .staff-customer-temporary-access > p {
+  grid-column: 1;
+}
+
+.app .staff-customer-temporary-access > span {
+  color: var(--vrena-neutral-700);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app .staff-customer-temporary-access > strong {
+  grid-column: 1;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 0.08em;
+}
+
+.app .staff-customer-temporary-access > p {
+  margin: 2px 0 0;
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+}
+
+.app .staff-customer-temporary-access > button {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+}
+
+.app .staff-customer-phone-account-setup > p {
+  align-self: center;
+  margin: 0;
+  color: var(--vrena-neutral-700);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .staff-card .staff-customer-invite-form > button.primary {
+  box-sizing: border-box;
+  align-self: end;
+  height: var(--staff-invite-control-height);
+  min-height: var(--staff-invite-control-height);
+  border-radius: 9px;
+  padding: 7px 13px;
+  font-size: 15px;
+  line-height: 1.15;
+  white-space: nowrap;
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.app .staff-achievement-award-panel {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
+}
+
+.app .staff-achievement-preview-icon,
+.app .staff-achievement-player-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--vrena-mode-accent);
+  background: color-mix(in srgb, var(--vrena-cyan-700) 9%, transparent);
+}
+
+.app .staff-achievement-awarded-list > strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.app .staff-achievement-preview span,
+.app .staff-achievement-awarded-list small {
+  color: var(--vrena-neutral-600);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.app .staff-achievement-award-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1.15fr);
+  gap: 14px;
+  align-items: start;
+}
