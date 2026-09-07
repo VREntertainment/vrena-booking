@@ -15,6 +15,7 @@ import type {
 } from './types.ts'
 
 export const defaultBookingForm = (): BookingForm => ({
+  bookingSource: 'walk_in',
   guestBooking: false,
   venueKey: 'ha-do-centrosa',
   customerId: '',

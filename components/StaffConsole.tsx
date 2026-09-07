@@ -349,7 +349,7 @@ function ButtonIconText({ children, icon }: { children: ReactNode; icon: ReactNo
   )
 }
 
-export default function StaffConsole({ profile, authEmail, language, mode = 'staff', kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, mode = 'staff', kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar, initialBooking, onBookingCreated }: StaffConsoleProps) {
   const resolvedLanguage = resolveStaffConsoleLanguage(language)
   const text = staffConsoleText[resolvedLanguage]
   const sharedText = uiText[resolvedLanguage]
@@ -433,7 +433,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [profiles, setProfiles] = useState<StaffProfile[]>([])
   const [achievementAwards, setAchievementAwards] = useState<StaffAchievementAward[]>([])
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
-  const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
+  const [booking, setBooking] = useState<BookingForm>(() => ({ ...defaultBookingForm(), ...initialBooking, arenaId: initialBooking?.venueKey === 'cafe-des-stagiaires' ? 'cafe:arena-1' : 'arena-1' }))
   const [customerNameFocused, setCustomerNameFocused] = useState(false)
   const [customerSuggestionIndex, setCustomerSuggestionIndex] = useState(-1)
   const bookingSubmitRef = useRef(false)
@@ -2077,27 +2077,30 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       const guestCustomer = booking.guestBooking
       const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
       const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
-      const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
-        p_customer_id: guestCustomer ? null : booking.customerId || null,
-        p_customer_name: guestCustomer ? null : booking.customerName || null,
-        p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
-        p_customer_email: guestCustomer ? null : booking.customerEmail || null,
-        p_game_id: selectedGame.id,
-        p_booking_date: booking.date,
-        p_booking_time: `${booking.time}:00`,
-        p_players_count: booking.players,
-        p_arena_id: selectedBookingArena || null,
-        p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
-        p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
-        p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
-        p_payment_splits: paymentSplits,
-        p_order_status: booking.orderStatus,
-        p_invoice_required: booking.invoiceRequired,
-        p_company_name: booking.companyName || null,
-        p_tax_code: booking.taxCode || null,
-        p_invoice_email: booking.invoiceEmail || null,
-        p_invoice_address: booking.invoiceAddress || null,
-        p_internal_note: booking.note || null,
+      const { data, error } = await supabase.rpc('staff_create_booking', {
+        p_booking_source: booking.bookingSource,
+        p_booking: {
+          p_customer_id: guestCustomer ? null : booking.customerId || null,
+          p_customer_name: guestCustomer ? null : booking.customerName || null,
+          p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
+          p_customer_email: guestCustomer ? null : booking.customerEmail || null,
+          p_game_id: selectedGame.id,
+          p_booking_date: booking.date,
+          p_booking_time: `${booking.time}:00`,
+          p_players_count: booking.players,
+          p_arena_id: selectedBookingArena || null,
+          p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
+          p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
+          p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
+          p_payment_splits: paymentSplits,
+          p_order_status: booking.orderStatus,
+          p_invoice_required: booking.invoiceRequired,
+          p_company_name: booking.companyName || null,
+          p_tax_code: booking.taxCode || null,
+          p_invoice_email: booking.invoiceEmail || null,
+          p_invoice_address: booking.invoiceAddress || null,
+          p_internal_note: booking.note || null,
+        },
       })
 
       if (error) {
@@ -2111,7 +2114,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         .replace('{order}', order?.order_number || '')
         .replace('{total}', formatVnd(order?.total ?? quote.total)))
       setBooking(defaultBookingForm())
-      markStaffDataStale('today', 'orders', 'report', 'profiles')
+      markStaffDataStale('today', 'todaySessions', 'orders', 'report', 'profiles')
+      onBookingCreated?.(booking.date, booking.venueKey)
       void loadProfiles(true)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error))
@@ -5116,7 +5120,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 onClick={() => {
                   const targetDate = booking.date || todayString()
                   if (onOpenSessionCalendar) {
-                    onOpenSessionCalendar(targetDate)
+                    onOpenSessionCalendar(targetDate, booking.venueKey)
                     return
                   }
                   setOperationsDate(targetDate)
@@ -5130,10 +5134,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders || saving}>
             <div className="form-grid compact-form-grid">
               <label>
-                {bookingText.bookingType}
-                <select value={booking.guestBooking ? 'guest' : 'customer'} onChange={(event) => setGuestBooking(event.target.value === 'guest')}>
-                  <option value="customer">{bookingText.customerBooking}</option>
-                  <option value="guest">{text.labels.guestBooking}</option>
+                {bookingText.bookingSource}
+                <select value={booking.bookingSource} onChange={(event) => setBooking((current) => ({ ...current, bookingSource: event.target.value as BookingForm['bookingSource'] }))}>
+                  {Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
               </label>
               <label>
@@ -5147,6 +5150,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
                   <option value="cafe-des-stagiaires">VRena Café des Stagiaires</option>
                 </select>
+              </label>
+              <label className="full staff-guest-toggle">
+                <input type="checkbox" checked={booking.guestBooking} onChange={(event) => setGuestBooking(event.target.checked)} />
+                <span>{text.labels.guestBooking}</span>
               </label>
               {booking.guestBooking && <p className="field-help full">{text.messages.guestBookingHelp}</p>}
               {!booking.guestBooking && <>
@@ -5322,12 +5329,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               <div className="staff-payment-splits full">
                 <div className="staff-list-head">
                   <h4>{text.labels.paymentSplits}</h4>
-                    <button type="button" onClick={addBookingPaymentSplit}>
+                    <button className="staff-payment-add secondary" type="button" onClick={addBookingPaymentSplit}>
                       <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.actions.addSplit}</ButtonIconText>
                     </button>
                 </div>
                 <div className="staff-payment-split-list">
-                  {booking.paymentSplits.map((split) => (
+                  {booking.paymentSplits.map((split, index) => (
                     <div className="staff-payment-split-row" key={split.id}>
                       <select
                         aria-label={text.aria.paymentMethod}
@@ -5343,8 +5350,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                         value={formatDongInput(split.amount)}
                         onChange={(event) => updateBookingPaymentSplit(split.id, { amount: dongDigits(event.target.value) })}
                       />
-                      <button className="secondary" type="button" onClick={() => removeBookingPaymentSplit(split.id)}>
-                        <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.remove}</ButtonIconText>
+                      <button className="staff-payment-remove" aria-label={`${bookingText.removeSplit} ${index + 1}`} title={bookingText.removeSplit} type="button" onClick={() => removeBookingPaymentSplit(split.id)}>
+                        <Trash2 aria-hidden="true" size={16} />
                       </button>
                     </div>
                   ))}

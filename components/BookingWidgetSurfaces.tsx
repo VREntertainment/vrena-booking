@@ -36,6 +36,7 @@ export const BookingProfileView = dynamic(() => import('./BookingProfileView'), 
   ssr: false,
   loading: () => <AppLoadingState className="section profile-section" />,
 })
+export const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 export const StaffConsole = dynamic(() => import('./StaffConsole'), {
   ssr: false,
   loading: () => <AppLoadingState className="section staff-console" />,

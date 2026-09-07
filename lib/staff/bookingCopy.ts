@@ -1,5 +1,8 @@
 export const staffBookingCopy = {
   en: {
+    bookingSource: 'Booking source',
+    sources: { walk_in: 'Walk-in', zalo: 'Zalo', whatsapp: 'WhatsApp', phone: 'Phone', website: 'Website', other: 'Other' },
+    removeSplit: 'Remove payment split',
     bookingType: 'Booking type', customerBooking: 'Client booking', shop: 'Shop',
     searchCustomer: 'Search by name, phone or email, or enter a new client',
     createProfile: 'Create profile for “{name}”',
@@ -13,6 +16,9 @@ export const staffBookingCopy = {
     durationHelp: 'This staff booking reserves the game runtime shown below. Check the shop, time, players and total before confirming.',
   },
   vi: {
+    bookingSource: 'Nguồn đặt chỗ',
+    sources: { walk_in: 'Khách đến trực tiếp', zalo: 'Zalo', whatsapp: 'WhatsApp', phone: 'Điện thoại', website: 'Website', other: 'Khác' },
+    removeSplit: 'Xóa phần thanh toán',
     bookingType: 'Loại đặt chỗ', customerBooking: 'Đặt chỗ theo hồ sơ khách', shop: 'Cửa hàng',
     searchCustomer: 'Tìm theo tên, điện thoại, email hoặc nhập tên khách mới',
     createProfile: 'Tạo hồ sơ cho “{name}”',
