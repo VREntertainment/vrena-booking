@@ -253,7 +253,8 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     return { inline: Math.abs(rect.top + rect.height / 2 - input.top - input.height / 2) < 2, width: rect.width, background: getComputedStyle(button).backgroundColor }
   })
   expect(hierarchy.inline).toBe(true)
-  expect(hierarchy.width).toBe(36)
+  // Browser transforms can leave subpixel rounding after a viewport change.
+  expect(hierarchy.width).toBeCloseTo(36, 0)
   await expect(page.locator('.staff-payment-remove svg')).toBeVisible()
   expect(await page.locator('.staff-payment-add').evaluate((button) => getComputedStyle(button).borderTopWidth)).toBe('0px')
   await page.getByRole('heading', { name: 'Payment splits', exact: true }).scrollIntoViewIfNeeded()
