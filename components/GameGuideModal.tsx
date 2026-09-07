@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { X } from 'lucide-react'
+import GameGuideCategory from './GameGuideCategory'
 import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
 import './GameGuideModal.css'
 
@@ -136,7 +137,7 @@ export default function GameGuideModal({
                   <div className="game-guide-card-head">
                     <div>
                       <h4>{game.title}</h4>
-                      <span>{game.category}</span>
+                      <GameGuideCategory gameId={game.id} category={game.category} />
                     </div>
                     <div className="game-guide-facts">
                       <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
