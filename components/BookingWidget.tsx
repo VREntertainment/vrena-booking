@@ -1,154 +1,124 @@
 'use client'
+import dynamic from 'next/dynamic'
+import type { ChallengeTarget } from '../features/booking/ChallengeControls'
+import { clubRankingCriterion, clubTheme } from '../features/booking/clubAccess.actions'
+import { avatarFields } from '../features/booking/profiles.actions'
+import { downloadSessionCalendar } from '../features/booking/reminders.actions'
+import { useBookingLifecycleActions } from '../features/booking/useBookingLifecycleActions'
 
-import { createTournamentActions } from '../lib/booking/tournamentActions'
+import { useBookingAuthenticationState } from '../features/booking/useBookingAuthenticationState'
+import { useBookingClubsState } from '../features/booking/useBookingClubsState'
+import { useBookingGameGuideState } from '../features/booking/useBookingGameGuideState'
+import { useBookingLeaderboardState } from '../features/booking/useBookingLeaderboardState'
+import { useBookingProfilesState } from '../features/booking/useBookingProfilesState'
+import { useBookingRemindersState } from '../features/booking/useBookingRemindersState'
+import { useBookingSessionEditorState } from '../features/booking/useBookingSessionEditorState'
+import { useBookingSessionsState } from '../features/booking/useBookingSessionsState'
+import { useBookingTicketsState } from '../features/booking/useBookingTicketsState'
+import { useBookingTournamentsState } from '../features/booking/useBookingTournamentsState'
+
+import { createBookingAuthCredentialsActions } from '../features/booking/authCredentials.actions'
+import { createBookingAuthSessionActions } from '../features/booking/authSession.actions'
+import { createBookingClubAccessActions } from '../features/booking/clubAccess.actions'
+import { createBookingClubDataActions } from '../features/booking/clubData.actions'
+import { createBookingClubManagementActions } from '../features/booking/clubManagement.actions'
+import { createBookingClubMembershipActions } from '../features/booking/clubMembership.actions'
+import { createBookingClubMessagesActions } from '../features/booking/clubMessages.actions'
+import { createBookingClubPageActions } from '../features/booking/clubPage.actions'
+import { createBookingMfaActions } from '../features/booking/mfa.actions'
+import { createBookingPasskeysActions } from '../features/booking/passkeys.actions'
+import { createBookingProfilesActions } from '../features/booking/profiles.actions'
+import { createBookingRecoveryActions } from '../features/booking/recovery.actions'
+import { createBookingRemindersActions } from '../features/booking/reminders.actions'
+import { createBookingSessionBookingActions } from '../features/booking/sessionBooking.actions'
+import { createBookingSessionEditingActions } from '../features/booking/sessionEditing.actions'
+import { createBookingSessionLoadingActions } from '../features/booking/sessionLoading.actions'
+import { createBookingSessionMessagesActions } from '../features/booking/sessionMessages.actions'
+import { ActionToast, BOOKING_ACTIVE_VIEW_STORAGE_KEY, BookingWidgetProps, CONSENT_WAIVER_URL, NAVIGATION_COLLAPSE_STORAGE_KEY, PRIVACY_POLICY_URL, REALTIME_REFRESH_DEBOUNCE_MS, TERMS_CONDITIONS_URL, TICKET_NEXT_AVAILABLE_SCAN_DAYS, isBookingAppView } from '../features/booking/shared'
+import { createBookingTicketsActions } from '../features/booking/tickets.actions'
+
+
+import { bindBookingTournamentActions } from '../features/booking/tournament.actions'
 
 import { CAFE_SOFT_OPENING_DATE, availableSessionTimes, cafeTicketTimes } from '../lib/booking/availability'
-import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking, writePendingTicketAccountBooking } from '../lib/booking/pendingAccountBooking'
+import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking } from '../lib/booking/pendingAccountBooking'
 
 import { useTicketCheckout } from '../hooks/useTicketCheckout'
 import { getSupabase } from '../lib/booking/client'
 
-import { buildTicketBookingRequest } from '../lib/ticketBookingRequest'
 
 import {
   Bold,
-  CalendarDays,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Crown,
   Italic,
-  Lock,
-  MessageSquare,
-  RefreshCw,
-  Save,
-  Send,
-  Share,
   Strikethrough,
   Underline,
-  UserCheck,
-  UserMinus,
-  X,
+  X
 } from 'lucide-react'
 import NextImage from 'next/image'
-import { calendarLanes, type CalendarNavigation } from '../lib/bookingCalendar'
-import type { BookingForm } from '../lib/staff/types'
 import {
-  ChangeEvent,
-  FormEvent,
-  MouseEvent,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from 'react'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
-import { ageBandFromBirthday, isMinorBirthday, isUnder13Birthday } from '../lib/agePolicy'
+import { ageBandFromBirthday, isMinorBirthday } from '../lib/agePolicy'
 import {
   canUseWebPush,
-  downloadSessionCalendarFile,
-  notifyBookingInvite,
-  notifyBookingSession,
   registerReminderServiceWorker,
-  requestBrowserReminderPermission,
-  shareBookingLink,
-  urlBase64ToUint8Array,
+  shareBookingLink
 } from '../lib/bookingBrowserActions'
+import { calendarLanes } from '../lib/bookingCalendar'
 import {
-  CLUB_LIST_SELECT,
-  CLUB_LIST_SELECT_BASE,
-  CLUB_LIST_WITH_MEMBERS_SELECT,
-  CLUB_LIST_WITH_MEMBERS_SELECT_BASE,
-  CLUB_MEMBER_SELECT,
-  CLUB_MEMBER_SELECT_BASE,
-  CLUB_MESSAGE_SELECT,
-  CLUB_PUBLIC_SELECT,
   OPTIONAL_SESSION_METADATA_COLUMNS,
   SESSION_CARD_PARTICIPANT_SELECT,
   SESSION_CARD_SELECT,
-  SESSION_CARD_SELECT_BASE,
-  SESSION_MESSAGE_SELECT,
-  SESSION_SELECT,
-  SESSION_SELECT_BASE,
-  WAITLIST_POSITION_SELECT,
-  WAITLIST_SELECT,
-  avatarColors,
-  avatarTextColors,
-  clubThemeColors,
   games,
   isEscapeSession,
   selectedTicketService,
   ticketMaxCustomerDurationMinutes,
   ticketServices,
   type GameId,
-  type TicketType,
+  type TicketType
 } from '../lib/bookingStaticData'
-import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 import {
-  ANONYMOUS_MASK_COLOR,
   ANONYMOUS_MASK_EMOJI,
-  ANONYMOUS_MASK_TEXT_COLOR,
   BlockedTime,
-  BookingType,
   CLOSE_MINUTES,
   ChallengeStatus,
-  Club,
-  ClubListPageRow,
-  ClubMember,
-  ClubMemberRole,
-  ClubMessage,
-  ClubRole,
-  ClubSessionScope,
-  ClubTab,
   DEFAULT_APP_URL,
   FriendConnection,
   LEADERBOARD_PAGE_SIZE,
   MessageTranslationResponse,
   OPEN_MINUTES,
-  PROFILE_SELECT,
   Participant,
   ParticipantPaymentSplit,
   ParticipantPaymentSplitDraft,
   Profile,
-  ProfileGender,
   QualificationRule,
   RealtimeRefreshTask,
   SESSION_LOAD_BATCH_DAYS,
   Session,
   SessionInvite,
   SessionListPageResult,
-  SessionMessage,
-  SessionMessagePageState,
-  StaffGameGuide,
   TIME_STEP_MINUTES,
-  TicketBookingConfirmation,
-  TicketStatus,
-  TotpEnrollment,
-  TotpFactor,
   TournamentAuditLog,
-  TournamentData,
   TournamentEditor,
   TournamentFormat,
   TournamentMatch,
   TournamentPool,
   TournamentPoolEntry,
-  WaitlistEntry,
   addDays,
   addDaysToDateValue,
-  anonymousCallsignForId,
-  appRedirectUrl,
-  arenasUsedBySession,
   authDebug,
   bestOfLabel,
   calculatePoolStandings,
-  cleanHexColor,
-  cleanPasswordRecoveryUrl,
   clubMemberCount,
   clubMembers,
-  clubRoleForProfile,
   compactDisplayName,
-  compactInitials,
   displayName,
   finiteNumber,
   formatCalendarWeekRange,
@@ -157,44 +127,28 @@ import {
   formatSpeedrunDuration,
   formatTicketFormulaPrice,
   formatVnd,
-  generateInviteCode,
   isBestSessionPerformer,
   isBirthdayToday,
-  isChallengeSession,
-  isHexColor,
   isPastSession,
   isTicketSession,
   isUpcomingSession,
   leaderboardPlayerFromStaffProfile,
-  limitDisplayName,
-  limitMotto,
   localDateString,
-  maxDateValue,
-  mergeClubRecords,
-  mergeCurrentUserClubMembership,
   minutesToTime,
   newParticipantPaymentSplit,
-  normalizeClubListPageRow,
   normalizeParticipantPaymentSplits,
-  normalizePrivateCode,
-  normalizeProfileGender,
   normalizeSearchValue,
   participantPaymentSplitTotal,
   participantScore,
-  passwordRecoveryUrlParams,
   paymentSplitsFromParticipant,
   percentValue,
-  playerCardLabel,
   rangesOverlap,
-  resolveCountryCode,
   scheduleDeferredWork,
   schedulePostEffectStateUpdate,
-  seatsLeft,
   sessionBestPerformer,
   sessionCoverGame,
   sessionStartDate,
   sortSessionsByStart,
-  splitPhoneNumber,
   startOfWeekDateValue,
   ticketArenaCountForPlayers,
   ticketDurationForPlayers,
@@ -204,15 +158,13 @@ import {
   ticketUnitFormulaText,
   timeToMinutes,
   upcomingBatchEndForDate,
-  validAvatarInitials,
-  weekDaysFromStart,
+  weekDaysFromStart
 } from '../lib/bookingWidgetDomain'
 import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
-import { trackTicketBookingCompleted, trackTicketCheckoutStarted } from '../lib/googleAnalytics'
-import { validateGuestTicketContact, type GuestTicketContact } from '../lib/guestTicketBooking'
-import { HCAPTCHA_SITE_KEY, ensureHCaptcha, getHCaptcha, passkeysAvailable, removeHCaptchaWidget } from '../lib/hcaptcha'
+import { validateGuestTicketContact } from '../lib/guestTicketBooking'
+import { HCAPTCHA_SITE_KEY, ensureHCaptcha, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
-import { isLanguageCode, languageOptions, type LanguageCode } from '../lib/i18n/languages'
+import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import {
   currentUserLeaderboardPlayer,
@@ -225,21 +177,17 @@ import {
   type LeaderboardRpcRow,
 } from '../lib/leaderboard'
 import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
-import { isPendingPhoneAccountSetup, normalizePhoneSetupEmail } from '../lib/phoneAccountSetup'
-import { isPhonePasswordLoginEmail, normalizePhonePasswordIdentifier } from '../lib/phonePasswordAccount'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import type { RateLimitAction } from '../lib/security/rateLimit'
+import type { BookingForm } from '../lib/staff/types'
 import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
-import { defaultStaffRoleForEmail as defaultRoleForEmail, isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
-import { getStaffKioskOperator, setStaffKioskOperatorToken, type StaffKioskOperator } from '../lib/supabase/client'
-import { vrenaPalette } from '../lib/theme/vrenaPalette'
+import { isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
+import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
-import AvatarNode from './AvatarNode'
 import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
 import {
-  StaffCalendarBookingDialog,
   BirthdayPopupModal,
   BookingProfileView,
   BookingSessionsPanel,
@@ -255,74 +203,20 @@ import {
   PlayerProfileModal,
   RichNotesEditor,
   ShortDateInput,
+  StaffCalendarBookingDialog,
   StaffConsole,
   TariffPaymentModal,
-  TicketBookingView,
-  type ClubVisibility,
-  type ClubVisibilityFilter,
-  type SessionTimeScope,
+  TicketBookingView
 } from './BookingWidgetSurfaces'
-import { ButtonIconText, LocalErrorBoundary } from './BookingWidgetUi'
+import { LocalErrorBoundary } from './BookingWidgetUi'
 import DocumentLanguage from './DocumentLanguage'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
-import MessageBodyText, { type MessageTranslationState } from './MessageBodyText'
-import type { AuthMode } from './ProfileAuthView'
+import { type MessageTranslationState } from './MessageBodyText'
 import type { StaffProfile } from './StaffConsole'
 import StaffKioskGate from './StaffKioskGate'
 
-const REALTIME_REFRESH_DEBOUNCE_MS = 650
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
-const VRENA_WEBSITE_URL = 'https://www.vre-vietnam.com'
-const PRIVACY_POLICY_URL = `${VRENA_WEBSITE_URL}/privacy-policy`
-const TERMS_CONDITIONS_URL = `${VRENA_WEBSITE_URL}/terms-and-conditions`
-const CONSENT_WAIVER_URL = `${VRENA_WEBSITE_URL}/consent-form`
-const LEGAL_CONSENT_VERSION = '2026-07-06'
-const CLUB_BANNER_MAX_BYTES = 2 * 1024 * 1024
-const CLUB_BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
-const AVATAR_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const CLUB_MESSAGE_MAX_LENGTH = 150
-
-const CLUB_MESSAGE_LIMIT = 30
-
-const SESSION_MESSAGE_PAGE_SIZE = 30
-const TICKET_NEXT_AVAILABLE_SCAN_DAYS = 35
-
-type BookingWidgetProps = {
-  embedded?: boolean
-  externalLanguage?: LanguageCode
-  initialText?: TranslationMap
-  initialSelectedPlayerId?: string
-  initialSelectedPlayerSessionId?: string
-  initialView?: AppView
-  initialCalendarNavigation?: CalendarNavigation | null
-  onActiveViewChange?: (view: AppView, query?: string) => void
-  onProfileChange?: (profile: Profile | null) => void
-  restoreStoredView?: boolean
-}
-
-type ActionToast = {
-  id: number
-  message: string
-}
-
-const BOOKING_ACTIVE_VIEW_STORAGE_KEY = 'vrena.booking.activeView'
-const NAVIGATION_COLLAPSE_STORAGE_KEY = 'vrena.console.sidebarCollapsed.v1'
-const bookingAppViews: AppView[] = ['sessions', 'tickets', 'create', 'leaderboard', 'clubs', 'profile', 'hr', 'staff']
-
-function isBookingAppView(value: unknown): value is AppView {
-  return typeof value === 'string' && bookingAppViews.includes(value as AppView)
-}
-
-function bookingUpdateKind(session: Pick<Session, 'booking_type'>) {
-  return session.booking_type === 'ticket' ? 'ticket' : 'session'
-}
-
-function bookingUpdateChanges(rows: Array<[string, unknown, unknown]>) {
-  return rows
-    .filter(([, before, after]) => String(before ?? '') !== String(after ?? ''))
-    .map(([label, before, after]) => ({ label, before: before as string | number | boolean | null, after: after as string | number | boolean | null }))
-}
+const ChallengeControls = dynamic(() => import('../features/booking/ChallengeControls'), { ssr: false })
+const ClubDetail = dynamic(() => import('../features/booking/ClubDetail'), { ssr: false })
 
 export default function WidgetPage({
   embedded = false,
@@ -336,8 +230,45 @@ export default function WidgetPage({
   onProfileChange,
   restoreStoredView = true,
 }: BookingWidgetProps = {}) {
+
   const [incomingCalendar] = useState(initialCalendarNavigation)
-  const [calendarTicketDraft, setCalendarTicketDraft] = useState(incomingCalendar?.mode === 'client-ticket' && initialView === 'tickets')
+  const {
+    calendarTicketDraft,
+    setCalendarTicketDraft,
+    ticketType,
+    setTicketType,
+    ticketDate,
+    setTicketDate,
+    ticketTime,
+    setTicketTime,
+    ticketPlayers,
+    setTicketPlayers,
+    ticketArenaCount,
+    setTicketArenaCount,
+    ticketDuration,
+    setTicketDuration,
+    ticketSpecialNote,
+    setTicketSpecialNote,
+    guestTicketContact,
+    setGuestTicketContact,
+    pendingGuestTicketClaim,
+    setPendingGuestTicketClaim,
+    pendingTicketAuthAction,
+    setPendingTicketAuthAction,
+    pendingTicketAuthCompletingRef,
+    ticketStatus,
+    setTicketStatus,
+    ticketStatusVariant,
+    setTicketStatusVariant,
+    isBookingTickets,
+    setIsBookingTickets,
+    bookingTicketsInFlightRef,
+    ticketConfirmation,
+    setTicketConfirmation,
+    ticketAvailabilitySearchTick,
+    setTicketAvailabilitySearchTick,
+    ticketAvailabilitySearchLoadingRef,
+  } = useBookingTicketsState({ incomingCalendar, initialView })
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -359,156 +290,436 @@ export default function WidgetPage({
     return () => window.cancelAnimationFrame(platformFrame)
   }, [])
   const hasMountedInitialViewSyncRef = useRef(false)
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [clubs, setClubs] = useState<Club[]>([])
+  const {
+    sessions,
+    setSessions,
+    sessionMessages,
+    setSessionMessages,
+    sessionMessagePages,
+    setSessionMessagePages,
+    loadedSessionDetailIds,
+    setLoadedSessionDetailIds,
+    loadingSessionDetailIds,
+    setLoadingSessionDetailIds,
+    blockedTimes,
+    setBlockedTimes,
+    search,
+    setSearch,
+    isSearchOpen,
+    setIsSearchOpen,
+    selectedSessionDate,
+    setSelectedSessionDate,
+    joinCodes,
+    setJoinCodes,
+    busySessionId,
+    setBusySessionId,
+    busyVoteKey,
+    setBusyVoteKey,
+    expandedNotes,
+    setExpandedNotes,
+    expandedSessions,
+    setExpandedSessions,
+    highlightedSessionId,
+    setHighlightedSessionId,
+    sessionTimeScope,
+    setSessionTimeScope,
+    hasMoreUpcomingSessions,
+    setHasMoreUpcomingSessions,
+    isLoadingMoreSessions,
+    setIsLoadingMoreSessions,
+    isLoadingPastSessions,
+    setIsLoadingPastSessions,
+    confirmedGameDrafts,
+    setConfirmedGameDrafts,
+    announcementDrafts,
+    setAnnouncementDrafts,
+    commentDrafts,
+    setCommentDrafts,
+  } = useBookingSessionsState()
+  const {
+    clubs,
+    setClubs,
+    clubMessages,
+    setClubMessages,
+    isLoadingClubMessages,
+    setIsLoadingClubMessages,
+    clubMessageStatus,
+    setClubMessageStatus,
+    clubSearch,
+    setClubSearch,
+    isClubSearchOpen,
+    setIsClubSearchOpen,
+    clubVisibility,
+    setClubVisibility,
+    clubVisibilityFilter,
+    setClubVisibilityFilter,
+    clubName,
+    setClubName,
+    clubDescription,
+    setClubDescription,
+    clubStatus,
+    setClubStatus,
+    isCreatingClub,
+    setIsCreatingClub,
+    busyClubId,
+    setBusyClubId,
+    selectedClubId,
+    setSelectedClubId,
+    selectedClubDate,
+    setSelectedClubDate,
+    selectedClubTab,
+    setSelectedClubTab,
+    selectedClubSessionScope,
+    setSelectedClubSessionScope,
+    clubUnlockTargetId,
+    setClubUnlockTargetId,
+    clubUnlockCode,
+    setClubUnlockCode,
+    clubUnlockStatus,
+    setClubUnlockStatus,
+    unlockedClubIds,
+    setUnlockedClubIds,
+    clubEditName,
+    setClubEditName,
+    clubEditMotto,
+    setClubEditMotto,
+    clubEditDescription,
+    setClubEditDescription,
+    clubEditVisibility,
+    setClubEditVisibility,
+    clubEditThemeColor,
+    setClubEditThemeColor,
+    clubEditThemeColorDraft,
+    setClubEditThemeColorDraft,
+    clubEditDefaultLanguage,
+    setClubEditDefaultLanguage,
+    clubEditRankingCriterion,
+    setClubEditRankingCriterion,
+    clubBannerFile,
+    setClubBannerFile,
+    clubBannerPreview,
+    setClubBannerPreview,
+    isSavingClub,
+    setIsSavingClub,
+    clubPublicMessageDrafts,
+    setClubPublicMessageDrafts,
+    clubAdminMessageDrafts,
+    setClubAdminMessageDrafts,
+    clubSearchShellRef,
+    clubsLoadedRef,
+    clubsLoadedForUserIdRef,
+    clubsLoadingRef,
+    loadedClubMessagesRef,
+  } = useBookingClubsState()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
-  const [leaderboardPlayers, setLeaderboardPlayers] = useState<LeaderboardPlayer[]>([])
-  const [currentUserRankPlayer, setCurrentUserRankPlayer] = useState<LeaderboardPlayer | null>(null)
-  const [currentUserShareStats, setCurrentUserShareStats] = useState<LeaderboardPlayer | null>(null)
-  const [hasMoreLeaderboardPlayers, setHasMoreLeaderboardPlayers] = useState(false)
-  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
-  const [isLoadingMoreLeaderboardPlayers, setIsLoadingMoreLeaderboardPlayers] = useState(false)
-  const [leaderboardStatus, setLeaderboardStatus] = useState('')
+  const {
+    leaderboardPlayers,
+    setLeaderboardPlayers,
+    currentUserRankPlayer,
+    setCurrentUserRankPlayer,
+    currentUserShareStats,
+    setCurrentUserShareStats,
+    hasMoreLeaderboardPlayers,
+    setHasMoreLeaderboardPlayers,
+    isLeaderboardLoading,
+    setIsLeaderboardLoading,
+    isLoadingMoreLeaderboardPlayers,
+    setIsLoadingMoreLeaderboardPlayers,
+    leaderboardStatus,
+    setLeaderboardStatus,
+    selectedPlayerId,
+    setSelectedPlayerId,
+    selectedPlayerSessionId,
+    setSelectedPlayerSessionId,
+    selectedPlayerStatsOverride,
+    setSelectedPlayerStatsOverride,
+    selectedPlayerGameStats,
+    setSelectedPlayerGameStats,
+    selectedPlayerGameStatsLoading,
+    setSelectedPlayerGameStatsLoading,
+    selectedPlayerStatsFetchedRef,
+    selectedPlayerStatsLoadingRef,
+    selectedPlayerGameStatsFetchedRef,
+    selectedPlayerGameStatsLoadingRef,
+    currentUserShareStatsLoadingRef,
+    leaderboardLoadedRef,
+    leaderboardLoadingRef,
+    leaderboardLoadedCountRef,
+    leaderboardQueryRef,
+    leaderboardSearchReloadTimeoutRef,
+    leaderboardView,
+    setLeaderboardLoaded,
+    setLeaderboardQuery,
+  } = useBookingLeaderboardState({ initialSelectedPlayerId, initialSelectedPlayerSessionId })
   const [friendConnections, setFriendConnections] = useState<FriendConnection[]>([])
   const [sessionInvites, setSessionInvites] = useState<SessionInvite[]>([])
-  const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([])
-  const [sessionMessagePages, setSessionMessagePages] = useState<Record<string, SessionMessagePageState>>({})
-  const [loadedSessionDetailIds, setLoadedSessionDetailIds] = useState<Record<string, boolean>>({})
-  const [loadingSessionDetailIds, setLoadingSessionDetailIds] = useState<Record<string, boolean>>({})
-  const [clubMessages, setClubMessages] = useState<ClubMessage[]>([])
-  const [isLoadingClubMessages, setIsLoadingClubMessages] = useState(false)
-  const [clubMessageStatus, setClubMessageStatus] = useState('')
   const [messageTranslations, setMessageTranslations] = useState<Record<string, MessageTranslationState>>({})
   const [networkTablesReady, setNetworkTablesReady] = useState(false)
-  const [tournamentData, setTournamentData] = useState<TournamentData>({
-    editors: [],
-    pools: [],
-    poolEntries: [],
-    matches: [],
-    auditLogs: [],
-  })
-  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [userId, setUserId] = useState('')
-  const [authEmail, setAuthEmail] = useState('')
-  const [kioskOperator, setKioskOperator] = useState<StaffKioskOperator | null>(() => getStaffKioskOperator())
-  const [kioskLock, setKioskLock] = useState<(() => void) | null>(null)
-  const [search, setSearch] = useState('')
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [selectedSessionDate, setSelectedSessionDate] = useState('')
-  const [clubSearch, setClubSearch] = useState('')
-  const [isClubSearchOpen, setIsClubSearchOpen] = useState(false)
-  const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
-
-  const [authMode, setAuthMode] = useState<AuthMode>('login')
-  const [authStep, setAuthStep] = useState<'email' | 'credentials'>('email')
-  const [profileCountryCode, setProfileCountryCode] = useState('+84')
-  const [profilePhone, setProfilePhone] = useState('')
-  const [profilePassword, setProfilePassword] = useState('')
-  const [phoneSetupRequired, setPhoneSetupRequired] = useState(false)
-  const [phoneSetupEmail, setPhoneSetupEmail] = useState('')
-  const [phoneSetupSentTo, setPhoneSetupSentTo] = useState('')
-  const [isPhoneSetupSaving, setIsPhoneSetupSaving] = useState(false)
-  const [rememberLogin, setRememberLogin] = useState(true)
-  const [captchaToken, setCaptchaToken] = useState('')
-  const captchaTokenRef = useRef('')
-  const [newPassword, setNewPassword] = useState('')
-  const [isRecoveryMode, setIsRecoveryMode] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [profileName, setProfileName] = useState('')
-  const [profileMotto, setProfileMotto] = useState('')
-  const [profileNickname, setProfileNickname] = useState('')
-  const [profileEmail, setProfileEmail] = useState('')
-  const [profileBirthday, setProfileBirthday] = useState('')
-  const [profileGender, setProfileGender] = useState<ProfileGender | ''>('')
-  const [personalDataConsent, setPersonalDataConsent] = useState(false)
-  const [marketingConsent, setMarketingConsent] = useState(true)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState('')
-  const [avatarMode, setAvatarMode] = useState<'photo' | 'emoji' | 'initials'>('photo')
-  const [failedAvatarUrls, setFailedAvatarUrls] = useState<Set<string>>(() => new Set())
-  const [avatarEmoji, setAvatarEmoji] = useState('😎')
-  const [avatarInitials, setAvatarInitials] = useState('')
-  const [avatarColor, setAvatarColor] = useState(avatarColors[0])
-  const [avatarColorDraft, setAvatarColorDraft] = useState(avatarColors[0])
-  const [avatarTextColor, setAvatarTextColor] = useState(avatarTextColors[0])
-  const [avatarTextColorDraft, setAvatarTextColorDraft] = useState(avatarTextColors[0])
-  const [profileStatus, setProfileStatus] = useState('')
+  const {
+    tournamentData,
+    setTournamentData,
+    tournamentFormat,
+    setTournamentFormat,
+    tournamentBestOf,
+    setTournamentBestOf,
+    tournamentRoundsPerMatch,
+    setTournamentRoundsPerMatch,
+    tournamentRequirePayment,
+    setTournamentRequirePayment,
+    tournamentQualificationRule,
+    setTournamentQualificationRule,
+    tournamentCustomQualifiers,
+    setTournamentCustomQualifiers,
+    tournamentThirdPlace,
+    setTournamentThirdPlace,
+    tournamentFirstPrize,
+    setTournamentFirstPrize,
+    tournamentSecondPrize,
+    setTournamentSecondPrize,
+    tournamentThirdPrize,
+    setTournamentThirdPrize,
+    editTournamentFormat,
+    setEditTournamentFormat,
+    editTournamentBestOf,
+    setEditTournamentBestOf,
+    editTournamentRoundsPerMatch,
+    setEditTournamentRoundsPerMatch,
+    editTournamentRequirePayment,
+    setEditTournamentRequirePayment,
+    editTournamentQualificationRule,
+    setEditTournamentQualificationRule,
+    editTournamentCustomQualifiers,
+    setEditTournamentCustomQualifiers,
+    editTournamentThirdPlace,
+    setEditTournamentThirdPlace,
+    editTournamentFirstPrize,
+    setEditTournamentFirstPrize,
+    editTournamentSecondPrize,
+    setEditTournamentSecondPrize,
+    editTournamentThirdPrize,
+    setEditTournamentThirdPrize,
+    tournamentPoolSize,
+    setTournamentPoolSize,
+    tournamentEditorEmail,
+    setTournamentEditorEmail,
+    tournamentEditorResults,
+    setTournamentEditorResults,
+    busyTournamentId,
+    setBusyTournamentId,
+    tournamentDataLoadedRef,
+    tournamentDataLoadingRef,
+  } = useBookingTournamentsState()
+  const {
+    profile,
+    setProfile,
+    userId,
+    setUserId,
+    authEmail,
+    setAuthEmail,
+    kioskOperator,
+    setKioskOperator,
+    kioskLock,
+    setKioskLock,
+    authMode,
+    setAuthMode,
+    authStep,
+    setAuthStep,
+    profilePassword,
+    setProfilePassword,
+    phoneSetupRequired,
+    setPhoneSetupRequired,
+    phoneSetupEmail,
+    setPhoneSetupEmail,
+    phoneSetupSentTo,
+    setPhoneSetupSentTo,
+    isPhoneSetupSaving,
+    setIsPhoneSetupSaving,
+    rememberLogin,
+    setRememberLogin,
+    captchaToken,
+    setCaptchaToken,
+    captchaTokenRef,
+    newPassword,
+    setNewPassword,
+    isRecoveryMode,
+    setIsRecoveryMode,
+    showPassword,
+    setShowPassword,
+    isProfileAuthLoading,
+    setIsProfileAuthLoading,
+    isOAuthLoading,
+    setIsOAuthLoading,
+    isPasskeyLoading,
+    setIsPasskeyLoading,
+    isResettingPassword,
+    setIsResettingPassword,
+    isDeletingAccount,
+    setIsDeletingAccount,
+    mfaFactors,
+    setMfaFactors,
+    mfaEnrollment,
+    setMfaEnrollment,
+    mfaVerifyCode,
+    setMfaVerifyCode,
+    mfaChallenge,
+    setMfaChallenge,
+    mfaChallengeCode,
+    setMfaChallengeCode,
+    mfaRequired,
+    setMfaRequired,
+    mfaAssuranceLevel,
+    setMfaAssuranceLevel,
+    isMfaLoading,
+    setIsMfaLoading,
+    mfaVerificationInFlightRef,
+    mfaStatus,
+    setMfaStatus,
+    captchaContainerRef,
+    captchaWidgetId,
+    profileAuthLoadSeqRef,
+  } = useBookingAuthenticationState()
+  const {
+    profileCountryCode,
+    setProfileCountryCode,
+    profilePhone,
+    setProfilePhone,
+    profileName,
+    setProfileName,
+    profileMotto,
+    setProfileMotto,
+    profileNickname,
+    setProfileNickname,
+    profileEmail,
+    setProfileEmail,
+    profileBirthday,
+    setProfileBirthday,
+    profileGender,
+    setProfileGender,
+    personalDataConsent,
+    setPersonalDataConsent,
+    marketingConsent,
+    setMarketingConsent,
+    avatarFile,
+    setAvatarFile,
+    avatarPreview,
+    setAvatarPreview,
+    avatarMode,
+    setAvatarMode,
+    failedAvatarUrls,
+    setFailedAvatarUrls,
+    avatarEmoji,
+    setAvatarEmoji,
+    avatarInitials,
+    setAvatarInitials,
+    avatarColor,
+    setAvatarColor,
+    avatarColorDraft,
+    setAvatarColorDraft,
+    avatarTextColor,
+    setAvatarTextColor,
+    avatarTextColorDraft,
+    setAvatarTextColorDraft,
+    profileStatus,
+    setProfileStatus,
+    profileSaveSuccessTimerRef,
+    isSavingProfile,
+    setIsSavingProfile,
+    isProfileSaveSuccessful,
+    setIsProfileSaveSuccessful,
+    profileUpcomingExpanded,
+    setProfileUpcomingExpanded,
+    profilePastExpanded,
+    setProfilePastExpanded,
+    profileInvitesExpanded,
+    setProfileInvitesExpanded,
+    anonymousConfirmOpen,
+    setAnonymousConfirmOpen,
+    isSavingAnonymousMode,
+    setIsSavingAnonymousMode,
+    profileScoreAdjustments,
+    setProfileScoreAdjustments,
+  } = useBookingProfilesState()
   const [actionToast, setActionToast] = useState<ActionToast | null>(null)
   const actionToastTimerRef = useRef<number | null>(null)
-  const profileSaveSuccessTimerRef = useRef<number | null>(null)
-  const [isProfileAuthLoading, setIsProfileAuthLoading] = useState(true)
-  const [isSavingProfile, setIsSavingProfile] = useState(false)
-  const [isProfileSaveSuccessful, setIsProfileSaveSuccessful] = useState(false)
-  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
-  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
-  const [isResettingPassword, setIsResettingPassword] = useState(false)
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
-  const [mfaFactors, setMfaFactors] = useState<TotpFactor[]>([])
-  const [mfaEnrollment, setMfaEnrollment] = useState<TotpEnrollment | null>(null)
-  const [mfaVerifyCode, setMfaVerifyCode] = useState('')
-  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; challengeId: string } | null>(null)
-  const [mfaChallengeCode, setMfaChallengeCode] = useState('')
-  const [mfaRequired, setMfaRequired] = useState(false)
-  const [mfaAssuranceLevel, setMfaAssuranceLevel] = useState<'aal1' | 'aal2' | null>(null)
-  const [isMfaLoading, setIsMfaLoading] = useState(false)
-  const mfaVerificationInFlightRef = useRef(false)
-  const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const [tourReplayNonce, setTourReplayNonce] = useState(0)
-  const [calendarEditSession, setCalendarEditSession] = useState<Session | null>(null)
-  const [calendarBookingDraft, setCalendarBookingDraft] = useState<Pick<BookingForm, 'date' | 'time' | 'venueKey'> | undefined>(() => incomingCalendar?.mode === 'staff-booking' && initialView === 'staff' ? { date: incomingCalendar.date, time: incomingCalendar.time, venueKey: incomingCalendar.venue } : undefined)
+  const {
+    calendarEditSession,
+    setCalendarEditSession,
+    calendarBookingDraft,
+    setCalendarBookingDraft,
+    sessionVisibility,
+    setSessionVisibility,
+    sessionType,
+    setSessionType,
+    sessionName,
+    setSessionName,
+    sessionDate,
+    setSessionDate,
+    sessionTime,
+    setSessionTime,
+    sessionDuration,
+    setSessionDuration,
+    sessionMaxPlayers,
+    setSessionMaxPlayers,
+    sessionArenaCount,
+    setSessionArenaCount,
+    sessionNotes,
+    setSessionNotes,
+    sessionClubId,
+    setSessionClubId,
+    selectedGames,
+    setSelectedGames,
+    createStatus,
+    setCreateStatus,
+    isCreating,
+    setIsCreating,
+    editingSessionId,
+    setEditingSessionId,
+    editSessionName,
+    setEditSessionName,
+    editSessionDate,
+    setEditSessionDate,
+    editSessionTime,
+    setEditSessionTime,
+    editSessionDuration,
+    setEditSessionDuration,
+    editSessionMaxPlayers,
+    setEditSessionMaxPlayers,
+    editSessionArenaCount,
+    setEditSessionArenaCount,
+    editSessionVisibility,
+    setEditSessionVisibility,
+    editSessionNotes,
+    setEditSessionNotes,
+    editSelectedGames,
+    setEditSelectedGames,
+    editBookingType,
+    setEditBookingType,
+    editTicketCustomerId,
+    setEditTicketCustomerId,
+    editTicketType,
+    setEditTicketType,
+    editTicketTotalPrice,
+    setEditTicketTotalPrice,
+    editTicketStatus,
+    setEditTicketStatus,
+    isUpdatingSession,
+    setIsUpdatingSession,
+  } = useBookingSessionEditorState({ incomingCalendar, initialView })
   const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
-
-  const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
-  const [sessionType, setSessionType] = useState<'game' | 'tournament'>('game')
-  const [tournamentFormat, setTournamentFormat] = useState<TournamentFormat>('pool_to_final')
-  const [tournamentBestOf, setTournamentBestOf] = useState<1 | 3 | 5>(1)
-  const [tournamentRoundsPerMatch, setTournamentRoundsPerMatch] = useState(1)
-  const [tournamentRequirePayment, setTournamentRequirePayment] = useState(false)
-  const [tournamentQualificationRule, setTournamentQualificationRule] = useState<QualificationRule>('top_1')
-  const [tournamentCustomQualifiers, setTournamentCustomQualifiers] = useState(2)
-  const [tournamentThirdPlace, setTournamentThirdPlace] = useState(true)
-  const [tournamentFirstPrize, setTournamentFirstPrize] = useState('')
-  const [tournamentSecondPrize, setTournamentSecondPrize] = useState('')
-  const [tournamentThirdPrize, setTournamentThirdPrize] = useState('')
-  const [sessionName, setSessionName] = useState('')
-  const [sessionDate, setSessionDate] = useState(localDateString())
-  const [sessionTime, setSessionTime] = useState('')
-  const [sessionDuration, setSessionDuration] = useState(20)
-  const [sessionMaxPlayers, setSessionMaxPlayers] = useState(4)
-  const [sessionArenaCount, setSessionArenaCount] = useState(1)
-  const [sessionNotes, setSessionNotes] = useState('')
-  const [sessionClubId, setSessionClubId] = useState('')
-  const [selectedGames, setSelectedGames] = useState<GameId[]>(['laser-tag'])
-  const [createStatus, setCreateStatus] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
-  const [pushReminderStatus, setPushReminderStatus] = useState('')
-  const [isPushSubscribed, setIsPushSubscribed] = useState(false)
-  const [isEnablingPush, setIsEnablingPush] = useState(false)
-  const [ticketType, setTicketType] = useState<TicketType>('individual')
-  const [ticketDate, setTicketDate] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.date : localDateString())
-  const [ticketTime, setTicketTime] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.time : '')
-  const [ticketPlayers, setTicketPlayers] = useState(1)
-  const [ticketArenaCount, setTicketArenaCount] = useState(1)
-  const [ticketDuration, setTicketDuration] = useState(20)
-  const [ticketSpecialNote, setTicketSpecialNote] = useState('')
-  const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
-  const [pendingGuestTicketClaim, setPendingGuestTicketClaim] = useState<{ phone: string; reference: string; name?: string; date?: string } | null>(null)
-  const [pendingTicketAuthAction, setPendingTicketAuthAction] = useState<'book-after-login' | 'claim-after-auth' | null>(null)
-  const pendingTicketAuthCompletingRef = useRef(false)
-  const [ticketStatus, setTicketStatus] = useState('')
-  const [ticketStatusVariant, setTicketStatusVariant] = useState<'info' | 'error'>('info')
-  const [isBookingTickets, setIsBookingTickets] = useState(false)
-  const bookingTicketsInFlightRef = useRef(false)
-  const [ticketConfirmation, setTicketConfirmation] = useState<TicketBookingConfirmation | null>(null)
-  const [ticketAvailabilitySearchTick, setTicketAvailabilitySearchTick] = useState(0)
-  const [gameGuideOpen, setGameGuideOpen] = useState(false)
-  const [gameGuideGameId, setGameGuideGameId] = useState<GameId | null>(null)
-  const [staffGameGuides, setStaffGameGuides] = useState<Partial<Record<GameId, StaffGameGuide>>>({})
-  const staffGameGuidesLoadedRef = useRef(false)
-  const staffGameGuidesLoadingRef = useRef(false)
+  const { pushReminderStatus, setPushReminderStatus, isPushSubscribed, setIsPushSubscribed, isEnablingPush, setIsEnablingPush } = useBookingRemindersState()
+  const {
+    gameGuideOpen,
+    setGameGuideOpen,
+    gameGuideGameId,
+    setGameGuideGameId,
+    staffGameGuides,
+    tariffPaymentOpen,
+    setTariffPaymentOpen,
+    ensureStaffGameGuidesLoaded,
+  } = useBookingGameGuideState()
   const [challengeTargetId, setChallengeTargetId] = useState('')
   const [challengeGameId, setChallengeGameId] = useState<GameId>('laser-tag')
   const [challengeDate, setChallengeDate] = useState(localDateString())
@@ -516,97 +727,15 @@ export default function WidgetPage({
   const [challengeDuration, setChallengeDuration] = useState(20)
   const [challengeStatus, setChallengeStatus] = useState('')
   const [isCreatingChallenge, setIsCreatingChallenge] = useState(false)
-  const [busySessionId, setBusySessionId] = useState('')
-  const [busyVoteKey, setBusyVoteKey] = useState('')
   const [copiedInviteId, setCopiedInviteId] = useState('')
   const [sharedKey, setSharedKey] = useState('')
-  const [editingSessionId, setEditingSessionId] = useState('')
-  const [editSessionName, setEditSessionName] = useState('')
-  const [editSessionDate, setEditSessionDate] = useState(localDateString())
-  const [editSessionTime, setEditSessionTime] = useState('')
-  const [editSessionDuration, setEditSessionDuration] = useState(20)
-  const [editSessionMaxPlayers, setEditSessionMaxPlayers] = useState(4)
-  const [editSessionArenaCount, setEditSessionArenaCount] = useState(1)
-  const [editSessionVisibility, setEditSessionVisibility] = useState<'public' | 'private'>('public')
-  const [editSessionNotes, setEditSessionNotes] = useState('')
-  const [editSelectedGames, setEditSelectedGames] = useState<GameId[]>(['laser-tag'])
-  const [editBookingType, setEditBookingType] = useState<BookingType>('community')
-  const [editTicketCustomerId, setEditTicketCustomerId] = useState('')
-  const [editTicketType, setEditTicketType] = useState<TicketType>('individual')
-  const [editTicketTotalPrice, setEditTicketTotalPrice] = useState('')
-  const [editTicketStatus, setEditTicketStatus] = useState<TicketStatus>('confirmed')
-  const [editTournamentFormat, setEditTournamentFormat] = useState<TournamentFormat>('pool_to_final')
-  const [editTournamentBestOf, setEditTournamentBestOf] = useState<1 | 3 | 5>(1)
-  const [editTournamentRoundsPerMatch, setEditTournamentRoundsPerMatch] = useState(1)
-  const [editTournamentRequirePayment, setEditTournamentRequirePayment] = useState(false)
-  const [editTournamentQualificationRule, setEditTournamentQualificationRule] = useState<QualificationRule>('top_1')
-  const [editTournamentCustomQualifiers, setEditTournamentCustomQualifiers] = useState(2)
-  const [editTournamentThirdPlace, setEditTournamentThirdPlace] = useState(true)
-  const [editTournamentFirstPrize, setEditTournamentFirstPrize] = useState('')
-  const [editTournamentSecondPrize, setEditTournamentSecondPrize] = useState('')
-  const [editTournamentThirdPrize, setEditTournamentThirdPrize] = useState('')
-  const [isUpdatingSession, setIsUpdatingSession] = useState(false)
-  const [clubVisibility, setClubVisibility] = useState<ClubVisibility>('public')
-  const [clubVisibilityFilter, setClubVisibilityFilter] = useState<ClubVisibilityFilter>('all')
-  const [clubName, setClubName] = useState('')
-  const [clubDescription, setClubDescription] = useState('')
-  const [clubStatus, setClubStatus] = useState('')
-  const [isCreatingClub, setIsCreatingClub] = useState(false)
-  const [busyClubId, setBusyClubId] = useState('')
-  const [selectedClubId, setSelectedClubId] = useState('')
-  const [selectedClubDate, setSelectedClubDate] = useState('')
-  const [selectedClubTab, setSelectedClubTab] = useState<ClubTab>('hall')
-  const [selectedClubSessionScope, setSelectedClubSessionScope] = useState<ClubSessionScope>('upcoming')
-  const [clubUnlockTargetId, setClubUnlockTargetId] = useState('')
-  const [clubUnlockCode, setClubUnlockCode] = useState('')
-  const [clubUnlockStatus, setClubUnlockStatus] = useState('')
-  const [unlockedClubIds, setUnlockedClubIds] = useState<Record<string, boolean>>({})
-  const [clubEditName, setClubEditName] = useState('')
-  const [clubEditMotto, setClubEditMotto] = useState('')
-  const [clubEditDescription, setClubEditDescription] = useState('')
-  const [clubEditVisibility, setClubEditVisibility] = useState<'public' | 'private'>('public')
-  const [clubEditThemeColor, setClubEditThemeColor] = useState(clubThemeColors[0])
-  const [clubEditThemeColorDraft, setClubEditThemeColorDraft] = useState(clubThemeColors[0])
-  const [clubEditDefaultLanguage, setClubEditDefaultLanguage] = useState<LanguageCode>('en')
-  const [clubEditRankingCriterion, setClubEditRankingCriterion] = useState<LeaderboardCriterion>('totalScore')
-  const [clubBannerFile, setClubBannerFile] = useState<File | null>(null)
-  const [clubBannerPreview, setClubBannerPreview] = useState('')
-  const [isSavingClub, setIsSavingClub] = useState(false)
-  const [tournamentPoolSize, setTournamentPoolSize] = useState(4)
-  const [tournamentEditorEmail, setTournamentEditorEmail] = useState('')
-  const [tournamentEditorResults, setTournamentEditorResults] = useState<Profile[]>([])
-  const [busyTournamentId, setBusyTournamentId] = useState('')
   const [drawerTouchStart, setDrawerTouchStart] = useState<number | null>(null)
   const [checkInTarget, setCheckInTarget] = useState<{ sessionId: string; participantId: string } | null>(null)
   const [checkInPaymentSplits, setCheckInPaymentSplits] = useState<ParticipantPaymentSplitDraft[]>(() => [newParticipantPaymentSplit('cash')])
-  const [selectedPlayerId, setSelectedPlayerId] = useState(initialSelectedPlayerId)
-  const [selectedPlayerSessionId, setSelectedPlayerSessionId] = useState(initialSelectedPlayerSessionId)
-  const [selectedPlayerStatsOverride, setSelectedPlayerStatsOverride] = useState<LeaderboardPlayer | null>(null)
-  const [selectedPlayerGameStats, setSelectedPlayerGameStats] = useState<Record<string, LeaderboardPlayer>>({})
-  const [selectedPlayerGameStatsLoading, setSelectedPlayerGameStatsLoading] = useState(false)
-  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
-  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({})
-  const [highlightedSessionId, setHighlightedSessionId] = useState('')
-  const [profileUpcomingExpanded, setProfileUpcomingExpanded] = useState(false)
-  const [profilePastExpanded, setProfilePastExpanded] = useState(false)
-  const [profileInvitesExpanded, setProfileInvitesExpanded] = useState(false)
   const [invitePopupInviteId, setInvitePopupInviteId] = useState('')
   const [inviteModalSessionId, setInviteModalSessionId] = useState('')
   const [inviteSearch, setInviteSearch] = useState('')
   const [birthdayPopupOpen, setBirthdayPopupOpen] = useState(false)
-  const [tariffPaymentOpen, setTariffPaymentOpen] = useState(false)
-  const [anonymousConfirmOpen, setAnonymousConfirmOpen] = useState(false)
-  const [isSavingAnonymousMode, setIsSavingAnonymousMode] = useState(false)
-  const [sessionTimeScope, setSessionTimeScope] = useState<SessionTimeScope>('upcoming')
-  const [hasMoreUpcomingSessions, setHasMoreUpcomingSessions] = useState(true)
-  const [isLoadingMoreSessions, setIsLoadingMoreSessions] = useState(false)
-  const [isLoadingPastSessions, setIsLoadingPastSessions] = useState(false)
-  const [confirmedGameDrafts, setConfirmedGameDrafts] = useState<Record<string, string>>({})
-  const [announcementDrafts, setAnnouncementDrafts] = useState<Record<string, string>>({})
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
-  const [clubPublicMessageDrafts, setClubPublicMessageDrafts] = useState<Record<string, string>>({})
-  const [clubAdminMessageDrafts, setClubAdminMessageDrafts] = useState<Record<string, string>>({})
-  const [profileScoreAdjustments, setProfileScoreAdjustments] = useState<Record<string, number>>({})
   const [busyInviteKey, setBusyInviteKey] = useState('')
   const [busyFriendId, setBusyFriendId] = useState('')
   const [busyMessageKey, setBusyMessageKey] = useState('')
@@ -615,28 +744,14 @@ export default function WidgetPage({
   const [text, setText] = useState<TranslationMap>(() => initialText ?? getFallbackTranslation())
   const searchShellRef = useRef<HTMLDivElement | null>(null)
   const dayStripRef = useRef<HTMLDivElement | null>(null)
-  const clubSearchShellRef = useRef<HTMLDivElement | null>(null)
-  const captchaContainerRef = useRef<HTMLDivElement | null>(null)
-  const captchaWidgetId = useRef<string | null>(null)
   const passkeyButtonRef = useRef<HTMLButtonElement | null>(null)
   const warmedSupabaseClientRef = useRef<Awaited<ReturnType<typeof getSupabase>> | null>(null)
   const notifiedReminderKeys = useRef<Set<string>>(new Set())
-  const clubsLoadedRef = useRef(false)
-  const clubsLoadedForUserIdRef = useRef<string | null>(null)
-  const clubsLoadingRef = useRef(false)
-  const loadedClubMessagesRef = useRef<Set<string>>(new Set())
-  const tournamentDataLoadedRef = useRef(false)
-  const tournamentDataLoadingRef = useRef(false)
   const networkDataLoadedRef = useRef(false)
   const networkDataLoadingRef = useRef(false)
   const allProfilesLoadedRef = useRef(false)
   const allProfilesLoadingRef = useRef(false)
   const selectedPlayerIdRef = useRef(initialSelectedPlayerId)
-  const selectedPlayerStatsFetchedRef = useRef<Set<string>>(new Set())
-  const selectedPlayerStatsLoadingRef = useRef<Set<string>>(new Set())
-  const selectedPlayerGameStatsFetchedRef = useRef<Set<string>>(new Set())
-  const selectedPlayerGameStatsLoadingRef = useRef<Set<string>>(new Set())
-  const currentUserShareStatsLoadingRef = useRef(false)
   const sessionDetailsLoadedRef = useRef<Set<string>>(new Set())
   const sessionDetailsLoadingRef = useRef<Set<string>>(new Set())
   const sessionMessagesLoadedRef = useRef<Set<string>>(new Set())
@@ -647,44 +762,12 @@ export default function WidgetPage({
   const queueRealtimeRefreshRef = useRef((tasks: RealtimeRefreshTask[]) => {
     void tasks
   })
-  const leaderboardLoadedRef = useRef(false)
-  const leaderboardLoadingRef = useRef(false)
-  const leaderboardLoadedCountRef = useRef(0)
-  const leaderboardQueryRef = useRef<LeaderboardQuery>(initialLeaderboardQuery())
-  const leaderboardSearchReloadTimeoutRef = useRef<number | null>(null)
   const highlightedSessionTimeoutRef = useRef<number | null>(null)
   const sessionsLoadedRef = useRef(false)
   const upcomingSessionsThroughRef = useRef('')
   const loadingSessionRangeRef = useRef(false)
-  const ticketAvailabilitySearchLoadingRef = useRef(false)
   const pastSessionsLoadedRef = useRef(false)
   const pastSessionsLoadingRef = useRef(false)
-  const ensureClubsLoadedRef = useRef(ensureClubsLoaded)
-  const ensureLeaderboardLoadedRef = useRef(ensureLeaderboardLoaded)
-  const ensureNetworkDataLoadedRef = useRef(ensureNetworkDataLoaded)
-  const ensurePastSessionsLoadedRef = useRef(ensurePastSessionsLoaded)
-  const ensureSessionsLoadedRef = useRef(ensureSessionsLoaded)
-  const ensureTournamentDataLoadedRef = useRef(ensureTournamentDataLoaded)
-  const ensureUpcomingSessionsThroughDateRef = useRef(ensureUpcomingSessionsThroughDate)
-  const loadClubMessagesRef = useRef(loadClubMessages)
-  const loadClubsRef = useRef(loadClubs)
-  const loadExpandedSessionDetailsRef = useRef(loadExpandedSessionDetails)
-  const loadExpandedSessionMessagesRef = useRef(loadExpandedSessionMessages)
-  const hydrateCurrentUserShareStatsRef = useRef(hydrateCurrentUserShareStats)
-  const loadLeaderboardPlayersRef = useRef(loadLeaderboardPlayers)
-  const loadMoreUpcomingSessionsRef = useRef(loadMoreUpcomingSessions)
-  const loadNetworkDataRef = useRef(loadNetworkData)
-  const loadProfileRef = useRef(loadProfile)
-  const profileAuthLoadSeqRef = useRef(0)
-  const loadSessionDetailRef = useRef(loadSessionDetail)
-  const loadSessionMessagesRef = useRef(loadSessionMessages)
-  const loadTournamentDataRef = useRef(loadTournamentData)
-  const notifyInviteRef = useRef(notifyInvite)
-  const notifySessionRef = useRef(notifySession)
-  const preparePasswordRecoveryFromUrlRef = useRef(preparePasswordRecoveryFromUrl)
-  const refreshLeaderboardIfLoadedRef = useRef(refreshLeaderboardIfLoaded)
-  const refreshSessionsIfLoadedRef = useRef(refreshSessionsIfLoaded)
-  const syncProfileEverywhereRef = useRef(syncProfileEverywhere)
   const resetPasswordReadyTextRef = useRef(text.resetPasswordReady)
   const looseText = text as Record<string, string>
   const leaveClubText = looseText.leaveClub || 'Leave Club'
@@ -751,6 +834,551 @@ export default function WidgetPage({
     },
     startOfWeekDateValue,
   })
+  const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
+  const { loadProfile, logout, logoutStaffKiosk } = createBookingAuthSessionActions(() => ({
+    isProfileAuthLoading,
+    profileAuthLoadSeqRef,
+    setIsProfileAuthLoading,
+    setUserId,
+    setAuthEmail,
+    setProfile,
+    setPhoneSetupRequired,
+    setProfileStatus,
+    setActiveView,
+    prepareMfaChallengeIfNeeded,
+    refreshMfaFactors,
+    setProfileCountryCode,
+    setProfilePhone,
+    setProfileName,
+    setProfileMotto,
+    setProfileNickname,
+    setProfileEmail,
+    setProfileBirthday,
+    setProfileGender,
+    setMarketingConsent,
+    setAvatarMode,
+    setAvatarEmoji,
+    setAvatarInitials,
+    setAvatarColor,
+    setAvatarColorDraft,
+    setAvatarTextColor,
+    setAvatarTextColorDraft,
+    setProfilePassword,
+    setPhoneSetupEmail,
+    setPhoneSetupSentTo,
+    setAuthStep,
+    setNewPassword,
+    setIsRecoveryMode,
+    setMfaFactors,
+    setMfaEnrollment,
+    setMfaChallenge,
+    setMfaChallengeCode,
+    setMfaVerifyCode,
+    setMfaRequired,
+    setMfaAssuranceLevel,
+    setMfaStatus,
+    text,
+  }))
+  const {
+    currentCaptchaToken,
+    resetCaptcha,
+    restorePasskeyDocumentFocus,
+    updateAuthMode,
+    continueAuthFromEmail,
+    editAuthEmail,
+    handleAuth,
+    sendPhoneSetupEmail,
+    signInWithGoogle,
+  } = createBookingAuthCredentialsActions(() => ({
+    captchaTokenRef,
+    setCaptchaToken,
+    captchaToken,
+    captchaWidgetId,
+    warmedSupabaseClientRef,
+    passkeyButtonRef,
+    setAuthMode,
+    setAuthStep,
+    setProfilePassword,
+    setProfileStatus,
+    profileEmail,
+    authMode,
+    text,
+    setProfileEmail,
+    profile,
+    isRecoveryMode,
+    authStep,
+    profilePhone,
+    profileName,
+    profilePassword,
+    profileBirthday,
+    personalDataConsent,
+    setIsSavingProfile,
+    profileNickname,
+    profileCountryCode,
+    profileGender,
+    marketingConsent,
+    setUserId,
+    setPersonalDataConsent,
+    loadProfile,
+    completePendingTicketAuth,
+    setActiveView,
+    prepareMfaChallengeIfNeeded,
+    isPhoneSetupSaving,
+    phoneSetupEmail,
+    setIsPhoneSetupSaving,
+    setPhoneSetupEmail,
+    setPhoneSetupSentTo,
+    setIsOAuthLoading,
+  }))
+  const { refreshMfaFactors, prepareMfaChallengeIfNeeded, verifyMfaChallenge, beginTotpEnrollment, confirmTotpEnrollment, removeTotpFactor } = createBookingMfaActions(() => ({
+    setMfaStatus,
+    setMfaFactors,
+    mfaChallenge,
+    setMfaAssuranceLevel,
+    text,
+    setProfileStatus,
+    setMfaChallenge,
+    setMfaChallengeCode,
+    setMfaRequired,
+    setActiveView,
+    mfaChallengeCode,
+    mfaVerificationInFlightRef,
+    setIsMfaLoading,
+    setUserId,
+    setAuthEmail,
+    loadProfile,
+    profile,
+    setMfaVerifyCode,
+    setMfaEnrollment,
+    mfaEnrollment,
+    mfaVerifyCode,
+  }))
+  const { signInWithPasskey, registerPasskey } = createBookingPasskeysActions(() => ({
+    setProfileStatus,
+    text,
+    setIsPasskeyLoading,
+    restorePasskeyDocumentFocus,
+    warmedSupabaseClientRef,
+    setUserId,
+    prepareMfaChallengeIfNeeded,
+    loadProfile,
+    completePendingTicketAuth,
+    setActiveView,
+    profile,
+  }))
+  const { sendPasswordReset, preparePasswordRecoveryFromUrl, updatePasswordFromRecovery } = createBookingRecoveryActions(() => ({
+    profile,
+    profileEmail,
+    setProfileStatus,
+    text,
+    currentCaptchaToken,
+    setIsResettingPassword,
+    resetCaptcha,
+    setActiveView,
+    setAuthMode,
+    setAuthStep,
+    setIsRecoveryMode,
+    setUserId,
+    setProfileEmail,
+    newPassword,
+    setNewPassword,
+    loadProfile,
+  }))
+  const {
+    updateAvatarColor,
+    updateAvatarColorDraft,
+    updateAvatarTextColor,
+    updateAvatarTextColorDraft,
+    chooseAvatarMode,
+    rememberFailedAvatarUrl,
+    avatarNode,
+    avatarStyle,
+    profileAvatarSnapshot,
+    syncProfileEverywhere,
+    notifyMinorBookingCreated,
+    updateAnonymousMode,
+    updateMarketingConsent,
+    saveProfile,
+    handleAvatarChange,
+    deleteMyAccount,
+  } = createBookingProfilesActions(() => ({
+    avatarColor,
+    setAvatarColor,
+    setAvatarColorDraft,
+    avatarTextColor,
+    setAvatarTextColor,
+    setAvatarTextColorDraft,
+    setAvatarMode,
+    setAvatarFile,
+    setAvatarPreview,
+    setFailedAvatarUrls,
+    failedAvatarUrls,
+    setSessions,
+    setClubs,
+    setTournamentData,
+    setAllProfiles,
+    setLeaderboardPlayers,
+    text,
+    profile,
+    userId,
+    setIsSavingAnonymousMode,
+    setProfileStatus,
+    setAnonymousConfirmOpen,
+    setProfile,
+    loadSessions,
+    loadClubs,
+    networkDataLoadedRef,
+    loadNetworkData,
+    refreshLeaderboardIfLoaded,
+    setMarketingConsent,
+    profileCountryCode,
+    profilePhone,
+    profileName,
+    profileMotto,
+    profileNickname,
+    setIsSavingProfile,
+    setIsProfileSaveSuccessful,
+    avatarMode,
+    avatarEmoji,
+    avatarInitials,
+    effectiveProfileBirthday,
+    profileGender,
+    marketingConsent,
+    loadTournamentData,
+    setProfileCountryCode,
+    setProfilePhone,
+    setProfileBirthday,
+    setProfileGender,
+    showActionToast,
+    profileSaveSuccessTimerRef,
+    avatarFile,
+    setIsDeletingAccount,
+    softDeleteRecord,
+    setUserId,
+    setAuthEmail,
+    setNewPassword,
+  }))
+  const { loadClubs, loadClubMessages } = createBookingClubDataActions(() => ({
+    clubsLoadingRef,
+    userId,
+    setClubStatus,
+    clubsLoadedRef,
+    clubsLoadedForUserIdRef,
+    setClubs,
+    canUseClubMessages,
+    loadedClubMessagesRef,
+    setIsLoadingClubMessages,
+    setClubMessageStatus,
+    sortClubMessages,
+    setClubMessages,
+  }))
+  const {
+    clubRoleFor,
+    clubRoleLabel,
+    canManageClub,
+    canModerateClubMembers,
+    canManageClubMember,
+    manageableRoleOptions,
+    clubThemeStyle,
+    isDuplicateClubMembershipError,
+    approvedClubMember,
+    canSeeClubPrivateData,
+    canOpenClubPage,
+    canCreateClubSession,
+    sessionClubFor,
+    clubMembershipFor,
+    canAccessClubSession,
+  } = useMemo(() => createBookingClubAccessActions({ userId, text, isAdmin, unlockedClubIds, clubs }), [userId, text, isAdmin, unlockedClubIds, clubs])
+  const {
+    saveClubSettings,
+    regenerateClubInviteCode,
+    shareClubInvite,
+    updateClubMemberRole,
+    transferClubOwnership,
+    notifyClubMembersOfSession,
+    createClub,
+  } = createBookingClubManagementActions(() => ({
+    clubBannerFile,
+    setClubStatus,
+    canManageClub,
+    clubEditName,
+    text,
+    setIsSavingClub,
+    setBusyClubId,
+    clubEditVisibility,
+    clubEditMotto,
+    clubEditDescription,
+    clubEditThemeColor,
+    clubEditDefaultLanguage,
+    clubEditRankingCriterion,
+    loadClubs,
+    setClubBannerFile,
+    setClubBannerPreview,
+    manageableRoleOptions,
+    userId,
+    isAdmin,
+    socialAvatarFields,
+    networkDataLoadedRef,
+    loadNetworkData,
+    requireProfile,
+    profile,
+    clubName,
+    setIsCreatingClub,
+    clubVisibility,
+    clubDescription,
+    avatarFields,
+    setClubName,
+    setClubDescription,
+    setClubVisibility,
+  }))
+  const { joinClub, approveClubMember, removeClubMember, leaveClub } = createBookingClubMembershipActions(() => ({
+    requireProfile,
+    profile,
+    userId,
+    setClubStatus,
+    text,
+    showActionToast,
+    setBusyClubId,
+    loadClubs,
+    avatarFields,
+    isDuplicateClubMembershipError,
+    clubs,
+    canModerateClubMembers,
+    canManageClubMember,
+    softDeleteRecord,
+    leaveClubConfirmText,
+    leftClubText,
+  }))
+  const { postClubMessage, sortClubMessages, canUseClubMessages, messagesForClub } = createBookingClubMessagesActions(() => ({
+    requireProfile,
+    profile,
+    setClubMessageStatus,
+    text,
+    clubPublicMessageDrafts,
+    clubAdminMessageDrafts,
+    setBusyMessageKey,
+    profileAvatarSnapshot,
+    userId,
+    setClubPublicMessageDrafts,
+    setClubAdminMessageDrafts,
+    loadedClubMessagesRef,
+    setClubMessages,
+    canManageClub,
+    approvedClubMember,
+    clubMessages,
+  }))
+  const { updateSessionMessagePage, messagesForSession, loadSessionMessages, postSessionMessage, reviewSessionMessage, deleteSessionMessage } = createBookingSessionMessagesActions(() => ({
+    userId,
+    isAdmin,
+    setSessionMessages,
+    sessionMessagesLoadedRef,
+    sessionMessagesLoadingRef,
+    setSessionMessagePages,
+    sessionMessages,
+    setCreateStatus,
+    requireProfile,
+    profile,
+    text,
+    announcementDrafts,
+    commentDrafts,
+    setBusyMessageKey,
+    setAnnouncementDrafts,
+    setCommentDrafts,
+    softDeleteRecord,
+  }))
+  const { loadSessionDetail, loadSessionRange, loadSessions, loadMoreUpcomingSessions } = createBookingSessionLoadingActions(() => ({
+    sessionDetailsLoadedRef,
+    sessions,
+    sessionDetailsLoadingRef,
+    setLoadingSessionDetailIds,
+    sessionDetailFromRpcPayload,
+    setSessions,
+    setSessionInvites,
+    setProfileScoreAdjustments,
+    setLoadedSessionDetailIds,
+    optionalSessionMetadataMissing,
+    setCreateStatus,
+    text,
+    normalizeSessionRow,
+    userId,
+    sessionPageFromRpcPayload,
+    loadingSessionRangeRef,
+    sessionsLoadedRef,
+    loadExpandedSessionDetails,
+    setBlockedTimes,
+    setHasMoreUpcomingSessions,
+    upcomingSessionsThroughRef,
+    isLoadingMoreSessions,
+    hasMoreUpcomingSessions,
+    setIsLoadingMoreSessions,
+  }))
+  const { createSession, joinSession, joinWaitlist, leaveSession, voteForGame, confirmPlayedGame } = createBookingSessionBookingActions(() => ({
+    isHaDoBookingVenue,
+    setCreateStatus,
+    text,
+    setIsCreating,
+    requireProfile,
+    profile,
+    sessionName,
+    sessionDate,
+    sessionTime,
+    sessionClubId,
+    clubs,
+    canCreateClubSession,
+    consumeAppRateLimit,
+    sessionVisibility,
+    userId,
+    sessionType,
+    sessionDuration,
+    sessionMaxPlayers,
+    sessionArenaCount,
+    selectedGames,
+    sessionNotes,
+    tournamentFormat,
+    tournamentBestOf,
+    tournamentRoundsPerMatch,
+    tournamentRequirePayment,
+    tournamentQualificationRule,
+    tournamentCustomQualifiers,
+    tournamentThirdPlace,
+    tournamentFirstPrize,
+    tournamentSecondPrize,
+    tournamentThirdPrize,
+    avatarFields,
+    notifyClubMembersOfSession,
+    notifyMinorBookingCreated,
+    showActionToast,
+    setSessionName,
+    setSessionNotes,
+    setSessionTime,
+    setSessionDuration,
+    setSessionMaxPlayers,
+    setSessionArenaCount,
+    setSessionClubId,
+    setSessionType,
+    setTournamentFormat,
+    setTournamentBestOf,
+    setTournamentRoundsPerMatch,
+    setTournamentRequirePayment,
+    setTournamentQualificationRule,
+    setTournamentCustomQualifiers,
+    setTournamentThirdPlace,
+    setTournamentFirstPrize,
+    setTournamentSecondPrize,
+    setTournamentThirdPrize,
+    setSelectedGames,
+    setSessionVisibility,
+    loadSessions,
+    setActiveView,
+    hasSessionInvite,
+    sessionClubFor,
+    canAccessClubSession,
+    joinCodes,
+    setBusySessionId,
+    fetchCurrentUserSessionParticipant,
+    mergeJoinedParticipantIntoSession,
+    loadSessionDetail,
+    loadNetworkData,
+    prepareJoinedSessionReminders,
+    waitlistPosition,
+    softDeleteRecord,
+    canManageSession,
+    setBusyVoteKey,
+    confirmedGameDrafts,
+    setSessions,
+    setConfirmedGameDrafts,
+  }))
+  const { toggleEditGame, startEditingSession, stopEditingSession, updateSession, cancelSession, removeParticipant } = createBookingSessionEditingActions(() => ({
+    setEditSelectedGames,
+    isAdmin,
+    ensureAllProfilesLoaded,
+    sessionDetailsLoadedRef,
+    loadSessionDetail,
+    setEditingSessionId,
+    setEditSessionName,
+    setEditSessionDate,
+    setEditSessionTime,
+    setEditSessionDuration,
+    setEditSessionMaxPlayers,
+    setEditSessionArenaCount,
+    setEditSessionVisibility,
+    setEditSessionNotes,
+    setEditBookingType,
+    setEditTicketCustomerId,
+    setEditTicketType,
+    setEditTicketTotalPrice,
+    setEditTicketStatus,
+    setEditTournamentFormat,
+    setEditTournamentBestOf,
+    setEditTournamentRoundsPerMatch,
+    setEditTournamentRequirePayment,
+    setEditTournamentQualificationRule,
+    setEditTournamentCustomQualifiers,
+    setEditTournamentThirdPlace,
+    setEditTournamentFirstPrize,
+    setEditTournamentSecondPrize,
+    setEditTournamentThirdPrize,
+    setCreateStatus,
+    setIsUpdatingSession,
+    canManageSession,
+    text,
+    editSessionName,
+    editSessionDate,
+    editSessionTime,
+    editSessionMaxPlayers,
+    editBookingType,
+    editSessionVisibility,
+    tournamentForSession,
+    editSessionDuration,
+    editSessionArenaCount,
+    editTicketType,
+    editTicketTotalPrice,
+    editTicketCustomerId,
+    editSelectedGames,
+    editSessionNotes,
+    editTicketStatus,
+    editTournamentFormat,
+    editTournamentBestOf,
+    editTournamentRoundsPerMatch,
+    editTournamentRequirePayment,
+    editTournamentQualificationRule,
+    editTournamentCustomQualifiers,
+    editTournamentThirdPlace,
+    editTournamentFirstPrize,
+    editTournamentSecondPrize,
+    editTournamentThirdPrize,
+    loadSessions,
+    consumeAppRateLimit,
+    setBusySessionId,
+    softDeleteRecord,
+  }))
+  const { notifySession, notifyInvite, enablePushReminders, scheduleReturnReminder, prepareJoinedSessionReminders } = createBookingRemindersActions(() => ({ language, invitationReceivedText, requireProfile, setPushReminderStatus, text, setIsEnablingPush, userId, setIsPushSubscribed }))
+  const ensureClubsLoadedRef = useRef(ensureClubsLoaded)
+  const ensureLeaderboardLoadedRef = useRef(ensureLeaderboardLoaded)
+  const ensureNetworkDataLoadedRef = useRef(ensureNetworkDataLoaded)
+  const ensurePastSessionsLoadedRef = useRef(ensurePastSessionsLoaded)
+  const ensureSessionsLoadedRef = useRef(ensureSessionsLoaded)
+  const ensureTournamentDataLoadedRef = useRef(ensureTournamentDataLoaded)
+  const ensureUpcomingSessionsThroughDateRef = useRef(ensureUpcomingSessionsThroughDate)
+  const loadExpandedSessionDetailsRef = useRef(loadExpandedSessionDetails)
+  const loadExpandedSessionMessagesRef = useRef(loadExpandedSessionMessages)
+  const hydrateCurrentUserShareStatsRef = useRef(hydrateCurrentUserShareStats)
+  const loadLeaderboardPlayersRef = useRef(loadLeaderboardPlayers)
+  const loadNetworkDataRef = useRef(loadNetworkData)
+  const loadTournamentDataRef = useRef(loadTournamentData)
+  const refreshLeaderboardIfLoadedRef = useRef(refreshLeaderboardIfLoaded)
+  const refreshSessionsIfLoadedRef = useRef(refreshSessionsIfLoaded)
+  const loadClubMessagesRef = useRef(loadClubMessages)
+  const loadClubsRef = useRef(loadClubs)
+  const loadMoreUpcomingSessionsRef = useRef(loadMoreUpcomingSessions)
+  const loadProfileRef = useRef(loadProfile)
+  const loadSessionDetailRef = useRef(loadSessionDetail)
+  const loadSessionMessagesRef = useRef(loadSessionMessages)
+  const notifyInviteRef = useRef(notifyInvite)
+  const notifySessionRef = useRef(notifySession)
+  const preparePasswordRecoveryFromUrlRef = useRef(preparePasswordRecoveryFromUrl)
+  const syncProfileEverywhereRef = useRef(syncProfileEverywhere)
+
   const activeTotpFactor = useMemo(() => mfaFactors.find((factor) => factor.status === 'verified') || mfaFactors[0] || null, [mfaFactors])
   const mfaQrCodeSrc = useMemo(() => {
     if (!mfaEnrollment?.qrCode) return ''
@@ -777,6 +1405,18 @@ export default function WidgetPage({
   const isTeenMinorProfile = activeAgeBand === 'minor'
   const isAdultProfile = activeAgeBand === 'adult'
   const sessionIdsKey = useMemo(() => sessions.map((session) => session.id).join('|'), [sessions])
+  const { updateCaptchaToken, warmSupabaseClient, resetSessionMessageState, clearTicketStatus } = useBookingLifecycleActions({
+    captchaTokenRef,
+    setCaptchaToken,
+    warmedSupabaseClientRef,
+    sessionMessagesLoadedRef,
+    sessionMessagesLoadingRef,
+    setSessionMessages,
+    setSessionMessagePages,
+    setTicketStatus,
+    setTicketStatusVariant,
+  })
+
 
   function challengeStatusLabel(status?: ChallengeStatus | null) {
     if (status === 'accepted') return text.challengeAccepted
@@ -817,7 +1457,7 @@ export default function WidgetPage({
     } finally {
       selectedPlayerStatsLoadingRef.current.delete(profileId)
     }
-  }, [text.player])
+  }, [leaderboardQueryRef, selectedPlayerStatsFetchedRef, selectedPlayerStatsLoadingRef, setProfileScoreAdjustments, setSelectedPlayerStatsOverride, text.player])
 
   const loadSelectedPlayerGameStats = useCallback(async (profileId: string, force = false) => {
     if (!profileId) return
@@ -856,7 +1496,7 @@ export default function WidgetPage({
       selectedPlayerGameStatsLoadingRef.current.delete(profileId)
       if (selectedPlayerIdRef.current === profileId) setSelectedPlayerGameStatsLoading(false)
     }
-  }, [text.player])
+  }, [selectedPlayerGameStatsFetchedRef, selectedPlayerGameStatsLoadingRef, setSelectedPlayerGameStats, setSelectedPlayerGameStatsLoading, text.player])
 
   function openPlayerProfile(profileId: string, sessionId = '', seedStats?: LeaderboardPlayer) {
     selectedPlayerIdRef.current = profileId
@@ -884,188 +1524,6 @@ export default function WidgetPage({
     setChallengeStatus('')
   }
 
-  function updateAvatarColor(value: string) {
-    const normalized = cleanHexColor(value, avatarColor)
-    setAvatarColor(normalized)
-    setAvatarColorDraft(normalized)
-  }
-
-  function updateAvatarColorDraft(value: string) {
-    setAvatarColorDraft(value)
-    if (isHexColor(value)) setAvatarColor(value.toLowerCase())
-  }
-
-  function updateAvatarTextColor(value: string) {
-    const normalized = cleanHexColor(value, avatarTextColor)
-    setAvatarTextColor(normalized)
-    setAvatarTextColorDraft(normalized)
-  }
-
-  function updateAvatarTextColorDraft(value: string) {
-    setAvatarTextColorDraft(value)
-    if (isHexColor(value)) setAvatarTextColor(value.toLowerCase())
-  }
-
-  function updateClubThemeColor(value: string) {
-    const normalized = cleanHexColor(value, clubEditThemeColor)
-    setClubEditThemeColor(normalized)
-    setClubEditThemeColorDraft(normalized)
-  }
-
-  function updateClubThemeColorDraft(value: string) {
-    setClubEditThemeColorDraft(value)
-    if (isHexColor(value)) setClubEditThemeColor(value.toLowerCase())
-  }
-
-  function chooseAvatarMode(mode: 'photo' | 'emoji' | 'initials') {
-    setAvatarMode(mode)
-    if (mode !== 'photo') {
-      setAvatarFile(null)
-      setAvatarPreview('')
-    }
-  }
-
-  function rememberFailedAvatarUrl(source: string | null | undefined) {
-    const normalizedSource = source?.trim()
-    if (!normalizedSource || normalizedSource.startsWith('blob:') || normalizedSource.startsWith('data:')) return
-    setFailedAvatarUrls((current) => {
-      if (current.has(normalizedSource)) return current
-      return new Set([...current, normalizedSource])
-    })
-  }
-
-  function avatarNode(source: {
-    avatar_url?: string | null
-    avatar_emoji?: string | null
-    avatar_initials?: string | null
-    avatar_color?: string | null
-    avatar_text_color?: string | null
-    display_name?: string | null
-    full_name?: string | null
-    nickname?: string | null
-  } | null | undefined, fallback = 'Player') {
-    return (
-      <AvatarNode
-        failedAvatarUrls={failedAvatarUrls}
-        fallback={fallback}
-        onFailedAvatarUrl={rememberFailedAvatarUrl}
-        source={source}
-      />
-    )
-  }
-
-  function avatarStyle(source: { avatar_color?: string | null; avatar_text_color?: string | null } | null | undefined) {
-    if (!source?.avatar_color && !source?.avatar_text_color) return undefined
-
-    return {
-      ...(source.avatar_color ? { background: source.avatar_color } : {}),
-      ...(source.avatar_text_color ? { color: source.avatar_text_color } : {}),
-    }
-  }
-
-  function avatarFields(source: Profile) {
-    if (source.anonymous_mode) {
-      return {
-        avatar_url: null,
-        avatar_emoji: ANONYMOUS_MASK_EMOJI,
-        avatar_initials: null,
-        avatar_color: ANONYMOUS_MASK_COLOR,
-        avatar_text_color: ANONYMOUS_MASK_TEXT_COLOR,
-        profile_motto: null,
-      }
-    }
-
-    return {
-      avatar_url: source.avatar_url || null,
-      avatar_emoji: source.avatar_emoji || null,
-      avatar_initials: source.avatar_initials || null,
-      avatar_color: source.avatar_color || null,
-      avatar_text_color: source.avatar_text_color || null,
-      profile_motto: source.profile_motto || null,
-    }
-  }
-
-  function profileAvatarSnapshot(source: Profile) {
-    return {
-      display_name: displayName(source),
-      ...avatarFields(source),
-    }
-  }
-
-  function mergeCurrentUserAvatar<T extends {
-    profile_id: string
-    display_name?: string | null
-    avatar_url?: string | null
-    avatar_emoji?: string | null
-    avatar_initials?: string | null
-    avatar_color?: string | null
-    avatar_text_color?: string | null
-    profile_motto?: string | null
-  }>(item: T, snapshot: ReturnType<typeof profileAvatarSnapshot>, profileId: string): T {
-    return item.profile_id === profileId
-      ? {
-        ...item,
-        ...snapshot,
-      }
-      : item
-  }
-
-  function syncProfileEverywhere(updatedProfile: Profile) {
-    const nextProfileSnapshot = profileAvatarSnapshot(updatedProfile)
-
-    setSessions((currentSessions) =>
-      currentSessions.map((session) => ({
-        ...session,
-        session_participants: session.session_participants?.map((participant) =>
-          mergeCurrentUserAvatar(participant, nextProfileSnapshot, updatedProfile.id)
-        ),
-        session_waitlist: session.session_waitlist?.map((entry) =>
-          mergeCurrentUserAvatar(entry, nextProfileSnapshot, updatedProfile.id)
-        ),
-      }))
-    )
-
-    setClubs((currentClubs) =>
-      currentClubs.map((club) => ({
-        ...club,
-        club_members: clubMembers(club).map((member) =>
-          mergeCurrentUserAvatar(member, nextProfileSnapshot, updatedProfile.id)
-        ),
-      }))
-    )
-
-    setTournamentData((currentData) => ({
-      ...currentData,
-      editors: currentData.editors.map((editor) =>
-        mergeCurrentUserAvatar(editor, nextProfileSnapshot, updatedProfile.id)
-      ),
-    }))
-
-    setAllProfiles((currentProfiles) => {
-      const nextProfiles = currentProfiles.map((item) => (item.id === updatedProfile.id ? { ...item, ...updatedProfile } : item))
-      return nextProfiles.some((item) => item.id === updatedProfile.id) ? nextProfiles : [...nextProfiles, updatedProfile]
-    })
-
-    setLeaderboardPlayers((currentPlayers) =>
-      currentPlayers.map((player) => player.profileId === updatedProfile.id
-        ? (() => {
-          const nextAvatar = avatarFields(updatedProfile)
-          return {
-            ...player,
-            displayName: compactDisplayName(displayName(updatedProfile), text.player),
-            avatarUrl: nextAvatar.avatar_url,
-            avatarEmoji: nextAvatar.avatar_emoji,
-            avatarInitials: nextAvatar.avatar_initials,
-            avatarColor: nextAvatar.avatar_color,
-            avatarTextColor: nextAvatar.avatar_text_color,
-            profileMotto: updatedProfile.profile_motto || null,
-          }
-        })()
-        : player
-      )
-    )
-  }
-
   const showActionToast = useCallback((message: string) => {
     const cleanMessage = message.trim()
     if (!cleanMessage) return
@@ -1089,7 +1547,7 @@ export default function WidgetPage({
     if (profileSaveSuccessTimerRef.current !== null) {
       window.clearTimeout(profileSaveSuccessTimerRef.current)
     }
-  }, [])
+  }, [profileSaveSuccessTimerRef])
 
   async function copyInviteCode(sessionId: string, inviteCode: string | null) {
     if (!inviteCode) return
@@ -1111,90 +1569,6 @@ export default function WidgetPage({
   function promptLogin() {
     setLoginPromptOpen(true)
     setProfileStatus(text.loginToContinue)
-  }
-
-  function prefillProfileFromGuestTicketClaim(claimSource: { phone: string; reference?: string; name?: string; date?: string } | null) {
-    if (!claimSource?.phone) return
-
-    const phoneParts = splitPhoneNumber(claimSource.phone)
-    setProfileCountryCode(phoneParts.countryInput || '+84')
-    setProfilePhone(phoneParts.localPhone)
-    if (claimSource.name) setProfileName(claimSource.name)
-    if (claimSource.reference) {
-      setPendingGuestTicketClaim({
-        phone: claimSource.phone,
-        reference: claimSource.reference,
-        name: claimSource.name,
-        date: claimSource.date,
-      })
-    }
-  }
-
-  function promptTicketLogin() {
-    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
-      phone: ticketConfirmation.guestPhone,
-      reference: ticketConfirmation.reference,
-      name: ticketConfirmation.guestName,
-      date: ticketConfirmation.date,
-    } : null)
-
-    const ticketAuthAction = claimSource?.phone && claimSource.reference
-      ? 'claim-after-auth'
-      : ticketDate && ticketTime
-        ? 'book-after-login'
-        : null
-    if (ticketAuthAction === 'book-after-login') {
-      writePendingTicketAccountBooking({
-        authMode: 'login',
-        createdAt: Date.now(),
-        ticketType,
-        date: ticketDate,
-        time: ticketTime,
-        players: ticketPlayers,
-        duration: ticketDuration,
-        specialNote: ticketSpecialNote,
-      })
-    } else {
-      clearPendingTicketAccountBooking()
-    }
-    setPendingTicketAuthAction(ticketAuthAction)
-    prefillProfileFromGuestTicketClaim(claimSource)
-    goToLogin()
-  }
-
-  function promptTicketCreateAccount() {
-    const claimSource = pendingGuestTicketClaim || (ticketConfirmation?.guestPhone ? {
-      phone: ticketConfirmation.guestPhone,
-      reference: ticketConfirmation.reference,
-      name: ticketConfirmation.guestName,
-      date: ticketConfirmation.date,
-    } : null)
-
-    const ticketAuthAction = claimSource?.phone && claimSource.reference
-      ? 'claim-after-auth'
-      : ticketDate && ticketTime
-        ? 'book-after-login'
-        : null
-    if (ticketAuthAction === 'book-after-login') {
-      writePendingTicketAccountBooking({
-        authMode: 'create',
-        createdAt: Date.now(),
-        ticketType,
-        date: ticketDate,
-        time: ticketTime,
-        players: ticketPlayers,
-        duration: ticketDuration,
-        specialNote: ticketSpecialNote,
-      })
-    } else {
-      clearPendingTicketAccountBooking()
-    }
-    setPendingTicketAuthAction(ticketAuthAction)
-    prefillProfileFromGuestTicketClaim(claimSource)
-    setLoginPromptOpen(false)
-    updateAuthMode('create')
-    setActiveView('profile')
-    setProfileStatus('')
   }
 
   function requireProfile() {
@@ -1242,7 +1616,7 @@ export default function WidgetPage({
   }
 
   function reloadLeaderboard(nextQuery: LeaderboardQuery) {
-    leaderboardQueryRef.current = nextQuery
+    setLeaderboardQuery(nextQuery)
     leaderboardLoadedCountRef.current = 0
     void loadLeaderboardPlayers(nextQuery, 0, 'replace', userId)
   }
@@ -1266,7 +1640,7 @@ export default function WidgetPage({
       ...leaderboardQueryRef.current,
       search: searchValue,
     }
-    leaderboardQueryRef.current = nextQuery
+    setLeaderboardQuery(nextQuery)
 
     if (leaderboardSearchReloadTimeoutRef.current) window.clearTimeout(leaderboardSearchReloadTimeoutRef.current)
     leaderboardSearchReloadTimeoutRef.current = window.setTimeout(() => {
@@ -1409,108 +1783,6 @@ export default function WidgetPage({
     }
   }
 
-  function updateCaptchaToken(token: string) {
-    captchaTokenRef.current = token
-    setCaptchaToken(token)
-  }
-
-  function currentCaptchaToken() {
-    const tokenFromState = captchaToken || captchaTokenRef.current
-    if (tokenFromState) return tokenFromState
-
-    const hcaptcha = getHCaptcha()
-    const widgetId = captchaWidgetId.current || undefined
-    const tokenFromWidget = hcaptcha?.getResponse?.(widgetId)
-
-    if (tokenFromWidget) {
-      updateCaptchaToken(tokenFromWidget)
-      return tokenFromWidget
-    }
-
-    return ''
-  }
-
-  function resetCaptcha() {
-    updateCaptchaToken('')
-
-    const hcaptcha = getHCaptcha()
-
-    if (hcaptcha && captchaWidgetId.current) {
-      hcaptcha.reset(captchaWidgetId.current)
-    }
-  }
-
-  function warmSupabaseClient() {
-    void getSupabase().then((client) => {
-      warmedSupabaseClientRef.current = client
-    }).catch(() => {})
-  }
-
-  function focusPasskeyDocument() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return true
-
-    window.focus()
-    passkeyButtonRef.current?.focus({ preventScroll: true })
-
-    return document.hasFocus()
-  }
-
-  async function restorePasskeyDocumentFocus() {
-    if (focusPasskeyDocument()) return
-
-    await new Promise<void>((resolve) => {
-      let settled = false
-      let timeoutId: number | null = null
-      const settle = () => {
-        if (settled) return
-        settled = true
-        if (timeoutId) window.clearTimeout(timeoutId)
-        window.removeEventListener('focus', settle)
-        document.removeEventListener('visibilitychange', settle)
-        resolve()
-      }
-
-      window.addEventListener('focus', settle, { once: true })
-      document.addEventListener('visibilitychange', settle, { once: true })
-      timeoutId = window.setTimeout(settle, 800)
-    })
-
-    focusPasskeyDocument()
-  }
-
-  function updateAuthMode(nextMode: 'login' | 'create') {
-    setAuthMode(nextMode)
-    setAuthStep('email')
-    setProfilePassword('')
-    setProfileStatus('')
-    resetCaptcha()
-  }
-
-  function continueAuthFromEmail() {
-    const submittedIdentifier = profileEmail.trim()
-    const loginEmail = submittedIdentifier.toLowerCase()
-    const loginPhone = authMode === 'login' && !loginEmail.includes('@')
-      ? normalizePhonePasswordIdentifier(submittedIdentifier)
-      : ''
-
-    if (authMode === 'login' ? (!loginEmail.includes('@') && !loginPhone) : (!loginEmail || !loginEmail.includes('@'))) {
-      setProfileStatus(authMode === 'login' ? text.emailOrPhoneRequired : text.emailRequired)
-      return
-    }
-
-    setProfileEmail(loginPhone || loginEmail)
-    setProfileStatus('')
-    resetCaptcha()
-    setAuthStep('credentials')
-  }
-
-  function editAuthEmail() {
-    setAuthStep('email')
-    setProfilePassword('')
-    setProfileStatus('')
-    resetCaptcha()
-  }
-
   async function shareLink(key: string, title: string, path = '') {
     await shareBookingLink({
       key,
@@ -1576,74 +1848,6 @@ export default function WidgetPage({
 
   function hasSessionInvite(sessionId: string, profileId: string) {
     return sessionInvites.some((invite) => invite.session_id === sessionId && invite.recipient_id === profileId)
-  }
-
-  function canReviewSessionMessages(session: Session) {
-    return Boolean(userId && (session.owner_id === userId || isAdmin))
-  }
-
-  function canSeeSessionMessage(session: Session, message: SessionMessage) {
-    const status = message.moderation_status || 'approved'
-    if (status === 'approved') return true
-    return Boolean(userId && (message.author_id === userId || canReviewSessionMessages(session)))
-  }
-
-  function sortSessionMessages(messages: SessionMessage[]) {
-    return [...messages].sort((a, b) => {
-      const left = a.created_at ? new Date(a.created_at).getTime() : 0
-      const right = b.created_at ? new Date(b.created_at).getTime() : 0
-      return left - right || a.id.localeCompare(b.id)
-    })
-  }
-
-  function mergeSessionMessage(message: SessionMessage) {
-    setSessionMessages((current) => sortSessionMessages([
-      ...current.filter((item) => item.id !== message.id),
-      message,
-    ]))
-  }
-
-  function resetSessionMessageState() {
-    sessionMessagesLoadedRef.current.clear()
-    sessionMessagesLoadingRef.current.clear()
-    setSessionMessages([])
-    setSessionMessagePages({})
-  }
-
-  function updateSessionMessagePage(sessionId: string, patch: Partial<SessionMessagePageState>) {
-    setSessionMessagePages((current) => ({
-      ...current,
-      [sessionId]: {
-        ...(current[sessionId] ?? {
-          loaded: false,
-          loading: false,
-          hasMore: false,
-          oldestCreatedAt: null,
-        }),
-        ...patch,
-      },
-    }))
-  }
-
-  function messagesForSession(session: Session) {
-    return sortSessionMessages(sessionMessages
-      .filter((message) => message.session_id === session.id && canSeeSessionMessage(session, message))
-    )
-  }
-
-  function sortClubMessages(messages: ClubMessage[]) {
-    return [...messages].sort((a, b) => {
-      const left = a.created_at ? new Date(a.created_at).getTime() : 0
-      const right = b.created_at ? new Date(b.created_at).getTime() : 0
-      return left - right || a.id.localeCompare(b.id)
-    })
-  }
-
-  function mergeClubMessage(message: ClubMessage) {
-    setClubMessages((current) => sortClubMessages([
-      ...current.filter((item) => item.id !== message.id),
-      message,
-    ]))
   }
 
   function messageTranslationKey(messageKind: 'club' | 'session', messageId: string, targetLanguage: LanguageCode) {
@@ -1753,23 +1957,6 @@ export default function WidgetPage({
     }))
   }
 
-  function canUseClubMessages(club: Club | undefined) {
-    if (!club || !userId) return false
-    return canManageClub(club) || club.owner_id === userId || approvedClubMember(club)
-  }
-
-  function canSeeClubAdminMessage(club: Club, message: ClubMessage) {
-    return message.message_type === 'public' || message.author_id === userId || canManageClub(club)
-  }
-
-  function messagesForClub(club: Club, messageType: ClubMessage['message_type']) {
-    return sortClubMessages(clubMessages.filter((message) => (
-      message.club_id === club.id
-      && message.message_type === messageType
-      && canSeeClubAdminMessage(club, message)
-    )))
-  }
-
   function previousPlayersForSession(session: Session) {
     const currentIds = new Set((session.session_participants ?? []).map((participant) => participant.profile_id))
     const people = new Map<string, ReturnType<typeof socialAvatarFields> & { profile_id: string }>()
@@ -1779,343 +1966,17 @@ export default function WidgetPage({
       const playedWithMe = (pastSession.session_participants ?? []).some((participant) => participant.profile_id === userId)
       if (!playedWithMe) return
 
-      ;(pastSession.session_participants ?? []).forEach((participant) => {
-        if (participant.profile_id === userId || currentIds.has(participant.profile_id)) return
-        if (people.has(participant.profile_id)) return
-        people.set(participant.profile_id, {
-          profile_id: participant.profile_id,
-          ...socialAvatarFields(participant),
+        ; (pastSession.session_participants ?? []).forEach((participant) => {
+          if (participant.profile_id === userId || currentIds.has(participant.profile_id)) return
+          if (people.has(participant.profile_id)) return
+          people.set(participant.profile_id, {
+            profile_id: participant.profile_id,
+            ...socialAvatarFields(participant),
+          })
         })
-      })
     })
 
     return Array.from(people.values()).slice(0, 8)
-  }
-
-  function notifySession(session: Session, message: string) {
-    notifyBookingSession(session, message, language)
-  }
-
-  function notifyInvite(session: Session) {
-    notifyBookingInvite(session, invitationReceivedText, language)
-  }
-
-  async function enablePushReminders() {
-    if (!requireProfile()) return false
-    if (!VAPID_PUBLIC_KEY) {
-      setPushReminderStatus(text.pushMissingConfig)
-      return false
-    }
-    if (!canUseWebPush()) {
-      setPushReminderStatus(text.pushUnsupported)
-      return false
-    }
-
-    setIsEnablingPush(true)
-    setPushReminderStatus('')
-
-    try {
-      const hasPermission = await requestBrowserReminderPermission()
-      if (!hasPermission) {
-        setPushReminderStatus(text.pushPermissionDenied)
-        setIsEnablingPush(false)
-        return false
-      }
-
-      const registration = await registerReminderServiceWorker()
-      const existingSubscription = await registration.pushManager.getSubscription()
-      const subscription = existingSubscription || await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      })
-      const serialized = subscription.toJSON()
-      const keys = serialized.keys || {}
-      if (!keys.p256dh || !keys.auth) {
-        setPushReminderStatus(text.pushSaveError)
-        setIsEnablingPush(false)
-        return false
-      }
-
-      const { error } = await (await getSupabase())
-        .from('push_subscriptions')
-        .upsert({
-          profile_id: userId,
-          endpoint: subscription.endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-          user_agent: navigator.userAgent,
-          disabled_at: null,
-          last_seen_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'endpoint' })
-
-      if (error) {
-        setPushReminderStatus(error.message)
-        setIsEnablingPush(false)
-        return false
-      }
-
-      setIsPushSubscribed(true)
-      setPushReminderStatus(text.pushEnabled)
-      setIsEnablingPush(false)
-      return true
-    } catch (error) {
-      setPushReminderStatus(error instanceof Error ? error.message : text.pushSaveError)
-      setIsEnablingPush(false)
-      return false
-    }
-  }
-
-  async function scheduleReturnReminder() {
-    const hasPermission = await enablePushReminders()
-    if (!hasPermission) {
-      return { ok: false, message: text.pushSaveError }
-    }
-
-    const client = await getSupabase()
-    const { data: { session } } = await client.auth.getSession()
-    if (!session?.access_token) {
-      return { ok: false, message: text.pushSaveError }
-    }
-
-    const response = await fetch('/api/profile/return-reminder', {
-      headers: {
-        authorization: `Bearer ${session.access_token}`,
-      },
-      method: 'POST',
-    })
-    const payload = await response.json().catch(() => ({})) as { error?: string; scheduledFor?: string }
-    if (!response.ok || !payload.scheduledFor) {
-      return { ok: false, message: payload.error || text.pushSaveError }
-    }
-
-    return { ok: true, scheduledFor: payload.scheduledFor }
-  }
-
-  function downloadSessionCalendar(session: Session) {
-    downloadSessionCalendarFile(session)
-  }
-
-  async function prepareJoinedSessionReminders(session: Session) {
-    downloadSessionCalendar(session)
-    const hasPermission = await enablePushReminders()
-    if (hasPermission) notifySession(session, text.reminderJoined)
-  }
-
-  async function loadProfile(options: { skipMfaChallenge?: boolean; showAuthLoading?: boolean } = {}) {
-    const shouldShowAuthLoading = options.showAuthLoading ?? isProfileAuthLoading
-    const authLoadSeq = shouldShowAuthLoading ? profileAuthLoadSeqRef.current + 1 : profileAuthLoadSeqRef.current
-    if (shouldShowAuthLoading) {
-      profileAuthLoadSeqRef.current = authLoadSeq
-      setIsProfileAuthLoading(true)
-    }
-
-    try {
-      authDebug('loadProfile:start')
-      const { data: userData, error: userError } = await (await getSupabase()).auth.getUser()
-      const authUser = userData.user
-      authDebug('loadProfile:getUser', {
-        error: userError,
-        user: authUser ? {
-          id: authUser.id,
-          email: authUser.email,
-          emailConfirmedAt: authUser.email_confirmed_at,
-          lastSignInAt: authUser.last_sign_in_at,
-          appMetadata: authUser.app_metadata,
-          userMetadata: authUser.user_metadata,
-        } : null,
-      })
-
-      if (userError) {
-        setUserId('')
-        setAuthEmail('')
-        setProfile(null)
-        setPhoneSetupRequired(false)
-        if (/auth session missing/i.test(userError.message)) {
-          setProfileStatus('')
-          return null
-        }
-        setProfileStatus(userError.message)
-        return null
-      }
-
-      if (!authUser) {
-        setUserId('')
-        setAuthEmail('')
-        setProfile(null)
-        setPhoneSetupRequired(false)
-        return null
-      }
-
-      setUserId(authUser.id)
-      setAuthEmail(isPhonePasswordLoginEmail(authUser.email) ? '' : authUser.email?.toLowerCase() || '')
-
-      const requiresPhoneSetup = isPendingPhoneAccountSetup(authUser.app_metadata)
-      setPhoneSetupRequired(requiresPhoneSetup)
-      if (requiresPhoneSetup) {
-        setProfile(null)
-        setActiveView('profile')
-        return null
-      }
-
-      if (!options.skipMfaChallenge) {
-        const needsMfa = await prepareMfaChallengeIfNeeded()
-        if (needsMfa) {
-          setProfile(null)
-          return null
-        }
-      }
-
-      await refreshMfaFactors()
-
-      const { data: profileRow, error: profileError, status: profileStatusCode } = await (await getSupabase())
-        .from('profiles')
-        .select(PROFILE_SELECT)
-        .eq('id', authUser.id)
-        .is('deleted_at', null)
-        .maybeSingle()
-
-      authDebug('loadProfile:profileQuery', {
-        status: profileStatusCode,
-        error: profileError,
-        profile: profileRow,
-        role: profileRow?.role,
-        isAdminEmail: isAdminEmail(authUser.email),
-      })
-
-      if (profileError) {
-        setProfileStatus(profileError.message)
-        return null
-      }
-
-      if (profileRow) {
-        const profileInitials = validAvatarInitials(profileRow.avatar_initials)
-        const phoneParts = splitPhoneNumber(profileRow.phone || '')
-        setProfile(profileRow)
-        setProfileCountryCode(phoneParts.countryInput)
-        setProfilePhone(phoneParts.localPhone)
-        setProfileName(profileRow.full_name || '')
-        setProfileMotto(limitMotto(profileRow.profile_motto || ''))
-        setProfileNickname(limitDisplayName(profileRow.nickname || ''))
-        setProfileEmail(profileRow.email || '')
-        setProfileBirthday(profileRow.birthday || '')
-        setProfileGender(normalizeProfileGender(profileRow.gender))
-        setMarketingConsent(profileRow.marketing_consent !== false)
-        setAvatarMode(profileRow.avatar_url ? 'photo' : profileRow.avatar_emoji ? 'emoji' : profileInitials ? 'initials' : 'photo')
-        setAvatarEmoji(profileRow.avatar_emoji || '😎')
-        setAvatarInitials(profileInitials)
-        setAvatarColor(profileRow.avatar_color || avatarColors[0])
-        setAvatarColorDraft(profileRow.avatar_color || avatarColors[0])
-        setAvatarTextColor(profileRow.avatar_text_color || avatarTextColors[0])
-        setAvatarTextColorDraft(profileRow.avatar_text_color || avatarTextColors[0])
-        return profileRow
-      }
-
-      const email = isPhonePasswordLoginEmail(authUser.email) ? '' : authUser.email?.toLowerCase() || ''
-      const fullName = (
-        typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name :
-          typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name :
-            typeof authUser.user_metadata?.display_name === 'string' ? authUser.user_metadata.display_name :
-              ''
-      )
-      const nickname = typeof authUser.user_metadata?.nickname === 'string' ? limitDisplayName(authUser.user_metadata.nickname) : ''
-      const profileMottoValue = typeof authUser.user_metadata?.profile_motto === 'string' ? limitMotto(authUser.user_metadata.profile_motto) : ''
-      const birthdayValue = typeof authUser.user_metadata?.birthday === 'string' ? authUser.user_metadata.birthday : ''
-      const genderValue = ageBandFromBirthday(birthdayValue) === 'under13' ? '' : normalizeProfileGender(authUser.user_metadata?.gender)
-      const personalDataConsentValue = authUser.user_metadata?.personal_data_consent === true
-      const phone = typeof authUser.user_metadata?.phone === 'string' ? authUser.user_metadata.phone : ''
-      const metadataAvatarUrl = (
-        typeof authUser.user_metadata?.avatar_url === 'string' ? authUser.user_metadata.avatar_url :
-          typeof authUser.user_metadata?.picture === 'string' ? authUser.user_metadata.picture :
-            ''
-      )
-      const metadataInitials = validAvatarInitials(typeof authUser.user_metadata?.avatar_initials === 'string' ? authUser.user_metadata.avatar_initials : '')
-      const fallbackProfile: Profile = {
-        id: authUser.id,
-        phone,
-        full_name: fullName || null,
-        nickname: nickname || null,
-        email,
-        birthday: birthdayValue || null,
-        gender: genderValue || null,
-        avatar_url: metadataAvatarUrl || null,
-        avatar_emoji: typeof authUser.user_metadata?.avatar_emoji === 'string' ? authUser.user_metadata.avatar_emoji : null,
-        avatar_initials: metadataInitials || null,
-        avatar_color: typeof authUser.user_metadata?.avatar_color === 'string' ? authUser.user_metadata.avatar_color : null,
-        avatar_text_color: typeof authUser.user_metadata?.avatar_text_color === 'string' ? authUser.user_metadata.avatar_text_color : null,
-        profile_motto: profileMottoValue || null,
-        role: defaultRoleForEmail(email),
-        anonymous_mode: Boolean(authUser.user_metadata?.anonymous_mode),
-        anonymous_callsign: typeof authUser.user_metadata?.anonymous_callsign === 'string' ? authUser.user_metadata.anonymous_callsign : null,
-        marketing_consent: authUser.user_metadata?.marketing_consent === false ? false : true,
-        marketing_consent_at: typeof authUser.user_metadata?.marketing_consent_at === 'string' ? authUser.user_metadata.marketing_consent_at : null,
-        marketing_opted_out_at: typeof authUser.user_metadata?.marketing_opted_out_at === 'string' ? authUser.user_metadata.marketing_opted_out_at : null,
-        personal_data_consent: personalDataConsentValue,
-        personal_data_consent_at: typeof authUser.user_metadata?.personal_data_consent_at === 'string' ? authUser.user_metadata.personal_data_consent_at : null,
-        privacy_policy_url: typeof authUser.user_metadata?.privacy_policy_url === 'string' ? authUser.user_metadata.privacy_policy_url : null,
-        terms_conditions_url: typeof authUser.user_metadata?.terms_conditions_url === 'string' ? authUser.user_metadata.terms_conditions_url : null,
-        consent_waiver_url: typeof authUser.user_metadata?.consent_waiver_url === 'string' ? authUser.user_metadata.consent_waiver_url : null,
-        legal_consent_version: typeof authUser.user_metadata?.legal_consent_version === 'string' ? authUser.user_metadata.legal_consent_version : null,
-      }
-
-      authDebug('loadProfile:missingProfileFallback', fallbackProfile)
-      setProfile(fallbackProfile)
-      setProfileCountryCode('+84')
-      setProfilePhone(phone.replace(/^\+?84/, ''))
-      setProfileName(fullName)
-      setProfileMotto(profileMottoValue)
-      setProfileNickname(nickname)
-      setProfileEmail(email)
-      setProfileBirthday(birthdayValue)
-      setProfileGender(genderValue)
-      setMarketingConsent(fallbackProfile.marketing_consent !== false)
-      setAvatarMode(fallbackProfile.avatar_url ? 'photo' : fallbackProfile.avatar_emoji ? 'emoji' : metadataInitials ? 'initials' : 'photo')
-      setAvatarEmoji(fallbackProfile.avatar_emoji || '😎')
-      setAvatarInitials(metadataInitials)
-      setAvatarColor(fallbackProfile.avatar_color || avatarColors[0])
-      setAvatarColorDraft(fallbackProfile.avatar_color || avatarColors[0])
-      setAvatarTextColor(fallbackProfile.avatar_text_color || avatarTextColors[0])
-      setAvatarTextColorDraft(fallbackProfile.avatar_text_color || avatarTextColors[0])
-
-      const repairResult = await (await getSupabase()).from('profiles').insert({
-        id: authUser.id,
-        phone: phone || null,
-        full_name: fullName || null,
-        nickname: nickname || null,
-        email,
-        birthday: fallbackProfile.birthday,
-        gender: fallbackProfile.gender,
-        avatar_url: fallbackProfile.avatar_url,
-        avatar_emoji: fallbackProfile.avatar_emoji,
-        avatar_initials: fallbackProfile.avatar_initials,
-        avatar_color: fallbackProfile.avatar_color,
-        avatar_text_color: fallbackProfile.avatar_text_color,
-        profile_motto: fallbackProfile.profile_motto,
-        anonymous_mode: fallbackProfile.anonymous_mode || false,
-        anonymous_callsign: fallbackProfile.anonymous_callsign || null,
-        marketing_consent: fallbackProfile.marketing_consent !== false,
-        marketing_consent_at: fallbackProfile.marketing_consent_at || new Date().toISOString(),
-        marketing_opted_out_at: fallbackProfile.marketing_opted_out_at || null,
-        personal_data_consent: fallbackProfile.personal_data_consent || false,
-        personal_data_consent_at: fallbackProfile.personal_data_consent_at || null,
-        privacy_policy_url: fallbackProfile.privacy_policy_url || null,
-        terms_conditions_url: fallbackProfile.terms_conditions_url || null,
-        consent_waiver_url: fallbackProfile.consent_waiver_url || null,
-        legal_consent_version: fallbackProfile.legal_consent_version || null,
-        updated_at: new Date().toISOString(),
-      })
-
-      authDebug('loadProfile:profileRepairUpsert', repairResult)
-      return fallbackProfile
-    } catch (error) {
-      authDebug('loadProfile:thrown', error)
-      setProfileStatus(error instanceof Error ? error.message : String(error))
-      return null
-    } finally {
-      if (shouldShowAuthLoading && profileAuthLoadSeqRef.current === authLoadSeq) {
-        setIsProfileAuthLoading(false)
-      }
-    }
   }
 
   async function consumeAppRateLimit(
@@ -2163,729 +2024,6 @@ export default function WidgetPage({
       p_include_pools: includePools,
       p_delete_reason: reason,
     })
-  }
-
-  async function handleAuth() {
-    try {
-      if (!profile && !isRecoveryMode && authMode !== 'reset' && authStep === 'email') {
-        continueAuthFromEmail()
-        return
-      }
-
-      const localPhone = profilePhone.replace(/\D/g, '')
-      const submittedIdentifier = profileEmail.trim()
-      const phoneLogin = authMode === 'login' && !submittedIdentifier.includes('@')
-      const loginPhone = phoneLogin ? normalizePhonePasswordIdentifier(submittedIdentifier) : ''
-      const loginEmail = phoneLogin ? '' : submittedIdentifier.toLowerCase()
-      const fullName = profileName.trim()
-
-      authDebug('handleAuth:attempt', {
-        mode: authMode,
-        identifierType: phoneLogin ? 'phone' : 'email',
-        isAdminEmail: isAdminEmail(loginEmail),
-        hasCaptcha: Boolean(currentCaptchaToken()),
-        localPhoneLength: localPhone.length,
-        hasFullName: Boolean(fullName),
-      })
-
-      if (phoneLogin ? !loginPhone : (!loginEmail || !loginEmail.includes('@'))) {
-        setProfileStatus(authMode === 'login' ? text.emailOrPhoneRequired : text.emailRequired)
-        return
-      }
-
-      if (profilePassword.length < 6) {
-        setProfileStatus(text.passwordRequired)
-        return
-      }
-
-      const signupAgeBand = ageBandFromBirthday(profileBirthday)
-
-      if (authMode === 'create' && signupAgeBand === 'unknown') {
-        setProfileStatus(text.birthdayRequired)
-        return
-      }
-
-      if (authMode === 'create' && signupAgeBand === 'adult' && !personalDataConsent) {
-        setProfileStatus(text.consentRequired)
-        return
-      }
-
-      const captchaTokenForAuth = authMode === 'create' || authMode === 'login' ? currentCaptchaToken() : ''
-
-      if ((authMode === 'create' || authMode === 'login') && !captchaTokenForAuth) {
-        setProfileStatus(text.captchaRequired)
-        return
-      }
-
-      setIsSavingProfile(true)
-      setProfileStatus(authMode === 'login' ? text.loggingIn : text.creating)
-
-      const nickname = limitDisplayName(profileNickname.trim())
-      const display = nickname || compactDisplayName(fullName || loginEmail.split('@')[0])
-      const consentAt = new Date().toISOString()
-      const countryCode = resolveCountryCode(profileCountryCode)
-      const normalizedProfilePhone = localPhone ? `${countryCode}${localPhone}` : ''
-      const legalConsentAccepted = authMode === 'create' && signupAgeBand === 'adult' && personalDataConsent
-
-      if (authMode === 'create') {
-        const signUpResult = await (await getSupabase()).auth.signUp({
-          email: loginEmail,
-          password: profilePassword,
-          options: {
-            data: {
-              display_name: display,
-              full_name: fullName || display,
-              name: display,
-              phone: normalizedProfilePhone || null,
-              birthday: profileBirthday || null,
-              gender: signupAgeBand === 'under13' ? null : profileGender || null,
-              marketing_consent: marketingConsent,
-              marketing_consent_at: marketingConsent ? consentAt : null,
-              marketing_opted_out_at: marketingConsent ? null : consentAt,
-              personal_data_consent: legalConsentAccepted,
-              personal_data_consent_at: legalConsentAccepted ? consentAt : null,
-              privacy_policy_url: PRIVACY_POLICY_URL,
-              terms_conditions_url: TERMS_CONDITIONS_URL,
-              consent_waiver_url: CONSENT_WAIVER_URL,
-              legal_consent_version: LEGAL_CONSENT_VERSION,
-            },
-            captchaToken: captchaTokenForAuth,
-          },
-        })
-
-        authDebug('handleAuth:signUpResponse', {
-          error: signUpResult.error,
-          hasSession: Boolean(signUpResult.data.session),
-          user: signUpResult.data.user ? {
-            id: signUpResult.data.user.id,
-            email: signUpResult.data.user.email,
-            emailConfirmedAt: signUpResult.data.user.email_confirmed_at,
-            appMetadata: signUpResult.data.user.app_metadata,
-            userMetadata: signUpResult.data.user.user_metadata,
-          } : null,
-        })
-
-        resetCaptcha()
-
-        if (signUpResult.error) {
-          setProfileStatus(signUpResult.error.message)
-          setIsSavingProfile(false)
-          return
-        }
-
-        if (!signUpResult.data.user) {
-          setProfileStatus(text.loginRequired)
-          setAuthMode('login')
-          setAuthStep('credentials')
-          setIsSavingProfile(false)
-          return
-        }
-
-        setUserId(signUpResult.data.user.id)
-        setPersonalDataConsent(false)
-        setProfilePassword('')
-        const loadedProfile = await loadProfile()
-        const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
-        if (!completedTicketAuth) {
-          setProfileStatus(text.accountCreated)
-          setActiveView('profile')
-        }
-        setIsSavingProfile(false)
-        return
-      }
-
-      authDebug('handleAuth:signInWithPassword:start', {
-        identifierType: phoneLogin ? 'phone' : 'email',
-        isAdminEmail: isAdminEmail(loginEmail),
-      })
-
-      const authClient = await getSupabase()
-      const signInResult = phoneLogin
-        ? await (async () => {
-            const response = await fetch('/api/auth/phone-password-login', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({
-                captchaToken: captchaTokenForAuth,
-                password: profilePassword,
-                phone: loginPhone,
-              }),
-            })
-            const payload = await response.json().catch(() => ({})) as {
-              accessToken?: string
-              error?: string
-              refreshToken?: string
-            }
-            if (!response.ok || !payload.accessToken || !payload.refreshToken) {
-              throw new Error(payload.error || 'Invalid phone number or password.')
-            }
-            return authClient.auth.setSession({
-              access_token: payload.accessToken,
-              refresh_token: payload.refreshToken,
-            })
-          })()
-        : await authClient.auth.signInWithPassword({
-            email: loginEmail,
-            password: profilePassword,
-            options: { captchaToken: captchaTokenForAuth },
-          })
-
-      authDebug('handleAuth:signInWithPassword:response', {
-        error: signInResult.error,
-        hasSession: Boolean(signInResult.data.session),
-        user: signInResult.data.user ? {
-          id: signInResult.data.user.id,
-          email: signInResult.data.user.email,
-          emailConfirmedAt: signInResult.data.user.email_confirmed_at,
-          lastSignInAt: signInResult.data.user.last_sign_in_at,
-          appMetadata: signInResult.data.user.app_metadata,
-          userMetadata: signInResult.data.user.user_metadata,
-        } : null,
-      })
-
-      resetCaptcha()
-
-      if (signInResult.error) {
-        setProfileStatus(signInResult.error.message)
-        setIsSavingProfile(false)
-        return
-      }
-
-      if (!signInResult.data.user) {
-        setProfileStatus(text.loginRequired)
-        setAuthMode('login')
-        setAuthStep('credentials')
-        setIsSavingProfile(false)
-        return
-      }
-
-      setUserId(signInResult.data.user.id)
-      setProfilePassword('')
-      const requiresPhoneSetup = isPendingPhoneAccountSetup(signInResult.data.user.app_metadata)
-      const needsMfa = await prepareMfaChallengeIfNeeded()
-      if (needsMfa) {
-        setIsSavingProfile(false)
-        return
-      }
-      const loadedProfile = await loadProfile()
-      if (requiresPhoneSetup) {
-        setProfileStatus('')
-        setActiveView('profile')
-        setIsSavingProfile(false)
-        return
-      }
-      const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
-      if (!completedTicketAuth) {
-        setProfileStatus('')
-        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
-      }
-      setIsSavingProfile(false)
-    } catch (error) {
-      authDebug('handleAuth:thrown', error)
-      resetCaptcha()
-      setProfileStatus(error instanceof Error ? error.message : String(error))
-      setIsSavingProfile(false)
-    }
-  }
-
-  async function logout() {
-    await (await getSupabase()).auth.signOut()
-    setUserId('')
-    setAuthEmail('')
-    setProfile(null)
-    setProfilePassword('')
-    setPhoneSetupRequired(false)
-    setPhoneSetupEmail('')
-    setPhoneSetupSentTo('')
-    setAuthStep('email')
-    setNewPassword('')
-    setIsRecoveryMode(false)
-    setMfaFactors([])
-    setMfaEnrollment(null)
-    setMfaChallenge(null)
-    setMfaChallengeCode('')
-    setMfaVerifyCode('')
-    setMfaRequired(false)
-    setMfaAssuranceLevel(null)
-    setMfaStatus('')
-    setProfileStatus(text.loggedOut)
-  }
-
-  async function sendPhoneSetupEmail() {
-    if (isPhoneSetupSaving) return
-    const email = normalizePhoneSetupEmail(phoneSetupEmail)
-    if (!email) {
-      setProfileStatus(text.emailRequired)
-      return
-    }
-
-    setIsPhoneSetupSaving(true)
-    setProfileStatus('')
-    try {
-      const client = await getSupabase()
-      const { data, error } = await client.auth.getSession()
-      if (error || !data.session?.access_token) throw new Error(text.loginRequired)
-
-      const response = await fetch('/api/auth/phone-account-setup/start', {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${data.session.access_token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
-      const payload = await response.json().catch(() => ({})) as { error?: string; maskedEmail?: string }
-      if (!response.ok || !payload.maskedEmail) throw new Error(payload.error || 'Could not send the verification email.')
-
-      setPhoneSetupEmail(email)
-      setPhoneSetupSentTo(payload.maskedEmail)
-    } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : 'Could not send the verification email.')
-    } finally {
-      setIsPhoneSetupSaving(false)
-    }
-  }
-
-  async function logoutStaffKiosk() {
-    await logout()
-    setActiveView('profile')
-  }
-
-  function isDocumentFocusPasskeyError(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || '')
-    return message.toLowerCase().includes('document is not focused')
-  }
-
-  async function signInWithPasskey() {
-    if (!passkeysAvailable()) {
-      setProfileStatus(text.passkeyUnavailable)
-      return
-    }
-
-    try {
-      setIsPasskeyLoading(true)
-      setProfileStatus(text.passkeyStarting)
-      await restorePasskeyDocumentFocus()
-
-      const client = warmedSupabaseClientRef.current || await getSupabase()
-      warmedSupabaseClientRef.current = client
-      let { data, error } = await client.auth.signInWithPasskey()
-
-      if (error && isDocumentFocusPasskeyError(error)) {
-        await restorePasskeyDocumentFocus()
-        const retryResult = await client.auth.signInWithPasskey()
-        data = retryResult.data
-        error = retryResult.error
-      }
-
-      if (error) {
-        setProfileStatus(error.message)
-        setIsPasskeyLoading(false)
-        return
-      }
-
-      if (!data) {
-        setProfileStatus(text.passkeyUnavailable)
-        setIsPasskeyLoading(false)
-        return
-      }
-
-      const nextUserId = data.user?.id || data.session?.user.id || ''
-      if (nextUserId) setUserId(nextUserId)
-      const needsMfa = await prepareMfaChallengeIfNeeded()
-      if (needsMfa) {
-        setIsPasskeyLoading(false)
-        return
-      }
-      const loadedProfile = await loadProfile()
-      const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
-      if (!completedTicketAuth) {
-        setProfileStatus('')
-        const loginEmail = data.user?.email || data.session?.user.email || ''
-        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
-      }
-      setIsPasskeyLoading(false)
-    } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : String(error))
-      setIsPasskeyLoading(false)
-    }
-  }
-
-  async function registerPasskey() {
-    if (!profile) return
-
-    if (!passkeysAvailable()) {
-      setProfileStatus(text.passkeyUnavailable)
-      return
-    }
-
-    try {
-      setIsPasskeyLoading(true)
-      setProfileStatus(text.passkeyStarting)
-      const { error } = await (await getSupabase()).auth.registerPasskey()
-
-      if (error) {
-        setProfileStatus(error.message)
-        setIsPasskeyLoading(false)
-        return
-      }
-
-      setProfileStatus(text.passkeyAdded)
-      setIsPasskeyLoading(false)
-    } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : String(error))
-      setIsPasskeyLoading(false)
-    }
-  }
-
-  async function refreshMfaFactors() {
-    const { data, error } = await (await getSupabase()).auth.mfa.listFactors()
-
-    if (error) {
-      setMfaStatus(error.message)
-      return []
-    }
-
-    const factors = (data?.totp ?? [])
-      .filter((factor) => Boolean(factor?.id))
-      .map((factor) => ({
-        id: factor.id,
-        friendly_name: factor.friendly_name,
-        factor_type: factor.factor_type,
-        status: factor.status,
-        created_at: factor.created_at,
-        updated_at: factor.updated_at,
-      }))
-    setMfaFactors(factors)
-    return factors
-  }
-
-  async function prepareMfaChallengeIfNeeded() {
-    if (mfaChallenge) return true
-
-    const assurance = await (await getSupabase()).auth.mfa.getAuthenticatorAssuranceLevel()
-
-    if (assurance.error) {
-      setMfaAssuranceLevel(null)
-      setMfaStatus(assurance.error.message)
-      return false
-    }
-
-    setMfaAssuranceLevel(assurance.data?.currentLevel === 'aal2' ? 'aal2' : 'aal1')
-
-    if (assurance.data?.currentLevel === 'aal1' && assurance.data.nextLevel === 'aal2') {
-      const factors = await refreshMfaFactors()
-      const factor = factors.find((item) => item.status === 'verified') || factors[0]
-
-      if (!factor) {
-        setMfaStatus(text.mfaChallengeError)
-        setProfileStatus(text.mfaChallengeError)
-        return false
-      }
-
-      const challenge = await (await getSupabase()).auth.mfa.challenge({ factorId: factor.id })
-
-      if (challenge.error || !challenge.data) {
-        setMfaStatus(challenge.error?.message || text.mfaChallengeError)
-        setProfileStatus(challenge.error?.message || text.mfaChallengeError)
-        return true
-      }
-
-      setMfaChallenge({ factorId: factor.id, challengeId: challenge.data.id })
-      setMfaChallengeCode('')
-      setMfaRequired(true)
-      setActiveView('profile')
-      setProfileStatus(text.mfaRequired)
-      return true
-    }
-
-    setMfaChallenge(null)
-    setMfaRequired(false)
-    return false
-  }
-
-  async function verifyMfaChallenge(codeOverride?: string) {
-    const code = typeof codeOverride === 'string' ? codeOverride.trim() : mfaChallengeCode.trim()
-
-    if (!mfaChallenge || !code) {
-      setProfileStatus(text.mfaCodeRequired)
-      return
-    }
-
-    if (mfaVerificationInFlightRef.current) return
-
-    mfaVerificationInFlightRef.current = true
-    setIsMfaLoading(true)
-    try {
-      const { data, error } = await (await getSupabase()).auth.mfa.verify({
-        factorId: mfaChallenge.factorId,
-        challengeId: mfaChallenge.challengeId,
-        code,
-      })
-
-      if (error) {
-        setProfileStatus(error.message)
-        return
-      }
-
-      setMfaChallenge(null)
-      setMfaChallengeCode('')
-      setMfaRequired(false)
-      setMfaAssuranceLevel('aal2')
-      if (data?.user) {
-        setUserId(data.user.id)
-        setAuthEmail(isPhonePasswordLoginEmail(data.user.email) ? '' : data.user.email?.toLowerCase() || '')
-      }
-      setProfileStatus('')
-      await refreshMfaFactors()
-      await loadProfile({ skipMfaChallenge: true })
-      setActiveView('leaderboard')
-    } finally {
-      mfaVerificationInFlightRef.current = false
-      setIsMfaLoading(false)
-    }
-  }
-
-  async function beginTotpEnrollment() {
-    if (!profile) return
-
-    setIsMfaLoading(true)
-    setMfaStatus('')
-    setMfaVerifyCode('')
-    const { data, error } = await (await getSupabase()).auth.mfa.enroll({
-      factorType: 'totp',
-      friendlyName: 'VRena',
-      issuer: 'VRena',
-    })
-
-    if (error || !data) {
-      setMfaStatus(error?.message || text.mfaEnrollError)
-      setIsMfaLoading(false)
-      return
-    }
-
-    setMfaEnrollment({
-      id: data.id,
-      qrCode: data.totp.qr_code,
-      secret: data.totp.secret,
-      uri: data.totp.uri,
-    })
-    setIsMfaLoading(false)
-  }
-
-  async function confirmTotpEnrollment() {
-    if (!mfaEnrollment || !mfaVerifyCode.trim()) {
-      setMfaStatus(text.mfaCodeRequired)
-      return
-    }
-
-    setIsMfaLoading(true)
-    setMfaStatus('')
-    const challenge = await (await getSupabase()).auth.mfa.challenge({ factorId: mfaEnrollment.id })
-
-    if (challenge.error || !challenge.data) {
-      setMfaStatus(challenge.error?.message || text.mfaVerifyError)
-      setIsMfaLoading(false)
-      return
-    }
-
-    const { error } = await (await getSupabase()).auth.mfa.verify({
-      factorId: mfaEnrollment.id,
-      challengeId: challenge.data.id,
-      code: mfaVerifyCode.trim(),
-    })
-
-    if (error) {
-      setMfaStatus(error.message)
-      setIsMfaLoading(false)
-      return
-    }
-
-    setMfaEnrollment(null)
-    setMfaVerifyCode('')
-    setMfaAssuranceLevel('aal2')
-    setMfaStatus(text.mfaEnabled)
-    await refreshMfaFactors()
-    setIsMfaLoading(false)
-  }
-
-  async function removeTotpFactor(factorId: string) {
-    if (typeof window !== 'undefined' && !window.confirm(text.mfaDisableConfirm)) return
-
-    setIsMfaLoading(true)
-    setMfaStatus('')
-    const { error } = await (await getSupabase()).auth.mfa.unenroll({ factorId })
-
-    if (error) {
-      setMfaStatus(error.message)
-      setIsMfaLoading(false)
-      return
-    }
-
-    setMfaEnrollment(null)
-    setMfaVerifyCode('')
-    setMfaAssuranceLevel('aal1')
-    setMfaStatus(text.mfaDisabled)
-    await refreshMfaFactors()
-    setIsMfaLoading(false)
-  }
-
-  async function signInWithGoogle() {
-    try {
-      setIsOAuthLoading(true)
-      setProfileStatus(text.loggingIn)
-      const { error } = await (await getSupabase()).auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: appRedirectUrl(),
-        },
-      })
-
-      if (error) {
-        setProfileStatus(error.message)
-        setIsOAuthLoading(false)
-      }
-    } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : String(error))
-      setIsOAuthLoading(false)
-    }
-  }
-
-  async function sendPasswordReset() {
-    const email = (profile?.email || profileEmail).trim().toLowerCase()
-
-    if (!email || !email.includes('@')) {
-      setProfileStatus(text.resetPasswordEmailRequired)
-      return
-    }
-
-    const captchaTokenForReset = profile ? '' : currentCaptchaToken()
-
-    if (!profile && !captchaTokenForReset) {
-      setProfileStatus(text.captchaRequired)
-      return
-    }
-
-    setIsResettingPassword(true)
-    const redirectTo = appRedirectUrl()
-    const supabase = await getSupabase()
-    const { data: sessionData } = await supabase.auth.getSession()
-    const response = await fetch('/api/auth/password-reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
-      },
-      body: JSON.stringify({
-        email,
-        redirectTo,
-        captchaToken: captchaTokenForReset || undefined,
-      }),
-    })
-    const resetResult = (await response.json().catch(() => ({}))) as { error?: string }
-
-    resetCaptcha()
-
-    if (!response.ok) {
-      setProfileStatus(resetResult.error || 'Could not send password reset email.')
-      setIsResettingPassword(false)
-      return
-    }
-
-    setProfileStatus(text.resetPasswordSent)
-    setIsResettingPassword(false)
-  }
-
-  async function preparePasswordRecoveryFromUrl() {
-    const recoveryParams = passwordRecoveryUrlParams()
-    if (!recoveryParams) return null
-
-    setActiveView('profile')
-    setAuthMode('login')
-    setAuthStep('email')
-
-    if (recoveryParams.errorDescription) {
-      setIsRecoveryMode(false)
-      setProfileStatus(recoveryParams.errorDescription)
-      cleanPasswordRecoveryUrl()
-      return false
-    }
-
-    const client = await getSupabase()
-
-    if (recoveryParams.accessToken && recoveryParams.refreshToken) {
-      const { error } = await client.auth.setSession({
-        access_token: recoveryParams.accessToken,
-        refresh_token: recoveryParams.refreshToken,
-      })
-
-      if (error) {
-        setIsRecoveryMode(false)
-        setProfileStatus(error.message)
-        cleanPasswordRecoveryUrl()
-        return false
-      }
-    } else if (recoveryParams.code) {
-      const { error } = await client.auth.exchangeCodeForSession(recoveryParams.code)
-
-      if (error) {
-        setIsRecoveryMode(false)
-        setProfileStatus(error.message)
-        cleanPasswordRecoveryUrl()
-        return false
-      }
-    } else if (!recoveryParams.code) {
-      setIsRecoveryMode(false)
-      setProfileStatus(text.resetPasswordSessionRequired)
-      cleanPasswordRecoveryUrl()
-      return false
-    }
-
-    const { data, error } = await client.auth.getSession()
-    cleanPasswordRecoveryUrl()
-
-    if (error || !data.session) {
-      setIsRecoveryMode(false)
-      setProfileStatus(!data.session ? text.resetPasswordSessionRequired : error?.message || text.resetPasswordSessionRequired)
-      return false
-    }
-
-    setUserId(data.session.user.id)
-    setProfileEmail(data.session.user.email || profileEmail)
-    setIsRecoveryMode(true)
-    setProfileStatus(text.resetPasswordReady)
-    return true
-  }
-
-  async function updatePasswordFromRecovery() {
-    if (newPassword.length < 6) {
-      setProfileStatus(text.passwordRequired)
-      return
-    }
-
-    setIsResettingPassword(true)
-    const client = await getSupabase()
-    const { data: sessionData, error: sessionError } = await client.auth.getSession()
-
-    if (sessionError || !sessionData.session) {
-      setProfileStatus(!sessionData.session ? text.resetPasswordSessionRequired : sessionError?.message || text.resetPasswordSessionRequired)
-      setIsResettingPassword(false)
-      return
-    }
-
-    const { error } = await client.auth.updateUser({ password: newPassword })
-
-    if (error) {
-      setProfileStatus(error.message)
-      setIsResettingPassword(false)
-      return
-    }
-
-    setNewPassword('')
-    setIsRecoveryMode(false)
-    setProfileStatus(text.passwordUpdated)
-    await loadProfile()
-    setIsResettingPassword(false)
   }
 
   async function fetchLeaderboardRows(query: LeaderboardQuery, offset: number, limit: number, profileId = '') {
@@ -2957,7 +2095,7 @@ export default function WidgetPage({
         : players.length
       const scoreAdjustments = Object.fromEntries(players.map((player) => [player.profileId, player.scoreAdjustment]))
 
-      leaderboardLoadedRef.current = true
+      setLeaderboardLoaded(true)
       leaderboardLoadedCountRef.current = nextLoadedCount
       setHasMoreLeaderboardPlayers(nextLoadedCount < totalCount)
       setProfileScoreAdjustments((current) => ({
@@ -3000,7 +2138,7 @@ export default function WidgetPage({
         : null
       setLeaderboardStatus(isMissingPagedLeaderboardFunction(leaderboardError) ? '' : error instanceof Error ? error.message : String(error))
       if (mode === 'replace') {
-        leaderboardLoadedRef.current = false
+        setLeaderboardLoaded(false)
         leaderboardLoadedCountRef.current = 0
         setLeaderboardPlayers([])
         await loadSessions()
@@ -3095,136 +2233,6 @@ export default function WidgetPage({
     }
   }
 
-  async function loadSessionDetail(sessionId: string, options: { force?: boolean } = {}) {
-    if (!sessionId) return null
-    if (!options.force && sessionDetailsLoadedRef.current.has(sessionId)) {
-      return sessions.find((session) => session.id === sessionId) ?? null
-    }
-    if (sessionDetailsLoadingRef.current.has(sessionId)) return null
-
-    sessionDetailsLoadingRef.current.add(sessionId)
-    setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
-
-    const client = await getSupabase()
-    const rpcDetailResult = await client.rpc('session_detail', { p_session_id: sessionId })
-
-    if (!rpcDetailResult.error && rpcDetailResult.data) {
-      const { session: detailSession, invites: inviteRows, scoreAdjustments } = sessionDetailFromRpcPayload(rpcDetailResult.data)
-
-      if (detailSession) {
-        setSessions((currentSessions) => {
-          const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
-          sessionsById.set(sessionId, detailSession)
-          return sortSessionsByStart(Array.from(sessionsById.values()))
-        })
-        setSessionInvites((current) => [
-          ...current.filter((invite) => invite.session_id !== sessionId),
-          ...inviteRows,
-        ])
-        if (Object.keys(scoreAdjustments).length > 0) {
-          setProfileScoreAdjustments((current) => ({
-            ...current,
-            ...scoreAdjustments,
-          }))
-        }
-
-        sessionDetailsLoadedRef.current.add(sessionId)
-        sessionDetailsLoadingRef.current.delete(sessionId)
-        setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
-        setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
-        return detailSession
-      }
-    }
-
-    let detailResult = await client
-      .from('sessions')
-      .select(SESSION_SELECT)
-      .eq('id', sessionId)
-      .is('deleted_at', null)
-      .is('session_participants.deleted_at', null)
-      .neq('status', 'cancelled')
-      .single()
-
-    if (optionalSessionMetadataMissing(detailResult.error)) {
-      detailResult = await client
-        .from('sessions')
-        .select(SESSION_SELECT_BASE)
-        .eq('id', sessionId)
-        .is('deleted_at', null)
-        .is('session_participants.deleted_at', null)
-        .neq('status', 'cancelled')
-        .single()
-    }
-
-    if (detailResult.error || !detailResult.data) {
-      setCreateStatus(detailResult.error?.message || text.noMatchingSessions)
-      sessionDetailsLoadingRef.current.delete(sessionId)
-      setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
-      return null
-    }
-
-    const detailSession = normalizeSessionRow(detailResult.data as Session)
-    const participantIds = Array.from(new Set((detailSession.session_participants ?? []).map((participant) => participant.profile_id)))
-
-    const [waitlistResult, invitesResult, adjustmentResult] = await Promise.all([
-      client
-        .from('session_waitlist')
-        .select(WAITLIST_SELECT)
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true }),
-      userId
-        ? client
-          .from('session_invites')
-          .select('id, session_id, inviter_id, recipient_id, recipient_display_name, recipient_avatar_url, recipient_avatar_emoji, recipient_avatar_initials, recipient_avatar_color, recipient_avatar_text_color, recipient_profile_motto, status, created_at')
-          .eq('session_id', sessionId)
-          .order('created_at', { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
-      participantIds.length > 0
-        ? client
-          .from('profiles')
-          .select('id, score_adjustment')
-          .is('deleted_at', null)
-          .in('id', participantIds)
-        : Promise.resolve({ data: [], error: null }),
-    ])
-
-    const waitlistRows = waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
-    const inviteRows = invitesResult.error ? [] : (invitesResult.data ?? []) as SessionInvite[]
-    const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? []) as Array<Pick<Profile, 'id' | 'score_adjustment'>>
-
-    const hydratedDetailSession = {
-      ...detailSession,
-      session_waitlist: waitlistRows,
-    }
-
-    setSessions((currentSessions) => {
-      const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
-      sessionsById.set(sessionId, hydratedDetailSession)
-      return sortSessionsByStart(Array.from(sessionsById.values()))
-    })
-    if (!invitesResult.error) {
-      setSessionInvites((current) => [
-        ...current.filter((invite) => invite.session_id !== sessionId),
-        ...inviteRows,
-      ])
-    }
-    if (adjustmentRows.length > 0) {
-      setProfileScoreAdjustments((current) => ({
-        ...current,
-        ...Object.fromEntries(adjustmentRows.map((row) => {
-          const adjustment = Number(row.score_adjustment ?? 0)
-          return [row.id, Number.isFinite(adjustment) ? adjustment : 0]
-        })),
-      }))
-    }
-
-    sessionDetailsLoadedRef.current.add(sessionId)
-    sessionDetailsLoadingRef.current.delete(sessionId)
-    setLoadedSessionDetailIds((current) => ({ ...current, [sessionId]: true }))
-    setLoadingSessionDetailIds((current) => ({ ...current, [sessionId]: false }))
-    return hydratedDetailSession
-  }
-
   function mergeJoinedParticipantIntoSession(sessionId: string, participant: Participant | null) {
     if (!participant) return
 
@@ -3259,267 +2267,6 @@ export default function WidgetPage({
     return data as Participant
   }
 
-  async function loadSessionMessages(
-    sessionId: string,
-    options: { force?: boolean; before?: string | null } = {}
-  ) {
-    if (!sessionId || !userId) return
-
-    const before = options.before ?? null
-    const isInitialPage = !before
-    if (isInitialPage && !options.force && sessionMessagesLoadedRef.current.has(sessionId)) return
-    if (sessionMessagesLoadingRef.current.has(sessionId)) return
-
-    sessionMessagesLoadingRef.current.add(sessionId)
-    updateSessionMessagePage(sessionId, { loading: true })
-
-    const client = await getSupabase()
-    let messageQuery = client
-      .from('session_messages')
-      .select(SESSION_MESSAGE_SELECT)
-      .eq('session_id', sessionId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(SESSION_MESSAGE_PAGE_SIZE + 1)
-
-    if (before) {
-      messageQuery = messageQuery.lt('created_at', before)
-    }
-
-    const { data, error } = await messageQuery
-
-    sessionMessagesLoadingRef.current.delete(sessionId)
-
-    if (error) {
-      setCreateStatus(error.message)
-      updateSessionMessagePage(sessionId, { loading: false })
-      return
-    }
-
-    const rows = ((data ?? []) as SessionMessage[]).slice(0, SESSION_MESSAGE_PAGE_SIZE)
-    const sortedRows = sortSessionMessages(rows)
-    const oldestCreatedAt = sortedRows[0]?.created_at ?? before ?? null
-    const hasMore = ((data ?? []) as SessionMessage[]).length > SESSION_MESSAGE_PAGE_SIZE
-
-    setSessionMessages((current) => {
-      const otherSessions = current.filter((message) => message.session_id !== sessionId)
-      const retainedSessionMessages = before
-        ? current.filter((message) => message.session_id === sessionId)
-        : []
-      const messagesById = new Map(retainedSessionMessages.map((message) => [message.id, message]))
-      sortedRows.forEach((message) => messagesById.set(message.id, message))
-      return sortSessionMessages([...otherSessions, ...Array.from(messagesById.values())])
-    })
-
-    sessionMessagesLoadedRef.current.add(sessionId)
-    updateSessionMessagePage(sessionId, {
-      loaded: true,
-      loading: false,
-      hasMore,
-      oldestCreatedAt,
-    })
-  }
-
-  async function loadSessionRows(startDate?: string, endDate?: string, includeBlockedTimes = false) {
-    const client = await getSupabase()
-    const rpcResult = await client.rpc('sessions_list_page', {
-      p_start_date: startDate || null,
-      p_end_date: endDate || null,
-      p_limit: 500,
-      p_offset: 0,
-      p_include_blocked_times: includeBlockedTimes,
-    })
-
-    if (!rpcResult.error && rpcResult.data) {
-      return sessionPageFromRpcPayload(rpcResult.data)
-    }
-
-    let sessionQuery = client
-      .from('sessions')
-      .select(SESSION_CARD_SELECT)
-      .is('deleted_at', null)
-      .is('session_participants.deleted_at', null)
-      .neq('status', 'cancelled')
-
-    if (startDate) sessionQuery = sessionQuery.gte('date', startDate)
-    if (endDate) sessionQuery = sessionQuery.lte('date', endDate)
-
-    const sessionResult = await sessionQuery
-      .order('date', { ascending: true })
-      .order('start_time', { ascending: true })
-
-    let sessionRowsData: unknown[] | null = sessionResult.data as unknown[] | null
-    let sessionError = sessionResult.error
-
-    if (optionalSessionMetadataMissing(sessionResult.error)) {
-      let fallbackSessionQuery = client
-        .from('sessions')
-        .select(SESSION_CARD_SELECT_BASE)
-        .is('deleted_at', null)
-        .is('session_participants.deleted_at', null)
-        .neq('status', 'cancelled')
-
-      if (startDate) fallbackSessionQuery = fallbackSessionQuery.gte('date', startDate)
-      if (endDate) fallbackSessionQuery = fallbackSessionQuery.lte('date', endDate)
-
-      const fallbackSessionResult = await fallbackSessionQuery
-        .order('date', { ascending: true })
-        .order('start_time', { ascending: true })
-      sessionRowsData = fallbackSessionResult.data
-      sessionError = fallbackSessionResult.error
-    }
-
-    if (sessionError) {
-      setCreateStatus(sessionError.message)
-      return null
-    }
-
-    return {
-      sessions: ((sessionRowsData ?? []) as Session[]).map(normalizeSessionRow),
-      scoreAdjustments: {},
-      blockedTimes: [],
-      hasMoreAfter: null,
-      source: 'select',
-    } satisfies SessionListPageResult
-  }
-
-  async function hasFutureSessionsAfter(dateValue: string) {
-    const { data, error } = await (await getSupabase())
-      .from('sessions')
-      .select('id')
-      .is('deleted_at', null)
-      .neq('status', 'cancelled')
-      .gt('date', dateValue)
-      .limit(1)
-
-    if (error) return true
-    return (data ?? []).length > 0
-  }
-
-  async function loadSessionRange(
-    startDate: string | undefined,
-    endDate: string | undefined,
-    mode: 'replace-upcoming' | 'replace-past' | 'merge',
-    options: { includeBlockedTimes?: boolean; updateUpcomingPagination?: boolean } = {}
-  ) {
-    if (loadingSessionRangeRef.current) return false
-
-    loadingSessionRangeRef.current = true
-    const sessionPage = await loadSessionRows(startDate, endDate, Boolean(options.includeBlockedTimes))
-
-    if (!sessionPage) {
-      loadingSessionRangeRef.current = false
-      return false
-    }
-
-    const sessionRows = sessionPage.sessions
-    const sessionIds = sessionRows.map((session) => session.id)
-    const profileIds = Array.from(new Set(sessionRows.flatMap((session) => (session.session_participants ?? []).map((participant) => participant.profile_id))))
-    const client = await getSupabase()
-    const needsSupplementalListData = sessionPage.source !== 'rpc'
-    const [waitlistResult, adjustmentResult] = needsSupplementalListData ? await Promise.all([
-      sessionIds.length > 0
-        ? client
-        .from('session_waitlist')
-        .select(WAITLIST_POSITION_SELECT)
-        .in('session_id', sessionIds)
-        .order('created_at', { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
-      profileIds.length > 0
-        ? client
-        .from('profiles')
-        .select('id, score_adjustment')
-        .is('deleted_at', null)
-        .in('id', profileIds)
-        : Promise.resolve({ data: [], error: null }),
-    ]) : [
-      { data: [], error: null },
-      { data: [], error: null },
-    ]
-
-    const waitlistRows = needsSupplementalListData
-      ? waitlistResult.error ? [] : (waitlistResult.data ?? []) as WaitlistEntry[]
-      : sessionRows.flatMap((session) => session.session_waitlist ?? [])
-    const adjustmentRows = adjustmentResult.error ? [] : (adjustmentResult.data ?? [])
-    const scoreAdjustments = needsSupplementalListData ? Object.fromEntries(adjustmentRows.map((row) => {
-      const adjustment = Number((row as Pick<Profile, 'score_adjustment'>).score_adjustment ?? 0)
-      return [(row as Pick<Profile, 'id'>).id, Number.isFinite(adjustment) ? adjustment : 0]
-    })) : sessionPage.scoreAdjustments
-
-    if (Object.keys(scoreAdjustments).length > 0) {
-      setProfileScoreAdjustments((current) => ({
-        ...current,
-        ...scoreAdjustments,
-      }))
-    }
-    const hydratedSessions = sessionRows.map((session) => ({
-      ...session,
-      session_waitlist: waitlistRows.filter((entry) => entry.session_id === session.id),
-    }))
-    hydratedSessions.forEach((session) => {
-      sessionDetailsLoadedRef.current.delete(session.id)
-    })
-
-    sessionsLoadedRef.current = true
-    setSessions((currentSessions) => {
-      const retainedSessions = mode === 'replace-upcoming'
-        ? currentSessions.filter((session) => isPastSession(session))
-        : mode === 'replace-past'
-          ? currentSessions.filter((session) => isUpcomingSession(session))
-          : currentSessions
-      const sessionsById = new Map(retainedSessions.map((session) => [session.id, session]))
-      hydratedSessions.forEach((session) => sessionsById.set(session.id, session))
-      return sortSessionsByStart(Array.from(sessionsById.values()))
-    })
-    loadExpandedSessionDetails()
-
-    if (options.includeBlockedTimes) {
-      if (sessionPage.source === 'rpc') {
-        setBlockedTimes(sessionPage.blockedTimes)
-      } else {
-        const blockedResult = await client.from('blocked_times').select('date, start_time, end_time, arenas_used')
-        setBlockedTimes((blockedResult.data ?? []) as BlockedTime[])
-      }
-    }
-
-    if (options.updateUpcomingPagination !== false && endDate && endDate >= localDateString()) {
-      setHasMoreUpcomingSessions(typeof sessionPage.hasMoreAfter === 'boolean'
-        ? sessionPage.hasMoreAfter
-        : await hasFutureSessionsAfter(endDate))
-    }
-
-    loadingSessionRangeRef.current = false
-    return true
-  }
-
-  async function loadSessions(options: { focusDate?: string } = {}) {
-    const today = localDateString()
-    const defaultEndDate = addDaysToDateValue(today, SESSION_LOAD_BATCH_DAYS - 1)
-    const focusEndDate = options.focusDate && options.focusDate >= today ? upcomingBatchEndForDate(options.focusDate) : ''
-    const nextEndDate = maxDateValue(defaultEndDate, upcomingSessionsThroughRef.current, focusEndDate)
-
-    const previousEndDate = upcomingSessionsThroughRef.current
-    upcomingSessionsThroughRef.current = nextEndDate
-    const loaded = await loadSessionRange(today, nextEndDate, 'replace-upcoming', { includeBlockedTimes: true })
-    if (!loaded) upcomingSessionsThroughRef.current = previousEndDate
-  }
-
-  async function loadMoreUpcomingSessions() {
-    if (isLoadingMoreSessions || loadingSessionRangeRef.current || !hasMoreUpcomingSessions) return
-
-    const today = localDateString()
-    const currentEndDate = upcomingSessionsThroughRef.current || addDaysToDateValue(today, SESSION_LOAD_BATCH_DAYS - 1)
-    const nextStartDate = addDaysToDateValue(currentEndDate, 1)
-    const nextEndDate = addDaysToDateValue(nextStartDate, SESSION_LOAD_BATCH_DAYS - 1)
-
-    setIsLoadingMoreSessions(true)
-    const previousEndDate = upcomingSessionsThroughRef.current
-    upcomingSessionsThroughRef.current = nextEndDate
-    const loaded = await loadSessionRange(nextStartDate, nextEndDate, 'merge')
-    if (!loaded) upcomingSessionsThroughRef.current = previousEndDate
-    setIsLoadingMoreSessions(false)
-  }
-
   async function ensureUpcomingSessionsThroughDate(dateValue: string) {
     const today = localDateString()
     if (!dateValue || dateValue < today) return
@@ -3545,182 +2292,6 @@ export default function WidgetPage({
     pastSessionsLoadedRef.current = loaded
     pastSessionsLoadingRef.current = false
     setIsLoadingPastSessions(false)
-  }
-
-  async function loadClubs() {
-    clubsLoadingRef.current = true
-    const client = await getSupabase()
-    const clubsPageResult = await client.rpc('clubs_list_page')
-    let data = Array.isArray(clubsPageResult.data)
-      ? (clubsPageResult.data as ClubListPageRow[]).map(normalizeClubListPageRow)
-      : null
-    let error = clubsPageResult.error
-    const publicResult = await client
-      .from('clubs')
-      .select(CLUB_PUBLIC_SELECT)
-      .order('created_at', { ascending: false })
-
-    if (!userId) {
-      const publicClubs = publicResult.error ? [] : (publicResult.data ?? []) as Club[]
-      const loadedClubs = mergeClubRecords(data ?? [], publicClubs.map((club) => ({ ...club, club_members: [] })))
-
-      if (error && publicResult.error && loadedClubs.length === 0) {
-        setClubStatus(error.message || publicResult.error.message)
-        clubsLoadingRef.current = false
-        return
-      }
-
-      clubsLoadedRef.current = true
-      clubsLoadedForUserIdRef.current = ''
-      clubsLoadingRef.current = false
-      setClubs(loadedClubs)
-      return
-    }
-
-    if (error || !data) {
-      const result = await client
-        .from('clubs')
-        .select(CLUB_LIST_WITH_MEMBERS_SELECT)
-        .order('created_at', { ascending: false })
-      data = result.data as Club[] | null
-      error = result.error
-
-      if (error) {
-        const fallbackResult = await client
-          .from('clubs')
-          .select(CLUB_LIST_WITH_MEMBERS_SELECT_BASE)
-          .order('created_at', { ascending: false })
-        data = fallbackResult.data as Club[] | null
-        error = fallbackResult.error
-      }
-
-      if (error) {
-        const fallbackResult = await client
-          .from('clubs')
-          .select(CLUB_LIST_SELECT)
-          .order('created_at', { ascending: false })
-        data = fallbackResult.data as Club[] | null
-        error = fallbackResult.error
-      }
-
-      if (error) {
-        const fallbackResult = await client
-          .from('clubs')
-          .select(CLUB_LIST_SELECT_BASE)
-          .order('created_at', { ascending: false })
-        data = fallbackResult.data as Club[] | null
-        error = fallbackResult.error
-      }
-    }
-
-    const publicClubs = publicResult.error ? [] : (publicResult.data ?? []) as Club[]
-    const loadedClubs = mergeClubRecords(data ?? [], publicClubs)
-
-    if (error && publicClubs.length === 0) {
-      setClubStatus(error.message)
-      clubsLoadingRef.current = false
-      return
-    }
-
-    const clubIds = loadedClubs.map((club) => club.id)
-    const membershipsByClubId = new Map<string, ClubMember[]>()
-    loadedClubs.forEach((club) => {
-      const members = clubMembers(club)
-      if (members.length > 0) membershipsByClubId.set(club.id, members)
-    })
-    if (clubIds.length > 0) {
-      const membersResult = await client
-        .from('club_members')
-        .select(CLUB_MEMBER_SELECT)
-        .in('club_id', clubIds)
-        .is('deleted_at', null)
-
-      let membersData = membersResult.data as ClubMember[] | null
-      let membersError = membersResult.error
-
-      if (membersError) {
-        const fallbackMembersResult = await client
-          .from('club_members')
-          .select(CLUB_MEMBER_SELECT_BASE)
-          .in('club_id', clubIds)
-          .is('deleted_at', null)
-
-        membersData = fallbackMembersResult.data as ClubMember[] | null
-        membersError = fallbackMembersResult.error
-      }
-
-      if (!membersError) {
-        const visibleMembers = membersData ?? []
-        visibleMembers.forEach((member) => {
-          const members = membershipsByClubId.get(member.club_id) ?? []
-          if (!members.some((existingMember) => existingMember.id === member.id)) members.push(member)
-          membershipsByClubId.set(member.club_id, members)
-        })
-      }
-    }
-
-    let currentUserMemberships: ClubMember[] = []
-    if (userId) {
-      const membershipResult = await client
-        .from('club_members')
-        .select(CLUB_MEMBER_SELECT)
-        .eq('profile_id', userId)
-        .is('deleted_at', null)
-
-      let membershipData = membershipResult.data as ClubMember[] | null
-      let membershipError = membershipResult.error
-
-      if (membershipError) {
-        const fallbackMembershipResult = await client
-          .from('club_members')
-          .select(CLUB_MEMBER_SELECT_BASE)
-          .eq('profile_id', userId)
-          .is('deleted_at', null)
-
-        membershipData = fallbackMembershipResult.data as ClubMember[] | null
-        membershipError = fallbackMembershipResult.error
-      }
-
-      if (!membershipError) {
-        currentUserMemberships = membershipData ?? []
-      }
-    }
-
-    clubsLoadedRef.current = true
-    clubsLoadedForUserIdRef.current = userId
-    clubsLoadingRef.current = false
-    setClubs(loadedClubs.map((club) => mergeCurrentUserClubMembership({
-      ...club,
-      club_members: membershipsByClubId.get(club.id) ?? [],
-    }, currentUserMemberships)))
-  }
-
-  async function loadClubMessages(club: Club, force = false) {
-    if (!canUseClubMessages(club)) return
-    if (!force && loadedClubMessagesRef.current.has(club.id)) return
-
-    setIsLoadingClubMessages(true)
-    const { data, error } = await (await getSupabase())
-      .from('club_messages')
-      .select(CLUB_MESSAGE_SELECT)
-      .eq('club_id', club.id)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(CLUB_MESSAGE_LIMIT)
-
-    setIsLoadingClubMessages(false)
-
-    if (error) {
-      setClubMessageStatus(error.message)
-      return
-    }
-
-    const rows = sortClubMessages((data ?? []) as ClubMessage[])
-    loadedClubMessagesRef.current.add(club.id)
-    setClubMessages((current) => [
-      ...current.filter((message) => message.club_id !== club.id),
-      ...rows,
-    ])
   }
 
   async function loadTournamentData(focusSessionId?: string) {
@@ -3821,7 +2392,7 @@ export default function WidgetPage({
       if (!invitedSessionsResult.error && invitedSessionsResult.data) {
         setSessions((currentSessions) => {
           const sessionsById = new Map(currentSessions.map((session) => [session.id, session]))
-          ;((invitedSessionsResult.data ?? []) as Session[]).map(normalizeSessionRow).forEach((session) => sessionsById.set(session.id, session))
+            ; ((invitedSessionsResult.data ?? []) as Session[]).map(normalizeSessionRow).forEach((session) => sessionsById.set(session.id, session))
           return sortSessionsByStart(Array.from(sessionsById.values()))
         })
       }
@@ -3910,7 +2481,7 @@ export default function WidgetPage({
   useEffect(() => {
     try {
       window.localStorage.setItem(BOOKING_ACTIVE_VIEW_STORAGE_KEY, activeView)
-    } catch {}
+    } catch { }
 
     const navigation: Record<string, string> | null = activeView === 'create' && createSessionMode === 'calendar'
       ? { mode: 'calendar', date: calendarWeekStart, venue: bookingVenue }
@@ -3958,7 +2529,7 @@ export default function WidgetPage({
       active = false
       deferredCleanup()
     }
-  }, [])
+  }, [setIsProfileAuthLoading])
 
   useEffect(() => {
     if (activeView === 'clubs' || activeView === 'create' || activeView === 'leaderboard') {
@@ -3967,7 +2538,7 @@ export default function WidgetPage({
 
     if (activeView === 'leaderboard') {
       const nextQuery = initialLeaderboardQuery()
-      leaderboardQueryRef.current = nextQuery
+      setLeaderboardQuery(nextQuery)
       leaderboardLoadedCountRef.current = 0
       void loadLeaderboardPlayersRef.current(nextQuery, 0, 'replace', userId)
     }
@@ -3980,7 +2551,7 @@ export default function WidgetPage({
       ensureNetworkDataLoadedRef.current()
       ensureLeaderboardLoadedRef.current()
     }
-  }, [activeView, userId])
+  }, [setLeaderboardQuery, activeView, leaderboardLoadedCountRef, leaderboardQueryRef, userId])
 
   useEffect(() => {
     if (activeView !== 'profile' || pendingTicketAuthAction) return undefined
@@ -4001,7 +2572,7 @@ export default function WidgetPage({
       setProfilePassword('')
       setProfileStatus('')
     })
-  }, [activeView, pendingTicketAuthAction])
+  }, [activeView, pendingTicketAuthAction, setAuthMode, setAuthStep, setPendingTicketAuthAction, setProfilePassword, setProfileStatus, setTicketDate, setTicketDuration, setTicketPlayers, setTicketSpecialNote, setTicketTime, setTicketType])
 
   useEffect(() => {
     if (sessionTimeScope === 'past') {
@@ -4012,7 +2583,7 @@ export default function WidgetPage({
   useEffect(() => () => {
     if (leaderboardSearchReloadTimeoutRef.current) window.clearTimeout(leaderboardSearchReloadTimeoutRef.current)
     if (highlightedSessionTimeoutRef.current) window.clearTimeout(highlightedSessionTimeoutRef.current)
-  }, [])
+  }, [leaderboardSearchReloadTimeoutRef])
 
   useEffect(() => {
     if (activeView === 'tickets') {
@@ -4068,7 +2639,7 @@ export default function WidgetPage({
     }
 
     return scheduleDeferredWork(() => ensureNetworkDataLoadedRef.current())
-  }, [userId])
+  }, [resetSessionMessageState, userId])
 
   useEffect(() => {
     if (selectedPlayerId) {
@@ -4160,7 +2731,7 @@ export default function WidgetPage({
       active = false
       unsubscribe?.()
     }
-  }, [])
+  }, [setAuthEmail, setAuthMode, setAuthStep, setIsProfileAuthLoading, setIsRecoveryMode, setKioskOperator, setMfaChallenge, setMfaChallengeCode, setMfaEnrollment, setMfaFactors, setMfaRequired, setMfaStatus, setMfaVerifyCode, setPhoneSetupEmail, setPhoneSetupRequired, setPhoneSetupSentTo, setProfile, setProfileEmail, setProfileStatus, setUserId])
 
   useEffect(() => {
     if (!profile) return
@@ -4293,14 +2864,14 @@ export default function WidgetPage({
       removeHCaptchaWidget(captchaWidgetId.current)
       captchaWidgetId.current = null
     }
-  }, [activeView, authMode, authStep, profile])
+  }, [activeView, authMode, authStep, captchaContainerRef, captchaWidgetId, profile, updateCaptchaToken])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (profile || isRecoveryMode || activeView !== 'profile' || authMode !== 'login') return
 
     warmSupabaseClient()
-  }, [activeView, authMode, isRecoveryMode, profile])
+  }, [activeView, authMode, isRecoveryMode, profile, warmSupabaseClient])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -4331,7 +2902,7 @@ export default function WidgetPage({
     return () => {
       document.removeEventListener('pointerdown', closeSearchOnOutsideClick)
     }
-  }, [clubSearch, isClubSearchOpen, isSearchOpen, search, selectedSessionDate])
+  }, [clubSearch, clubSearchShellRef, isClubSearchOpen, isSearchOpen, search, selectedSessionDate, setClubSearch, setIsClubSearchOpen, setIsSearchOpen, setSearch, setSelectedSessionDate])
 
   const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => (
     availableSessionTimes({ date, duration, arenaCount, excludeSessionId, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
@@ -4374,7 +2945,7 @@ export default function WidgetPage({
       ))
       if (ticketTime && !selectedTimeStillAvailable) setTicketConfirmation(null)
     })
-  }, [activeView, ticketTime, ticketTimeOptions])
+  }, [activeView, setTicketConfirmation, setTicketTime, ticketTime, ticketTimeOptions])
   const ticketNextAvailableSearchEndDate = useMemo(() => {
     if (!ticketDate) return ''
 
@@ -4430,14 +3001,7 @@ export default function WidgetPage({
       setTicketConfirmation(null)
       clearTicketStatus()
     })
-  }, [
-    activeView,
-    nextTicketDateWithAvailability,
-    ticketAvailabilitySearchTick,
-    ticketDate,
-    ticketNextAvailableSearchEndDate,
-    ticketTimeOptions.length,
-  ])
+  }, [activeView, clearTicketStatus, nextTicketDateWithAvailability, setTicketAvailabilitySearchTick, setTicketConfirmation, setTicketDate, setTicketTime, ticketAvailabilitySearchLoadingRef, ticketAvailabilitySearchTick, ticketDate, ticketNextAvailableSearchEndDate, ticketTimeOptions.length])
   const challengeTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
@@ -4471,7 +3035,19 @@ export default function WidgetPage({
     estimatedTicketLoyaltyReductionValue,
     ticketDiscountCodeInvalidText,
     ticketDiscountCodeCheckingText
-  } = useTicketCheckout({ ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount, bookingVenue, isHaDoBookingVenue, activeView, profile, text })
+  } = useTicketCheckout({
+    ticketType,
+    ticketDate,
+    ticketTime,
+    ticketPlayers,
+    activeTicketDuration,
+    activeTicketArenaCount,
+    bookingVenue,
+    isHaDoBookingVenue,
+    activeView,
+    profile,
+    text,
+  })
   const gameGuideGames = useMemo(() => {
     if (!gameGuideGameId) return publicGameGuideCatalog
     const focusedGame = publicGameGuideCatalog.find((game) => game.id === gameGuideGameId)
@@ -4516,23 +3092,18 @@ export default function WidgetPage({
         setTicketConfirmation(null)
       }
     })
-  }, [activeTicketDuration, ticketDurationOptions, ticketTime])
+  }, [activeTicketDuration, setTicketConfirmation, setTicketDuration, setTicketTime, ticketDurationOptions, ticketTime])
 
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
   const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
 
-function handleSessionDateChange(value: string) {
-  setSessionDate(value)
-}
+  function handleSessionDateChange(value: string) {
+    setSessionDate(value)
+  }
 
   function showTicketStatus(message: string, variant: 'info' | 'error' = 'info') {
     setTicketStatus(message)
     setTicketStatusVariant(variant)
-  }
-
-  function clearTicketStatus() {
-    setTicketStatus('')
-    setTicketStatusVariant('info')
   }
 
   function handleBookingVenueChange(value: BookingVenueId) {
@@ -5099,7 +3670,7 @@ function handleSessionDateChange(value: string) {
       setClubBannerFile(null)
       setClubBannerPreview('')
     })
-  }, [language, selectedClub])
+  }, [language, selectedClub, setClubBannerFile, setClubBannerPreview, setClubEditDefaultLanguage, setClubEditDescription, setClubEditMotto, setClubEditName, setClubEditRankingCriterion, setClubEditThemeColor, setClubEditThemeColorDraft, setClubEditVisibility])
 
   useEffect(() => {
     if (!selectedClub || selectedClubTab !== 'messages') return
@@ -5184,81 +3755,81 @@ function handleSessionDateChange(value: string) {
     sessions.forEach((session) => {
       const bestPerformer = sessionBestPerformer(session)
 
-      ;(session.session_participants ?? []).forEach((participant) => {
-        const current = stats.get(participant.profile_id) ?? {
-          profileId: participant.profile_id,
-          displayName: compactDisplayName(participant.display_name, text.player),
-          avatarUrl: participant.avatar_url,
-          avatarEmoji: participant.avatar_emoji || null,
-          avatarInitials: participant.avatar_initials || null,
-          avatarColor: participant.avatar_color || null,
-          avatarTextColor: participant.avatar_text_color || null,
-          profileMotto: participant.profile_motto || null,
-          sessionsJoined: 0,
-          gamesJoined: 0,
-          wins: 0,
-          bestPerformerCount: 0,
-          baseTotalScore: 0,
-          totalScore: 0,
-          scoreAdjustment: 0,
-          loyaltyPoints: 0,
-          totalAccuracy: 0,
-          accuracyCount: 0,
-          totalProjectiles: 0,
-          totalProjectilesOverride: null,
-          bestEscapeDurationSeconds: null,
-          averageAccuracyOverride: null,
-          bestEscapeDurationSecondsOverride: null,
-          bestByGame: new Map<string, number>(),
-        }
+        ; (session.session_participants ?? []).forEach((participant) => {
+          const current = stats.get(participant.profile_id) ?? {
+            profileId: participant.profile_id,
+            displayName: compactDisplayName(participant.display_name, text.player),
+            avatarUrl: participant.avatar_url,
+            avatarEmoji: participant.avatar_emoji || null,
+            avatarInitials: participant.avatar_initials || null,
+            avatarColor: participant.avatar_color || null,
+            avatarTextColor: participant.avatar_text_color || null,
+            profileMotto: participant.profile_motto || null,
+            sessionsJoined: 0,
+            gamesJoined: 0,
+            wins: 0,
+            bestPerformerCount: 0,
+            baseTotalScore: 0,
+            totalScore: 0,
+            scoreAdjustment: 0,
+            loyaltyPoints: 0,
+            totalAccuracy: 0,
+            accuracyCount: 0,
+            totalProjectiles: 0,
+            totalProjectilesOverride: null,
+            bestEscapeDurationSeconds: null,
+            averageAccuracyOverride: null,
+            bestEscapeDurationSecondsOverride: null,
+            bestByGame: new Map<string, number>(),
+          }
 
-        current.displayName = compactDisplayName(participant.display_name, current.displayName)
-        current.avatarUrl = participant.avatar_url || current.avatarUrl
-        current.avatarEmoji = participant.avatar_emoji || current.avatarEmoji
-        current.avatarInitials = participant.avatar_initials || current.avatarInitials
-        current.avatarColor = participant.avatar_color || current.avatarColor
-        current.avatarTextColor = participant.avatar_text_color || current.avatarTextColor
-        current.profileMotto = participant.profile_motto || current.profileMotto
-        current.sessionsJoined += 1
-        if (participant.checked_in) current.gamesJoined += 1
-        if (participant.placement === 1) current.wins += 1
+          current.displayName = compactDisplayName(participant.display_name, current.displayName)
+          current.avatarUrl = participant.avatar_url || current.avatarUrl
+          current.avatarEmoji = participant.avatar_emoji || current.avatarEmoji
+          current.avatarInitials = participant.avatar_initials || current.avatarInitials
+          current.avatarColor = participant.avatar_color || current.avatarColor
+          current.avatarTextColor = participant.avatar_text_color || current.avatarTextColor
+          current.profileMotto = participant.profile_motto || current.profileMotto
+          current.sessionsJoined += 1
+          if (participant.checked_in) current.gamesJoined += 1
+          if (participant.placement === 1) current.wins += 1
 
-        const numericScore = participantScore(participant)
-        if (numericScore !== null) {
-          current.baseTotalScore += numericScore
-          if (bestPerformer?.participant.id === participant.id) current.bestPerformerCount += 1
+          const numericScore = participantScore(participant)
+          if (numericScore !== null) {
+            current.baseTotalScore += numericScore
+            if (bestPerformer?.participant.id === participant.id) current.bestPerformerCount += 1
 
-          session.game_options.forEach((gameId) => {
-            const game = games.find((item) => item.id === gameId)
-            const previous = current.bestByGame.get(gameId)
-            const isEscape = game?.category === 'Escape'
+            session.game_options.forEach((gameId) => {
+              const game = games.find((item) => item.id === gameId)
+              const previous = current.bestByGame.get(gameId)
+              const isEscape = game?.category === 'Escape'
 
-            if (previous === undefined || (isEscape ? numericScore < previous : numericScore > previous)) {
-              current.bestByGame.set(gameId, numericScore)
-            }
-          })
-        }
+              if (previous === undefined || (isEscape ? numericScore < previous : numericScore > previous)) {
+                current.bestByGame.set(gameId, numericScore)
+              }
+            })
+          }
 
-        const accuracy = Number(participant.accuracy_percent)
-        if (Number.isFinite(accuracy)) {
-          current.totalAccuracy += accuracy
-          current.accuracyCount += 1
-        }
+          const accuracy = Number(participant.accuracy_percent)
+          if (Number.isFinite(accuracy)) {
+            current.totalAccuracy += accuracy
+            current.accuracyCount += 1
+          }
 
-        const projectiles = Number(participant.projectiles_fired)
-        if (Number.isFinite(projectiles)) {
-          current.totalProjectiles += projectiles
-        }
+          const projectiles = Number(participant.projectiles_fired)
+          if (Number.isFinite(projectiles)) {
+            current.totalProjectiles += projectiles
+          }
 
-        const escapeDuration = Number(participant.escape_duration_seconds)
-        if (isEscapeSession(session) && Number.isFinite(escapeDuration) && escapeDuration > 0) {
-          current.bestEscapeDurationSeconds = current.bestEscapeDurationSeconds === null
-            ? escapeDuration
-            : Math.min(current.bestEscapeDurationSeconds, escapeDuration)
-        }
+          const escapeDuration = Number(participant.escape_duration_seconds)
+          if (isEscapeSession(session) && Number.isFinite(escapeDuration) && escapeDuration > 0) {
+            current.bestEscapeDurationSeconds = current.bestEscapeDurationSeconds === null
+              ? escapeDuration
+              : Math.min(current.bestEscapeDurationSeconds, escapeDuration)
+          }
 
-        stats.set(participant.profile_id, current)
-      })
+          stats.set(participant.profile_id, current)
+        })
     })
 
     return Array.from(stats.values())
@@ -5278,7 +3849,7 @@ function handleSessionDateChange(value: string) {
       .sort((a, b) => b.totalScore - a.totalScore)
   }, [allProfiles, profileScoreAdjustments, sessions, text.player])
 
-  const leaderboardPlayerStats = leaderboardLoadedRef.current ? leaderboardPlayers : allPlayerStats
+  const leaderboardPlayerStats = leaderboardView.loaded ? leaderboardPlayers : allPlayerStats
   const currentProfileAvatar = profile ? avatarFields(profile) : null
 
   const hydratedCurrentUserShareStats = currentUserShareStats?.profileId === userId ? currentUserShareStats : null
@@ -5311,7 +3882,6 @@ function handleSessionDateChange(value: string) {
   const canShareCurrentUserStats = Boolean(profile && userId)
   const currentUserStatsShared = sharedKey === 'stats'
 
-  const isAdmin = Boolean(isAdminRole(profile?.role) || isAdminEmail(profile?.email) || isAdminEmail(authEmail))
   const staffAccessRank = profile
     ? Math.max(staffConsoleRank(profile.role, profile.email), staffConsoleRank(profile.role, authEmail))
     : 0
@@ -5326,7 +3896,7 @@ function handleSessionDateChange(value: string) {
   const sharedKioskAccount = requiresStaffKioskPin(staffAccountEmail)
   const handleKioskLockChange = useCallback((lock: (() => void) | null) => {
     setKioskLock(() => lock)
-  }, [])
+  }, [setKioskLock])
   const canAccessStaffConsole = Boolean(profile && (
     sharedKioskAccount
       ? canStaffKioskOperatorAccessStaff(kioskOperator?.accessRole)
@@ -5373,10 +3943,10 @@ function handleSessionDateChange(value: string) {
           ? selectedClubHallRankingCriterion
           : 'totalScore',
     }
-    leaderboardQueryRef.current = nextQuery
+    setLeaderboardQuery(nextQuery)
     leaderboardLoadedCountRef.current = 0
     void loadLeaderboardPlayersRef.current(nextQuery, 0, 'replace', userId)
-  }, [selectedClubHallId, selectedClubHallRankingCriterion, selectedClubTab, userId])
+  }, [setLeaderboardQuery, leaderboardLoadedCountRef, leaderboardQueryRef, selectedClubHallId, selectedClubHallRankingCriterion, selectedClubTab, userId])
 
   const topPlayer = leaderboardPlayerStats[0]
   const crownedTopPlayer = topPlayer && topPlayer.totalScore > 0 ? topPlayer : undefined
@@ -5389,12 +3959,12 @@ function handleSessionDateChange(value: string) {
   useEffect(() => {
     if (!selectedPlayerId || selectedPlayerStatsFromLoadedData || selectedPlayerStatsFetchedRef.current.has(selectedPlayerId)) return
     void loadSelectedPlayerStats(selectedPlayerId)
-  }, [loadSelectedPlayerStats, selectedPlayerId, selectedPlayerStatsFromLoadedData])
+  }, [loadSelectedPlayerStats, selectedPlayerId, selectedPlayerStatsFetchedRef, selectedPlayerStatsFromLoadedData])
 
   useEffect(() => {
     if (!selectedPlayerId || selectedPlayerGameStatsFetchedRef.current.has(selectedPlayerId)) return
     void loadSelectedPlayerGameStats(selectedPlayerId)
-  }, [loadSelectedPlayerGameStats, selectedPlayerId])
+  }, [loadSelectedPlayerGameStats, selectedPlayerGameStatsFetchedRef, selectedPlayerId])
 
   const selectedPlayerSessionContext = useMemo(() => {
     if (!selectedPlayerId || !selectedPlayerSessionId) return null
@@ -5692,9 +4262,9 @@ function handleSessionDateChange(value: string) {
 
   useEffect(() => {
     if (selectedPlayerSessionIsEscape) void ensureStaffGameGuidesLoaded()
-  }, [selectedPlayerSessionIsEscape])
+  }, [ensureStaffGameGuidesLoaded, selectedPlayerSessionIsEscape])
 
-  function openChallengeForm(player: NonNullable<typeof selectedPlayerProfile>) {
+  function openChallengeForm(player: ChallengeTarget) {
     if (!profile) {
       closePlayerProfile()
       promptLogin()
@@ -5719,7 +4289,7 @@ function handleSessionDateChange(value: string) {
     void ensureUpcomingSessionsThroughDate(contextDate)
   }
 
-  async function createFriendChallenge(player: NonNullable<typeof selectedPlayerProfile>) {
+  async function createFriendChallenge(player: ChallengeTarget) {
     if (!profile) {
       closePlayerProfile()
       promptLogin()
@@ -5826,32 +4396,6 @@ function handleSessionDateChange(value: string) {
     )
   }
 
-  async function ensureStaffGameGuidesLoaded() {
-    if (staffGameGuidesLoadedRef.current || staffGameGuidesLoadingRef.current) return
-
-    staffGameGuidesLoadingRef.current = true
-    const client = await getSupabase()
-    const { data, error } = await client
-      .from('staff_games')
-      .select('slug, game_type, escape_chapter_count, guide_language, guide_summary, guide_rules, guide_tips')
-      .eq('active', true)
-
-    staffGameGuidesLoadingRef.current = false
-    staffGameGuidesLoadedRef.current = true
-
-    if (error || !data) return
-
-    const knownGameIds = new Set(games.map((game) => game.id))
-    const guidesByGame = ((data ?? []) as StaffGameGuide[]).reduce<Partial<Record<GameId, StaffGameGuide>>>((guides, guide) => {
-      if (knownGameIds.has(guide.slug as GameId)) {
-        guides[guide.slug as GameId] = guide
-      }
-      return guides
-    }, {})
-
-    setStaffGameGuides(guidesByGame)
-  }
-
   function openGameGuide(gameId?: GameId | null) {
     setGameGuideGameId(gameId || null)
     setGameGuideOpen(true)
@@ -5876,30 +4420,30 @@ function handleSessionDateChange(value: string) {
   const playerProfileStats = selectedPlayerProfile ? [
     selectedPlayerSessionContext
       ? {
-          key: 'score',
-          className: 'score-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{sessionScoreText}</span>
-              {renderCompactStatValue(formatCompactNumber(selectedPlayerSessionContext.score))}
-              <span className="stat-subline">
-                <span>{text.totalScore}</span>
-                {renderCompactStatValue(selectedPlayerProfile.totalScore)}
-              </span>
-              {selectedPlayerSessionContext.isBestPerformer && <small className="best-performer-label compact-best-label">{bestPerformerText}</small>}
-            </>
-          ),
-        }
-      : {
-          key: 'score',
-          className: 'score-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{text.totalScore}</span>
+        key: 'score',
+        className: 'score-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{sessionScoreText}</span>
+            {renderCompactStatValue(formatCompactNumber(selectedPlayerSessionContext.score))}
+            <span className="stat-subline">
+              <span>{text.totalScore}</span>
               {renderCompactStatValue(selectedPlayerProfile.totalScore)}
-            </>
-          ),
-        },
+            </span>
+            {selectedPlayerSessionContext.isBestPerformer && <small className="best-performer-label compact-best-label">{bestPerformerText}</small>}
+          </>
+        ),
+      }
+      : {
+        key: 'score',
+        className: 'score-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{text.totalScore}</span>
+            {renderCompactStatValue(selectedPlayerProfile.totalScore)}
+          </>
+        ),
+      },
     {
       key: 'loyalty-points',
       className: 'editable-stat-card',
@@ -5912,182 +4456,83 @@ function handleSessionDateChange(value: string) {
     },
     selectedPlayerSessionIsEscape && selectedPlayerMetricParticipant
       ? {
-          key: 'escape-time',
-          className: 'editable-stat-card split-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{escapeSessionTimeText}</span>
-              {renderCompactStatValue(formatSpeedrunDuration(selectedPlayerEscapeDurationSeconds))}
-              <span className="stat-subline">
-                <span>{escapeBestTimeText}</span>
-                {renderCompactStatValue(formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds))}
-              </span>
-              {renderEscapeChapterTimes()}
-            </>
-          ),
-        }
-      : {
-          key: 'escape-time',
-          value: (
-            <>
-              <span className="stat-label">{escapeBestTimeText}</span>
+        key: 'escape-time',
+        className: 'editable-stat-card split-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{escapeSessionTimeText}</span>
+            {renderCompactStatValue(formatSpeedrunDuration(selectedPlayerEscapeDurationSeconds))}
+            <span className="stat-subline">
+              <span>{escapeBestTimeText}</span>
               {renderCompactStatValue(formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds))}
-            </>
-          ),
-        },
+            </span>
+            {renderEscapeChapterTimes()}
+          </>
+        ),
+      }
+      : {
+        key: 'escape-time',
+        value: (
+          <>
+            <span className="stat-label">{escapeBestTimeText}</span>
+            {renderCompactStatValue(formatSpeedrunDuration(selectedPlayerProfile.bestEscapeDurationSeconds))}
+          </>
+        ),
+      },
     selectedPlayerMetricParticipant
       ? {
-          key: 'accuracy',
-          className: 'editable-stat-card split-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{text.accuracy}</span>
-              {renderCompactStatValue(formatCompactNumber(selectedPlayerMetricParticipant.accuracy_percent, '%'))}
-              <span className="stat-subline">
-                <span>{averageAccuracyText}</span>
-                {renderCompactStatValue(formatCompactNumber(selectedPlayerProfile.averageAccuracy, '%'))}
-              </span>
-            </>
-          ),
-        }
-      : {
-          key: 'accuracy',
-          className: 'editable-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{text.accuracy}</span>
+        key: 'accuracy',
+        className: 'editable-stat-card split-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{text.accuracy}</span>
+            {renderCompactStatValue(formatCompactNumber(selectedPlayerMetricParticipant.accuracy_percent, '%'))}
+            <span className="stat-subline">
+              <span>{averageAccuracyText}</span>
               {renderCompactStatValue(formatCompactNumber(selectedPlayerProfile.averageAccuracy, '%'))}
-            </>
-          ),
-        },
+            </span>
+          </>
+        ),
+      }
+      : {
+        key: 'accuracy',
+        className: 'editable-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{text.accuracy}</span>
+            {renderCompactStatValue(formatCompactNumber(selectedPlayerProfile.averageAccuracy, '%'))}
+          </>
+        ),
+      },
     selectedPlayerMetricParticipant
       ? {
-          key: 'projectiles',
-          className: 'editable-stat-card split-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{text.projectiles}</span>
-              {renderCompactStatValue(formatCompactCount(selectedPlayerMetricParticipant.projectiles_fired))}
-              <span className="stat-subline">
-                <span>{totalShotsText}</span>
-                {renderCompactStatValue(formatCompactCount(selectedPlayerProfile.totalProjectiles))}
-              </span>
-            </>
-          ),
-        }
-      : {
-          key: 'projectiles',
-          className: 'editable-stat-card',
-          value: (
-            <>
-              <span className="stat-label">{text.projectiles}</span>
+        key: 'projectiles',
+        className: 'editable-stat-card split-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{text.projectiles}</span>
+            {renderCompactStatValue(formatCompactCount(selectedPlayerMetricParticipant.projectiles_fired))}
+            <span className="stat-subline">
+              <span>{totalShotsText}</span>
               {renderCompactStatValue(formatCompactCount(selectedPlayerProfile.totalProjectiles))}
-            </>
-          ),
-        },
+            </span>
+          </>
+        ),
+      }
+      : {
+        key: 'projectiles',
+        className: 'editable-stat-card',
+        value: (
+          <>
+            <span className="stat-label">{text.projectiles}</span>
+            {renderCompactStatValue(formatCompactCount(selectedPlayerProfile.totalProjectiles))}
+          </>
+        ),
+      },
     { key: 'games', value: <>{selectedPlayerProfile.gamesJoined} {text.gamesCheckedIn}</> },
     { key: 'wins', value: <>{selectedPlayerProfile.wins} {text.wins}</> },
     { key: 'best-performer', value: <>{selectedPlayerProfile.bestPerformerCount} {bestPerformerCountText}</> },
   ] : []
-
-  function renderChallengeControls(player: NonNullable<typeof selectedPlayerProfile>) {
-    if (player.profileId === userId) return null
-
-    const isOpen = challengeTargetId === player.profileId
-    const sentChallenge = sessionInvites.find((invite) => {
-      const invitedSession = sessionForInvite(invite)
-      return invite.inviter_id === userId
-        && invite.recipient_id === player.profileId
-        && invite.status === 'pending'
-        && invitedSession
-        && isChallengeSession(invitedSession)
-    })
-
-    if (!isOpen) {
-      return (
-        <div className="challenge-card compact-challenge-card">
-          <button className="primary small-button challenge-button" type="button" onClick={() => openChallengeForm(player)}>
-            {text.challengeFriend}
-          </button>
-          {sentChallenge && <span className="challenge-sent-pill">{text.challengePending}</span>}
-        </div>
-      )
-    }
-
-    const selectedGame = games.find((game) => game.id === challengeGameId) || games[0]
-
-    return (
-      <div className="challenge-card">
-        <div className="challenge-card-head">
-          <div>
-            <strong>{text.challengeFriendTitle}</strong>
-            <span>{text.challengeFriendHint}</span>
-          </div>
-          <button className="secondary small-button" type="button" onClick={() => setChallengeTargetId('')}>
-            {text.close}
-          </button>
-        </div>
-        <div className="challenge-form-grid">
-          <label>
-            <span>{text.playedGame}</span>
-            <select value={challengeGameId} onChange={(event) => setChallengeGameId(event.target.value as GameId)}>
-              {games.map((game) => (
-                <option key={game.id} value={game.id}>{game.title}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{text.date}</span>
-            <ShortDateInput
-              ariaLabel={text.date}
-              language={language}
-              onChange={(value) => {
-                setChallengeDate(value)
-                setChallengeTime('')
-              }}
-              placeholder={text.chooseDate}
-              value={challengeDate}
-            />
-          </label>
-          <label>
-            <span>{text.availableTime}</span>
-            <select value={challengeTime} onChange={(event) => setChallengeTime(event.target.value)}>
-              <option value="">{text.chooseTime}</option>
-              {challengeTimeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{text.duration}</span>
-            <select value={challengeDuration} onChange={(event) => {
-              setChallengeDuration(Number(event.target.value))
-              setChallengeTime('')
-            }}>
-              {[20, 40, 60, 80, 100, 120].map((duration) => (
-                <option key={duration} value={duration}>{duration} min</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <p className="challenge-summary">
-          {selectedGame.title} · {challengeDate ? formatShortDate(challengeDate, language) : text.chooseDate}
-          {challengeTime ? ` · ${challengeTime}` : ''}
-        </p>
-        <button
-          className={isCreatingChallenge ? 'primary create-button loading' : 'primary create-button'}
-          disabled={isCreatingChallenge}
-          type="button"
-          onClick={() => createFriendChallenge(player)}
-        >
-          {isCreatingChallenge ? text.challengeCreating : text.sendChallenge}
-        </button>
-        {challengeStatus && <p className="notice compact-notice">{challengeStatus}</p>}
-      </div>
-    )
-  }
 
   useEffect(() => {
     return schedulePostEffectStateUpdate(() => {
@@ -6119,7 +4564,7 @@ function handleSessionDateChange(value: string) {
     return () => {
       active = false
     }
-  }, [userId])
+  }, [setIsPushSubscribed, userId])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return
@@ -6129,27 +4574,27 @@ function handleSessionDateChange(value: string) {
 
     joinedUpcomingSessions.forEach((session) => {
       const start = sessionStartDate(session).getTime()
-      ;[
-        { key: '24h', delay: start - 24 * 60 * 60 * 1000 - now, label: text.reminderTomorrow },
-        { key: '2h', delay: start - 2 * 60 * 60 * 1000 - now, label: text.reminderSoon },
-      ].forEach((reminder) => {
-        const reminderKey = `${session.id}-${reminder.key}`
-        if (notifiedReminderKeys.current.has(reminderKey)) return
+        ;[
+          { key: '24h', delay: start - 24 * 60 * 60 * 1000 - now, label: text.reminderTomorrow },
+          { key: '2h', delay: start - 2 * 60 * 60 * 1000 - now, label: text.reminderSoon },
+        ].forEach((reminder) => {
+          const reminderKey = `${session.id}-${reminder.key}`
+          if (notifiedReminderKeys.current.has(reminderKey)) return
 
-        if (reminder.delay <= 0 && reminder.delay > -10 * 60 * 1000) {
-          notifiedReminderKeys.current.add(reminderKey)
-          notifySessionRef.current(session, reminder.label)
-          return
-        }
-
-        if (reminder.delay > 0 && reminder.delay < 24 * 60 * 60 * 1000) {
-          const timer = window.setTimeout(() => {
+          if (reminder.delay <= 0 && reminder.delay > -10 * 60 * 1000) {
             notifiedReminderKeys.current.add(reminderKey)
             notifySessionRef.current(session, reminder.label)
-          }, reminder.delay)
-          timers.push(timer)
-        }
-      })
+            return
+          }
+
+          if (reminder.delay > 0 && reminder.delay < 24 * 60 * 60 * 1000) {
+            const timer = window.setTimeout(() => {
+              notifiedReminderKeys.current.add(reminderKey)
+              notifySessionRef.current(session, reminder.label)
+            }, reminder.delay)
+            timers.push(timer)
+          }
+        })
     })
 
     return () => {
@@ -6235,7 +4680,7 @@ function handleSessionDateChange(value: string) {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [tournamentEditorEmail])
+  }, [setTournamentEditorResults, tournamentEditorEmail])
 
   function canManageSession(session: Session) {
     return Boolean(
@@ -6310,589 +4755,6 @@ function handleSessionDateChange(value: string) {
     return calculatePoolStandings(session, pool, data.poolEntries, data.matches)
   }
 
-  function clubRoleFor(club: Club, profileId = userId): ClubRole {
-    return clubRoleForProfile(club, profileId)
-  }
-
-  function clubRoleLabel(role: ClubRole) {
-    if (role === 'owner') return text.ownerRole
-    if (role === 'admin') return text.adminRole
-    if (role === 'moderator') return text.moderatorRole
-    return text.memberRole
-  }
-
-  function canManageClub(club: Club) {
-    const role = clubRoleFor(club)
-    return Boolean(userId && (isAdmin || role === 'owner' || role === 'admin'))
-  }
-
-  function canModerateClubMembers(club: Club) {
-    const role = clubRoleFor(club)
-    return Boolean(userId && (isAdmin || role === 'owner' || role === 'admin' || role === 'moderator'))
-  }
-
-  function canManageClubMember(club: Club, member: ClubMember) {
-    if (!userId) return false
-    if (member.profile_id === club.owner_id) return false
-    if (isAdmin) return true
-
-    const actorRole = clubRoleFor(club)
-    const targetRole = clubRoleFor(club, member.profile_id)
-
-    if (actorRole === 'owner') return true
-    if (actorRole === 'admin') return targetRole === 'moderator' || targetRole === 'member'
-    if (actorRole === 'moderator') return targetRole === 'member'
-    return false
-  }
-
-  function manageableRoleOptions(club: Club, member: ClubMember): ClubMemberRole[] {
-    if (!canManageClubMember(club, member)) return []
-    if (isAdmin || clubRoleFor(club) === 'owner') return ['admin', 'moderator', 'member']
-    if (clubRoleFor(club) === 'admin') return ['moderator', 'member']
-    return ['member']
-  }
-
-  function clubTheme(club: Club | undefined) {
-    return cleanHexColor(club?.theme_color || '', clubThemeColors[0])
-  }
-
-  function clubRankingCriterion(club: Club | undefined): LeaderboardCriterion {
-    const criterion = club?.ranking_criterion
-    if (criterion === 'projectiles') return 'hits'
-    return isLeaderboardCriterion(criterion) ? criterion : 'totalScore'
-  }
-
-  function clubThemeStyle(club: Club | undefined) {
-    const color = clubTheme(club)
-    return {
-      '--club-theme': color,
-      '--club-theme-soft': `${color}24`,
-      '--club-theme-faint': `${color}12`,
-    } as Record<string, string>
-  }
-
-  function isDuplicateClubMembershipError(error: { code?: string; message?: string } | null | undefined) {
-    const message = error?.message?.toLowerCase() || ''
-    return error?.code === '23505' || message.includes('club_members_active_club_profile_key')
-  }
-
-  function approvedClubMember(club: Club, profileId = userId) {
-    return clubMembers(club).some((member) => member.profile_id === profileId && member.status === 'approved')
-  }
-
-  function canEnterPrivateClubPage(club: Club | undefined) {
-    if (!club) return false
-    if (club.visibility !== 'private') return true
-    if (!userId) return false
-    return club.owner_id === userId || approvedClubMember(club) || Boolean(unlockedClubIds[club.id])
-  }
-
-  function canSeeClubPrivateData(club: Club | undefined) {
-    if (!club) return true
-    if (club.visibility === 'public') return true
-    return canEnterPrivateClubPage(club) || canManageClub(club)
-  }
-
-  function canOpenClubPage(club: Club | undefined) {
-    if (!club) return false
-    if (!userId) return false
-    if (club.visibility === 'private') return canEnterPrivateClubPage(club)
-    return canSeeClubPrivateData(club)
-  }
-
-  function canCreateClubSession(club: Club | undefined) {
-    if (!club) return false
-    return canManageClub(club) || approvedClubMember(club)
-  }
-
-  function sessionClubFor(session: Session) {
-    return session.club_id ? clubs.find((club) => club.id === session.club_id) : undefined
-  }
-
-  function clubMembershipFor(club: Club | undefined, profileId = userId) {
-    if (!club || !profileId) return undefined
-    return clubMembers(club).find((member) => member.profile_id === profileId)
-  }
-
-  function canAccessClubSession(session: Session) {
-    const club = sessionClubFor(session)
-    if (!club) return true
-    return canSeeClubPrivateData(club)
-  }
-
-  function openClubPage(clubId: string, tab: ClubTab = 'hall') {
-    const club = clubs.find((item) => item.id === clubId)
-    setClubStatus('')
-    setClubMessageStatus('')
-
-    if (!userId) {
-      setSelectedClubId('')
-      promptLogin()
-      return
-    }
-
-    if (!canOpenClubPage(club)) {
-      setSelectedClubId('')
-      if (club?.visibility === 'private') {
-        setClubUnlockTargetId(club.id)
-        setClubUnlockCode('')
-        setClubUnlockStatus('')
-      } else {
-        setClubStatus(text.hiddenMembers)
-      }
-      return
-    }
-
-    setSelectedClubId(clubId)
-    setSelectedClubDate('')
-    setSelectedClubTab(tab)
-    setSelectedClubSessionScope('upcoming')
-  }
-
-  function closeClubUnlockModal() {
-    setClubUnlockTargetId('')
-    setClubUnlockCode('')
-    setClubUnlockStatus('')
-  }
-
-  function unlockClubPage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!clubUnlockTarget) return
-
-    const expectedCode = normalizePrivateCode(clubUnlockTarget.pin_code)
-    const typedCode = normalizePrivateCode(clubUnlockCode)
-    if (!expectedCode || typedCode !== expectedCode) {
-      setClubUnlockStatus(text.privateIncorrect)
-      return
-    }
-
-    setUnlockedClubIds((current) => ({ ...current, [clubUnlockTarget.id]: true }))
-    const unlockedClubId = clubUnlockTarget.id
-    closeClubUnlockModal()
-    setSelectedClubId(unlockedClubId)
-    setSelectedClubDate('')
-    setSelectedClubTab('hall')
-    setSelectedClubSessionScope('upcoming')
-  }
-
-  function handleClubTabChange(tab: ClubTab) {
-    setSelectedClubTab(tab)
-    if (tab === 'sessions' && selectedClubSessionScope === 'past') {
-      void ensurePastSessionsLoaded()
-    }
-  }
-
-  function handleClubSessionScopeChange(scope: ClubSessionScope) {
-    setSelectedClubSessionScope(scope)
-    setSelectedClubDate('')
-    if (scope === 'past') void ensurePastSessionsLoaded()
-  }
-
-  function handleClubBannerChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!CLUB_BANNER_TYPES.includes(file.type)) {
-      setClubStatus(text.clubBannerTypeError)
-      event.target.value = ''
-      return
-    }
-
-    if (file.size > CLUB_BANNER_MAX_BYTES) {
-      setClubStatus(text.clubBannerSizeError)
-      event.target.value = ''
-      return
-    }
-
-    setClubBannerFile(file)
-    setClubBannerPreview(URL.createObjectURL(file))
-    setClubStatus('')
-  }
-
-  async function uploadClubBanner(club: Club) {
-    if (!clubBannerFile) return club.banner_url || null
-
-    const safeName = clubBannerFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
-    const path = `${club.id}/${Date.now()}-${safeName}`
-    const client = await getSupabase()
-    const upload = await client.storage.from('club-banners').upload(path, clubBannerFile, {
-      contentType: clubBannerFile.type,
-      upsert: true,
-    })
-
-    if (upload.error) {
-      setClubStatus(upload.error.message)
-      return false
-    }
-
-    const { data } = client.storage.from('club-banners').getPublicUrl(path)
-    return data.publicUrl
-  }
-
-  async function saveClubSettings(club: Club) {
-    if (!canManageClub(club)) return
-
-    const name = clubEditName.trim()
-    if (!name) {
-      setClubStatus(text.clubRequired)
-      return
-    }
-
-    setIsSavingClub(true)
-    setBusyClubId(club.id)
-    setClubStatus(text.saving)
-
-    const bannerUrl = await uploadClubBanner(club)
-    if (bannerUrl === false) {
-      setIsSavingClub(false)
-      setBusyClubId('')
-      return
-    }
-
-    const nextPinCode = clubEditVisibility === 'private' ? club.pin_code || generateInviteCode() : null
-    const { error } = await (await getSupabase())
-      .from('clubs')
-      .update({
-        name,
-        motto: clubEditMotto.trim() || null,
-        description: clubEditDescription.trim() || null,
-        banner_url: bannerUrl,
-        theme_color: cleanHexColor(clubEditThemeColor, clubThemeColors[0]),
-        visibility: clubEditVisibility,
-        pin_code: nextPinCode,
-        default_language: clubEditDefaultLanguage,
-        ranking_criterion: clubEditRankingCriterion,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', club.id)
-
-    if (error) {
-      setClubStatus(error.message)
-      setIsSavingClub(false)
-      setBusyClubId('')
-      return
-    }
-
-    await loadClubs()
-    setClubBannerFile(null)
-    setClubBannerPreview('')
-    setClubStatus(text.clubSaved)
-    setIsSavingClub(false)
-    setBusyClubId('')
-  }
-
-  async function regenerateClubInviteCode(club: Club) {
-    if (!canManageClub(club)) return
-
-    setBusyClubId(club.id)
-    const { error } = await (await getSupabase())
-      .from('clubs')
-      .update({
-        pin_code: generateInviteCode(),
-        visibility: 'private',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', club.id)
-
-    if (error) setClubStatus(error.message)
-    else {
-      await loadClubs()
-      setClubStatus(text.clubInviteRegenerated)
-    }
-    setBusyClubId('')
-  }
-
-  async function shareClubInvite(club: Club) {
-    const code = club.pin_code || ''
-    const shareBody = club.visibility === 'private'
-      ? `${club.name} · ${text.privateCode}: ${code}`
-      : `${club.name} · ${DEFAULT_APP_URL}`
-
-    if (navigator.share) {
-      await navigator.share({ title: club.name, text: shareBody })
-    } else {
-      await navigator.clipboard?.writeText(shareBody)
-      setClubStatus(text.copied)
-    }
-  }
-
-  async function updateClubMemberRole(club: Club, member: ClubMember, role: ClubMemberRole) {
-    if (!manageableRoleOptions(club, member).includes(role)) return
-
-    setBusyClubId(club.id)
-    const { error } = await (await getSupabase())
-      .from('club_members')
-      .update({ role, status: 'approved' })
-      .eq('id', member.id)
-
-    if (error) setClubStatus(error.message)
-    else {
-      await loadClubs()
-      setClubStatus(text.clubRoleUpdated)
-    }
-    setBusyClubId('')
-  }
-
-  async function transferClubOwnership(club: Club, member: ClubMember) {
-    if (!userId || (!isAdmin && club.owner_id !== userId)) return
-    if (!window.confirm(text.transferOwnershipConfirm)) return
-
-    setBusyClubId(club.id)
-    const { error } = await (await getSupabase()).rpc('transfer_club_ownership', {
-      p_club_id: club.id,
-      p_new_owner_id: member.profile_id,
-    })
-
-    if (error) setClubStatus(error.message)
-    else {
-      await loadClubs()
-      setClubStatus(text.clubOwnershipTransferred)
-    }
-    setBusyClubId('')
-  }
-
-  async function notifyClubMembersOfSession(club: Club, sessionId: string) {
-    const recipients = clubMembers(club)
-      .filter((member) => member.status === 'approved' && member.profile_id !== userId)
-      .slice(0, 80)
-
-    if (recipients.length === 0) return
-
-    const payloads = recipients.map((member) => {
-      const snapshot = socialAvatarFields(member)
-      return {
-        session_id: sessionId,
-        inviter_id: userId,
-        recipient_id: member.profile_id,
-        recipient_display_name: snapshot.display_name,
-        recipient_avatar_url: snapshot.avatar_url,
-        recipient_avatar_emoji: snapshot.avatar_emoji,
-        recipient_avatar_initials: snapshot.avatar_initials,
-        recipient_avatar_color: snapshot.avatar_color,
-        recipient_avatar_text_color: snapshot.avatar_text_color,
-        recipient_profile_motto: snapshot.profile_motto,
-        status: 'pending',
-      }
-    })
-
-    const { error } = await (await getSupabase())
-      .from('session_invites')
-      .upsert(payloads, { onConflict: 'session_id,recipient_id' })
-
-    if (!error && networkDataLoadedRef.current) await loadNetworkData()
-  }
-
-  async function createClub() {
-    if (!requireProfile()) return
-
-    const activeProfile = profile
-    const name = clubName.trim()
-
-    if (!activeProfile) return
-
-    if (!name) {
-      setClubStatus(text.clubRequired)
-      return
-    }
-
-    setIsCreatingClub(true)
-    setClubStatus(text.creatingClub)
-
-    const clubPinCode = clubVisibility === 'private' ? generateInviteCode() : null
-    let savedClubPinCode = clubPinCode
-    const client = await getSupabase()
-    const clubPayload = {
-      owner_id: userId,
-      name,
-      description: clubDescription.trim() || null,
-      visibility: clubVisibility,
-      pin_code: clubPinCode,
-    }
-    let clubResult = await client
-      .from('clubs')
-      .insert(clubPayload)
-      .select('id')
-      .single()
-
-    if (clubResult.error && clubResult.error.message.toLowerCase().includes('pin_code')) {
-      savedClubPinCode = null
-      const fallbackClubPayload = {
-        owner_id: clubPayload.owner_id,
-        name: clubPayload.name,
-        description: clubPayload.description,
-        visibility: clubPayload.visibility,
-      }
-      clubResult = await client
-        .from('clubs')
-        .insert(fallbackClubPayload)
-        .select('id')
-        .single()
-    }
-
-    if (clubResult.error || !clubResult.data) {
-      setClubStatus(clubResult.error?.message || text.createError)
-      setIsCreatingClub(false)
-      return
-    }
-
-    const memberResult = await client.from('club_members').insert({
-      club_id: clubResult.data.id,
-      profile_id: userId,
-      display_name: displayName(activeProfile),
-      ...avatarFields(activeProfile),
-      status: 'approved',
-    })
-
-    if (memberResult.error) {
-      setClubStatus(memberResult.error.message)
-      setIsCreatingClub(false)
-      return
-    }
-
-    setClubName('')
-    setClubDescription('')
-    setClubVisibility('public')
-    await loadClubs()
-    setClubStatus(savedClubPinCode ? `${text.clubCreated} ${text.privateCode}: ${savedClubPinCode}` : text.clubCreated)
-    setIsCreatingClub(false)
-  }
-
-  async function joinClub(club: Club) {
-    if (!requireProfile()) return
-
-    const activeProfile = profile
-    if (!activeProfile) return
-
-    const currentMembership = clubMembers(club).find((member) => member.profile_id === userId)
-    if (currentMembership) {
-      setClubStatus(currentMembership.status === 'pending' ? text.requestSent : text.joinedClub)
-      showActionToast(currentMembership.status === 'pending' ? text.requestSent : text.joinedClub)
-      return
-    }
-
-    setBusyClubId(club.id)
-    const client = await getSupabase()
-    const desiredStatus = club.visibility === 'private' ? 'pending' : 'approved'
-    const existingMembershipResult = await client
-      .from('club_members')
-      .select(CLUB_MEMBER_SELECT)
-      .eq('club_id', club.id)
-      .eq('profile_id', userId)
-      .is('deleted_at', null)
-      .maybeSingle()
-
-    if (existingMembershipResult.error) {
-      const fallbackMembershipResult = await client
-        .from('club_members')
-        .select(CLUB_MEMBER_SELECT_BASE)
-        .eq('club_id', club.id)
-        .eq('profile_id', userId)
-        .is('deleted_at', null)
-        .maybeSingle()
-
-      if (fallbackMembershipResult.error) {
-        setClubStatus(fallbackMembershipResult.error.message)
-        setBusyClubId('')
-        return
-      }
-
-      if (fallbackMembershipResult.data) {
-        await loadClubs()
-        setClubStatus(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
-        showActionToast(fallbackMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
-        setBusyClubId('')
-        return
-      }
-    } else if (existingMembershipResult.data) {
-      await loadClubs()
-      setClubStatus(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
-      showActionToast(existingMembershipResult.data.status === 'pending' ? text.requestSent : text.joinedClub)
-      setBusyClubId('')
-      return
-    }
-
-    const { error } = await client.from('club_members').insert({
-      club_id: club.id,
-      profile_id: userId,
-      display_name: displayName(activeProfile),
-      ...avatarFields(activeProfile),
-      status: desiredStatus,
-    })
-
-    if (error) {
-      if (isDuplicateClubMembershipError(error)) {
-        await loadClubs()
-        setClubStatus(desiredStatus === 'pending' ? text.requestSent : text.joinedClub)
-        showActionToast(desiredStatus === 'pending' ? text.requestSent : text.joinedClub)
-      } else {
-        setClubStatus(error.message)
-      }
-      setBusyClubId('')
-      return
-    }
-
-    await loadClubs()
-    setClubStatus(club.visibility === 'private' ? text.requestSent : text.joinedClub)
-    showActionToast(club.visibility === 'private' ? text.requestSent : text.joinedClub)
-    setBusyClubId('')
-  }
-
-  async function approveClubMember(member: ClubMember) {
-    const club = clubs.find((item) => item.id === member.club_id)
-    if (!club || !canModerateClubMembers(club)) return
-
-    setBusyClubId(member.club_id)
-    const { error } = await (await getSupabase()).from('club_members').update({ status: 'approved', role: 'member' }).eq('id', member.id)
-
-    if (error) {
-      setClubStatus(error.message)
-      setBusyClubId('')
-      return
-    }
-
-    await loadClubs()
-    setClubStatus(text.memberApproved)
-    setBusyClubId('')
-  }
-
-  async function removeClubMember(club: Club, member: ClubMember) {
-    if (!canManageClubMember(club, member)) return
-
-    if (!window.confirm(text.removeMemberConfirm)) return
-
-    setBusyClubId(club.id)
-    const { error } = await softDeleteRecord('club_members', member.id, 'Removed from club')
-
-    if (error) {
-      setClubStatus(error.message)
-      setBusyClubId('')
-      return
-    }
-
-    await loadClubs()
-    setClubStatus(text.memberRemoved)
-    setBusyClubId('')
-  }
-
-  async function leaveClub(club: Club, member: ClubMember) {
-    if (!userId || member.profile_id !== userId || club.owner_id === userId) return
-
-    if (!window.confirm(leaveClubConfirmText)) return
-
-    setBusyClubId(club.id)
-    const { error } = await softDeleteRecord('club_members', member.id, 'User left club')
-
-    if (error) {
-      setClubStatus(error.message)
-      setBusyClubId('')
-      return
-    }
-
-    await loadClubs()
-    setClubStatus(leftClubText)
-    setBusyClubId('')
-  }
-
   async function updateParticipantCheckIn(participantId: string, paymentSplits: ParticipantPaymentSplit[] | null, markFree = false) {
     const normalizedSplits = paymentSplits ?? []
     const normalizedAmount = participantPaymentSplitTotal(normalizedSplits)
@@ -6937,339 +4799,6 @@ function handleSessionDateChange(value: string) {
     ))
   }
 
-  function marketingConsentValues(consent: boolean, currentProfile: Profile | null, timestamp = new Date().toISOString()) {
-    return {
-      marketing_consent: consent,
-      marketing_consent_at: consent ? currentProfile?.marketing_consent_at || timestamp : currentProfile?.marketing_consent_at || null,
-      marketing_opted_out_at: consent ? null : timestamp,
-    }
-  }
-
-  async function syncMarketingListForProfile(source: Profile, consent: boolean) {
-    const client = await getSupabase()
-
-    if (!consent) {
-      const { error } = await client
-        .from('marketing_list')
-        .delete()
-        .eq('profile_id', source.id)
-      return error?.message || ''
-    }
-
-    const { error } = await client
-      .from('marketing_list')
-      .upsert({
-        profile_id: source.id,
-        email: source.email,
-        full_name: source.full_name,
-        nickname: source.nickname,
-        phone: source.phone,
-        consented_at: source.marketing_consent_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'profile_id' })
-
-    return error?.message || ''
-  }
-
-  async function syncProfilePublicSnapshots(profileId: string) {
-    const { error } = await (await getSupabase()).rpc('sync_profile_public_snapshot', { p_profile_id: profileId })
-    return error?.message || ''
-  }
-
-  async function notifyMinorBookingCreated(kind: 'session' | 'ticket', sessionId: string | null | undefined, sourceProfile: Profile | null) {
-    if (!sessionId || !sourceProfile || ageBandFromBirthday(sourceProfile.birthday) !== 'minor') return
-
-    try {
-      await notifyBookingUpdateEmail(await getSupabase(), {
-        action: 'created',
-        bookingKind: kind,
-        sessionId,
-        source: 'player-app',
-      })
-    } catch (error) {
-      console.warn('Could not send minor booking notice.', error)
-    }
-  }
-
-  async function updateAnonymousMode(nextMode: boolean) {
-    if (!profile || !userId) return
-
-    setIsSavingAnonymousMode(true)
-    const nextCallsign = profile.anonymous_callsign || anonymousCallsignForId(userId)
-    const { data, error } = await (await getSupabase())
-      .from('profiles')
-      .update({
-        anonymous_mode: nextMode,
-        anonymous_callsign: nextCallsign,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
-      .select(PROFILE_SELECT)
-      .single()
-
-    if (error) {
-      setProfileStatus(error.message)
-      setIsSavingAnonymousMode(false)
-      setAnonymousConfirmOpen(false)
-      return
-    }
-
-    const metadataUpdate = await (await getSupabase()).auth.updateUser({
-      data: {
-        display_name: displayName(data),
-        name: displayName(data),
-        anonymous_mode: data.anonymous_mode,
-        anonymous_callsign: data.anonymous_callsign,
-      },
-    })
-
-    if (metadataUpdate.error) {
-      setProfileStatus(metadataUpdate.error.message)
-      setIsSavingAnonymousMode(false)
-      setAnonymousConfirmOpen(false)
-      return
-    }
-
-    const snapshotError = await syncProfilePublicSnapshots(data.id)
-    if (snapshotError) {
-      setProfileStatus(snapshotError)
-      setIsSavingAnonymousMode(false)
-      setAnonymousConfirmOpen(false)
-      return
-    }
-
-    setProfile(data)
-    syncProfileEverywhere(data)
-    await loadSessions()
-    await loadClubs()
-    if (networkDataLoadedRef.current) await loadNetworkData()
-    refreshLeaderboardIfLoaded()
-    setProfileStatus(nextMode ? text.anonymousModeActivated : text.anonymousModeDeactivated)
-    setAnonymousConfirmOpen(false)
-    setIsSavingAnonymousMode(false)
-  }
-
-  async function updateMarketingConsent(nextConsent: boolean) {
-    setMarketingConsent(nextConsent)
-    if (!profile || !userId) return
-
-    const previousProfile = profile
-    const values = marketingConsentValues(nextConsent, profile)
-    const optimisticProfile = { ...profile, ...values }
-    setProfile(optimisticProfile)
-    setProfileStatus(text.savingProfile)
-
-    const { data, error } = await (await getSupabase())
-      .from('profiles')
-      .update(values)
-      .eq('id', userId)
-      .select(PROFILE_SELECT)
-      .single()
-
-    if (error) {
-      setMarketingConsent(previousProfile.marketing_consent !== false)
-      setProfile(previousProfile)
-      setProfileStatus(error.message)
-      return
-    }
-
-    const listError = await syncMarketingListForProfile(data, nextConsent)
-    setProfile(data)
-    setProfileStatus(listError || (nextConsent ? text.marketingConsentSaved : text.marketingConsentRemoved))
-  }
-
-  async function saveProfile() {
-    if (!userId) {
-      setProfileStatus(text.profileLoading)
-      return
-    }
-
-    const countryCode = resolveCountryCode(profileCountryCode)
-    const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
-    const fullName = profileName.trim()
-    const cleanMotto = limitMotto(profileMotto.trim())
-    const nickname = limitDisplayName(profileNickname.trim())
-
-    if (!profilePhone.trim()) {
-      setProfileStatus(text.phoneRequired)
-      document.getElementById('profile-phone-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      document.getElementById('profile-phone-input')?.focus({ preventScroll: true })
-      return
-    }
-
-    if (!fullName) {
-      setProfileStatus(text.nameRequired)
-      document.getElementById('profile-name-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      document.getElementById('profile-name-input')?.focus({ preventScroll: true })
-      return
-    }
-
-    setIsSavingProfile(true)
-    setIsProfileSaveSuccessful(false)
-    setProfileStatus(text.savingProfile)
-
-    try {
-      const avatarUrl = avatarMode === 'photo' ? await uploadAvatar(userId, profile?.avatar_url || null) : null
-
-      if (avatarUrl === false) return
-
-      const avatarPayload = {
-        avatar_url: avatarMode === 'photo' ? avatarUrl : null,
-        avatar_emoji: avatarMode === 'emoji' ? avatarEmoji.trim() || '😎' : null,
-        avatar_initials: avatarMode === 'initials' ? compactInitials(avatarInitials || displayName(profile) || fullName) : null,
-        avatar_color: avatarColor,
-        avatar_text_color: avatarTextColor,
-      }
-
-      const row = {
-        full_name: fullName,
-        phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
-        profile_motto: cleanMotto || null,
-        nickname: nickname || null,
-        birthday: effectiveProfileBirthday || null,
-        gender: isUnder13Birthday(effectiveProfileBirthday) ? null : profileGender || null,
-        ...marketingConsentValues(marketingConsent, profile),
-        ...avatarPayload,
-        updated_at: new Date().toISOString(),
-      }
-
-      const { data, error } = await (await getSupabase())
-        .from('profiles')
-        .update(row)
-        .eq('id', userId)
-        .select(PROFILE_SELECT)
-        .single()
-
-      if (error) {
-        setProfileStatus(error.code === '23505' ? text.profileIdentityTaken : error.message)
-        return
-      }
-
-      const display = displayName(data)
-      const publicAvatar = avatarFields(data)
-      const metadataUpdate = await (await getSupabase()).auth.updateUser({
-        data: {
-          display_name: display,
-          full_name: fullName,
-          name: display,
-          nickname: nickname || null,
-          birthday: data.birthday,
-          gender: data.gender,
-          phone: data.phone,
-          avatar_url: publicAvatar.avatar_url,
-          avatar_emoji: publicAvatar.avatar_emoji,
-          avatar_initials: publicAvatar.avatar_initials,
-          avatar_color: publicAvatar.avatar_color,
-          avatar_text_color: publicAvatar.avatar_text_color,
-          profile_motto: data.profile_motto,
-          marketing_consent: data.marketing_consent,
-          marketing_consent_at: data.marketing_consent_at,
-          marketing_opted_out_at: data.marketing_opted_out_at,
-          personal_data_consent: data.personal_data_consent,
-          personal_data_consent_at: data.personal_data_consent_at,
-          privacy_policy_url: data.privacy_policy_url,
-          terms_conditions_url: data.terms_conditions_url,
-          consent_waiver_url: data.consent_waiver_url,
-          legal_consent_version: data.legal_consent_version,
-        },
-      })
-
-      if (metadataUpdate.error) {
-        setProfileStatus(metadataUpdate.error.message)
-        return
-      }
-
-      const snapshotError = await syncProfilePublicSnapshots(data.id)
-      if (snapshotError) {
-        setProfileStatus(snapshotError)
-        return
-      }
-
-      const marketingListError = await syncMarketingListForProfile(data, data.marketing_consent !== false)
-      if (marketingListError) {
-        setProfileStatus(marketingListError)
-        return
-      }
-
-      setProfile(data)
-      await loadSessions()
-      await loadClubs()
-      await loadTournamentData()
-      syncProfileEverywhere(data)
-      setAvatarFile(null)
-      setAvatarPreview('')
-      setProfileCountryCode(countryCode)
-      setProfilePhone(localPhone)
-      setProfileBirthday(data.birthday || '')
-      setProfileGender(normalizeProfileGender(data.gender))
-      setProfileStatus(text.profileSaved)
-      showActionToast(text.profileSaved)
-      setIsProfileSaveSuccessful(true)
-      if (profileSaveSuccessTimerRef.current !== null) {
-        window.clearTimeout(profileSaveSuccessTimerRef.current)
-      }
-      profileSaveSuccessTimerRef.current = window.setTimeout(() => {
-        setIsProfileSaveSuccessful(false)
-        profileSaveSuccessTimerRef.current = null
-      }, 2600)
-    } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : text.profileSaveError)
-    } finally {
-      setIsSavingProfile(false)
-    }
-  }
-
-  async function uploadAvatar(ownerId: string, currentAvatarUrl: string | null) {
-    if (!avatarFile) return currentAvatarUrl
-
-    const safeName = avatarFile.name.replace(/[^a-z0-9.-]/gi, '-').toLowerCase()
-    const path = `${ownerId}/${Date.now()}-${safeName}`
-    const upload = await (await getSupabase()).storage.from('avatars').upload(path, avatarFile, {
-      contentType: avatarFile.type,
-      upsert: true,
-    })
-
-    if (upload.error) {
-      setProfileStatus(upload.error.message)
-      setIsSavingProfile(false)
-      return false as const
-    }
-
-    const { data } = (await getSupabase()).storage.from('avatars').getPublicUrl(path)
-    return data.publicUrl
-  }
-
-  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] || null
-
-    if (!file) {
-      setAvatarFile(null)
-      setAvatarPreview('')
-      return
-    }
-
-    if (!AVATAR_IMAGE_TYPES.includes(file.type)) {
-      setProfileStatus(text.avatarPhotoTypeError)
-      setAvatarFile(null)
-      setAvatarPreview('')
-      event.target.value = ''
-      return
-    }
-
-    if (file.size > AVATAR_IMAGE_MAX_BYTES) {
-      setProfileStatus(text.avatarPhotoSizeError)
-      setAvatarFile(null)
-      setAvatarPreview('')
-      event.target.value = ''
-      return
-    }
-
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
-    setAvatarMode('photo')
-    setProfileStatus('')
-  }
-
   function toggleGame(gameId: GameId) {
     setSelectedGames((current) => {
       if (current.includes(gameId)) {
@@ -7281,462 +4810,6 @@ function handleSessionDateChange(value: string) {
 
   function applyRichTextCommand(command: 'bold' | 'italic' | 'underline' | 'strikeThrough') {
     document.execCommand(command, false)
-  }
-
-  async function bookTickets(profileOverride?: Profile | null) {
-    if (bookingTicketsInFlightRef.current) return false
-
-    const activeProfile = profileOverride === undefined ? profile : profileOverride
-
-    const service = selectedTicketService(ticketType)
-    const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
-    const normalizedTicketDiscountCode = ticketDiscountCode.trim().toUpperCase()
-
-    if (activeProfile && ageBandFromBirthday(activeProfile.birthday) === 'under13') {
-      showTicketStatus(text.under13BookingBlocked, 'error')
-      return false
-    }
-
-    if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
-
-    const guestContactValidation = activeProfile
-      ? { normalizedPhone: '', error: '' }
-      : validateGuestTicketContact(guestTicketContact, looseText)
-
-    if (guestContactValidation.error) {
-      showTicketStatus(guestContactValidation.error, 'error')
-      return false
-    }
-
-    // Lock synchronously before the first server check, including same-tick clicks.
-    bookingTicketsInFlightRef.current = true
-    setIsBookingTickets(true)
-    try {
-      const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
-      if (!allowed) return false
-
-      const ticketAnalytics = {
-        ticketType,
-        ticketLabel: ticketTypeLabel(ticketType, looseText),
-        date: ticketDate,
-        time: ticketTime,
-        players: ticketPlayers,
-        durationMinutes: activeTicketDuration,
-        totalPrice: isSpecialTicketType ? 0 : currentTicketTotalPrice,
-      }
-      trackTicketCheckoutStarted(ticketAnalytics)
-
-      showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
-      setTicketConfirmation(null)
-
-      const request = buildTicketBookingRequest({
-        isHaDo: isHaDoBookingVenue,
-        authenticated: Boolean(activeProfile),
-        ticketType,
-        date: ticketDate,
-        time: ticketTime,
-        durationMinutes: activeTicketDuration,
-        players: ticketPlayers,
-        arenaCount: activeTicketArenaCount,
-        defaultGame: service.defaultGame,
-        unitPrice: currentTicketUnitPrice,
-        totalPrice: currentTicketTotalPrice,
-        special: isSpecialTicketType,
-        note: ticketSpecialNote,
-        loyaltyPoints: appliedTicketLoyaltyPoints,
-        discountCode: ticketDiscountQuote ? normalizedTicketDiscountCode : null,
-        guestName: guestTicketContact.name,
-        guestPhone: guestContactValidation.normalizedPhone,
-      })
-      const client = await getSupabase()
-      const { data, error } = await client.rpc(request.name, request.args)
-
-      if (error) {
-        showTicketStatus(error.message || text.ticketBookingError, 'error')
-        return false
-      }
-
-      const booking = (data || {}) as {
-        discount_amount?: number | null
-        discount_code?: string | null
-        loyalty_points_total?: number | null
-        session_id?: string
-        ticket_reference?: string
-        ticket_total_price?: number | null
-      }
-      const confirmation: TicketBookingConfirmation = {
-        sessionId: booking.session_id || '',
-        reference: booking.ticket_reference || '',
-        ticketType,
-        ticketLabel: ticketTypeLabel(ticketType, looseText),
-        date: ticketDate,
-        time: ticketTime,
-        players: ticketPlayers,
-        totalPrice: isSpecialTicketType
-          ? 0
-          : isHaDoBookingVenue
-            ? currentTicketTotalPrice
-            : Math.max(0, Math.floor(Number(booking.ticket_total_price ?? currentTicketPricing.totalPrice) || 0)),
-        guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
-        guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
-        discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
-        discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
-        loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
-        loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
-        requiresZaloConfirmation: !isHaDoBookingVenue,
-      }
-
-      if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
-        setPendingGuestTicketClaim({
-          phone: confirmation.guestPhone,
-          reference: confirmation.reference,
-          name: confirmation.guestName,
-          date: confirmation.date,
-        })
-      }
-
-      if (isHaDoBookingVenue && activeProfile && booking.loyalty_points_total !== undefined && booking.loyalty_points_total !== null) {
-        const nextPointsTotal = Math.max(0, Math.floor(Number(booking.loyalty_points_total) || 0))
-        const nextProfile = { ...activeProfile, loyalty_points_total: nextPointsTotal }
-        setProfile(nextProfile)
-        syncProfileEverywhere(nextProfile)
-        setTicketLoyaltyRedemption((current) => current
-          ? { ...current, loyalty_points_total: nextPointsTotal }
-          : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
-      }
-
-      setTicketConfirmation(confirmation)
-      trackTicketBookingCompleted({
-        ...ticketAnalytics,
-        transactionId: confirmation.reference || confirmation.sessionId,
-      })
-      const bookingCreatedMessage = isHaDoBookingVenue ? text.ticketBookingCreated : text.bookingRequestSubmitted
-      showTicketStatus(bookingCreatedMessage)
-      showActionToast(bookingCreatedMessage)
-      setTicketTime('')
-      setTicketUseLoyaltyPoints(false)
-      setTicketLoyaltyPointsToRedeem('')
-      setTicketDiscountCode('')
-      setTicketDiscountQuote(null)
-      setTicketDiscountStatus('')
-      await notifyMinorBookingCreated('ticket', confirmation.sessionId, activeProfile)
-      await loadSessions({ focusDate: ticketDate })
-      return true
-    } catch (error) {
-      showTicketStatus(error instanceof Error ? error.message : text.ticketBookingError, 'error')
-      return false
-    } finally {
-      bookingTicketsInFlightRef.current = false
-      setIsBookingTickets(false)
-    }
-  }
-
-  async function createSession() {
-    if (!isHaDoBookingVenue) {
-      setCreateStatus(text.bookingVenueCafeComingSoonBody)
-      setIsCreating(false)
-      return
-    }
-
-    if (!requireProfile()) {
-      setIsCreating(false)
-      return
-    }
-
-    const activeProfile = profile
-
-    if (!activeProfile) {
-      setIsCreating(false)
-      return
-    }
-
-    if (ageBandFromBirthday(activeProfile.birthday) === 'under13') {
-      setCreateStatus(text.under13CreateBlocked)
-      setIsCreating(false)
-      return
-    }
-
-    if (!sessionName.trim() || !sessionDate || !sessionTime) {
-      setCreateStatus(text.sessionRequired)
-      setIsCreating(false)
-      return
-    }
-
-    const selectedSessionClub = sessionClubId ? clubs.find((club) => club.id === sessionClubId) : undefined
-
-    if (selectedSessionClub && !canCreateClubSession(selectedSessionClub)) {
-      setCreateStatus(text.clubMembershipRequired)
-      setIsCreating(false)
-      return
-    }
-
-    const allowed = await consumeAppRateLimit('booking_attempt', `${sessionDate}:${sessionTime}`)
-    if (!allowed) {
-      setIsCreating(false)
-      return
-    }
-
-    setIsCreating(true)
-    setCreateStatus(text.creating)
-
-    const effectiveVisibility = selectedSessionClub ? 'public' : sessionVisibility
-    const inviteCode = effectiveVisibility === 'private' ? generateInviteCode() : null
-
-    const { data: created, error } = await (await getSupabase())
-      .from('sessions')
-      .insert({
-        owner_id: userId,
-        club_id: sessionClubId || null,
-        session_type: sessionType,
-        name: sessionName.trim(),
-        date: sessionDate,
-        start_time: `${sessionTime}:00`,
-        duration_minutes: sessionDuration,
-        max_players: sessionMaxPlayers,
-        arena_count: sessionArenaCount,
-        game_options: selectedGames,
-        game_votes: { [userId]: selectedGames[0] },
-        confirmed_game_id: null,
-        visibility: effectiveVisibility,
-        invite_code: inviteCode,
-        notes: sessionNotes.trim() || null,
-        status: 'open',
-        tournament_format: sessionType === 'tournament' ? tournamentFormat : null,
-        best_of: sessionType === 'tournament' ? tournamentBestOf : 1,
-        rounds_per_match: sessionType === 'tournament' ? tournamentRoundsPerMatch : null,
-        require_payment: sessionType === 'tournament' ? tournamentRequirePayment : false,
-        qualification_rule: sessionType === 'tournament' ? tournamentQualificationRule : null,
-        custom_qualifiers: sessionType === 'tournament' ? tournamentCustomQualifiers : null,
-        enable_third_place_match: sessionType === 'tournament' ? tournamentThirdPlace : false,
-        first_prize: sessionType === 'tournament' ? tournamentFirstPrize.trim() || null : null,
-        second_prize: sessionType === 'tournament' ? tournamentSecondPrize.trim() || null : null,
-        third_prize: sessionType === 'tournament' ? tournamentThirdPrize.trim() || null : null,
-        tournament_locked: false,
-      })
-      .select('id')
-      .single()
-
-    if (error || !created) {
-      setCreateStatus(error?.message || text.createError)
-      setIsCreating(false)
-      return
-    }
-
-    await (await getSupabase()).from('session_participants').insert({
-      session_id: created.id,
-      profile_id: userId,
-      display_name: displayName(activeProfile),
-      ...avatarFields(activeProfile),
-    })
-
-    if (selectedSessionClub) {
-      await notifyClubMembersOfSession(selectedSessionClub, created.id)
-    }
-
-    await notifyMinorBookingCreated('session', created.id, activeProfile)
-
-    setCreateStatus(
-      sessionVisibility === 'private'
-        ? `${text.privateCreated} ${inviteCode}`
-        : text.sessionCreated
-    )
-    showActionToast(sessionVisibility === 'private' ? text.privateCreated : text.sessionCreated)
-
-    setSessionName('')
-    setSessionNotes('')
-    setSessionTime('')
-    setSessionDuration(20)
-    setSessionMaxPlayers(4)
-    setSessionArenaCount(1)
-    setSessionClubId('')
-    setSessionType('game')
-    setTournamentFormat('pool_to_final')
-    setTournamentBestOf(1)
-    setTournamentRoundsPerMatch(1)
-    setTournamentRequirePayment(false)
-    setTournamentQualificationRule('top_1')
-    setTournamentCustomQualifiers(2)
-    setTournamentThirdPlace(true)
-    setTournamentFirstPrize('')
-    setTournamentSecondPrize('')
-    setTournamentThirdPrize('')
-    setSelectedGames(['laser-tag'])
-    setSessionVisibility('public')
-    await loadSessions({ focusDate: sessionDate })
-    setActiveView('sessions')
-    setIsCreating(false)
-  }
-
-  async function joinSession(session: Session) {
-    if (!requireProfile()) return
-
-    if (isTicketSession(session)) {
-      setCreateStatus(text.privateTicketSession)
-      return
-    }
-
-    if (isChallengeSession(session) && session.challenge_target_id !== userId && !hasSessionInvite(session.id, userId)) {
-      setCreateStatus(text.challengeInviteOnly)
-      return
-    }
-
-    const activeProfile = profile
-
-    if (!activeProfile) return
-
-    const sessionClub = sessionClubFor(session)
-    if (sessionClub && !canAccessClubSession(session)) {
-      setCreateStatus(text.clubMembershipRequired)
-      return
-    }
-
-    const joinsWithPrivateCode = session.visibility === 'private' && !hasSessionInvite(session.id, userId)
-
-    if (joinsWithPrivateCode) {
-      const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
-      if (!typedCode) {
-        setCreateStatus(text.privateIncorrect)
-        return
-      }
-    }
-
-    const participants = session.session_participants ?? []
-    if (participants.some((participant) => participant.profile_id === userId)) return
-
-    if (participants.length >= session.max_players) {
-      setCreateStatus(text.sessionFull)
-      return
-    }
-
-    const allowed = await consumeAppRateLimit('join_leave', `join:${session.id}`)
-    if (!allowed) return
-
-    setBusySessionId(session.id)
-
-    const avatarPayload = avatarFields(activeProfile)
-    const client = await getSupabase()
-    let joinedParticipant: Participant | null = null
-    const joinResult = joinsWithPrivateCode
-      ? await client.rpc('join_private_session_with_code', {
-        p_session_id: session.id,
-        p_invite_code: (joinCodes[session.id] || '').trim().toUpperCase(),
-        p_display_name: displayName(activeProfile),
-        p_avatar_url: avatarPayload.avatar_url,
-        p_avatar_emoji: avatarPayload.avatar_emoji,
-        p_avatar_initials: avatarPayload.avatar_initials,
-        p_avatar_color: avatarPayload.avatar_color,
-        p_avatar_text_color: avatarPayload.avatar_text_color,
-        p_profile_motto: avatarPayload.profile_motto,
-      })
-      : await client.from('session_participants').insert({
-        session_id: session.id,
-        profile_id: userId,
-        display_name: displayName(activeProfile),
-        ...avatarPayload,
-      })
-
-    if (joinResult.error) {
-      setCreateStatus(joinResult.error.message)
-      setBusySessionId('')
-      return
-    }
-
-    joinedParticipant = await fetchCurrentUserSessionParticipant(session.id)
-
-    mergeJoinedParticipantIntoSession(session.id, joinedParticipant)
-
-    await client
-      .from('session_waitlist')
-      .delete()
-      .eq('session_id', session.id)
-      .eq('profile_id', userId)
-
-    await client
-      .from('session_invites')
-      .update({ status: 'accepted' })
-      .eq('session_id', session.id)
-      .eq('recipient_id', userId)
-
-    await loadSessions({ focusDate: session.date })
-    await loadSessionDetail(session.id, { force: true })
-    mergeJoinedParticipantIntoSession(session.id, joinedParticipant)
-    await loadNetworkData()
-    setBusySessionId('')
-    setCreateStatus(text.joinedSession)
-    showActionToast(text.joinedSession)
-    await prepareJoinedSessionReminders(session)
-  }
-
-  async function joinWaitlist(session: Session) {
-    if (!requireProfile()) return
-
-    if (isTicketSession(session)) {
-      setCreateStatus(text.privateTicketSession)
-      return
-    }
-
-    if (isChallengeSession(session)) {
-      setCreateStatus(text.challengeInviteOnly)
-      return
-    }
-
-    const activeProfile = profile
-    if (!activeProfile) return
-
-    const sessionClub = sessionClubFor(session)
-    if (sessionClub && !canAccessClubSession(session)) {
-      setCreateStatus(text.clubMembershipRequired)
-      return
-    }
-
-    const waitlistsWithPrivateCode = session.visibility === 'private' && !hasSessionInvite(session.id, userId)
-
-    if (waitlistsWithPrivateCode) {
-      const typedCode = (joinCodes[session.id] || '').trim().toUpperCase()
-      if (!typedCode) {
-        setCreateStatus(text.privateIncorrect)
-        return
-      }
-    }
-
-    const participants = session.session_participants ?? []
-    if (participants.some((participant) => participant.profile_id === userId)) return
-    if (waitlistPosition(session, userId)) return
-
-    const allowed = await consumeAppRateLimit('join_leave', `waitlist:${session.id}`)
-    if (!allowed) return
-
-    setBusySessionId(session.id)
-
-    const avatarPayload = avatarFields(activeProfile)
-    const waitlistResult = waitlistsWithPrivateCode
-      ? await (await getSupabase()).rpc('join_private_session_waitlist_with_code', {
-        p_session_id: session.id,
-        p_invite_code: (joinCodes[session.id] || '').trim().toUpperCase(),
-        p_display_name: displayName(activeProfile),
-        p_avatar_url: avatarPayload.avatar_url,
-        p_avatar_emoji: avatarPayload.avatar_emoji,
-        p_avatar_initials: avatarPayload.avatar_initials,
-        p_avatar_color: avatarPayload.avatar_color,
-        p_avatar_text_color: avatarPayload.avatar_text_color,
-        p_profile_motto: avatarPayload.profile_motto,
-      })
-      : await (await getSupabase()).from('session_waitlist').insert({
-        session_id: session.id,
-        profile_id: userId,
-        display_name: displayName(activeProfile),
-        ...avatarPayload,
-      })
-
-    if (waitlistResult.error) {
-      setCreateStatus(waitlistResult.error.message)
-      setBusySessionId('')
-      return
-    }
-
-    await loadSessions({ focusDate: session.date })
-    setCreateStatus(text.waitlistJoined)
-    setBusySessionId('')
   }
 
   async function toggleFollowPlayer(player: {
@@ -7823,510 +4896,6 @@ function handleSessionDateChange(value: string) {
     setBusyInviteKey('')
   }
 
-  async function postSessionMessage(session: Session, messageType: 'announcement' | 'comment') {
-    if (!requireProfile() || !profile) return
-    if (ageBandFromBirthday(profile.birthday) === 'under13') {
-      setCreateStatus(text.under13MessageBlocked)
-      return
-    }
-    if (messageType === 'announcement' && !canReviewSessionMessages(session)) return
-
-    const draft = (messageType === 'announcement' ? announcementDrafts[session.id] : commentDrafts[session.id]) || ''
-    const body = draft.trim()
-    if (!body) return
-
-    const messageKey = `${session.id}-${messageType}`
-    setBusyMessageKey(messageKey)
-
-    const { data, error } = await (await getSupabase()).functions.invoke('post-session-message', {
-      body: {
-        session_id: session.id,
-        message_type: messageType,
-        body,
-      },
-    })
-
-    const message = data?.message as SessionMessage | undefined
-
-    if (error) {
-      setCreateStatus(error.message)
-    } else {
-      if (messageType === 'announcement') {
-        setAnnouncementDrafts((current) => ({ ...current, [session.id]: '' }))
-      } else {
-        setCommentDrafts((current) => ({ ...current, [session.id]: '' }))
-      }
-      if (message) {
-        mergeSessionMessage(message)
-      } else {
-        await loadSessionMessages(session.id, { force: true })
-      }
-      setCreateStatus(message?.moderation_status === 'pending_review' ? text.messagePendingReview : text.messagePosted)
-    }
-
-    setBusyMessageKey('')
-  }
-
-  async function postClubMessage(club: Club, messageType: ClubMessage['message_type']) {
-    if (!requireProfile() || !profile) return
-    if (ageBandFromBirthday(profile.birthday) === 'under13') {
-      setClubMessageStatus(text.under13MessageBlocked)
-      return
-    }
-    if (!canUseClubMessages(club)) {
-      setClubMessageStatus(text.clubMessageLoginRequired)
-      return
-    }
-
-    const drafts = messageType === 'public' ? clubPublicMessageDrafts : clubAdminMessageDrafts
-    const body = (drafts[club.id] || '').trim()
-    if (!body) return
-
-    if (Array.from(body).length > CLUB_MESSAGE_MAX_LENGTH) {
-      setClubMessageStatus(text.clubMessageTooLong)
-      return
-    }
-
-    const messageKey = `${club.id}-${messageType}`
-    setBusyMessageKey(messageKey)
-    setClubMessageStatus('')
-
-    const avatarSnapshot = profileAvatarSnapshot(profile)
-    const { data, error } = await (await getSupabase())
-      .from('club_messages')
-      .insert({
-        club_id: club.id,
-        author_id: userId,
-        author_display_name: avatarSnapshot.display_name,
-        author_avatar_url: avatarSnapshot.avatar_url,
-        author_avatar_emoji: avatarSnapshot.avatar_emoji,
-        author_avatar_initials: avatarSnapshot.avatar_initials,
-        author_avatar_color: avatarSnapshot.avatar_color,
-        author_avatar_text_color: avatarSnapshot.avatar_text_color,
-        author_profile_motto: avatarSnapshot.profile_motto || null,
-        message_type: messageType,
-        body,
-      })
-      .select(CLUB_MESSAGE_SELECT)
-      .single()
-
-    if (error) {
-      setClubMessageStatus(error.message)
-    } else {
-      if (messageType === 'public') {
-        setClubPublicMessageDrafts((current) => ({ ...current, [club.id]: '' }))
-      } else {
-        setClubAdminMessageDrafts((current) => ({ ...current, [club.id]: '' }))
-      }
-      if (data) mergeClubMessage(data as ClubMessage)
-      loadedClubMessagesRef.current.add(club.id)
-      setClubMessageStatus(text.clubMessagePosted)
-    }
-
-    setBusyMessageKey('')
-  }
-
-  async function reviewSessionMessage(message: SessionMessage, status: 'approved' | 'rejected') {
-    if (!requireProfile()) return
-
-    setBusyMessageKey(`${message.id}-${status}`)
-    const { error } = await (await getSupabase())
-      .from('session_messages')
-      .update({
-        moderation_status: status,
-        reviewed_by: userId,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', message.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-    } else {
-      setCreateStatus(status === 'approved' ? text.messageApproved : text.messageRejected)
-      const reviewedAt = new Date().toISOString()
-      setSessionMessages((current) => sortSessionMessages(current.map((item) => (
-        item.id === message.id
-          ? { ...item, moderation_status: status, reviewed_by: userId, reviewed_at: reviewedAt }
-          : item
-      ))))
-    }
-
-    setBusyMessageKey('')
-  }
-
-  async function deleteSessionMessage(message: SessionMessage) {
-    if (!requireProfile()) return
-    if (!isAdmin) {
-      setCreateStatus(text.adminOnlyAction)
-      return
-    }
-
-    const confirmed = window.confirm(text.deleteMessageConfirm)
-    if (!confirmed) return
-
-    setBusyMessageKey(`${message.id}-delete`)
-    const { error } = await softDeleteRecord('session_messages', message.id, 'Admin deleted message')
-
-    if (error) {
-      setCreateStatus(error.message)
-    } else {
-      setCreateStatus(text.messageDeleted)
-      setSessionMessages((current) => current.filter((item) => item.id !== message.id))
-    }
-
-    setBusyMessageKey('')
-  }
-
-  async function leaveSession(session: Session) {
-    if (!requireProfile()) return
-
-    if (session.owner_id === userId) {
-      setCreateStatus(text.creatorCannotRemove)
-      return
-    }
-
-    const confirmed = window.confirm(`${text.leaveConfirmPrefix} "${session.name}"? ${text.leaveConfirmSuffix}`)
-    if (!confirmed) return
-
-    const participant = (session.session_participants ?? []).find((item) => item.profile_id === userId)
-    if (!participant) return
-
-    const allowed = await consumeAppRateLimit('join_leave', `leave:${session.id}`)
-    if (!allowed) return
-
-    setBusySessionId(session.id)
-    const { error } = await softDeleteRecord('session_participants', participant.id, 'User left session')
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusySessionId('')
-      return
-    }
-
-    await loadSessions()
-    setCreateStatus(text.leftSession)
-    setBusySessionId('')
-  }
-
-  async function voteForGame(session: Session, gameId: GameId) {
-    if (!requireProfile()) return
-    if (isPastSession(session) && !canManageSession(session)) return
-
-    const voteKey = `${session.id}-${gameId}`
-    setBusyVoteKey(voteKey)
-    const votes = { ...(session.game_votes || {}), [userId]: gameId }
-    const { error } = await (await getSupabase()).from('sessions').update({ game_votes: votes }).eq('id', session.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusyVoteKey('')
-      return
-    }
-
-    await loadSessions()
-    setCreateStatus(text.voteSaved)
-    setBusyVoteKey('')
-  }
-
-  async function confirmPlayedGame(session: Session) {
-    if (!canManageSession(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
-      return
-    }
-
-    const selectedGameId = confirmedGameDrafts[session.id] || session.confirmed_game_id || ''
-    const validGameId = games.some((game) => game.id === selectedGameId) ? selectedGameId : null
-
-    setBusySessionId(session.id)
-    const { error } = await (await getSupabase())
-      .from('sessions')
-      .update({ confirmed_game_id: validGameId })
-      .eq('id', session.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusySessionId('')
-      return
-    }
-
-    setSessions((current) =>
-      current.map((item) =>
-        item.id === session.id
-          ? { ...item, confirmed_game_id: validGameId as GameId | null }
-          : item
-      )
-    )
-    setConfirmedGameDrafts((current) => ({ ...current, [session.id]: validGameId || '' }))
-    await loadSessions()
-    setCreateStatus(text.confirmedPlayedGame)
-    setBusySessionId('')
-  }
-
-  function toggleEditGame(gameId: GameId) {
-    setEditSelectedGames((current) => {
-      if (current.includes(gameId)) {
-        return current.length === 1 ? current : current.filter((id) => id !== gameId)
-      }
-      return [...current, gameId]
-    })
-  }
-
-  async function startEditingSession(session: Session) {
-    if (isAdmin) ensureAllProfilesLoaded()
-    const fullSession = sessionDetailsLoadedRef.current.has(session.id)
-      ? session
-      : (await loadSessionDetail(session.id)) || session
-
-    setEditingSessionId(session.id)
-    setEditSessionName(fullSession.name)
-    setEditSessionDate(fullSession.date)
-    setEditSessionTime(fullSession.start_time.slice(0, 5))
-    setEditSessionDuration(fullSession.duration_minutes)
-    setEditSessionMaxPlayers(fullSession.max_players)
-    setEditSessionArenaCount(arenasUsedBySession(fullSession))
-    setEditSessionVisibility(fullSession.visibility)
-    setEditSessionNotes(fullSession.notes || '')
-    setEditSelectedGames(fullSession.game_options?.length ? fullSession.game_options : ['laser-tag'])
-    setEditBookingType(fullSession.booking_type || 'community')
-    setEditTicketCustomerId(fullSession.ticket_customer_id || fullSession.owner_id)
-    setEditTicketType(fullSession.ticket_type || 'individual')
-    setEditTicketTotalPrice(String(fullSession.ticket_total_price ?? ''))
-    setEditTicketStatus(fullSession.ticket_status || 'confirmed')
-    setEditTournamentFormat(fullSession.tournament_format || 'pool_to_final')
-    setEditTournamentBestOf((fullSession.best_of || 1) as 1 | 3 | 5)
-    setEditTournamentRoundsPerMatch(fullSession.rounds_per_match || 1)
-    setEditTournamentRequirePayment(Boolean(fullSession.require_payment))
-    setEditTournamentQualificationRule(fullSession.qualification_rule || 'top_1')
-    setEditTournamentCustomQualifiers(fullSession.custom_qualifiers || 2)
-    setEditTournamentThirdPlace(Boolean(fullSession.enable_third_place_match))
-    setEditTournamentFirstPrize(fullSession.first_prize || '')
-    setEditTournamentSecondPrize(fullSession.second_prize || '')
-    setEditTournamentThirdPrize(fullSession.third_prize || '')
-    setCreateStatus('')
-  }
-
-  function stopEditingSession() {
-    setEditingSessionId('')
-    setIsUpdatingSession(false)
-  }
-
-  async function sendSessionUpdateNotification(
-    session: Session,
-    payload: {
-      action: 'edited' | 'cancelled' | 'deleted'
-      summary: string
-      changes?: Array<{ label: string; before?: string | number | boolean | null; after?: string | number | boolean | null }>
-    },
-  ) {
-    try {
-      await notifyBookingUpdateEmail(await getSupabase(), {
-        action: payload.action,
-        bookingKind: bookingUpdateKind(session),
-        sessionId: session.id,
-        title: session.name,
-        reference: session.ticket_reference || null,
-        date: session.date,
-        time: session.start_time.slice(0, 5),
-        total: session.ticket_total_price ?? null,
-        summary: payload.summary,
-        changes: payload.changes || [],
-        source: 'Player booking flow',
-      })
-    } catch (error) {
-      console.warn('Could not send booking update email.', error)
-    }
-  }
-
-  async function updateSession(session: Session) {
-    if (!canManageSession(session)) {
-      setCreateStatus(text.creatorOnlyEdit)
-      return
-    }
-
-    const participants = session.session_participants ?? []
-
-    if (!editSessionName.trim() || !editSessionDate || !editSessionTime) {
-      setCreateStatus(text.sessionRequired)
-      return
-    }
-
-    if (editSessionMaxPlayers < participants.length) {
-      setCreateStatus(text.maxPlayersBelowJoined)
-      return
-    }
-
-    setIsUpdatingSession(true)
-    setCreateStatus(text.savingSession)
-
-    const effectiveEditVisibility = session.club_id ? 'public' : editBookingType === 'ticket' || editBookingType === 'challenge' ? 'private' : editSessionVisibility
-    const inviteCode =
-      effectiveEditVisibility === 'private'
-        ? session.invite_code || generateInviteCode()
-        : null
-    const tournament = tournamentForSession(session.id)
-    const hasTournamentBracket = tournament.pools.length > 0 || tournament.matches.length > 0
-    const ticketEditDuration = editSessionDuration
-    const ticketEditArenaCount = editBookingType === 'ticket'
-      ? ticketArenaCountForPlayers(editSessionArenaCount)
-      : editSessionArenaCount
-    const ticketEditPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, ticketEditDuration, ticketEditArenaCount)
-    const sanitizedTicketTotal = Math.max(0, Math.round(Number(editTicketTotalPrice) || ticketEditPricing.totalPrice))
-
-    const { error } = await (await getSupabase())
-      .from('sessions')
-      .update({
-        name: editSessionName.trim(),
-        ...(isAdmin && editBookingType === 'ticket' && editTicketCustomerId ? { owner_id: editTicketCustomerId } : {}),
-        date: editSessionDate,
-        start_time: `${editSessionTime}:00`,
-        duration_minutes: ticketEditDuration,
-        max_players: editSessionMaxPlayers,
-        arena_count: ticketEditArenaCount,
-        game_options: editSelectedGames,
-        visibility: effectiveEditVisibility,
-        invite_code: inviteCode,
-        notes: editSessionNotes.trim() || null,
-        ...(isAdmin
-          ? {
-            booking_type: editBookingType,
-            ticket_customer_id: editBookingType === 'ticket' ? editTicketCustomerId || null : null,
-            ticket_type: editBookingType === 'ticket' ? editTicketType : null,
-            ticket_player_count: editBookingType === 'ticket' ? editSessionMaxPlayers : null,
-            ticket_total_price: editBookingType === 'ticket' ? sanitizedTicketTotal : null,
-            ticket_unit_price: editBookingType === 'ticket' ? ticketEditPricing.baseUnitPrice : null,
-            ticket_status: editBookingType === 'ticket' ? editTicketStatus : null,
-          }
-          : {}),
-        ...(session.session_type === 'tournament'
-          ? {
-            tournament_format: hasTournamentBracket ? session.tournament_format : editTournamentFormat,
-            best_of: hasTournamentBracket ? session.best_of : editTournamentBestOf,
-            rounds_per_match: editTournamentRoundsPerMatch,
-            require_payment: editTournamentRequirePayment,
-            qualification_rule: hasTournamentBracket ? session.qualification_rule : editTournamentQualificationRule,
-            custom_qualifiers: hasTournamentBracket ? session.custom_qualifiers : editTournamentCustomQualifiers,
-            enable_third_place_match: editTournamentThirdPlace,
-            first_prize: editTournamentFirstPrize.trim() || null,
-            second_prize: editTournamentSecondPrize.trim() || null,
-            third_prize: editTournamentThirdPrize.trim() || null,
-          }
-          : {}),
-      })
-      .eq('id', session.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      setIsUpdatingSession(false)
-      return
-    }
-
-    await loadSessions({ focusDate: editSessionDate })
-    void sendSessionUpdateNotification(session, {
-      action: editBookingType === 'ticket' && editTicketStatus === 'cancelled' ? 'cancelled' : 'edited',
-      summary: editBookingType === 'ticket' && editTicketStatus === 'cancelled'
-        ? 'Booking status was changed to cancelled.'
-        : 'Booking details were edited.',
-      changes: bookingUpdateChanges([
-        ['Name', session.name, editSessionName.trim()],
-        ['Date', session.date, editSessionDate],
-        ['Time', session.start_time.slice(0, 5), editSessionTime],
-        ['Duration', session.duration_minutes, ticketEditDuration],
-        ['Max players', session.max_players, editSessionMaxPlayers],
-        ['Visibility', session.visibility, effectiveEditVisibility],
-        ['Ticket status', session.ticket_status, editBookingType === 'ticket' ? editTicketStatus : session.ticket_status],
-        ['Total', session.ticket_total_price, editBookingType === 'ticket' ? sanitizedTicketTotal : session.ticket_total_price],
-      ]),
-    })
-    setCreateStatus(effectiveEditVisibility === 'private' ? `${text.privateUpdated} ${inviteCode}` : text.sessionUpdated)
-    stopEditingSession()
-  }
-
-  async function cancelSession(session: Session) {
-    if (!canManageSession(session)) {
-      setCreateStatus(text.creatorOnlyCancel)
-      return
-    }
-
-    const confirmed = window.confirm(`${text.cancelConfirmPrefix} "${session.name}"? ${text.cancelConfirmSuffix}`)
-    if (!confirmed) return
-
-    const allowed = await consumeAppRateLimit('admin_destructive', `cancel-session:${session.id}`)
-    if (!allowed) return
-
-    setBusySessionId(session.id)
-    const { error } = await (await getSupabase()).from('sessions').update({ status: 'cancelled' }).eq('id', session.id)
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusySessionId('')
-      return
-    }
-
-    await loadSessions()
-    void sendSessionUpdateNotification(session, {
-      action: 'cancelled',
-      summary: 'Booking status was changed to cancelled.',
-      changes: [{ label: 'Status', before: session.status, after: 'cancelled' }],
-    })
-    setCreateStatus(text.sessionCancelled)
-    setBusySessionId('')
-  }
-
-  async function removeParticipant(session: Session, participant: Participant) {
-    if (!canManageSession(session)) {
-      setCreateStatus(text.creatorOnlyRemove)
-      return
-    }
-
-    if (participant.profile_id === session.owner_id) {
-      setCreateStatus(text.creatorCannotRemove)
-      return
-    }
-
-    const confirmed = window.confirm(`${text.removeConfirmPrefix} ${participant.display_name || text.removeConfirmFallback} ${text.fromSession} "${session.name}"?`)
-    if (!confirmed) return
-
-    setBusySessionId(session.id)
-    const { error } = await softDeleteRecord('session_participants', participant.id, 'Removed from session')
-
-    if (error) {
-      setCreateStatus(error.message)
-      setBusySessionId('')
-      return
-    }
-
-    await loadSessions()
-    setCreateStatus(text.playerRemoved)
-    setBusySessionId('')
-  }
-
-  async function deleteMyAccount() {
-    if (!profile || !userId) return
-
-    const confirmed = window.confirm(text.deleteAccountConfirm)
-    if (!confirmed) return
-
-    setIsDeletingAccount(true)
-    setProfileStatus(text.saving)
-
-    const { error } = await softDeleteRecord('profiles', userId, 'User deleted own account')
-
-    if (error) {
-      setProfileStatus(error.message)
-      setIsDeletingAccount(false)
-      return
-    }
-
-    await (await getSupabase()).auth.signOut()
-    setUserId('')
-    setAuthEmail('')
-    setProfile(null)
-    setNewPassword('')
-    setProfileStatus(text.accountDeleted)
-    setIsDeletingAccount(false)
-    await loadSessions()
-  }
-
   function tournamentStageLabel(stage: TournamentMatch['stage']) {
     return stage.replace('_', ' ')
   }
@@ -8341,7 +4910,7 @@ function handleSessionDateChange(value: string) {
     finishTournament,
     createThirdPlaceMatch,
     claimPrize
-  } = createTournamentActions({
+  } = bindBookingTournamentActions(() => ({
     text,
     tournamentEditorEmail,
     tournamentPoolSize,
@@ -8353,14 +4922,14 @@ function handleSessionDateChange(value: string) {
     editorDisplayName: (editorProfile) => compactDisplayName(displayName(editorProfile), text.player),
     avatarFields,
     softDeleteTournamentRecords,
-    loadTournamentData,
-    loadSessions,
+    loadTournamentData: () => loadTournamentData(),
+    loadSessions: () => loadSessions(),
     logTournamentAudit,
     setCreateStatus,
     setBusyTournamentId,
     setTournamentEditorEmail,
     setTournamentEditorResults
-  })
+  }))
 
   async function shareCurrentUserStats(contextLabel = '') {
     let shareStats = playerStats
@@ -8495,507 +5064,387 @@ function handleSessionDateChange(value: string) {
   const publicCanManageSession = () => false
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
+  const { promptTicketLogin, promptTicketCreateAccount, bookTickets } = createBookingTicketsActions(() => ({
+    setProfileCountryCode,
+    setProfilePhone,
+    setProfileName,
+    setPendingGuestTicketClaim,
+    pendingGuestTicketClaim,
+    ticketConfirmation,
+    ticketDate,
+    ticketTime,
+    ticketType,
+    ticketPlayers,
+    ticketDuration,
+    ticketSpecialNote,
+    setPendingTicketAuthAction,
+    goToLogin,
+    setLoginPromptOpen,
+    updateAuthMode,
+    setActiveView,
+    setProfileStatus,
+    bookingTicketsInFlightRef,
+    profile,
+    ticketTimeOptions,
+    ticketDiscountCode,
+    showTicketStatus,
+    text,
+    validateTicketSelection,
+    guestTicketContact,
+    looseText,
+    setIsBookingTickets,
+    consumeAppRateLimit,
+    activeTicketDuration,
+    isSpecialTicketType,
+    currentTicketTotalPrice,
+    isHaDoBookingVenue,
+    setTicketConfirmation,
+    activeTicketArenaCount,
+    currentTicketUnitPrice,
+    appliedTicketLoyaltyPoints,
+    ticketDiscountQuote,
+    currentTicketPricing,
+    ticketLoyaltyDiscountAmount,
+    setProfile,
+    syncProfileEverywhere,
+    setTicketLoyaltyRedemption,
+    ticketLoyaltyRedeemValue,
+    showActionToast,
+    setTicketTime,
+    setTicketUseLoyaltyPoints,
+    setTicketLoyaltyPointsToRedeem,
+    setTicketDiscountCode,
+    setTicketDiscountQuote,
+    setTicketDiscountStatus,
+    notifyMinorBookingCreated,
+    loadSessions,
+  }))
+  const {
+    updateClubThemeColor,
+    updateClubThemeColorDraft,
+    openClubPage,
+    closeClubUnlockModal,
+    unlockClubPage,
+    handleClubTabChange,
+    handleClubSessionScopeChange,
+    handleClubBannerChange,
+    isUserClub,
+    renderClubCard,
+  } = createBookingClubPageActions(() => ({
+    clubEditThemeColor,
+    setClubEditThemeColor,
+    setClubEditThemeColorDraft,
+    clubs,
+    setClubStatus,
+    setClubMessageStatus,
+    userId,
+    setSelectedClubId,
+    promptLogin,
+    canOpenClubPage,
+    setClubUnlockTargetId,
+    setClubUnlockCode,
+    setClubUnlockStatus,
+    text,
+    setSelectedClubDate,
+    setSelectedClubTab,
+    setSelectedClubSessionScope,
+    clubUnlockTarget,
+    clubUnlockCode,
+    setUnlockedClubIds,
+    selectedClubSessionScope,
+    ensurePastSessionsLoaded,
+    setClubBannerFile,
+    setClubBannerPreview,
+    canManageClub,
+    sessions,
+    messagesForClub,
+    canSeeClubPrivateData,
+    canUseClubMessages,
+    formatClubActivityDate,
+    joinClub,
+    clubThemeStyle,
+    language,
+    openPlayerProfile,
+    avatarStyle,
+    avatarNode,
+    busyClubId,
+    removeClubMember,
+    approveClubMember,
+  }))
+
 
   const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isPhoneSetupSaving, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, phoneSetupEmail, phoneSetupRequired, phoneSetupSentTo, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, scheduleReturnReminder, sendPasswordReset, sendPhoneSetupEmail, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setPhoneSetupEmail, setPhoneSetupSentTo, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
-  const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin,  isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal,  tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
-
-  function isUserClub(club: Club) {
-    if (!userId) return false
-    if (club.owner_id === userId || canManageClub(club)) return true
-    return clubMembers(club).some((member) => member.profile_id === userId && member.status === 'approved')
-  }
-
-  function nextSessionForClub(club: Club) {
-    return sessions
-      .filter((session) => session.club_id === club.id && isUpcomingSession(session))
-      .sort((left, right) => sessionStartDate(left).getTime() - sessionStartDate(right).getTime())[0]
-  }
-
-  function latestMessageForClub(club: Club) {
-    return [...messagesForClub(club, 'public'), ...messagesForClub(club, 'admin_private')]
-      .sort((left, right) => {
-        const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0
-        const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0
-        return rightTime - leftTime
-      })[0]
-  }
-
-  function renderClubCard(club: Club) {
-    const members = clubMembers(club)
-    const approvedMembers = members.filter((member) => member.status === 'approved')
-    const pendingMembers = members.filter((member) => member.status === 'pending')
-    const membership = members.find((member) => member.profile_id === userId)
-    const canManage = canManageClub(club)
-    const canOpenPage = canOpenClubPage(club)
-    const canAskPrivateCode = Boolean(userId && club.visibility === 'private' && !canOpenPage)
-    const canActivateClubCard = !userId || canOpenPage || canAskPrivateCode
-    const canSeeMembers = canSeeClubPrivateData(club)
-    const canUseMessages = canOpenPage && canUseClubMessages(club)
-    const visibleApprovedMembers = approvedMembers.slice(0, 6)
-    const extraApprovedMemberCount = Math.max(0, approvedMembers.length - visibleApprovedMembers.length)
-    const nextClubSession = nextSessionForClub(club)
-    const latestClubMessage = latestMessageForClub(club)
-    const latestClubMessageDate = formatClubActivityDate(latestClubMessage?.created_at)
-    const clubPrimaryActionText = !userId
-      ? (club.visibility === 'private' ? text.requestJoin : text.viewClub)
-      : (!membership && !canManage ? (club.visibility === 'private' ? text.requestJoin : text.joinClub) : text.viewClub)
-    const canShowPrimaryAction = !membership || canManage || canOpenPage || !userId
-
-    function handleClubPrimaryAction(event: MouseEvent<HTMLButtonElement>) {
-      event.stopPropagation()
-      if (!userId || membership || canManage || canOpenPage) {
-        openClubPage(club.id)
-        return
-      }
-      joinClub(club)
-    }
-
-    return (
-      <article
-        className={canActivateClubCard ? 'club-card clickable' : 'club-card'}
-        key={club.id}
-        onClick={canActivateClubCard ? () => openClubPage(club.id) : undefined}
-        onKeyDown={canActivateClubCard ? (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            openClubPage(club.id)
-          }
-        } : undefined}
-        style={clubThemeStyle(club)}
-        role={canActivateClubCard ? 'button' : undefined}
-        tabIndex={canActivateClubCard ? 0 : undefined}
-      >
-        <div className={club.banner_url ? 'club-card-cover has-banner' : 'club-card-cover'}>
-          {club.banner_url && <NextImage src={club.banner_url} alt="" fill loading="eager" sizes="(max-width: 720px) 100vw, 720px" />}
-          <div className="club-card-cover-copy">
-            <span className={club.visibility === 'private' ? 'pill private' : 'pill ok'}>
-              {club.visibility === 'private' ? text.private : text.public}
-            </span>
-            {membership?.status === 'pending' && <span className="pill">{text.pending}</span>}
-          </div>
-        </div>
-
-        <div className="club-card-main">
-          <div>
-            <h3>{club.name}</h3>
-            {club.motto && <p className="club-card-motto">{club.motto}</p>}
-          </div>
-          <div className="row-meta club-card-meta">
-            <span>{clubMemberCount(club)} {text.members}</span>
-            {canManage && pendingMembers.length > 0 && <span className="pill">{pendingMembers.length} {text.pending}</span>}
-          </div>
-        </div>
-
-        {club.description && <p className="notes club-card-description">{club.description}</p>}
-
-        <div className="club-card-activity">
-          <button
-            className="club-card-signal"
-            onClick={(event) => {
-              event.stopPropagation()
-              openClubPage(club.id, 'sessions')
-            }}
-            type="button"
-          >
-            <CalendarDays aria-hidden="true" size={17} />
-            <span>
-              <strong>{text.clubNextSession}</strong>
-              {nextClubSession ? `${formatShortDate(nextClubSession.date, language)} · ${nextClubSession.start_time.slice(0, 5)} · ${nextClubSession.name}` : text.noUpcomingClubSessions}
-            </span>
-          </button>
-          {canUseMessages && (
-            <button
-              className="club-card-signal"
-              onClick={(event) => {
-                event.stopPropagation()
-                openClubPage(club.id, 'messages')
-              }}
-              type="button"
-            >
-              <MessageSquare aria-hidden="true" size={17} />
-              <span>
-                <strong>{text.clubLatestMessage}</strong>
-                {latestClubMessage ? `${latestClubMessage.author_display_name || text.player}${latestClubMessageDate ? ` · ${latestClubMessageDate}` : ''}` : text.noClubMessages}
-              </span>
-            </button>
-          )}
-          {canManage && pendingMembers.length > 0 && (
-            <button
-              className="club-card-signal attention"
-              onClick={(event) => {
-                event.stopPropagation()
-                openClubPage(club.id, 'members')
-              }}
-              type="button"
-            >
-              <UserCheck aria-hidden="true" size={17} />
-              <span>
-                <strong>{text.clubPendingRequests}</strong>
-                {pendingMembers.length} {text.pending}
-              </span>
-            </button>
-          )}
-        </div>
-
-        <div className="club-card-footer">
-          {canSeeMembers ? (
-            <div className="players club-card-players">
-              {visibleApprovedMembers.map((member) => (
-                <div className="player" key={member.id}>
-                  <button
-                    aria-label={playerCardLabel(member.display_name, text.player)}
-                    className="player-avatar player-avatar-button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      openPlayerProfile(member.profile_id)
-                    }}
-                    style={avatarStyle(member)}
-                    type="button"
-                  >
-                    {avatarNode(member, 'P')}
-                  </button>
-                  <span>{compactDisplayName(member.display_name, text.player)}</span>
-                  {canManage && member.profile_id !== club.owner_id && (
-                    <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
-                      event.stopPropagation()
-                      removeClubMember(club, member)
-                    }} type="button">
-                      {text.remove}
-                    </button>
-                  )}
-                </div>
-              ))}
-              {extraApprovedMemberCount > 0 && <span className="club-card-more-members">+{extraApprovedMemberCount}</span>}
-            </div>
-          ) : (
-            <span className="club-private-note">
-              <Lock aria-hidden="true" size={15} />
-              {text.hiddenMembers}
-            </span>
-          )}
-
-          <div className="club-card-actions">
-            {canUseMessages && (
-              <button
-                className="secondary small-button"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  openClubPage(club.id, 'messages')
-                }}
-                type="button"
-              >
-                {text.clubMessages}
-              </button>
-            )}
-            {canShowPrimaryAction && (
-              <button
-                className={busyClubId === club.id ? 'primary loading club-card-primary-action' : 'primary club-card-primary-action'}
-                disabled={busyClubId === club.id}
-                onClick={handleClubPrimaryAction}
-                type="button"
-              >
-                {clubPrimaryActionText}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {canManage && pendingMembers.length > 0 && (
-          <div className="pending-list">
-            {pendingMembers.map((member) => (
-              <div className="pending-member" key={member.id}>
-                <span>{compactDisplayName(member.display_name, text.player)}</span>
-                <div className="mini-session-actions">
-                  <button className="secondary small-button" disabled={busyClubId === club.id} onClick={(event) => {
-                    event.stopPropagation()
-                    approveClubMember(member)
-                  }} type="button">
-                    {text.approve}
-                  </button>
-                  <button className="danger small-button" disabled={busyClubId === club.id} onClick={(event) => {
-                    event.stopPropagation()
-                    removeClubMember(club, member)
-                  }} type="button">
-                    {text.remove}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </article>
-    )
-  }
+  const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin, isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal, tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 
   const appMain = (
-      <main lang={language}>
-        {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-          <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
-        )}
+    <main lang={language}>
+      {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
+        <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
+      )}
 
-        {activeView === 'sessions' && (
-          isHaDoBookingVenue
-            ? <BookingSessionsPanel context={sessionsPanelContext} />
-            : <BookingVenueComingSoon text={text} />
-        )}
+      {activeView === 'sessions' && (
+        isHaDoBookingVenue
+          ? <BookingSessionsPanel context={sessionsPanelContext} />
+          : <BookingVenueComingSoon text={text} />
+      )}
 
-        {activeView === 'leaderboard' && (
-          <>
-            {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <AppLoadingState className="section leaderboard-section" />}
-            {leaderboardStatus && leaderboardPlayerStats.length === 0 && <p className="notice">{leaderboardStatus}</p>}
-            <LocalErrorBoundary fallback={<p className="notice">{text.noLeaderboardPlayers}</p>} resetKey={`leaderboard-${language}-${leaderboardPlayerStats.length}-${clubs.length}`}>
-              <LeaderboardPanel
-                avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-                  avatar_color: player.avatarColor,
-                  avatar_text_color: player.avatarTextColor,
-                })}
-                canBypassPrivateClubPins={isAdmin}
-                clubs={clubs}
-                currentUserRankPlayer={currentUserRankPlayer}
-                hasMorePlayers={hasMoreLeaderboardPlayers}
-                initialCriterion={leaderboardQueryRef.current.criterion}
-                initialGameId={leaderboardQueryRef.current.gameId}
-                isCurrentUserStatsShared={currentUserStatsShared}
-                isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
-                onLeaderboardClubChange={handleLeaderboardClubChange}
-                onLeaderboardClubFilterOpen={ensureClubsLoaded}
-                onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
-                onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
-                onLeaderboardGameChange={handleLeaderboardGameChange}
-                onLeaderboardSearchChange={handleLeaderboardSearchChange}
-                onLoadMorePlayers={loadMoreLeaderboardPlayers}
-                onShareCurrentUserStats={() => shareCurrentUserStats()}
-                onOpenPlayerProfile={openPlayerProfile}
-                players={leaderboardPlayerStats}
-                renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-                  avatar_url: player.avatarUrl,
-                  avatar_emoji: player.avatarEmoji,
-                  avatar_initials: player.avatarInitials,
-                  avatar_color: player.avatarColor,
-                  avatar_text_color: player.avatarTextColor,
-                  display_name: player.displayName,
-                }, 'P')}
-                serverFiltered
-                showClubFilter
-                text={text}
-                useServerRanking
-                userId={userId}
-              />
-            </LocalErrorBoundary>
-          </>
-        )}
+      {activeView === 'leaderboard' && (
+        <>
+          {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <AppLoadingState className="section leaderboard-section" />}
+          {leaderboardStatus && leaderboardPlayerStats.length === 0 && <p className="notice">{leaderboardStatus}</p>}
+          <LocalErrorBoundary fallback={<p className="notice">{text.noLeaderboardPlayers}</p>} resetKey={`leaderboard-${language}-${leaderboardPlayerStats.length}-${clubs.length}`}>
+            <LeaderboardPanel
+              avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
+                avatar_color: player.avatarColor,
+                avatar_text_color: player.avatarTextColor,
+              })}
+              canBypassPrivateClubPins={isAdmin}
+              clubs={clubs}
+              currentUserRankPlayer={currentUserRankPlayer}
+              hasMorePlayers={hasMoreLeaderboardPlayers}
+              initialCriterion={leaderboardView.query.criterion}
+              initialGameId={leaderboardView.query.gameId}
+              isCurrentUserStatsShared={currentUserStatsShared}
+              isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
+              onLeaderboardClubChange={handleLeaderboardClubChange}
+              onLeaderboardClubFilterOpen={ensureClubsLoaded}
+              onLeaderboardClubPinUnlock={handleLeaderboardClubPinUnlock}
+              onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+              onLeaderboardGameChange={handleLeaderboardGameChange}
+              onLeaderboardSearchChange={handleLeaderboardSearchChange}
+              onLoadMorePlayers={loadMoreLeaderboardPlayers}
+              onShareCurrentUserStats={() => shareCurrentUserStats()}
+              onOpenPlayerProfile={openPlayerProfile}
+              players={leaderboardPlayerStats}
+              renderAvatar={(player: LeaderboardPlayer) => avatarNode({
+                avatar_url: player.avatarUrl,
+                avatar_emoji: player.avatarEmoji,
+                avatar_initials: player.avatarInitials,
+                avatar_color: player.avatarColor,
+                avatar_text_color: player.avatarTextColor,
+                display_name: player.displayName,
+              }, 'P')}
+              serverFiltered
+              showClubFilter
+              text={text}
+              useServerRanking
+              userId={userId}
+            />
+          </LocalErrorBoundary>
+        </>
+      )}
 
-        {activeView === 'clubs' && (
-          <ClubsView
-            clubDescription={clubDescription}
-            clubListCount={filteredClubs.length}
-            clubName={clubName}
-            clubSearch={clubSearch}
-            clubSearchShellRef={clubSearchShellRef}
-            clubStatus={clubStatus}
-            clubVisibility={clubVisibility}
-            clubVisibilityFilter={clubVisibilityFilter}
-            isClubSearchOpen={isClubSearchOpen}
-            isCreatingClub={isCreatingClub}
+      {activeView === 'clubs' && (
+        <ClubsView
+          clubDescription={clubDescription}
+          clubListCount={filteredClubs.length}
+          clubName={clubName}
+          clubSearch={clubSearch}
+          clubSearchShellRef={clubSearchShellRef}
+          clubStatus={clubStatus}
+          clubVisibility={clubVisibility}
+          clubVisibilityFilter={clubVisibilityFilter}
+          isClubSearchOpen={isClubSearchOpen}
+          isCreatingClub={isCreatingClub}
+          isLoggedIn={Boolean(profile)}
+          onClubDescriptionChange={setClubDescription}
+          onClubNameChange={setClubName}
+          onClubSearchChange={setClubSearch}
+          onClubSearchOpenChange={setIsClubSearchOpen}
+          onClubVisibilityFilterChange={setClubVisibilityFilter}
+          onClubVisibilityChange={setClubVisibility}
+          onCreateClub={createClub}
+          onPromptLogin={promptLogin}
+          text={text}
+        >
+          {userId ? (() => {
+            const myClubs = filteredClubs.filter(isUserClub)
+            const discoverClubs = filteredClubs.filter((club) => !isUserClub(club))
+            return (
+              <>
+                <div className="club-list-group">
+                  <div className="club-list-group-head">
+                    <h3>{text.myClubs}</h3>
+                    <span>{myClubs.length}</span>
+                  </div>
+                  {myClubs.length > 0 ? myClubs.map(renderClubCard) : <p className="notice">{text.noMyClubs}</p>}
+                </div>
+
+                <div className="club-list-group">
+                  <div className="club-list-group-head">
+                    <h3>{text.discoverClubs}</h3>
+                    <span>{discoverClubs.length}</span>
+                  </div>
+                  {discoverClubs.length > 0 ? discoverClubs.map(renderClubCard) : <p className="notice">{text.noDiscoverClubs}</p>}
+                </div>
+              </>
+            )
+          })() : filteredClubs.map(renderClubCard)}
+        </ClubsView>
+      )}
+
+      {activeView === 'staff' && (
+        isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessStaffConsole ? (
+          sharedKioskAccount && kioskOperator ? (
+            <StaffConsole
+              authEmail=""
+              key={`staff-console-${kioskOperator.profileId}`}
+              kioskOperator={kioskOperator}
+              language={language}
+              mode="staff"
+              onKioskLock={kioskLock || undefined}
+              profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
+              onOpenPlayerProfile={openStaffPlayerProfile}
+              onOpenSessionCalendar={openStaffCalendar}
+              initialBooking={calendarBookingDraft}
+              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
+            />
+          ) : (
+            <StaffConsole
+              authEmail={authEmail}
+              key="staff-console"
+              language={language}
+              mode="staff"
+              profile={profile}
+              onOpenPlayerProfile={openStaffPlayerProfile}
+              onOpenSessionCalendar={openStaffCalendar}
+              initialBooking={calendarBookingDraft}
+              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
+            />
+          )
+        ) : (
+          <section className="section staff-console">
+            <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
+            <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
+          </section>
+        )
+      )}
+
+      {activeView === 'hr' && (
+        isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessHrConsole ? (
+          sharedKioskAccount && kioskOperator ? (
+            <StaffConsole
+              authEmail=""
+              key={`hr-console-${kioskOperator.profileId}`}
+              kioskOperator={kioskOperator}
+              language={language}
+              mode="hr"
+              onKioskLock={kioskLock || undefined}
+              profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
+              onOpenPlayerProfile={openStaffPlayerProfile}
+              onOpenSessionCalendar={openStaffCalendar}
+              initialBooking={calendarBookingDraft}
+              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
+            />
+          ) : (
+            <StaffConsole
+              authEmail={authEmail}
+              key="hr-console"
+              language={language}
+              mode="hr"
+              profile={profile}
+              onOpenPlayerProfile={openStaffPlayerProfile}
+              onOpenSessionCalendar={openStaffCalendar}
+              initialBooking={calendarBookingDraft}
+              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
+            />
+          )
+        ) : (
+          <section className="section staff-console">
+            <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
+            <p className="notice">{language === 'vi' ? 'Cần quyền truy cập HR.' : 'HR access required.'}</p>
+          </section>
+        )
+      )}
+
+      {activeView === 'tickets' && (
+        <div className={isHaDoBookingVenue ? 'ticket-booking-layout' : 'ticket-booking-layout cafe'}>
+          <TicketBookingView
+            activeTicketDuration={activeTicketDuration}
+            activeTicketArenaCount={activeTicketArenaCount}
+            currentTicketPricing={currentTicketPricing}
+            currentTicketTotalPrice={currentTicketTotalPrice}
+            currentTicketUnitPrice={currentTicketUnitPrice}
+            formatShortDate={formatShortDate}
+            formatVnd={formatVnd}
+            gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
+            guestTicketContact={guestTicketContact}
+            isBookingTickets={isBookingTickets}
+            isCheckingTicketDiscount={isCheckingTicketDiscount}
+            isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
-            onClubDescriptionChange={setClubDescription}
-            onClubNameChange={setClubName}
-            onClubSearchChange={setClubSearch}
-            onClubSearchOpenChange={setIsClubSearchOpen}
-            onClubVisibilityFilterChange={setClubVisibilityFilter}
-            onClubVisibilityChange={setClubVisibility}
-            onCreateClub={createClub}
-            onPromptLogin={promptLogin}
+            requiresZaloConfirmation={!isHaDoBookingVenue}
+            singleArenaOnly={!isHaDoBookingVenue}
+            estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
+            estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
+            loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
+            loyaltyPointsBalance={ticketLoyaltyBalance}
+            loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}
+            loyaltyRedeemValue={ticketLoyaltyRedeemValue}
+            maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
+            language={language}
+            onBookTickets={bookTickets}
+            onGuestTicketContactChange={setGuestTicketContact}
+            onPrepareGuestTicketAction={prepareGuestTicketAction}
+            onPromptCreateAccount={promptTicketCreateAccount}
+            onPromptLogin={promptTicketLogin}
+            onValidateTicketSelection={validateTicketSelection}
+            onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
+            onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
+            onTicketDateChange={(value) => {
+              setTicketDate(value)
+              setTicketTime('')
+              setTicketConfirmation(null)
+              clearTicketStatus()
+            }}
+            onTicketDurationChange={handleTicketDurationChange}
+            onTicketArenaCountChange={handleTicketArenaCountChange}
+            onTicketPlayersChange={handleTicketPlayersChange}
+            onTicketTimeChange={(value) => {
+              setTicketTime(value)
+              setTicketConfirmation(null)
+              clearTicketStatus()
+            }}
+            onTicketTypeChange={handleTicketTypeChange}
+            onTicketUseLoyaltyPointsChange={handleTicketUseLoyaltyPointsChange}
+            tariffTrigger={renderTariffTrigger('ticket-tariff-link')}
+            text={looseText}
+            ticketConfirmation={ticketConfirmation}
+            ticketDate={ticketDate}
+            ticketDiscountAmount={activeTicketDiscountAmount}
+            ticketDiscountCode={ticketDiscountCode}
+            ticketDiscountSource={activeTicketDiscountSource}
+            ticketDiscountStatus={ticketDiscountStatus}
+            ticketDurationOptions={ticketDurationOptions}
+            ticketPriceBlockMinutes={activeTicketPriceBlockMinutes}
+            ticketPlayerOptions={ticketPlayerOptions}
+            ticketPlayers={ticketPlayers}
+            ticketServices={ticketServices}
+            ticketStatus={ticketStatus}
+            ticketStatusVariant={ticketStatusVariant}
+            ticketSpecialNote={ticketSpecialNote}
+            ticketTime={ticketTime}
+            ticketTimeOptions={ticketTimeOptions}
+            ticketType={ticketType}
+            ticketTypeDescription={ticketTypeDescription}
+            ticketTypeLabel={ticketTypeLabel}
+            ticketUnitFormulaText={ticketUnitFormulaText}
+            useLoyaltyPoints={ticketUseLoyaltyPoints}
+            onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
+          />
+          {!isHaDoBookingVenue && <CafeSoftOpeningBookingNotice text={text} />}
+        </div>
+      )}
+
+      {activeView === 'create' && (
+        isHaDoBookingVenue || createSessionMode === 'calendar' ? (
+          <CreateSessionView
+            createStatus={createStatus}
+            mode={createSessionMode}
+            onModeChange={(mode) => { if (mode === 'form' && !isHaDoBookingVenue) { setActiveView('tickets'); return }; handleCreateSessionModeChange(mode) }}
             text={text}
           >
-            {userId ? (() => {
-              const myClubs = filteredClubs.filter(isUserClub)
-              const discoverClubs = filteredClubs.filter((club) => !isUserClub(club))
-              return (
-                <>
-                  <div className="club-list-group">
-                    <div className="club-list-group-head">
-                      <h3>{text.myClubs}</h3>
-                      <span>{myClubs.length}</span>
-                    </div>
-                    {myClubs.length > 0 ? myClubs.map(renderClubCard) : <p className="notice">{text.noMyClubs}</p>}
-                  </div>
-
-                  <div className="club-list-group">
-                    <div className="club-list-group-head">
-                      <h3>{text.discoverClubs}</h3>
-                      <span>{discoverClubs.length}</span>
-                    </div>
-                    {discoverClubs.length > 0 ? discoverClubs.map(renderClubCard) : <p className="notice">{text.noDiscoverClubs}</p>}
-                  </div>
-                </>
-              )
-            })() : filteredClubs.map(renderClubCard)}
-          </ClubsView>
-        )}
-
-        {activeView === 'staff' && (
-          isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessStaffConsole ? (
-            sharedKioskAccount && kioskOperator ? (
-              <StaffConsole
-                authEmail=""
-                key={`staff-console-${kioskOperator.profileId}`}
-                kioskOperator={kioskOperator}
-                language={language}
-                mode="staff"
-                onKioskLock={kioskLock || undefined}
-                profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
-                onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openStaffCalendar}
-                initialBooking={calendarBookingDraft}
-                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-              />
-            ) : (
-              <StaffConsole
-                authEmail={authEmail}
-                key="staff-console"
-                language={language}
-                mode="staff"
-                profile={profile}
-                onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openStaffCalendar}
-                initialBooking={calendarBookingDraft}
-                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-              />
-            )
-          ) : (
-            <section className="section staff-console">
-              <h2>{language === 'vi' ? 'Bảng nhân viên' : 'Staff Console'}</h2>
-              <p className="notice">{language === 'vi' ? 'Cần quyền nhân viên.' : 'Staff access required.'}</p>
-            </section>
-          )
-        )}
-
-        {activeView === 'hr' && (
-          isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessHrConsole ? (
-            sharedKioskAccount && kioskOperator ? (
-              <StaffConsole
-                authEmail=""
-                key={`hr-console-${kioskOperator.profileId}`}
-                kioskOperator={kioskOperator}
-                language={language}
-                mode="hr"
-                onKioskLock={kioskLock || undefined}
-                profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
-                onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openStaffCalendar}
-                initialBooking={calendarBookingDraft}
-                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-              />
-            ) : (
-              <StaffConsole
-                authEmail={authEmail}
-                key="hr-console"
-                language={language}
-                mode="hr"
-                profile={profile}
-                onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openStaffCalendar}
-                initialBooking={calendarBookingDraft}
-                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-              />
-            )
-          ) : (
-            <section className="section staff-console">
-              <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
-              <p className="notice">{language === 'vi' ? 'Cần quyền truy cập HR.' : 'HR access required.'}</p>
-            </section>
-          )
-        )}
-
-        {activeView === 'tickets' && (
-          <div className={isHaDoBookingVenue ? 'ticket-booking-layout' : 'ticket-booking-layout cafe'}>
-            <TicketBookingView
-              activeTicketDuration={activeTicketDuration}
-              activeTicketArenaCount={activeTicketArenaCount}
-              currentTicketPricing={currentTicketPricing}
-              currentTicketTotalPrice={currentTicketTotalPrice}
-              currentTicketUnitPrice={currentTicketUnitPrice}
-              formatShortDate={formatShortDate}
-              formatVnd={formatVnd}
-              gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')}
-              guestTicketContact={guestTicketContact}
-              isBookingTickets={isBookingTickets}
-              isCheckingTicketDiscount={isCheckingTicketDiscount}
-              isLoadingTicketLoyalty={isLoadingTicketLoyalty}
-              isLoggedIn={Boolean(profile)}
-              requiresZaloConfirmation={!isHaDoBookingVenue}
-              singleArenaOnly={!isHaDoBookingVenue}
-              estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
-              estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}
-              loyaltyDiscountAmount={ticketLoyaltyDiscountAmount}
-              loyaltyPointsBalance={ticketLoyaltyBalance}
-              loyaltyPointsToRedeem={ticketLoyaltyPointsToRedeem}
-              loyaltyRedeemValue={ticketLoyaltyRedeemValue}
-              maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
-              language={language}
-              onBookTickets={bookTickets}
-              onGuestTicketContactChange={setGuestTicketContact}
-              onPrepareGuestTicketAction={prepareGuestTicketAction}
-              onPromptCreateAccount={promptTicketCreateAccount}
-              onPromptLogin={promptTicketLogin}
-              onValidateTicketSelection={validateTicketSelection}
-              onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
-              onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
-              onTicketDateChange={(value) => {
-                setTicketDate(value)
-                setTicketTime('')
-                setTicketConfirmation(null)
-                clearTicketStatus()
-              }}
-              onTicketDurationChange={handleTicketDurationChange}
-              onTicketArenaCountChange={handleTicketArenaCountChange}
-              onTicketPlayersChange={handleTicketPlayersChange}
-              onTicketTimeChange={(value) => {
-                setTicketTime(value)
-                setTicketConfirmation(null)
-                clearTicketStatus()
-              }}
-              onTicketTypeChange={handleTicketTypeChange}
-              onTicketUseLoyaltyPointsChange={handleTicketUseLoyaltyPointsChange}
-              tariffTrigger={renderTariffTrigger('ticket-tariff-link')}
-              text={looseText}
-              ticketConfirmation={ticketConfirmation}
-              ticketDate={ticketDate}
-              ticketDiscountAmount={activeTicketDiscountAmount}
-              ticketDiscountCode={ticketDiscountCode}
-              ticketDiscountSource={activeTicketDiscountSource}
-              ticketDiscountStatus={ticketDiscountStatus}
-              ticketDurationOptions={ticketDurationOptions}
-              ticketPriceBlockMinutes={activeTicketPriceBlockMinutes}
-              ticketPlayerOptions={ticketPlayerOptions}
-              ticketPlayers={ticketPlayers}
-              ticketServices={ticketServices}
-              ticketStatus={ticketStatus}
-              ticketStatusVariant={ticketStatusVariant}
-              ticketSpecialNote={ticketSpecialNote}
-              ticketTime={ticketTime}
-              ticketTimeOptions={ticketTimeOptions}
-              ticketType={ticketType}
-              ticketTypeDescription={ticketTypeDescription}
-              ticketTypeLabel={ticketTypeLabel}
-              ticketUnitFormulaText={ticketUnitFormulaText}
-              useLoyaltyPoints={ticketUseLoyaltyPoints}
-              onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
-            />
-            {!isHaDoBookingVenue && <CafeSoftOpeningBookingNotice text={text} />}
-          </div>
-        )}
-
-        {activeView === 'create' && (
-          isHaDoBookingVenue || createSessionMode === 'calendar' ? (
-            <CreateSessionView
-              createStatus={createStatus}
-              mode={createSessionMode}
-              onModeChange={(mode) => { if (mode === 'form' && !isHaDoBookingVenue) { setActiveView('tickets'); return }; handleCreateSessionModeChange(mode) }}
-              text={text}
-            >
             {createSessionMode === 'calendar' ? (
               <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-toolbar">
@@ -9123,234 +5572,234 @@ function handleSessionDateChange(value: string) {
               </div>
             ) : (
               <div className="create-session-form" id="create-session-form">
-            <div className="form-grid">
-              <div className="full">
-                <label htmlFor="create-sessionName">{text.sessionName} <span className="required">*</span></label>
-                <input id="create-sessionName" data-testid="create-session-name" placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
-              </div>
-              <div className="full session-mode-row">
-                <div>
-                  <label>{text.sessionType}</label>
-                  <div className="segmented session-type-toggle" role="group" aria-label={text.sessionType}>
-                    <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
-                      {text.normalGame}
-                    </button>
-                    <button className={sessionType === 'tournament' ? 'active' : ''} onClick={() => setSessionType('tournament')} type="button">
-                      {text.tournament}
-                    </button>
+                <div className="form-grid">
+                  <div className="full">
+                    <label htmlFor="create-sessionName">{text.sessionName} <span className="required">*</span></label>
+                    <input id="create-sessionName" data-testid="create-session-name" placeholder={text.fridayPlaceholder} value={sessionName} onChange={(event) => setSessionName(event.target.value)} />
                   </div>
-                </div>
-                {!sessionClubId && (
-                  <div>
-                    <label>{text.visibility}</label>
-                    <div className="segmented visibility-toggle" role="group" aria-label={text.visibility}>
-                      <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
-                        {text.public}
-                      </button>
-                      <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
-                        {text.private}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {sessionType === 'tournament' && (
-                <div className="full tournament-create-box tournament-settings-box">
-                  <div className="tournament-settings-head">
-                    <strong>{text.tournamentRules}</strong>
-                    <span>{text.tournamentRulesHint}</span>
-                  </div>
-                  <div className="form-grid compact-form-grid">
+                  <div className="full session-mode-row">
                     <div>
-                      <label htmlFor="create-tournamentFormat">{text.tournamentFormat}</label>
-                      <select id="create-tournamentFormat" value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
-                        <option value="pool_only">{text.formatPoolOnly}</option>
-                        <option value="pool_to_semifinal">{text.formatPoolSemifinal}</option>
-                        <option value="pool_to_final">{text.formatPoolFinal}</option>
-                        <option value="single_elimination">{text.formatSingleElimination}</option>
-                        <option value="double_elimination">{text.formatDoubleElimination}</option>
-                        <option value="leaderboard">{text.formatLeaderboard}</option>
-                      </select>
+                      <label>{text.sessionType}</label>
+                      <div className="segmented session-type-toggle" role="group" aria-label={text.sessionType}>
+                        <button className={sessionType === 'game' ? 'active' : ''} onClick={() => setSessionType('game')} type="button">
+                          {text.normalGame}
+                        </button>
+                        <button className={sessionType === 'tournament' ? 'active' : ''} onClick={() => setSessionType('tournament')} type="button">
+                          {text.tournament}
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label htmlFor="create-matchSeries">{text.matchSeries}</label>
-                      <select id="create-matchSeries" value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
-                        <option value={1}>BO1</option>
-                        <option value={3}>BO3</option>
-                        <option value={5}>BO5</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="create-roundsPerMatch">{text.roundsPerMatch}</label>
-                      <select id="create-roundsPerMatch" value={tournamentRoundsPerMatch} onChange={(event) => setTournamentRoundsPerMatch(Number(event.target.value))}>
-                        {[1, 2, 3, 4, 5].map((roundCount) => (
-                          <option key={roundCount} value={roundCount}>{roundCount}</option>
-                        ))}
-                      </select>
-                      <p className="field-help">{text.roundsPerMatchHint}</p>
-                    </div>
-                    <div>
-                      <label htmlFor="create-qualification">{text.qualification}</label>
-                      <select id="create-qualification" value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
-                        <option value="top_1">{text.topOnePerPool}</option>
-                        <option value="top_2">{text.topTwoPerPool}</option>
-                        <option value="top_4">{text.topFourPerPool}</option>
-                        <option value="custom">{text.custom}</option>
-                      </select>
-                    </div>
-                    {tournamentQualificationRule === 'custom' && (
+                    {!sessionClubId && (
                       <div>
-                        <label htmlFor="create-customQualifiers">{text.customQualifiers}</label>
-                        <input id="create-customQualifiers" inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
+                        <label>{text.visibility}</label>
+                        <div className="segmented visibility-toggle" role="group" aria-label={text.visibility}>
+                          <button className={sessionVisibility === 'public' ? 'active' : ''} onClick={() => setSessionVisibility('public')} type="button">
+                            {text.public}
+                          </button>
+                          <button className={sessionVisibility === 'private' ? 'active' : ''} onClick={() => setSessionVisibility('private')} type="button">
+                            {text.private}
+                          </button>
+                        </div>
                       </div>
                     )}
-                    <label className="toggle-line">
-                      <input checked={tournamentRequirePayment} onChange={(event) => setTournamentRequirePayment(event.target.checked)} type="checkbox" />
-                      <span>{text.requirePaymentForBracket}</span>
-                    </label>
-                    <label className="toggle-line">
-                      <input checked={tournamentThirdPlace} onChange={(event) => setTournamentThirdPlace(event.target.checked)} type="checkbox" />
-                      <span>{text.createBronzeMatch}</span>
-                    </label>
+                  </div>
+                  {sessionType === 'tournament' && (
+                    <div className="full tournament-create-box tournament-settings-box">
+                      <div className="tournament-settings-head">
+                        <strong>{text.tournamentRules}</strong>
+                        <span>{text.tournamentRulesHint}</span>
+                      </div>
+                      <div className="form-grid compact-form-grid">
+                        <div>
+                          <label htmlFor="create-tournamentFormat">{text.tournamentFormat}</label>
+                          <select id="create-tournamentFormat" value={tournamentFormat} onChange={(event) => setTournamentFormat(event.target.value as TournamentFormat)}>
+                            <option value="pool_only">{text.formatPoolOnly}</option>
+                            <option value="pool_to_semifinal">{text.formatPoolSemifinal}</option>
+                            <option value="pool_to_final">{text.formatPoolFinal}</option>
+                            <option value="single_elimination">{text.formatSingleElimination}</option>
+                            <option value="double_elimination">{text.formatDoubleElimination}</option>
+                            <option value="leaderboard">{text.formatLeaderboard}</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="create-matchSeries">{text.matchSeries}</label>
+                          <select id="create-matchSeries" value={tournamentBestOf} onChange={(event) => setTournamentBestOf(Number(event.target.value) as 1 | 3 | 5)}>
+                            <option value={1}>BO1</option>
+                            <option value={3}>BO3</option>
+                            <option value={5}>BO5</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="create-roundsPerMatch">{text.roundsPerMatch}</label>
+                          <select id="create-roundsPerMatch" value={tournamentRoundsPerMatch} onChange={(event) => setTournamentRoundsPerMatch(Number(event.target.value))}>
+                            {[1, 2, 3, 4, 5].map((roundCount) => (
+                              <option key={roundCount} value={roundCount}>{roundCount}</option>
+                            ))}
+                          </select>
+                          <p className="field-help">{text.roundsPerMatchHint}</p>
+                        </div>
+                        <div>
+                          <label htmlFor="create-qualification">{text.qualification}</label>
+                          <select id="create-qualification" value={tournamentQualificationRule} onChange={(event) => setTournamentQualificationRule(event.target.value as QualificationRule)}>
+                            <option value="top_1">{text.topOnePerPool}</option>
+                            <option value="top_2">{text.topTwoPerPool}</option>
+                            <option value="top_4">{text.topFourPerPool}</option>
+                            <option value="custom">{text.custom}</option>
+                          </select>
+                        </div>
+                        {tournamentQualificationRule === 'custom' && (
+                          <div>
+                            <label htmlFor="create-customQualifiers">{text.customQualifiers}</label>
+                            <input id="create-customQualifiers" inputMode="numeric" min={1} max={16} type="number" value={tournamentCustomQualifiers} onChange={(event) => setTournamentCustomQualifiers(Number(event.target.value) || 1)} />
+                          </div>
+                        )}
+                        <label className="toggle-line">
+                          <input checked={tournamentRequirePayment} onChange={(event) => setTournamentRequirePayment(event.target.checked)} type="checkbox" />
+                          <span>{text.requirePaymentForBracket}</span>
+                        </label>
+                        <label className="toggle-line">
+                          <input checked={tournamentThirdPlace} onChange={(event) => setTournamentThirdPlace(event.target.checked)} type="checkbox" />
+                          <span>{text.createBronzeMatch}</span>
+                        </label>
+                        <div>
+                          <label htmlFor="create-firstPrize">{text.firstPrize}</label>
+                          <input id="create-firstPrize" value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
+                        </div>
+                        <div>
+                          <label htmlFor="create-secondPrize">{text.secondPrize}</label>
+                          <input id="create-secondPrize" value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
+                        </div>
+                        <div>
+                          <label htmlFor="create-thirdPrize">{text.thirdPrize}</label>
+                          <input id="create-thirdPrize" value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="full">
+                    <label htmlFor="create-clubOnly">{text.clubOnly}</label>
+                    <select id="create-clubOnly" value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
+                      <option value="">{text.noClub}</option>
+                      {sessionClubOptions.map((club) => (
+                        <option key={club.id} value={club.id}>
+                          {club.name}
+                        </option>
+                      ))}
+                    </select>
+                    {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
+                  </div>
+                  <div className="full session-timing-row">
                     <div>
-                      <label htmlFor="create-firstPrize">{text.firstPrize}</label>
-                      <input id="create-firstPrize" value={tournamentFirstPrize} onChange={(event) => setTournamentFirstPrize(event.target.value)} placeholder="1,000,000 VND" />
+                      <label>{text.date} <span className="required">*</span></label>
+                      <ShortDateInput
+                        ariaLabel={text.date}
+                        language={language}
+                        onChange={handleSessionDateChange}
+                        placeholder={text.chooseDate}
+                        value={sessionDate}
+                      />
                     </div>
                     <div>
-                      <label htmlFor="create-secondPrize">{text.secondPrize}</label>
-                      <input id="create-secondPrize" value={tournamentSecondPrize} onChange={(event) => setTournamentSecondPrize(event.target.value)} placeholder="Free Ticket" />
+                      <label htmlFor="create-availableTime">{text.availableTime} <span className="required">*</span></label>
+                      <select id="create-availableTime" data-testid="create-session-time" value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
+                        <option value="">{text.chooseTime}</option>
+                        {timeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label htmlFor="create-thirdPrize">{text.thirdPrize}</label>
-                      <input id="create-thirdPrize" value={tournamentThirdPrize} onChange={(event) => setTournamentThirdPrize(event.target.value)} placeholder="Free Drink" />
+                      <label htmlFor="create-duration">{text.duration}</label>
+                      <select id="create-duration" data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
+                        {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
+                          <option value={duration} key={duration}>
+                            {duration} min
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                </div>
-              )}
-              <div className="full">
-                <label htmlFor="create-clubOnly">{text.clubOnly}</label>
-                <select id="create-clubOnly" value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
-                  <option value="">{text.noClub}</option>
-                  {sessionClubOptions.map((club) => (
-                    <option key={club.id} value={club.id}>
-                      {club.name}
-                    </option>
-                  ))}
-                </select>
-                {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
-              </div>
-              <div className="full session-timing-row">
-                <div>
-                  <label>{text.date} <span className="required">*</span></label>
-                  <ShortDateInput
-                    ariaLabel={text.date}
-                    language={language}
-                    onChange={handleSessionDateChange}
-                    placeholder={text.chooseDate}
-                    value={sessionDate}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="create-availableTime">{text.availableTime} <span className="required">*</span></label>
-                  <select id="create-availableTime" data-testid="create-session-time" value={sessionTime} onChange={(event) => setSessionTime(event.target.value)}>
-                    <option value="">{text.chooseTime}</option>
-                    {timeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="create-duration">{text.duration}</label>
-                  <select id="create-duration" data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
-                    {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
-                      <option value={duration} key={duration}>
-                        {duration} min
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="full session-capacity-row">
-                <div>
-                  <label htmlFor="create-maxPlayers">{text.maxPlayers}</label>
-                  <select id="create-maxPlayers" data-testid="create-session-max-players" value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
-                    {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
-                      <option value={count} key={count}>
-                        {count} player{count === 1 ? '' : 's'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="create-arenas">{text.arenas}</label>
-                  <select id="create-arenas" value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
-                    <option value={1}>{text.oneArena}</option>
-                    <option value={2} disabled={sessionMaxPlayers < 8}>
-                      {text.twoArenas}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              {sessionDurationRecommendation && (
-                <p className="full notice duration-recommendation">{sessionDurationRecommendation}</p>
-              )}
-              <div className="full">
-                <div className="game-picker-head">
-                  <label>{text.gameOptions} <span className="required">*</span></label>
-                  {renderGameGuideTrigger(null, 'game-picker-guide-link')}
-                </div>
-                <div className="game-picker" role="group" aria-label={text.gameOptions}>
-                  {games.map((game) => (
-                    <div className="game-card-shell" key={game.id}>
-                      <button
-                        className={selectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
-                        onClick={() => toggleGame(game.id)}
-                        type="button"
-                      >
-                        <NextImage src={game.image} alt="" width={240} height={240} />
-                        <span>{game.title}</span>
-                        <strong>{game.category}</strong>
-                      </button>
-                      {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                  <div className="full session-capacity-row">
+                    <div>
+                      <label htmlFor="create-maxPlayers">{text.maxPlayers}</label>
+                      <select id="create-maxPlayers" data-testid="create-session-max-players" value={sessionMaxPlayers} onChange={(event) => handleMaxPlayersChange(Number(event.target.value))}>
+                        {Array.from({ length: 16 }, (_, index) => index + 1).map((count) => (
+                          <option value={count} key={count}>
+                            {count} player{count === 1 ? '' : 's'}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  ))}
+                    <div>
+                      <label htmlFor="create-arenas">{text.arenas}</label>
+                      <select id="create-arenas" value={sessionArenaCount} onChange={(event) => handleArenaCountChange(Number(event.target.value))}>
+                        <option value={1}>{text.oneArena}</option>
+                        <option value={2} disabled={sessionMaxPlayers < 8}>
+                          {text.twoArenas}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  {sessionDurationRecommendation && (
+                    <p className="full notice duration-recommendation">{sessionDurationRecommendation}</p>
+                  )}
+                  <div className="full">
+                    <div className="game-picker-head">
+                      <label>{text.gameOptions} <span className="required">*</span></label>
+                      {renderGameGuideTrigger(null, 'game-picker-guide-link')}
+                    </div>
+                    <div className="game-picker" role="group" aria-label={text.gameOptions}>
+                      {games.map((game) => (
+                        <div className="game-card-shell" key={game.id}>
+                          <button
+                            className={selectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
+                            onClick={() => toggleGame(game.id)}
+                            type="button"
+                          >
+                            <NextImage src={game.image} alt="" width={240} height={240} />
+                            <span>{game.title}</span>
+                            <strong>{game.category}</strong>
+                          </button>
+                          {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="full">
+                    <label>{text.notes}</label>
+                    <div className="format-toolbar">
+                      <button type="button" aria-label={text.formatBold} title={text.formatBold} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}><Bold aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                      <button type="button" aria-label={text.formatItalic} title={text.formatItalic} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}><Italic aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                      <button type="button" aria-label={text.formatUnderline} title={text.formatUnderline} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}><Underline aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                      <button type="button" aria-label={text.formatStrike} title={text.formatStrike} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}><Strikethrough aria-hidden="true" size={15} strokeWidth={2.5} /></button>
+                    </div>
+                    <RichNotesEditor ariaLabel={text.notes}
+                      value={sessionNotes}
+                      onChange={setSessionNotes}
+                      placeholder={text.notesPlaceholder}
+                      resetKey={`create-${activeView}`}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="full">
-                <label>{text.notes}</label>
-                <div className="format-toolbar">
-                  <button type="button" aria-label={text.formatBold} title={text.formatBold} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('bold') }}><Bold aria-hidden="true" size={15} strokeWidth={2.5} /></button>
-                  <button type="button" aria-label={text.formatItalic} title={text.formatItalic} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('italic') }}><Italic aria-hidden="true" size={15} strokeWidth={2.5} /></button>
-                  <button type="button" aria-label={text.formatUnderline} title={text.formatUnderline} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('underline') }}><Underline aria-hidden="true" size={15} strokeWidth={2.5} /></button>
-                  <button type="button" aria-label={text.formatStrike} title={text.formatStrike} onMouseDown={(event) => { event.preventDefault(); applyRichTextCommand('strikeThrough') }}><Strikethrough aria-hidden="true" size={15} strokeWidth={2.5} /></button>
-                </div>
-                <RichNotesEditor ariaLabel={text.notes}
-                  value={sessionNotes}
-                  onChange={setSessionNotes}
-                  placeholder={text.notesPlaceholder}
-                  resetKey={`create-${activeView}`}
-                />
-              </div>
-            </div>
 
-            <button data-testid="create-session-submit" className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
-              {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
-            </button>
+                <button data-testid="create-session-submit" className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
+                  {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
+                </button>
               </div>
             )}
-            </CreateSessionView>
-          ) : (
-            <BookingVenueComingSoon text={text} />
-          )
-        )}
+          </CreateSessionView>
+        ) : (
+          <BookingVenueComingSoon text={text} />
+        )
+      )}
 
-        {activeView === 'profile' && (
-          <BookingProfileView context={profileViewContext} />
-        )}
+      {activeView === 'profile' && (
+        <BookingProfileView context={profileViewContext} />
+      )}
 
-      </main>
+    </main>
   )
 
   const appOverlays = (
@@ -9523,652 +5972,107 @@ function handleSessionDateChange(value: string) {
         />
       )}
 
-      {selectedClub && canOpenClubPage(selectedClub) && (() => {
-        const canManageSelectedClub = canManageClub(selectedClub)
-        const canModerateSelectedClub = canModerateClubMembers(selectedClub)
-        const canSeeSelectedClubData = canSeeClubPrivateData(selectedClub)
-        const bannerUrl = clubBannerPreview || selectedClub.banner_url || ''
-        const showInviteCode = selectedClub.visibility === 'private' && selectedClub.pin_code && canManageSelectedClub
-        const canCreateSelectedClubSession = canManageSelectedClub || sessionClubOptions.some((club) => club.id === selectedClub.id)
-        const noClubSessionsText = selectedClubSessionScope === 'past' ? text.noPastClubSessions : text.noUpcomingClubSessions
-        const canUseSelectedClubMessages = canUseClubMessages(selectedClub)
-        const selectedClubPublicMessages = messagesForClub(selectedClub, 'public')
-        const selectedClubAdminMessages = messagesForClub(selectedClub, 'admin_private')
-        const publicDraft = clubPublicMessageDrafts[selectedClub.id] || ''
-        const adminDraft = clubAdminMessageDrafts[selectedClub.id] || ''
-        const publicCharactersLeft = CLUB_MESSAGE_MAX_LENGTH - Array.from(publicDraft).length
-        const adminCharactersLeft = CLUB_MESSAGE_MAX_LENGTH - Array.from(adminDraft).length
-
-        return (
-          <div className="club-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="club-drawer-title" onClick={() => setSelectedClubId('')}>
-            <div
-              className="club-drawer club-page"
-              onClick={(event) => event.stopPropagation()}
-              onTouchStart={(event) => setDrawerTouchStart(event.touches[0]?.clientY ?? null)}
-              onTouchEnd={(event) => {
-                if (drawerTouchStart === null) return
-                const endY = event.changedTouches[0]?.clientY ?? drawerTouchStart
-                if (endY - drawerTouchStart > 70) {
-                  setSelectedClubId('')
-                }
-                setDrawerTouchStart(null)
-              }}
-              style={clubThemeStyle(selectedClub)}
-            >
-              <div className="drawer-handle" />
-              <div className={bannerUrl ? 'club-hero has-banner' : 'club-hero'}>
-                {bannerUrl ? (
-                  <NextImage src={bannerUrl} alt="" fill sizes="(max-width: 720px) 100vw, 720px" />
-                ) : (
-                  <div className="club-banner-empty">
-                    <strong>{text.clubBanner}</strong>
-                    {canManageSelectedClub && <span>{text.clubBannerHelp}</span>}
-                  </div>
-                )}
-                <div className="club-hero-content">
-                  <div>
-                    <h2 id="club-drawer-title">{selectedClub.name}</h2>
-                    {selectedClub.motto && <p className="club-motto">{selectedClub.motto}</p>}
-                    <div className="row-meta">
-                      <span className={selectedClub.visibility === 'private' ? 'pill private' : 'pill ok'}>
-                        {selectedClub.visibility === 'private' ? text.private : text.public}
-                      </span>
-                      <span>{clubMemberCount(selectedClub)} {text.members}</span>
-                      {(selectedClub.owner_id === userId || selectedClubMembership?.status === 'approved') && (
-                        <span>{clubRoleLabel(clubRoleFor(selectedClub))}</span>
-                      )}
-                    </div>
-                  </div>
-                  <button className="secondary small-button" type="button" onClick={() => setSelectedClubId('')}>
-                    <ButtonIconText icon={<X aria-hidden="true" size={15} />}>{text.close}</ButtonIconText>
-                  </button>
-                </div>
-              </div>
-
-              {selectedClub.description && <p className="notes club-description">{selectedClub.description}</p>}
-
-              <div className="club-action-row">
-                {!selectedClubMembership && !canManageSelectedClub && (
-                  <button
-                    className={busyClubId === selectedClub.id ? 'primary loading create-button' : 'primary create-button'}
-                    disabled={busyClubId === selectedClub.id}
-                    onClick={() => joinClub(selectedClub)}
-                    type="button"
-                  >
-                    {selectedClub.visibility === 'private' ? text.requestJoin : text.joinClub}
-                  </button>
-                )}
-
-                {canCreateSelectedClubSession && (
-                  <button
-                    className="primary create-button"
-                    type="button"
-                    onClick={() => {
-                      setSessionClubId(selectedClub.id)
-                      setSessionVisibility('public')
-                      setCreateStatus(text.clubOnlyCreateHint)
-                      setActiveView('create')
-                      setSelectedClubId('')
-                    }}
-                  >
-                    {text.clubOnly}
-                  </button>
-                )}
-
-                {selectedClubMembership?.status === 'approved' && selectedClub.owner_id !== userId && (
-                  <button
-                    className={busyClubId === selectedClub.id ? 'danger loading create-button club-leave-button' : 'danger create-button club-leave-button'}
-                    disabled={busyClubId === selectedClub.id}
-                    onClick={() => leaveClub(selectedClub, selectedClubMembership)}
-                    type="button"
-                  >
-                    <ButtonIconText icon={<UserMinus aria-hidden="true" size={18} />}>{leaveClubText}</ButtonIconText>
-                  </button>
-                )}
-              </div>
-
-              {showInviteCode && (
-                <div className="club-invite-box">
-                  <span>{text.clubInviteCode}</span>
-                  <strong>{selectedClub.pin_code}</strong>
-                  <button className="secondary small-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                    <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{text.shareClubCode}</ButtonIconText>
-                  </button>
-                </div>
-              )}
-
-              {selectedClubMembership?.status === 'pending' && (
-                <p className="notice">{text.requestSent}</p>
-              )}
-
-              <div className="sub-tabs club-page-tabs">
-                <button className={selectedClubTab === 'hall' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('hall')}>
-                  {text.clubHallOfFame}
-                </button>
-                <button className={selectedClubTab === 'members' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('members')}>
-                  {text.clubMembers}
-                </button>
-                <button className={selectedClubTab === 'sessions' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('sessions')}>
-                  {text.clubSessions}
-                </button>
-                <button className={selectedClubTab === 'messages' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('messages')}>
-                  {text.clubMessages}
-                </button>
-                {canManageSelectedClub && (
-                  <button className={selectedClubTab === 'settings' ? 'active' : ''} type="button" onClick={() => handleClubTabChange('settings')}>
-                    {text.clubSettings}
-                  </button>
-                )}
-              </div>
-
-              {selectedClubTab === 'hall' && (
-                <div className="club-tab-panel club-hall-panel">
-                  {!canSeeSelectedClubData ? (
-                    <p className="notice">{text.hiddenMembers}</p>
-                  ) : (
-                    <>
-                      {isLeaderboardLoading && leaderboardPlayerStats.length === 0 && <AppLoadingState className="section leaderboard-section" compact />}
-                      <LocalErrorBoundary fallback={<p className="notice">{text.noLeaderboardPlayers}</p>} resetKey={`club-hall-${selectedClub.id}-${language}-${leaderboardPlayerStats.length}`}>
-                        <LeaderboardPanel
-                          avatarStyleFor={(player: LeaderboardPlayer) => avatarStyle({
-                            avatar_color: player.avatarColor,
-                            avatar_text_color: player.avatarTextColor,
-                          })}
-                          canBypassPrivateClubPins={isAdmin}
-                          clubs={[selectedClub]}
-                          currentUserRankPlayer={currentUserRankPlayer}
-                          fixedClubId={selectedClub.id}
-                          hasMorePlayers={hasMoreLeaderboardPlayers}
-                          hideIntro
-                          initialCriterion={clubRankingCriterion(selectedClub)}
-                          initialGameId={leaderboardQueryRef.current.gameId}
-                          isCurrentUserStatsShared={currentUserStatsShared}
-                          isLoadingMorePlayers={isLoadingMoreLeaderboardPlayers}
-                          onLeaderboardCriterionChange={handleLeaderboardCriterionChange}
-                          onLeaderboardGameChange={handleLeaderboardGameChange}
-                          onLeaderboardSearchChange={handleLeaderboardSearchChange}
-                          onLoadMorePlayers={loadMoreLeaderboardPlayers}
-                          onOpenPlayerProfile={openPlayerProfile}
-                          onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
-                          players={leaderboardPlayerStats}
-                          renderAvatar={(player: LeaderboardPlayer) => avatarNode({
-                            avatar_url: player.avatarUrl,
-                            avatar_emoji: player.avatarEmoji,
-                            avatar_initials: player.avatarInitials,
-                            avatar_color: player.avatarColor,
-                            avatar_text_color: player.avatarTextColor,
-                            display_name: player.displayName,
-                          }, 'P')}
-                          serverFiltered
-                          text={text}
-                          useServerRanking
-                          userId={userId}
-                        />
-                      </LocalErrorBoundary>
-                      {selectedClubApprovedMembers.length === 0 && <p className="notice">{text.noTrophiesYet}</p>}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {selectedClubTab === 'members' && (
-                <div className="club-tab-panel">
-                  {!canSeeSelectedClubData ? (
-                    <p className="notice">{text.hiddenMembers}</p>
-                  ) : (
-                    <>
-                      {selectedClubApprovedMembers.length === 0 && <p className="notice">{text.noMembersYet}</p>}
-                      <div className="club-member-list">
-                        {selectedClubApprovedMembers.map((member) => {
-                          const role = clubRoleFor(selectedClub, member.profile_id)
-                          const roleOptions = manageableRoleOptions(selectedClub, member)
-                          const canTransfer = (isAdmin || selectedClub.owner_id === userId) && member.profile_id !== selectedClub.owner_id
-
-                          return (
-                            <article className="club-member-row" key={member.id}>
-                              <button aria-label={playerCardLabel(member.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(member.profile_id)} style={avatarStyle(member)} type="button">
-                                {avatarNode(member, 'P')}
-                              </button>
-                              <div className="club-member-main">
-                                <strong>{compactDisplayName(member.display_name, text.player)}</strong>
-                                <div className="row-meta">
-                                  <span>{clubRoleLabel(role)}</span>
-                                  {member.created_at && <span>{text.joinedOn}: {formatShortDate(localDateString(new Date(member.created_at)), language)}</span>}
-                                </div>
-                              </div>
-                              {roleOptions.length > 0 && (
-                                <select
-                                  aria-label={text.assignRole}
-                                  disabled={busyClubId === selectedClub.id}
-                                  value={(member.role || 'member') as ClubMemberRole}
-                                  onChange={(event) => updateClubMemberRole(selectedClub, member, event.target.value as ClubMemberRole)}
-                                >
-                                  {roleOptions.map((option) => (
-                                    <option key={option} value={option}>{clubRoleLabel(option)}</option>
-                                  ))}
-                                </select>
-                              )}
-                              {canTransfer && (
-                                <button className="secondary small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => transferClubOwnership(selectedClub, member)}>
-                                  <ButtonIconText icon={<Crown aria-hidden="true" size={15} />}>{text.transferOwnership}</ButtonIconText>
-                                </button>
-                              )}
-                              {canManageClubMember(selectedClub, member) && (
-                                <button className="danger small-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => removeClubMember(selectedClub, member)}>
-                                  <ButtonIconText icon={<UserMinus aria-hidden="true" size={15} />}>{text.remove}</ButtonIconText>
-                                </button>
-                              )}
-                            </article>
-                          )
-                        })}
-                      </div>
-
-                      {canModerateSelectedClub && selectedClubPendingMembers.length > 0 && (
-                        <div className="pending-list">
-                          <h3>{text.pending}</h3>
-                          {selectedClubPendingMembers.map((member) => (
-                            <div className="pending-member" key={member.id}>
-                              <span>{compactDisplayName(member.display_name, text.player)}</span>
-                              <div className="mini-session-actions">
-                                <button className="secondary small-button" disabled={busyClubId === selectedClub.id} onClick={() => approveClubMember(member)} type="button">
-                                  <ButtonIconText icon={<UserCheck aria-hidden="true" size={15} />}>{text.approve}</ButtonIconText>
-                                </button>
-                                {canManageClubMember(selectedClub, member) && (
-                                  <button className="danger small-button" disabled={busyClubId === selectedClub.id} onClick={() => removeClubMember(selectedClub, member)} type="button">
-                                    <ButtonIconText icon={<UserMinus aria-hidden="true" size={15} />}>{text.remove}</ButtonIconText>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {selectedClubTab === 'sessions' && (
-                <div className="club-tab-panel">
-                  <div className="club-tab-toolbar">
-                    <div className="segmented compact-segmented">
-                      <button className={selectedClubSessionScope === 'upcoming' ? 'active' : ''} type="button" onClick={() => handleClubSessionScopeChange('upcoming')}>
-                        {text.upcoming}
-                      </button>
-                      <button className={selectedClubSessionScope === 'past' ? 'active' : ''} type="button" onClick={() => handleClubSessionScopeChange('past')}>
-                        {text.past}
-                      </button>
-                    </div>
-                  </div>
-
-                  {selectedClubDayOptions.length > 0 && (
-                    <div className="day-strip drawer-days">
-                      <button
-                        className={!selectedClubDate ? 'day-chip active' : 'day-chip'}
-                        type="button"
-                        onClick={() => setSelectedClubDate('')}
-                      >
-                        <strong>{text.allDays}</strong>
-                      </button>
-                      {selectedClubDayOptions.map((day) => (
-                        <button
-                          className={selectedClubDate === day.value ? 'day-chip active' : 'day-chip'}
-                          key={day.value}
-                          type="button"
-                          onClick={() => setSelectedClubDate(day.value)}
-                        >
-                          <span>{day.weekday}</span>
-                          <strong>{day.day}</strong>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {filteredSelectedClubSessions.length === 0 ? (
-                    <p className="notice">{isLoadingPastSessions && selectedClubSessionScope === 'past' ? '...' : noClubSessionsText}</p>
-                  ) : (
-                    <div className="mini-session-list">
-                      {filteredSelectedClubSessions.map((session) => {
-                        const coverGame = sessionCoverGame(session)
-                        const remaining = seatsLeft(session)
-                        const isPast = isPastSession(session)
-
-                        return (
-                          <article
-                            className="club-session-preview"
-                            key={session.id}
-                            onClick={() => {
-                              setSelectedClubId('')
-                              openSessionFromProfile(session.id)
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                setSelectedClubId('')
-                                openSessionFromProfile(session.id)
-                              }
-                            }}
-                          >
-                            <div className="compact-session-card club-session-card">
-                              <NextImage className="compact-session-image" src={coverGame.image} alt="" width={116} height={116} />
-                              <div className="compact-session-main">
-                                <div className="compact-session-title-row">
-                                  <h3>{session.name}</h3>
-                                  {session.session_type === 'tournament' && (
-                                    <span className="pill private">
-                                      {text.tournament}
-                                    </span>
-                                  )}
-                                  <span className="pill">{text.clubSession}</span>
-                                </div>
-                                <div className="row-meta compact-meta">
-                                  <span>{formatShortDate(session.date, language)}</span>
-                                  <span>{session.start_time.slice(0, 5)}</span>
-                                  <span>{session.duration_minutes} min</span>
-                                  {renderGameGuideTrigger(coverGame.id, 'compact-game-guide-link')}
-                                  {!isPast && <span>{remaining} {text.seatsLeft}</span>}
-                                  {isPast && <span>{text.finalGame}: {coverGame.title}</span>}
-                                </div>
-                              </div>
-                              <div className="compact-session-actions club-session-actions">
-                                <button
-                                  className="secondary compact-expand"
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    setSelectedClubId('')
-                                    openSessionFromProfile(session.id)
-                                  }}
-                                >
-                                  <ButtonIconText icon={<ChevronDown aria-hidden="true" size={15} />}>{text.expandDetails}</ButtonIconText>
-                                </button>
-                              </div>
-                            </div>
-                          </article>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {selectedClubSessionScope === 'upcoming' && hasMoreUpcomingSessions && (
-                    <button className="secondary create-button" type="button" onClick={loadMoreUpcomingSessions} disabled={isLoadingMoreSessions}>
-                      {isLoadingMoreSessions ? '...' : text.expandDetails}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {selectedClubTab === 'messages' && (
-                <div className="club-tab-panel club-messages-panel">
-                  {!canUseSelectedClubMessages ? (
-                    <p className="notice">{text.clubMessageLoginRequired}</p>
-                  ) : (
-                    <>
-                      {isLoadingClubMessages && <div className="club-tab-toolbar"><span className="pill">{text.clubMessagesLoading}</span></div>}
-                      {clubMessageStatus && <p className="notice">{clubMessageStatus}</p>}
-                      <div className="club-message-channels">
-                        <section className="club-message-channel">
-                          <div className="message-channel-head">
-                            <strong>{text.clubPublicMessages}</strong>
-                            <small>{text.clubMessageLimit}</small>
-                          </div>
-                          <div className="message-compose club-message-compose">
-                            <textarea
-                              maxLength={CLUB_MESSAGE_MAX_LENGTH}
-                              rows={2}
-                              value={publicDraft}
-                              onChange={(event) => setClubPublicMessageDrafts((current) => ({ ...current, [selectedClub.id]: event.target.value }))}
-                              placeholder={text.clubPublicPlaceholder}
-                            />
-                            <button
-                              aria-label={text.sendMessage}
-                              className="secondary small-button club-message-send-button"
-                              disabled={busyMessageKey === `${selectedClub.id}-public`}
-                              title={text.sendMessage}
-                              type="button"
-                              onClick={() => postClubMessage(selectedClub, 'public')}
-                            >
-                              <Send aria-hidden="true" size={18} />
-                            </button>
-                          </div>
-                          <small className={publicCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>
-                            {publicCharactersLeft}
-                          </small>
-                          {selectedClubPublicMessages.length === 0 ? (
-                            <p className="notice">{text.noClubMessages}</p>
-                          ) : (
-                            <div className="message-list club-message-list">
-                              {selectedClubPublicMessages.map((message) => {
-                                const isOwnMessage = message.author_id === userId
-                                const messageClassName = [
-                                  'session-message',
-                                  'club-message',
-                                  isOwnMessage ? 'own-message' : '',
-                                ].filter(Boolean).join(' ')
-                                const translationKey = messageTranslationKey('club', message.id, language)
-
-                                return (
-                                  <div className={messageClassName} key={message.id}>
-                                    <span className="player-avatar tiny-avatar message-avatar" style={avatarStyle({
-                                      avatar_color: message.author_avatar_color,
-                                      avatar_text_color: message.author_avatar_text_color,
-                                    })}>
-                                      {avatarNode({
-                                        avatar_url: message.author_avatar_url,
-                                        avatar_emoji: message.author_avatar_emoji,
-                                        avatar_initials: message.author_avatar_initials,
-                                        display_name: message.author_display_name,
-                                      }, 'P')}
-                                    </span>
-                                    <div className="message-body">
-                                      <div className="message-meta-row">
-                                        <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
-                                      </div>
-                                      <MessageBodyText
-                                        body={message.body}
-                                        messageId={message.id}
-                                        messageKind="club"
-                                        onRequestTranslation={requestMessageTranslation}
-                                        onToggleOriginal={() => toggleMessageOriginal('club', message.id, language)}
-                                        targetLanguage={language}
-                                        text={text}
-                                        translation={messageTranslations[translationKey]}
-                                      />
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </section>
-
-                        <section className="club-message-channel">
-                          <div className="message-channel-head">
-                            <strong>{text.clubAdminMessages}</strong>
-                            <small>{text.clubMessagesPrivateHint}</small>
-                          </div>
-                          <div className="message-compose club-message-compose">
-                            <textarea
-                              maxLength={CLUB_MESSAGE_MAX_LENGTH}
-                              rows={2}
-                              value={adminDraft}
-                              onChange={(event) => setClubAdminMessageDrafts((current) => ({ ...current, [selectedClub.id]: event.target.value }))}
-                              placeholder={text.clubAdminPlaceholder}
-                            />
-                            <button
-                              aria-label={text.sendMessage}
-                              className="secondary small-button club-message-send-button"
-                              disabled={busyMessageKey === `${selectedClub.id}-admin_private`}
-                              title={text.sendMessage}
-                              type="button"
-                              onClick={() => postClubMessage(selectedClub, 'admin_private')}
-                            >
-                              <Send aria-hidden="true" size={18} />
-                            </button>
-                          </div>
-                          <small className={adminCharactersLeft < 0 ? 'character-count over-limit' : 'character-count'}>
-                            {adminCharactersLeft}
-                          </small>
-                          {selectedClubAdminMessages.length === 0 ? (
-                            <p className="notice">{text.noClubAdminMessages}</p>
-                          ) : (
-                            <div className="message-list club-message-list">
-                              {selectedClubAdminMessages.map((message) => {
-                                const isOwnMessage = message.author_id === userId
-                                const messageClassName = [
-                                  'session-message',
-                                  'club-message',
-                                  'admin-private',
-                                  isOwnMessage ? 'own-message' : '',
-                                ].filter(Boolean).join(' ')
-                                const translationKey = messageTranslationKey('club', message.id, language)
-
-                                return (
-                                  <div className={messageClassName} key={message.id}>
-                                    <span className="player-avatar tiny-avatar message-avatar" style={avatarStyle({
-                                      avatar_color: message.author_avatar_color,
-                                      avatar_text_color: message.author_avatar_text_color,
-                                    })}>
-                                      {avatarNode({
-                                        avatar_url: message.author_avatar_url,
-                                        avatar_emoji: message.author_avatar_emoji,
-                                        avatar_initials: message.author_avatar_initials,
-                                        display_name: message.author_display_name,
-                                      }, 'P')}
-                                    </span>
-                                    <div className="message-body">
-                                      <div className="message-meta-row">
-                                        <strong>{compactDisplayName(message.author_display_name, text.player)}</strong>
-                                        <small className="moderation-badge pending">{text.private}</small>
-                                      </div>
-                                      <MessageBodyText
-                                        body={message.body}
-                                        messageId={message.id}
-                                        messageKind="club"
-                                        onRequestTranslation={requestMessageTranslation}
-                                        onToggleOriginal={() => toggleMessageOriginal('club', message.id, language)}
-                                        targetLanguage={language}
-                                        text={text}
-                                        translation={messageTranslations[translationKey]}
-                                      />
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </section>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {selectedClubTab === 'settings' && canManageSelectedClub && (
-                <div className="club-tab-panel club-settings-panel">
-                  <div className="form-grid club-settings-grid">
-                    <div>
-                      <label>{text.clubName} <span className="required">*</span></label>
-                      <input value={clubEditName} onChange={(event) => setClubEditName(event.target.value)} />
-                    </div>
-                    <div>
-                      <label>{text.clubMotto}</label>
-                      <input maxLength={48} value={clubEditMotto} onChange={(event) => setClubEditMotto(event.target.value)} placeholder={text.clubMottoPlaceholder} />
-                    </div>
-                    <div className="full">
-                      <label>{text.clubDescription}</label>
-                      <textarea value={clubEditDescription} onChange={(event) => setClubEditDescription(event.target.value)} placeholder={text.clubDescriptionPlaceholder} />
-                    </div>
-                    <div>
-                      <label>{text.clubPrivacy}</label>
-                      <div className="segmented visibility-toggle">
-                        <button className={clubEditVisibility === 'public' ? 'active' : ''} onClick={() => setClubEditVisibility('public')} type="button">
-                          {text.public}
-                        </button>
-                        <button className={clubEditVisibility === 'private' ? 'active' : ''} onClick={() => setClubEditVisibility('private')} type="button">
-                          {text.private}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label>{text.clubDefaultLanguage}</label>
-                      <select value={clubEditDefaultLanguage} onChange={(event) => setClubEditDefaultLanguage(event.target.value as LanguageCode)}>
-                        {languageOptions.map((option) => (
-                          <option key={option} value={option}>{option.toUpperCase()}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label>{text.rankBy}</label>
-                      <select value={clubEditRankingCriterion} onChange={(event) => setClubEditRankingCriterion(event.target.value as LeaderboardCriterion)}>
-                        {clubRankingCriteria.map((criterion) => (
-                          <option key={criterion.value} value={criterion.value}>
-                            {criterion.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="full club-banner-field">
-                      <label>{text.clubBanner}</label>
-                      <label className="club-banner-upload">
-                        {bannerUrl ? <NextImage src={bannerUrl} alt="" width={1600} height={600} /> : <span>{text.clubBannerHelp}</span>}
-                        <input accept="image/jpeg,image/png,image/webp" type="file" onChange={handleClubBannerChange} />
-                      </label>
-                      <p className="field-help">{text.clubBannerHelp}</p>
-                    </div>
-                    <div className="full">
-                      <label>{text.clubThemeColor}</label>
-                      <div className="color-row" aria-label={text.clubThemeColor}>
-                        {clubThemeColors.map((color) => (
-                          <button
-                            aria-label={color}
-                            className={clubEditThemeColor === color ? 'active' : ''}
-                            key={color}
-                            onClick={() => updateClubThemeColor(color)}
-                            style={{ background: color }}
-                            type="button"
-                          />
-                        ))}
-                      </div>
-                      <div className="custom-color-row">
-                        <label>
-                          <span>{text.customColor}</span>
-                          <input type="color" value={clubEditThemeColor} onChange={(event) => updateClubThemeColor(event.target.value)} />
-                        </label>
-                        <label className="hex-field">
-                          <span>{text.hexColor}</span>
-                          <input
-                            value={clubEditThemeColorDraft}
-                            onBlur={() => setClubEditThemeColorDraft(clubEditThemeColor)}
-                            onChange={(event) => updateClubThemeColorDraft(event.target.value)}
-                            placeholder={vrenaPalette.purple[500]}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="club-action-row">
-                    <button className={isSavingClub ? 'primary loading create-button' : 'primary create-button'} disabled={isSavingClub || busyClubId === selectedClub.id} type="button" onClick={() => saveClubSettings(selectedClub)}>
-                      <ButtonIconText icon={<Save aria-hidden="true" size={17} />}>{isSavingClub ? text.saving : text.saveClub}</ButtonIconText>
-                    </button>
-                    <button className="secondary create-button" disabled={busyClubId === selectedClub.id} type="button" onClick={() => regenerateClubInviteCode(selectedClub)}>
-                      <ButtonIconText icon={<RefreshCw aria-hidden="true" size={17} />}>{text.regenerateInviteCode}</ButtonIconText>
-                    </button>
-                    {selectedClub.pin_code && (
-                      <button className="secondary create-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
-                        <ButtonIconText icon={<Share aria-hidden="true" size={17} />}>{text.shareClubCode}</ButtonIconText>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })()}
+      {selectedClub && canOpenClubPage(selectedClub) && <ClubDetail
+        canManageClub={canManageClub}
+        selectedClub={selectedClub}
+        canModerateClubMembers={canModerateClubMembers}
+        canSeeClubPrivateData={canSeeClubPrivateData}
+        clubBannerPreview={clubBannerPreview}
+        sessionClubOptions={sessionClubOptions}
+        selectedClubSessionScope={selectedClubSessionScope}
+        text={text}
+        canUseClubMessages={canUseClubMessages}
+        messagesForClub={messagesForClub}
+        clubPublicMessageDrafts={clubPublicMessageDrafts}
+        clubAdminMessageDrafts={clubAdminMessageDrafts}
+        setSelectedClubId={setSelectedClubId}
+        setDrawerTouchStart={setDrawerTouchStart}
+        drawerTouchStart={drawerTouchStart}
+        clubThemeStyle={clubThemeStyle}
+        userId={userId}
+        selectedClubMembership={selectedClubMembership}
+        clubRoleLabel={clubRoleLabel}
+        clubRoleFor={clubRoleFor}
+        busyClubId={busyClubId}
+        joinClub={joinClub}
+        setSessionClubId={setSessionClubId}
+        setSessionVisibility={setSessionVisibility}
+        setCreateStatus={setCreateStatus}
+        setActiveView={setActiveView}
+        leaveClub={leaveClub}
+        leaveClubText={leaveClubText}
+        shareClubInvite={shareClubInvite}
+        selectedClubTab={selectedClubTab}
+        handleClubTabChange={handleClubTabChange}
+        isLeaderboardLoading={isLeaderboardLoading}
+        leaderboardPlayerStats={leaderboardPlayerStats}
+        language={language}
+        avatarStyle={avatarStyle}
+        isAdmin={isAdmin}
+        currentUserRankPlayer={currentUserRankPlayer}
+        hasMoreLeaderboardPlayers={hasMoreLeaderboardPlayers}
+        leaderboardView={leaderboardView}
+        currentUserStatsShared={currentUserStatsShared}
+        isLoadingMoreLeaderboardPlayers={isLoadingMoreLeaderboardPlayers}
+        handleLeaderboardCriterionChange={handleLeaderboardCriterionChange}
+        handleLeaderboardGameChange={handleLeaderboardGameChange}
+        handleLeaderboardSearchChange={handleLeaderboardSearchChange}
+        loadMoreLeaderboardPlayers={loadMoreLeaderboardPlayers}
+        openPlayerProfile={openPlayerProfile}
+        shareCurrentUserStats={shareCurrentUserStats}
+        avatarNode={avatarNode}
+        selectedClubApprovedMembers={selectedClubApprovedMembers}
+        manageableRoleOptions={manageableRoleOptions}
+        updateClubMemberRole={updateClubMemberRole}
+        transferClubOwnership={transferClubOwnership}
+        canManageClubMember={canManageClubMember}
+        removeClubMember={removeClubMember}
+        selectedClubPendingMembers={selectedClubPendingMembers}
+        approveClubMember={approveClubMember}
+        handleClubSessionScopeChange={handleClubSessionScopeChange}
+        selectedClubDayOptions={selectedClubDayOptions}
+        selectedClubDate={selectedClubDate}
+        setSelectedClubDate={setSelectedClubDate}
+        filteredSelectedClubSessions={filteredSelectedClubSessions}
+        isLoadingPastSessions={isLoadingPastSessions}
+        openSessionFromProfile={openSessionFromProfile}
+        renderGameGuideTrigger={renderGameGuideTrigger}
+        hasMoreUpcomingSessions={hasMoreUpcomingSessions}
+        loadMoreUpcomingSessions={loadMoreUpcomingSessions}
+        isLoadingMoreSessions={isLoadingMoreSessions}
+        isLoadingClubMessages={isLoadingClubMessages}
+        clubMessageStatus={clubMessageStatus}
+        setClubPublicMessageDrafts={setClubPublicMessageDrafts}
+        busyMessageKey={busyMessageKey}
+        postClubMessage={postClubMessage}
+        messageTranslationKey={messageTranslationKey}
+        requestMessageTranslation={requestMessageTranslation}
+        toggleMessageOriginal={toggleMessageOriginal}
+        messageTranslations={messageTranslations}
+        setClubAdminMessageDrafts={setClubAdminMessageDrafts}
+        clubEditName={clubEditName}
+        setClubEditName={setClubEditName}
+        clubEditMotto={clubEditMotto}
+        setClubEditMotto={setClubEditMotto}
+        clubEditDescription={clubEditDescription}
+        setClubEditDescription={setClubEditDescription}
+        clubEditVisibility={clubEditVisibility}
+        setClubEditVisibility={setClubEditVisibility}
+        clubEditDefaultLanguage={clubEditDefaultLanguage}
+        setClubEditDefaultLanguage={setClubEditDefaultLanguage}
+        clubEditRankingCriterion={clubEditRankingCriterion}
+        setClubEditRankingCriterion={setClubEditRankingCriterion}
+        clubRankingCriteria={clubRankingCriteria}
+        handleClubBannerChange={handleClubBannerChange}
+        clubEditThemeColor={clubEditThemeColor}
+        updateClubThemeColor={updateClubThemeColor}
+        clubEditThemeColorDraft={clubEditThemeColorDraft}
+        setClubEditThemeColorDraft={setClubEditThemeColorDraft}
+        updateClubThemeColorDraft={updateClubThemeColorDraft}
+        isSavingClub={isSavingClub}
+        saveClubSettings={saveClubSettings}
+        regenerateClubInviteCode={regenerateClubInviteCode}
+      />}
 
       {selectedPlayerProfile && (
         <PlayerProfileModal
@@ -10200,7 +6104,29 @@ function handleSessionDateChange(value: string) {
           onClose={closePlayerProfile}
           stats={playerProfileStats}
           scoreSummary={null}
-          challengeControls={renderChallengeControls(selectedPlayerProfile)}
+          challengeControls={<ChallengeControls
+            userId={userId}
+            challengeTargetId={challengeTargetId}
+            sessionInvites={sessionInvites}
+            sessionForInvite={sessionForInvite}
+            openChallengeForm={openChallengeForm}
+            text={text}
+            challengeGameId={challengeGameId}
+            setChallengeTargetId={setChallengeTargetId}
+            setChallengeGameId={setChallengeGameId}
+            language={language}
+            setChallengeDate={setChallengeDate}
+            setChallengeTime={setChallengeTime}
+            challengeDate={challengeDate}
+            challengeTime={challengeTime}
+            challengeTimeOptions={challengeTimeOptions}
+            challengeDuration={challengeDuration}
+            setChallengeDuration={setChallengeDuration}
+            isCreatingChallenge={isCreatingChallenge}
+            createFriendChallenge={createFriendChallenge}
+            challengeStatus={challengeStatus}
+            player={selectedPlayerProfile}
+          />}
           gameStatsTitle={text.bestScores}
           gameStats={selectedPlayerGameCards}
           gameStatsLoading={selectedPlayerGameStatsLoading}

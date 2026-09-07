@@ -48,10 +48,6 @@
   gap: 8px;
 }
 
-.app .staff-tab-categories {
-  display: none;
-}
-
 .app .staff-tabs {
   display: flex;
   flex-wrap: wrap;

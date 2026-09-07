@@ -301,10 +301,6 @@
   box-shadow: inset 0 -2px 0 var(--vrena-selection-indicator);
 }
 
-.app .day-chip.active span {
-  color: var(--vrena-selection-ink);
-}
-
 .app .mobile-search-toggle {
   display: none;
   color: var(--vrena-neutral-950);

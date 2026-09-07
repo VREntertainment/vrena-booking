@@ -879,10 +879,6 @@
   gap: 8px;
 }
 
-.app .compact-segmented {
-  width: fit-content;
-}
-
 .app .emoji-row, .app .color-row {
   display: flex;
   gap: 8px;
