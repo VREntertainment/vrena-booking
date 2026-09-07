@@ -28,32 +28,28 @@ import type {
   StaffShiftTemplate,
   StaffShiftTemplateId,
 } from './types'
+export type StaffHrSharedModel = {
+  hrTab: StaffHrTab
+  resolvedLanguage: StaffConsoleLanguage
+  saving: boolean
+  setHrTab: Dispatch<SetStateAction<StaffHrSharedModel['hrTab']>>
+  setStatus: Dispatch<SetStateAction<string>>
+  sharedText: (typeof uiText)['en' | 'vi']
+  text: StaffConsoleCopy
+}
 
-/** Typed boundary between the staff controller and its lazy HR view. */
-export type StaffHrModel = {
-  approvePayrollRun: (run: StaffPayrollRun) => Promise<void>
-  approveAttendancePeriod: () => Promise<void>
-  applyShiftTemplate: (templateId: StaffShiftTemplateId) => void
-  attendanceLogs: StaffAttendanceLog[]
-  attendanceScheduleScopeOptions: StaffScheduleScope[]
-  attendanceSettings: StaffAttendanceSettings
-  attendanceShiftsByCell: Map<string, StaffScheduleShift[]>
-  attendanceWeekEnd: string
-  attendanceWeekDates: string[]
-  attendanceWeekStart: string
+export type StaffHrAccessModel = {
   canEditEmployeeProfiles: boolean
   canAccessHrSettings: boolean
   canAccessZaloSettings: boolean
   canManageEmployeeKioskPins: boolean
   canManageAttendance: boolean
-  downloadEmployeePayslip: (staffProfileId?: string) => Promise<void>
-  downloadPayrollExcel: () => Promise<boolean>
-  draggingShiftId: string
-  draftShiftCount: number
-  effectiveAttendanceScheduleScope: StaffScheduleScope
-  effectiveShiftTemplates: StaffShiftTemplate[]
+  isOwnerOrAdmin: boolean
+  canRevealEmployeeKioskPin: boolean
+}
+
+export type StaffHrEmployeesModel = {
   editEmployeeProfile: (staffProfile: StaffProfile) => void
-  editShift: (shift: StaffScheduleShift) => void
   configureEmployeeKioskPin: () => Promise<void>
   createEmployeeRecord: (input: { email: string; employmentType: StaffEmployeeRecordEmploymentType; fullName: string; phone: string; }) => Promise<{ warning: string; }>
   employeeForm: ReturnType<typeof defaultEmployeeForm>
@@ -68,24 +64,66 @@ export type StaffHrModel = {
   employeePayrollSummary: StaffPayrollCalculation
   employeeProfileById: Map<string, StaffEmployeeProfile>
   firstEmployeeStaffProfileId: string
-  firstScheduleStaffProfileId: string
   generateEmployeeKioskPin: () => void
-  generatePayrollRun: () => Promise<void>
   handleHrDocumentUpload: (event: ChangeEvent<HTMLInputElement>, documentType: Extract<StaffHrDocumentType, "profile_photo" | "cv">) => Promise<void>
-  hrAdjustmentForm: ReturnType<typeof defaultHrAdjustmentForm>
-  hrContractTypeOptions: StaffHrSetupOption[]
-  hrDepartmentOptions: StaffHrSetupOption[]
   hrDocumentUploading: "" | StaffHrDocumentType
-  hrJobTitleOptions: StaffHrSetupOption[]
-  hrLocationOptions: StaffHrSetupOption[]
-  hrOptionsByType: Map<StaffHrSetupOptionType, StaffHrSetupOption[]>
+  saveEmployeeProfile: () => Promise<void>
+  sendEmployeeKioskPinEmail: (staffProfileId: string) => Promise<void>
+  selectedEmployeeDocuments: StaffHrDocument[]
+  selectedEmployeeOutstandingDebt: number
+  selectedEmployeeStaffId: string
+  selectedEmployeeStaffProfile: StaffProfile | null
+  setEmployeeForm: Dispatch<SetStateAction<StaffHrEmployeesModel['employeeForm']>>
+  setEmployeeKioskAccessRole: Dispatch<SetStateAction<StaffHrEmployeesModel['employeeKioskAccessRole']>>
+  setEmployeeKioskPin: Dispatch<SetStateAction<StaffHrEmployeesModel['employeeKioskPin']>>
+  setEmployeeKioskPinConfirm: Dispatch<SetStateAction<StaffHrEmployeesModel['employeeKioskPinConfirm']>>
+  visibleAllStaffProfileOptions: StaffProfile[]
+}
+
+export type StaffHrScheduleModel = {
+  approveAttendancePeriod: () => Promise<void>
+  applyShiftTemplate: (templateId: StaffShiftTemplateId) => void
+  attendanceLogs: StaffAttendanceLog[]
+  attendanceScheduleScopeOptions: StaffScheduleScope[]
+  attendanceSettings: StaffAttendanceSettings
+  attendanceShiftsByCell: Map<string, StaffScheduleShift[]>
+  attendanceWeekEnd: string
+  attendanceWeekDates: string[]
+  attendanceWeekStart: string
+  draggingShiftId: string
+  draftShiftCount: number
+  effectiveAttendanceScheduleScope: StaffScheduleScope
+  effectiveShiftTemplates: StaffShiftTemplate[]
+  editShift: (shift: StaffScheduleShift) => void
+  firstScheduleStaffProfileId: string
+  saveAttendanceSettings: () => Promise<void>
+  saveShift: () => Promise<void>
+  selectedShiftTemplate: StaffShiftTemplateId
+  setAttendanceScheduleScope: Dispatch<SetStateAction<StaffScheduleScope>>
+  setAttendanceSettings: Dispatch<SetStateAction<StaffHrScheduleModel['attendanceSettings']>>
+  setAttendanceRange: (start: string, end: string) => void
+  setDraggingShiftId: Dispatch<SetStateAction<StaffHrScheduleModel['draggingShiftId']>>
+  setShiftForm: Dispatch<SetStateAction<StaffHrScheduleModel['shiftForm']>>
+  shiftForm: ReturnType<typeof defaultShiftForm>
+  shiftAttendanceRange: (dayOffset: number) => void
+  shiftWarningsById: Map<string, string[]>
+  startShiftForCell: (staffProfileId: string, shiftDate: string) => Promise<void>
+  resetAttendanceRangeToThisWeek: () => void
+  updateShiftStatus: (shift: StaffScheduleShift, status: StaffShiftStatus) => Promise<void>
+  visibleScheduleAttendanceShifts: StaffScheduleShift[]
+  visibleScheduleStaffProfileOptions: StaffProfile[]
+  copyPreviousAttendanceWeek: () => Promise<void>
+  moveShiftToCell: (shift: StaffScheduleShift, staffProfileId: string, shiftDate: string) => Promise<void>
+  publishAttendanceWeek: () => Promise<void>
+}
+
+export type StaffHrPayrollModel = {
+  approvePayrollRun: (run: StaffPayrollRun) => Promise<void>
+  downloadEmployeePayslip: (staffProfileId?: string) => Promise<void>
+  downloadPayrollExcel: () => Promise<boolean>
+  generatePayrollRun: () => Promise<void>
+  hrAdjustmentForm: ReturnType<typeof defaultHrAdjustmentForm>
   hrPayrollTotals: { gross: number; net: number; companyCost: number; restWarnings: number; }
-  hrSettings: StaffHrSettings
-  hrSetupForm: Record<StaffHrSetupOptionType, string>
-  hrSetupOptions: StaffHrSetupOption[]
-  hrTab: StaffHrTab
-  isOwnerOrAdmin: boolean
-  canRevealEmployeeKioskPin: boolean
   leaveRequests: StaffLeaveRequest[]
   payrollItems: StaffPayrollItem[]
   payrollPeriodEnd: string
@@ -94,56 +132,41 @@ export type StaffHrModel = {
   payrollRuns: StaffPayrollRun[]
   periodHrAdjustments: StaffHrAdjustment[]
   profileById: Map<string, StaffProfile>
-  resolvedLanguage: StaffConsoleLanguage
   costAssignments: StaffCostAssignment[]
   reloadCostAssignments: () => Promise<void>
   staffCostAllocations: Map<string, { shares: { location: string; paidMinutes: number; companyCost: number; }[]; needsPaidHours: boolean; }>
-  saveEmployeeProfile: () => Promise<void>
   saveHrAdjustment: (kind?: "adjustment" | "advance") => Promise<void>
+  setHrAdjustmentForm: Dispatch<SetStateAction<StaffHrPayrollModel['hrAdjustmentForm']>>
+  setPayrollRunForm: Dispatch<SetStateAction<StaffHrPayrollModel['payrollRunForm']>>
+  staffPayrollCalculations: Map<string, StaffPayrollCalculation>
+  updateHrAdjustmentStatus: (adjustment: StaffHrAdjustment, statusValue: StaffHrAdjustmentStatus) => Promise<void>
+  visibleStaffProfileOptions: StaffProfile[]
+}
+
+export type StaffHrSettingsModel = {
+  hrContractTypeOptions: StaffHrSetupOption[]
+  hrDepartmentOptions: StaffHrSetupOption[]
+  hrJobTitleOptions: StaffHrSetupOption[]
+  hrLocationOptions: StaffHrSetupOption[]
+  hrOptionsByType: Map<StaffHrSetupOptionType, StaffHrSetupOption[]>
+  hrSettings: StaffHrSettings
+  hrSetupForm: Record<StaffHrSetupOptionType, string>
+  hrSetupOptions: StaffHrSetupOption[]
   saveHrSettings: () => Promise<void>
   saveHrSetupOption: (optionType: StaffHrSetupOptionType) => Promise<void>
   updateHrSetupOption: (optionId: string, name: string) => Promise<boolean>
   setHrSetupOptionActive: (optionId: string, active: boolean) => Promise<void>
-  saveAttendanceSettings: () => Promise<void>
-  saveShift: () => Promise<void>
-  saving: boolean
-  sendEmployeeKioskPinEmail: (staffProfileId: string) => Promise<void>
-  selectedEmployeeDocuments: StaffHrDocument[]
-  selectedEmployeeOutstandingDebt: number
-  selectedEmployeeStaffId: string
-  selectedEmployeeStaffProfile: StaffProfile | null
-  selectedShiftTemplate: StaffShiftTemplateId
-  setEmployeeForm: Dispatch<SetStateAction<StaffHrModel['employeeForm']>>
-  setEmployeeKioskAccessRole: Dispatch<SetStateAction<StaffHrModel['employeeKioskAccessRole']>>
-  setEmployeeKioskPin: Dispatch<SetStateAction<StaffHrModel['employeeKioskPin']>>
-  setEmployeeKioskPinConfirm: Dispatch<SetStateAction<StaffHrModel['employeeKioskPinConfirm']>>
-  setAttendanceScheduleScope: Dispatch<SetStateAction<StaffScheduleScope>>
-  setAttendanceSettings: Dispatch<SetStateAction<StaffHrModel['attendanceSettings']>>
-  setAttendanceRange: (start: string, end: string) => void
-  setDraggingShiftId: Dispatch<SetStateAction<StaffHrModel['draggingShiftId']>>
-  setHrAdjustmentForm: Dispatch<SetStateAction<StaffHrModel['hrAdjustmentForm']>>
-  setHrSettings: Dispatch<SetStateAction<StaffHrModel['hrSettings']>>
-  setHrSetupForm: Dispatch<SetStateAction<StaffHrModel['hrSetupForm']>>
-  setHrTab: Dispatch<SetStateAction<StaffHrModel['hrTab']>>
-  setStatus: Dispatch<SetStateAction<string>>
-  setPayrollRunForm: Dispatch<SetStateAction<StaffHrModel['payrollRunForm']>>
-  setShiftForm: Dispatch<SetStateAction<StaffHrModel['shiftForm']>>
-  sharedText: (typeof uiText)['en' | 'vi']
-  shiftForm: ReturnType<typeof defaultShiftForm>
-  shiftAttendanceRange: (dayOffset: number) => void
-  shiftWarningsById: Map<string, string[]>
-  staffPayrollCalculations: Map<string, StaffPayrollCalculation>
-  startShiftForCell: (staffProfileId: string, shiftDate: string) => Promise<void>
+  setHrSettings: Dispatch<SetStateAction<StaffHrSettingsModel['hrSettings']>>
+  setHrSetupForm: Dispatch<SetStateAction<StaffHrSettingsModel['hrSetupForm']>>
   syncPayrollDraft: () => Promise<void>
-  text: StaffConsoleCopy
-  resetAttendanceRangeToThisWeek: () => void
-  updateHrAdjustmentStatus: (adjustment: StaffHrAdjustment, statusValue: StaffHrAdjustmentStatus) => Promise<void>
-  updateShiftStatus: (shift: StaffScheduleShift, status: StaffShiftStatus) => Promise<void>
-  visibleAllStaffProfileOptions: StaffProfile[]
-  visibleScheduleAttendanceShifts: StaffScheduleShift[]
-  visibleScheduleStaffProfileOptions: StaffProfile[]
-  visibleStaffProfileOptions: StaffProfile[]
-  copyPreviousAttendanceWeek: () => Promise<void>
-  moveShiftToCell: (shift: StaffScheduleShift, staffProfileId: string, shiftDate: string) => Promise<void>
-  publishAttendanceWeek: () => Promise<void>
+}
+
+/** Each HR feature receives its own state and commands; access remains explicit and shared. */
+export type StaffHrModel = {
+  shared: StaffHrSharedModel
+  access: StaffHrAccessModel
+  employees: StaffHrEmployeesModel
+  schedule: StaffHrScheduleModel
+  payroll: StaffHrPayrollModel
+  settings: StaffHrSettingsModel
 }

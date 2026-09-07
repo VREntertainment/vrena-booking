@@ -12,7 +12,10 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: false,
-  workers: 2,
+  // The local suite shares one MFA account. Concurrent AAL1 -> AAL2 logins
+  // can revoke each other's pending sessions inside GoTrue. Keep real MFA enabled
+  // and serialize the browser tests instead of bypassing authentication.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   outputDir: process.env.E2E_OUTPUT_DIR || '/tmp/vrena-e2e-results',

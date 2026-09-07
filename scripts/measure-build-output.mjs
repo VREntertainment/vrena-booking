@@ -8,6 +8,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const sourceTargets = [
   "components/BookingWidget.tsx",
   "components/StaffConsole.tsx",
+  "components/StaffHrHub.tsx",
   "components/LeaderboardPanel.tsx",
   "components/TicketBookingView.tsx",
   "components/SessionModals.tsx",
@@ -94,6 +95,8 @@ if (!existsSync(path.join(repoRoot, ".next"))) {
 
 printTable("Largest tracked source files", sourceSizes);
 printTable("Largest static JS/CSS chunks", chunkSizes);
+printTable("Largest feature modules", collectFiles("features", (file) => /\.tsx?$/.test(file)));
+console.log("\nFor first-screen JS/CSS download totals and production budgets, run the workflow-boundaries browser tests with E2E_PRODUCTION_BUILD=1 via npm run test:services.");
 
 if (pageBuildManifest?.pages?.["/page"]) {
   console.log("\nRoot page initial files");

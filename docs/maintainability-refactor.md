@@ -35,7 +35,10 @@ A source comparison confirmed that the split preserves every rule and its order;
 
 Behavior tests cover arena occupancy and adjacent slots, venue differences and closing hours, non-stacking discounts, loyalty caps, approved paid hours versus clock spans, overtime categories, leave overlap, probation pay, shift conflicts, pricing precedence, bilingual payment exports, and tournament permission/lock checks. The existing isolated database and browser suite remains the release gate for the assembled application.
 
-## Remaining structure
+## Follow-up structure
+
+The four workflow follow-ups are implemented in [Feature workflow refactor](feature-workflow-refactor.md), including grouped HR contracts, feature state/commands, deferred views, production download measurements, and stronger architecture checks.
+
 
 This implements the review's gradual extraction recommendation. The booking and staff components still coordinate substantial UI state and rendering. Continue moving a feature's state and commands together when that feature changes; do not move the remaining controller into one equally large hook or replace explicit types with a generic model. The size ceilings are transitional safeguards, not an assertion that file length alone measures maintainability.
 
