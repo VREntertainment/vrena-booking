@@ -5,6 +5,7 @@ import { buildDailySeries, buildStaffReport, mergeOrderPayments, orderPaidAmount
 import type { StaffOrder, StaffOrderPayment } from './staff/types'
 import { staffOrderExportRows } from './staff/reportExports.ts'
 import { staffConsoleText } from './staff/copy.ts'
+import { buildAccountantExportRows } from './staffAccountantExportRows.ts'
 
 function order(overrides: Partial<StaffOrder> = {}): StaffOrder {
   return {
@@ -46,6 +47,22 @@ test('report totals preserve split payments and remaining balances after extract
   assert.equal(report.bankTransferTotal, 200000)
   assert.equal(report.bestSellingGame, 'Laser Tag')
   assert.equal(report.players, 4)
+})
+
+test('card, Momo and VNPAY reconcile separately and never export as cash', () => {
+  const payments = paymentMapFromRows([payment('card', 100000, 'card_manual'), payment('momo', 120000, 'momo_manual'), payment('vnpay', 220000, 'vnpay')])
+  const report = buildStaffReport([order()], new Map(), payments)
+  assert.equal(report.totalPaid, 440000)
+  assert.equal(report.unpaidAmount, 0)
+  assert.deepEqual([report.cardTotal, report.momoTotal, report.vnpayTotal, report.cashTotal, report.bankTransferTotal], [100000, 120000, 220000, 0, 0])
+  const context = { orders: [order()], paymentsByOrderId: payments, text: staffConsoleText.en, report, games: [], discounts: [], auditLogs: [], includeAttachments: false, language: 'en', reportStart: '2026-09-07', reportEnd: '2026-09-07', storeLabel: 'Fixture' }
+  const rows = buildAccountantExportRows('payments_reconciliation', context)
+  assert.deepEqual(rows.map((row) => row.Method), ['Credit/Debit Card', 'Momo', 'VNPAY'])
+  assert.ok(rows.every((row) => row['Bank account / wallet'] !== 'Cash drawer'))
+  const journal = buildAccountantExportRows('accountant_journal', context)
+  assert.ok(journal.every((row) => row['Account code'] !== 'Cash'))
+  const exported = staffOrderExportRows([order()], [], payments)[0]
+  assert.match(exported.payment_method, /Credit\/Debit Card.*Momo.*VNPAY/)
 })
 
 test('payment rows remain authoritative for overpayments and legacy paid orders still work', () => {

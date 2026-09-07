@@ -3,6 +3,92 @@ import { createClient } from '@supabase/supabase-js'
 import { execFileSync } from 'node:child_process'
 import { chooseCafeVenue, futureDate, loginAsAdmin, openAdmin } from './support/admin'
 
+test('staff booking: electronic payments, automatic offers, required override reason and country menu', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Use the isolated service once.')
+  if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Staff booking write tests require isolated services.')
+  const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  const suffix = Date.now()
+  const { data: offers, error } = await admin.from('staff_discount_rules').insert([
+    { name: `QA Group five ${suffix}`, discount_type: 'percentage', value: 10, min_players: 5, max_players: 8, ticket_type: 'all', valid_from: '2020-01-01', active: true },
+    { name: `QA Group nine ${suffix}`, discount_type: 'percentage', value: 15, min_players: 9, max_players: 16, ticket_type: 'all', valid_from: '2020-01-01', active: true },
+    { name: `QA Birthday ${suffix}`, discount_type: 'percentage', value: 10, ticket_type: 'birthday', valid_from: '2020-01-01', active: true },
+    { name: `QA Affiliate ${suffix}`, code: `VR_QA_${suffix}`, discount_type: 'percentage', value: 10, ticket_type: 'all', valid_from: '2020-01-01', active: true },
+  ]).select('id,name')
+  if (error) throw error
+  let sessionId: string | undefined
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  try {
+    await loginAsAdmin(page)
+    await openAdmin(page)
+    await page.setViewportSize({ width: 1142, height: 894 })
+    const phoneHeight = await page.getByRole('textbox', { name: 'Phone', exact: true }).evaluate((el) => el.getBoundingClientRect().height)
+    const countryHeight = await page.getByRole('button', { name: 'Country Code', exact: true }).evaluate((el) => el.getBoundingClientRect().height)
+    expect(Math.abs(phoneHeight - countryHeight)).toBeLessThanOrEqual(1)
+    await page.getByRole('button', { name: 'Country Code', exact: true }).click()
+    await expect(page.getByPlaceholder('Search country or code')).toBeVisible()
+    expect(await page.locator('.country-menu').evaluate((menu) => {
+      const rect = menu.getBoundingClientRect()
+      return Boolean(document.elementFromPoint(rect.left + 30, Math.min(innerHeight - 10, rect.bottom - 30))?.closest('.country-menu'))
+    })).toBe(true)
+    await page.getByPlaceholder('Search country or code').fill('Vietnam')
+    await page.locator('.country-list button').first().click()
+    await page.getByRole('button', { name: 'Booking time', exact: true }).click()
+    const timeList = page.getByRole('listbox', { name: 'Booking time', exact: true })
+    await expect(timeList.getByRole('option').first()).toHaveText('09:00')
+    await timeList.getByRole('option').first().click()
+    await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
+    await page.getByRole('button', { name: 'Booking time', exact: true }).click()
+    await expect(timeList.getByRole('option').first()).toHaveText('16:00')
+    await expect(timeList.getByRole('option').last()).toHaveText('21:15')
+    await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).fill('15:00')
+    await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).press('Enter')
+    await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('16:00')
+    await page.getByLabel('Booking date', { exact: true }).fill(futureDate(181))
+    const players = page.getByRole('spinbutton', { name: 'Players', exact: true })
+    await players.fill('5')
+    await expect(page.locator('.staff-price-lines')).toContainText('1.080.000')
+    await players.fill('9')
+    await expect(page.locator('.staff-price-lines')).toContainText('1.836.000')
+    await players.fill('4')
+    await expect(page.locator('.staff-price-lines')).toContainText('960.000')
+    const discount = page.getByRole('combobox', { name: 'Discount / voucher', exact: true })
+    await expect(discount.locator('option')).not.toContainText([`QA Affiliate ${suffix}`])
+    await discount.selectOption(offers!.find((offer) => offer.name === `QA Birthday ${suffix}`)!.id)
+    await expect(page.locator('.staff-price-lines')).toContainText('864.000')
+    await page.getByRole('checkbox', { name: 'Override total', exact: true }).check()
+    await page.getByRole('spinbutton', { name: 'Final total (VND)', exact: true }).fill('900000')
+    await expect(page.getByRole('button', { name: 'Confirm booking', exact: true })).toBeDisabled()
+    await page.getByRole('textbox', { name: 'Reason for price override', exact: true }).fill('Agreed birthday package')
+    const method = page.getByRole('combobox', { name: 'Payment method', exact: true })
+    await expect(method.locator('option')).toHaveText(['Cash', 'Bank Transfer', 'Credit/Debit Card', 'Momo', 'VNPAY'])
+    for (const [index, value] of ['card_manual', 'momo_manual', 'vnpay'].entries()) {
+      if (index) await page.getByRole('button', { name: 'Add split', exact: true }).click()
+      await method.nth(index).selectOption(value)
+      await page.getByRole('textbox', { name: 'Payment amount', exact: true }).nth(index).fill('300000')
+    }
+    await page.setViewportSize({ width: 375, height: 667 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.getByRole('heading', { name: 'Payment splits', exact: true }).scrollIntoViewIfNeeded()
+    await page.screenshot({ path: '/tmp/staff-new-payments-mobile.png', animations: 'disabled' })
+    await page.setViewportSize({ width: 1142, height: 894 })
+    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
+    await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
+    const body = await (await response).json()
+    sessionId = body.session_id
+    expect(body.total).toBe(900000)
+    const saved = await admin.from('staff_orders').select('total,payment_status,payment_method,price_override_original_total,price_override_reason,staff_order_payments(payment_method,amount)').eq('id', body.order_id).single()
+    expect(saved.error).toBeNull()
+    expect(saved.data).toMatchObject({ total: 900000, payment_status: 'paid', payment_method: 'split', price_override_original_total: 864000, price_override_reason: 'Agreed birthday package' })
+    expect(saved.data!.staff_order_payments).toHaveLength(3)
+    expect(errors).toEqual([])
+  } finally {
+    if (sessionId) await admin.from('sessions').delete().eq('id', sessionId)
+    await admin.from('staff_discount_rules').delete().in('id', offers!.map((offer) => offer.id))
+  }
+})
+
 test('staff booking: inline client, shop games, discounts and responsive summary', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Create isolated fixture records once; validate desktop and mobile in the same flow.')
   const backendUrl = process.env.SUPABASE_URL || ''
@@ -134,7 +220,7 @@ test('staff booking: client contacts and available discounts follow the selectio
   await expect(page.getByRole('textbox', { name: 'E-mail', exact: true })).toHaveValue('')
   await page.getByRole('spinbutton', { name: 'Players', exact: true }).fill('2')
   const discount = page.getByRole('combobox', { name: 'Discount / voucher', exact: true })
-  await expect(discount.locator('option')).toContainText(['No discount', 'PAIR10 · Pair offer · 10%'])
+  await expect(discount.locator('option')).toContainText(['Automatic group discount', 'PAIR10 · Pair offer · 10%'])
   await discount.selectOption('85000000-0000-4000-8000-000000000043')
   await expect(page.locator('.staff-price-lines')).toContainText('Pair offer')
   await page.getByRole('spinbutton', { name: 'Players', exact: true }).fill('1')

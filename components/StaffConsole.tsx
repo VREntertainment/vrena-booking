@@ -24,6 +24,7 @@ import { useStaffReportsState } from '../features/staff/useStaffReportsState'
 import { useStaffSchedulingState } from '../features/staff/useStaffSchedulingState'
 import { useStaffSettingsState } from '../features/staff/useStaffSettingsState'
 
+import { isStaffGroupDiscount } from '../lib/staff/pricing'
 import { createStaffBookingActions } from '../features/staff/booking.actions'
 import { createStaffClientsActions } from '../features/staff/clients.actions'
 import { createStaffCommerceActions } from '../features/staff/commerce.actions'
@@ -554,17 +555,21 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     ? selectedRule.price_per_arena_slot * bookingDurationBlocks
     : bookingUnitPrice * booking.players
   const availableBookingDiscounts = useMemo(() => (
-    discounts.filter((discount) => discountMatchesContext(discount, {
+    discounts.filter((discount) => !/^VR_/i.test(discount.code || '') && discountMatchesContext(discount, {
       date: booking.date,
       gameId: selectedGame?.id || null,
       players: booking.players,
       priceRuleId: selectedRule?.id || null,
       subtotal: bookingSubtotal,
-      ticketType: 'individual',
+      ticketType: discount.ticket_type === 'birthday' ? 'birthday' : 'individual',
       time: booking.time,
     }))
   ), [booking.date, booking.players, booking.time, bookingSubtotal, discounts, selectedGame, selectedRule])
-  const selectedDiscount = useMemo(() => availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null, [availableBookingDiscounts, booking.discountId])
+  const selectedDiscount = useMemo(() => {
+    if (booking.discountId) return availableBookingDiscounts.find((discount) => discount.id === booking.discountId) || null
+    if (calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal) > 0) return null
+    return availableBookingDiscounts.filter(isStaffGroupDiscount).sort((a, b) => calculateDiscount(b, bookingSubtotal, bookingUnitPrice) - calculateDiscount(a, bookingSubtotal, bookingUnitPrice) || a.id.localeCompare(b.id))[0] || null
+  }, [availableBookingDiscounts, booking.discountId, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice])
 
   const quote = useMemo(() => {
     const subtotal = bookingSubtotal
@@ -579,11 +584,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       discountLabel: manualDiscountTotal > 0
         ? manualDiscountLabel(booking.manualDiscountType, booking.manualDiscountValue, text)
         : selectedDiscount?.name || text.noDiscount,
-      total: Math.max(0, subtotal - discountTotal),
+      total: booking.overrideTotalEnabled && booking.overrideTotal.trim() !== '' && Number.isFinite(Number(booking.overrideTotal)) ? Math.max(0, Number(booking.overrideTotal)) : Math.max(0, subtotal - discountTotal),
       ruleName: selectedRule?.rule_name || (booking.venueKey === 'cafe-des-stagiaires' ? bookingVenueName : text.defaultWalkInRate),
       duration: selectedGame?.duration_minutes || 20,
     }
-  }, [booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
+  }, [booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
@@ -956,6 +961,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const items = [
       { label: text.labels.cash, value: report.cashTotal },
       { label: text.labels.bankTransfer, value: report.bankTransferTotal },
+      { label: text.paymentMethods.card_manual, value: report.cardTotal },
+      { label: text.paymentMethods.momo_manual, value: report.momoTotal },
+      { label: text.paymentMethods.vnpay, value: report.vnpayTotal },
       { label: text.unpaid, value: report.unpaidAmount },
     ]
     const total = Math.max(1, items.reduce((sum, item) => sum + item.value, 0))

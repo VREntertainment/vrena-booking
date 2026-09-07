@@ -1,15 +1,18 @@
 'use client'
 import { useRef, useState } from 'react'
+import { paymentMethods } from '../lib/staff/options'
+import { staffConsoleText } from '../lib/staff/copy'
+import type { StaffPaymentMethod } from '../lib/staff/types'
 import { visitCopy } from '../lib/staffVisit'
 
-export type OrderPaymentEntry = { id: string; method: 'cash' | 'bank_transfer'; amount: number }
+export type OrderPaymentEntry = { id: string; method: StaffPaymentMethod; amount: number }
 export default function StaffOrderPaymentForm({ language, balance, disabled, onSave, onCancel }: {
   language: 'en' | 'vi'; balance: number; disabled: boolean
   onSave: (entry: OrderPaymentEntry) => Promise<boolean>; onCancel: () => void
 }) {
   const text = visitCopy[language]
   const [amount, setAmount] = useState(String(Math.max(0, balance)))
-  const [method, setMethod] = useState<'cash' | 'bank_transfer'>('cash')
+  const [method, setMethod] = useState<StaffPaymentMethod>('cash')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const request = useRef<OrderPaymentEntry | null>(null)
@@ -29,7 +32,7 @@ export default function StaffOrderPaymentForm({ language, balance, disabled, onS
       <legend>{text.recordPayment}</legend>
       <p>{text.orderPaymentHint}</p>
       <div className="staff-operation-field-grid">
-        <label>{language === 'vi' ? 'Hình thức thanh toán đơn' : 'Order payment method'}<select value={method} onChange={(event) => setMethod(event.target.value as 'cash' | 'bank_transfer')}><option value="cash">{text.cash}</option><option value="bank_transfer">{text.bank}</option></select></label>
+        <label>{language === 'vi' ? 'Hình thức thanh toán đơn' : 'Order payment method'}<select value={method} onChange={(event) => setMethod(event.target.value as StaffPaymentMethod)}>{paymentMethods.map((value) => <option key={value} value={value}>{staffConsoleText[language].paymentMethods[value]}</option>)}</select></label>
         <label>{text.amount}<input required type="number" min={1} max={Math.max(1, balance)} step={1} value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
       </div>
       <div className="staff-row-actions"><button type="submit" disabled={balance <= 0}>{text.savePayment}</button><button type="button" onClick={onCancel}>{language === 'vi' ? 'Đóng' : 'Close'}</button></div>

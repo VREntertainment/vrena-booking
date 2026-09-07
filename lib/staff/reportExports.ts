@@ -43,6 +43,9 @@ export function staffReportRows(report: StaffReportSummary, text: StaffConsoleCo
     { metric: text.unpaid, value: formatVnd(report.unpaidAmount) },
     { metric: text.labels.cash, value: formatVnd(report.cashTotal) },
     { metric: text.labels.bankTransfer, value: formatVnd(report.bankTransferTotal) },
+    { metric: text.paymentMethods.card_manual, value: formatVnd(report.cardTotal) },
+    { metric: text.paymentMethods.momo_manual, value: formatVnd(report.momoTotal) },
+    { metric: text.paymentMethods.vnpay, value: formatVnd(report.vnpayTotal) },
     { metric: text.labels.bookings, value: report.bookings },
     { metric: text.labels.players, value: report.players },
     { metric: text.labels.cancelled, value: report.cancelled },
@@ -101,6 +104,9 @@ export function paymentPieItems(report: StaffReportSummary, text: StaffConsoleCo
   return [
     { label: text.labels.cash, value: report.cashTotal },
     { label: text.labels.bankTransfer, value: report.bankTransferTotal },
+    { label: text.paymentMethods.card_manual, value: report.cardTotal },
+    { label: text.paymentMethods.momo_manual, value: report.momoTotal },
+    { label: text.paymentMethods.vnpay, value: report.vnpayTotal },
     { label: text.unpaid, value: report.unpaidAmount },
   ]
 }

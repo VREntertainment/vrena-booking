@@ -16,6 +16,9 @@ import type {
 
 export const defaultBookingForm = (): BookingForm => ({
   bookingSource: 'walk_in',
+  overrideTotalEnabled: false,
+  overrideTotal: '',
+  overrideReason: '',
   guestBooking: false,
   venueKey: 'ha-do-centrosa',
   customerId: '',

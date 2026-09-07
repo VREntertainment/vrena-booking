@@ -9,6 +9,7 @@ import { PhoneNumberInput } from '../../components/CountryCodePicker'
 import { StaffPickerField } from '../../components/staff/StaffPickerField'
 import { bookingDurationCopy } from '../../lib/bookingDurationCopy'
 import { uiText } from '../../lib/i18n/translations'
+import { staffBookingHours, validStaffBookingTime } from '../../lib/staff/bookingHours'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
@@ -26,7 +27,9 @@ import {
 } from '../../lib/staff/options'
 import { paymentStatusFromAmount, paymentStatusLabel } from '../../lib/staff/payments'
 import {
-  formatDiscountRuleValue
+  formatDiscountRuleValue,
+  isStaffGroupDiscount,
+  validBookingTotalOverride
 } from '../../lib/staff/pricing'
 import {
   customerName
@@ -115,6 +118,8 @@ export default function NewSection({
   status,
   createOrder,
 }: NewSectionProps) {
+  const hours = staffBookingHours(booking.venueKey, quote.duration)
+  const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time)
   return (
     <div className="staff-grid">
       <div className="staff-card staff-card-wide">
@@ -266,12 +271,14 @@ export default function NewSection({
             </label>
             <label>
               {text.labels.time}
-              <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
+              <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} minTime={hours.min} maxTime={hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
             </label>
             <label>
               {text.labels.players}
-              <input min={1} max={64} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
+              <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
             </label>
+            <p className="field-help full">{bookingText.openingHours}: {hours.min}–{hours.close} · {bookingText.latestStart}: {hours.max}</p>
+            {!validTime && <p className="notice full" role="alert">{bookingText.outsideHours}</p>}
             <label>
               {text.labels.arena}
               <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
@@ -291,14 +298,14 @@ export default function NewSection({
                   manualDiscountValue: 0,
                 })}
               >
-                <option value="">{text.noDiscount}</option>
+                <option value="">{bookingText.automaticDiscount}</option>
                 {booking.discountId && !selectedDiscount && <option value={booking.discountId}>{bookingText.discountChanged}</option>}
-                {availableBookingDiscounts.map((discount) => (
+                {availableBookingDiscounts.filter((discount) => !isStaffGroupDiscount(discount)).map((discount) => (
                   <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ` : ''}{discount.name} · {formatDiscountRuleValue(discount, text)}</option>
                 ))}
               </select>
             </label>
-            <p className="field-help full">{bookingText.discountsHelp.replace('{count}', String(availableBookingDiscounts.length))}</p>
+            <p className="field-help full">{bookingText.groupDiscountHelp}</p>
             <div className="staff-manual-discount full">
               <span className="staff-field-label">{text.labels.uniqueDiscount}</span>
               <div>
@@ -399,8 +406,16 @@ export default function NewSection({
           <span>{text.labels.discount}</span><strong>-{formatVnd(quote.discountTotal)}</strong>
           <span>{text.labels.total}</span><strong>{formatVnd(quote.total)}</strong>
         </div>
+        <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
+          <label className="staff-override-toggle"><input type="checkbox" checked={booking.overrideTotalEnabled} onChange={(event) => setBooking({ ...booking, overrideTotalEnabled: event.target.checked, overrideTotal: event.target.checked ? String(quote.total) : '', overrideReason: event.target.checked ? booking.overrideReason : '' })} /><span>{bookingText.overrideTotal}</span></label>
+          {booking.overrideTotalEnabled && <>
+            <label>{bookingText.finalTotal}<input required min={0} max={2147483647} step={1} type="number" value={booking.overrideTotal} onChange={(event) => setBooking({ ...booking, overrideTotal: event.target.value })} /></label>
+            <label>{bookingText.overrideReason}<textarea required value={booking.overrideReason} onChange={(event) => setBooking({ ...booking, overrideReason: event.target.value })} /></label>
+            <p className="field-help">{bookingText.overrideHelp}</p>
+          </>}
+        </fieldset>
         {status && <p className="notice compact-notice" role="status">{status}</p>}
-        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
+        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame || !validTime || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
           {text.actions.confirmBooking}
         </button>
       </div>

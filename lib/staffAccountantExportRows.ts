@@ -98,7 +98,7 @@ function rangeLabel(start: string, end: string) {
 function paymentMethodLabel(value: string, text: AccountantText) {
   if (value === 'split') return text.split
   if (value === 'unpaid') return text.unpaid
-  if (value === 'cash' || value === 'bank_transfer') return text.paymentMethods[value]
+  if (Object.hasOwn(text.paymentMethods, value)) return text.paymentMethods[value]
   return value.replace(/_/g, ' ')
 }
 
@@ -399,7 +399,7 @@ export function buildAccountantExportRows(reportId: string, context: AccountantE
           'Payment date': payment.created_at.slice(0, 10),
           Amount: payment.amount,
           Method: paymentMethodLabel(payment.payment_method, context.text),
-          'Bank account / wallet': payment.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
+          'Bank account / wallet': payment.payment_method === 'cash' ? 'Cash drawer' : paymentMethodLabel(payment.payment_method, context.text),
           'Transaction reference': '',
           'Office staff': payment.created_by || '',
           'Reconciliation status': paidTotal === order.total ? 'Matched' : 'Partial',
@@ -414,7 +414,7 @@ export function buildAccountantExportRows(reportId: string, context: AccountantE
         'Payment date': order.created_at.slice(0, 10),
         Amount: paid,
         Method: paymentMethodLabel(order.payment_method, context.text),
-        'Bank account / wallet': order.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash drawer',
+        'Bank account / wallet': order.payment_method === 'cash' ? 'Cash drawer' : paymentMethodLabel(order.payment_method, context.text),
         'Transaction reference': '',
         'Office staff': order.created_by || '',
         'Reconciliation status': paid === order.total && paid > 0 ? 'Matched' : paid > 0 ? 'Partial' : 'Unmatched',
@@ -545,7 +545,7 @@ export function buildAccountantExportRows(reportId: string, context: AccountantE
         ? payments.map((payment) => ({
           Date: payment.created_at.slice(0, 10),
           'Journal type': 'Sales',
-          'Account code': payment.payment_method === 'bank_transfer' ? 'Bank' : 'Cash',
+          'Account code': payment.payment_method === 'bank_transfer' ? 'Bank' : payment.payment_method === 'cash' ? 'Cash' : '',
           Debit: payment.amount,
           Credit: '',
           Description: `VR ticket sale - ${accountantGameName(order, context.games)}`,
@@ -554,7 +554,7 @@ export function buildAccountantExportRows(reportId: string, context: AccountantE
         : [{
           Date: order.created_at.slice(0, 10),
           'Journal type': 'Sales',
-          'Account code': order.payment_method === 'bank_transfer' ? 'Bank' : 'Cash',
+          'Account code': order.payment_method === 'bank_transfer' ? 'Bank' : order.payment_method === 'cash' ? 'Cash' : '',
           Debit: orderPaidAmount(order, context.paymentsByOrderId),
           Credit: '',
           Description: `VR ticket sale - ${accountantGameName(order, context.games)}`,

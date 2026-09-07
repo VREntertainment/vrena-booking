@@ -35,7 +35,7 @@ export function arenasUsedBySession(session: Pick<Session, 'max_players' | 'aren
 }
 
 export const CAFE_SOFT_OPENING_DATE = '2026-08-31'
-const CAFE_OPEN_MINUTES = 16 * 60
+export const CAFE_OPEN_MINUTES = 16 * 60
 const CAFE_CLOSE_MINUTES = 22 * 60
 
 export type BookingTimeOption = { value: string; label: string; remaining: number }

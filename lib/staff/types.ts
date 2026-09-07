@@ -56,7 +56,7 @@ export type AccountantExportReportId =
   | 'accountant_journal'
   | 'audit_trail'
 
-export type StaffPaymentMethod = 'cash' | 'bank_transfer'
+export type StaffPaymentMethod = 'cash' | 'bank_transfer' | 'card_manual' | 'momo_manual' | 'vnpay'
 
 export type StaffDiscountValueUnit = 'percentage' | 'fixed_amount'
 
@@ -722,6 +722,9 @@ export type StaffReportSummary = {
   unpaidAmount: number
   cashTotal: number
   bankTransferTotal: number
+  cardTotal: number
+  momoTotal: number
+  vnpayTotal: number
   bookings: number
   players: number
   cancelled: number
@@ -760,6 +763,9 @@ export type StaffHourlyRevenuePoint = {
 }
 
 export type BookingForm = {
+  overrideTotalEnabled: boolean
+  overrideTotal: string
+  overrideReason: string
   bookingSource: 'walk_in' | 'zalo' | 'whatsapp' | 'phone' | 'website' | 'other'
   venueKey: 'ha-do-centrosa' | 'cafe-des-stagiaires'
   guestBooking: boolean
@@ -818,6 +824,8 @@ export type StaffPickerFieldProps = {
   type: 'date' | 'time'
   value: string
   mode?: 'clock' | 'duration'
+  minTime?: string
+  maxTime?: string
   placeholder?: string
   inputRef?: RefObject<HTMLInputElement | null>
   onChange: (value: string) => void

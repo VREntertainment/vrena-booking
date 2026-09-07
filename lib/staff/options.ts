@@ -75,7 +75,7 @@ export const accountantExportStores = [
   { id: 'vrena-vietnam', label: { en: 'VRena Vietnam', vi: 'VRena Vietnam' } },
 ] satisfies Array<{ id: string; label: Record<StaffConsoleLanguage, string> }>
 
-export const paymentMethods = ['cash', 'bank_transfer'] as const
+export const paymentMethods = ['cash', 'bank_transfer', 'card_manual', 'momo_manual', 'vnpay'] as const
 
 export const orderStatuses = ['draft', 'confirmed', 'paid', 'partially_paid', 'cancelled', 'refunded', 'no_show', 'completed'] as const
 

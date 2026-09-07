@@ -93,9 +93,9 @@ export type ReportSectionProps = {
   reportLinePath: string
   comparisonLinePath: string
   pieStops: string
-  pieItems: ({ label: "Cash" | "Tiền mặt"; value: number } | { label: "Bank transfer" | "Chuyển khoản"; value: number } | { label: "Unpaid" | "Chưa thanh toán"; value: number })[]
+  pieItems: Array<{ label: string; value: number }>
   comparisonReport: import("../../lib/staff/types").StaffReportSummary
-  paymentMix: ({ share: number; label: "Cash" | "Tiền mặt"; value: number } | { share: number; label: "Bank transfer" | "Chuyển khoản"; value: number } | { share: number; label: "Unpaid" | "Chưa thanh toán"; value: number })[]
+  paymentMix: Array<{ label: string; value: number; share: number }>
   orderRows: (rows: import("../../lib/staff/types").StaffOrder[], paymentsByOrderId?: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>) => React.JSX.Element
   reportOrders: import("../../lib/staff/types").StaffOrder[]
   reportPaymentsByOrderId: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>
@@ -424,6 +424,9 @@ export default function ReportSection({
             <div><span>{text.unpaid}</span><strong>{formatVnd(report.unpaidAmount)}</strong></div>
             <div><span>{text.labels.cash}</span><strong>{formatVnd(report.cashTotal)}</strong></div>
             <div><span>{text.labels.bankTransfer}</span><strong>{formatVnd(report.bankTransferTotal)}</strong></div>
+            <div><span>{text.paymentMethods.card_manual}</span><strong>{formatVnd(report.cardTotal)}</strong></div>
+            <div><span>{text.paymentMethods.momo_manual}</span><strong>{formatVnd(report.momoTotal)}</strong></div>
+            <div><span>{text.paymentMethods.vnpay}</span><strong>{formatVnd(report.vnpayTotal)}</strong></div>
             <div><span>{text.labels.bookings}</span><strong>{report.bookings}</strong></div>
             <div><span>{text.labels.players}</span><strong>{report.players}</strong></div>
             <div><span>{text.labels.cancelled}</span><strong>{report.cancelled}</strong></div>
