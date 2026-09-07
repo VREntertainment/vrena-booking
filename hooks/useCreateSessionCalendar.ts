@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { CreateSessionMode } from '../components/CreateSessionView'
 
 type LoadCalendarRange = (startDate: string, endDate: string) => Promise<unknown>
 
 type UseCreateSessionCalendarOptions = {
+  initialCalendarDate?: string
   addDaysToDateValue: (dateValue: string, days: number) => string
   getLocalDateString: () => string
   onActiveViewChange: (view: 'create') => void
@@ -18,6 +19,7 @@ type UseCreateSessionCalendarOptions = {
 }
 
 export function useCreateSessionCalendar({
+  initialCalendarDate,
   addDaysToDateValue,
   getLocalDateString,
   loadCalendarRange,
@@ -30,12 +32,22 @@ export function useCreateSessionCalendar({
   scrollToCreateForm,
   startOfWeekDateValue,
 }: UseCreateSessionCalendarOptions) {
-  const [createSessionMode, setCreateSessionMode] = useState<CreateSessionMode>('form')
-  const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(getLocalDateString()))
+  const [createSessionMode, setCreateSessionMode] = useState<CreateSessionMode>(initialCalendarDate ? 'calendar' : 'form')
+  const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(initialCalendarDate || getLocalDateString()))
+  const [isCalendarLoading, setIsCalendarLoading] = useState(Boolean(initialCalendarDate))
+  const calendarRequest = useRef(0)
 
   async function loadCalendarWeek(startDate = calendarWeekStart) {
     const weekEnd = addDaysToDateValue(startDate, 6)
-    await loadCalendarRange(startDate, weekEnd)
+    const request = ++calendarRequest.current
+    setIsCalendarLoading(true)
+    try {
+      await loadCalendarRange(startDate, weekEnd)
+    } catch (error) {
+      if (request === calendarRequest.current) onCreateStatusChange(error instanceof Error ? error.message : String(error))
+    } finally {
+      if (request === calendarRequest.current) setIsCalendarLoading(false)
+    }
   }
 
   function startSessionFromCalendar(dateValue: string, timeValue: string) {
@@ -82,6 +94,7 @@ export function useCreateSessionCalendar({
 
   return {
     calendarWeekStart,
+    isCalendarLoading,
     createSessionMode,
     handleCreateSessionModeChange,
     loadCalendarWeek,

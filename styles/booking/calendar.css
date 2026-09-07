@@ -1,0 +1,26 @@
+.app .calendar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.app .calendar-actions .calendar-hint { flex: 1 1 250px; margin: 0; }
+.app .calendar-actions label { display: flex; align-items: center; gap: 8px; }
+.app .calendar-actions input { width: 150px; }
+.app .calendar-toolbar .calendar-shop-badge { color: var(--vrena-blue-700); font-weight: 800; }
+.app .calendar-venue-cafe-des-stagiaires .calendar-shop-badge { color: var(--vrena-orange-700); }
+.app .calendar-venue-cafe-des-stagiaires { border-top: 4px solid var(--vrena-orange-500); }
+.app .calendar-venue-ha-do-centrosa { border-top: 4px solid var(--vrena-blue-600); }
+.app .calendar-booking-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; border: 1px solid var(--vrena-neutral-200); border-radius: 18px; background: var(--vrena-white); color: var(--vrena-neutral-950); overflow: auto; }
+.app .calendar-booking-dialog::backdrop { background: color-mix(in srgb, var(--vrena-neutral-950) 45%, transparent); }
+.app .calendar-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.app .calendar-dialog-heading h2 { margin: 0; font-size: 22px; }
+.app .calendar-dialog-close { width: 40px; min-height: 40px; padding: 8px; background: transparent; color: var(--vrena-neutral-600); border: 0; box-shadow: none; }
+.app .calendar-edit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.app .calendar-edit-fields label { min-width: 0; display: grid; gap: 6px; }
+.app .calendar-edit-fields input, .app .calendar-edit-fields select, .app .calendar-edit-fields textarea { width: 100%; min-width: 0; }
+.app .calendar-edit-fields .full { grid-column: 1 / -1; }
+.app .calendar-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.app .calendar-dialog-actions .calendar-delete-action { display: flex; gap: 6px; align-items: center; margin-right: auto; border: 0; background: transparent; box-shadow: none; color: var(--vrena-red-600); }
+@media (max-width: 600px) {
+  .app .calendar-booking-dialog { padding: 16px; }
+  .app .calendar-edit-fields { grid-template-columns: minmax(0, 1fr); }
+  .app .calendar-dialog-actions button { flex: 1 1 auto; }
+}
+.app .calendar-session-block { min-height: 22px; padding: 3px 5px; }
+.app .calendar-session-compact { max-height: 100%; overflow: hidden; }

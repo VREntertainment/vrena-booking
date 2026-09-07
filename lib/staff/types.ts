@@ -760,6 +760,7 @@ export type StaffHourlyRevenuePoint = {
 }
 
 export type BookingForm = {
+  bookingSource: 'walk_in' | 'zalo' | 'whatsapp' | 'phone' | 'website' | 'other'
   venueKey: 'ha-do-centrosa' | 'cafe-des-stagiaires'
   guestBooking: boolean
   customerId: string
@@ -805,7 +806,9 @@ export type StaffConsoleProps = {
   kioskOperator?: StaffKioskOperator | null
   onKioskLock?: () => void
   onOpenPlayerProfile?: (profile: StaffProfile) => void
-  onOpenSessionCalendar?: (dateValue: string) => void
+  initialBooking?: Pick<BookingForm, 'date' | 'time' | 'venueKey'>
+  onBookingCreated?: (dateValue: string, venueKey: BookingForm['venueKey']) => void
+  onOpenSessionCalendar?: (dateValue: string, venueKey?: BookingForm['venueKey']) => void
 }
 
 export type StaffConsoleLanguage = 'en' | 'vi'

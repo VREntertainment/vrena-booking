@@ -1,0 +1,11 @@
+.app .staff-guest-toggle { display: flex; align-items: center; gap: 10px; }
+.app .staff-guest-toggle input[type="checkbox"] { width: 18px; min-height: 18px; height: 18px; margin: 0; }
+.app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) 36px; align-items: center; }
+.app .staff-console .staff-payment-splits .staff-list-head button.staff-payment-add.secondary:not(.primary):not(.danger) {
+  min-height: 36px; padding: 6px 10px; border: 0; background: transparent; color: var(--vrena-cta-tertiary-ink); box-shadow: none; font-size: 13px;
+}
+.app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove {
+  display: grid; place-items: center; grid-column: auto; width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 8px; border: 0; background: transparent; color: var(--vrena-neutral-600); box-shadow: none;
+}
+.app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove:hover { color: var(--vrena-red-600); background: var(--vrena-red-50); }
+.app .staff-console .staff-payment-splits button.staff-payment-remove svg { display: block; width: 16px; height: 16px; color: inherit; stroke: currentColor; }

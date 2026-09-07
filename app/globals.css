@@ -21,6 +21,7 @@
 @import "../styles/booking/actions.css";
 @import "../styles/booking/workspace.css";
 @import "../styles/booking/ticket-compact.css";
+@import "../styles/booking/calendar.css";
 @source "./";
 @source "../components";
 @source "../hooks";

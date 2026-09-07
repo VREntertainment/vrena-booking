@@ -31,6 +31,8 @@ import {
   X,
 } from 'lucide-react'
 import NextImage from 'next/image'
+import { calendarLanes, type CalendarNavigation } from '../lib/bookingCalendar'
+import type { BookingForm } from '../lib/staff/types'
 import {
   ChangeEvent,
   FormEvent,
@@ -237,6 +239,7 @@ import AppSidebar, { type AppView } from './AppSidebar'
 import AvatarNode from './AvatarNode'
 import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
 import {
+  StaffCalendarBookingDialog,
   BirthdayPopupModal,
   BookingProfileView,
   BookingSessionsPanel,
@@ -292,7 +295,8 @@ type BookingWidgetProps = {
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
   initialView?: AppView
-  onActiveViewChange?: (view: AppView) => void
+  initialCalendarNavigation?: CalendarNavigation | null
+  onActiveViewChange?: (view: AppView, query?: string) => void
   onProfileChange?: (profile: Profile | null) => void
   restoreStoredView?: boolean
 }
@@ -327,10 +331,13 @@ export default function WidgetPage({
   initialSelectedPlayerId = '',
   initialSelectedPlayerSessionId = '',
   initialView = 'tickets',
+  initialCalendarNavigation,
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
 }: BookingWidgetProps = {}) {
+  const [incomingCalendar] = useState(initialCalendarNavigation)
+  const [calendarTicketDraft, setCalendarTicketDraft] = useState(incomingCalendar?.mode === 'client-ticket' && initialView === 'tickets')
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -449,7 +456,9 @@ export default function WidgetPage({
   const [mfaStatus, setMfaStatus] = useState('')
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const [tourReplayNonce, setTourReplayNonce] = useState(0)
-  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>('ha-do-centrosa')
+  const [calendarEditSession, setCalendarEditSession] = useState<Session | null>(null)
+  const [calendarBookingDraft, setCalendarBookingDraft] = useState<Pick<BookingForm, 'date' | 'time' | 'venueKey'> | undefined>(() => incomingCalendar?.mode === 'staff-booking' && initialView === 'staff' ? { date: incomingCalendar.date, time: incomingCalendar.time, venueKey: incomingCalendar.venue } : undefined)
+  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
 
   const [sessionVisibility, setSessionVisibility] = useState<'public' | 'private'>('public')
@@ -479,8 +488,8 @@ export default function WidgetPage({
   const [isPushSubscribed, setIsPushSubscribed] = useState(false)
   const [isEnablingPush, setIsEnablingPush] = useState(false)
   const [ticketType, setTicketType] = useState<TicketType>('individual')
-  const [ticketDate, setTicketDate] = useState(localDateString())
-  const [ticketTime, setTicketTime] = useState('')
+  const [ticketDate, setTicketDate] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.date : localDateString())
+  const [ticketTime, setTicketTime] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.time : '')
   const [ticketPlayers, setTicketPlayers] = useState(1)
   const [ticketArenaCount, setTicketArenaCount] = useState(1)
   const [ticketDuration, setTicketDuration] = useState(20)
@@ -697,18 +706,34 @@ export default function WidgetPage({
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
   const {
     calendarWeekStart,
+    isCalendarLoading,
+    loadCalendarWeek,
     createSessionMode,
     handleCreateSessionModeChange,
     moveCalendarWeek,
     openCreateSessionCalendar,
     startSessionFromCalendar,
   } = useCreateSessionCalendar({
+    initialCalendarDate: incomingCalendar?.mode === 'calendar' && initialView === 'create' ? incomingCalendar.date : undefined,
     addDaysToDateValue,
     getLocalDateString: localDateString,
-    loadCalendarRange: (startDate, endDate) => loadSessionRange(startDate, endDate, 'merge', {
-      includeBlockedTimes: true,
-      updateUpcomingPagination: false,
-    }),
+    loadCalendarRange: async (startDate, endDate) => {
+      const client = await getSupabase()
+      const rows: Session[] = []
+      const blocks: BlockedTime[] = []
+      for (let offset = 0; ; offset += 250) {
+        const { data, error } = await client.rpc('sessions_list_page', {
+          p_start_date: startDate, p_end_date: endDate, p_limit: 250, p_offset: offset, p_include_blocked_times: offset === 0,
+        })
+        if (error) throw new Error(error.message)
+        const page = sessionPageFromRpcPayload(data)
+        rows.push(...page.sessions)
+        blocks.push(...page.blockedTimes)
+        if (page.sessions.length < 250) break
+      }
+      setSessions((current) => sortSessionsByStart([...current.filter((session) => session.date < startDate || session.date > endDate), ...rows]))
+      setBlockedTimes((current) => [...current.filter((block) => block.date < startDate || block.date > endDate), ...blocks])
+    },
     onActiveViewChange: setActiveView,
     onCreateStatusChange: setCreateStatus,
     onSessionDateChange: setSessionDate,
@@ -1352,7 +1377,36 @@ export default function WidgetPage({
   }
 
   function openSessionFromCalendar(session: Session) {
+    if (canManageCalendarBookings) {
+      setCalendarEditSession(session)
+      return
+    }
+    if ((session.venue_key || 'ha-do-centrosa') === 'cafe-des-stagiaires') {
+      setTicketDate(session.date)
+      setActiveView('tickets')
+      return
+    }
     openSessionFromProfile(session.id)
+  }
+
+  function openStaffCalendar(date: string, venue?: BookingForm['venueKey']) {
+    if (venue) handleBookingVenueChange(venue)
+    setCalendarBookingDraft(undefined)
+    openCreateSessionCalendar(date)
+  }
+
+  function startCalendarBooking(date: string, time: string) {
+    if (canManageCalendarBookings) {
+      setCalendarBookingDraft({ date, time, venueKey: bookingVenue })
+      setActiveView('staff')
+    } else if (isHaDoBookingVenue) {
+      startSessionFromCalendar(date, time)
+    } else {
+      setTicketDate(date)
+      setTicketTime(time)
+      setCalendarTicketDraft(true)
+      setActiveView('tickets')
+    }
   }
 
   function updateCaptchaToken(token: string) {
@@ -3858,8 +3912,15 @@ export default function WidgetPage({
       window.localStorage.setItem(BOOKING_ACTIVE_VIEW_STORAGE_KEY, activeView)
     } catch {}
 
-    onActiveViewChange?.(activeView)
-  }, [activeView, onActiveViewChange])
+    const navigation: Record<string, string> | null = activeView === 'create' && createSessionMode === 'calendar'
+      ? { mode: 'calendar', date: calendarWeekStart, venue: bookingVenue }
+      : activeView === 'staff' && calendarBookingDraft
+        ? { mode: 'staff-booking', date: calendarBookingDraft.date, time: calendarBookingDraft.time, venue: calendarBookingDraft.venueKey }
+        : activeView === 'tickets' && calendarTicketDraft
+          ? { mode: 'client-ticket', date: ticketDate, time: ticketTime, venue: bookingVenue }
+          : null
+    onActiveViewChange?.(activeView, navigation ? new URLSearchParams(navigation).toString() : activeView === 'create' ? '' : undefined)
+  }, [activeView, bookingVenue, calendarBookingDraft, calendarTicketDraft, calendarWeekStart, createSessionMode, onActiveViewChange, ticketDate, ticketTime])
 
   useEffect(() => {
     onProfileChange?.(profile)
@@ -4815,21 +4876,27 @@ function handleSessionDateChange(value: string) {
 
   const calendarSessions = useMemo(() => {
     return sortSessionsByStart(
-      sessions.filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd)
+      sessions.filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd && (session.venue_key || 'ha-do-centrosa') === bookingVenue && session.status !== 'cancelled' && !['cancelled', 'expired'].includes(session.ticket_status || ''))
     )
-  }, [calendarWeekEnd, calendarWeekStart, sessions])
+  }, [bookingVenue, calendarWeekEnd, calendarWeekStart, sessions])
+  const calendarSessionLanes = useMemo(() => calendarLanes(calendarSessions), [calendarSessions])
 
   const calendarAvailableSlotKeys = useMemo(() => {
     const availableKeys = new Set<string>()
     const today = localDateString()
     calendarWeekDays.forEach((day) => {
       if (day.value < today) return
-      getAvailableTimeOptions(day.value, TIME_STEP_MINUTES, 1).forEach((option) => {
-        availableKeys.add(`${day.value}-${option.value}`)
+      const options = isHaDoBookingVenue
+        ? getAvailableTimeOptions(day.value, TIME_STEP_MINUTES, 1)
+        : getCafeSoftOpeningTimeOptions(day.value, TIME_STEP_MINUTES, 1)
+      options.forEach((option) => {
+        const start = timeToMinutes(option.value)
+        const cafeOccupied = !isHaDoBookingVenue && calendarSessions.some((session) => session.date === day.value && session.status === 'open' && rangesOverlap(start, start + TIME_STEP_MINUTES, timeToMinutes(session.start_time), timeToMinutes(session.start_time) + session.duration_minutes))
+        if (!cafeOccupied) availableKeys.add(`${day.value}-${option.value}`)
       })
     })
     return availableKeys
-  }, [calendarWeekDays, getAvailableTimeOptions])
+  }, [calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
 
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
@@ -5279,6 +5346,12 @@ function handleSessionDateChange(value: string) {
         roleRank: staffAccessRank,
       })
   ))
+  const canManageCalendarBookings = canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
+  useEffect(() => {
+    if (activeView === 'create' && createSessionMode === 'calendar' && !isProfileAuthLoading) void loadCalendarWeek()
+    // Reload the shared calendar after route hydration or a change in staff access.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, createSessionMode, isProfileAuthLoading, canManageCalendarBookings])
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -8774,7 +8847,9 @@ function handleSessionDateChange(value: string) {
                 onKioskLock={kioskLock || undefined}
                 profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
                 onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openCreateSessionCalendar}
+                onOpenSessionCalendar={openStaffCalendar}
+                initialBooking={calendarBookingDraft}
+                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
               />
             ) : (
               <StaffConsole
@@ -8784,7 +8859,9 @@ function handleSessionDateChange(value: string) {
                 mode="staff"
                 profile={profile}
                 onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openCreateSessionCalendar}
+                onOpenSessionCalendar={openStaffCalendar}
+                initialBooking={calendarBookingDraft}
+                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
               />
             )
           ) : (
@@ -8807,7 +8884,9 @@ function handleSessionDateChange(value: string) {
                 onKioskLock={kioskLock || undefined}
                 profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
                 onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openCreateSessionCalendar}
+                onOpenSessionCalendar={openStaffCalendar}
+                initialBooking={calendarBookingDraft}
+                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
               />
             ) : (
               <StaffConsole
@@ -8817,7 +8896,9 @@ function handleSessionDateChange(value: string) {
                 mode="hr"
                 profile={profile}
                 onOpenPlayerProfile={openStaffPlayerProfile}
-                onOpenSessionCalendar={openCreateSessionCalendar}
+                onOpenSessionCalendar={openStaffCalendar}
+                initialBooking={calendarBookingDraft}
+                onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
               />
             )
           ) : (
@@ -8908,23 +8989,25 @@ function handleSessionDateChange(value: string) {
         )}
 
         {activeView === 'create' && (
-          isHaDoBookingVenue ? (
+          isHaDoBookingVenue || createSessionMode === 'calendar' ? (
             <CreateSessionView
               createStatus={createStatus}
               mode={createSessionMode}
-              onModeChange={handleCreateSessionModeChange}
+              onModeChange={(mode) => { if (mode === 'form' && !isHaDoBookingVenue) { setActiveView('tickets'); return }; handleCreateSessionModeChange(mode) }}
               text={text}
             >
             {createSessionMode === 'calendar' ? (
-              <div className="calendar-panel" aria-label={text.calendarAvailabilityTitle}>
+              <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-toolbar">
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
+                    <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">
                     <button
                       aria-label={text.previousWeek}
+                      disabled={isCalendarLoading}
                       type="button"
                       onClick={() => moveCalendarWeek(-7)}
                     >
@@ -8932,6 +9015,7 @@ function handleSessionDateChange(value: string) {
                     </button>
                     <button
                       aria-label={text.nextWeek}
+                      disabled={isCalendarLoading}
                       type="button"
                       onClick={() => moveCalendarWeek(7)}
                     >
@@ -8939,7 +9023,12 @@ function handleSessionDateChange(value: string) {
                     </button>
                   </div>
                 </div>
-                <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
+                <div className="calendar-actions">
+                  <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
+                  <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
+                  <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
+                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart < localDateString() ? localDateString() : calendarWeekStart, isHaDoBookingVenue ? '09:00' : '16:00')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
+                </div>
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">
                     <div className="calendar-day-header calendar-time-header" />
@@ -8971,10 +9060,10 @@ function handleSessionDateChange(value: string) {
                                 <button
                                   aria-label={`${text.emptySlot}: ${day.weekday} ${day.day} ${slot.value}`}
                                   className={slotAvailable ? 'calendar-slot' : 'calendar-slot unavailable'}
-                                  disabled={!slotAvailable}
+                                  disabled={!slotAvailable || isCalendarLoading}
                                   key={slot.value}
                                   type="button"
-                                  onClick={() => startSessionFromCalendar(day.value, slot.value)}
+                                  onClick={() => startCalendarBooking(day.value, slot.value)}
                                 >
                                   {slot.isHour ? <span>{slot.value}</span> : null}
                                 </button>
@@ -8988,10 +9077,7 @@ function handleSessionDateChange(value: string) {
                               const visibleStart = Math.max(start, OPEN_MINUTES)
                               const visibleEnd = Math.min(end, CLOSE_MINUTES)
                               const topPercent = ((visibleStart - OPEN_MINUTES) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
-                              const heightPercent = Math.max(
-                                4,
-                                ((visibleEnd - visibleStart) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
-                              )
+                              const heightPercent = ((visibleEnd - visibleStart) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
                               const participantCount = session.session_participants?.length ?? 0
                               const capacity = isTicket ? session.ticket_player_count || session.max_players : session.max_players
                               const sessionKind = isTicket
@@ -9000,14 +9086,15 @@ function handleSessionDateChange(value: string) {
                                   ? text.private
                                   : text.public
                               const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
-                              const calendarSessionLabel = `${session.name}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
+                              const lane = calendarSessionLanes.get(session.id) || { lane: 0, lanes: 1 }
+                              const calendarSessionLabel = `${session.name} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
 
                               return (
                                 <button
                                   aria-label={calendarSessionLabel}
                                   className={isTicket ? 'calendar-session-block ticket' : 'calendar-session-block'}
                                   key={session.id}
-                                  style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
+                                  style={{ top: `${topPercent}%`, height: `${heightPercent}%`, left: `calc(${lane.lane * 100 / lane.lanes}% + 3px)`, right: 'auto', width: `calc(${100 / lane.lanes}% - 6px)` }}
                                   title={calendarSessionLabel}
                                   type="button"
                                   onClick={() => openSessionFromCalendar(session)}
@@ -9268,6 +9355,16 @@ function handleSessionDateChange(value: string) {
 
   const appOverlays = (
     <>
+      {calendarEditSession && canManageCalendarBookings && (
+        <StaffCalendarBookingDialog session={calendarEditSession} language={language === 'vi' ? 'vi' : 'en'}
+          onClose={() => setCalendarEditSession(null)}
+          onSaved={(date, deleted, venue) => {
+            if (deleted) setSessions((current) => current.filter((session) => session.id !== calendarEditSession.id))
+            setCalendarEditSession(null)
+            if (!deleted) handleBookingVenueChange(venue)
+            openCreateSessionCalendar(date)
+          }} />
+      )}
       {actionToast && (
         <div className="action-toast" role="status" aria-live="polite" aria-atomic="true" key={actionToast.id}>
           {actionToast.message}

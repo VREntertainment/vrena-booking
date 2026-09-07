@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { execFileSync } from 'node:child_process'
-import { futureDate, loginAsAdmin, openAdmin } from './support/admin'
+import { chooseCafeVenue, futureDate, loginAsAdmin, openAdmin } from './support/admin'
 
 test('staff booking: inline client, shop games, discounts and responsive summary', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Create isolated fixture records once; validate desktop and mobile in the same flow.')
@@ -17,7 +17,7 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await loginAsAdmin(page)
   await openAdmin(page)
   await page.setViewportSize({ width: 1142, height: 894 })
-  await expect(page.getByRole('combobox', { name: 'Booking type', exact: true })).toHaveValue('customer')
+  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('walk_in')
   const name = page.getByRole('combobox', { name: 'Customer name', exact: true })
   await name.click()
   await expect(page.getByRole('listbox')).toBeVisible()
@@ -50,8 +50,8 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await page.screenshot({ path: '/tmp/staff-booking-mobile.png' })
   await page.setViewportSize({ width: 1142, height: 894 })
   let writes = 0
-  page.on('request', (request) => { if (request.url().endsWith('/rpc/create_staff_order_with_payments')) writes += 1 })
-  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/create_staff_order_with_payments'))
+  page.on('request', (request) => { if (request.url().endsWith('/rpc/staff_create_booking')) writes += 1 })
+  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking'))
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const created = await (await createdResponse).json() as { session_id: string; customer_id: string }
   testInfo.annotations.push({ type: 'local-fixture', description: created.session_id || 'creation failed' })
@@ -61,7 +61,7 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await expect(page.getByRole('option').filter({ hasText: client }).first()).toBeVisible()
   await page.getByRole('option').filter({ hasText: client }).first().click()
   await expect(page.getByText('Existing profile selected.', { exact: false })).toBeVisible()
-  await page.getByRole('combobox', { name: 'Booking type', exact: true }).selectOption('guest')
+  await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
   await expect(name).toHaveCount(0)
   await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
   await expect(page.getByRole('combobox', { name: 'Arena', exact: true }).locator('option')).toHaveCount(1)
@@ -83,7 +83,7 @@ test('staff booking: repeated confirmation clicks recover after a failed check',
   test.skip(testInfo.project.name !== 'chromium', 'Exercise the request lock once.')
   await loginAsAdmin(page)
   await openAdmin(page)
-  await page.getByRole('combobox', { name: 'Booking type', exact: true }).selectOption('guest')
+  await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
   let rateChecks = 0
   let writes = 0
   await page.route('**/rest/v1/rpc/consume_booking_attempt_rate_limit', async (route) => {
@@ -91,7 +91,7 @@ test('staff booking: repeated confirmation clicks recover after a failed check',
     await new Promise((resolve) => setTimeout(resolve, 600))
     await route.fulfill(rateChecks === 1 ? { status: 429, json: { message: 'QA temporary check failure' } } : { json: null })
   })
-  await page.route('**/rest/v1/rpc/create_staff_order_with_payments', async (route) => {
+  await page.route('**/rest/v1/rpc/staff_create_booking', async (route) => {
     writes += 1
     await route.fulfill({ json: { order_number: 'QA-SINGLE-BOOKING', total: 220000 } })
   })
@@ -122,7 +122,7 @@ test('staff booking: client contacts and available discounts follow the selectio
     max_uses: null, used_count: 0,
   }] }))
   let writes = 0
-  await page.route('**/rest/v1/rpc/create_staff_order_with_payments', async (route) => { writes += 1; await route.abort() })
+  await page.route('**/rest/v1/rpc/staff_create_booking', async (route) => { writes += 1; await route.abort() })
   await openAdmin(page)
   const name = page.getByRole('combobox', { name: 'Customer name', exact: true })
   await name.click()
@@ -143,4 +143,112 @@ test('staff booking: client contacts and available discounts follow the selectio
   expect(writes).toBe(0)
   await discount.selectOption('')
   await expect(page.locator('.staff-price-lines')).toContainText('No discount')
+})
+
+test('staff calendar: shared calendar supports source-aware creation, edit, deletion and mobile payments', async ({ page, browser }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Run the isolated write flow once; cover desktop and mobile together.')
+  if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Calendar write tests require isolated local services.')
+  const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  await page.route('**/api/bookings/update-email', (route) => route.fulfill({ json: { ok: true } }))
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await loginAsAdmin(page)
+  await openAdmin(page)
+  await page.setViewportSize({ width: 1142, height: 894 })
+  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true }).locator('option')).toHaveText(['Walk-in','Zalo','WhatsApp','Phone','Website','Other'])
+  await page.getByRole('button', { name: 'Add split', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Payment amount', exact: true })).toHaveCount(2)
+  await page.getByRole('button', { name: 'Remove payment split 2', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Payment amount', exact: true })).toHaveCount(1)
+  await page.setViewportSize({ width: 375, height: 667 })
+  const hierarchy = await page.locator('.staff-payment-remove').evaluate((button) => {
+    const rect = button.getBoundingClientRect()
+    const input = button.previousElementSibling!.getBoundingClientRect()
+    return { inline: Math.abs(rect.top + rect.height / 2 - input.top - input.height / 2) < 2, width: rect.width, background: getComputedStyle(button).backgroundColor }
+  })
+  expect(hierarchy.inline).toBe(true)
+  expect(hierarchy.width).toBe(36)
+  await expect(page.locator('.staff-payment-remove svg')).toBeVisible()
+  expect(await page.locator('.staff-payment-add').evaluate((button) => getComputedStyle(button).borderTopWidth)).toBe('0px')
+  await page.getByRole('heading', { name: 'Payment splits', exact: true }).scrollIntoViewIfNeeded()
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await page.locator('.staff-payment-splits').screenshot({ path: '/tmp/staff-payment-controls.png', animations: 'disabled' })
+  await page.screenshot({ path: '/tmp/staff-payment-hierarchy-mobile.png', animations: 'disabled' })
+  await page.setViewportSize({ width: 1142, height: 894 })
+  await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
+  await page.getByLabel('Booking date', { exact: true }).fill(futureDate(120))
+  await page.getByRole('button', { name: 'Open session calendar', exact: true }).click()
+  await expect(page).toHaveURL(/mode=calendar/)
+  const calendar = page.locator('.calendar-panel')
+  await expect(calendar).toHaveAttribute('aria-busy', 'false')
+  await expect(calendar.locator('.calendar-shop-badge')).toHaveText('VRena Café des Stagiaires')
+  await expect(page.getByTestId('staff-console')).toHaveCount(0)
+  // Existing weekly grid is shared by both audiences, and the shop remains selected.
+  await expect(calendar.locator('.calendar-day-column')).toHaveCount(7)
+  await calendar.locator('.calendar-slot:not([disabled])').first().click()
+  await expect(page.getByTestId('staff-console')).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Shop', exact: true })).toHaveValue('cafe-des-stagiaires')
+  await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('16:00')
+  await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
+  await page.getByRole('combobox', { name: 'Booking source', exact: true }).selectOption('zalo')
+  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking'))
+  await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
+  const created = await (await createdResponse).json() as { session_id: string; order_id: string }
+  expect(created.session_id).toBeTruthy()
+  try {
+    await expect(calendar).toBeVisible()
+    await expect(calendar).toHaveAttribute('aria-busy', 'false')
+    const saved = await admin.from('sessions').select('name,date,start_time,venue_key').eq('id', created.session_id).single()
+    if (saved.error) throw saved.error
+    const block = calendar.getByRole('button').filter({ hasText: saved.data.name })
+    await expect(block).toHaveCount(1)
+    await block.click()
+    const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
+    await expect(dialog.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('zalo')
+    await dialog.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('ha-do-centrosa')
+    await dialog.getByRole('textbox', { name: 'Booking name', exact: true }).fill('Calendar updated fixture')
+    await dialog.getByLabel('Time', { exact: true }).fill('17:00')
+    await dialog.getByRole('spinbutton', { name: 'Players', exact: true }).fill('2')
+    await dialog.getByRole('combobox', { name: 'Booking source', exact: true }).selectOption('whatsapp')
+    await page.setViewportSize({ width: 375, height: 667 })
+    expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
+    await page.screenshot({ path: '/tmp/staff-calendar-editor-mobile.png' })
+    await dialog.getByRole('button', { name: 'Save changes', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(calendar).toHaveAttribute('aria-busy', 'false')
+    await expect(calendar.locator('.calendar-shop-badge')).toHaveText('VRena Hà Đô Centrosa')
+    const order = await admin.from('staff_orders').select('booking_time,players_count,booking_source,total').eq('id', created.order_id).single()
+    expect(order.data).toMatchObject({ booking_time: '17:00:00', players_count: 2, booking_source: 'whatsapp', total: 240000 })
+    await page.setViewportSize({ width: 1142, height: 894 })
+    await calendar.getByRole('button').filter({ hasText: 'Calendar updated fixture' }).scrollIntoViewIfNeeded()
+    await page.screenshot({ path: '/tmp/staff-calendar-desktop.png' })
+    await calendar.getByRole('button').filter({ hasText: 'Calendar updated fixture' }).click()
+    await dialog.getByRole('button', { name: 'Delete booking', exact: true }).click()
+    const confirmation = page.getByRole('dialog', { name: 'Delete booking', exact: true })
+    await expect(confirmation).toContainText('VRena Hà Đô Centrosa')
+    await confirmation.getByRole('button', { name: 'Keep booking', exact: true }).click()
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Delete booking', exact: true }).click()
+    await confirmation.getByRole('button', { name: 'Confirm deletion', exact: true }).click()
+    await expect(confirmation).toHaveCount(0)
+    await expect(calendar.getByRole('button').filter({ hasText: 'Calendar updated fixture' })).toHaveCount(0)
+    const deleted = await admin.from('sessions').select('deleted_at').eq('id', created.session_id).single()
+    expect(deleted.data?.deleted_at).toBeTruthy()
+    expect(errors).toEqual([])
+    const anonymous = await browser.newContext({ baseURL: new URL(page.url()).origin, viewport: { width: 375, height: 667 } })
+    await anonymous.addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: new URL(page.url()).origin }])
+    const clientPage = await anonymous.newPage()
+    await clientPage.goto('/create-session')
+    await clientPage.getByRole('button', { name: 'Calendar', exact: true }).click()
+    await expect(clientPage.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
+    await chooseCafeVenue(clientPage)
+    await expect(clientPage.locator('.calendar-shop-badge')).toHaveText('VRena Café des Stagiaires')
+    await expect(clientPage.getByRole('button', { name: 'New booking', exact: true })).toHaveCount(0)
+    await expect(clientPage.getByRole('button', { name: 'Delete booking', exact: true })).toHaveCount(0)
+    await expect(clientPage.locator('.calendar-day-column')).toHaveCount(7)
+    expect(await clientPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    await anonymous.close()
+  } finally {
+    await admin.from('sessions').delete().eq('id', created.session_id)
+  }
 })
