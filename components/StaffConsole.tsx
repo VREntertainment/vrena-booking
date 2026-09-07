@@ -4,6 +4,9 @@ import StaffOrderPaymentForm, { type OrderPaymentEntry } from './StaffOrderPayme
 import StaffVisitParticipantEditor from './StaffVisitParticipantEditor'
 import { visitCopy, visitProgress } from '../lib/staffVisit'
 import { bookingDurationCopy } from '../lib/bookingDurationCopy'
+import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { individualTicketUnitPrice } from '../lib/ticketTariffs'
+import { staffBookingCopy } from '../lib/staff/bookingCopy'
 import {
   buildStaffReport,
   buildDailySeries,
@@ -1042,7 +1045,8 @@ function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): Paym
 }
 
 const defaultBookingForm = (): BookingForm => ({
-  guestBooking: true,
+  guestBooking: false,
+  venueKey: 'ha-do-centrosa',
   customerId: '',
   customerName: '',
   customerPhone: '',
@@ -2494,6 +2498,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [deletedRecords, setDeletedRecords] = useState<SoftDeletedRecord[]>([])
   const [booking, setBooking] = useState<BookingForm>(() => defaultBookingForm())
   const [customerNameFocused, setCustomerNameFocused] = useState(false)
+  const [customerSuggestionIndex, setCustomerSuggestionIndex] = useState(-1)
+  const bookingSubmitRef = useRef(false)
+  const bookingText = staffBookingCopy[resolvedLanguage]
   const [customerInviteForm, setCustomerInviteForm] = useState<CustomerInviteForm>(() => defaultCustomerInviteForm())
   const [customerInviteStatus, setCustomerInviteStatus] = useState('')
   const [customerTemporaryAccess, setCustomerTemporaryAccess] = useState<CustomerTemporaryAccess | null>(null)
@@ -2656,14 +2663,25 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
   const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
-  const selectedGame = useMemo(() => activeGames.find((game) => game.id === booking.gameId) || activeGames[0] || null, [activeGames, booking.gameId])
+  const bookingGames = useMemo(() => activeGames.filter((game) => {
+    const venues = publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']
+    return venues.includes(booking.venueKey)
+  }), [activeGames, booking.venueKey])
+  const selectedGame = useMemo(() => bookingGames.find((game) => game.id === booking.gameId) || bookingGames[0] || null, [bookingGames, booking.gameId])
+  const bookingArenas = booking.venueKey === 'cafe-des-stagiaires'
+    ? ['cafe:arena-1']
+    : selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1']
+  const selectedBookingArena = bookingArenas.includes(booking.arenaId) ? booking.arenaId : bookingArenas[0]
+  const bookingVenueName = booking.venueKey === 'cafe-des-stagiaires' ? 'VRena Café des Stagiaires' : 'VRena Hà Đô Centrosa'
   const selectedRule = useMemo(() => {
-    if (!selectedGame) return null
+    if (!selectedGame || booking.venueKey === 'cafe-des-stagiaires') return null
     return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
-  }, [booking.date, booking.time, prices, selectedGame])
-  const bookingUnitPrice = selectedRule?.price_per_player || 220000
+  }, [booking.date, booking.time, booking.venueKey, prices, selectedGame])
+  const bookingUnitPrice = booking.venueKey === 'cafe-des-stagiaires'
+    ? individualTicketUnitPrice(booking.date, booking.time, booking.venueKey)
+    : selectedRule?.price_per_player ?? 200000
   const bookingDurationBlocks = Math.max(1, Math.ceil((selectedGame?.duration_minutes || 20) / 20))
-  const bookingSubtotal = selectedRule?.price_per_arena_slot
+  const bookingSubtotal = selectedRule?.price_per_arena_slot != null
     ? selectedRule.price_per_arena_slot * bookingDurationBlocks
     : bookingUnitPrice * booking.players
   const availableBookingDiscounts = useMemo(() => (
@@ -2673,7 +2691,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       players: booking.players,
       priceRuleId: selectedRule?.id || null,
       subtotal: bookingSubtotal,
-      ticketType: 'all',
+      ticketType: 'individual',
       time: booking.time,
     }))
   ), [booking.date, booking.players, booking.time, bookingSubtotal, discounts, selectedGame, selectedRule])
@@ -2693,10 +2711,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         ? manualDiscountLabel(booking.manualDiscountType, booking.manualDiscountValue, text)
         : selectedDiscount?.name || text.noDiscount,
       total: Math.max(0, subtotal - discountTotal),
-      ruleName: selectedRule?.rule_name || text.defaultWalkInRate,
+      ruleName: selectedRule?.rule_name || (booking.venueKey === 'cafe-des-stagiaires' ? bookingVenueName : text.defaultWalkInRate),
       duration: selectedGame?.duration_minutes || 20,
     }
-  }, [booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text])
+  }, [booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
@@ -2938,8 +2956,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   ), [hrAdjustments, selectedEmployeeStaffId])
   const customerNameSuggestions = useMemo(() => {
     const query = normalizeStaffSearchValue(booking.customerName.trim())
-    if (query.length < 2) return []
-
     return profiles
       .filter((item) => !isDemoProfile(item) && customerSearchText(item, text).includes(query))
       .sort((left, right) => {
@@ -2953,7 +2969,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           || (left.email || '').localeCompare(right.email || '')
       })
   }, [booking.customerName, profiles, text])
-  const showCustomerNameSuggestions = customerNameFocused && customerNameSuggestions.length > 0
+  const showCustomerNameSuggestions = !booking.guestBooking && customerNameFocused
+  const visibleCustomerSuggestions = customerNameSuggestions.slice(0, 50)
+  const canOfferNewCustomer = Boolean(booking.customerName.trim()) && !booking.customerId
   const employeePayrollSummary = selectedEmployeePayrollSummary
   const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
   const attendanceGridStyle = useMemo(() => ({
@@ -4080,8 +4098,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       guestBooking: false,
       customerId: profileId,
       customerName: selected ? customerName(selected, text) : current.customerName,
-      customerPhone: selected?.phone || current.customerPhone,
-      customerEmail: selected?.email || current.customerEmail,
+      customerPhone: selected?.phone || '',
+      customerEmail: selected?.email || '',
     }))
   }
 
@@ -4107,7 +4125,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         return selected && customerName(selected, text) === value ? current.customerId : ''
       })(),
       customerName: value,
+      ...(current.customerId ? { customerPhone: '', customerEmail: '' } : {}),
     }))
+    setCustomerNameFocused(true)
+    setCustomerSuggestionIndex(-1)
   }
 
   function selectCustomerSuggestion(profileId: string) {
@@ -4116,52 +4137,74 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   }
 
   async function createOrder() {
-    if (!canCreateOrders || !selectedGame) return
-
-    const allowed = await consumeStaffRateLimit('booking_attempt', `${booking.date}:${booking.time}:${selectedGame.id}`)
-    if (!allowed) return
-
-    setSaving(true)
-    setStatus(text.messages.orderCreating)
-    const guestCustomer = booking.guestBooking
-    const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
-    const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
-    const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
-      p_customer_id: guestCustomer ? null : booking.customerId || null,
-      p_customer_name: guestCustomer ? null : booking.customerName || null,
-      p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
-      p_customer_email: guestCustomer ? null : booking.customerEmail || null,
-      p_game_id: selectedGame.id,
-      p_booking_date: booking.date,
-      p_booking_time: `${booking.time}:00`,
-      p_players_count: booking.players,
-      p_arena_id: booking.arenaId || null,
-      p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
-      p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
-      p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
-      p_payment_splits: paymentSplits,
-      p_order_status: booking.orderStatus,
-      p_invoice_required: booking.invoiceRequired,
-      p_company_name: booking.companyName || null,
-      p_tax_code: booking.taxCode || null,
-      p_invoice_email: booking.invoiceEmail || null,
-      p_invoice_address: booking.invoiceAddress || null,
-      p_internal_note: booking.note || null,
-    })
-
-    if (error) {
-      setStatus(error.message)
-      setSaving(false)
+    if (!canCreateOrders || !selectedGame || bookingSubmitRef.current) return
+    if (!booking.guestBooking && !booking.customerName.trim()) {
+      setStatus(text.messages.customerAccountNameRequired)
       return
     }
+    if (!Number.isInteger(booking.players) || booking.players < 1 || booking.players > 64 || !booking.date || !booking.time) {
+      setStatus(bookingText.invalidBooking)
+      return
+    }
+    if (booking.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.customerEmail)) {
+      setStatus(bookingText.invalidEmail)
+      return
+    }
+    if (booking.discountId && !selectedDiscount) {
+      setStatus(bookingText.discountChanged)
+      return
+    }
+    bookingSubmitRef.current = true
+    setSaving(true)
+    try {
+      const allowed = await consumeStaffRateLimit('booking_attempt', `${booking.date}:${booking.time}:${selectedGame.id}`)
+      if (!allowed) return
+      setStatus(text.messages.orderCreating)
+      const guestCustomer = booking.guestBooking
+      const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
+      const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
+      const { data, error } = await supabase.rpc('create_staff_order_with_payments', {
+        p_customer_id: guestCustomer ? null : booking.customerId || null,
+        p_customer_name: guestCustomer ? null : booking.customerName || null,
+        p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
+        p_customer_email: guestCustomer ? null : booking.customerEmail || null,
+        p_game_id: selectedGame.id,
+        p_booking_date: booking.date,
+        p_booking_time: `${booking.time}:00`,
+        p_players_count: booking.players,
+        p_arena_id: selectedBookingArena || null,
+        p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
+        p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
+        p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
+        p_payment_splits: paymentSplits,
+        p_order_status: booking.orderStatus,
+        p_invoice_required: booking.invoiceRequired,
+        p_company_name: booking.companyName || null,
+        p_tax_code: booking.taxCode || null,
+        p_invoice_email: booking.invoiceEmail || null,
+        p_invoice_address: booking.invoiceAddress || null,
+        p_internal_note: booking.note || null,
+      })
 
-    const order = data as { order_number?: string; total?: number } | null
-    setStatus(text.messages.orderConfirmed
-      .replace('{order}', order?.order_number || '')
-      .replace('{total}', formatVnd(order?.total || quote.total)))
-    setBooking(defaultBookingForm())
-    markStaffDataStale('today', 'orders', 'report')
-    setSaving(false)
+      if (error) {
+        setStatus(error.message)
+        setSaving(false)
+        return
+      }
+
+      const order = data as { order_number?: string; total?: number } | null
+      setStatus(text.messages.orderConfirmed
+        .replace('{order}', order?.order_number || '')
+        .replace('{total}', formatVnd(order?.total ?? quote.total)))
+      setBooking(defaultBookingForm())
+      markStaffDataStale('today', 'orders', 'report', 'profiles')
+      void loadProfiles(true)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error))
+    } finally {
+      bookingSubmitRef.current = false
+      setSaving(false)
+    }
   }
 
   async function handleGameImageUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -7170,30 +7213,31 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </button>
             </div>
             {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
-            <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders}>
+            <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders || saving}>
             <div className="form-grid compact-form-grid">
-              <label className="checkbox-row staff-guest-booking-toggle full">
-                <input
-                  checked={booking.guestBooking}
-                  type="checkbox"
-                  onChange={(event) => setGuestBooking(event.target.checked)}
-                />
-                <span className="staff-guest-booking-copy">
-                  <strong>{text.labels.guestBooking}</strong>
-                  <small>{text.messages.guestBookingHelp}</small>
-                </span>
-              </label>
               <label>
-                {text.labels.customerProfile}
-                <select disabled={booking.guestBooking} value={booking.customerId} onChange={(event) => applyCustomer(event.target.value)}>
-                  <option value="">{text.walkIn}</option>
-                  {profiles.map((item) => (
-                    <option key={item.id} value={item.id}>{customerName(item, text)}</option>
-                  ))}
+                {bookingText.bookingType}
+                <select value={booking.guestBooking ? 'guest' : 'customer'} onChange={(event) => setGuestBooking(event.target.value === 'guest')}>
+                  <option value="customer">{bookingText.customerBooking}</option>
+                  <option value="guest">{text.labels.guestBooking}</option>
                 </select>
               </label>
+              <label>
+                {bookingText.shop}
+                <select value={booking.venueKey} onChange={(event) => setBooking((current) => ({
+                  ...current,
+                  venueKey: event.target.value as BookingForm['venueKey'],
+                  gameId: '', arenaId: '', discountId: '',
+                  time: event.target.value === 'cafe-des-stagiaires' && current.time < '16:00' ? '16:00' : current.time,
+                }))}>
+                  <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
+                  <option value="cafe-des-stagiaires">VRena Café des Stagiaires</option>
+                </select>
+              </label>
+              {booking.guestBooking && <p className="field-help full">{text.messages.guestBookingHelp}</p>}
+              {!booking.guestBooking && <>
               <div
-                className="staff-customer-name-field"
+                className="staff-customer-name-field full"
                 onBlur={(event) => {
                   if (!event.currentTarget.contains(event.relatedTarget)) setCustomerNameFocused(false)
                 }}
@@ -7202,6 +7246,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 <label htmlFor="staff-booking-customer-name">{text.labels.customerName}</label>
                 <input
                   id="staff-booking-customer-name"
+                  maxLength={120}
+                  autoComplete="off"
+                  placeholder={bookingText.searchCustomer}
+                  aria-activedescendant={showCustomerNameSuggestions && customerSuggestionIndex >= 0 ? `staff-customer-option-${customerSuggestionIndex}` : undefined}
                   aria-autocomplete="list"
                   aria-controls={!booking.guestBooking && showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
                   aria-expanded={!booking.guestBooking && showCustomerNameSuggestions}
@@ -7209,12 +7257,29 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   role="combobox"
                   value={booking.customerName}
                   onChange={(event) => handleCustomerNameChange(event.target.value)}
+                  onClick={() => setCustomerNameFocused(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      setCustomerNameFocused(true)
+                      const count = visibleCustomerSuggestions.length + (canOfferNewCustomer ? 1 : 0)
+                      setCustomerSuggestionIndex((current) => count ? (current + (event.key === 'ArrowDown' ? 1 : -1) + count) % count : -1)
+                    }
+                    if (event.key === 'Enter' && showCustomerNameSuggestions && customerSuggestionIndex >= 0) {
+                      event.preventDefault()
+                      const match = visibleCustomerSuggestions[customerSuggestionIndex]
+                      if (match) selectCustomerSuggestion(match.id)
+                      else setCustomerNameFocused(false)
+                    }
+                  }}
                 />
                 {showCustomerNameSuggestions && (
                   <div className="staff-customer-suggestions" id="staff-customer-name-suggestions" role="listbox">
-                    {customerNameSuggestions.map((item) => (
+                    {visibleCustomerSuggestions.map((item, index) => (
                       <button
-                        aria-selected={booking.customerId === item.id}
+                        id={`staff-customer-option-${index}`}
+                        aria-selected={customerSuggestionIndex === index || booking.customerId === item.id}
                         className="staff-customer-suggestion"
                         key={item.id}
                         role="option"
@@ -7225,9 +7290,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                         <small>{[item.phone, item.email].filter(Boolean).join(' · ') || text.noContact}</small>
                       </button>
                     ))}
+                    {canOfferNewCustomer && <button
+                      id={`staff-customer-option-${visibleCustomerSuggestions.length}`}
+                      className="staff-customer-suggestion"
+                      role="option"
+                      aria-selected={customerSuggestionIndex === visibleCustomerSuggestions.length}
+                      type="button"
+                      onClick={() => { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }}
+                    >
+                      <span>+ {bookingText.createProfile.replace('{name}', booking.customerName.trim())}</span>
+                      <small>{bookingText.createWithBooking}</small>
+                    </button>}
+                    {!visibleCustomerSuggestions.length && !canOfferNewCustomer && <p className="field-help">{bookingText.searchCustomer}</p>}
                   </div>
                 )}
               </div>
+              <p className="field-help full">{booking.customerId ? bookingText.profileSelected : bookingText.createWithBooking}</p>
               <label>
                 {text.labels.phone}
                 <PhoneNumberInput
@@ -7242,12 +7320,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </label>
               <label>
                 {text.labels.email}
-                <input disabled={booking.guestBooking} value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
+                <input type="email" autoComplete="off" disabled={booking.guestBooking} value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
               </label>
+              </>}
               <label>
                 {text.labels.game}
-                <select value={booking.gameId || selectedGame?.id || ''} onChange={(event) => setBooking({ ...booking, gameId: event.target.value })}>
-                  {activeGames.map((game) => (
+                <select disabled={!bookingGames.length} value={selectedGame?.id || ''} onChange={(event) => setBooking({ ...booking, gameId: event.target.value, arenaId: '', discountId: '' })}>
+                  {!bookingGames.length && <option value="">{bookingText.noGames}</option>}
+                  {bookingGames.map((game) => (
                     <option key={game.id} value={game.id}>{game.name}</option>
                   ))}
                 </select>
@@ -7266,9 +7346,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </label>
               <label>
                 {text.labels.arena}
-                <select value={booking.arenaId} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
-                  {(selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1']).map((arena) => (
-                    <option key={arena} value={arena}>{arena}</option>
+                <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
+                  {bookingArenas.map((arena, index) => (
+                    <option key={arena} value={arena}>{text.labels.arena} {index + 1}</option>
                   ))}
                 </select>
               </label>
@@ -7284,15 +7364,18 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   })}
                 >
                   <option value="">{text.noDiscount}</option>
+                  {booking.discountId && !selectedDiscount && <option value={booking.discountId}>{bookingText.discountChanged}</option>}
                   {availableBookingDiscounts.map((discount) => (
-                    <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</option>
+                    <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ` : ''}{discount.name} · {formatDiscountRuleValue(discount, text)}</option>
                   ))}
                 </select>
               </label>
+              <p className="field-help full">{bookingText.discountsHelp.replace('{count}', String(availableBookingDiscounts.length))}</p>
               <div className="staff-manual-discount full">
                 <span className="staff-field-label">{text.labels.uniqueDiscount}</span>
                 <div>
                   <select
+                    aria-label={text.labels.uniqueDiscount}
                     value={booking.manualDiscountType}
                     onChange={(event) => setBooking({
                       ...booking,
@@ -7306,6 +7389,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                     <option value="percentage">{text.discountTypes.percentage}</option>
                   </select>
                   <input
+                    aria-label={bookingText.discountValue}
                     disabled={!booking.manualDiscountType}
                     min={0}
                     max={booking.manualDiscountType === 'percentage' ? 100 : undefined}
@@ -7373,8 +7457,12 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
           <div className="staff-card staff-summary-card">
             <h3>{text.labels.summary}</h3>
-            <p className="field-help">{bookingDurationCopy[resolvedLanguage].hint}</p>
+            <p className="field-help">{bookingText.durationHelp}</p>
             <div className="staff-price-lines">
+              <span>{bookingText.shop}</span><strong>{bookingVenueName}</strong>
+              <span>{text.labels.game}</span><strong>{selectedGame?.name || bookingText.noGames}</strong>
+              <span>{text.labels.date} / {text.labels.time}</span><strong>{shortDateLabel(booking.date)} · {booking.time}</strong>
+              <span>{text.labels.players}</span><strong>{booking.players}</strong>
               <span>{text.labels.customer}</span><strong>{booking.guestBooking ? text.labels.guestBooking : booking.customerName || text.walkIn}</strong>
               <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
               <span>{bookingDurationCopy[resolvedLanguage].game}</span><strong>{quote.duration} min</strong>
@@ -7383,7 +7471,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               <span>{text.labels.discount}</span><strong>-{formatVnd(quote.discountTotal)}</strong>
               <span>{text.labels.total}</span><strong>{formatVnd(quote.total)}</strong>
             </div>
-            <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame} type="button" onClick={createOrder}>
+            {status && <p className="notice compact-notice" role="status">{status}</p>}
+            <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
               {text.actions.confirmBooking}
             </button>
           </div>

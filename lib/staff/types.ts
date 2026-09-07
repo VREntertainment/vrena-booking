@@ -760,6 +760,7 @@ export type StaffHourlyRevenuePoint = {
 }
 
 export type BookingForm = {
+  venueKey: 'ha-do-centrosa' | 'cafe-des-stagiaires'
   guestBooking: boolean
   customerId: string
   customerName: string
