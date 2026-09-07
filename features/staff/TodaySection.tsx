@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import StaffOrderStatusConfirmation, { type OrderStatusChange } from '../../components/staff/StaffOrderStatusConfirmation'
 import {
   CalendarDays,
   Check,
@@ -141,7 +142,7 @@ export default function TodaySection({
   unlinkedOperationOrders,
   orderRows,
 }: TodaySectionProps) {
-  const [noShowId, setNoShowId] = useState<string | null>(null)
+  const [statusConfirmation, setStatusConfirmation] = useState<{ id: string; status: OrderStatusChange } | null>(null)
   return (
     <div className="staff-card staff-card-wide staff-operations-card">
       <div className="staff-card-heading">
@@ -294,7 +295,7 @@ export default function TodaySection({
                 {order && canCreateOrders && (
                   <>
                     <button className="secondary" type="button" disabled={saving || orderPaidAmount(order, orderPaymentsByOrderId) >= order.total || ['cancelled', 'refunded', 'no_show'].includes(order.order_status)} onClick={() => setPaymentOrderId(order.id)}>
-                      <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{visitText.recordPayment}</ButtonIconText>
+                      <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.labels.payment}</ButtonIconText>
                     </button>
                     <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => {
                       if (!progress.recorded) {
@@ -302,11 +303,11 @@ export default function TodaySection({
                         setVisitFeedback((current) => ({ ...current, [session.id]: visitText.hint }))
                         return
                       }
-                      void updateOrder(order, { order_status: 'completed' })
+                      setStatusConfirmation({ id: session.id, status: 'completed' })
                     }}>
                       <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
                     </button>
-                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => setNoShowId(session.id)}>
+                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => setStatusConfirmation({ id: session.id, status: 'no_show' })}>
                       <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
                     </button>
                   </>
@@ -317,7 +318,7 @@ export default function TodaySection({
                   </button>
                 )}
               </div>
-              {order && noShowId === session.id && <div className="staff-visit-editor"><p>{resolvedLanguage === 'vi' ? 'Đánh dấu không đến và giải phóng lịch? Giữ nguyên các khoản đã trả.' : 'Mark as a no-show and release the calendar slot? Recorded payments will be retained.'}</p><div className="staff-row-actions"><button className="danger" disabled={saving} type="button" onClick={async () => { await updateOrder(order, { order_status: 'no_show' }); setNoShowId(null) }}>{resolvedLanguage === 'vi' ? 'Xác nhận không đến' : 'Confirm no-show'}</button><button className="secondary" disabled={saving} type="button" onClick={() => setNoShowId(null)}>{text.actions.cancel}</button></div></div>}
+              {order && statusConfirmation?.id === session.id && <StaffOrderStatusConfirmation order={order} status={statusConfirmation.status} balance={order.payment_status === 'partially_paid' && !orderPaymentsByOrderId.get(order.id)?.length ? null : Math.max(0, order.total - orderPaidAmount(order, orderPaymentsByOrderId))} language={resolvedLanguage} disabled={saving} onConfirm={async () => { await updateOrder(order, { order_status: statusConfirmation.status }); setStatusConfirmation(null) }} onCancel={() => setStatusConfirmation(null)} />}
               {order && paymentOrderId === order.id && <div className="staff-operation-edit-panel">{orderPaymentForm(order)}</div>}
               {isExpanded && (
                 <div className="staff-operation-edit-panel">

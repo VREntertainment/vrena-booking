@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import StaffOrderStatusConfirmation, { type OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 
 const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 const NewSection = dynamic(() => import('../features/staff/NewSection'), { ssr: false })
@@ -210,7 +211,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const currentProfileId = profile?.id || ''
   const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
-  const [orderStatusConfirm, setOrderStatusConfirm] = useState<StaffOrder | null>(null)
+  const [orderStatusConfirm, setOrderStatusConfirm] = useState<{ orderId: string; status: OrderStatusChange } | null>(null)
   const [ordersShop, setOrdersShop] = useState('all')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const {
@@ -1127,11 +1128,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </td>
               <td data-label={text.labels.status}>{text.orderStatuses[order.order_status]}</td>
               {canCreateOrders && <td data-label={text.labels.actions}><div className="staff-row-actions staff-order-actions">
-                <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{visitText.recordPayment}</button>
+                <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{text.labels.payment}</button>
                 {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
-                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
-                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm(order)}>{text.actions.noShow}</button>
+                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
+                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
               </div></td>}
             </tr>
             {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order, paymentsByOrderId)}</td></tr>}
@@ -1142,7 +1143,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                 <div className="staff-row-actions"><button className="primary" type="submit" disabled={!draft.reason.trim()}>{text.actions.save}</button><button className="secondary" type="button" onClick={cancelOrderEdit}>{text.actions.cancel}</button></div>
               </fieldset>{orderEditError && <p role="alert">{orderEditError}</p>}
             </form></td></tr>}
-            {orderStatusConfirm?.id === order.id && <tr className="staff-order-detail-row"><td colSpan={6}><div className="staff-visit-editor" role="group" aria-label={text.actions.noShow}><p>{resolvedLanguage === 'vi' ? 'Đánh dấu khách không đến và giải phóng lịch đặt chỗ? Các khoản đã trả được giữ nguyên.' : 'Mark this booking as a no-show and release its calendar slot? Recorded payments will be retained.'}</p><div className="staff-row-actions"><button className="danger" type="button" disabled={saving} onClick={async () => { await updateOrder(order, { order_status: 'no_show' }); setOrderStatusConfirm(null) }}>{resolvedLanguage === 'vi' ? 'Xác nhận không đến' : 'Confirm no-show'}</button><button className="secondary" type="button" disabled={saving} onClick={() => setOrderStatusConfirm(null)}>{text.actions.cancel}</button></div></div></td></tr>}
+            {orderStatusConfirm?.orderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}><StaffOrderStatusConfirmation order={order} status={orderStatusConfirm.status} balance={payments.length === 0 && order.payment_status === 'partially_paid' ? null : balance} language={resolvedLanguage} disabled={saving} onConfirm={async () => { await updateOrder(order, { order_status: orderStatusConfirm.status }); setOrderStatusConfirm(null) }} onCancel={() => setOrderStatusConfirm(null)} /></td></tr>}
           </Fragment>
         })}{rows.length === 0 && <tr><td colSpan={canCreateOrders ? 6 : 5}>{text.messages.noOrders}</td></tr>}</tbody>
       </table>
