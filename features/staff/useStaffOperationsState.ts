@@ -18,7 +18,7 @@ import type {
 export function useStaffOperationsState() {
   const [orders, setOrders] = useState<StaffOrder[]>([])
   const [ordersRange, setOrdersRange] = useState(() => ({ start: addDays(todayString(), -30), end: addDays(todayString(), 30) }))
-  const [ordersQuery, setOrdersQuery] = useState(() => ({ ...ordersRange, page: 0 }))
+  const [ordersQuery, setOrdersQuery] = useState(() => ({ ...ordersRange, page: 0, shop: 'all' }))
   const [browsedOrders, setBrowsedOrders] = useState<{ rows: StaffOrder[]; total: number; key: string } | null>(null)
   const ordersRequestRef = useRef(0)
   const [orderPayments, setOrderPayments] = useState<StaffOrderPayment[]>([])

@@ -822,3 +822,40 @@
   background: var(--vrena-surface-warm);
   padding: 10px;
 }
+
+/* Orders: one main payment action, a booking editor, then quiet corrections. */
+.app .staff-orders-table { width: 100%; table-layout: fixed; }
+.app .staff-orders-table td, .app .staff-orders-table th { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.app .staff-orders-table th:first-child { width: 16%; }
+.app .staff-orders-table th:nth-child(2) { width: 21%; }
+.app .staff-orders-table th:nth-child(3) { width: 13%; }
+.app .staff-orders-table th:nth-child(4) { width: 19%; }
+.app .staff-orders-table th:last-child { width: 21%; }
+.app .staff-orders-table td p { margin: 6px 0; }
+.app .staff-order-actions { align-items: stretch; flex-direction: column; gap: 6px; }
+.app .staff-console button.staff-order-tertiary:not(.primary) { min-height: 32px; border: 0; background: transparent; color: var(--vrena-cta-tertiary-ink); box-shadow: none; padding: 5px 8px; }
+.app .staff-console button.staff-order-tertiary.danger { color: var(--vrena-red-600); }
+.app .staff-order-shop { display: inline-block; border-left: 3px solid var(--vrena-purple-500); padding-left: 7px; font-weight: 700; }
+.app .staff-order-shop.cafe { border-color: var(--vrena-cyan-500); }
+.app .staff-order-receipts { margin-top: 8px; }
+.app .staff-order-receipts summary { cursor: pointer; color: var(--vrena-cta-tertiary-ink); }
+.app .staff-order-receipts ul { margin: 8px 0; padding-left: 14px; }
+.app .staff-order-receipts small { display: block; color: var(--vrena-neutral-600); }
+.app .staff-order-detail-row > td { padding: 16px; }
+.app .staff-order-detail-row fieldset { display: grid; gap: 12px; min-width: 0; }
+.app .staff-order-detail-row label, .app .staff-order-payment-editor label { display: grid; gap: 5px; min-width: 0; }
+.app .staff-order-detail-row input, .app .staff-order-detail-row textarea, .app .staff-order-payment-editor select, .app .staff-order-payment-editor input { width: 100%; min-width: 0; }
+.app .staff-order-payment-editor .staff-payment-split-row { align-items: end; }
+@media (max-width: 900px) {
+  .app .staff-orders-table-wrap { overflow: visible; }
+  .app .staff-orders-table, .app .staff-orders-table tbody { display: block; min-width: 0; }
+  .app .staff-orders-table thead { display: none; }
+  .app .staff-orders-table tr { display: grid; min-width: 0; margin-bottom: 12px; padding: 10px; border: 1px solid var(--vrena-neutral-200); border-radius: 10px; }
+  .app .staff-orders-table td[data-label] { display: grid; grid-template-columns: minmax(70px, 28%) minmax(0, 1fr); gap: 10px; border: 0; padding: 7px 0; }
+  .app .staff-orders-table td[data-label]::before { content: attr(data-label); color: var(--vrena-neutral-600); font-weight: 500; }
+  .app .staff-orders-table .staff-order-detail-row > td { min-width: 0; padding: 0; }
+}
+@media (max-width: 600px) {
+  .app .staff-order-payment-editor .staff-payment-split-row > label:first-child { grid-column: 1 / -1; }
+  .app .staff-order-payment-editor .staff-payment-split-row > label:nth-child(2) { grid-column: 1; }
+}

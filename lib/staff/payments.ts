@@ -34,6 +34,7 @@ export function paymentStatusFromAmount(total: number, paidTotal: number): Staff
 export function staffOrderEditDraft(order: StaffOrder): StaffOrderEditDraft {
   return {
     orderId: order.id,
+    reason: '',
     gameId: order.game_id || '',
     bookingDate: order.booking_date,
     bookingTime: normalizeTime(order.booking_time),

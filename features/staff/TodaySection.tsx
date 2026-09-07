@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   CalendarDays,
   Check,
@@ -50,6 +51,7 @@ import { visitCopy, visitProgress } from '../../lib/staffVisit'
 import { ButtonIconText } from './shared'
 
 export type TodaySectionProps = {
+  onEditBooking: (sessionId: string) => void
   text: StaffConsoleCopy
   operationsDate: string
   setOperationsDate: React.Dispatch<React.SetStateAction<string>>
@@ -99,6 +101,7 @@ export default function TodaySection({
   operationsDate,
   setOperationsDate,
   onOpenSessionCalendar,
+  onEditBooking,
   canCreateOrders,
   setBooking,
   setActiveTab,
@@ -138,6 +141,7 @@ export default function TodaySection({
   unlinkedOperationOrders,
   orderRows,
 }: TodaySectionProps) {
+  const [noShowId, setNoShowId] = useState<string | null>(null)
   return (
     <div className="staff-card staff-card-wide staff-operations-card">
       <div className="staff-card-heading">
@@ -282,16 +286,17 @@ export default function TodaySection({
                 )}
               </div>
               <div className="staff-row-actions staff-operation-actions">
-                {canCreateOrders && <button type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: true }))}>{visitText.record}</button>}
-                <button type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}>
-                  {isExpanded ? text.actions.cancel : text.actions.edit}
+                {canCreateOrders && <button className="primary" type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: true }))}>{visitText.record}</button>}
+                <button className="secondary" type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}>
+                  {isExpanded ? text.actions.cancel : (resolvedLanguage === 'vi' ? 'Chi tiết lượt chơi' : 'Visit details')}
                 </button>
+                {canCreateOrders && <button className="secondary" type="button" disabled={saving} onClick={() => onEditBooking(session.id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
                 {order && canCreateOrders && (
                   <>
-                    <button type="button" disabled={saving} onClick={() => setPaymentOrderId(order.id)}>
+                    <button className="secondary" type="button" disabled={saving || orderPaidAmount(order, orderPaymentsByOrderId) >= order.total || ['cancelled', 'refunded', 'no_show'].includes(order.order_status)} onClick={() => setPaymentOrderId(order.id)}>
                       <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{visitText.recordPayment}</ButtonIconText>
                     </button>
-                    <button disabled={saving} type="button" onClick={() => {
+                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => {
                       if (!progress.recorded) {
                         setExpandedOperationSessions((current) => ({ ...current, [session.id]: true }))
                         setVisitFeedback((current) => ({ ...current, [session.id]: visitText.hint }))
@@ -301,17 +306,18 @@ export default function TodaySection({
                     }}>
                       <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
                     </button>
-                    <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
+                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => setNoShowId(session.id)}>
                       <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
                     </button>
                   </>
                 )}
                 {canCreateOrders && (
-                  <button className="danger" disabled={saving} type="button" onClick={() => openOperationDeleteDraft(session, order || null)}>
+                  <button className="staff-order-tertiary danger" disabled={saving} type="button" onClick={() => openOperationDeleteDraft(session, order || null)}>
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteSession}</ButtonIconText>
                   </button>
                 )}
               </div>
+              {order && noShowId === session.id && <div className="staff-visit-editor"><p>{resolvedLanguage === 'vi' ? 'Đánh dấu không đến và giải phóng lịch? Giữ nguyên các khoản đã trả.' : 'Mark as a no-show and release the calendar slot? Recorded payments will be retained.'}</p><div className="staff-row-actions"><button className="danger" disabled={saving} type="button" onClick={async () => { await updateOrder(order, { order_status: 'no_show' }); setNoShowId(null) }}>{resolvedLanguage === 'vi' ? 'Xác nhận không đến' : 'Confirm no-show'}</button><button className="secondary" disabled={saving} type="button" onClick={() => setNoShowId(null)}>{text.actions.cancel}</button></div></div>}
               {order && paymentOrderId === order.id && <div className="staff-operation-edit-panel">{orderPaymentForm(order)}</div>}
               {isExpanded && (
                 <div className="staff-operation-edit-panel">

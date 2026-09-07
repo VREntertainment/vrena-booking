@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 
+const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 const NewSection = dynamic(() => import('../features/staff/NewSection'), { ssr: false })
 const TodaySection = dynamic(() => import('../features/staff/TodaySection'), { ssr: false })
 const AttendanceSection = dynamic(() => import('../features/staff/AttendanceSection'), { ssr: false })
@@ -86,7 +87,7 @@ import {
   staffHrSetupOptionTypes,
   staffTabGroups
 } from '../lib/staff/options'
-import { normalizePaymentSplits, paymentSplitTotal, paymentStatusLabel } from '../lib/staff/payments'
+import { normalizePaymentSplits, paymentSplitTotal, paymentStatusLabel, paymentMethodLabel } from '../lib/staff/payments'
 import {
   adjustmentAppliesToPeriod,
   calculateStaffPayroll,
@@ -151,17 +152,13 @@ import type {
 export type { StaffProfile } from '../lib/staff/types'
 
 import {
-  Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   LockKeyhole,
-  Pencil,
   RotateCcw,
   Save,
   Trash2,
   UserRound,
-  UserX,
   X
 } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
@@ -212,6 +209,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
   const currentProfileId = profile?.id || ''
   const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
+  const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
+  const [orderStatusConfirm, setOrderStatusConfirm] = useState<StaffOrder | null>(null)
+  const [ordersShop, setOrdersShop] = useState('all')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const {
     attendanceTab,
@@ -1100,156 +1100,51 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   )
 
   const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
-    <div className="staff-table-wrap">
-      <table className="staff-table">
-        <thead>
-          <tr>
-            <th>{text.labels.order}</th>
-            <th>{text.labels.customer}</th>
-            <th>{text.labels.game}</th>
-            <th>{text.labels.date}</th>
-            <th>{text.labels.total}</th>
-            <th>{text.labels.payment}</th>
-            <th>{text.labels.status}</th>
-            {canCreateOrders && <th>{text.labels.actions}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((order) => {
-            const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
-            const isEditing = Boolean(draft)
-            const gameName = games.find((game) => game.id === order.game_id)?.name || text.gameFallback
-            return (
-              <Fragment key={order.id}>
-                <tr className={isEditing ? 'staff-order-row editing' : 'staff-order-row'}>
-                  <td><strong>{order.order_number}</strong></td>
-                  <td>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</td>
-                  <td className="staff-order-editable-cell">
-                    {draft ? (
-                      <select
-                        aria-label={text.labels.game}
-                        disabled={saving}
-                        value={draft.gameId}
-                        onChange={(event) => patchOrderEditDraft({ gameId: event.target.value })}
-                      >
-                        <option value="">{text.noneYet}</option>
-                        {games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}
-                      </select>
-                    ) : canCreateOrders ? (
-                      <button
-                        aria-label={`${text.actions.edit} ${text.labels.game}: ${gameName}`}
-                        className="staff-order-edit-trigger"
-                        type="button"
-                        onClick={() => beginOrderEdit(order)}
-                      >
-                        {gameName}
-                        <Pencil aria-hidden="true" size={12} />
-                      </button>
-                    ) : gameName}
-                  </td>
-                  <td className="staff-order-editable-cell staff-order-date-cell">
-                    {draft ? (
-                      <div className="staff-order-date-fields">
-                        <input
-                          aria-label={text.aria.bookingDate}
-                          disabled={saving}
-                          type="date"
-                          value={draft.bookingDate}
-                          onChange={(event) => patchOrderEditDraft({ bookingDate: event.target.value })}
-                        />
-                        <input
-                          aria-label={text.aria.bookingTime}
-                          disabled={saving}
-                          type="time"
-                          value={draft.bookingTime}
-                          onChange={(event) => patchOrderEditDraft({ bookingTime: event.target.value })}
-                        />
-                      </div>
-                    ) : canCreateOrders ? (
-                      <button
-                        aria-label={`${text.actions.edit} ${text.labels.date}: ${staffDateLabel(order.booking_date)} ${normalizeTime(order.booking_time)}`}
-                        className="staff-order-edit-trigger"
-                        type="button"
-                        onClick={() => beginOrderEdit(order)}
-                      >
-                        {staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}
-                        <Pencil aria-hidden="true" size={12} />
-                      </button>
-                    ) : `${staffDateLabel(order.booking_date)} · ${normalizeTime(order.booking_time)}`}
-                  </td>
-                  <td className="staff-order-editable-cell">
-                    {draft ? (
-                      <label className="staff-order-total-field">
-                        <input
-                          aria-label={text.labels.total}
-                          disabled={saving}
-                          inputMode="numeric"
-                          min={0}
-                          step={1000}
-                          type="number"
-                          value={draft.total}
-                          onChange={(event) => patchOrderEditDraft({ total: event.target.value })}
-                        />
-                        <span>₫</span>
-                      </label>
-                    ) : canCreateOrders ? (
-                      <button
-                        aria-label={`${text.actions.edit} ${text.labels.total}: ${formatVnd(order.total)}`}
-                        className="staff-order-edit-trigger"
-                        type="button"
-                        onClick={() => beginOrderEdit(order)}
-                      >
-                        {formatVnd(order.total)}
-                        <Pencil aria-hidden="true" size={12} />
-                      </button>
-                    ) : formatVnd(order.total)}
-                  </td>
-                  <td>{orderPaymentLabel(order, paymentsByOrderId, text)}<br /><span>{paymentStatusLabel(order.payment_status, text)}</span></td>
-                  <td>{text.orderStatuses[order.order_status]}</td>
-                  {canCreateOrders && (
-                    <td>
-                      <div className="staff-row-actions">
-                        {isEditing ? (
-                          <>
-                            <button className="primary" disabled={saving} type="button" onClick={() => saveOrderEdit(order)}>
-                              <ButtonIconText icon={<Save aria-hidden="true" size={14} />}>{text.actions.save}</ButtonIconText>
-                            </button>
-                            <button className="secondary" disabled={saving} type="button" onClick={cancelOrderEdit}>
-                              <ButtonIconText icon={<X aria-hidden="true" size={14} />}>{text.actions.cancel}</ButtonIconText>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button type="button" disabled={saving} onClick={() => setPaymentOrderId(order.id)}>
-                              <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{visitText.recordPayment}</ButtonIconText>
-                            </button>
-                            <button type="button" onClick={() => updateOrder(order, { order_status: 'completed' })}>
-                              <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
-                            </button>
-                            <button type="button" onClick={() => updateOrder(order, { order_status: 'no_show' })}>
-                              <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-                {paymentOrderId === order.id && <tr><td colSpan={8}>{orderPaymentForm(order)}</td></tr>}
-                {isEditing && orderEditError && (
-                  <tr className="staff-order-edit-error-row">
-                    <td colSpan={canCreateOrders ? 8 : 7}>{orderEditError}</td>
-                  </tr>
-                )}
-              </Fragment>
-            )
-          })}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={canCreateOrders ? 8 : 7}>{text.messages.noOrders}</td>
+    <div className="staff-table-wrap staff-orders-table-wrap">
+      <table className="staff-table staff-orders-table">
+        <thead><tr>{[text.labels.order, resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking', text.labels.total, text.labels.payment, text.labels.status, ...(canCreateOrders ? [text.labels.actions] : [])].map((label) => <th key={label}>{label}</th>)}</tr></thead>
+        <tbody>{rows.map((order) => {
+          const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
+          const payments = paymentsByOrderId.get(order.id) || []
+          const paid = orderPaidAmount(order, paymentsByOrderId)
+          const balance = Math.max(0, order.total - paid)
+          const terminal = ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)
+          const canPay = balance > 0 && !['cancelled', 'refunded', 'no_show'].includes(order.order_status) && order.payment_status !== 'refunded' && !(payments.length === 0 && order.payment_status === 'partially_paid')
+          const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
+          return <Fragment key={order.id}>
+            <tr className="staff-order-row">
+              <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p></div></td>
+              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Café des Stagiaires' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
+              <td data-label={text.labels.total}>{formatVnd(order.total)}</td>
+              <td data-label={text.labels.payment}>
+                <div>{paymentStatusLabel(order.payment_status, text)}<br />{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}<br />{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}
+                  <details className="staff-order-receipts"><summary>{resolvedLanguage === 'vi' ? 'Chi tiết thanh toán' : 'Payment details'}</summary>
+                    {payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}<small>{new Date(payment.created_at).toLocaleString(resolvedLanguage === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small></li>)}</ul> : <p>{order.payment_status === 'unpaid' ? (resolvedLanguage === 'vi' ? 'Chưa ghi nhận thanh toán.' : 'No payments recorded.') : (resolvedLanguage === 'vi' ? 'Thiếu biên nhận cũ. Kiểm tra trước khi thay đổi thanh toán.' : 'Historical receipts are missing. Review the existing payment record before making changes.')}</p>}
+                    {order.price_override_reason && <p>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Price adjustment reason'}: {order.price_override_reason}</p>}
+                    {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
+                  </details>
+                </div>
+              </td>
+              <td data-label={text.labels.status}>{text.orderStatuses[order.order_status]}</td>
+              {canCreateOrders && <td data-label={text.labels.actions}><div className="staff-row-actions staff-order-actions">
+                <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{visitText.recordPayment}</button>
+                {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
+                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
+                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => updateOrder(order, { order_status: 'completed' })}>{text.actions.done}</button>
+                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm(order)}>{text.actions.noShow}</button>
+              </div></td>}
             </tr>
-          )}
-        </tbody>
+            {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order)}</td></tr>}
+            {draft && <tr className="staff-order-detail-row"><td colSpan={6}><form className="staff-visit-editor" onSubmit={(event) => { event.preventDefault(); void saveOrderEdit(order) }}>
+              <fieldset disabled={saving}><legend>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'} · {order.order_number}</legend><p>{resolvedLanguage === 'vi' ? 'Các khoản đã thanh toán được giữ nguyên. Tổng mới không được thấp hơn số tiền đã trả.' : 'Recorded payments are retained. The new total cannot be lower than the amount already paid.'}</p>
+                <label>{text.labels.total}<input required min={paid} step={1} type="number" value={draft.total} onChange={(event) => patchOrderEditDraft({ total: event.target.value })} /></label>
+                <label>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Reason for price adjustment'}<textarea required maxLength={1000} value={draft.reason} onChange={(event) => patchOrderEditDraft({ reason: event.target.value })} /></label>
+                <div className="staff-row-actions"><button className="primary" type="submit" disabled={!draft.reason.trim()}>{text.actions.save}</button><button className="secondary" type="button" onClick={cancelOrderEdit}>{text.actions.cancel}</button></div>
+              </fieldset>{orderEditError && <p role="alert">{orderEditError}</p>}
+            </form></td></tr>}
+            {orderStatusConfirm?.id === order.id && <tr className="staff-order-detail-row"><td colSpan={6}><div className="staff-visit-editor" role="group" aria-label={text.actions.noShow}><p>{resolvedLanguage === 'vi' ? 'Đánh dấu khách không đến và giải phóng lịch đặt chỗ? Các khoản đã trả được giữ nguyên.' : 'Mark this booking as a no-show and release its calendar slot? Recorded payments will be retained.'}</p><div className="staff-row-actions"><button className="danger" type="button" disabled={saving} onClick={async () => { await updateOrder(order, { order_status: 'no_show' }); setOrderStatusConfirm(null) }}>{resolvedLanguage === 'vi' ? 'Xác nhận không đến' : 'Confirm no-show'}</button><button className="secondary" type="button" disabled={saving} onClick={() => setOrderStatusConfirm(null)}>{text.actions.cancel}</button></div></div></td></tr>}
+          </Fragment>
+        })}{rows.length === 0 && <tr><td colSpan={canCreateOrders ? 6 : 5}>{text.messages.noOrders}</td></tr>}</tbody>
       </table>
     </div>
   )
@@ -1800,6 +1695,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         updateOrder={updateOrder}
         openOperationDeleteDraft={openOperationDeleteDraft}
         paymentOrderId={paymentOrderId}
+        onEditBooking={setEditingBookingId}
         orderPaymentForm={orderPaymentForm}
         resolvedLanguage={resolvedLanguage}
         visitOrderSelection={visitOrderSelection}
@@ -2149,18 +2045,31 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         </div>
       )}
 
+      {editingBookingId && canCreateOrders && <StaffCalendarBookingDialog key={editingBookingId} sessionId={editingBookingId} language={resolvedLanguage} onClose={() => setEditingBookingId(null)} onSaved={() => {
+        setEditingBookingId(null)
+        setPaymentOrderId(null)
+        setOrderEditDraft(null)
+        markStaffDataStale('today', 'orders', 'report')
+        if (currentTab === 'orders') void loadRecentOrders()
+        if (currentTab === 'today') void Promise.all([loadTodayOrders(true), loadTodaySessions(true)])
+        if (currentTab === 'report') void loadReportData(true)
+        setStatus(text.messages.orderUpdated)
+      }} />}
+
       {currentTab === 'orders' && (
         <div className="staff-card">
           <h3>{text.labels.orders}</h3>
+          <p>{resolvedLanguage === 'vi' ? 'Dùng Sửa đặt chỗ / Chuyển cửa hàng để đổi cửa hàng, trò chơi hoặc giờ. Lịch và Hôm nay cũng có chức năng này.' : 'Use Edit booking / Move shop to change the shop, game or time. The same editor is available in Calendar and Today.'}</p>
           <form className="staff-orders-filters staff-operation-field-grid" onSubmit={(event) => {
             event.preventDefault()
             if (!ordersRange.start || !ordersRange.end) return
             const [start, end] = orderedRange(ordersRange.start, ordersRange.end)
-            setOrdersQuery({ start, end, page: 0 })
+            setOrdersQuery({ start, end, page: 0, shop: ordersShop })
           }}>
             <label>{text.labels.startDate}<input required type="date" value={ordersRange.start} onChange={(event) => setOrdersRange((current) => ({ ...current, start: event.target.value }))} /></label>
             <label>{resolvedLanguage === 'vi' ? 'Ngày kết thúc' : 'End date'}<input required type="date" value={ordersRange.end} onChange={(event) => setOrdersRange((current) => ({ ...current, end: event.target.value }))} /></label>
-            <button type="submit" disabled={currentTabLoading || saving}>{resolvedLanguage === 'vi' ? 'Xem đơn hàng' : 'Show orders'}</button>
+            <label>{bookingText.shop}<select value={ordersShop} onChange={(event) => setOrdersShop(event.target.value)}><option value="all">{resolvedLanguage === 'vi' ? 'Tất cả cửa hàng' : 'All shops'}</option><option value="ha-do-centrosa">Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Café des Stagiaires</option></select></label>
+            <button className="secondary" type="submit" disabled={currentTabLoading || saving}>{resolvedLanguage === 'vi' ? 'Xem đơn hàng' : 'Show orders'}</button>
           </form>
           <p>{resolvedLanguage === 'vi' ? 'Ngày đặt chỗ' : 'Booking dates'}: {ordersQuery.start} — {ordersQuery.end}. {resolvedLanguage === 'vi' ? '50 đơn mỗi trang. Có thể xem bất kỳ khoảng ngày nào.' : '50 orders per page. Choose any date range to browse the full history.'}</p>
           {currentTabReady && browsedOrders && <>

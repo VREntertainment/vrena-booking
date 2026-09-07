@@ -5805,7 +5805,7 @@ export default function WidgetPage({
   const appOverlays = (
     <>
       {calendarEditSession && canManageCalendarBookings && (
-        <StaffCalendarBookingDialog session={calendarEditSession} language={language === 'vi' ? 'vi' : 'en'}
+        <StaffCalendarBookingDialog sessionId={calendarEditSession.id} language={language === 'vi' ? 'vi' : 'en'}
           onClose={() => setCalendarEditSession(null)}
           onSaved={(date, deleted, venue) => {
             if (deleted) setSessions((current) => current.filter((session) => session.id !== calendarEditSession.id))

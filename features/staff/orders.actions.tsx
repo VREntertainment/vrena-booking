@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase/client'
 export type OrdersActionContext = {
   ordersRequestRef: React.RefObject<number>
   ordersQueryKey: string
-  ordersQuery: { page: number; start: string; end: string }
+  ordersQuery: { page: number; start: string; end: string; shop: string }
   runStaffLoader: (key: import("../../lib/staff/types").StaffDataKey, loader: () => Promise<void>, force?: boolean) => Promise<void>
   ordersPageSize: 50
   setBrowsedOrders: React.Dispatch<React.SetStateAction<{ rows: import("../../lib/staff/types").StaffOrder[]; total: number; key: string } | null>>
@@ -42,10 +42,13 @@ export function createStaffOrdersActions(getContext: () => OrdersActionContext) 
     const [from, to] = orderedRange(ordersQuery.start, ordersQuery.end)
     await runStaffLoader('orders', async () => {
       const offset = ordersQuery.page * ordersPageSize
-      const { data, count, error } = await supabase.from('staff_orders').select('*', { count: 'exact' })
+      let query = supabase.from('staff_orders').select('*', { count: 'exact' })
         .gte('booking_date', from).lte('booking_date', to)
         .order('booking_date', { ascending: false }).order('booking_time', { ascending: false })
         .order('id', { ascending: true }).range(offset, offset + ordersPageSize - 1)
+      if (ordersQuery.shop === 'cafe-des-stagiaires') query = query.like('arena_id', 'cafe:%')
+      if (ordersQuery.shop === 'ha-do-centrosa') query = query.not('arena_id', 'like', 'cafe:%')
+      const { data, count, error } = await query
       if (error) throw new Error(error.message)
       const rows = (data ?? []) as StaffOrder[]
       const payments = await fetchOrderPayments(rows)

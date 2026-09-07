@@ -600,6 +600,8 @@ export type StaffOrder = {
   created_by: string | null
   created_at: string
   updated_at: string
+  price_override_reason?: string | null
+  price_override_original_total?: number | null
   invoice_required: boolean
   company_name: string | null
   tax_code: string | null
@@ -611,6 +613,7 @@ export type StaffOrder = {
 }
 
 export type StaffOrderEditDraft = {
+  reason: string
   orderId: string
   gameId: string
   bookingDate: string
