@@ -1,5 +1,7 @@
 'use client'
 
+import { validStaffBookingTime } from '../../lib/staff/bookingHours'
+import type { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
   formatVnd
@@ -7,7 +9,8 @@ import {
 import { defaultBookingForm } from '../../lib/staff/forms'
 import { newPaymentSplit, normalizePaymentSplits } from '../../lib/staff/payments'
 import {
-  calculateManualDiscount
+  calculateManualDiscount,
+  validBookingTotalOverride
 } from '../../lib/staff/pricing'
 import {
   customerName
@@ -29,7 +32,7 @@ export type BookingActionContext = {
   bookingSubmitRef: React.RefObject<boolean>
   booking: import("../../lib/staff/types").BookingForm
   setStatus: React.Dispatch<React.SetStateAction<string>>
-  bookingText: { readonly bookingSource: "Booking source"; readonly sources: { readonly walk_in: "Walk-in"; readonly zalo: "Zalo"; readonly whatsapp: "WhatsApp"; readonly phone: "Phone"; readonly website: "Website"; readonly other: "Other" }; readonly removeSplit: "Remove payment split"; readonly bookingType: "Booking type"; readonly customerBooking: "Client booking"; readonly shop: "Shop"; readonly searchCustomer: "Search by name, phone or email, or enter a new client"; readonly createProfile: "Create profile for “{name}”"; readonly createWithBooking: "New client? Enter their name and optional contact details. The profile is saved when you confirm this booking."; readonly profileSelected: "Existing profile selected. Contact details below apply to this booking."; readonly invalidBooking: "Enter a valid date, time and player count (1–64)."; readonly invalidEmail: "Enter a valid email address or leave it empty."; readonly discountChanged: "This discount no longer applies. Choose an available discount or no discount."; readonly discountsHelp: "{count} offers match this game, date, time and player count. Customer usage limits are checked when confirming."; readonly discountValue: "Unique discount value"; readonly noGames: "No games available at this shop"; readonly durationHelp: "This staff booking reserves the game runtime shown below. Check the shop, time, players and total before confirming." } | { readonly bookingSource: "Nguồn đặt chỗ"; readonly sources: { readonly walk_in: "Khách đến trực tiếp"; readonly zalo: "Zalo"; readonly whatsapp: "WhatsApp"; readonly phone: "Điện thoại"; readonly website: "Website"; readonly other: "Khác" }; readonly removeSplit: "Xóa phần thanh toán"; readonly bookingType: "Loại đặt chỗ"; readonly customerBooking: "Đặt chỗ theo hồ sơ khách"; readonly shop: "Cửa hàng"; readonly searchCustomer: "Tìm theo tên, điện thoại, email hoặc nhập tên khách mới"; readonly createProfile: "Tạo hồ sơ cho “{name}”"; readonly createWithBooking: "Khách mới? Nhập tên và thông tin liên hệ nếu có. Hồ sơ được lưu khi xác nhận đặt chỗ này."; readonly profileSelected: "Đã chọn hồ sơ có sẵn. Thông tin liên hệ bên dưới áp dụng cho lượt đặt chỗ này."; readonly invalidBooking: "Nhập ngày, giờ và số người chơi hợp lệ (1–64)."; readonly invalidEmail: "Nhập email hợp lệ hoặc để trống."; readonly discountChanged: "Ưu đãi này không còn áp dụng. Chọn ưu đãi khác hoặc không giảm giá."; readonly discountsHelp: "{count} ưu đãi phù hợp với trò chơi, ngày, giờ và số người. Giới hạn sử dụng theo khách được kiểm tra khi xác nhận."; readonly discountValue: "Giá trị giảm giá riêng"; readonly noGames: "Cửa hàng chưa có trò chơi khả dụng"; readonly durationHelp: "Lượt đặt chỗ của nhân viên giữ chỗ theo thời lượng trò chơi bên dưới. Kiểm tra cửa hàng, giờ, số người và tổng tiền trước khi xác nhận." }
+  bookingText: (typeof staffBookingCopy)['en' | 'vi']
   selectedDiscount: import("../../lib/staff/types").StaffDiscount | null
   setSaving: React.Dispatch<React.SetStateAction<boolean>>
   consumeStaffRateLimit: (action: "login_attempt" | "otp_request" | "join_leave" | "booking_attempt" | "admin_destructive" | "password_reset" | "invite_player" | "session_message" | "customer_invite" | "voucher_quote" | "staff_config_write", subject: string) => Promise<boolean>
@@ -120,8 +123,12 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(text.messages.customerAccountNameRequired)
       return
     }
-    if (!Number.isInteger(booking.players) || booking.players < 1 || booking.players > 64 || !booking.date || !booking.time) {
+    if (!Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !booking.date || !booking.time) {
       setStatus(bookingText.invalidBooking)
+      return
+    }
+    if (!validStaffBookingTime(booking.venueKey, quote.duration, booking.time)) {
+      setStatus(bookingText.outsideHours)
       return
     }
     if (booking.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.customerEmail)) {
@@ -130,6 +137,10 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
     }
     if (booking.discountId && !selectedDiscount) {
       setStatus(bookingText.discountChanged)
+      return
+    }
+    if (!validBookingTotalOverride(booking)) {
+      setStatus(bookingText.invalidOverride)
       return
     }
     bookingSubmitRef.current = true
@@ -144,6 +155,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       const { data, error } = await supabase.rpc('staff_create_booking', {
         p_booking_source: booking.bookingSource,
         p_booking: {
+          p_total_override: booking.overrideTotalEnabled ? Number(booking.overrideTotal) : null,
+          p_override_reason: booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,
           p_customer_id: guestCustomer ? null : booking.customerId || null,
           p_customer_name: guestCustomer ? null : booking.customerName || null,
           p_customer_phone: guestCustomer ? null : booking.customerPhone || null,

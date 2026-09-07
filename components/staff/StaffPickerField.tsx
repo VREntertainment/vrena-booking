@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { normalizeTime, normalizeTypedStaffDuration, normalizeTypedStaffTime, staffDateLabel, staffTimeOptions } from '../../lib/staff/dates.ts'
 import type { StaffPickerFieldProps } from '../../lib/staff/types.ts'
 
-export function StaffPickerField({ ariaLabel, type, value, mode = 'clock', placeholder, inputRef, onChange }: StaffPickerFieldProps) {
+export function StaffPickerField({ ariaLabel, type, value, mode = 'clock', minTime, maxTime, placeholder, inputRef, onChange }: StaffPickerFieldProps) {
   const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
   const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
   const [timeOpen, setTimeOpen] = useState(false)
@@ -39,12 +39,15 @@ export function StaffPickerField({ ariaLabel, type, value, mode = 'clock', place
     const normalizedTime = normalizeTime(value)
     const manualTime = timeDraft ?? normalizedTime
 
+    const withinHours = (time: string) => (!minTime || time >= minTime) && (!maxTime || time <= maxTime)
+    const options = staffTimeOptions.filter(withinHours)
+
     const commitManualTime = () => {
       if (timeDraft === null) return
       const normalizedDraft = mode === 'duration'
         ? normalizeTypedStaffDuration(timeDraft)
         : normalizeTypedStaffTime(timeDraft)
-      if (normalizedDraft) onChange(normalizedDraft)
+      if (normalizedDraft && withinHours(normalizedDraft)) onChange(normalizedDraft)
       setTimeDraft(null)
       setTimeOpen(false)
     }
@@ -82,7 +85,7 @@ export function StaffPickerField({ ariaLabel, type, value, mode = 'clock', place
               }}
             />
             <span aria-label={ariaLabel} className="staff-time-option-list" role="listbox">
-              {staffTimeOptions.map((option) => (
+              {options.map((option) => (
                 <button
                   aria-selected={normalizedTime === option}
                   className={normalizedTime === option ? 'staff-time-option active' : 'staff-time-option'}

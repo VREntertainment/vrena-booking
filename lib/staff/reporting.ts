@@ -34,7 +34,7 @@ export function buildLineChartPath(series: Array<{ sales: number }>, max: number
 export function conicStops(items: Array<{ value: number }>) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
   if (total <= 0) return `${vrenaPalette.neutral[300]} 0deg 360deg`
-  const colors = [vrenaPalette.cyan[500], vrenaPalette.purple[500], vrenaPalette.neutral[400]]
+  const colors = [vrenaPalette.cyan[500], vrenaPalette.purple[500], vrenaPalette.blue[500], vrenaPalette.orange[500], vrenaPalette.green[500], vrenaPalette.neutral[400]]
   let cursor = 0
   return items.map((item, index) => {
     const start = cursor
@@ -100,6 +100,9 @@ export function emptyStaffReport(text: StaffConsoleCopy = staffConsoleText.en): 
     unpaidAmount: 0,
     cashTotal: 0,
     bankTransferTotal: 0,
+    cardTotal: 0,
+    momoTotal: 0,
+    vnpayTotal: 0,
     bookings: 0,
     players: 0,
     cancelled: 0,
@@ -130,10 +133,16 @@ export function buildStaffReport(
     if (payments.length > 0) {
       payments.forEach((payment) => {
         if (payment.payment_method === 'cash') summary.cashTotal += payment.amount
+        if (payment.payment_method === 'card_manual') summary.cardTotal += payment.amount
+        if (payment.payment_method === 'momo_manual') summary.momoTotal += payment.amount
+        if (payment.payment_method === 'vnpay') summary.vnpayTotal += payment.amount
         if (payment.payment_method === 'bank_transfer') summary.bankTransferTotal += payment.amount
       })
     } else {
       if (order.payment_method === 'cash') summary.cashTotal += order.total
+      if (order.payment_method === 'card_manual' && order.payment_status === 'paid') summary.cardTotal += order.total
+      if (order.payment_method === 'momo_manual' && order.payment_status === 'paid') summary.momoTotal += order.total
+      if (order.payment_method === 'vnpay' && order.payment_status === 'paid') summary.vnpayTotal += order.total
       if (order.payment_method === 'bank_transfer') summary.bankTransferTotal += order.total
     }
     if (order.order_status === 'cancelled') summary.cancelled += 1
@@ -147,6 +156,9 @@ export function buildStaffReport(
     unpaidAmount: 0,
     cashTotal: 0,
     bankTransferTotal: 0,
+    cardTotal: 0,
+    momoTotal: 0,
+    vnpayTotal: 0,
     bookings: orders.length,
     players: 0,
     cancelled: 0,
@@ -162,6 +174,9 @@ export function buildStaffReport(
     unpaidAmount: totals.unpaidAmount,
     cashTotal: totals.cashTotal,
     bankTransferTotal: totals.bankTransferTotal,
+    vnpayTotal: totals.vnpayTotal,
+    momoTotal: totals.momoTotal,
+    cardTotal: totals.cardTotal,
     bookings: totals.bookings,
     players: totals.players,
     cancelled: totals.cancelled,
@@ -217,6 +232,9 @@ export function reportSummaryFromRpc(value: unknown, text: StaffConsoleCopy = st
     unpaidAmount: numericReportValue(row.unpaidAmount ?? row.unpaid_amount),
     cashTotal: numericReportValue(row.cashTotal ?? row.cash_total),
     bankTransferTotal: numericReportValue(row.bankTransferTotal ?? row.bank_transfer_total),
+    vnpayTotal: numericReportValue(row.vnpayTotal ?? row.vnpay_total),
+    momoTotal: numericReportValue(row.momoTotal ?? row.momo_total),
+    cardTotal: numericReportValue(row.cardTotal ?? row.card_total),
     bookings: numericReportValue(row.bookings),
     players: numericReportValue(row.players),
     cancelled: numericReportValue(row.cancelled),

@@ -758,6 +758,9 @@ export const staffConsoleText = {
     paymentMethods: {
       bank_transfer: 'Bank Transfer',
       cash: 'Cash',
+      card_manual: 'Credit/Debit Card',
+      momo_manual: 'Momo',
+      vnpay: 'VNPAY',
     } satisfies Record<StaffPaymentMethod, string>,
     roles: {
       admin: 'Admin',
@@ -1576,6 +1579,9 @@ export const staffConsoleText = {
     paymentMethods: {
       bank_transfer: 'Chuyển khoản',
       cash: 'Tiền mặt',
+      card_manual: 'Thẻ tín dụng/ghi nợ',
+      momo_manual: 'Momo',
+      vnpay: 'VNPAY',
     } satisfies Record<StaffPaymentMethod, string>,
     roles: {
       admin: 'Admin',

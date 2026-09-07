@@ -9,3 +9,20 @@
 }
 .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove:hover { color: var(--vrena-red-600); background: var(--vrena-red-50); }
 .app .staff-console .staff-payment-splits button.staff-payment-remove svg { display: block; width: 16px; height: 16px; color: inherit; stroke: currentColor; }
+
+.app .staff-console .staff-readonly-fieldset .compact-form-grid > label:has(.country-menu) { position: relative; z-index: 120; }
+.app .staff-console .staff-phone-control .country-button { height: 38px; min-height: 38px; padding-block: 6px; }
+.app .staff-console .staff-phone-control .country-menu { z-index: 130; }
+.app .staff-console .staff-readonly-fieldset .compact-form-grid > .staff-guest-toggle { display: flex; align-items: center; gap: 8px; }
+.app .staff-total-override { border: 0; padding: 0; margin: 18px 0; display: grid; gap: 10px; min-width: 0; }
+.app .staff-total-override label { display: grid; gap: 6px; }
+.app .staff-total-override label.staff-override-toggle { display: flex; align-items: center; gap: 8px; }
+.app .staff-total-override .staff-override-toggle input { width: 18px; height: 18px; min-height: 18px; margin: 0; }
+.app .staff-total-override input, .app .staff-total-override textarea { min-width: 0; width: 100%; }
+
+@media (max-width: 600px) {
+  .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 36px; padding-bottom: 8px; }
+  .app .staff-payment-split-row:has(.staff-payment-remove) > select { grid-column: 1 / -1; }
+  .app .staff-payment-split-row:has(.staff-payment-remove) > input { grid-column: 1; }
+  .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { grid-column: 2; }
+}

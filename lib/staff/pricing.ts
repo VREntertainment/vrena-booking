@@ -169,3 +169,13 @@ export function manualDiscountLabel(type: BookingForm['manualDiscountType'], val
 export function loyaltyCalculationLabel(type: StaffLoyaltyRule['calculation_type'], text: StaffConsoleCopy = staffConsoleText.en) {
   return text.loyaltyCalculation[type]
 }
+
+export function isStaffGroupDiscount(discount: StaffDiscount) {
+  return !discount.code && discount.ticket_type !== 'birthday' && (discount.discount_type === 'group' || (discount.min_players ?? 0) > 1)
+}
+
+export function validBookingTotalOverride(booking: Pick<BookingForm, 'overrideTotalEnabled' | 'overrideTotal' | 'overrideReason'>) {
+  if (!booking.overrideTotalEnabled) return true
+  const value = Number(booking.overrideTotal)
+  return booking.overrideTotal.trim() !== '' && Number.isInteger(value) && value >= 0 && value <= 2147483647 && booking.overrideReason.trim().length > 0
+}
