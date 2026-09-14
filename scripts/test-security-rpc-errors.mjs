@@ -11,7 +11,7 @@ assert.equal(services.API_URL, 'http://127.0.0.1:56431')
 const admin = createClient(services.API_URL, services.SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
 const sql = (input) => execFileSync('docker', ['exec', '-i', 'supabase_db_vrena-health-ci', 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()
 
-async function fixture(run) {
+async function fixture(run, inviteCode = 'SECURE-CODE') {
   const email = `rpc-security-${randomUUID()}@example.invalid`
   const password = randomBytes(24).toString('base64url')
   const created = await admin.auth.admin.createUser({ email, password, email_confirm: true })
@@ -23,7 +23,7 @@ async function fixture(run) {
     sql(`select set_config('request.jwt.claims','{"role":"service_role","sub":"${id}"}',false);
       insert into public.profiles (id,email,full_name) values ('${id}','${email}','Local RPC security fixture') on conflict (id) do nothing;
       insert into public.sessions (id,owner_id,name,date,start_time,max_players,visibility,invite_code,booking_type)
-      values ('${sessionId}','${id}','Local RPC security fixture',current_date + 60,'10:00',4,'private','SECURE-CODE','community');`)
+      values ('${sessionId}','${id}','Local RPC security fixture',current_date + 60,'10:00',4,'private','${inviteCode}','community');`)
     const client = createClient(services.API_URL, services.ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
     assert.ifError((await client.auth.signInWithPassword({ email, password })).error)
     const count = (subject) => Number(sql(`select coalesce(max(attempt_count),0) from public.security_rate_limits where reset_at > now() and subject_hash = encode(extensions.digest('booking_attempt:${id}:${subject.toLowerCase()}','sha256'),'hex');`))
@@ -42,6 +42,49 @@ const expectError = (result, message) => {
   assert.equal(result.data, null, 'Supabase must report failure to existing clients')
   assert.equal(result.error?.message, message)
 }
+
+test('invitation IDs cannot grant access to another account private session through the Data API', async () => {
+  await fixture(async ({ client, id, sessionId }) => {
+    await fixture(async ({ id: otherId, sessionId: otherSessionId }) => {
+      const inviteId = randomUUID()
+      assert.ifError((await client.from('session_invites').insert({
+        id: inviteId,
+        session_id: sessionId,
+        inviter_id: id,
+        recipient_id: id,
+        recipient_display_name: 'Local IDOR fixture',
+        status: 'pending',
+      })).error)
+
+      const expectPrivate = async () => {
+        const result = await client.from('sessions').select('id, invite_code, notes').eq('id', otherSessionId)
+        assert.ifError(result.error)
+        assert.deepEqual(result.data, [], 'Another account private session must remain inaccessible')
+      }
+      await expectPrivate()
+      for (const payload of [
+        { session_id: otherSessionId },
+        { inviter_id: otherId },
+        { recipient_id: otherId },
+        { id: randomUUID() },
+      ]) {
+        const result = await client.from('session_invites').update(payload).eq('id', inviteId)
+        assert.equal(result.status, 403)
+        assert.equal(result.error?.code, '42501')
+        await expectPrivate()
+      }
+
+      const accepted = await client.from('session_invites').update({ status: 'accepted' }).eq('id', inviteId).select('status, session_id')
+      assert.ifError(accepted.error)
+      assert.deepEqual(accepted.data, [{ status: 'accepted', session_id: sessionId }])
+      const refreshed = await client.rpc('sync_profile_public_snapshot', { p_profile_id: id })
+      assert.ifError(refreshed.error, 'Profile snapshot refreshes must preserve the invitation binding')
+      const removed = await client.from('session_invites').delete().eq('id', inviteId).select('id')
+      assert.ifError(removed.error)
+      assert.deepEqual(removed.data, [{ id: inviteId }])
+    }, 'OTHER-SECURE-CODE')
+  })
+})
 
 test('wrong private codes persist and share a limit across join and waitlist endpoints', async () => {
   await fixture(async ({ client, id, sessionId, count }) => {
