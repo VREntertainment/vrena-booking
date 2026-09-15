@@ -28,7 +28,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
       await chooseCafeVenue(page)
     }
     await page.locator('.ticket-control-date input[type="date"]').fill(new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10))
-    await page.locator('#ticket-available-time').selectOption(venue === 'cafe-des-stagiaires' ? '17:00' : '12:00')
+    await page.locator('#ticket-available-time').selectOption(venue === 'cafe-des-stagiaires' ? '17:10' : '12:00')
     await page.getByRole('button', { name: venue === 'cafe-des-stagiaires' ? 'Send booking request' : 'Reserve your slot', exact: true }).click()
     await page.getByPlaceholder('0981152315').fill('0900000993')
     await page.getByRole('button', { name: 'Book without an account', exact: true }).click()

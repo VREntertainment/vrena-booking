@@ -62,7 +62,7 @@ test.describe('booking venue selection', () => {
     await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
     await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
-    await expect(page.locator('#ticket-available-time option')).toHaveCount(17)
+    await expect(page.locator('#ticket-available-time option')).toHaveCount(22)
     if (test.info().project.name === 'chromium') {
       const noticeHeight = await page.locator('.cafe-booking-notice').evaluate((element) => element.getBoundingClientRect().height)
       expect(noticeHeight).toBeLessThan(620)
