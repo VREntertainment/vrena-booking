@@ -295,7 +295,7 @@ export const en = {
   sessionTariffRateWeekendDay: 'Weekend, 09:00–20:00: 330,000 VND / player / 45 min',
   sessionTariffRateWeekendEvening: 'Weekend, 20:00–22:00: 390,000 VND / player / 45 min',
   sessionTariffRateCafeHappy: 'Daily, 16:00–20:00: 240,000 VND / player / 45 min',
-  sessionTariffRateCafeEvening: 'Daily, 20:00–22:00: 290,000 VND / player / 45 min',
+  sessionTariffRateCafeEvening: 'Daily, 20:00–23:00: 290,000 VND / player / 45 min',
   sessionTariffArena: 'Each arena = up to 4 simultaneous players every 45 min',
   sessionTariffHaDoArena: '2 arenas; up to 4 simultaneous players per arena every 45 min',
   sessionTariffCafeArena: '1 arena; up to 8 simultaneous players every 45 min',
