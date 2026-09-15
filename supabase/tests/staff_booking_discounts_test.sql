@@ -39,7 +39,7 @@ select is((select price_override_reason from public.staff_orders where id=(selec
 select is((select ticket_total_price from public.sessions where id=(select (result->>'session_id')::uuid from discount_results where method='override')),1000000,'Linked calendar booking uses the overridden total');
 select is((select payment_status from public.staff_orders where id=(select (result->>'order_id')::uuid from discount_results where method='override')),'paid','Override payment status reconciles with its receipt');
 select ok((select internal_note like '%Agreed group package%' from public.staff_orders where id=(select (result->>'order_id')::uuid from discount_results where method='override')),'Reason is visible in the existing order note');
-select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+125,'15:59',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','Selected time is outside opening hours.','Cafe cannot book before its own opening time');
+select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+125,'15:29',1,'cafe:arena-1',null,'confirmed')$q$,'P0001','Selected time is outside opening hours.','Cafe cannot book before its own opening time');
 select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+125,'21:59',1,'arena-1',null,'confirmed')$q$,'P0001','Selected time is outside opening hours.','A booking must finish before closing');
 reset role;
 select * from finish();
