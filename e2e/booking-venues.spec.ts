@@ -52,7 +52,7 @@ test.describe('booking venue selection', () => {
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toContainText('Your booking is confirmed only after the team replies on Zalo or WhatsApp.')
-    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily only 16:00–22:00')
+    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily only 15:30–23:00')
     const zaloLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /Zalo/ })
     const whatsappLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /WhatsApp/ })
     await expect(zaloLink).toHaveAttribute('href', 'https://zalo.me/84981152315')

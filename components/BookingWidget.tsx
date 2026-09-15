@@ -84,6 +84,7 @@ import {
   type GameId,
   type TicketType
 } from '../lib/bookingStaticData'
+import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES } from '../lib/booking/availability'
 import {
   ANONYMOUS_MASK_EMOJI,
   BlockedTime,
@@ -3434,16 +3435,20 @@ export default function WidgetPage({
 
   const calendarWeekEnd = addDaysToDateValue(calendarWeekStart, 6)
 
+  const calendarOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
+  const calendarCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
+  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : 10
+
   const calendarTimeSlots = useMemo(() => {
-    return Array.from({ length: Math.floor((CLOSE_MINUTES - OPEN_MINUTES) / TIME_STEP_MINUTES) }, (_, index) => {
-      const minutes = OPEN_MINUTES + index * TIME_STEP_MINUTES
+    return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
+      const minutes = calendarOpenMinutes + index * calendarStepMinutes
       return {
         minutes,
         value: minutesToTime(minutes),
         isHour: minutes % 60 === 0,
       }
     })
-  }, [])
+  }, [calendarOpenMinutes, calendarCloseMinutes, calendarStepMinutes])
 
   const calendarSessions = useMemo(() => {
     return sortSessionsByStart(
@@ -5476,7 +5481,7 @@ export default function WidgetPage({
                   <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
                   <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
                   <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
-                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart < localDateString() ? localDateString() : calendarWeekStart, isHaDoBookingVenue ? '09:00' : '16:00')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
+                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart < localDateString() ? localDateString() : calendarWeekStart, isHaDoBookingVenue ? '09:00' : '15:30')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
                 </div>
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">
@@ -5492,7 +5497,7 @@ export default function WidgetPage({
                       const daySessions = calendarSessions.filter((session) => {
                         if (session.date !== day.value) return false
                         const start = timeToMinutes(session.start_time)
-                        return rangesOverlap(start, start + session.duration_minutes, OPEN_MINUTES, CLOSE_MINUTES)
+                        return rangesOverlap(start, start + session.duration_minutes, calendarOpenMinutes, calendarCloseMinutes)
                       })
 
                       return (
@@ -5523,10 +5528,10 @@ export default function WidgetPage({
                               const isTicket = isTicketSession(session)
                               const start = timeToMinutes(session.start_time)
                               const end = start + session.duration_minutes
-                              const visibleStart = Math.max(start, OPEN_MINUTES)
-                              const visibleEnd = Math.min(end, CLOSE_MINUTES)
-                              const topPercent = ((visibleStart - OPEN_MINUTES) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
-                              const heightPercent = ((visibleEnd - visibleStart) / (CLOSE_MINUTES - OPEN_MINUTES)) * 100
+                              const visibleStart = Math.max(start, calendarOpenMinutes)
+                              const visibleEnd = Math.min(end, calendarCloseMinutes)
+                              const topPercent = ((visibleStart - calendarOpenMinutes) / (calendarCloseMinutes - calendarOpenMinutes)) * 100
+                              const heightPercent = ((visibleEnd - visibleStart) / (calendarCloseMinutes - calendarOpenMinutes)) * 100
                               const participantCount = session.session_participants?.length ?? 0
                               const capacity = isTicket ? session.ticket_player_count || session.max_players : session.max_players
                               const sessionKind = isTicket

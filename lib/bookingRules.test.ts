@@ -43,10 +43,10 @@ test('same-day slots skip the current minute while future days retain opening sl
 test('Cafe availability keeps its own launch date, opening hours, and same-day cutoff', () => {
   assert.deepEqual(cafeTicketTimes('2026-08-30', 45, 1, now), [])
   const times = cafeTicketTimes(date, 45, 1, now)
-  assert.equal(times[0].label, '16:00-16:45')
-  assert.equal(times.at(-1)?.label, '21:00-21:45')
-  assert.equal(times.length, 16)
-  assert.equal(cafeTicketTimes(date, 45, 1, new Date(2026, 8, 9, 16, 0))[0].value, '16:20')
+  assert.equal(times[0].label, '15:30-16:15')
+  assert.equal(times.at(-1)?.label, '22:10-22:55')
+  assert.equal(times.length, 21)
+  assert.equal(cafeTicketTimes(date, 45, 1, new Date(2026, 8, 9, 16, 0))[0].value, '16:10')
 })
 
 const base: TicketCheckoutAmountsInput = {

@@ -35,10 +35,10 @@ select ok(
 );
 
 select ok(
-  position('v_end_minutes > 22 * 60' in pg_get_functiondef(
+  position('v_end_minutes > 23 * 60' in pg_get_functiondef(
     'public.create_cafe_ticket_booking_request(text,date,time without time zone,integer,integer,integer,text[],text,text,text)'::regprocedure
   )) > 0,
-  'CS booking requests close at 22:00'
+  'CS booking requests close at 23:00'
 );
 
 select ok(
