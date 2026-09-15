@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase/client'
 import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { staffBookingHours } from '../lib/staff/bookingHours'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
 import type { BookingForm, StaffGame, StaffOrder } from '../lib/staff/types'
 import type { Session } from '../lib/bookingWidgetDomain'
@@ -118,11 +119,11 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           const venue = event.target.value as Draft['venue']
           const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
           const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
-          patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '16:00' ? '16:00' : draft.time })
+          patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
         }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">VRena Café des Stagiaires</option></select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={!orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
-        <label>{text.time}<input required type="time" min={draft.venue === 'cafe-des-stagiaires' ? '16:00' : '09:00'} max={`${String(Math.floor((1320 - draft.duration) / 60)).padStart(2, '0')}:${String((1320 - draft.duration) % 60).padStart(2, '0')}`} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
+        <label>{text.time}<input required type="time" min={staffBookingHours(draft.venue, draft.duration).min} max={staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label>{text.game}<select required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
         <label>{text.players}<input required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
         <label>{text.duration}<input required min={20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>

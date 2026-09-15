@@ -157,7 +157,7 @@ export default function NewSection({
                 ...current,
                 venueKey: event.target.value as BookingForm['venueKey'],
                 gameId: '', arenaId: '', discountId: '',
-                time: event.target.value === 'cafe-des-stagiaires' && current.time < '16:00' ? '16:00' : current.time,
+                time: event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
               }))}>
                 <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
                 <option value="cafe-des-stagiaires">VRena Café des Stagiaires</option>
