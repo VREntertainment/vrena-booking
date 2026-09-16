@@ -34,6 +34,12 @@ from billing_results r join billing_cases c using(id) join public.sessions s on 
 select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',45,9,1,array['laser-tag'],0,0,'+84988009991','Fixture')$q$,'P0001','Invalid player count.','Ha Do rejects nine guests in one arena');
 select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',45,17,2,array['laser-tag'],0,0,'+84988009992','Fixture')$q$,'P0001','Invalid player count.','Ha Do rejects more than sixteen guests');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+240,'16:00',45,17,1,array['revolta'],'+84988009993','Fixture')$q$,'P0001','Invalid player count.','Cafe rejects more than sixteen guests');
+-- Event requests share the same hard sixteen-guest Cafe limit.
+select throws_ok(format($q$select public.create_cafe_ticket_booking_request(%L,current_date+245,'16:00',45,17,1,array['revolta'],'+84988009994','Fixture')$q$,kind),
+'P0001','Invalid player count.',format('Cafe rejects 17 guests for %s',kind)) from (values ('birthday'),('corporate')) t(kind);
+select is((public.create_cafe_ticket_booking_request(kind,current_date+246+id,'16:00',45,16,1,array['revolta'],
+'+8498811'||lpad(id::text,4,'0'),'Event fixture')->>'ticket_total_price')::int,0,format('Cafe accepts 16 guests for %s as a quote request',kind))
+from (values (1,'birthday'),(2,'corporate')) t(id,kind);
 -- Actual Cafe endpoint totals cover every discount boundary and multiple blocks.
 select is((public.create_cafe_ticket_booking_request('individual',current_date+260+id,'16:00',minutes,guests,1,array['revolta'],
 '+8498810'||lpad(id::text,4,'0'),'Cafe fixture')->>'ticket_total_price')::int,expected,

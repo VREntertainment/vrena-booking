@@ -56,6 +56,13 @@ test.describe('booking venue selection', () => {
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
     await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
     await expect(page.locator('#ticket-available-time option')).toHaveCount(22)
+    for (const eventIndex of [0, 1]) {
+      await page.locator('.ticket-service-card').nth(eventIndex).click()
+      await expect(page.locator('#ticket-player-count option').last()).toHaveValue('16')
+      await expect(page.locator('#ticket-player-count option[value="17"]')).toHaveCount(0)
+      await expect(page.locator('#ticket-arena-count')).toHaveValue('1')
+      await expect(page.locator('#ticket-arena-count')).toBeDisabled()
+    }
     await expectContainedLayout(page)
   })
 })
