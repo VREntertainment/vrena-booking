@@ -513,6 +513,8 @@ export default function TicketBookingView({
               )}
               {!requiresZaloConfirmation && <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>}
 
+              <p className="field-help ticket-helper-note">{text.sessionTariffPayment}</p>
+
               <div className="ticket-checkout-action">
                 <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
                 <button
@@ -654,6 +656,7 @@ export default function TicketBookingView({
                 <span>{ticketConfirmation.requiresZaloConfirmation ? text.bookingRequestSubmitted : text.bookingConfirmed}</span>
                 <strong>{ticketConfirmation.ticketLabel}</strong>
               </div>
+              <p>{text.sessionTariffPayment}</p>
               <div className="ticket-confirmation-grid">
                 <span>{formatShortDate(ticketConfirmation.date, language)}</span>
                 <span>{ticketConfirmation.time}</span>

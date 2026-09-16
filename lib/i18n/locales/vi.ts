@@ -307,7 +307,7 @@ export const vi = {
   sessionTariffRates: 'Từ 31/08/2026: Hà Đô 220k/260k/290k ngày thường và 330k/390k cuối tuần; CS 240k từ 16:00 và 290k từ 20:00. Tất cả giá tính theo người / 45 phút.',
   sessionTariffGroups: 'Chọn 1 hoặc 2 arena. Mỗi arena có tối đa 4 suất cùng lúc. 5-8 người: giảm 10%. 9-16 người: giảm 15%.',
   sessionOfferLimit: 'Chỉ dùng một ưu đãi hoặc voucher cho mỗi booking.',
-  sessionTariffPayment: 'Thanh toán tại quầy lễ tân. Cần hỗ trợ?',
+  sessionTariffPayment: "Chỉ thanh toán tại cửa hàng bằng mã QR, thẻ tín dụng hoặc thẻ ghi nợ, Apple Pay, Samsung Pay, Google Pay hoặc tiền mặt. Có xuất hóa đơn VAT.",
   sessionTariffLoyaltyTitle: 'Điểm thưởng',
   sessionTariffLoyaltyText: 'Điểm được cộng sau khi xác nhận thanh toán, dựa trên giá cuối cùng đã trả và làm tròn xuống. Có thể dùng điểm cho vé sau khi đổi điểm đang bật.',
   sessionTariffDisclaimer: 'Biểu giá mới áp dụng từ 31/08/2026. CS chỉ mở cửa hằng ngày từ 15:30 đến 23:00. Giá và thời gian tối thiểu tính theo số arena đã chọn; mỗi arena phục vụ tối đa 4 người cùng lúc.',

@@ -307,7 +307,7 @@ export const ko = {
   sessionTariffRates: '2026년 8월 31일부터: Hà Đô 평일 220k/260k/290k, 주말 330k/390k; CS 16:00부터 240k, 20:00부터 290k. 모든 요금은 1인 / 45분 기준입니다.',
   sessionTariffGroups: '아레나 1개 또는 2개를 선택합니다. 각 아레나는 동시 최대 4자리입니다. 5-8명: 10% 할인. 9-16명: 15% 할인.',
   sessionOfferLimit: '예약당 오퍼 또는 바우처는 하나만 사용할 수 있습니다.',
-  sessionTariffPayment: '결제는 리셉션에서 현장 결제합니다. 도움이 필요하신가요?',
+  sessionTariffPayment: "결제는 매장에서만 가능합니다. QR 코드, 신용카드 또는 체크카드, Apple Pay, Samsung Pay, Google Pay, 현금으로 결제할 수 있습니다. VAT 세금계산서 발급이 가능합니다.",
   sessionTariffLoyaltyTitle: '포인트',
   sessionTariffLoyaltyText: '포인트는 결제 확인 후, 실제로 지불한 최종 금액을 내림해 지급됩니다. 사용이 활성화되면 이후 티켓에 사용할 수 있습니다.',
   sessionTariffDisclaimer: '새 요금은 2026년 8월 31일부터 적용됩니다. CS는 매일 15:30부터 23:00까지만 운영합니다. 요금과 최소 시간은 선택한 아레나 수를 기준으로 계산되며, 아레나당 동시 최대 4명입니다.',
