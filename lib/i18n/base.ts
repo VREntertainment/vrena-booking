@@ -111,7 +111,7 @@ export const en = {
   birthdayTicket: 'Birthday / Events Booking',
   birthdayTicketDescription: 'Private event block for birthdays and small groups.',
   corporateTicket: 'Corporate Team Building',
-  corporateTicketDescription: 'Private team session for company groups.',
+  corporateTicketVatDescription: "Private team sessions for company groups, with a VAT invoice.",
   numberOfPlayers: 'Number of players',
   ticketArenaCountLabel: 'Number of arenas',
   ticketOneArenaBookingCapacity: "1 arena · up to 8 guests",

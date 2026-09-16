@@ -113,7 +113,7 @@ export const de = {
   birthdayTicket: 'Geburtstag / Event',
   birthdayTicketDescription: 'Privater Zeitblock für Geburtstage und kleine Gruppen.',
   corporateTicket: 'Firmen-Team-Building',
-  corporateTicketDescription: 'Private Team-Session für Firmengruppen.',
+  corporateTicketVatDescription: "Private Team-Session für Firmengruppen, mit Rechnung inklusive Mehrwertsteuerausweis.",
   numberOfPlayers: 'Anzahl der Spieler',
   ticketArenaCountLabel: 'Anzahl der Arenen',
   ticketOneArenaBookingCapacity: "1 Arena · bis zu 8 Gäste",

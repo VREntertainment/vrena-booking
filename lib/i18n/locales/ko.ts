@@ -113,7 +113,7 @@ export const ko = {
   birthdayTicket: '생일 / 이벤트 예약',
   birthdayTicketDescription: '생일과 소규모 그룹을 위한 단독 이용 시간입니다.',
   corporateTicket: '기업 팀 빌딩',
-  corporateTicketDescription: '기업 단체를 위한 단독 팀 세션입니다.',
+  corporateTicketVatDescription: "기업 단체를 위한 단독 팀 세션이며, VAT 세금계산서가 제공됩니다.",
   numberOfPlayers: '플레이어 수',
   ticketArenaCountLabel: '아레나 수',
   ticketOneArenaBookingCapacity: "아레나 1개 · 최대 8명",

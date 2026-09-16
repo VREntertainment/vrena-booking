@@ -113,7 +113,7 @@ export const ja = {
   birthdayTicket: '誕生日 / イベント予約',
   birthdayTicketDescription: '誕生日や少人数グループ向けのプライベート枠です。',
   corporateTicket: '企業向けチームビルディング',
-  corporateTicketDescription: '社内グループ向けのプライベート・チームセッションです。',
+  corporateTicketVatDescription: "企業のグループ向けプライベートセッション。VAT（付加価値税）請求書を発行します。",
   numberOfPlayers: '参加人数',
   ticketArenaCountLabel: 'アリーナ数',
   ticketOneArenaBookingCapacity: "1アリーナ・最大8名",

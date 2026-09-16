@@ -113,7 +113,7 @@ export const it = {
   birthdayTicket: 'Compleanno / evento',
   birthdayTicketDescription: 'Fascia oraria privata per compleanni e piccoli gruppi.',
   corporateTicket: 'Team building aziendale',
-  corporateTicketDescription: 'Sessione privata per gruppi aziendali.',
+  corporateTicketVatDescription: "Sessione privata per gruppi aziendali, con fattura IVA.",
   numberOfPlayers: 'Numero di giocatori',
   ticketArenaCountLabel: 'Numero di arene',
   ticketOneArenaBookingCapacity: "1 arena · fino a 8 ospiti",

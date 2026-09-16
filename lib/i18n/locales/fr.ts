@@ -113,7 +113,7 @@ export const fr = {
   birthdayTicket: 'Anniversaire / événement',
   birthdayTicketDescription: 'Créneau privé pour les anniversaires et les petits groupes.',
   corporateTicket: 'Team building d’entreprise',
-  corporateTicketDescription: 'Session privée pour les groupes d’entreprise.',
+  corporateTicketVatDescription: "Session privée pour les groupes d’entreprise, avec facture de TVA.",
   numberOfPlayers: 'Nombre de joueurs',
   ticketArenaCountLabel: 'Nombre d’arènes',
   ticketOneArenaBookingCapacity: "1 arène · jusqu’à 8 personnes",

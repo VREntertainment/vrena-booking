@@ -113,7 +113,7 @@ export const vi = {
   birthdayTicket: 'Đặt tiệc sinh nhật / sự kiện',
   birthdayTicketDescription: 'Khung giờ riêng cho tiệc sinh nhật và nhóm nhỏ.',
   corporateTicket: 'Team building doanh nghiệp',
-  corporateTicketDescription: 'Phiên chơi riêng dành cho nhóm công ty.',
+  corporateTicketVatDescription: "Phiên chơi riêng dành cho nhóm công ty, có xuất hóa đơn VAT.",
   numberOfPlayers: 'Số người chơi',
   ticketArenaCountLabel: 'Số arena',
   ticketOneArenaBookingCapacity: "1 arena · tối đa 8 khách",
