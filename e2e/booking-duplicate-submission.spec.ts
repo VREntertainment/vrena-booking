@@ -31,7 +31,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
       await chooseCafeVenue(page)
       await page.locator('.ticket-voucher-details summary').click()
       await page.getByPlaceholder('Enter code', { exact: true }).fill('summer25')
-      await expect(page.getByPlaceholder('Enter code', { exact: true })).toHaveValue('summer25')
+      await expect(page.getByPlaceholder('Enter code', { exact: true })).toHaveValue('SUMMER25')
       await expect(page.getByText('Available loyalty points can be used after any voucher or group discount. Every paid ticket earns points from the final amount paid.', { exact: true })).toBeVisible()
       await expect(page.getByText('Voucher codes and loyalty redemption are confirmed by our team before payment.', { exact: true })).toBeVisible()
     }
