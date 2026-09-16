@@ -588,7 +588,7 @@ export function ticketTypeLabel(ticketType: TicketType, text: Record<string, str
 
 export function ticketTypeDescription(ticketType: TicketType, text: Record<string, string>) {
   if (ticketType === 'birthday') return text.birthdayTicketDescription
-  if (ticketType === 'corporate') return text.corporateTicketDescription
+  if (ticketType === 'corporate') return text.corporateTicketVatDescription
   return text.individualTicketDescription
 }
 

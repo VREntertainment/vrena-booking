@@ -67,7 +67,7 @@ export default function PublicGameGuidePage({
           </Link>
           <div className="public-game-guide-title">
             <h1>{text.gameGuideTitle}</h1>
-            <p>{text.gameGuideIntro}</p>
+            <p>{text.gameGuideSessionIntro}</p>
           </div>
           <nav className="public-game-guide-languages" aria-label={text.language}>
             {languageOptions.map((option) => {
