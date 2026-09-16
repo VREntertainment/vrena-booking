@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import GameGuideCategory from './GameGuideCategory'
 import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
@@ -37,6 +38,7 @@ export type GameGuideStaffGuide = {
 }
 
 type GameGuideModalProps = {
+  initialVenue: GameGuideGame['venues'][number]
   closeText: string
   text: Record<string, string>
   language: LanguageCode
@@ -82,6 +84,7 @@ function normalizedGuideText(value: StaffGameGuideText | null | undefined, langu
 }
 
 export default function GameGuideModal({
+  initialVenue,
   closeText,
   text,
   language,
@@ -89,6 +92,9 @@ export default function GameGuideModal({
   staffGameGuides,
   onClose,
 }: GameGuideModalProps) {
+  const [venue, setVenue] = useState(initialVenue)
+  const visibleGames = games.filter((game) => game.venues.includes(venue))
+
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={onClose}>
       <div className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
@@ -98,9 +104,22 @@ export default function GameGuideModal({
         <div className="game-guide-header">
           <h3 id="game-guide-title">{text.gameGuideTitle}</h3>
           <p>{text.gameGuideIntro}</p>
+          <label className="game-guide-location" htmlFor="game-guide-location">
+            <span>{text.bookingVenueLabel}</span>
+            <select
+              id="game-guide-location"
+              value={venue}
+              onChange={(event) => {
+                setVenue(event.target.value as GameGuideGame['venues'][number])
+              }}
+            >
+              <option value="ha-do-centrosa">{text.bookingVenueHaDoName}</option>
+              <option value="cafe-des-stagiaires">{text.bookingVenueCafeName}</option>
+            </select>
+          </label>
         </div>
-        <div className="game-guide-scroll">
-          {games.map((game) => {
+        <div className="game-guide-scroll" key={venue}>
+          {visibleGames.map((game) => {
             const isEscape = game.category === 'Escape'
             const isMiniBlockTowers = game.id === 'mini-block-towers'
             const staffGuide = staffGameGuides[game.id]
