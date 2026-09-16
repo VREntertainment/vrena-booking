@@ -5968,6 +5968,7 @@ export default function WidgetPage({
 
       {gameGuideOpen && (
         <GameGuideModal
+          initialVenue={bookingVenue}
           closeText={text.gameGuideClose}
           games={gameGuideGames}
           language={language}
