@@ -58,7 +58,7 @@ test.describe('booking venue selection', () => {
     await expect(page.locator('#ticket-available-time option')).toHaveCount(22)
     for (const eventIndex of [0, 1]) {
       await page.locator('.ticket-service-card').nth(eventIndex).click()
-      await expect(page.locator('#ticket-player-count option').last()).toHaveValue('16')
+      await expect(page.locator('#ticket-player-count option').last()).toHaveAttribute('value', '16')
       await expect(page.locator('#ticket-player-count option[value="17"]')).toHaveCount(0)
       await expect(page.locator('#ticket-arena-count')).toHaveValue('1')
       await expect(page.locator('#ticket-arena-count')).toBeDisabled()
