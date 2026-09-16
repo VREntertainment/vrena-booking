@@ -236,10 +236,10 @@ export default function TicketBookingView({
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
   const ticketGroupDiscountSummary = currentTicketPricing.discountRate > 0
-    ? text.ticketGroupDiscountApplied
+    ? text.ticketBilledSlotsDiscountApplied
       .replace('{discount}', String(Math.round(currentTicketPricing.discountRate * 100)))
-      .replace('{players}', String(ticketPlayers))
-    : text.ticketGroupDiscountStartsAtFive
+      .replace('{players}', String(currentTicketPricing.chargedPlayerSpots))
+    : text.ticketBilledSlotsNoDiscount
 
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
@@ -363,8 +363,8 @@ export default function TicketBookingView({
                     value={activeTicketArenaCount}
                     onChange={(event) => onTicketArenaCountChange(Number(event.target.value))}
                   >
-                    <option value={1}>{singleArenaOnly ? text.ticketCafeArena : text.ticketOneArena}</option>
-                    {!singleArenaOnly && <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenas}</option>}
+                    <option value={1} disabled={!singleArenaOnly && ticketPlayers > 8}>{singleArenaOnly ? text.ticketCafeArenaBookingCapacity : text.ticketOneArenaBookingCapacity}</option>
+                    {!singleArenaOnly && <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenasBookingCapacity}</option>}
                   </select>
                 </div>
               </div>
@@ -500,7 +500,11 @@ export default function TicketBookingView({
               {!isSpecialTicket && (
                 <div className="ticket-group-pricing-note" aria-live="polite">
                   <strong>{ticketGroupDiscountSummary}</strong>
-                  <span>{text.ticketGroupDiscountRule}</span>
+                  <span>{text.ticketBilledSlotsFormula
+                    .replace('{players}', String(currentTicketPricing.chargedPlayersPerBlock))
+                    .replace('{blocks}', String(currentTicketPricing.durationBlocks))
+                    .replace('{slots}', String(currentTicketPricing.chargedPlayerSpots))}</span>
+                  <span>{text.ticketBilledSlotsDiscountRule}</span>
                 </div>
               )}
 
@@ -511,7 +515,6 @@ export default function TicketBookingView({
 
               <div className="ticket-checkout-action">
                 <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
-                {requiresZaloConfirmation && <p className="ticket-confirmation-requirement">{text.bookingVenueCafeBookingNoticeStatus}</p>}
                 <button
                   className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
                   disabled={isBookingTickets || guestTicketAction !== null}

@@ -40,7 +40,7 @@ test.describe('booking venue selection', () => {
     })
   }
 
-  test('Cafe tickets stay bookable and explain Zalo-only confirmation in the right panel', async ({ page }) => {
+  test('Cafe tickets stay bookable without the removed soft-opening notices', async ({ page }) => {
     await keepConsentOutOfTheBookingFlow(page)
     await page.goto('/tickets')
 
@@ -50,23 +50,12 @@ test.describe('booking venue selection', () => {
 
     await expect(venueSelector).toContainText('VRena Café des Stagiaires')
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
-    await expect(page.locator('.cafe-booking-notice')).toBeVisible()
-    await expect(page.locator('.cafe-booking-notice')).toContainText('Your booking is confirmed only after the team replies on Zalo or WhatsApp.')
-    await expect(page.locator('.cafe-booking-notice')).toContainText('Daily only 15:30–23:00')
-    const zaloLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /Zalo/ })
-    const whatsappLink = page.locator('.cafe-booking-notice').getByRole('link', { name: /WhatsApp/ })
-    await expect(zaloLink).toHaveAttribute('href', 'https://zalo.me/84981152315')
-    await expect(zaloLink.locator('img')).toHaveCount(1)
-    await expect(whatsappLink).toHaveAttribute('href', 'https://wa.me/84981152315')
-    await expect(whatsappLink.locator('img')).toHaveCount(1)
+    await expect(page.locator('.cafe-booking-notice')).toHaveCount(0)
+    await expect(page.locator('.ticket-confirmation-requirement')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
     await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
     await expect(page.locator('#ticket-available-time option')).toHaveCount(22)
-    if (test.info().project.name === 'chromium') {
-      const noticeHeight = await page.locator('.cafe-booking-notice').evaluate((element) => element.getBoundingClientRect().height)
-      expect(noticeHeight).toBeLessThan(620)
-    }
     await expectContainedLayout(page)
   })
 })
