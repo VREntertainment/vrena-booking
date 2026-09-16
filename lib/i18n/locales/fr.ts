@@ -307,7 +307,7 @@ export const fr = {
   sessionTariffRates: 'À partir du 31 août 2026 : Hà Đô 220k/260k/290k en semaine et 330k/390k le week-end ; CS 240k dès 16:00 et 290k dès 20:00. Prix par joueur / 45 min.',
   sessionTariffGroups: 'Choisissez 1 ou 2 arènes. Chaque arène ajoute jusqu’à 4 places simultanées. 5-8 joueurs: -10%. 9-16 joueurs: -15%.',
   sessionOfferLimit: 'Une seule offre ou un seul voucher peut être utilisé par réservation.',
-  sessionTariffPayment: 'Paiement sur place à la réception. Besoin d’aide?',
+  sessionTariffPayment: "Le paiement se fait uniquement sur place : par code QR, carte de crédit ou de débit, Apple Pay, Samsung Pay, Google Pay ou en espèces. Une facture avec TVA est disponible.",
   sessionTariffLoyaltyTitle: 'Points fidélité',
   sessionTariffLoyaltyText: 'Les points sont gagnés après confirmation du paiement, selon le prix final payé arrondi à l’entier inférieur. Ils sont utilisables sur de futurs tickets lorsque l’échange est actif.',
   sessionTariffDisclaimer: 'Les nouveaux tarifs s’appliquent à partir du 31 août 2026. CS est ouvert tous les jours uniquement de 15:30 à 23:00. Le prix et la durée minimale dépendent du nombre d’arènes choisi ; chaque arène accueille jusqu’à 4 joueurs simultanément.',

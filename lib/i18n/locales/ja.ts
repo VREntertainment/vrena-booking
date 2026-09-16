@@ -307,7 +307,7 @@ export const ja = {
   sessionTariffRates: '2026年8月31日から：Hà Đôは平日220k/260k/290k、週末330k/390k。CSは16:00から240k、20:00から290k。すべて1名 / 45分の料金です。',
   sessionTariffGroups: '1または2アリーナを選択。各アリーナは同時に最大4枠。5-8名: 10%割引。9-16名: 15%割引。',
   sessionOfferLimit: '1予約につきオファーまたはバウチャーは1つだけ利用できます。',
-  sessionTariffPayment: 'お支払いは受付で現地払いです。サポートが必要ですか?',
+  sessionTariffPayment: "お支払いは店頭のみです。QRコード、クレジットカード・デビットカード、Apple Pay、Samsung Pay、Google Pay、現金をご利用いただけます。VAT請求書の発行も可能です。",
   sessionTariffLoyaltyTitle: 'ポイント',
   sessionTariffLoyaltyText: 'ポイントは支払い確認後、実際に支払った最終金額を切り捨てて付与されます。交換が有効なときに次回以降のチケットで使えます。',
   sessionTariffDisclaimer: '新料金は2026年8月31日から適用されます。CSの営業時間は毎日15:30〜23:00のみです。料金と最低時間は選択したアリーナ数で計算され、各アリーナは同時に最大4名まで対応します。',
