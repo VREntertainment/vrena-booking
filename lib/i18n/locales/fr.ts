@@ -188,6 +188,7 @@ export const fr = {
   ticketSpecialNotePlaceholder: 'Anniversaire, événement d’entreprise, setup souhaité, horaires...',
   ticketSpecialNoteCharacterCount: '{count}/500 caractères',
   ticketDiscountDeskNote: 'Les points fidélité disponibles peuvent être utilisés après tout voucher ou remise de groupe. Chaque ticket payé rapporte des points sur le montant final payé.',
+  ticketCafeDiscountConfirmationNote: "Notre équipe confirme les codes de réduction et l’utilisation des points de fidélité avant le paiement.",
   ticketDiscountCodeLabel: 'Code voucher / réduction',
   ticketDiscountCodePlaceholder: 'Entrer un code',
   ticketDiscountCodeChecking: 'Vérification du code...',

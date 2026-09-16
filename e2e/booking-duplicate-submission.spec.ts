@@ -10,6 +10,9 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: appUrl }])
     // Intercept all booking writes: this regression never creates a real reservation.
     await page.route('**/rest/v1/rpc/create_*', async (route) => {
+      if (venue === 'cafe-des-stagiaires') {
+        expect(route.request().postDataJSON().p_special_note).toBe('Voucher requested (pending staff confirmation): SUMMER25')
+      }
       bookingRequests += 1
       await route.fulfill({ json: { session_id: '00000000-0000-4000-8000-000000000993', ticket_reference: 'QA-SINGLE-BOOKING', ticket_total_price: 440000 } })
     })
@@ -26,6 +29,11 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await page.goto('/tickets')
     if (venue === 'cafe-des-stagiaires') {
       await chooseCafeVenue(page)
+      await page.locator('.ticket-voucher-details summary').click()
+      await page.getByPlaceholder('Enter code', { exact: true }).fill('summer25')
+      await expect(page.getByPlaceholder('Enter code', { exact: true })).toHaveValue('summer25')
+      await expect(page.getByText('Available loyalty points can be used after any voucher or group discount. Every paid ticket earns points from the final amount paid.', { exact: true })).toBeVisible()
+      await expect(page.getByText('Voucher codes and loyalty redemption are confirmed by our team before payment.', { exact: true })).toBeVisible()
     }
     await page.locator('.ticket-control-date input[type="date"]').fill(new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10))
     await page.locator('#ticket-available-time').selectOption(venue === 'cafe-des-stagiaires' ? '17:10' : '12:00')
@@ -40,6 +48,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await expect(confirm).toBeEnabled()
     await confirm.dblclick()
     await expect(page.getByText('QA-SINGLE-BOOKING', { exact: true })).toBeVisible()
+    if (venue === 'cafe-des-stagiaires') await expect(page.locator('.ticket-confirmation')).toContainText('SUMMER25')
     expect(rateChecks).toBe(2)
     expect(bookingRequests).toBe(1)
     await expect(page.locator('.guest-ticket-modal')).toHaveCount(0)

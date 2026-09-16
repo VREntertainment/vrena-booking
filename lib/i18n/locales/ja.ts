@@ -188,6 +188,7 @@ export const ja = {
   ticketSpecialNotePlaceholder: '誕生日、会社イベント、希望セットアップ、スケジュールなど...',
   ticketSpecialNoteCharacterCount: '{count}/500文字',
   ticketDiscountDeskNote: '利用可能なポイントは、バウチャーやグループ割引の適用後に使用できます。支払い済みのすべてのチケットで、最終支払額に応じたポイントを獲得できます。',
+  ticketCafeDiscountConfirmationNote: "クーポンコードとポイントの利用は、お支払い前にスタッフが確認します。",
   ticketDiscountCodeLabel: 'バウチャー / 割引コード',
   ticketDiscountCodePlaceholder: 'コードを入力',
   ticketDiscountCodeChecking: 'コードを確認中...',
