@@ -188,6 +188,7 @@ export const de = {
   ticketSpecialNotePlaceholder: 'Geburtstag, Firmenevent, gewünschtes Setup, Zeitplan...',
   ticketSpecialNoteCharacterCount: '{count}/500 Zeichen',
   ticketDiscountDeskNote: 'Verfügbare Treuepunkte können nach jedem Voucher oder Gruppenrabatt eingesetzt werden. Jedes bezahlte Ticket sammelt Punkte auf den endgültig bezahlten Betrag.',
+  ticketCafeDiscountConfirmationNote: "Unser Team bestätigt Gutscheincodes und die Einlösung von Treuepunkten vor der Zahlung.",
   ticketDiscountCodeLabel: 'Voucher- / Rabattcode',
   ticketDiscountCodePlaceholder: 'Code eingeben',
   ticketDiscountCodeChecking: 'Code wird geprüft...',

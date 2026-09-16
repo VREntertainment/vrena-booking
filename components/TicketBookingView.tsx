@@ -369,12 +369,13 @@ export default function TicketBookingView({
                 </div>
               </div>
 
-              {!isSpecialTicket && !requiresZaloConfirmation && (
+              {!isSpecialTicket && (
                 <details className="ticket-voucher-details">
                   <summary>{text.ticketDiscountCodeLabel}{ticketDiscountCode ? ` · ${ticketDiscountCode}` : ''}</summary>
                   <label className="ticket-discount-code-field">
                     <span>{text.ticketDiscountCodeLabel}</span>
                     <input
+                      maxLength={64}
                       autoCapitalize="characters"
                       autoComplete="off"
                       inputMode="text"
@@ -382,6 +383,7 @@ export default function TicketBookingView({
                       value={ticketDiscountCode}
                       onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
                     />
+                    {requiresZaloConfirmation && <small>{text.ticketCafeDiscountConfirmationNote}</small>}
                     {(isCheckingTicketDiscount || ticketDiscountStatus) && (
                       <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
                     )}
@@ -511,7 +513,7 @@ export default function TicketBookingView({
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
               )}
-              {!requiresZaloConfirmation && <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>}
+              <p className="field-help ticket-helper-note">{text.ticketDiscountDeskNote}</p>
 
               <p className="field-help ticket-helper-note">{text.sessionTariffPayment}</p>
 
@@ -668,9 +670,10 @@ export default function TicketBookingView({
                   {text.ticketLoyaltyRedeemed}: <strong>{ticketConfirmation.loyaltyPointsRedeemed} {text.loyaltyPoints}</strong> (-{formatVnd(ticketConfirmation.loyaltyDiscountAmount || 0)})
                 </p>
               )}
-              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.discountCode && ticketConfirmation.discountAmount) && (
+              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.discountCode && (ticketConfirmation.discountAmount || ticketConfirmation.requiresZaloConfirmation)) && (
                 <p>
-                  {text.ticketDiscountCodeSummary}: <strong>{ticketConfirmation.discountCode}</strong> (-{formatVnd(ticketConfirmation.discountAmount || 0)})
+                  {text.ticketDiscountCodeSummary}: <strong>{ticketConfirmation.discountCode}</strong> {Boolean(ticketConfirmation.discountAmount) && <> (-{formatVnd(ticketConfirmation.discountAmount || 0)})</>}
+                  {ticketConfirmation.requiresZaloConfirmation && <><br />{text.ticketCafeDiscountConfirmationNote}</>}
                 </p>
               )}
               {ticketConfirmation.reference && (

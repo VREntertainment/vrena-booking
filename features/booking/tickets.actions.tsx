@@ -295,7 +295,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         special: isSpecialTicketType,
         note: ticketSpecialNote,
         loyaltyPoints: appliedTicketLoyaltyPoints,
-        discountCode: ticketDiscountQuote ? normalizedTicketDiscountCode : null,
+        discountCode: !isSpecialTicketType && (!isHaDoBookingVenue || ticketDiscountQuote) ? normalizedTicketDiscountCode : null,
         guestName: guestTicketContact.name,
         guestPhone: guestContactValidation.normalizedPhone,
       })
@@ -330,7 +330,9 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
             : Math.max(0, Math.floor(Number(booking.ticket_total_price ?? currentTicketPricing.totalPrice) || 0)),
         guestPhone: activeProfile ? undefined : guestContactValidation.normalizedPhone,
         guestName: activeProfile ? undefined : guestTicketContact.name.trim() || undefined,
-        discountCode: activeProfile && !isSpecialTicketType ? booking.discount_code || undefined : undefined,
+        discountCode: !isSpecialTicketType
+          ? !isHaDoBookingVenue ? normalizedTicketDiscountCode || undefined : activeProfile ? booking.discount_code || undefined : undefined
+          : undefined,
         discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
         loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
         loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,

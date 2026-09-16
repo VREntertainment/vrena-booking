@@ -56,3 +56,21 @@ test('ordinary account bookings preserve the price quote and do not send special
   assert.equal(request.args.p_start_time, '17:00:00')
   assert.equal('p_special_note' in request.args, false)
 })
+
+
+test('Cafe voucher requests preserve the code for staff without claiming a discount or redeeming points', () => {
+  for (const authenticated of [true, false]) {
+    const request = buildTicketBookingRequest({ ...selection, isHaDo: false, authenticated, discountCode: ' summer25 ', note: 'Window seat' })
+    assert.equal(request.name, 'create_cafe_ticket_booking_request')
+    assert.equal(request.args.p_special_note, 'Voucher requested (pending staff confirmation): SUMMER25\nWindow seat')
+    assert.equal('p_discount_code' in request.args, false)
+    assert.equal('p_loyalty_points_to_redeem' in request.args, false)
+  }
+  const bounded = buildTicketBookingRequest({ ...selection, isHaDo: false, discountCode: 'x'.repeat(100), note: 'n'.repeat(500) })
+  assert.equal(bounded.name, 'create_cafe_ticket_booking_request')
+  assert.equal(bounded.args.p_special_note?.length, 500)
+  assert.ok(bounded.args.p_special_note?.includes('X'.repeat(64)))
+  const special = buildTicketBookingRequest({ ...selection, isHaDo: false, special: true, note: 'Birthday' })
+  assert.equal(special.name, 'create_cafe_ticket_booking_request')
+  assert.equal(special.args.p_special_note, 'Birthday')
+})

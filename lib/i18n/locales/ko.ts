@@ -188,6 +188,7 @@ export const ko = {
   ticketSpecialNotePlaceholder: '생일, 회사 행사, 원하는 세팅, 일정 등...',
   ticketSpecialNoteCharacterCount: '{count}/500자',
   ticketDiscountDeskNote: '보유 포인트는 바우처나 단체 할인 적용 후에도 사용할 수 있습니다. 결제된 모든 티켓은 최종 결제 금액을 기준으로 포인트가 적립됩니다.',
+  ticketCafeDiscountConfirmationNote: "쿠폰 코드와 포인트 사용은 결제 전에 직원이 확인합니다.",
   ticketDiscountCodeLabel: '바우처 / 할인 코드',
   ticketDiscountCodePlaceholder: '코드 입력',
   ticketDiscountCodeChecking: '코드 확인 중...',

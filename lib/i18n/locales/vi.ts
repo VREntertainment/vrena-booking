@@ -188,6 +188,7 @@ export const vi = {
   ticketSpecialNotePlaceholder: 'Sinh nhật, sự kiện công ty, setup mong muốn, lịch trình...',
   ticketSpecialNoteCharacterCount: '{count}/500 ký tự',
   ticketDiscountDeskNote: 'Có thể dùng điểm thưởng hiện có sau khi áp dụng voucher hoặc giảm giá nhóm. Mọi vé đã thanh toán đều tích điểm theo số tiền thực trả.',
+  ticketCafeDiscountConfirmationNote: "Đội ngũ VRena sẽ xác nhận mã ưu đãi và việc đổi điểm thành viên trước khi thanh toán.",
   ticketDiscountCodeLabel: 'Mã voucher / giảm giá',
   ticketDiscountCodePlaceholder: 'Nhập mã',
   ticketDiscountCodeChecking: 'Đang kiểm tra mã...',

@@ -115,7 +115,7 @@ export function useTicketCheckout({ ticketType, ticketDate, ticketTime, ticketPl
     if (!isHaDoBookingVenue || isSpecialTicketType || !normalizedCode) {
       return schedulePostEffectStateUpdate(() => {
         setTicketDiscountQuote(null)
-        if (!isHaDoBookingVenue || isSpecialTicketType) setTicketDiscountCode('')
+        if (isSpecialTicketType) setTicketDiscountCode('')
         setTicketDiscountStatus('')
         setIsCheckingTicketDiscount(false)
       })

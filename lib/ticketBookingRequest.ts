@@ -33,13 +33,15 @@ export function buildTicketBookingRequest(selection: TicketBookingSelection) {
   const note = selection.note.trim().slice(0, 500) || null
   const guestName = selection.guestName.trim() || null
   if (!selection.isHaDo) {
+    const requestedCode = selection.special ? '' : (selection.discountCode || '').trim().toUpperCase().replace(/\s+/g, ' ').slice(0, 64)
+    const requestNote = [requestedCode ? `Voucher requested (pending staff confirmation): ${requestedCode}` : null, note].filter(Boolean).join('\n').slice(0, 500) || null
     return {
       name: 'create_cafe_ticket_booking_request' as const,
       args: {
         ...common,
         p_guest_name: selection.authenticated ? null : guestName,
         p_guest_phone: selection.authenticated ? null : selection.guestPhone,
-        p_special_note: note,
+        p_special_note: requestNote,
       },
     }
   }

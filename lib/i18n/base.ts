@@ -186,6 +186,7 @@ export const en = {
   ticketSpecialNotePlaceholder: 'Birthday, company event, preferred setup, schedule details...',
   ticketSpecialNoteCharacterCount: '{count}/500 characters',
   ticketDiscountDeskNote: 'Available loyalty points can be used after any voucher or group discount. Every paid ticket earns points from the final amount paid.',
+  ticketCafeDiscountConfirmationNote: "Voucher codes and loyalty redemption are confirmed by our team before payment.",
   ticketDiscountCodeLabel: 'Voucher / discount code',
   ticketDiscountCodePlaceholder: 'Enter code',
   ticketDiscountCodeChecking: 'Checking code...',
