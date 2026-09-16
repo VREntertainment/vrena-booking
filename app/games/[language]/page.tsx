@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: GamesLanguagePageProps): Prom
   if (!isLanguageCode(language)) notFound()
   return {
     title: `${uiText[language].gameGuideTitle} | VRena`,
-    description: uiText[language].gameGuideIntro,
+    description: uiText[language].gameGuideSessionIntro,
     alternates: { canonical: `/games/${language}` },
   }
 }

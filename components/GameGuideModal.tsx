@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { ticketPriceBlockMinutes } from '../lib/ticketTariffs'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import GameGuideCategory from './GameGuideCategory'
@@ -103,7 +104,7 @@ export default function GameGuideModal({
         </button>
         <div className="game-guide-header">
           <h3 id="game-guide-title">{text.gameGuideTitle}</h3>
-          <p>{text.gameGuideIntro}</p>
+          <p>{text.gameGuideSessionIntro}</p>
           <label className="game-guide-location" htmlFor="game-guide-location">
             <span>{text.bookingVenueLabel}</span>
             <select
@@ -159,8 +160,8 @@ export default function GameGuideModal({
                       <GameGuideCategory gameId={game.id} category={game.category} />
                     </div>
                     <div className="game-guide-facts">
-                      <span>{text.gameGuideDuration}: <strong>{game.durationMinutes} min</strong></span>
-                      <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
+                      <span>{text.gameGuideDuration}: <strong>{ticketPriceBlockMinutes} min</strong></span>
+                      <span>{text.gameGuidePlayers}: <strong>{venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>
                   <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>

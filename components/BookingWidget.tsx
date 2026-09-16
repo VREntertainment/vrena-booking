@@ -187,7 +187,7 @@ import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
-import BookingVenueSelector, { BookingVenueComingSoon, CafeSoftOpeningBookingNotice, type BookingVenueId } from './BookingVenueSelector'
+import BookingVenueSelector, { BookingVenueComingSoon, type BookingVenueId } from './BookingVenueSelector'
 import {
   BirthdayPopupModal,
   BookingProfileView,
@@ -2928,7 +2928,7 @@ export default function WidgetPage({
   const activeTicketService = selectedTicketService(ticketType)
   const activeTicketPriceBlockMinutes = ticketPriceBlockMinutesForDate(ticketDate)
   const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, ticketDuration))
-  const activeTicketArenaCount = isHaDoBookingVenue ? ticketArenaCountForPlayers(ticketArenaCount) : 1
+  const activeTicketArenaCount = isHaDoBookingVenue ? Math.max(ticketPlayers > 8 ? 2 : 1, ticketArenaCountForPlayers(ticketArenaCount)) : 1
   const ticketTimeOptions = useMemo(() => {
     return getTicketTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, getTicketTimeOptions, ticketDate])
@@ -3075,7 +3075,7 @@ export default function WidgetPage({
   }, [activeTicketArenaCount, activeTicketPriceBlockMinutes, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
-      { length: activeTicketService.maxPlayers - activeTicketService.minPlayers + 1 },
+      { length: Math.min(16, activeTicketService.maxPlayers) - activeTicketService.minPlayers + 1 },
       (_, index) => activeTicketService.minPlayers + index
     )
   }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
@@ -3113,7 +3113,7 @@ export default function WidgetPage({
       : ticketDate
     setBookingVenue(value)
     setTicketArenaCount(1)
-    setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
+    setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, value === 'ha-do-centrosa' && ticketPlayers > 8 ? 2 : 1, nextTicketDate, value))
     setTicketTime('')
     setTicketConfirmation(null)
     setTicketDiscountCode('')
@@ -3289,7 +3289,7 @@ export default function WidgetPage({
   }
 
   function handleTicketPlayersChange(value: number) {
-    const nextArenaCount = !isHaDoBookingVenue || value <= 4 ? 1 : activeTicketArenaCount
+    const nextArenaCount = !isHaDoBookingVenue || value <= 4 ? 1 : value > 8 ? 2 : activeTicketArenaCount
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
@@ -3305,7 +3305,7 @@ export default function WidgetPage({
   }
 
   function handleTicketArenaCountChange(value: number) {
-    const nextArenaCount = !isHaDoBookingVenue || ticketPlayers <= 4 ? 1 : ticketArenaCountForPlayers(value)
+    const nextArenaCount = !isHaDoBookingVenue || ticketPlayers <= 4 ? 1 : ticketPlayers > 8 ? 2 : ticketArenaCountForPlayers(value)
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
@@ -5364,7 +5364,7 @@ export default function WidgetPage({
       )}
 
       {activeView === 'tickets' && (
-        <div className={isHaDoBookingVenue ? 'ticket-booking-layout' : 'ticket-booking-layout cafe'}>
+        <div className="ticket-booking-layout">
           <TicketBookingView
             activeTicketDuration={activeTicketDuration}
             activeTicketArenaCount={activeTicketArenaCount}
@@ -5438,7 +5438,6 @@ export default function WidgetPage({
             useLoyaltyPoints={ticketUseLoyaltyPoints}
             onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
           />
-          {!isHaDoBookingVenue && <CafeSoftOpeningBookingNotice text={text} />}
         </div>
       )}
 

@@ -16,8 +16,8 @@ select set_config('request.jwt.claim.sub', '', true);
 
 select is(public.ticket_minimum_duration_minutes('cafe-des-stagiaires', date '2026-09-05', 5, 1), 45, 'Cafe five players fit 45 minutes');
 select is(public.ticket_minimum_duration_minutes('cafe-des-stagiaires', date '2026-09-05', 8, 1), 45, 'Cafe eight players fit 45 minutes');
-select is(public.ticket_minimum_duration_minutes('cafe-des-stagiaires', date '2026-09-05', 9, 1), 90, 'Cafe ninth player needs another block');
-select is(public.ticket_minimum_duration_minutes('ha-do-centrosa', date '2026-09-05', 5, 1), 90, 'Ha Do keeps four players per arena');
+select is(public.ticket_minimum_duration_minutes('cafe-des-stagiaires', date '2026-09-05', 9, 1), 45, 'Cafe ninth guest fits the same block');
+select is(public.ticket_minimum_duration_minutes('ha-do-centrosa', date '2026-09-05', 5, 1), 45, 'Ha Do accepts five guests in one block');
 select is(public.ticket_minimum_duration_minutes('ha-do-centrosa', date '2026-09-05', 8, 2), 45, 'Ha Do two arenas fit eight players');
 
 -- Exercise the actual deployed request endpoint, including profile/session writes,
@@ -29,12 +29,12 @@ select is(
 )
 from (values
   (1,45,240000), (4,45,960000), (5,45,1080000), (6,45,1296000),
-  (7,45,1512000), (8,45,1728000), (9,90,3672000), (16,90,6528000)
+  (7,45,1512000), (8,45,1728000), (9,90,3264000), (16,90,3264000)
 ) cases(players,duration,expected_total);
 
-select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 45, 9, 1,
+select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 45, 17, 1,
   array['revolta'], '+84999000999', 'Local regression')$q$, 'P0001',
-  'Ticket duration is below the minimum for the selected players and arenas.', 'Cafe rejects nine players in 45 minutes');
+  'Invalid player count.', 'Cafe rejects more than sixteen guests');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 45, 8, 2,
   array['revolta'], '+84999000998', 'Local regression')$q$, 'P0001',
   'Cafe bookings use one arena.', 'Cafe rejects a second arena');
