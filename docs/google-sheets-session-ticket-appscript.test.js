@@ -54,7 +54,7 @@ test('email only shows game options when the payload contains a real selection',
 
 for (const [venueKey, shop] of [
   ['ha-do-centrosa', 'VRena Hà Đô Centrosa'],
-  ['cafe-des-stagiaires', 'VRena Café des Stagiaires'],
+  ['cafe-des-stagiaires', 'Vrena Thao Dien'],
 ]) {
   test(`notification identifies ${shop} in HTML and plain text`, () => {
     const { context, sentEmail } = loadScript()
@@ -69,6 +69,6 @@ for (const [venueKey, shop] of [
 
 test('shop uses the raw database venue when the older webhook omits it from session', () => {
   const { context } = loadScript()
-  assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'VRena Café des Stagiaires')
+  assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'Vrena Thao Dien')
   assert.equal(context.bookingShopName({ session: { venue_key: 'unexpected-shop' } }), 'Unknown shop (unexpected-shop)')
 })

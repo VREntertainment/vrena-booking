@@ -2503,7 +2503,7 @@ begin
   end if;
 
   if p_date < date '2026-08-31' then
-    raise exception 'VRena Café des Stagiaires bookings open on August 31.';
+    raise exception 'Vrena Thao Dien bookings open on August 31.';
   end if;
 
   if p_player_count < 1
@@ -2542,7 +2542,7 @@ begin
   v_end_minutes := v_start_minutes + p_duration_minutes;
 
   if v_start_minutes < 16 * 60 or v_end_minutes > 22 * 60 then
-    raise exception 'Selected time is outside VRena Café des Stagiaires opening hours.';
+    raise exception 'Selected time is outside Vrena Thao Dien opening hours.';
   end if;
 
   if public.ticket_booking_start_is_past(p_date, p_start_time) then
@@ -2661,7 +2661,7 @@ begin
     null,
     'private',
     v_invite_code,
-    concat_ws(E'\n', 'Zalo confirmation required for VRena Café des Stagiaires soft opening.', v_special_note),
+    concat_ws(E'\n', 'Zalo confirmation required for Vrena Thao Dien soft opening.', v_special_note),
     'open',
     null,
     1,
@@ -2728,7 +2728,7 @@ $$;
 ALTER FUNCTION "public"."create_cafe_ticket_booking_request"("p_ticket_type" "text", "p_date" "date", "p_start_time" time without time zone, "p_duration_minutes" integer, "p_player_count" integer, "p_arena_count" integer, "p_game_options" "text"[], "p_guest_phone" "text", "p_guest_name" "text", "p_special_note" "text") OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."create_cafe_ticket_booking_request"("p_ticket_type" "text", "p_date" "date", "p_start_time" time without time zone, "p_duration_minutes" integer, "p_player_count" integer, "p_arena_count" integer, "p_game_options" "text"[], "p_guest_phone" "text", "p_guest_name" "text", "p_special_note" "text") IS 'Creates a pending VRena Café des Stagiaires soft-opening ticket request that requires Zalo confirmation.';
+COMMENT ON FUNCTION "public"."create_cafe_ticket_booking_request"("p_ticket_type" "text", "p_date" "date", "p_start_time" time without time zone, "p_duration_minutes" integer, "p_player_count" integer, "p_arena_count" integer, "p_game_options" "text"[], "p_guest_phone" "text", "p_guest_name" "text", "p_special_note" "text") IS 'Creates a pending Vrena Thao Dien soft-opening ticket request that requires Zalo confirmation.';
 
 
 

@@ -32,7 +32,7 @@ test.describe('booking venue selection', () => {
       await expect(page.locator(route.activeSurface)).toBeVisible()
       await chooseCafeVenue(page)
 
-      await expect(venueSelector).toContainText('VRena Café des Stagiaires')
+      await expect(venueSelector).toContainText('Vrena Thao Dien')
       await expect(page.locator(route.activeSurface)).toHaveCount(0)
       await expect(page.locator('.booking-venue-coming-soon')).toContainText('Community sessions are not available yet')
       await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
@@ -48,7 +48,7 @@ test.describe('booking venue selection', () => {
 
     await chooseCafeVenue(page)
 
-    await expect(venueSelector).toContainText('VRena Café des Stagiaires')
+    await expect(venueSelector).toContainText('Vrena Thao Dien')
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toHaveCount(0)
     await expect(page.locator('.ticket-confirmation-requirement')).toHaveCount(0)

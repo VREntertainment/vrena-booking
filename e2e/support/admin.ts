@@ -91,5 +91,5 @@ export async function chooseCafeVenue(page: Page) {
   await expect(selector).toBeVisible()
   const change = selector.getByRole('button', { name: /change/i })
   if (await change.isVisible()) await change.click()
-  await selector.getByRole('radio').filter({ hasText: 'VRena Café des Stagiaires' }).click()
+  await selector.getByRole('radio').filter({ hasText: 'Vrena Thao Dien' }).click()
 }

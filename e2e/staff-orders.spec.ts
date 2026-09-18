@@ -36,7 +36,7 @@ test('staff orders: split receipts, shop transfer, price reason and no-show stay
     await page.getByRole('textbox', { name: 'End date', exact: true }).fill(date)
     await page.getByRole('button', { name: 'Show orders', exact: true }).click()
     const row = page.getByRole('row').filter({ has: page.getByText(orderNumber, { exact: true }) }).first()
-    await expect(row).toContainText('Café des Stagiaires')
+    await expect(row).toContainText('Vrena Thao Dien')
     await row.getByRole('button', { name: 'Payment', exact: true }).click()
     const payment = page.getByRole('form', { name: 'Record order payment', exact: true })
     await payment.getByRole('spinbutton').fill('40000')

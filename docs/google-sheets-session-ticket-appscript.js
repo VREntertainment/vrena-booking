@@ -194,11 +194,11 @@ function bookingShopName(payload) {
   const session = getSession(payload)
   const venueKey = session.venue_key || (payload.raw_session || {}).venue_key
   if (venueKey === 'ha-do-centrosa') return 'VRena Hà Đô Centrosa'
-  if (venueKey === 'cafe-des-stagiaires') return 'VRena Café des Stagiaires'
+  if (venueKey === 'cafe-des-stagiaires') return 'Vrena Thao Dien'
   if (venueKey) return 'Unknown shop (' + venueKey + ')'
   // Earlier webhook versions omitted the venue but retained the venue-specific reference.
   return String(session.ticket_reference || '').startsWith('CS-')
-    ? 'VRena Café des Stagiaires'
+    ? 'Vrena Thao Dien'
     : 'VRena Hà Đô Centrosa'
 }
 

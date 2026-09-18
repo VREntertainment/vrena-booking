@@ -274,7 +274,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await expect(page).toHaveURL(/mode=calendar/)
   const calendar = page.locator('.calendar-panel')
   await expect(calendar).toHaveAttribute('aria-busy', 'false')
-  await expect(calendar.locator('.calendar-shop-badge')).toHaveText('VRena Café des Stagiaires')
+  await expect(calendar.locator('.calendar-shop-badge')).toHaveText('Vrena Thao Dien')
   await expect(page.getByTestId('staff-console')).toHaveCount(0)
   // Existing weekly grid is shared by both audiences, and the shop remains selected.
   await expect(calendar.locator('.calendar-day-column')).toHaveCount(7)
@@ -335,7 +335,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await clientPage.getByRole('button', { name: 'Calendar', exact: true }).click()
     await expect(clientPage.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
     await chooseCafeVenue(clientPage)
-    await expect(clientPage.locator('.calendar-shop-badge')).toHaveText('VRena Café des Stagiaires')
+    await expect(clientPage.locator('.calendar-shop-badge')).toHaveText('Vrena Thao Dien')
     await expect(clientPage.getByRole('button', { name: 'New booking', exact: true })).toHaveCount(0)
     await expect(clientPage.getByRole('button', { name: 'Delete booking', exact: true })).toHaveCount(0)
     await expect(clientPage.locator('.calendar-day-column')).toHaveCount(7)

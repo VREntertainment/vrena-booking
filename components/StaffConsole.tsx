@@ -543,7 +543,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     ? ['cafe:arena-1']
     : selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1']
   const selectedBookingArena = bookingArenas.includes(booking.arenaId) ? booking.arenaId : bookingArenas[0]
-  const bookingVenueName = booking.venueKey === 'cafe-des-stagiaires' ? 'VRena Café des Stagiaires' : 'VRena Hà Đô Centrosa'
+  const bookingVenueName = booking.venueKey === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : 'VRena Hà Đô Centrosa'
   const selectedRule = useMemo(() => {
     if (!selectedGame || booking.venueKey === 'cafe-des-stagiaires') return null
     return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
@@ -1115,7 +1115,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           return <Fragment key={order.id}>
             <tr className="staff-order-row">
               <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p></div></td>
-              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Café des Stagiaires' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
+              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
               <td data-label={text.labels.total}>{formatVnd(order.total)}</td>
               <td data-label={text.labels.payment}>
                 <div>{paymentStatusLabel(order.payment_status, text)}<br />{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}<br />{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}
@@ -2069,7 +2069,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           }}>
             <label>{text.labels.startDate}<input required type="date" value={ordersRange.start} onChange={(event) => setOrdersRange((current) => ({ ...current, start: event.target.value }))} /></label>
             <label>{resolvedLanguage === 'vi' ? 'Ngày kết thúc' : 'End date'}<input required type="date" value={ordersRange.end} onChange={(event) => setOrdersRange((current) => ({ ...current, end: event.target.value }))} /></label>
-            <label>{bookingText.shop}<select value={ordersShop} onChange={(event) => setOrdersShop(event.target.value)}><option value="all">{resolvedLanguage === 'vi' ? 'Tất cả cửa hàng' : 'All shops'}</option><option value="ha-do-centrosa">Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Café des Stagiaires</option></select></label>
+            <label>{bookingText.shop}<select value={ordersShop} onChange={(event) => setOrdersShop(event.target.value)}><option value="all">{resolvedLanguage === 'vi' ? 'Tất cả cửa hàng' : 'All shops'}</option><option value="ha-do-centrosa">Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Vrena Thao Dien</option></select></label>
             <button className="secondary" type="submit" disabled={currentTabLoading || saving}>{resolvedLanguage === 'vi' ? 'Xem đơn hàng' : 'Show orders'}</button>
           </form>
           <p>{resolvedLanguage === 'vi' ? 'Ngày đặt chỗ' : 'Booking dates'}: {ordersQuery.start} — {ordersQuery.end}. {resolvedLanguage === 'vi' ? '50 đơn mỗi trang. Có thể xem bất kỳ khoảng ngày nào.' : '50 orders per page. Choose any date range to browse the full history.'}</p>
