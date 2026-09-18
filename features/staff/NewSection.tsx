@@ -74,7 +74,7 @@ export type NewSectionProps = {
   bookingPaidTotal: number
   bookingRemainingTotal: number
   quote: { unitPrice: number; subtotal: number; discountTotal: number; discountLabel: string; total: number; ruleName: string; duration: number }
-  bookingVenueName: "VRena Hà Đô Centrosa" | "VRena Café des Stagiaires"
+  bookingVenueName: "VRena Hà Đô Centrosa" | "Vrena Thao Dien"
   resolvedLanguage: import("../../lib/staff/types").StaffConsoleLanguage
   status: string
   createOrder: () => Promise<void>
@@ -160,7 +160,7 @@ export default function NewSection({
                 time: event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
               }))}>
                 <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
-                <option value="cafe-des-stagiaires">VRena Café des Stagiaires</option>
+                <option value="cafe-des-stagiaires">Vrena Thao Dien</option>
               </select>
             </label>
             <label className="full staff-guest-toggle">

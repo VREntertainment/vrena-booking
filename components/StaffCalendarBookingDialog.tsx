@@ -110,7 +110,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     {error && <p role="alert" className="notice">{error}</p>}
     {!draft && !error && <p>{text.loading}</p>}
     {draft && (confirmDelete ? <div className="calendar-delete-confirm">
-      <strong>{persisted?.name || draft.name}</strong><p>{(persisted?.venue || draft.venue) === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'VRena Café des Stagiaires'} · {persisted?.date || draft.date} · {persisted?.time || draft.time}</p>
+      <strong>{persisted?.name || draft.name}</strong><p>{(persisted?.venue || draft.venue) === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'Vrena Thao Dien'} · {persisted?.date || draft.date} · {persisted?.time || draft.time}</p>
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
     </div> : <form onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
@@ -120,7 +120,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
           const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
           patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
-        }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">VRena Café des Stagiaires</option></select></label>
+        }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Vrena Thao Dien</option></select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={!orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={staffBookingHours(draft.venue, draft.duration).min} max={staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
