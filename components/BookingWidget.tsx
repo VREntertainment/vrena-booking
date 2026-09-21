@@ -84,7 +84,7 @@ import {
   type GameId,
   type TicketType
 } from '../lib/bookingStaticData'
-import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES } from '../lib/booking/availability'
+import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES, CAFE_TIME_STEP_MINUTES } from '../lib/booking/availability'
 import {
   ANONYMOUS_MASK_EMOJI,
   BlockedTime,
@@ -3437,7 +3437,7 @@ export default function WidgetPage({
 
   const calendarOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const calendarCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
-  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : 10
+  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
 
   const calendarTimeSlots = useMemo(() => {
     return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
@@ -3445,7 +3445,7 @@ export default function WidgetPage({
       return {
         minutes,
         value: minutesToTime(minutes),
-        isHour: minutes % 60 === 0,
+        isHour: index === 0 || minutes % 60 === 0,
       }
     })
   }, [calendarOpenMinutes, calendarCloseMinutes, calendarStepMinutes])
@@ -3457,22 +3457,6 @@ export default function WidgetPage({
   }, [bookingVenue, calendarWeekEnd, calendarWeekStart, sessions])
   const calendarSessionLanes = useMemo(() => calendarLanes(calendarSessions), [calendarSessions])
 
-  const calendarAvailableSlotKeys = useMemo(() => {
-    const availableKeys = new Set<string>()
-    const today = localDateString()
-    calendarWeekDays.forEach((day) => {
-      if (day.value < today) return
-      const options = isHaDoBookingVenue
-        ? getAvailableTimeOptions(day.value, TIME_STEP_MINUTES, 1)
-        : getCafeSoftOpeningTimeOptions(day.value, TIME_STEP_MINUTES, 1)
-      options.forEach((option) => {
-        const start = timeToMinutes(option.value)
-        const cafeOccupied = !isHaDoBookingVenue && calendarSessions.some((session) => session.date === day.value && session.status === 'open' && rangesOverlap(start, start + TIME_STEP_MINUTES, timeToMinutes(session.start_time), timeToMinutes(session.start_time) + session.duration_minutes))
-        if (!cafeOccupied) availableKeys.add(`${day.value}-${option.value}`)
-      })
-    })
-    return availableKeys
-  }, [calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
 
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
@@ -3922,6 +3906,25 @@ export default function WidgetPage({
       })
   ))
   const canManageCalendarBookings = canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
+
+  const calendarAvailableSlotKeys = useMemo(() => {
+    const availableKeys = new Set<string>()
+    const today = localDateString()
+    calendarWeekDays.forEach((day) => {
+      if (day.value < today) return
+      const duration = isHaDoBookingVenue || canManageCalendarBookings ? TIME_STEP_MINUTES : activeTicketDuration
+      const options = isHaDoBookingVenue
+        ? getAvailableTimeOptions(day.value, duration, 1)
+        : getCafeSoftOpeningTimeOptions(day.value, duration, 1)
+      options.forEach((option) => {
+        const start = timeToMinutes(option.value)
+        const cafeOccupied = !isHaDoBookingVenue && calendarSessions.some((session) => session.date === day.value && session.status === 'open' && rangesOverlap(start, start + duration, timeToMinutes(session.start_time), timeToMinutes(session.start_time) + session.duration_minutes))
+        if (!cafeOccupied) availableKeys.add(`${day.value}-${option.value}`)
+      })
+    })
+    return availableKeys
+  }, [activeTicketDuration, canManageCalendarBookings, calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
+
   useEffect(() => {
     if (activeView === 'create' && createSessionMode === 'calendar' && !isProfileAuthLoading) void loadCalendarWeek()
     // Reload the shared calendar after route hydration or a change in staff access.
@@ -5455,6 +5458,7 @@ export default function WidgetPage({
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
                     <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
+                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">

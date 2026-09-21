@@ -37,6 +37,7 @@ export function arenasUsedBySession(session: Pick<Session, 'max_players' | 'aren
 export const CAFE_SOFT_OPENING_DATE = '2026-08-31'
 export const CAFE_OPEN_MINUTES = 15 * 60 + 30
 export const CAFE_CLOSE_MINUTES = 23 * 60
+export const CAFE_TIME_STEP_MINUTES = 10
 
 export type BookingTimeOption = { value: string; label: string; remaining: number }
 
@@ -110,7 +111,7 @@ export function cafeTicketTimes(date: string, duration: number, arenaCount: numb
   const latestStart = CAFE_CLOSE_MINUTES - duration
   const options: Array<{ value: string; label: string; remaining: number }> = []
 
-  for (let start = CAFE_OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
+  for (let start = CAFE_OPEN_MINUTES; start <= latestStart; start += CAFE_TIME_STEP_MINUTES) {
     if (date === today && start <= nowMinutes) continue
 
     const end = start + duration

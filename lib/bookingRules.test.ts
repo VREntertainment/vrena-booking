@@ -45,8 +45,22 @@ test('Cafe availability keeps its own launch date, opening hours, and same-day c
   const times = cafeTicketTimes(date, 45, 1, now)
   assert.equal(times[0].label, '15:30-16:15')
   assert.equal(times.at(-1)?.label, '22:10-22:55')
-  assert.equal(times.length, 21)
+  assert.equal(times.length, 41)
   assert.equal(cafeTicketTimes(date, 45, 1, new Date(2026, 8, 9, 16, 0))[0].value, '16:10')
+})
+
+
+test('Thao Dien has continuous ten-minute availability every day of the week', () => {
+  for (let day = 21; day <= 27; day++) {
+    const times = cafeTicketTimes(`2026-09-${day}`, 20, 1, now)
+    assert.equal(times[0].value, '15:30')
+    assert.equal(times.at(-1)?.label, '22:40-23:00')
+    assert.equal(times.length, 44)
+    for (let index = 1; index < times.length; index++) {
+      const minutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3))
+      assert.equal(minutes(times[index].value) - minutes(times[index - 1].value), 10)
+    }
+  }
 })
 
 const base: TicketCheckoutAmountsInput = {
