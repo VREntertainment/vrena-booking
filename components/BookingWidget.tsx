@@ -84,7 +84,7 @@ import {
   type GameId,
   type TicketType
 } from '../lib/bookingStaticData'
-import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES } from '../lib/booking/availability'
+import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES, CAFE_TIME_STEP_MINUTES } from '../lib/booking/availability'
 import {
   ANONYMOUS_MASK_EMOJI,
   BlockedTime,
@@ -3437,7 +3437,7 @@ export default function WidgetPage({
 
   const calendarOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const calendarCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
-  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : 10
+  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
 
   const calendarTimeSlots = useMemo(() => {
     return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
@@ -3445,7 +3445,7 @@ export default function WidgetPage({
       return {
         minutes,
         value: minutesToTime(minutes),
-        isHour: minutes % 60 === 0,
+        isHour: index === 0 || minutes % 60 === 0,
       }
     })
   }, [calendarOpenMinutes, calendarCloseMinutes, calendarStepMinutes])
@@ -5455,6 +5455,7 @@ export default function WidgetPage({
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
                     <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
+                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">
