@@ -66,3 +66,25 @@ test.describe('booking venue selection', () => {
     await expectContainedLayout(page)
   })
 })
+
+
+test('Thao Dien calendar offers continuous booking starts across all seven days', async ({ page }) => {
+  await keepConsentOutOfTheBookingFlow(page)
+  await page.goto(`/create-session?mode=calendar&date=${futureDate(30)}&venue=cafe-des-stagiaires`)
+  const calendar = page.locator('.calendar-panel')
+  await expect(calendar).toHaveAttribute('aria-busy', 'false')
+  await expect(calendar.locator('.calendar-opening-hours')).toHaveText('15:30–23:00')
+  const days = calendar.locator('.calendar-day-column')
+  await expect(days).toHaveCount(7)
+  for (let day = 0; day < 7; day++) {
+    const slots = days.nth(day).locator('.calendar-slot')
+    await expect(slots).toHaveCount(45)
+    await expect(slots.nth(0)).toBeEnabled()
+    await expect(slots.nth(1)).toBeEnabled()
+    await expect(slots.nth(40)).toBeEnabled()
+    await expect(slots.nth(41)).toBeDisabled()
+  }
+  await days.nth(0).locator('.calendar-slot').nth(1).click()
+  await expect(page.locator('#ticket-available-time')).toHaveValue('15:40')
+  await expectContainedLayout(page)
+})

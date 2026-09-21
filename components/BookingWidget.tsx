@@ -3457,22 +3457,6 @@ export default function WidgetPage({
   }, [bookingVenue, calendarWeekEnd, calendarWeekStart, sessions])
   const calendarSessionLanes = useMemo(() => calendarLanes(calendarSessions), [calendarSessions])
 
-  const calendarAvailableSlotKeys = useMemo(() => {
-    const availableKeys = new Set<string>()
-    const today = localDateString()
-    calendarWeekDays.forEach((day) => {
-      if (day.value < today) return
-      const options = isHaDoBookingVenue
-        ? getAvailableTimeOptions(day.value, TIME_STEP_MINUTES, 1)
-        : getCafeSoftOpeningTimeOptions(day.value, TIME_STEP_MINUTES, 1)
-      options.forEach((option) => {
-        const start = timeToMinutes(option.value)
-        const cafeOccupied = !isHaDoBookingVenue && calendarSessions.some((session) => session.date === day.value && session.status === 'open' && rangesOverlap(start, start + TIME_STEP_MINUTES, timeToMinutes(session.start_time), timeToMinutes(session.start_time) + session.duration_minutes))
-        if (!cafeOccupied) availableKeys.add(`${day.value}-${option.value}`)
-      })
-    })
-    return availableKeys
-  }, [calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
 
   const filteredSessions = useMemo(() => {
     const query = normalizeSearchValue(search)
@@ -3922,6 +3906,25 @@ export default function WidgetPage({
       })
   ))
   const canManageCalendarBookings = canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
+
+  const calendarAvailableSlotKeys = useMemo(() => {
+    const availableKeys = new Set<string>()
+    const today = localDateString()
+    calendarWeekDays.forEach((day) => {
+      if (day.value < today) return
+      const duration = isHaDoBookingVenue || canManageCalendarBookings ? TIME_STEP_MINUTES : activeTicketDuration
+      const options = isHaDoBookingVenue
+        ? getAvailableTimeOptions(day.value, duration, 1)
+        : getCafeSoftOpeningTimeOptions(day.value, duration, 1)
+      options.forEach((option) => {
+        const start = timeToMinutes(option.value)
+        const cafeOccupied = !isHaDoBookingVenue && calendarSessions.some((session) => session.date === day.value && session.status === 'open' && rangesOverlap(start, start + duration, timeToMinutes(session.start_time), timeToMinutes(session.start_time) + session.duration_minutes))
+        if (!cafeOccupied) availableKeys.add(`${day.value}-${option.value}`)
+      })
+    })
+    return availableKeys
+  }, [activeTicketDuration, canManageCalendarBookings, calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
+
   useEffect(() => {
     if (activeView === 'create' && createSessionMode === 'calendar' && !isProfileAuthLoading) void loadCalendarWeek()
     // Reload the shared calendar after route hydration or a change in staff access.
