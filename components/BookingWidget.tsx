@@ -3435,21 +3435,6 @@ export default function WidgetPage({
 
   const calendarWeekEnd = addDaysToDateValue(calendarWeekStart, 6)
 
-  const calendarOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
-  const calendarCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
-  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
-
-  const calendarTimeSlots = useMemo(() => {
-    return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
-      const minutes = calendarOpenMinutes + index * calendarStepMinutes
-      return {
-        minutes,
-        value: minutesToTime(minutes),
-        isHour: index === 0 || minutes % 60 === 0,
-      }
-    })
-  }, [calendarOpenMinutes, calendarCloseMinutes, calendarStepMinutes])
-
   const calendarSessions = useMemo(() => {
     return sortSessionsByStart(
       sessions.filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd && (session.venue_key || 'ha-do-centrosa') === bookingVenue && session.status !== 'cancelled' && !['cancelled', 'expired'].includes(session.ticket_status || ''))
@@ -3906,6 +3891,36 @@ export default function WidgetPage({
       })
   ))
   const canManageCalendarBookings = canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
+  const venueOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
+  const venueCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
+  const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
+  // Staff must also see event reservations made outside public opening hours.
+  const [calendarOpenMinutes, calendarCloseMinutes] = (() => {
+    let first = venueOpenMinutes
+    let last = venueCloseMinutes
+    if (canManageCalendarBookings) {
+      for (const session of sessions) {
+        if (session.date < calendarWeekStart || session.date > calendarWeekEnd || (session.venue_key || 'ha-do-centrosa') !== bookingVenue || session.status === 'cancelled' || ['cancelled', 'expired'].includes(session.ticket_status || '')) continue
+        const start = timeToMinutes(session.start_time)
+        first = Math.min(first, Math.floor(start / calendarStepMinutes) * calendarStepMinutes)
+        last = Math.max(last, Math.min(1440, Math.ceil((start + session.duration_minutes) / calendarStepMinutes) * calendarStepMinutes))
+      }
+    }
+    return [first, last]
+  })()
+
+  const calendarTimeSlots = useMemo(() => {
+    return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
+      const minutes = calendarOpenMinutes + index * calendarStepMinutes
+      return {
+        minutes,
+        value: minutesToTime(minutes),
+        isHour: index === 0 || minutes % 60 === 0,
+      }
+    })
+  }, [calendarOpenMinutes, calendarCloseMinutes, calendarStepMinutes])
+
+
 
   const calendarAvailableSlotKeys = useMemo(() => {
     const availableKeys = new Set<string>()
@@ -5458,7 +5473,7 @@ export default function WidgetPage({
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
                     <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
-                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
+                    <span className="calendar-opening-hours">{minutesToTime(venueOpenMinutes)}–{minutesToTime(venueCloseMinutes)}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">

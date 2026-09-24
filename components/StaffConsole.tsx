@@ -551,7 +551,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const bookingUnitPrice = booking.venueKey === 'cafe-des-stagiaires'
     ? individualTicketUnitPrice(booking.date, booking.time, booking.venueKey)
     : selectedRule?.price_per_player ?? 200000
-  const bookingDurationBlocks = Math.max(1, Math.ceil((selectedGame?.duration_minutes || 20) / 20))
+  const bookingDurationBlocks = Math.max(1, Math.ceil((booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20) / 20))
   const bookingSubtotal = selectedRule?.price_per_arena_slot != null
     ? selectedRule.price_per_arena_slot * bookingDurationBlocks
     : bookingUnitPrice * booking.players
@@ -587,9 +587,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         : selectedDiscount?.name || text.noDiscount,
       total: booking.overrideTotalEnabled && booking.overrideTotal.trim() !== '' && Number.isFinite(Number(booking.overrideTotal)) ? Math.max(0, Number(booking.overrideTotal)) : Math.max(0, subtotal - discountTotal),
       ruleName: selectedRule?.rule_name || (booking.venueKey === 'cafe-des-stagiaires' ? bookingVenueName : text.defaultWalkInRate),
-      duration: selectedGame?.duration_minutes || 20,
+      duration: booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20,
     }
-  }, [booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
+  }, [booking.bookingKind, booking.reservedMinutes, booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)

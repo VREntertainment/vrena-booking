@@ -1,5 +1,16 @@
 export const staffBookingCopy = {
   en: {
+    standardBooking: 'Standard game', eventBooking: 'Event / corporate',
+    reservedMinutes: 'Time booked (minutes)', endTime: 'End time', reservedTime: 'Total time reserved',
+    allowOutsideHours: 'Allow booking outside opening hours',
+    eventHelp: 'Enter the full time needed, including preparation and turnaround. Any whole number of minutes is allowed, ending by midnight. Use Override total for an agreed event price.',
+    contactName: 'Contact person', contactHelp: 'Enter the company or customer name above, and the person to contact here. Phone and email below are the booking contact details.',
+    checkingAvailability: 'Checking arena availability…', available: 'Arena available for the full reserved time.',
+    unavailable: 'This arena or time is unavailable. Choose another arena or time.',
+    availabilityError: 'Unable to check availability. Retry before confirming.', retry: 'Check again',
+    invalidDuration: 'Enter a valid duration and time that finish by midnight.',
+    bookingNotes: 'Booking notes / special requests',
+
     bookingSource: 'Booking source',
     openingHours: 'Opening hours', latestStart: 'Latest start',
     outsideHours: 'Choose a time within the shop’s opening hours that allows the game to finish before closing.',
@@ -22,9 +33,20 @@ export const staffBookingCopy = {
     discountChanged: 'This discount no longer applies. Choose an available discount or no discount.',
     discountsHelp: '{count} offers match this game, date, time and player count. Customer usage limits are checked when confirming.',
     discountValue: 'Unique discount value', noGames: 'No games available at this shop',
-    durationHelp: 'This staff booking reserves the game runtime shown below. Check the shop, time, players and total before confirming.',
+    durationHelp: 'The full reserved time shown below blocks the arena. Availability is checked again when you confirm.',
   },
   vi: {
+    standardBooking: 'Trò chơi thông thường', eventBooking: 'Sự kiện / doanh nghiệp',
+    reservedMinutes: 'Thời gian đặt (phút)', endTime: 'Giờ kết thúc', reservedTime: 'Tổng thời gian giữ chỗ',
+    allowOutsideHours: 'Cho phép đặt ngoài giờ mở cửa',
+    eventHelp: 'Nhập toàn bộ thời gian cần thiết, gồm chuẩn bị và thu dọn. Có thể nhập số phút bất kỳ, kết thúc trước hoặc đúng nửa đêm. Dùng Điều chỉnh tổng tiền cho giá sự kiện đã thỏa thuận.',
+    contactName: 'Người liên hệ', contactHelp: 'Nhập tên công ty hoặc khách hàng ở trên và người liên hệ tại đây. Số điện thoại và email bên dưới dùng để liên hệ về đặt chỗ.',
+    checkingAvailability: 'Đang kiểm tra lịch trống…', available: 'Khu chơi còn trống trong toàn bộ thời gian đặt.',
+    unavailable: 'Khu chơi hoặc thời gian này không còn trống. Chọn khu chơi hoặc giờ khác.',
+    availabilityError: 'Không thể kiểm tra lịch trống. Vui lòng thử lại trước khi xác nhận.', retry: 'Kiểm tra lại',
+    invalidDuration: 'Nhập thời lượng và giờ hợp lệ, kết thúc trước hoặc đúng nửa đêm.',
+    bookingNotes: 'Ghi chú đặt chỗ / yêu cầu đặc biệt',
+
     bookingSource: 'Nguồn đặt chỗ',
     openingHours: 'Giờ mở cửa', latestStart: 'Giờ bắt đầu muộn nhất',
     outsideHours: 'Chọn giờ trong thời gian mở cửa và đủ để hoàn thành trò chơi trước khi đóng cửa.',
@@ -47,6 +69,6 @@ export const staffBookingCopy = {
     discountChanged: 'Ưu đãi này không còn áp dụng. Chọn ưu đãi khác hoặc không giảm giá.',
     discountsHelp: '{count} ưu đãi phù hợp với trò chơi, ngày, giờ và số người. Giới hạn sử dụng theo khách được kiểm tra khi xác nhận.',
     discountValue: 'Giá trị giảm giá riêng', noGames: 'Cửa hàng chưa có trò chơi khả dụng',
-    durationHelp: 'Lượt đặt chỗ của nhân viên giữ chỗ theo thời lượng trò chơi bên dưới. Kiểm tra cửa hàng, giờ, số người và tổng tiền trước khi xác nhận.',
+    durationHelp: 'Khu chơi được giữ trong toàn bộ thời gian bên dưới. Lịch trống được kiểm tra lại khi xác nhận.',
   },
 } as const

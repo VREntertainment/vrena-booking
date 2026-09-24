@@ -766,6 +766,10 @@ export type StaffHourlyRevenuePoint = {
 }
 
 export type BookingForm = {
+  bookingKind: 'standard' | 'event'
+  reservedMinutes: number
+  allowOutsideHours: boolean
+  contactName: string
   overrideTotalEnabled: boolean
   overrideTotal: string
   overrideReason: string

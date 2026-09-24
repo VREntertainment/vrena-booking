@@ -15,6 +15,10 @@ import type {
 } from './types.ts'
 
 export const defaultBookingForm = (): BookingForm => ({
+  bookingKind: 'standard',
+  reservedMinutes: 45,
+  allowOutsideHours: false,
+  contactName: '',
   bookingSource: 'walk_in',
   overrideTotalEnabled: false,
   overrideTotal: '',
