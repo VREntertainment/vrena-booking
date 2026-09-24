@@ -13,7 +13,7 @@ import { PhoneNumberInput } from '../../components/CountryCodePicker'
 import { StaffPickerField } from '../../components/staff/StaffPickerField'
 import { bookingDurationCopy } from '../../lib/bookingDurationCopy'
 import { uiText } from '../../lib/i18n/translations'
-import { staffBookingEndTime, staffBookingHours, validStaffBookingTime } from '../../lib/staff/bookingHours'
+import { staffBookingEndTime, staffBookingHours, validStaffBookingTime, validStaffSessionCount } from '../../lib/staff/bookingHours'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
@@ -46,6 +46,8 @@ import type {
 import { ButtonIconText } from './shared'
 
 export type NewSectionProps = {
+  sessionLengthError: boolean
+  refreshSessionLength: () => void
   text: StaffConsoleCopy
   booking: import("../../lib/staff/types").BookingForm
   onOpenSessionCalendar: ((dateValue: string, venueKey?: "ha-do-centrosa" | "cafe-des-stagiaires" | undefined) => void) | undefined
@@ -77,7 +79,7 @@ export type NewSectionProps = {
   removeBookingPaymentSplit: (splitId: string) => void
   bookingPaidTotal: number
   bookingRemainingTotal: number
-  quote: { unitPrice: number; subtotal: number; discountTotal: number; discountLabel: string; total: number; ruleName: string; duration: number }
+  quote: { sessionMinutes: number | null; unitPrice: number; subtotal: number; discountTotal: number; discountLabel: string; total: number; ruleName: string; duration: number }
   bookingVenueName: "VRena Hà Đô Centrosa" | "Vrena Thao Dien"
   resolvedLanguage: import("../../lib/staff/types").StaffConsoleLanguage
   status: string
@@ -85,6 +87,8 @@ export type NewSectionProps = {
 }
 
 export default function NewSection({
+  sessionLengthError,
+  refreshSessionLength,
   text,
   booking,
   onOpenSessionCalendar,
@@ -322,14 +326,22 @@ export default function NewSection({
                 }} /> : <input aria-label={bookingText.endTime} readOnly value={staffBookingEndTime(booking.time, quote.duration)} />}
               </label>
             </div>
-            <label>
-              {text.labels.players}
-              <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
-            </label>
+            <div className="staff-booking-pair">
+              <label>
+                {text.labels.players}
+                <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
+              </label>
+              <label>
+                {bookingText.sessionCount}
+                <input min={1} max={32} step={1} type="number" value={booking.sessionCount || ''} onChange={(event) => setBooking({ ...booking, sessionCount: Number(event.target.value) })} />
+              </label>
+            </div>
+            {!validStaffSessionCount(booking.sessionCount) && <p className="notice full" role="alert">{bookingText.invalidSessionCount}</p>}
             {booking.bookingKind === 'event' && <>
               <label className="full staff-guest-toggle"><input type="checkbox" checked={booking.allowOutsideHours} onChange={(event) => setBooking({ ...booking, allowOutsideHours: event.target.checked })} /><span>{bookingText.allowOutsideHours}</span></label>
             </>}
-            {!validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
+            {booking.bookingKind === 'standard' && !quote.sessionMinutes && <p className="notice full" role="status">{sessionLengthError ? bookingText.sessionLengthError : bookingText.loadingSessionLength}{sessionLengthError && <button type="button" onClick={refreshSessionLength}>{bookingText.retry}</button>}</p>}
+            {(booking.bookingKind === 'event' || quote.sessionMinutes) && !validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
             <div className={booking.venueKey === 'ha-do-centrosa' ? 'staff-booking-pair' : undefined}>
               <label>
                 {text.labels.arena}
@@ -461,6 +473,8 @@ export default function NewSection({
             <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
             {selectedGame && <><span>{bookingDurationCopy[resolvedLanguage].game}</span><strong>{selectedGame.duration_minutes} min</strong></>}
             <span>{bookingText.arenaCount}</span><strong>{booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount}</strong>
+            <span>{bookingText.sessionCount}</span><strong>{booking.sessionCount}</strong>
+            {booking.bookingKind === 'standard' && <><span>{bookingText.sessionTime}</span><strong>{quote.sessionMinutes ?? '—'} min</strong></>}
             <span>{bookingText.reservedTime}</span><strong>{quote.duration} min</strong>
             <span>{bookingText.endTime}</span><strong>{staffBookingEndTime(booking.time, quote.duration)}</strong>
             {booking.contactName && <><span>{bookingText.contactName}</span><strong>{booking.contactName}</strong></>}
@@ -484,7 +498,7 @@ export default function NewSection({
           {(availabilityState === 'error' || availabilityState === 'unavailable') && <button type="button" className="secondary" onClick={() => { setAvailability(null); setRetry((value) => value + 1) }}>{bookingText.retry}</button>}
         </p>}
         {status && <p className="notice compact-notice" role="status">{status}</p>}
-        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || availabilityState !== 'available' || !validTime || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
+        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || availabilityState !== 'available' || !validTime || !validStaffSessionCount(booking.sessionCount) || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
           {text.actions.confirmBooking}
         </button>
       </div>

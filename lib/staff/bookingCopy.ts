@@ -1,5 +1,7 @@
 export const staffBookingCopy = {
   en: {
+    loadingSessionLength: 'Loading session time…', sessionLengthError: 'Unable to load session time. Please try again.',
+    sessionCount: 'Number of sessions', sessionTime: 'Time per session', invalidSessionCount: 'Enter a whole number of sessions from 1 to 32.',
     noGame: 'None', startTime: 'Starting time', arenaCount: 'Number of arenas',
     totalVatIncluded: 'Total (VAT included)', totalBeforeVat: 'Total before VAT',
     vatNotes: 'Details for VAT invoice:\nCompany name:\nCompany address:\nCompany VAT number:',
@@ -39,6 +41,8 @@ export const staffBookingCopy = {
     durationHelp: 'The full reserved time shown below blocks the arena. Availability is checked again when you confirm.',
   },
   vi: {
+    loadingSessionLength: 'Đang tải thời gian buổi chơi…', sessionLengthError: 'Không thể tải thời gian buổi chơi. Vui lòng thử lại.',
+    sessionCount: 'Số buổi chơi', sessionTime: 'Thời gian mỗi buổi', invalidSessionCount: 'Nhập số buổi chơi nguyên từ 1 đến 32.',
     noGame: 'Không chọn', startTime: 'Giờ bắt đầu', arenaCount: 'Số khu chơi',
     totalVatIncluded: 'Tổng tiền (đã gồm VAT)', totalBeforeVat: 'Tổng tiền trước VAT',
     vatNotes: 'Thông tin xuất hóa đơn VAT:\nTên công ty:\nĐịa chỉ công ty:\nMã số thuế công ty:',

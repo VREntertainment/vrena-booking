@@ -19,7 +19,7 @@ insert into billing_cases values
 (1,4,1,45,4,0),(2,5,1,45,4,0),(3,8,1,45,4,0),
 (4,8,1,90,4,.10),(5,8,1,135,4,.15),(6,8,1,180,4,.15),
 (7,9,2,45,8,.10),(8,16,2,45,8,.10),(9,16,2,90,8,.15),
-(10,16,2,135,8,0);
+(10,16,2,135,8,0),(11,2,2,45,2,0),(12,9,1,90,4,.10);
 create temp table billing_results(kind text,id int,result jsonb);
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select set_config('request.jwt.claim.role','anon',true);
@@ -31,7 +31,7 @@ round(public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date
 select is(s.ticket_total_price,round(public.ticket_tariff_unit_price('ha-do-centrosa','individual',s.date,'10:00')*c.billed*(c.minutes/45)*(1-c.rate))::int,
 format('Guest Ha Do: %s guests, %s arenas, %s minutes',c.guests,c.arenas,c.minutes))
 from billing_results r join billing_cases c using(id) join public.sessions s on s.id=(r.result->>'session_id')::uuid where r.kind='guest';
-select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',45,9,1,array['laser-tag'],0,0,'+84988009991','Fixture')$q$,'P0001','Invalid player count.','Ha Do rejects nine guests in one arena');
+select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',45,9,1,array['laser-tag'],0,0,'+84988009991','Fixture')$q$,'P0001','Ticket duration is below the minimum for the selected players and arenas.','Ha Do requires more time for nine guests in one arena');
 select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',45,17,2,array['laser-tag'],0,0,'+84988009992','Fixture')$q$,'P0001','Invalid player count.','Ha Do rejects more than sixteen guests');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+240,'16:00',45,17,1,array['revolta'],'+84988009993','Fixture')$q$,'P0001','Invalid player count.','Cafe rejects more than sixteen guests');
 -- Event requests share the same hard sixteen-guest Cafe limit.
@@ -56,6 +56,7 @@ from billing_cases;
 select is(s.ticket_total_price,round(public.ticket_tariff_unit_price('ha-do-centrosa','individual',s.date,'10:00')*c.billed*(c.minutes/45)*(1-c.rate))::int,
 format('Account Ha Do: %s guests, %s arenas, %s minutes',c.guests,c.arenas,c.minutes))
 from billing_results r join billing_cases c using(id) join public.sessions s on s.id=(r.result->>'session_id')::uuid where r.kind='account';
+select is(s.arena_count,c.arenas,format('%s preserves the selected arena count for %s players',r.kind,c.guests)) from billing_results r join billing_cases c using(id) join public.sessions s on s.id=(r.result->>'session_id')::uuid where c.id in (11,12);
 select ok(not has_function_privilege('anon','public.ticket_billed_players_per_block(text,date,integer,integer)','execute'), 'Billing helper is private to server calls');
 select * from finish();
 rollback;

@@ -34,7 +34,7 @@ type TicketCheckoutInput = {
 
 /** Owns voucher and loyalty requests, stale-response cancellation, and checkout amounts. */
 export function useTicketCheckout({ ticketType, ticketDate, ticketTime, ticketPlayers, activeTicketDuration, activeTicketArenaCount, bookingVenue, isHaDoBookingVenue, activeView, profile, text }: TicketCheckoutInput) {
-  const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(false)
+  const [ticketUseLoyaltyPoints, setTicketUseLoyaltyPoints] = useState(true)
   const [ticketLoyaltyPointsToRedeem, setTicketLoyaltyPointsToRedeem] = useState('')
   const [ticketLoyaltyRedemption, setTicketLoyaltyRedemption] = useState<TicketLoyaltyRedemption | null>(null)
   const [ticketLoyaltyEarnQuote, setTicketLoyaltyEarnQuote] = useState<TicketLoyaltyEarnQuote | null>(null)
@@ -180,13 +180,12 @@ export function useTicketCheckout({ ticketType, ticketDate, ticketTime, ticketPl
     if (!ticketUseLoyaltyPoints) return
     if (maxTicketLoyaltyPoints <= 0) {
       return schedulePostEffectStateUpdate(() => {
-        setTicketUseLoyaltyPoints(false)
         setTicketLoyaltyPointsToRedeem('')
       })
     }
 
     const requestedPoints = Math.max(0, Math.floor(Number(ticketLoyaltyPointsToRedeem) || 0))
-    if (requestedPoints > maxTicketLoyaltyPoints) {
+    if (ticketLoyaltyPointsToRedeem === '' || requestedPoints > maxTicketLoyaltyPoints) {
       return schedulePostEffectStateUpdate(() => {
         setTicketLoyaltyPointsToRedeem(String(maxTicketLoyaltyPoints))
       })
@@ -203,7 +202,6 @@ useEffect(() => {
       return schedulePostEffectStateUpdate(() => {
         setTicketLoyaltyRedemption(null)
         setTicketLoyaltyEarnQuote(null)
-        setTicketUseLoyaltyPoints(false)
         setTicketLoyaltyPointsToRedeem('')
         setIsLoadingTicketLoyalty(false)
       })
@@ -219,7 +217,6 @@ useEffect(() => {
         if (!active) return
         if (error) {
           setTicketLoyaltyRedemption(null)
-          setTicketUseLoyaltyPoints(false)
           setTicketLoyaltyPointsToRedeem('')
           return
         }
@@ -235,7 +232,6 @@ useEffect(() => {
       .catch(() => {
         if (!active) return
         setTicketLoyaltyRedemption(null)
-        setTicketUseLoyaltyPoints(false)
         setTicketLoyaltyPointsToRedeem('')
       })
       .finally(() => {

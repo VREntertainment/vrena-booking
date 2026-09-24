@@ -44,6 +44,8 @@ import { ButtonIconText, StaffReportDateRangeModal } from '../features/staff/sha
 
 import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
+import { useStaffSessionLength } from '../hooks/useStaffSessionLength'
+import { staffBookingDuration } from '../lib/staff/bookingHours'
 import { individualTicketUnitPrice } from '../lib/ticketTariffs'
 
 import {
@@ -538,6 +540,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const venues = publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']
     return venues.includes(booking.venueKey)
   }), [activeGames, booking.venueKey])
+  const sessionLength = useStaffSessionLength(booking.date)
   const selectedGame = useMemo(() => booking.gameId === 'none' ? null : bookingGames.find((game) => game.id === booking.gameId) || bookingGames[0] || null, [bookingGames, booking.gameId])
   const bookingArenas = booking.venueKey === 'cafe-des-stagiaires'
     ? ['cafe:arena-1']
@@ -551,10 +554,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const bookingUnitPrice = booking.venueKey === 'cafe-des-stagiaires'
     ? individualTicketUnitPrice(booking.date, booking.time, booking.venueKey)
     : selectedRule?.price_per_player ?? 200000
-  const bookingDurationBlocks = Math.max(1, Math.ceil((booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20) / 20))
+  const bookingDurationBlocks = Math.max(1, Math.ceil((booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20) / 20)) * (booking.bookingKind === 'event' ? 1 : booking.sessionCount)
   const bookingSubtotal = selectedRule?.price_per_arena_slot != null
     ? selectedRule.price_per_arena_slot * bookingDurationBlocks * (booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount)
-    : bookingUnitPrice * booking.players
+    : bookingUnitPrice * booking.players * booking.sessionCount
   const availableBookingDiscounts = useMemo(() => (
     discounts.filter((discount) => !/^VR_/i.test(discount.code || '') && discountMatchesContext(discount, {
       date: booking.date,
@@ -587,9 +590,10 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         : selectedDiscount?.name || text.noDiscount,
       total: booking.overrideTotalEnabled && booking.overrideTotal.trim() !== '' && Number.isFinite(Number(booking.overrideTotal)) ? Math.max(0, Number(booking.overrideTotal)) : Math.max(0, subtotal - discountTotal),
       ruleName: selectedRule?.rule_name || (booking.venueKey === 'cafe-des-stagiaires' ? bookingVenueName : text.defaultWalkInRate),
-      duration: booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20,
+      sessionMinutes: sessionLength.minutes,
+      duration: staffBookingDuration({ bookingKind: booking.bookingKind, reservedMinutes: booking.reservedMinutes, sessionCount: booking.sessionCount, date: booking.date }, sessionLength.minutes || 0),
     }
-  }, [booking.bookingKind, booking.reservedMinutes, booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedGame, selectedRule, text, booking.venueKey, bookingVenueName])
+  }, [sessionLength.minutes, booking.date, booking.sessionCount, booking.bookingKind, booking.reservedMinutes, booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedRule, text, booking.venueKey, bookingVenueName])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
@@ -1632,6 +1636,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {currentTabError && <div className="notice" role="alert"><p>{resolvedLanguage === 'vi' ? 'Không thể tải dữ liệu. Vui lòng thử lại.' : 'Couldn’t load this data. Please try again.'}</p><button type="button" disabled={currentTabLoading} onClick={retryCurrentData}>{resolvedLanguage === 'vi' ? 'Thử lại' : 'Try again'}</button></div>}
 
       {currentTabReady && currentTab === 'new' && (<NewSection
+        sessionLengthError={sessionLength.error}
+        refreshSessionLength={sessionLength.refresh}
         text={text}
         booking={booking}
         onOpenSessionCalendar={onOpenSessionCalendar}

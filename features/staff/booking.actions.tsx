@@ -1,6 +1,6 @@
 'use client'
 
-import { validStaffBookingTime } from '../../lib/staff/bookingHours'
+import { validStaffBookingTime, validStaffSessionCount } from '../../lib/staff/bookingHours'
 import type { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
@@ -36,7 +36,7 @@ export type BookingActionContext = {
   selectedDiscount: import("../../lib/staff/types").StaffDiscount | null
   setSaving: React.Dispatch<React.SetStateAction<boolean>>
   consumeStaffRateLimit: (action: "login_attempt" | "otp_request" | "join_leave" | "booking_attempt" | "admin_destructive" | "password_reset" | "invite_player" | "session_message" | "customer_invite" | "voucher_quote" | "staff_config_write", subject: string) => Promise<boolean>
-  quote: { unitPrice: number; subtotal: number; discountTotal: number; discountLabel: string; total: number; ruleName: string; duration: number }
+  quote: { sessionMinutes: number | null; unitPrice: number; subtotal: number; discountTotal: number; discountLabel: string; total: number; ruleName: string; duration: number }
   selectedBookingArena: string
   markStaffDataStale: (...keys: import("../../lib/staff/types").StaffDataKey[]) => void
   onBookingCreated: ((dateValue: string, venueKey: "ha-do-centrosa" | "cafe-des-stagiaires") => void) | undefined
@@ -124,6 +124,10 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(text.messages.customerAccountNameRequired)
       return
     }
+    if (!validStaffSessionCount(booking.sessionCount)) {
+      setStatus(bookingText.invalidSessionCount)
+      return
+    }
     if (!Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !booking.date || !booking.time) {
       setStatus(bookingText.invalidBooking)
       return
@@ -157,6 +161,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
         p_booking_source: booking.bookingSource,
         p_booking: {
           p_booking_kind: booking.bookingKind,
+          p_session_count: booking.sessionCount,
+          p_session_length_minutes: booking.bookingKind === 'standard' ? quote.sessionMinutes : null,
           p_duration_minutes: booking.bookingKind === 'event' ? booking.reservedMinutes : null,
           p_allow_outside_hours: booking.bookingKind === 'event' && booking.allowOutsideHours,
           p_contact_name: booking.contactName.trim() || null,

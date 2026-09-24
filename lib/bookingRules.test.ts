@@ -110,3 +110,12 @@ test('Cafe and special-event quotes cannot apply Ha Do voucher or loyalty reduct
     assert.equal(event.activeTicketDiscountAmount, 0)
   }
 })
+
+
+test('unchecking loyalty keeps the balance and removes all point deductions', () => {
+  const quote = calculateTicketCheckout({ ...base, ticketUseLoyaltyPoints: false })
+  assert.equal(quote.ticketLoyaltyBalance, 100)
+  assert.equal(quote.appliedTicketLoyaltyPoints, 0)
+  assert.equal(quote.ticketLoyaltyDiscountAmount, 0)
+  assert.equal(quote.currentTicketTotalPrice, 850000)
+})

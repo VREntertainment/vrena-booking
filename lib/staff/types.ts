@@ -768,6 +768,7 @@ export type StaffHourlyRevenuePoint = {
 export type BookingForm = {
   bookingKind: 'standard' | 'event'
   arenaCount: number
+  sessionCount: number
   reservedMinutes: number
   allowOutsideHours: boolean
   contactName: string
