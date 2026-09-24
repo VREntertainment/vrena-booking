@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabase/client'
 import {
   CalendarDays,
   Plus,
@@ -9,7 +11,7 @@ import { PhoneNumberInput } from '../../components/CountryCodePicker'
 import { StaffPickerField } from '../../components/staff/StaffPickerField'
 import { bookingDurationCopy } from '../../lib/bookingDurationCopy'
 import { uiText } from '../../lib/i18n/translations'
-import { staffBookingHours, validStaffBookingTime } from '../../lib/staff/bookingHours'
+import { staffBookingEndTime, staffBookingHours, validStaffBookingTime } from '../../lib/staff/bookingHours'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
@@ -119,7 +121,27 @@ export default function NewSection({
   createOrder,
 }: NewSectionProps) {
   const hours = staffBookingHours(booking.venueKey, quote.duration)
-  const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time)
+  const outsideHours = booking.bookingKind === 'event' && booking.allowOutsideHours
+  const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
+  const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, selectedGame?.id])
+  const [availability, setAvailability] = useState<{ key: string; state: 'available' | 'unavailable' | 'error' } | null>(null)
+  const [retry, setRetry] = useState(0)
+  const availabilityState = availability?.key === availabilityKey ? availability.state : 'checking'
+  useEffect(() => {
+    if (!canCreateOrders || !validTime || !booking.date || !selectedGame) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc('staff_booking_availability', {
+          p_date: booking.date, p_time: `${booking.time}:00`, p_arena_id: selectedBookingArena, p_duration: quote.duration,
+        })
+        if (!cancelled) setAvailability({ key: availabilityKey, state: error ? 'error' : data === true ? 'available' : 'unavailable' })
+      } catch {
+        if (!cancelled) setAvailability({ key: availabilityKey, state: 'error' })
+      }
+    }, 250)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [availabilityKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime])
   return (
     <div className="staff-grid">
       <div className="staff-card staff-card-wide">
@@ -157,10 +179,17 @@ export default function NewSection({
                 ...current,
                 venueKey: event.target.value as BookingForm['venueKey'],
                 gameId: '', arenaId: '', discountId: '',
-                time: event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
+                time: !current.allowOutsideHours && event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
               }))}>
                 <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
                 <option value="cafe-des-stagiaires">Vrena Thao Dien</option>
+              </select>
+            </label>
+            <label className="full">
+              {bookingText.bookingType}
+              <select value={booking.bookingKind} onChange={(event) => setBooking({ ...booking, bookingKind: event.target.value as BookingForm['bookingKind'], allowOutsideHours: false })}>
+                <option value="standard">{bookingText.standardBooking}</option>
+                <option value="event">{bookingText.eventBooking}</option>
               </select>
             </label>
             <label className="full staff-guest-toggle">
@@ -239,6 +268,11 @@ export default function NewSection({
                 )}
               </div>
               <p className="field-help full">{booking.customerId ? bookingText.profileSelected : bookingText.createWithBooking}</p>
+              <label className="full">
+                {bookingText.contactName}
+                <input maxLength={120} value={booking.contactName} onChange={(event) => setBooking({ ...booking, contactName: event.target.value })} />
+              </label>
+              <p className="field-help full">{bookingText.contactHelp}</p>
               <label>
                 {text.labels.phone}
                 <PhoneNumberInput
@@ -271,14 +305,19 @@ export default function NewSection({
             </label>
             <label>
               {text.labels.time}
-              <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} minTime={hours.min} maxTime={hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
+              <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
             </label>
             <label>
               {text.labels.players}
               <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
             </label>
-            <p className="field-help full">{bookingText.openingHours}: {hours.min}–{hours.close} · {bookingText.latestStart}: {hours.max}</p>
-            {!validTime && <p className="notice full" role="alert">{bookingText.outsideHours}</p>}
+            {booking.bookingKind === 'event' && <>
+              <label>{bookingText.reservedMinutes}<input type="number" min={1} max={1440} step={1} value={booking.reservedMinutes || ''} onChange={(event) => setBooking({ ...booking, reservedMinutes: Number(event.target.value) })} /></label>
+              <label className="staff-guest-toggle"><input type="checkbox" checked={booking.allowOutsideHours} onChange={(event) => setBooking({ ...booking, allowOutsideHours: event.target.checked })} /><span>{bookingText.allowOutsideHours}</span></label>
+              <p className="field-help full">{bookingText.eventHelp}</p>
+            </>}
+            <p className="field-help full">{bookingText.openingHours}: {hours.min}–{hours.close}{!outsideHours && <> · {bookingText.latestStart}: {hours.max}</>}</p>
+            {!validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
             <label>
               {text.labels.arena}
               <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
@@ -384,7 +423,7 @@ export default function NewSection({
             </label>
           </div>
           <label className="staff-note-field">
-            {text.labels.internalNote}
+            {bookingText.bookingNotes}
             <textarea value={booking.note} onChange={(event) => setBooking({ ...booking, note: event.target.value })} />
           </label>
         </fieldset>
@@ -400,7 +439,10 @@ export default function NewSection({
           <span>{text.labels.players}</span><strong>{booking.players}</strong>
           <span>{text.labels.customer}</span><strong>{booking.guestBooking ? text.labels.guestBooking : booking.customerName || text.walkIn}</strong>
           <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
-          <span>{bookingDurationCopy[resolvedLanguage].game}</span><strong>{quote.duration} min</strong>
+          <span>{bookingDurationCopy[resolvedLanguage].game}</span><strong>{selectedGame?.duration_minutes || 20} min</strong>
+          <span>{bookingText.reservedTime}</span><strong>{quote.duration} min</strong>
+          <span>{bookingText.endTime}</span><strong>{staffBookingEndTime(booking.time, quote.duration)}</strong>
+          {booking.contactName && <><span>{bookingText.contactName}</span><strong>{booking.contactName}</strong></>}
           <span>{text.labels.subtotal}</span><strong>{formatVnd(quote.subtotal)}</strong>
           <span>{text.labels.discountType}</span><strong>{quote.discountLabel}</strong>
           <span>{text.labels.discount}</span><strong>-{formatVnd(quote.discountTotal)}</strong>
@@ -414,8 +456,12 @@ export default function NewSection({
             <p className="field-help">{bookingText.overrideHelp}</p>
           </>}
         </fieldset>
+        {validTime && <p className="field-help staff-booking-availability" role="status" aria-live="polite">
+          {availabilityState === 'available' ? bookingText.available : availabilityState === 'unavailable' ? bookingText.unavailable : availabilityState === 'error' ? bookingText.availabilityError : bookingText.checkingAvailability}
+          {(availabilityState === 'error' || availabilityState === 'unavailable') && <button type="button" className="secondary" onClick={() => { setAvailability(null); setRetry((value) => value + 1) }}>{bookingText.retry}</button>}
+        </p>}
         {status && <p className="notice compact-notice" role="status">{status}</p>}
-        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || !selectedGame || !validTime || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
+        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || availabilityState !== 'available' || !selectedGame || !validTime || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
           {text.actions.confirmBooking}
         </button>
       </div>

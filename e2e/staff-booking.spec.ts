@@ -345,3 +345,73 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await admin.from('sessions').delete().eq('id', created.session_id)
   }
 })
+
+test('staff booking: exact event duration, outside hours, contact and live conflict check', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Validate desktop and mobile in one isolated booking flow.')
+  if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Event write tests require isolated services.')
+  const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  let sessionId: string | undefined
+  let customerId: string | undefined
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  try {
+    await loginAsAdmin(page)
+    await openAdmin(page)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.getByRole('combobox', { name: 'Customer name', exact: true }).fill(`Event company ${Date.now()}`)
+    await page.getByRole('textbox', { name: 'Contact person', exact: true }).fill('Event coordinator')
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
+    await page.getByRole('combobox', { name: 'Booking type', exact: true }).selectOption('event')
+    await page.getByRole('spinbutton', { name: 'Time booked (minutes)', exact: true }).fill('127')
+    await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
+    await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
+    const setTime = async (value: string) => {
+      await page.getByRole('button', { name: 'Booking time', exact: true }).click()
+      const input = page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true })
+      await input.fill(value)
+      await input.press('Enter')
+    }
+    await setTime('10:13')
+    await page.getByRole('textbox', { name: 'Booking notes / special requests', exact: true }).fill('Prepare room early')
+    await expect(page.locator('.staff-price-lines')).toContainText('127 min')
+    await expect(page.locator('.staff-price-lines')).toContainText('12:20')
+    await expect(page.getByText('Arena available for the full reserved time.', { exact: true })).toBeVisible()
+    await page.screenshot({ path: '/tmp/staff-event-desktop.png', fullPage: true })
+    await page.setViewportSize({ width: 375, height: 667 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    await page.screenshot({ path: '/tmp/staff-event-mobile.png', fullPage: true })
+    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
+    await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
+    const body = await (await response).json()
+    expect(body.session_id).toBeTruthy()
+    sessionId = body.session_id
+    customerId = body.customer_id
+    const saved = await admin.from('sessions').select('duration_minutes,start_time,notes').eq('id', sessionId!).single()
+    expect(saved.error).toBeNull()
+    expect(saved.data!.duration_minutes).toBe(127)
+    expect(saved.data!.start_time.slice(0, 5)).toBe('10:13')
+    expect(saved.data!.notes).toContain('Contact person: Event coordinator')
+    expect(saved.data!.notes).toContain('Prepare room early')
+    await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
+    await page.getByRole('combobox', { name: 'Booking type', exact: true }).selectOption('event')
+    await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
+    await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
+    await setTime('12:19')
+    await expect(page.locator('.staff-booking-availability')).toContainText('This arena or time is unavailable. Choose another arena or time.')
+    await expect(page.getByRole('button', { name: 'Confirm booking', exact: true })).toBeDisabled()
+    await setTime('12:20')
+    await expect(page.getByText('Arena available for the full reserved time.', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Confirm booking', exact: true })).toBeEnabled()
+    await page.getByRole('button', { name: 'Open session calendar', exact: true }).click()
+    const calendar = page.locator('.calendar-panel')
+    await expect(calendar).toHaveAttribute('aria-busy', 'false')
+    await expect(calendar.getByRole('button').filter({ hasText: 'Staff booking - City Z' })).toHaveCount(1)
+    await expect(calendar.locator('.calendar-time-label').first()).toHaveText('10:10')
+    await page.screenshot({ path: '/tmp/staff-event-calendar.png' })
+    expect(errors).toEqual([])
+  } finally {
+    if (sessionId) await admin.from('sessions').delete().eq('id', sessionId)
+    if (customerId && /^[0-9a-f-]{36}$/.test(customerId)) execFileSync('docker', ['exec', '-i', 'supabase_db_vrena-health-ci', 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1'], { input: `delete from auth.users where id='${customerId}'::uuid;`, stdio: ['pipe', 'ignore', 'pipe'] })
+  }
+})

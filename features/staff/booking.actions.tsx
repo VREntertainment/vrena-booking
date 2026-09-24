@@ -71,6 +71,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
         customerName: '',
         customerPhone: '',
         customerEmail: '',
+        contactName: '',
       } : {}),
     }))
   }
@@ -127,7 +128,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(bookingText.invalidBooking)
       return
     }
-    if (!validStaffBookingTime(booking.venueKey, quote.duration, booking.time)) {
+    if (!validStaffBookingTime(booking.venueKey, quote.duration, booking.time, booking.bookingKind === 'event' && booking.allowOutsideHours)) {
       setStatus(bookingText.outsideHours)
       return
     }
@@ -155,6 +156,10 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       const { data, error } = await supabase.rpc('staff_create_booking', {
         p_booking_source: booking.bookingSource,
         p_booking: {
+          p_booking_kind: booking.bookingKind,
+          p_duration_minutes: booking.bookingKind === 'event' ? booking.reservedMinutes : null,
+          p_allow_outside_hours: booking.bookingKind === 'event' && booking.allowOutsideHours,
+          p_contact_name: booking.contactName.trim() || null,
           p_total_override: booking.overrideTotalEnabled ? Number(booking.overrideTotal) : null,
           p_override_reason: booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,
           p_customer_id: guestCustomer ? null : booking.customerId || null,

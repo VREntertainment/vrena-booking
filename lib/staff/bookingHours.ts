@@ -9,7 +9,20 @@ export function staffBookingHours(venueKey: string, duration: number) {
   }
 }
 
-export function validStaffBookingTime(venueKey: string, duration: number, time: string) {
+export function validStaffBookingTime(venueKey: string, duration: number, time: string, allowOutsideHours = false) {
+  if (!Number.isInteger(duration) || duration < 1 || duration > 1440) return false
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return false
+  const [hour, minute] = time.split(':').map(Number)
+  if (hour * 60 + minute + duration > 1440) return false
+  if (allowOutsideHours) return true
   const { min, max } = staffBookingHours(venueKey, duration)
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(time) && time >= min && time <= max
+}
+
+export function staffBookingEndTime(time: string, duration: number) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !Number.isInteger(duration) || duration < 1) return '—'
+  const [hour, minute] = time.split(':').map(Number)
+  const end = hour * 60 + minute + duration
+  if (end > 1440) return '—'
+  return minutesToTime(end)
 }
