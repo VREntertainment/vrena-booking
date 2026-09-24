@@ -1,3 +1,4 @@
+import type { BookingForm } from './types.ts'
 import { CAFE_CLOSE_MINUTES, CAFE_OPEN_MINUTES, CLOSE_MINUTES, OPEN_MINUTES, minutesToTime } from '../booking/availability.ts'
 
 export function staffBookingHours(venueKey: string, duration: number) {
@@ -25,4 +26,12 @@ export function staffBookingEndTime(time: string, duration: number) {
   const end = hour * 60 + minute + duration
   if (end > 1440) return '—'
   return minutesToTime(end)
+}
+
+export function validStaffSessionCount(count: number) {
+  return Number.isInteger(count) && count >= 1 && count <= 32
+}
+
+export function staffBookingDuration(booking: Pick<BookingForm, 'bookingKind' | 'reservedMinutes' | 'sessionCount' | 'date'>, sessionMinutes: number) {
+  return booking.bookingKind === 'event' ? booking.reservedMinutes : sessionMinutes * booking.sessionCount
 }

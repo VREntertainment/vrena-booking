@@ -367,7 +367,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       showTicketStatus(bookingCreatedMessage)
       showActionToast(bookingCreatedMessage)
       setTicketTime('')
-      setTicketUseLoyaltyPoints(false)
+      setTicketUseLoyaltyPoints(true)
       setTicketLoyaltyPointsToRedeem('')
       setTicketDiscountCode('')
       setTicketDiscountQuote(null)

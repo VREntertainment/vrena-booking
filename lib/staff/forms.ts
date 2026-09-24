@@ -17,6 +17,7 @@ import type {
 export const defaultBookingForm = (): BookingForm => ({
   bookingKind: 'standard',
   arenaCount: 1,
+  sessionCount: 1,
   reservedMinutes: 45,
   allowOutsideHours: false,
   contactName: '',

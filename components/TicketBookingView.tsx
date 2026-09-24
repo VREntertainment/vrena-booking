@@ -202,7 +202,6 @@ export default function TicketBookingView({
   formatVnd,
   ticketTypeLabel,
   ticketTypeDescription,
-  ticketUnitFormulaText,
   guestTicketContact,
   onGuestTicketContactChange,
 }: TicketBookingViewProps) {
@@ -360,12 +359,18 @@ export default function TicketBookingView({
                   <select
                     disabled={singleArenaOnly}
                     id="ticket-arena-count"
+                    aria-describedby="ticket-arena-recommendation"
                     value={activeTicketArenaCount}
                     onChange={(event) => onTicketArenaCountChange(Number(event.target.value))}
                   >
-                    <option value={1} disabled={!singleArenaOnly && ticketPlayers > 8}>{singleArenaOnly ? text.ticketCafeArenaBookingCapacity : text.ticketOneArenaBookingCapacity}</option>
-                    {!singleArenaOnly && <option value={2} disabled={ticketPlayers <= 4}>{text.ticketTwoArenasBookingCapacity}</option>}
+                    <option value={1}>{text.ticketOneArenaChoice}</option>
+                    {!singleArenaOnly && <option value={2}>{text.ticketTwoArenasChoice}</option>}
                   </select>
+                  <p className="field-help" id="ticket-arena-recommendation" aria-live="polite">
+                    {activeTicketArenaCount === 1
+                      ? ticketPlayers <= (singleArenaOnly ? 8 : 4) ? text.ticketArenaTogether : singleArenaOnly ? text.ticketArenaTakeTurns : text.ticketArenaRecommendTwo
+                      : ticketPlayers <= 4 ? text.ticketArenaExtraSpace : ticketPlayers <= 8 ? text.ticketArenasTogether : text.ticketArenasTakeTurns}
+                  </p>
                 </div>
               </div>
 
@@ -422,7 +427,7 @@ export default function TicketBookingView({
                     <strong className={showDiscountedUnitPrice ? 'ticket-unit-discounted' : undefined}>
                       {formatVnd(discountedTicketUnitPrice)}
                     </strong>
-                    <small>{ticketPriceBlockMinutes === 20 ? text.ticketUnitPriceBasisLegacy : ticketUnitFormulaText(text, currentTicketUnitPrice, ticketPlayers, activeTicketArenaCount)}</small>
+                    <small>{text.ticketHeadsetPriceBasis.replace('{minutes}', String(ticketPriceBlockMinutes))}</small>
                   </div>
                 )}
                 <div className="ticket-reserved-line">
@@ -438,6 +443,7 @@ export default function TicketBookingView({
                     <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>
                   )}
                   <strong>{ticketTotalDisplay}</strong>
+                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}
                 </div>
                 {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
@@ -448,6 +454,14 @@ export default function TicketBookingView({
                           .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
                         : text.ticketLoyaltyEarnZero}
                     </p>
+                        <label className="ticket-loyalty-toggle">
+                          <input
+                            checked={useLoyaltyPoints}
+                            onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
+                            type="checkbox"
+                          />
+                          <span>{text.ticketUseLoyaltyPoints}</span>
+                        </label>
                     {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
                       null
                     ) : (
@@ -463,15 +477,6 @@ export default function TicketBookingView({
                                 : text.ticketLoyaltyUnavailable}
                           </small>
                         </div>
-                        <label className="ticket-loyalty-toggle">
-                          <input
-                            checked={useLoyaltyPoints}
-                            disabled={maxLoyaltyPointsToRedeem <= 0}
-                            onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
-                            type="checkbox"
-                          />
-                          <span>{text.ticketUseLoyaltyPoints}</span>
-                        </label>
                         {useLoyaltyPoints && (
                           <label className="ticket-loyalty-input">
                             <span>{text.ticketLoyaltyPointsToUse}</span>
@@ -518,7 +523,8 @@ export default function TicketBookingView({
               <p className="field-help ticket-helper-note">{text.sessionTariffPayment}</p>
 
               <div className="ticket-checkout-action">
-                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
+                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong>
+                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}</div>
                 <button
                   className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
                   disabled={isBookingTickets || guestTicketAction !== null}

@@ -2928,7 +2928,7 @@ export default function WidgetPage({
   const activeTicketService = selectedTicketService(ticketType)
   const activeTicketPriceBlockMinutes = ticketPriceBlockMinutesForDate(ticketDate)
   const activeTicketDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, ticketDuration))
-  const activeTicketArenaCount = isHaDoBookingVenue ? Math.max(ticketPlayers > 8 ? 2 : 1, ticketArenaCountForPlayers(ticketArenaCount)) : 1
+  const activeTicketArenaCount = isHaDoBookingVenue ? ticketArenaCountForPlayers(ticketArenaCount) : 1
   const ticketTimeOptions = useMemo(() => {
     return getTicketTimeOptions(ticketDate, activeTicketDuration, activeTicketArenaCount)
   }, [activeTicketArenaCount, activeTicketDuration, getTicketTimeOptions, ticketDate])
@@ -3113,14 +3113,13 @@ export default function WidgetPage({
       : ticketDate
     setBookingVenue(value)
     setTicketArenaCount(1)
-    setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, value === 'ha-do-centrosa' && ticketPlayers > 8 ? 2 : 1, nextTicketDate, value))
+    setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
     setTicketTime('')
     setTicketConfirmation(null)
     setTicketDiscountCode('')
     setTicketDiscountQuote(null)
     setTicketAutomaticDiscountQuote(null)
     setTicketDiscountStatus('')
-    setTicketUseLoyaltyPoints(false)
     setTicketLoyaltyPointsToRedeem('')
     clearTicketStatus()
 
@@ -3240,7 +3239,12 @@ export default function WidgetPage({
       return false
     }
 
-    if (isHaDoBookingVenue && activeProfile && ticketUseLoyaltyPoints && appliedTicketLoyaltyPoints <= 0) {
+    if (isHaDoBookingVenue && activeProfile && ticketUseLoyaltyPoints && isLoadingTicketLoyalty) {
+      showTicketStatus(text.ticketLoyaltyLoading)
+      return false
+    }
+
+    if (isHaDoBookingVenue && activeProfile && ticketUseLoyaltyPoints && maxTicketLoyaltyPoints > 0 && appliedTicketLoyaltyPoints <= 0) {
       showTicketStatus(text.ticketLoyaltyInvalid, 'error')
       return false
     }
@@ -3275,7 +3279,6 @@ export default function WidgetPage({
       setTicketDiscountQuote(null)
       setTicketDiscountStatus('')
       setTicketAutomaticDiscountQuote(null)
-      setTicketUseLoyaltyPoints(false)
       setTicketLoyaltyPointsToRedeem('')
     } else {
       setTicketSpecialNote('')
@@ -3289,7 +3292,7 @@ export default function WidgetPage({
   }
 
   function handleTicketPlayersChange(value: number) {
-    const nextArenaCount = !isHaDoBookingVenue || value <= 4 ? 1 : value > 8 ? 2 : activeTicketArenaCount
+    const nextArenaCount = !isHaDoBookingVenue ? 1 : activeTicketArenaCount
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
@@ -3305,7 +3308,7 @@ export default function WidgetPage({
   }
 
   function handleTicketArenaCountChange(value: number) {
-    const nextArenaCount = !isHaDoBookingVenue || ticketPlayers <= 4 ? 1 : ticketPlayers > 8 ? 2 : ticketArenaCountForPlayers(value)
+    const nextArenaCount = !isHaDoBookingVenue ? 1 : ticketArenaCountForPlayers(value)
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, nextArenaCount)
