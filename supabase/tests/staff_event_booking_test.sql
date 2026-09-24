@@ -31,6 +31,16 @@ insert into booking_results values ('midnight',public.staff_create_booking(pg_te
 select is(public.staff_booking_availability(current_date+213,'23:59','cafe:arena-1',1),false,'Midnight boundary remains unavailable');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',0),'phone')$q$,'P0001','Invalid reserved duration.','Zero duration rejected');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',60)||'{"p_booking_kind":"standard"}'::jsonb,'phone')$q$,'P0001','Custom duration and outside-hours booking require event type.','Standard bookings cannot bypass opening hours');
+select is(public.staff_booking_availability_for_arenas(current_date+214,'10:00','arena-1',127,2),true,'Two arenas available initially');
+insert into booking_results values ('no-game',public.staff_create_booking(pg_temp.event_payload('10:00',127)||jsonb_build_object('p_game_id',null,'p_booking_date',current_date+214,'p_arena_id','arena-1','p_arena_count',2),'phone'));
+select is((select game_id from public.staff_orders where id=(select (result->>'order_id')::uuid from booking_results where label='no-game')),null::uuid,'No game persists without substituting a game');
+select is((select arena_count from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='no-game')),2,'Both arenas are reserved');
+select is((select game_options from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='no-game')),array[]::text[],'No game options fabricated');
+select is(public.staff_booking_availability_for_arenas(current_date+214,'12:06','arena-2',20,1),false,'Both arenas unavailable through full event');
+select is(public.staff_booking_availability_for_arenas(current_date+214,'12:07','arena-2',20,1),true,'Adjacent booking allowed');
+select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('11:00',20)||jsonb_build_object('p_game_id',null,'p_booking_date',current_date+214,'p_arena_id','arena-2'),'phone')$q$,'P0001','Selected time slot is no longer available.','Saving on second arena cannot overlap a two-arena booking');
+select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('15:00',20)||'{"p_arena_count":2}'::jsonb,'phone')$q$,'P0001','Invalid arena selection.','Single arena venue rejects two arenas');
+select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('15:00',20)||'{"p_arena_count":0}'::jsonb,'phone')$q$,'P0001','Invalid arena selection.','Zero arena count rejected');
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',true);
 select throws_ok($q$select public.staff_booking_availability(current_date+213,'16:00','cafe:arena-1',45)$q$,'P0001','Staff access required.','Availability requires staff MFA');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',60),'phone')$q$,'P0001','Staff access required.','Event creation requires staff MFA');

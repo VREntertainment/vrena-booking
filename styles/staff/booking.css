@@ -26,3 +26,14 @@
   .app .staff-payment-split-row:has(.staff-payment-remove) > input { grid-column: 1; }
   .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { grid-column: 2; }
 }
+
+.app .staff-booking-toggles { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.app .staff-booking-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.app .staff-booking-pair label { min-width: 0; }
+.app .staff-booking-pair input[readonly] { text-align: center; }
+
+.app .staff-summary-share { display: flex; justify-content: flex-end; gap: 8px; }
+.app .staff-summary-share button { display: inline-flex; align-items: center; gap: 6px; }
+.app .staff-summary-export { min-width: 0; }
+
+.app .staff-booking-pair > label:last-child .staff-time-panel { left: auto; right: 0; }

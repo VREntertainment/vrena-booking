@@ -1,3 +1,4 @@
+import { vatSplit as accountantVatSplit } from './staff/vat.ts'
 type AccountantOrder = {
   booking_date: string
   company_name: string | null
@@ -172,10 +173,6 @@ function accountantIsRecognized(order: AccountantOrder) {
   return order.order_status === 'completed' || order.booking_date <= todayString()
 }
 
-function accountantVatSplit(total: number) {
-  const net = Math.round(total / 1.08)
-  return { net, vat: Math.max(total - net, 0) }
-}
 
 function accountantSourcePendingRow(columns: string[], context: AccountantExportContext) {
   const noteColumn = columns.includes('Notes') ? 'Notes' : columns[columns.length - 1]
