@@ -28,7 +28,7 @@ export type BookingActionContext = {
   profileById: Map<string, import("../../lib/staff/types").StaffProfile>
   setCustomerSuggestionIndex: React.Dispatch<React.SetStateAction<number>>
   canCreateOrders: boolean
-  selectedGame: import("../../lib/staff/types").StaffGame
+  selectedGame: import("../../lib/staff/types").StaffGame | null
   bookingSubmitRef: React.RefObject<boolean>
   booking: import("../../lib/staff/types").BookingForm
   setStatus: React.Dispatch<React.SetStateAction<string>>
@@ -119,7 +119,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       loadProfiles,
     } = getContext()
 
-    if (!canCreateOrders || !selectedGame || bookingSubmitRef.current) return
+    if (!canCreateOrders || bookingSubmitRef.current) return
     if (!booking.guestBooking && !booking.customerName.trim()) {
       setStatus(text.messages.customerAccountNameRequired)
       return
@@ -147,7 +147,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
     bookingSubmitRef.current = true
     setSaving(true)
     try {
-      const allowed = await consumeStaffRateLimit('booking_attempt', `${booking.date}:${booking.time}:${selectedGame.id}`)
+      const allowed = await consumeStaffRateLimit('booking_attempt', `${booking.date}:${booking.time}:${selectedGame?.id || 'none'}`)
       if (!allowed) return
       setStatus(text.messages.orderCreating)
       const guestCustomer = booking.guestBooking
@@ -166,7 +166,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
           p_customer_name: guestCustomer ? null : booking.customerName || null,
           p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
           p_customer_email: guestCustomer ? null : booking.customerEmail || null,
-          p_game_id: selectedGame.id,
+          p_game_id: selectedGame?.id || null,
+          p_arena_count: booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount,
           p_booking_date: booking.date,
           p_booking_time: `${booking.time}:00`,
           p_players_count: booking.players,

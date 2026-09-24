@@ -538,22 +538,22 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     const venues = publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']
     return venues.includes(booking.venueKey)
   }), [activeGames, booking.venueKey])
-  const selectedGame = useMemo(() => bookingGames.find((game) => game.id === booking.gameId) || bookingGames[0] || null, [bookingGames, booking.gameId])
+  const selectedGame = useMemo(() => booking.gameId === 'none' ? null : bookingGames.find((game) => game.id === booking.gameId) || bookingGames[0] || null, [bookingGames, booking.gameId])
   const bookingArenas = booking.venueKey === 'cafe-des-stagiaires'
     ? ['cafe:arena-1']
-    : selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1']
+    : selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1', 'arena-2']
   const selectedBookingArena = bookingArenas.includes(booking.arenaId) ? booking.arenaId : bookingArenas[0]
   const bookingVenueName = booking.venueKey === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : 'VRena Hà Đô Centrosa'
   const selectedRule = useMemo(() => {
-    if (!selectedGame || booking.venueKey === 'cafe-des-stagiaires') return null
-    return selectPricingRule(prices, selectedGame.id, booking.date, booking.time)
+    if (booking.venueKey === 'cafe-des-stagiaires') return null
+    return selectPricingRule(prices, selectedGame?.id || '', booking.date, booking.time)
   }, [booking.date, booking.time, booking.venueKey, prices, selectedGame])
   const bookingUnitPrice = booking.venueKey === 'cafe-des-stagiaires'
     ? individualTicketUnitPrice(booking.date, booking.time, booking.venueKey)
     : selectedRule?.price_per_player ?? 200000
   const bookingDurationBlocks = Math.max(1, Math.ceil((booking.bookingKind === 'event' ? booking.reservedMinutes : selectedGame?.duration_minutes || 20) / 20))
   const bookingSubtotal = selectedRule?.price_per_arena_slot != null
-    ? selectedRule.price_per_arena_slot * bookingDurationBlocks
+    ? selectedRule.price_per_arena_slot * bookingDurationBlocks * (booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount)
     : bookingUnitPrice * booking.players
   const availableBookingDiscounts = useMemo(() => (
     discounts.filter((discount) => !/^VR_/i.test(discount.code || '') && discountMatchesContext(discount, {

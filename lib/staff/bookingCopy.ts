@@ -1,5 +1,8 @@
 export const staffBookingCopy = {
   en: {
+    noGame: 'None', startTime: 'Starting time', arenaCount: 'Number of arenas',
+    totalVatIncluded: 'Total (VAT included)', totalBeforeVat: 'Total before VAT',
+    vatNotes: 'Details for VAT invoice:\nCompany name:\nCompany address:\nCompany VAT number:',
     standardBooking: 'Standard game', eventBooking: 'Event / corporate',
     reservedMinutes: 'Time booked (minutes)', endTime: 'End time', reservedTime: 'Total time reserved',
     allowOutsideHours: 'Allow booking outside opening hours',
@@ -36,6 +39,9 @@ export const staffBookingCopy = {
     durationHelp: 'The full reserved time shown below blocks the arena. Availability is checked again when you confirm.',
   },
   vi: {
+    noGame: 'Không chọn', startTime: 'Giờ bắt đầu', arenaCount: 'Số khu chơi',
+    totalVatIncluded: 'Tổng tiền (đã gồm VAT)', totalBeforeVat: 'Tổng tiền trước VAT',
+    vatNotes: 'Thông tin xuất hóa đơn VAT:\nTên công ty:\nĐịa chỉ công ty:\nMã số thuế công ty:',
     standardBooking: 'Trò chơi thông thường', eventBooking: 'Sự kiện / doanh nghiệp',
     reservedMinutes: 'Thời gian đặt (phút)', endTime: 'Giờ kết thúc', reservedTime: 'Tổng thời gian giữ chỗ',
     allowOutsideHours: 'Cho phép đặt ngoài giờ mở cửa',
