@@ -207,6 +207,7 @@ export const ja = {
   ticketDiscountBestReductionMessage: '割引は併用できません。最もお得な割引が自動で適用されます。',
   ticketDiscountCodeSummary: 'バウチャー / 割引',
   ticketDiscountNotUsed: '最安割引を使用',
+  ticketLoyaltyNoAvailablePoints: "利用できるポイントはありません。このチケットで獲得するポイントは次回以降の予約に使えます。",
   ticketLoyaltyBalance: '保有ポイント',
   ticketLoyaltyRedeemRate: '1ポイント = {value}',
   ticketLoyaltyLoading: 'ポイントを確認中...',

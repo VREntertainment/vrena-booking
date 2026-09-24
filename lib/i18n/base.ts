@@ -205,6 +205,7 @@ export const en = {
   ticketDiscountBestReductionMessage: 'Discounts do not stack. The best price reduction is used automatically.',
   ticketDiscountCodeSummary: 'Voucher / discount',
   ticketDiscountNotUsed: 'Best price used',
+  ticketLoyaltyNoAvailablePoints: "No points available to use. Points earned from this ticket are for a future booking.",
   ticketLoyaltyBalance: 'Your loyalty points',
   ticketLoyaltyRedeemRate: '{value} per point',
   ticketLoyaltyLoading: 'Checking loyalty points...',

@@ -207,6 +207,7 @@ export const de = {
   ticketDiscountBestReductionMessage: 'Rabatte werden nicht kombiniert. Die beste Ermäßigung wird automatisch genutzt.',
   ticketDiscountCodeSummary: 'Voucher / Rabatt',
   ticketDiscountNotUsed: 'Bester Preis genutzt',
+  ticketLoyaltyNoAvailablePoints: "Keine Punkte verfügbar. Mit diesem Ticket gesammelte Punkte gelten für eine spätere Buchung.",
   ticketLoyaltyBalance: 'Deine Treuepunkte',
   ticketLoyaltyRedeemRate: '{value} pro Punkt',
   ticketLoyaltyLoading: 'Treuepunkte werden geprüft...',

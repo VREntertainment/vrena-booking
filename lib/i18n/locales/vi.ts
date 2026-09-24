@@ -207,6 +207,7 @@ export const vi = {
   ticketDiscountBestReductionMessage: 'Các ưu đãi không cộng dồn. Hệ thống tự chọn mức giảm tốt nhất.',
   ticketDiscountCodeSummary: 'Voucher / giảm giá',
   ticketDiscountNotUsed: 'Đã dùng giá tốt nhất',
+  ticketLoyaltyNoAvailablePoints: "Chưa có điểm để sử dụng. Điểm nhận từ vé này dùng cho lần đặt sau.",
   ticketLoyaltyBalance: 'Điểm thưởng của bạn',
   ticketLoyaltyRedeemRate: '{value} mỗi điểm',
   ticketLoyaltyLoading: 'Đang kiểm tra điểm...',
