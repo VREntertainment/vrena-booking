@@ -398,7 +398,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
     await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
     await setTime('12:19')
-    await expect(page.getByText('This arena or time is unavailable. Choose another arena or time.', { exact: true })).toBeVisible()
+    await expect(page.locator('.staff-booking-availability')).toContainText('This arena or time is unavailable. Choose another arena or time.')
     await expect(page.getByRole('button', { name: 'Confirm booking', exact: true })).toBeDisabled()
     await setTime('12:20')
     await expect(page.getByText('Arena available for the full reserved time.', { exact: true })).toBeVisible()
