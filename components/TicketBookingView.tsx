@@ -433,6 +433,7 @@ export default function TicketBookingView({
                 <div className="ticket-reserved-line">
                   <span>{text.numberOfPlayers}</span>
                   <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
+                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}
                 </div>
                 <div className="ticket-total-line">
                   <span className="ticket-total-heading">
@@ -443,7 +444,6 @@ export default function TicketBookingView({
                     <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>
                   )}
                   <strong>{ticketTotalDisplay}</strong>
-                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}
                 </div>
                 {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
@@ -523,8 +523,7 @@ export default function TicketBookingView({
               <p className="field-help ticket-helper-note">{text.sessionTariffPayment}</p>
 
               <div className="ticket-checkout-action">
-                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong>
-                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}</div>
+                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
                 <button
                   className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
                   disabled={isBookingTickets || guestTicketAction !== null}

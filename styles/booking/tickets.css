@@ -301,7 +301,7 @@
 .app .ticket-form-panel .ticket-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  align-items: end;
+  align-items: start;
 }
 
 .app .ticket-control-arenas {
