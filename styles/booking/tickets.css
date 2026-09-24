@@ -467,12 +467,36 @@
   grid-column: 1 / -1;
 }
 
-.app .ticket-loyalty-redemption {
+.app .ticket-price-summary > .ticket-loyalty-redemption {
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.app .ticket-loyalty-heading,
+.app .ticket-loyalty-details {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 12px;
-  row-gap: 8px;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.app .ticket-loyalty-heading .ticket-loyalty-toggle {
+  margin: 0;
+}
+
+.app .ticket-loyalty-details {
+  align-items: flex-end;
+}
+
+.app .ticket-loyalty-details .ticket-loyalty-input {
+  width: min(160px, 100%);
+  margin: 0;
+}
+
+.app .ticket-loyalty-toggle input {
+  flex: 0 0 18px;
 }
 
 .app .ticket-loyalty-toggle {
