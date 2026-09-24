@@ -559,7 +559,7 @@ test('staff booking: customer loyalty defaults on and opt-out survives pricing c
   await loginAsAdmin(page)
   await page.route('**/rest/v1/rpc/ticket_loyalty_redemption_settings', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ loyalty_points_total: 10, redeem_value_vnd_per_point: 5000 }]) }))
   await page.goto('/tickets')
-  const toggle = page.getByRole('checkbox', { name: 'Use loyalty points for this ticket', exact: true })
+  const toggle = page.getByRole('checkbox', { name: 'Use loyalty points', exact: true })
   await expect(toggle).toBeChecked()
   await expect(page.locator('.ticket-discount-line')).toContainText('50.000')
   const total = page.locator('.ticket-price-summary .ticket-total-line > strong')
