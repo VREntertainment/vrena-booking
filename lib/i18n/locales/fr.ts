@@ -207,6 +207,7 @@ export const fr = {
   ticketDiscountBestReductionMessage: 'Les réductions ne se cumulent pas. La meilleure réduction est appliquée automatiquement.',
   ticketDiscountCodeSummary: 'Voucher / réduction',
   ticketDiscountNotUsed: 'Meilleur prix utilisé',
+  ticketLoyaltyNoAvailablePoints: "Aucun point disponible. Les points gagnés avec ce billet serviront à une prochaine réservation.",
   ticketLoyaltyBalance: 'Tes points fidélité',
   ticketLoyaltyRedeemRate: '{value} par point',
   ticketLoyaltyLoading: 'Vérification des points...',

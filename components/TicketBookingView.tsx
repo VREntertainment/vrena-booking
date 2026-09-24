@@ -454,44 +454,27 @@ export default function TicketBookingView({
                           .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
                         : text.ticketLoyaltyEarnZero}
                     </p>
-                        <label className="ticket-loyalty-toggle">
-                          <input
-                            checked={useLoyaltyPoints}
-                            onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)}
-                            type="checkbox"
-                          />
-                          <span>{text.ticketUseLoyaltyPoints}</span>
-                        </label>
-                    {loyaltyPointsBalance <= 0 && !isLoadingTicketLoyalty ? (
-                      null
-                    ) : (
-                      <>
-                        <div>
-                          <span>{text.ticketLoyaltyBalance}</span>
-                          <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
-                          <small>
-                            {loyaltyRedeemValue > 0
-                              ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
-                              : isLoadingTicketLoyalty
-                                ? text.ticketLoyaltyLoading
-                                : text.ticketLoyaltyUnavailable}
-                          </small>
-                        </div>
-                        {useLoyaltyPoints && (
-                          <label className="ticket-loyalty-input">
-                            <span>{text.ticketLoyaltyPointsToUse}</span>
-                            <input
-                              inputMode="numeric"
-                              max={maxLoyaltyPointsToRedeem}
-                              min={0}
-                              onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)}
-                              type="number"
-                              value={loyaltyPointsToRedeem}
-                            />
-                            <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
-                          </label>
-                        )}
-                      </>
+                    <div>
+                      <span>{text.ticketLoyaltyBalance}</span>
+                      <strong>{loyaltyPointsBalance} {text.loyaltyPoints}</strong>
+                      <small>
+                        {isLoadingTicketLoyalty ? text.ticketLoyaltyLoading
+                          : loyaltyPointsBalance <= 0 ? text.ticketLoyaltyNoAvailablePoints
+                            : loyaltyRedeemValue > 0 ? text.ticketLoyaltyRedeemRate.replace('{value}', formatVnd(loyaltyRedeemValue))
+                              : text.ticketLoyaltyUnavailable}
+                      </small>
+                    </div>
+                    <label className="ticket-loyalty-toggle">
+                      <input checked={useLoyaltyPoints} onChange={(event) => onTicketUseLoyaltyPointsChange(event.target.checked)} type="checkbox" />
+                      <span>{text.ticketUseLoyaltyPoints}</span>
+                    </label>
+                    {useLoyaltyPoints && maxLoyaltyPointsToRedeem > 0 && (
+                      <label className="ticket-loyalty-input">
+                        <span>{text.ticketLoyaltyPointsToUse}</span>
+                        <input inputMode="numeric" max={maxLoyaltyPointsToRedeem} min={0}
+                          onChange={(event) => onTicketLoyaltyPointsChange(event.target.value)} type="number" value={loyaltyPointsToRedeem} />
+                        <small>{text.ticketLoyaltyMax.replace('{points}', String(maxLoyaltyPointsToRedeem))}</small>
+                      </label>
                     )}
                   </div>
                 )}

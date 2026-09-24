@@ -207,6 +207,7 @@ export const ko = {
   ticketDiscountBestReductionMessage: '할인은 중복 적용되지 않습니다. 가장 큰 할인이 자동 적용됩니다.',
   ticketDiscountCodeSummary: '바우처 / 할인',
   ticketDiscountNotUsed: '최적가 적용',
+  ticketLoyaltyNoAvailablePoints: "사용 가능한 포인트가 없습니다. 이 티켓으로 적립한 포인트는 다음 예약에 사용할 수 있습니다.",
   ticketLoyaltyBalance: '내 포인트',
   ticketLoyaltyRedeemRate: '포인트당 {value}',
   ticketLoyaltyLoading: '포인트 확인 중...',
