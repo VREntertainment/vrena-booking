@@ -41,7 +41,7 @@ test('staff booking: electronic payments, automatic offers, required override re
     await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
     await page.getByRole('button', { name: 'Booking time', exact: true }).click()
     await expect(timeList.getByRole('option').first()).toHaveText('15:30')
-    await expect(timeList.getByRole('option').last()).toHaveText('22:15')
+    await expect(timeList.getByRole('option').last()).toHaveText('22:30')
     await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).fill('15:00')
     await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).press('Enter')
     await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('15:30')
