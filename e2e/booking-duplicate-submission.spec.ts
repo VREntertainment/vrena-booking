@@ -32,7 +32,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
       await page.locator('.ticket-voucher-details summary').click()
       await page.getByPlaceholder('Enter code', { exact: true }).fill('summer25')
       await expect(page.getByPlaceholder('Enter code', { exact: true })).toHaveValue('SUMMER25')
-      await expect(page.getByText('Discounts use the total billed player-slots: 5–8 get 5% off; 9–16 get 5% off. Each block is 45 minutes.', { exact: true })).toBeVisible()
+      await expect(page.getByText('Discounts use the total billed player-slots: 5–8 get 5% off; 9–16 get 5% off. Each block is 30 minutes.', { exact: true })).toBeVisible()
       await expect(page.getByText('Voucher codes and loyalty redemption are confirmed by our team before payment.', { exact: true })).toBeVisible()
     }
     await page.locator('.ticket-control-date input[type="date"]').fill(new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10))

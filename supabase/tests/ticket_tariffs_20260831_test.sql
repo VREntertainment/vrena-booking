@@ -3,10 +3,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(18);
+select plan(20);
 
 select is(public.ticket_tariff_price_block_minutes(date '2026-08-30'), 20, 'legacy bookings keep 20-minute price blocks');
 select is(public.ticket_tariff_price_block_minutes(date '2026-08-31'), 45, 'new tariffs use 45-minute price blocks');
+select is(public.ticket_tariff_price_block_minutes(date '2026-09-24'), 45, 'existing tariff dates retain 45-minute price blocks');
+select is(public.ticket_tariff_price_block_minutes(date '2026-09-25'), 30, 'current tickets use 30-minute price blocks');
 
 select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-08-31', time '09:00'), 220000, 'Ha Do weekday daytime tariff');
 select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-08-31', time '16:00'), 260000, 'Ha Do weekday happy-hour tariff');
