@@ -12,7 +12,7 @@ export const individualTicketPrices = {
     happyHour: 260000,
     evening: 290000,
     weekendDay: 330000,
-    weekendEvening: 390000,
+    weekendEvening: 290000,
   },
   'cafe-des-stagiaires': {
     weekdayDay: 190000,

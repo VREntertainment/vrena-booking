@@ -53,10 +53,10 @@ export type TicketsActionContext = {
   isHaDoBookingVenue: boolean
   setTicketConfirmation: React.Dispatch<React.SetStateAction<import("../../lib/bookingWidgetDomain").TicketBookingConfirmation | null>>
   activeTicketArenaCount: number
-  currentTicketUnitPrice: 220000 | 260000 | 290000 | 330000 | 390000 | 190000 | 240000 | 200000 | 250000
+  currentTicketUnitPrice: 220000 | 260000 | 290000 | 330000 | 190000 | 240000 | 200000 | 250000
   appliedTicketLoyaltyPoints: number
   ticketDiscountQuote: import("../../lib/bookingWidgetDomain").TicketDiscountQuote | null
-  currentTicketPricing: { arenaCount: number; durationBlocks: number; chargedPlayersPerBlock: number; chargedPlayerSpots: number; grossPrice: number; discountRate: number; discountAmount: number; totalPrice: number; baseUnitPrice: 220000 | 260000 | 290000 | 330000 | 390000 | 190000 | 240000 | 200000 | 250000; unitPrice: 220000 | 260000 | 290000 | 330000 | 390000 | 190000 | 240000 | 200000 | 250000; requiredSlots: number }
+  currentTicketPricing: { arenaCount: number; durationBlocks: number; chargedPlayersPerBlock: number; chargedPlayerSpots: number; grossPrice: number; discountRate: number; discountAmount: number; totalPrice: number; baseUnitPrice: 220000 | 260000 | 290000 | 330000 | 190000 | 240000 | 200000 | 250000; unitPrice: 220000 | 260000 | 290000 | 330000 | 190000 | 240000 | 200000 | 250000; requiredSlots: number }
   ticketLoyaltyDiscountAmount: number
   setProfile: React.Dispatch<React.SetStateAction<import("../../lib/bookingWidgetDomain").Profile | null>>
   syncProfileEverywhere: (updatedProfile: import("../../lib/bookingWidgetDomain").Profile) => void

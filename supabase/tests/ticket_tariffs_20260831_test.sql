@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(17);
+select plan(18);
 
 select is(public.ticket_tariff_price_block_minutes(date '2026-08-30'), 20, 'legacy bookings keep 20-minute price blocks');
 select is(public.ticket_tariff_price_block_minutes(date '2026-08-31'), 45, 'new tariffs use 45-minute price blocks');
@@ -12,7 +12,9 @@ select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '
 select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-08-31', time '16:00'), 260000, 'Ha Do weekday happy-hour tariff');
 select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-08-31', time '20:00'), 290000, 'Ha Do weekday evening tariff');
 select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-09-05', time '19:59'), 330000, 'Ha Do weekend daytime tariff');
-select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-09-05', time '20:00'), 390000, 'Ha Do weekend evening tariff');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-09-05', time '20:00'), 290000, 'Ha Do weekend evening tariff');
+
+select is(public.ticket_tariff_unit_price('ha-do-centrosa', 'individual', date '2026-09-27', time '21:00'), 290000, 'Ha Do Sunday evening tariff');
 
 select is(public.ticket_tariff_unit_price('cafe-des-stagiaires', 'individual', date '2026-08-31', time '16:00'), 240000, 'CS daily 16:00 tariff');
 select is(public.ticket_tariff_unit_price('cafe-des-stagiaires', 'individual', date '2026-08-31', time '20:00'), 290000, 'CS daily 20:00 tariff');

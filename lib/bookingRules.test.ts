@@ -81,6 +81,17 @@ test('checkout chooses one best discount, then applies loyalty to the remaining 
   assert.equal(quote.currentTicketTotalPrice, 800000)
 })
 
+test('current loyalty rate redeems each point for 2,500 VND after discounts', () => {
+  const quote = calculateTicketCheckout({
+    ...base,
+    ticketLoyaltyPointsToRedeem: '2',
+    ticketLoyaltyRedemption: { loyalty_points_total: 100, redeem_value_vnd_per_point: 2500 },
+  })
+  assert.equal(quote.appliedTicketLoyaltyPoints, 2)
+  assert.equal(quote.ticketLoyaltyDiscountAmount, 5000)
+  assert.equal(quote.currentTicketTotalPrice, 845000)
+})
+
 test('built-in group reduction wins ties and is never stacked with a voucher', () => {
   const quote = calculateTicketCheckout({ ...base, currentTicketPricing: { grossPrice: 1000000, discountAmount: 150000 } })
   assert.equal(quote.activeTicketDiscountSource, 'automatic')

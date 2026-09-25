@@ -308,7 +308,7 @@ export const ko = {
   sessionTariffRateEvening: '월–금 16:00–20:00: 260,000 VND / 1인 / 45분',
   sessionTariffRateWeekend: '월–금 20:00–22:00: 290,000 VND / 1인 / 45분',
   sessionTariffRateWeekendDay: '주말 09:00–20:00: 330,000 VND / 1인 / 45분',
-  sessionTariffRateWeekendEvening: '주말 20:00–22:00: 390,000 VND / 1인 / 45분',
+  sessionTariffRateWeekendEvening: '주말 20:00–22:00: 290,000 VND / 1인 / 45분',
   sessionTariffRateCafeHappy: '매일 16:00–20:00: 240,000 VND / 1인 / 45분',
   sessionTariffRateCafeEvening: '매일 20:00–23:00: 290,000 VND / 1인 / 45분',
   sessionTariffArena: '아레나 1개당 45분 세션에 동시 최대 4명',
