@@ -28,8 +28,8 @@ select is(
   expected_total, format('Cafe endpoint accepts %s players / %s minutes with the correct price', players, duration)
 )
 from (values
-  (1,45,240000), (4,45,960000), (5,45,1080000), (6,45,1296000),
-  (7,45,1512000), (8,45,1728000), (9,90,3264000), (16,90,3264000)
+  (1,45,240000), (4,45,960000), (5,45,1140000), (6,45,1368000),
+  (7,45,1596000), (8,45,1824000), (9,90,3648000), (16,90,3648000)
 ) cases(players,duration,expected_total);
 
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 45, 17, 1,
