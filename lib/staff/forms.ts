@@ -18,7 +18,7 @@ export const defaultBookingForm = (): BookingForm => ({
   bookingKind: 'standard',
   arenaCount: 1,
   sessionCount: 1,
-  reservedMinutes: 45,
+  reservedMinutes: 30,
   allowOutsideHours: false,
   contactName: '',
   bookingSource: 'walk_in',

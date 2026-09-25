@@ -41,19 +41,19 @@ select is(public.staff_booking_availability_for_arenas(current_date+214,'12:07',
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('11:00',20)||jsonb_build_object('p_game_id',null,'p_booking_date',current_date+214,'p_arena_id','arena-2'),'phone')$q$,'P0001','Selected time slot is no longer available.','Saving on second arena cannot overlap a two-arena booking');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('15:00',20)||'{"p_arena_count":2}'::jsonb,'phone')$q$,'P0001','Invalid arena selection.','Single arena venue rejects two arenas');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('15:00',20)||'{"p_arena_count":0}'::jsonb,'phone')$q$,'P0001','Invalid arena selection.','Zero arena count rejected');
-select is(public.staff_booking_session_minutes(current_date+216),45,'Staff reads the shared session setting');
+select is(public.staff_booking_session_minutes(current_date+216),30,'Staff reads the shared session setting');
 create function pg_temp.standard_payload(t text, count int) returns jsonb language sql as $$
-select (pg_temp.event_payload(t,45) - 'p_duration_minutes' - 'p_allow_outside_hours') || jsonb_build_object('p_booking_kind','standard','p_booking_date',current_date+216,'p_arena_id','arena-1','p_game_id',(select id from public.staff_games where slug='booking-hado-fixture'),'p_session_count',count,'p_session_length_minutes',45); $$;
+select (pg_temp.event_payload(t,30) - 'p_duration_minutes' - 'p_allow_outside_hours') || jsonb_build_object('p_booking_kind','standard','p_booking_date',current_date+216,'p_arena_id','arena-1','p_game_id',(select id from public.staff_games where slug='booking-hado-fixture'),'p_session_count',count,'p_session_length_minutes',30); $$;
 insert into booking_results values ('standard-two',public.staff_create_booking(pg_temp.standard_payload('09:00',2),'phone'));
-select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='standard-two')),90,'Two standard sessions reserve ninety minutes despite twenty-minute game runtime');
+select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='standard-two')),60,'Two standard sessions reserve sixty minutes despite twenty-minute game runtime');
 insert into booking_results values ('standard-one',public.staff_create_booking(pg_temp.standard_payload('15:00',1),'phone'));
 select is((select (result->>'total')::numeric from booking_results where label='standard-two'),2*(select (result->>'total')::numeric from booking_results where label='standard-one'),'Two standard sessions charge twice the one-session price');
 select is((select session_count from public.staff_orders where id=(select (result->>'order_id')::uuid from booking_results where label='standard-two')),2,'Session count persists on the order');
-select is(public.staff_booking_availability(current_date+216,'10:29','arena-1',45),false,'Second session remains blocked through its full duration');
-select is(public.staff_booking_availability(current_date+216,'10:30','arena-1',45),true,'Next booking starts at the calculated session end');
+select is(public.staff_booking_availability(current_date+216,'09:59','arena-1',30),false,'Second session remains blocked through its full duration');
+select is(public.staff_booking_availability(current_date+216,'10:00','arena-1',30),true,'Next booking starts at the calculated session end');
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('11:00',0),'phone')$q$,'P0001','Invalid session count.','Zero sessions rejected');
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('11:00',1)||'{"p_session_count":1.5}'::jsonb,'phone')$q$,'P0001','Invalid session count.','Fractional sessions rejected');
-select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('21:00',2),'phone')$q$,'P0001','Selected time is outside opening hours.','Multiple sessions must fit opening hours');
+select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('21:01',2),'phone')$q$,'P0001','Selected time is outside opening hours.','Multiple sessions must fit opening hours');
 -- Simulate a future change to the authoritative session setting inside this rolled-back test.
 reset role;
 create or replace function public.ticket_tariff_price_block_minutes(p_booking_date date) returns integer language sql immutable as $$ select 60; $$;
@@ -61,7 +61,7 @@ set local role authenticated;
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('12:00',2),'phone')$q$,'P0001','Session time has changed. Refresh the booking form before confirming.','Outdated form cannot confirm an incorrect end time');
 insert into booking_results values ('future-length',public.staff_create_booking(pg_temp.standard_payload('12:00',2)||'{"p_session_length_minutes":60}'::jsonb,'phone'));
 select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='future-length')),120,'New bookings use updated session length automatically');
-select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='standard-two')),90,'Existing bookings retain their original reserved duration');
+select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='standard-two')),60,'Existing bookings retain their original reserved duration');
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',true);
 select throws_ok($q$select public.staff_booking_session_minutes(current_date+216)$q$,'P0001','Staff access required.','Session setting requires staff MFA');
 select throws_ok($q$select public.staff_booking_availability(current_date+213,'16:00','cafe:arena-1',45)$q$,'P0001','Staff access required.','Availability requires staff MFA');

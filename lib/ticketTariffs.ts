@@ -1,4 +1,5 @@
 export const ticketTariffEffectiveDate = '2026-08-31'
+export const thirtyMinuteTicketEffectiveDate = '2026-09-25'
 
 export const legacyIndividualTicketPrices = {
   weekdayDay: 200000,
@@ -24,7 +25,7 @@ export const individualTicketPrices = {
 } as const
 
 export const legacyTicketPriceBlockMinutes = 20
-export const ticketPriceBlockMinutes = 45
+export const ticketPriceBlockMinutes = 30
 
 export type TicketPricingVenue = keyof typeof individualTicketPrices
 
@@ -36,7 +37,9 @@ function timeToMinutes(value: string) {
 export function ticketPriceBlockMinutesForDate(dateValue: string) {
   return !dateValue || dateValue < ticketTariffEffectiveDate
     ? legacyTicketPriceBlockMinutes
-    : ticketPriceBlockMinutes
+    : dateValue < thirtyMinuteTicketEffectiveDate
+      ? 45
+      : ticketPriceBlockMinutes
 }
 
 export function individualTicketUnitPrice(
