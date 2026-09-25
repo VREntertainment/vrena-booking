@@ -1,4 +1,6 @@
 begin;
+-- Administrative migration writes use the existing service-role trigger path.
+select set_config('request.jwt.claim.role', 'service_role', true);
 -- Change future offers only; recorded orders and unrelated voucher prices stay intact.
 update public.staff_discount_rules
 set value = 5
