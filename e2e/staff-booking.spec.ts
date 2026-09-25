@@ -9,9 +9,9 @@ test('staff booking: electronic payments, automatic offers, required override re
   const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
   const suffix = Date.now()
   const { data: offers, error } = await admin.from('staff_discount_rules').insert([
-    { name: `QA Group five ${suffix}`, discount_type: 'percentage', value: 10, min_players: 5, max_players: 8, ticket_type: 'all', valid_from: '2020-01-01', active: true },
-    { name: `QA Group nine ${suffix}`, discount_type: 'percentage', value: 15, min_players: 9, max_players: 16, ticket_type: 'all', valid_from: '2020-01-01', active: true },
-    { name: `QA Birthday ${suffix}`, discount_type: 'percentage', value: 10, ticket_type: 'birthday', valid_from: '2020-01-01', active: true },
+    { name: `QA Group five ${suffix}`, discount_type: 'percentage', value: 5, min_players: 5, max_players: 8, ticket_type: 'all', valid_from: '2020-01-01', active: true },
+    { name: `QA Group nine ${suffix}`, discount_type: 'percentage', value: 5, min_players: 9, max_players: 16, ticket_type: 'all', valid_from: '2020-01-01', active: true },
+    { name: `QA Birthday ${suffix}`, discount_type: 'percentage', value: 5, ticket_type: 'birthday', valid_from: '2020-01-01', active: true },
     { name: `QA Affiliate ${suffix}`, code: `VR_QA_${suffix}`, discount_type: 'percentage', value: 10, ticket_type: 'all', valid_from: '2020-01-01', active: true },
   ]).select('id,name')
   if (error) throw error
@@ -51,15 +51,15 @@ test('staff booking: electronic payments, automatic offers, required override re
     await page.getByLabel('Booking date', { exact: true }).fill(futureDate(181))
     const players = page.getByRole('spinbutton', { name: 'Players', exact: true })
     await players.fill('5')
-    await expect(page.locator('.staff-price-lines')).toContainText('1.080.000')
+    await expect(page.locator('.staff-price-lines')).toContainText('1.140.000')
     await players.fill('9')
-    await expect(page.locator('.staff-price-lines')).toContainText('1.836.000')
+    await expect(page.locator('.staff-price-lines')).toContainText('2.052.000')
     await players.fill('4')
     await expect(page.locator('.staff-price-lines')).toContainText('960.000')
     const discount = page.getByRole('combobox', { name: 'Discount / voucher', exact: true })
     await expect(discount.locator('option')).not.toContainText([`QA Affiliate ${suffix}`])
     await discount.selectOption(offers!.find((offer) => offer.name === `QA Birthday ${suffix}`)!.id)
-    await expect(page.locator('.staff-price-lines')).toContainText('864.000')
+    await expect(page.locator('.staff-price-lines')).toContainText('912.000')
     await page.getByRole('checkbox', { name: 'Override total', exact: true }).check()
     await page.getByRole('spinbutton', { name: 'Final total (VND)', exact: true }).fill('900000')
     await expect(page.getByRole('button', { name: 'Confirm booking', exact: true })).toBeDisabled()
@@ -83,7 +83,7 @@ test('staff booking: electronic payments, automatic offers, required override re
     expect(body.total).toBe(900000)
     const saved = await admin.from('staff_orders').select('total,payment_status,payment_method,price_override_original_total,price_override_reason,staff_order_payments(payment_method,amount)').eq('id', body.order_id).single()
     expect(saved.error).toBeNull()
-    expect(saved.data).toMatchObject({ total: 900000, payment_status: 'paid', payment_method: 'split', price_override_original_total: 864000, price_override_reason: 'Agreed birthday package' })
+    expect(saved.data).toMatchObject({ total: 900000, payment_status: 'paid', payment_method: 'split', price_override_original_total: 912000, price_override_reason: 'Agreed birthday package' })
     expect(saved.data!.staff_order_payments).toHaveLength(3)
     expect(errors).toEqual([])
   } finally {
