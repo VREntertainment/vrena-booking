@@ -308,7 +308,7 @@ export const it = {
   sessionTariffRateEvening: 'Lun–ven, 16:00–20:00: 260.000 VND / giocatore / 45 min',
   sessionTariffRateWeekend: 'Lun–ven, 20:00–22:00: 290.000 VND / giocatore / 45 min',
   sessionTariffRateWeekendDay: 'Weekend, 09:00–20:00: 330.000 VND / giocatore / 45 min',
-  sessionTariffRateWeekendEvening: 'Weekend, 20:00–22:00: 390.000 VND / giocatore / 45 min',
+  sessionTariffRateWeekendEvening: 'Weekend, 20:00–22:00: 290.000 VND / giocatore / 45 min',
   sessionTariffRateCafeHappy: 'Tutti i giorni, 16:00–20:00: 240.000 VND / giocatore / 45 min',
   sessionTariffRateCafeEvening: 'Tutti i giorni, 20:00–23:00: 290.000 VND / giocatore / 45 min',
   sessionTariffArena: 'Ogni arena = fino a 4 giocatori insieme per sessione di 45 min',

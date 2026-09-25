@@ -20,7 +20,7 @@ test('uses the new Hà Đô weekday tariff periods from August 31', () => {
 
 test('uses the new Hà Đô weekend daytime and evening tariffs', () => {
   assert.equal(individualTicketUnitPrice('2026-09-05', '19:40', 'ha-do-centrosa'), 330_000)
-  assert.equal(individualTicketUnitPrice('2026-09-05', '20:00', 'ha-do-centrosa'), 390_000)
+  assert.equal(individualTicketUnitPrice('2026-09-05', '20:00', 'ha-do-centrosa'), 290_000)
 })
 
 test('uses the CS 4pm and 8pm tariff boundary every day', () => {

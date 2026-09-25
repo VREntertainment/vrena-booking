@@ -308,7 +308,7 @@ export const ja = {
   sessionTariffRateEvening: '月〜金 16:00–20:00：260,000 VND / 1名 / 45分',
   sessionTariffRateWeekend: '月〜金 20:00–22:00：290,000 VND / 1名 / 45分',
   sessionTariffRateWeekendDay: '週末 09:00–20:00：330,000 VND / 1名 / 45分',
-  sessionTariffRateWeekendEvening: '週末 20:00–22:00：390,000 VND / 1名 / 45分',
+  sessionTariffRateWeekendEvening: '週末 20:00–22:00：290,000 VND / 1名 / 45分',
   sessionTariffRateCafeHappy: '毎日 16:00–20:00：240,000 VND / 1名 / 45分',
   sessionTariffRateCafeEvening: '毎日 20:00–23:00：290,000 VND / 1名 / 45分',
   sessionTariffArena: '各アリーナ = 45分セッションごとに同時に最大4名',

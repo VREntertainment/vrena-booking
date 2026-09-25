@@ -308,7 +308,7 @@ export const vi = {
   sessionTariffRateEvening: 'Thứ 2–6, 16:00–20:00: 260.000 VND / người / 45 phút',
   sessionTariffRateWeekend: 'Thứ 2–6, 20:00–22:00: 290.000 VND / người / 45 phút',
   sessionTariffRateWeekendDay: 'Cuối tuần, 09:00–20:00: 330.000 VND / người / 45 phút',
-  sessionTariffRateWeekendEvening: 'Cuối tuần, 20:00–22:00: 390.000 VND / người / 45 phút',
+  sessionTariffRateWeekendEvening: 'Cuối tuần, 20:00–22:00: 290.000 VND / người / 45 phút',
   sessionTariffRateCafeHappy: 'Hằng ngày, 16:00–20:00: 240.000 VND / người / 45 phút',
   sessionTariffRateCafeEvening: 'Hằng ngày, 20:00–23:00: 290.000 VND / người / 45 phút',
   sessionTariffArena: 'Mỗi arena = tối đa 4 người chơi cùng lúc mỗi 45 phút',
