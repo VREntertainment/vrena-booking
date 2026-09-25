@@ -55,7 +55,7 @@ test.describe('booking venue selection', () => {
     await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
     await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
-    await expect(page.locator('#ticket-available-time option')).toHaveCount(42)
+    await expect(page.locator('#ticket-available-time option')).toHaveCount(44)
     for (const eventIndex of [0, 1]) {
       await page.locator('.ticket-service-card').nth(eventIndex).click()
       await expect(page.locator('#ticket-player-count option').last()).toHaveAttribute('value', '16')
@@ -82,7 +82,8 @@ test('Thao Dien calendar offers continuous booking starts across all seven days'
     await expect(slots.nth(0)).toBeEnabled()
     await expect(slots.nth(1)).toBeEnabled()
     await expect(slots.nth(40)).toBeEnabled()
-    await expect(slots.nth(41)).toBeDisabled()
+    await expect(slots.nth(42)).toBeEnabled()
+    await expect(slots.nth(43)).toBeDisabled()
   }
   await days.nth(0).locator('.calendar-slot').nth(1).click()
   await expect(page.locator('#ticket-available-time')).toHaveValue('15:40')
