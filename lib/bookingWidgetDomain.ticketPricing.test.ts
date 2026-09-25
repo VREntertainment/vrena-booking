@@ -22,8 +22,8 @@ test('charges every player at full price for every booked block', () => {
   assert.equal(pricing.durationBlocks, 6)
   assert.equal(pricing.chargedPlayerSpots, 36)
   assert.equal(pricing.grossPrice, 11_880_000)
-  assert.equal(pricing.discountRate, 0.1)
-  assert.equal(pricing.totalPrice, 10_692_000)
+  assert.equal(pricing.discountRate, 0.05)
+  assert.equal(pricing.totalPrice, 11_286_000)
 })
 
 test('keeps the minimum rotation time for larger groups', () => {
@@ -33,12 +33,12 @@ test('keeps the minimum rotation time for larger groups', () => {
   assert.equal(minimumTicketDurationMinutes(16), 80)
 })
 
-test('applies the configured 15 percent discount through 16 players', () => {
+test('applies the configured 5 percent discount through 16 players', () => {
   const pricing = calculateTicketPricing(330_000, 16, 120)
 
   assert.equal(pricing.chargedPlayersPerBlock, 16)
-  assert.equal(pricing.discountRate, 0.15)
-  assert.equal(pricing.totalPrice, 26_928_000)
+  assert.equal(pricing.discountRate, 0.05)
+  assert.equal(pricing.totalPrice, 30_096_000)
 })
 
 test('two arenas charge the same full player price', () => {
@@ -48,8 +48,8 @@ test('two arenas charge the same full player price', () => {
   assert.equal(pricing.chargedPlayersPerBlock, 6)
   assert.equal(pricing.chargedPlayerSpots, 36)
   assert.equal(pricing.grossPrice, 11_880_000)
-  assert.equal(pricing.discountRate, 0.1)
-  assert.equal(pricing.totalPrice, 10_692_000)
+  assert.equal(pricing.discountRate, 0.05)
+  assert.equal(pricing.totalPrice, 11_286_000)
 })
 
 test('two arenas reduce the minimum rotation time', () => {
@@ -61,11 +61,11 @@ test('two arenas reduce the minimum rotation time', () => {
 test('weekend totals increase with every additional person for one arena', () => {
   const expectedTotals = new Map([
     [4, 7_920_000],
-    [5, 8_910_000],
-    [6, 10_692_000],
-    [8, 14_256_000],
-    [9, 15_147_000],
-    [16, 26_928_000],
+    [5, 9_405_000],
+    [6, 11_286_000],
+    [8, 15_048_000],
+    [9, 16_929_000],
+    [16, 30_096_000],
   ])
 
   for (let players = 1; players <= 16; players += 1) {
@@ -79,11 +79,11 @@ test('weekend totals increase with every additional person for one arena', () =>
 
 test('weekend totals increase with every additional person for two arenas', () => {
   const expectedTotals = new Map([
-    [5, 8_910_000],
-    [6, 10_692_000],
-    [8, 14_256_000],
-    [9, 15_147_000],
-    [16, 26_928_000],
+    [5, 9_405_000],
+    [6, 11_286_000],
+    [8, 15_048_000],
+    [9, 16_929_000],
+    [16, 30_096_000],
   ])
 
   for (let players = 5; players <= 16; players += 1) {
@@ -99,7 +99,7 @@ test('arena count changes capacity but not price for the same group and duration
   const oneArena = calculateTicketPricing(330_000, 9, 120, 20, 4, 1)
   const twoArenas = calculateTicketPricing(330_000, 9, 120, 20, 4, 2)
 
-  assert.equal(oneArena.totalPrice, 15_147_000)
+  assert.equal(oneArena.totalPrice, 16_929_000)
   assert.equal(twoArenas.totalPrice, oneArena.totalPrice)
 })
 
@@ -107,8 +107,8 @@ test('group discount depends on people, not the number of time blocks', () => {
   const shortBooking = calculateTicketPricing(330_000, 6, 40, 20, 4, 1)
   const longBooking = calculateTicketPricing(330_000, 6, 120, 20, 4, 1)
 
-  assert.equal(shortBooking.discountRate, 0.1)
-  assert.equal(longBooking.discountRate, 0.1)
+  assert.equal(shortBooking.discountRate, 0.05)
+  assert.equal(longBooking.discountRate, 0.05)
   assert.equal(longBooking.durationBlocks, shortBooking.durationBlocks * 3)
   assert.equal(longBooking.grossPrice, shortBooking.grossPrice * 3)
 })

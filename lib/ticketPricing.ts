@@ -34,9 +34,9 @@ export function calculateTicketPricing(
   const grossPrice = Math.round(baseUnitPrice * chargedPlayerSpots)
   const discountPlayers = priceBlockMinutes === 45 ? chargedPlayerSpots : playerCount
   const discountRate = discountPlayers >= 9 && discountPlayers <= 16
-    ? 0.15
+    ? 0.05
     : discountPlayers >= 5 && discountPlayers <= 8
-      ? 0.1
+      ? 0.05
       : 0
   const discountAmount = Math.round(grossPrice * discountRate)
 

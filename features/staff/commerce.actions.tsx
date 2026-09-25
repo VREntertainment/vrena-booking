@@ -299,7 +299,9 @@ export function createStaffCommerceActions(getContext: () => CommerceActionConte
     setDiscountForm((current) => ({
       ...current,
       discount_type: nextType,
-      value: nextType === 'free_ticket'
+      value: nextType === 'birthday' || nextType === 'group'
+        ? 5
+        : nextType === 'free_ticket'
         ? 0
         : discountValueUnit(nextType) === 'percentage'
           ? parsePercentInput(current.value)

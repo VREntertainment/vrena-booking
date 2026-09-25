@@ -12,14 +12,14 @@ insert into auth.users(id,email) values ('89000000-0000-4000-8000-000000000001',
 insert into public.profiles(id,full_name) values ('89000000-0000-4000-8000-000000000001','Billing cap test') on conflict(id) do nothing;
 update public.staff_discount_rules set active=false;
 insert into public.staff_discount_rules(name,discount_type,value,min_players,max_players,ticket_type,valid_from,active) values
-('QA billed slots 5-8','percentage',10,5,8,'individual','2020-01-01',true),
-('QA billed slots 9-16','percentage',15,9,16,'individual','2020-01-01',true);
+('QA billed slots 5-8','percentage',5,5,8,'individual','2020-01-01',true),
+('QA billed slots 9-16','percentage',5,9,16,'individual','2020-01-01',true);
 create temp table billing_cases(id int,guests int,arenas int,minutes int,billed int,rate numeric);
 insert into billing_cases values
 (1,4,1,45,4,0),(2,5,1,45,4,0),(3,8,1,45,4,0),
-(4,8,1,90,4,.10),(5,8,1,135,4,.15),(6,8,1,180,4,.15),
-(7,9,2,45,8,.10),(8,16,2,45,8,.10),(9,16,2,90,8,.15),
-(10,16,2,135,8,0),(11,2,2,45,2,0),(12,9,1,90,4,.10);
+(4,8,1,90,4,.05),(5,8,1,135,4,.05),(6,8,1,180,4,.05),
+(7,9,2,45,8,.05),(8,16,2,45,8,.05),(9,16,2,90,8,.05),
+(10,16,2,135,8,0),(11,2,2,45,2,0),(12,9,1,90,4,.05);
 create temp table billing_results(kind text,id int,result jsonb);
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select set_config('request.jwt.claim.role','anon',true);
@@ -44,8 +44,8 @@ from (values (1,'birthday'),(2,'corporate')) t(id,kind);
 select is((public.create_cafe_ticket_booking_request('individual',current_date+260+id,'16:00',minutes,guests,1,array['revolta'],
 '+8498810'||lpad(id::text,4,'0'),'Cafe fixture')->>'ticket_total_price')::int,expected,
 format('Cafe: %s guests, %s minutes',guests,minutes))
-from (values (1,4,45,960000),(2,5,45,1080000),(3,8,45,1728000),(4,9,45,1728000),(5,16,45,1728000),
-(6,16,90,3264000),(7,16,135,5760000),(8,3,135,1836000)) c(id,guests,minutes,expected);
+from (values (1,4,45,960000),(2,5,45,1140000),(3,8,45,1824000),(4,9,45,1824000),(5,16,45,1824000),
+(6,16,90,3648000),(7,16,135,5760000),(8,3,135,2052000)) c(id,guests,minutes,expected);
 -- Authenticated booking must quote and claim using billed slots, too.
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"89000000-0000-4000-8000-000000000001"}',true);
 select set_config('request.jwt.claim.role','authenticated',true);
