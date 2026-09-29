@@ -169,14 +169,26 @@ function sendNotificationEmail(payload, receivedAt) {
   const customerEmail = bookingCustomerEmail(payload)
   if (customerEmail) {
     const customerDetails = bookingEmailDetails(payload, receivedAt, true)
-    MailApp.sendEmail({
+    const customerMessage = {
       to: customerEmail,
       replyTo: bookingEmailRecipients(payload)[0],
-      name: 'VRena',
+      name: customerDetails.venue,
       subject: `[${customerDetails.venue}] ${customerDetails.heading}${customerDetails.reference ? ' · ' + customerDetails.reference : ''}`,
       body: buildEmailText(payload, receivedAt, true),
       htmlBody: buildEmailHtml(payload, receivedAt, true),
-    })
+    }
+    // Only enable verified store aliases. Thao Dien remains on the existing sender
+    // until its Gmail send-as verification is complete.
+    if (customerMessage.replyTo === 'contact@vre-vietnam.com') {
+      GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
+        from: 'contact@vre-vietnam.com',
+        replyTo: customerMessage.replyTo,
+        name: customerMessage.name,
+        htmlBody: customerMessage.htmlBody,
+      })
+    } else {
+      MailApp.sendEmail(customerMessage)
+    }
   }
 }
 
