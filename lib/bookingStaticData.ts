@@ -42,6 +42,7 @@ export const CLUB_MESSAGE_SELECT = 'id, club_id, author_id, author_display_name,
 export const SESSION_MESSAGE_SELECT = 'id, session_id, author_id, author_display_name, author_avatar_url, author_avatar_emoji, author_avatar_initials, author_avatar_color, author_avatar_text_color, author_profile_motto, message_type, body, moderation_status, moderation_reason, reviewed_by, reviewed_at, moderation_categories, moderation_score, created_at'
 
 export type GameId =
+  | 'sim-racing'
   | 'laser-tag'
   | 'mini-block-towers'
   | 'office-war'
@@ -66,7 +67,7 @@ export type GameAudience =
 export type GameInfo = {
   id: GameId
   title: string
-  category: 'FPS / PVP' | 'Escape'
+  category: 'FPS / PVP' | 'Escape' | 'Racing'
   image: string
   durationMinutes: number
   maxPlayersPerArena: number

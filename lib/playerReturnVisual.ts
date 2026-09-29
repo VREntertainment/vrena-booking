@@ -37,6 +37,7 @@ const fallbackVisual: PlayerReturnVisual = {
 }
 
 const gameVisualById: Record<GameId, string> = {
+  'sim-racing': '/games/sim-racing.webp',
   'arc-of-the-covenant': '/retention/escape-investigator.png',
   'castle-unspunnen': '/retention/alpine-sentinel.png',
   'joller-house': '/retention/escape-investigator.png',

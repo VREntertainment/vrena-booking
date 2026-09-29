@@ -60,7 +60,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setPersisted({ name: record.name, venue: record.venue_key || 'ha-do-centrosa', date: record.date, time: record.start_time.slice(0, 5) })
         setDraft({ name: record.name, date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
           game: record.confirmed_game_id || record.game_options?.[0] || '', players: record.ticket_player_count || record.max_players,
-          duration: record.duration_minutes, arenas: record.arena_count || 1, arenaId: order?.arena_id || '', status: record.status,
+          duration: record.duration_minutes, arenas: record.arena_count ?? 1, arenaId: order?.arena_id || '', status: record.status,
           notes: record.notes || '', source: order?.booking_source || '',
         })
       } catch (cause) {
@@ -72,7 +72,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
 
   const availableGames = games.filter((game) => (publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']).includes(draft?.venue || 'ha-do-centrosa'))
   const game = availableGames.find((item) => item.slug === draft?.game)
-  const arenas = draft?.venue === 'cafe-des-stagiaires' ? ['cafe:arena-1'] : (game?.available_arena_ids?.length ? game.available_arena_ids : ['arena-1', 'arena-2'])
+  const isSimRacing = session?.confirmed_game_id === 'sim-racing'
+  const arenas = isSimRacing ? ['sim-racing-1'] : draft?.venue === 'cafe-des-stagiaires' ? ['cafe:arena-1'] : (game?.available_arena_ids?.length ? game.available_arena_ids : ['arena-1', 'arena-2'])
   const patch = (value: Partial<Draft>) => setDraft((current) => current ? { ...current, ...value } : current)
 
   async function mutate(deleted: boolean) {
@@ -83,7 +84,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     try {
       const result = deleted
         ? await supabase.rpc('staff_delete_session_operation', { p_session_id: session.id, p_delete_reason: 'Deleted from shared booking calendar' })
-        : await supabase.rpc('staff_update_calendar_booking', { p_session_id: session.id, p_booking: {
+        : await supabase.rpc(isSimRacing ? 'staff_update_sim_racing_booking' : 'staff_update_calendar_booking', { p_session_id: session.id, p_booking: {
           expected_updated_at: version, name: draft.name.trim(), date: draft.date, start_time: draft.time,
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenas, arena_id: draft.arenaId || arenas[0], status: draft.status, notes: draft.notes,
@@ -114,27 +115,27 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
     </div> : <form onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
-        <label className="full">{text.name}<input required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
-        <label>{text.shop}<select value={draft.venue} onChange={(event) => {
+        <label className="full">{text.name}<input disabled={isSimRacing} required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
+        <label>{text.shop}<select disabled={isSimRacing} value={draft.venue} onChange={(event) => {
           const venue = event.target.value as Draft['venue']
           const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
           const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
           patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
         }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Vrena Thao Dien</option></select></label>
-        <label>{bookingText.bookingSource}<select value={draft.source} disabled={!orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing || !orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={staffBookingHours(draft.venue, draft.duration).min} max={staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
-        <label>{text.game}<select required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
-        <label>{text.players}<input required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
-        <label>{text.duration}<input required min={20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
-        <label>{text.arenas}<select value={draft.arenas} onChange={(event) => patch({ arenas: Number(event.target.value) })}><option value={1}>1</option>{draft.venue === 'ha-do-centrosa' && <option value={2}>2</option>}</select></label>
-        <label>{text.arena}<select value={draft.arenaId || arenas[0]} onChange={(event) => patch({ arenaId: event.target.value })}>{arenas.map((id, index) => <option value={id} key={id}>{text.arena} {index + 1}</option>)}</select></label>
+        <label>{text.game}<select disabled={isSimRacing} required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{isSimRacing ? 'SIM Racing' : draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
+        <label>{text.players}<input disabled={isSimRacing} required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
+        <label>{text.duration}<input disabled={isSimRacing} required min={isSimRacing ? 15 : 20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
+        <label>{text.arenas}<select disabled={isSimRacing} value={draft.arenas} onChange={(event) => patch({ arenas: Number(event.target.value) })}>{isSimRacing && <option value={0}>SIM Racing</option>}<option value={1}>1</option>{draft.venue === 'ha-do-centrosa' && <option value={2}>2</option>}</select></label>
+        <label>{text.arena}<select disabled={isSimRacing} value={draft.arenaId || arenas[0]} onChange={(event) => patch({ arenaId: event.target.value })}>{arenas.map((id, index) => <option value={id} key={id}>{isSimRacing ? 'SIM Racing' : `${text.arena} ${index + 1}`}</option>)}</select></label>
         <label>{text.status}<select value={draft.status} onChange={(event) => patch({ status: event.target.value })}><option value="open">{text.open}</option><option value="completed">{text.completed}</option><option value="cancelled">{text.cancelled}</option></select></label>
         <label className="full">{text.notes}<textarea value={draft.notes} onChange={(event) => patch({ notes: event.target.value })} /></label>
       </fieldset>
       {orders.map((order) => <p key={order.id}>{order.order_number} · {order.customer_name || 'Guest'} · {text.total}: {order.total.toLocaleString('vi-VN')} đ</p>)}
       <p className="field-help">{text.savedPrice}</p>
-      <div className="calendar-dialog-actions"><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || !game} type="submit">{text.save}</button></div>
+      <div className="calendar-dialog-actions"><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || (!game && !isSimRacing)} type="submit">{text.save}</button></div>
     </form>)}
   </dialog>
 }

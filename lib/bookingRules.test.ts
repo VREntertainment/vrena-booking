@@ -130,3 +130,9 @@ test('unchecking loyalty keeps the balance and removes all point deductions', ()
   assert.equal(quote.ticketLoyaltyDiscountAmount, 0)
   assert.equal(quote.currentTicketTotalPrice, 850000)
 })
+
+test('a SIM Racing reservation does not consume VR arena capacity', () => {
+  const sim = { ...occupied, arena_count: 0, max_players: 1, duration_minutes: 15 }
+  assert.deepEqual(availableSessionTimes({ ...availability, sessions: [sim] }), availableSessionTimes(availability))
+  assert.deepEqual(availableSessionTimes({ ...availability, sessions: [occupied, sim] }), availableSessionTimes({ ...availability, sessions: [occupied] }))
+})
