@@ -49,12 +49,12 @@ test('email only shows game options when the payload contains a real selection',
 
   assert.doesNotMatch(withoutGame, /Game options/)
   assert.match(withGame, /Game options/)
-  assert.match(withGame, /laser-tag/)
+  assert.match(withGame, /Laser Tag/)
 })
 
 for (const [venueKey, shop] of [
   ['ha-do-centrosa', 'VRena Hà Đô Centrosa'],
-  ['cafe-des-stagiaires', 'Vrena Thao Dien'],
+  ['cafe-des-stagiaires', 'VRena Thao Dien'],
 ]) {
   test(`notification identifies ${shop} in HTML and plain text`, () => {
     const { context, sentEmail } = loadScript()
@@ -62,14 +62,14 @@ for (const [venueKey, shop] of [
       event_type: 'ticket_booked',
       session: { venue_key: venueKey, ticket_reference: 'TEST', game_options: [] },
     }, new Date())
-    assert.ok(sentEmail().body.includes(`Shop: ${shop}`))
-    assert.ok(sentEmail().htmlBody.includes(`<th>Shop</th><td>${shop}</td>`))
+    assert.ok(sentEmail().body.includes(`Venue: ${shop}`))
+    assert.ok(sentEmail().htmlBody.includes(shop))
   })
 }
 
 test('shop uses the raw database venue when the older webhook omits it from session', () => {
   const { context } = loadScript()
-  assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'Vrena Thao Dien')
+  assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'VRena Thao Dien')
   assert.equal(context.bookingShopName({ session: { venue_key: 'unexpected-shop' } }), 'Unknown shop (unexpected-shop)')
 })
 
@@ -94,4 +94,34 @@ test('legacy Thao Dien payloads use raw venue or CS reference without reaching H
     assert.equal(context.bookingEmailRecipients(payload).join(','), 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com')
   }
   assert.throws(() => context.bookingEmailRecipients({ session: { venue_key: 'unknown' } }), /Unknown booking venue/)
+})
+
+
+test('confirmation leads with the venue and visit instead of internal labels', () => {
+  const { context, sentEmail } = loadScript()
+  const payload = { event_type: 'ticket_booked', session: {
+    venue_key: 'cafe-des-stagiaires', name: 'Cafe soft-opening request - Individual',
+    date: '2026-09-29', start_time: '15:50:00', duration_minutes: 30,
+    ticket_status: 'pending', ticket_reference: 'CS-TEST', ticket_total_price: 190000,
+    game_options: ['laser-tag'], id: 'internal-id',
+  }, customer: { name: 'Test Guest', email: 'test@example.com' }, owner: { name: 'Test Guest', email: 'test@example.com' } }
+  context.sendNotificationEmail(payload, new Date())
+  const email = sentEmail()
+  assert.match(email.subject, /^\[VRena Thao Dien\]/)
+  assert.match(email.htmlBody, /Awaiting confirmation/)
+  assert.match(email.body, /29 Sep 2026 · 15:50/)
+  assert.doesNotMatch(email.htmlBody, /Cafe soft-opening|ticket_booked|Booked by/)
+  assert.ok(email.htmlBody.indexOf('Your visit') < email.htmlBody.indexOf('Internal session ID'))
+  assert.match(email.htmlBody, /Booking total/)
+})
+
+test('update labels and untrusted content remain clear and escaped', () => {
+  const { context } = loadScript()
+  const html = context.buildEmailHtml({ event_type: 'ticket_cancelled', session: {
+    venue_key: 'ha-do-centrosa', name: '<script>alert(1)</script>', ticket_status: 'cancelled',
+  }, minor_warning: 'Parent confirmation required' }, new Date())
+  assert.match(html, /Booking cancelled/)
+  assert.match(html, /&lt;script&gt;/)
+  assert.doesNotMatch(html, /<script>/)
+  assert.match(html, /Parent confirmation required/)
 })
