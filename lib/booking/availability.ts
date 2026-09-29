@@ -31,7 +31,7 @@ export function localDateString(date = new Date()) {
 }
 
 export function arenasUsedBySession(session: Pick<Session, 'max_players' | 'arena_count'>) {
-  return session.arena_count || (session.max_players > 7 ? 2 : 1)
+  return session.arena_count ?? (session.max_players > 7 ? 2 : 1)
 }
 
 export const CAFE_SOFT_OPENING_DATE = '2026-08-31'

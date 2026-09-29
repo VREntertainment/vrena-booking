@@ -45,6 +45,7 @@ import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking } fro
 
 import { useTicketCheckout } from '../hooks/useTicketCheckout'
 import { getSupabase } from '../lib/booking/client'
+import SimRacingBooking from './SimRacingBooking'
 
 
 import {
@@ -710,6 +711,13 @@ export default function WidgetPage({
   } = useBookingSessionEditorState({ incomingCalendar, initialView })
   const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
+  const [simRacingSelected, setSimRacingSelected] = useState(false)
+  useEffect(() => {
+    const selectProduct = () => { if (window.location.hash === '#sim-racing') { setSimRacingSelected(true); setBookingVenue('ha-do-centrosa') } }
+    selectProduct()
+    window.addEventListener('hashchange', selectProduct)
+    return () => window.removeEventListener('hashchange', selectProduct)
+  }, [])
   const { pushReminderStatus, setPushReminderStatus, isPushSubscribed, setIsPushSubscribed, isEnablingPush, setIsEnablingPush } = useBookingRemindersState()
   const {
     gameGuideOpen,
@@ -5386,7 +5394,11 @@ export default function WidgetPage({
 
       {activeView === 'tickets' && (
         <div className="ticket-booking-layout">
-          <TicketBookingView
+          {isHaDoBookingVenue && <div className="sim-racing-product-picker">
+            <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR · {text.bookTickets}</button>
+            <button type="button" className={simRacingSelected ? 'primary' : 'secondary'} aria-pressed={simRacingSelected} onClick={() => setSimRacingSelected(true)}>SIM Racing · 150.000 VND</button>
+          </div>}
+          {isHaDoBookingVenue && simRacingSelected ? <SimRacingBooking language={language} text={looseText} profile={profile} onBooked={() => { void loadSessions() }} /> : <TicketBookingView
             activeTicketDuration={activeTicketDuration}
             activeTicketArenaCount={activeTicketArenaCount}
             currentTicketPricing={currentTicketPricing}
@@ -5458,7 +5470,7 @@ export default function WidgetPage({
             ticketUnitFormulaText={ticketUnitFormulaText}
             useLoyaltyPoints={ticketUseLoyaltyPoints}
             onTicketSpecialNoteChange={handleTicketSpecialNoteChange}
-          />
+          />}
         </div>
       )}
 

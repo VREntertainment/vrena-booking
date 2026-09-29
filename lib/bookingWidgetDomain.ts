@@ -1022,6 +1022,7 @@ export function mostVotedGameId(session: Pick<Session, 'game_options' | 'game_vo
 }
 
 export function sessionCoverGame(session: Pick<Session, 'game_options' | 'game_votes' | 'confirmed_game_id'>) {
+  if (session.confirmed_game_id === 'sim-racing') return { id: 'sim-racing' as const, title: 'SIM Racing', category: 'Racing' as const, image: '/games/sim-racing.webp', durationMinutes: 15, maxPlayersPerArena: 1, audience: [] }
   const confirmedGame = games.find((game) => game.id === session.confirmed_game_id)
   if (confirmedGame) return confirmedGame
 
