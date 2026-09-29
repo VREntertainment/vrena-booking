@@ -1,7 +1,7 @@
 import type { BookingUpdateEmailChange, BookingUpdateEmailPayload } from './bookingUpdateEmailTypes'
 import { vrenaPalette } from './theme/vrenaPalette'
+import { bookingEmailRecipients } from './bookingEmailRecipients'
 
-const DEFAULT_TO_EMAIL = 'contact@vre-vietnam.com'
 const DEFAULT_FROM_EMAIL = 'VRena Booking <bookings@vre-vietnam.com>'
 
 function cleanText(value: unknown) {
@@ -77,7 +77,7 @@ function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | 
 
 export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload & { actorEmail?: string | null }) {
   const apiKey = process.env.RESEND_API_KEY
-  const to = process.env.BOOKING_UPDATE_EMAIL_TO || DEFAULT_TO_EMAIL
+  const to = bookingEmailRecipients(payload.venueKey, payload.reference)
   const from = process.env.BOOKING_UPDATE_EMAIL_FROM
     || process.env.BOOKING_EMAIL_FROM
     || process.env.RESEND_FROM_EMAIL
