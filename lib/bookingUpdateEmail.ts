@@ -47,7 +47,7 @@ function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | 
     `Action: ${subjectAction(payload.action)}`,
     `Booking type: ${bookingKindLabel(payload.bookingKind)}`,
     `Title: ${valueText(payload.title)}`,
-    `Reference: ${valueText(payload.reference)}`,
+    `Reference: ${valueText(payload.reference).replace(/^CS-/, 'TD-')}`,
     `Date/time: ${[payload.date, payload.time].map(cleanText).filter(Boolean).join(' ') || '-'}`,
     `Customer: ${[payload.customerName, payload.customerPhone, payload.customerEmail].map(cleanText).filter(Boolean).join(' | ') || '-'}`,
     `Total: ${formatVnd(payload.total) || '-'}`,
@@ -89,7 +89,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
   }
 
   const kind = bookingKindLabel(payload.bookingKind)
-  const reference = cleanText(payload.reference)
+  const reference = cleanText(payload.reference).replace(/^CS-/, 'TD-')
   const title = cleanText(payload.title)
   const dateTime = [payload.date, payload.time].map(cleanText).filter(Boolean).join(' ')
   const subjectParts = [

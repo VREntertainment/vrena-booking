@@ -125,3 +125,16 @@ test('update labels and untrusted content remain clear and escaped', () => {
   assert.doesNotMatch(html, /<script>/)
   assert.match(html, /Parent confirmation required/)
 })
+
+
+test('Thao Dien email references use TD even for legacy payloads', () => {
+  const { context, sentEmail } = loadScript()
+  context.sendNotificationEmail({ event_type: 'ticket_booked', session: {
+    venue_key: 'cafe-des-stagiaires', ticket_reference: 'CS-260929-ABC123',
+    name: 'Cafe soft-opening request - Individual', notes: 'Cafe des Stagiaires',
+  } }, new Date())
+  assert.match(sentEmail().subject, /TD-260929-ABC123/)
+  assert.match(sentEmail().body, /TD-260929-ABC123/)
+  assert.doesNotMatch(sentEmail().subject + sentEmail().body + sentEmail().htmlBody, /CS-|cafe des stagiaires/i)
+  assert.equal(context.bookingEmailRecipients({ session: { ticket_reference: 'TD-260929-ABC123' } }).join(','), 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com')
+})

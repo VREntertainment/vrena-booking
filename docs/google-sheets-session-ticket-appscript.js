@@ -171,7 +171,7 @@ function sendNotificationEmail(payload, receivedAt) {
 function bookingEmailRecipients(payload) {
   const session = getSession(payload)
   const venueKey = session.venue_key || (payload.raw_session || {}).venue_key
-    || (String(session.ticket_reference || '').startsWith('CS-') ? 'cafe-des-stagiaires' : 'ha-do-centrosa')
+    || (/^(?:TD|CS)-/.test(String(session.ticket_reference || '')) ? 'cafe-des-stagiaires' : 'ha-do-centrosa')
   const recipients = CONFIG.EMAIL_RECIPIENTS_BY_VENUE[venueKey]
   if (!recipients) throw new Error('Unknown booking venue: ' + venueKey)
   return recipients
@@ -184,7 +184,7 @@ function bookingShopName(payload) {
   if (venueKey === 'cafe-des-stagiaires') return 'VRena Thao Dien'
   if (venueKey) return 'Unknown shop (' + venueKey + ')'
   // Earlier webhook versions omitted the venue but retained the venue-specific reference.
-  return String(session.ticket_reference || '').startsWith('CS-')
+  return /^(?:TD|CS)-/.test(String(session.ticket_reference || ''))
     ? 'VRena Thao Dien'
     : 'VRena Hà Đô Centrosa'
 }
@@ -217,7 +217,8 @@ function bookingEmailDetails(payload, receivedAt) {
     ? session.game_options.filter(Boolean).map(readableLabel).join(', ')
     : readableLabel(session.game_options)
   const notes = String(session.notes || '')
-    .replace(/(?:VRena Caf[eé] des Stagiaires|Vrena Thao Dien)/gi, 'VRena Thao Dien')
+    .replace(/(?:VRena\s+)?Caf[eé] des Stagiaires|Vrena Thao Dien/gi, 'VRena Thao Dien')
+  const reference = String(session.ticket_reference || '').replace(/^CS-/, 'TD-')
   const name = /^Cafe soft-opening request\s*-/i.test(session.name || '')
     ? venue : session.name || ''
   const sections = [
@@ -242,7 +243,7 @@ function bookingEmailDetails(payload, receivedAt) {
     ]],
     ['Notes & requests', [['Notes', notes], ['Player notice', payload.minor_warning || '']]],
     ['Booking details', [
-      ['Reference', session.ticket_reference || ''],
+      ['Reference', reference],
       ['Status', statusLabel],
       ['Invite code', session.invite_code || ''],
       ['Visibility', readableLabel(session.visibility)],
@@ -252,7 +253,7 @@ function bookingEmailDetails(payload, receivedAt) {
     ]],
   ].map(([title, rows]) => [title, rows.filter((row) => row[1] !== '' && row[1] !== null && row[1] !== undefined)])
     .filter((section) => section[1].length)
-  return { venue, heading, statusLabel, reference: session.ticket_reference || '', sections }
+  return { venue, heading, statusLabel, reference, sections }
 }
 
 function buildEmailText(payload, receivedAt) {
