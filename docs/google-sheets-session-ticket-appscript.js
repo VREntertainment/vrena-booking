@@ -159,36 +159,11 @@ function buildMainRow(payload, receivedAt) {
 }
 
 function sendNotificationEmail(payload, receivedAt) {
-  const session = getSession(payload)
-  const customer = payload.customer || {}
-  const isTicket = payload.event_type === 'ticket_booked'
-  const subject = isTicket
-    ? `[VRena] New ticket booking ${session.ticket_reference || ''}`.trim()
-    : `[VRena] New session created: ${session.name || 'Untitled session'}`
-
-  const lines = [
-    isTicket ? 'A new ticket booking was created.' : 'A new community session was created.',
-    '',
-    `Shop: ${bookingShopName(payload)}`,
-    `Received: ${formatDateTime(receivedAt)}`,
-    `Name: ${session.name || ''}`,
-    `Date: ${session.date || ''}`,
-    `Time: ${session.start_time || ''}`,
-    `Duration: ${session.duration_minutes || ''} min`,
-    `Players: ${session.ticket_player_count || session.max_players || ''}`,
-    `Customer: ${customer.name || ''}`,
-    `Customer email: ${customer.email || ''}`,
-    `Customer phone: ${customer.phone || ''}`,
-    `Ticket type: ${session.ticket_type || ''}`,
-    `Ticket reference: ${session.ticket_reference || ''}`,
-    `Total price: ${formatVnd(session.ticket_total_price)}`,
-    `Session ID: ${session.id || ''}`,
-  ]
-
+  const details = bookingEmailDetails(payload, receivedAt)
   MailApp.sendEmail({
     to: bookingEmailRecipients(payload).join(','),
-    subject,
-    body: lines.join('\n'),
+    subject: `[${details.venue}] ${details.heading}${details.reference ? ' · ' + details.reference : ''}`,
+    body: buildEmailText(payload, receivedAt),
     htmlBody: buildEmailHtml(payload, receivedAt),
   })
 }
@@ -206,58 +181,105 @@ function bookingShopName(payload) {
   const session = getSession(payload)
   const venueKey = session.venue_key || (payload.raw_session || {}).venue_key
   if (venueKey === 'ha-do-centrosa') return 'VRena Hà Đô Centrosa'
-  if (venueKey === 'cafe-des-stagiaires') return 'Vrena Thao Dien'
+  if (venueKey === 'cafe-des-stagiaires') return 'VRena Thao Dien'
   if (venueKey) return 'Unknown shop (' + venueKey + ')'
   // Earlier webhook versions omitted the venue but retained the venue-specific reference.
   return String(session.ticket_reference || '').startsWith('CS-')
-    ? 'Vrena Thao Dien'
+    ? 'VRena Thao Dien'
     : 'VRena Hà Đô Centrosa'
 }
 
-function buildEmailHtml(payload, receivedAt) {
+function readableLabel(value) {
+  return String(value || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function visitDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''))
+  if (!match) return value || ''
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${Number(match[3])} ${months[Number(match[2]) - 1]} ${match[1]}`
+}
+
+function bookingEmailDetails(payload, receivedAt) {
   const session = getSession(payload)
   const owner = payload.owner || {}
-  const customer = payload.customer || {}
+  const customer = payload.customer || owner
+  const venue = bookingShopName(payload)
+  const event = String(payload.event_type || '')
+  const isTicket = event.startsWith('ticket_') || session.booking_type === 'ticket'
+  const heading = event.includes('cancelled') ? 'Booking cancelled'
+    : event.includes('deleted') ? 'Booking deleted'
+      : event.includes('updated') ? 'Booking updated'
+        : isTicket ? 'New ticket booking' : 'New session booking'
+  const status = session.ticket_status || session.status || ''
+  const statusLabel = status === 'pending' ? 'Awaiting confirmation' : readableLabel(status)
   const gameOptions = Array.isArray(session.game_options)
-    ? session.game_options.filter(Boolean).join(', ')
-    : stringifyCell(session.game_options)
-  const rows = [
-    ['Shop', bookingShopName(payload)],
-    ['Received', formatDateTime(receivedAt)],
-    ['Event', payload.event_type || ''],
-    ['Session ID', session.id || ''],
-    ['Name', session.name || ''],
-    ['Date', session.date || ''],
-    ['Time', session.start_time || ''],
-    ['Duration', session.duration_minutes ? `${session.duration_minutes} min` : ''],
-    ['Players', session.ticket_player_count || session.max_players || ''],
-    ['Booking type', session.booking_type || ''],
-    ['Ticket type', session.ticket_type || ''],
-    ['Ticket reference', session.ticket_reference || ''],
-    ['Ticket status', session.ticket_status || ''],
-    ['Unit price', formatVnd(session.ticket_unit_price)],
-    ['Total price', formatVnd(session.ticket_total_price)],
-    ['Visibility', session.visibility || ''],
-    ['Invite code', session.invite_code || ''],
-    ...(gameOptions ? [['Game options', gameOptions]] : []),
-    ['Owner', compactContact(owner)],
-    ['Customer', compactContact(customer)],
-    ['Notes', session.notes || ''],
-    ['App', payload.app_url || ''],
-  ]
+    ? session.game_options.filter(Boolean).map(readableLabel).join(', ')
+    : readableLabel(session.game_options)
+  const notes = String(session.notes || '')
+    .replace(/(?:VRena Caf[eé] des Stagiaires|Vrena Thao Dien)/gi, 'VRena Thao Dien')
+  const name = /^Cafe soft-opening request\s*-/i.test(session.name || '')
+    ? venue : session.name || ''
+  const sections = [
+    ['Your visit', [
+      ['Venue', venue],
+      ['Booking', name && name !== venue ? name : ''],
+      ['Date & time', [visitDate(session.date), String(session.start_time || '').slice(0, 5)].filter(Boolean).join(' · ')],
+      ['Duration', session.duration_minutes ? `${session.duration_minutes} minutes` : ''],
+      ['Players', session.ticket_player_count || session.max_players || ''],
+      ['Game options', gameOptions],
+      ['Ticket', readableLabel(session.ticket_type)],
+    ]],
+    ['Customer', [
+      ['Name', customer.name || ''],
+      ['Phone', customer.phone || ''],
+      ['Email', customer.email || ''],
+      ['Booked by', compactContact(owner) !== compactContact(customer) ? compactContact(owner) : ''],
+    ]],
+    ['Price', [
+      ['Per player', formatVnd(session.ticket_unit_price)],
+      ['Booking total', formatVnd(session.ticket_total_price)],
+    ]],
+    ['Notes & requests', [['Notes', notes], ['Player notice', payload.minor_warning || '']]],
+    ['Booking details', [
+      ['Reference', session.ticket_reference || ''],
+      ['Status', statusLabel],
+      ['Invite code', session.invite_code || ''],
+      ['Visibility', readableLabel(session.visibility)],
+      ['Changes', Array.isArray(payload.changed_fields) ? payload.changed_fields.map(readableLabel).join(', ') : ''],
+      ['Received', formatDateTime(receivedAt) + ' (Vietnam time)'],
+      ['Internal session ID', session.id || ''],
+    ]],
+  ].map(([title, rows]) => [title, rows.filter((row) => row[1] !== '' && row[1] !== null && row[1] !== undefined)])
+    .filter((section) => section[1].length)
+  return { venue, heading, statusLabel, reference: session.ticket_reference || '', sections }
+}
 
-  const tableRows = rows
-    .map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`)
-    .join('')
+function buildEmailText(payload, receivedAt) {
+  const details = bookingEmailDetails(payload, receivedAt)
+  return [details.venue, details.heading, details.statusLabel, '',
+    ...details.sections.flatMap(([title, rows]) => [title.toUpperCase(), ...rows.map(([label, value]) => `${label}: ${value}`), '']),
+    'All visit times are Vietnam time (UTC+7).',
+    'Open booking webapp: https://booking.vre-vietnam.com',
+  ].join('\n')
+}
 
-  return `
-    <div style="font-family:Arial,sans-serif;color:#071112">
-      <h2 style="margin:0 0 12px">${payload.event_type === 'ticket_booked' ? 'New ticket booking' : 'New session created'}</h2>
-      <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;border:1px solid #d9e1e5">
-        ${tableRows}
-      </table>
-    </div>
-  `
+function buildEmailHtml(payload, receivedAt) {
+  const details = bookingEmailDetails(payload, receivedAt)
+  const sections = details.sections.map(([title, rows]) => `
+    <h2 style="font-family:'League Spartan',Arial,sans-serif;font-size:18px;margin:26px 0 8px;color:#020E0E">${escapeHtml(title)}</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;border-collapse:collapse;font-size:14px;line-height:1.6">
+      ${rows.map(([label, value]) => `<tr><th align="left" valign="top" width="32%" style="padding:7px 12px 7px 0;font-weight:400;color:#5F6D6D;border-bottom:1px solid #EEEEEE">${escapeHtml(label)}</th><td valign="top" style="padding:7px 0;border-bottom:1px solid #EEEEEE;overflow-wrap:anywhere;word-break:break-word;${label === 'Booking total' ? 'font-size:20px;font-weight:700;' : ''}">${escapeHtml(value)}</td></tr>`).join('')}
+    </table>`).join('')
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#F5F7F7;color:#020E0E;font-family:Inter,Arial,sans-serif">
+    <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-top:5px solid #525BFD;padding:24px 20px">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#332CD6">${escapeHtml(details.venue)}</p>
+      <h1 style="font-family:'League Spartan',Arial,sans-serif;font-size:27px;line-height:1.2;margin:0 0 12px">${escapeHtml(details.heading)}</h1>
+      <p style="margin:0;font-size:15px;line-height:1.6">${escapeHtml(details.statusLabel)}${details.reference ? '<br>Reference: <strong>' + escapeHtml(details.reference) + '</strong>' : ''}</p>
+      ${sections}
+      <p style="margin:24px 0 12px"><a href="https://booking.vre-vietnam.com" style="display:inline-block;background:#332CD6;color:#FFFFFF;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;font-size:14px">Open booking webapp</a></p>
+      <p style="font-size:12px;line-height:1.5;color:#5F6D6D;margin:0">All visit times are Vietnam time (UTC+7).</p>
+    </div></body></html>`
 }
 
 function getSpreadsheet() {
