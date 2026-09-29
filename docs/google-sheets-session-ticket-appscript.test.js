@@ -26,7 +26,7 @@ function loadScript() {
   return { context, sentEmail: () => sentEmail }
 }
 
-test('ticket notification is sent only to the shared contact address', () => {
+test('legacy Ha Do ticket notification is sent only to the contact address', () => {
   const { context, sentEmail } = loadScript()
   context.sendNotificationEmail({
     event_type: 'ticket_booked',
@@ -71,4 +71,27 @@ test('shop uses the raw database venue when the older webhook omits it from sess
   const { context } = loadScript()
   assert.equal(context.bookingShopName({ session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } }), 'Vrena Thao Dien')
   assert.equal(context.bookingShopName({ session: { venue_key: 'unexpected-shop' } }), 'Unknown shop (unexpected-shop)')
+})
+
+for (const eventType of ['ticket_booked', 'session_created', 'ticket_updated', 'session_cancelled']) {
+  for (const venueKey of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+    test(`${eventType} routes ${venueKey} to its own recipients`, () => {
+      const { context, sentEmail } = loadScript()
+      context.sendNotificationEmail({ event_type: eventType, session: { venue_key: venueKey } }, new Date())
+      assert.equal(sentEmail().to, venueKey === 'cafe-des-stagiaires'
+        ? 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com'
+        : 'contact@vre-vietnam.com')
+    })
+  }
+}
+
+test('legacy Thao Dien payloads use raw venue or CS reference without reaching Ha Do', () => {
+  const { context } = loadScript()
+  for (const payload of [
+    { session: {}, raw_session: { venue_key: 'cafe-des-stagiaires' } },
+    { session: { ticket_reference: 'CS-TEST' } },
+  ]) {
+    assert.equal(context.bookingEmailRecipients(payload).join(','), 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com')
+  }
+  assert.throws(() => context.bookingEmailRecipients({ session: { venue_key: 'unknown' } }), /Unknown booking venue/)
 })

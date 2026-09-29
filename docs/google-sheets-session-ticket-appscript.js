@@ -19,7 +19,10 @@
 const CONFIG = {
   SPREADSHEET_ID: '', // Leave blank when this script is bound to the Google Sheet.
   WEBHOOK_SECRET: 'CHANGE_ME_TO_A_LONG_RANDOM_SECRET',
-  EMAIL_RECIPIENTS: ['contact@vre-vietnam.com'],
+  EMAIL_RECIPIENTS_BY_VENUE: {
+    'ha-do-centrosa': ['contact@vre-vietnam.com'],
+    'cafe-des-stagiaires': ['vrena-thaodien@vre-vietnam.com', 'emile@vre-vietnam.com'],
+  },
   SHEETS: {
     ticket_booked: 'Tickets',
     session_created: 'Sessions',
@@ -183,11 +186,20 @@ function sendNotificationEmail(payload, receivedAt) {
   ]
 
   MailApp.sendEmail({
-    to: CONFIG.EMAIL_RECIPIENTS.join(','),
+    to: bookingEmailRecipients(payload).join(','),
     subject,
     body: lines.join('\n'),
     htmlBody: buildEmailHtml(payload, receivedAt),
   })
+}
+
+function bookingEmailRecipients(payload) {
+  const session = getSession(payload)
+  const venueKey = session.venue_key || (payload.raw_session || {}).venue_key
+    || (String(session.ticket_reference || '').startsWith('CS-') ? 'cafe-des-stagiaires' : 'ha-do-centrosa')
+  const recipients = CONFIG.EMAIL_RECIPIENTS_BY_VENUE[venueKey]
+  if (!recipients) throw new Error('Unknown booking venue: ' + venueKey)
+  return recipients
 }
 
 function bookingShopName(payload) {
