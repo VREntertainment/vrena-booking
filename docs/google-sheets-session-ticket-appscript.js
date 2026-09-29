@@ -177,18 +177,14 @@ function sendNotificationEmail(payload, receivedAt) {
       body: buildEmailText(payload, receivedAt, true),
       htmlBody: buildEmailHtml(payload, receivedAt, true),
     }
-    // Only enable verified store aliases. Thao Dien remains on the existing sender
-    // until its Gmail send-as verification is complete.
-    if (customerMessage.replyTo === 'contact@vre-vietnam.com') {
-      GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
-        from: 'contact@vre-vietnam.com',
-        replyTo: customerMessage.replyTo,
-        name: customerMessage.name,
-        htmlBody: customerMessage.htmlBody,
-      })
-    } else {
-      MailApp.sendEmail(customerMessage)
-    }
+    GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
+      from: customerMessage.replyTo,
+      replyTo: customerMessage.replyTo,
+      ...(customerMessage.replyTo === 'vrena-thaodien@vre-vietnam.com'
+        ? { bcc: 'emile@vre-vietnam.com' } : {}),
+      name: customerMessage.name,
+      htmlBody: customerMessage.htmlBody,
+    })
   }
 }
 
