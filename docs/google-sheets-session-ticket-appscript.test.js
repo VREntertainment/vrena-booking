@@ -87,7 +87,7 @@ for (const eventType of ['ticket_booked', 'session_created', 'ticket_updated', '
       const { context, sentEmail } = loadScript()
       context.sendNotificationEmail({ event_type: eventType, session: { venue_key: venueKey } }, new Date())
       assert.equal(sentEmail().to, venueKey === 'cafe-des-stagiaires'
-        ? 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com'
+        ? 'vrena-thaodien@vre-vietnam.com'
         : 'contact@vre-vietnam.com')
     })
   }
@@ -157,7 +157,8 @@ for (const venueKey of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }, customer: { name: 'Guest', email: 'guest@example.com' }, owner: { name: 'PRIVATE-STAFF' } }, new Date())
     assert.equal(sentEmails.length, 2)
     assert.equal(sentEmails[1].to, 'guest@example.com')
-    assert.equal(sentEmails[1].bcc, venueKey === 'cafe-des-stagiaires' ? 'emile@vre-vietnam.com' : undefined)
+    assert.equal(sentEmails[1].bcc, undefined)
+    assert.equal(sentEmails[0].bcc, venueKey === 'cafe-des-stagiaires' ? 'emile@vre-vietnam.com' : undefined)
     assert.equal(sentEmails[1].cc, undefined)
     assert.equal(sentEmails[1].from, venueKey === 'ha-do-centrosa' ? 'contact@vre-vietnam.com' : 'vrena-thaodien@vre-vietnam.com')
     assert.equal(sentEmails[1].name, venueKey === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'VRena Thao Dien')
