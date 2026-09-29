@@ -18,6 +18,12 @@ function loadScript() {
         sentEmails.push(options)
       },
     },
+    GmailApp: {
+      sendEmail(to, subject, body, options) {
+        sentEmail = { to, subject, body, ...options }
+        sentEmails.push(sentEmail)
+      },
+    },
     Utilities: {
       formatDate() {
         return '2026-08-04 13:14:02'
@@ -151,6 +157,8 @@ for (const venueKey of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }, customer: { name: 'Guest', email: 'guest@example.com' }, owner: { name: 'PRIVATE-STAFF' } }, new Date())
     assert.equal(sentEmails.length, 2)
     assert.equal(sentEmails[1].to, 'guest@example.com')
+    assert.equal(sentEmails[1].from, venueKey === 'ha-do-centrosa' ? 'contact@vre-vietnam.com' : undefined)
+    assert.equal(sentEmails[1].name, venueKey === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'VRena Thao Dien')
     assert.equal(sentEmails[1].replyTo, venueKey === 'cafe-des-stagiaires' ? 'vrena-thaodien@vre-vietnam.com' : 'contact@vre-vietnam.com')
     assert.match(sentEmails[1].subject, /Booking request received/)
     assert.match(sentEmails[1].htmlBody, /vrena-logo-full-light.png/)
