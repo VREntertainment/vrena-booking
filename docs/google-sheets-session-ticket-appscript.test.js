@@ -10,10 +10,12 @@ const scriptSource = readFileSync(
 
 function loadScript() {
   let sentEmail = null
+  const sentEmails = []
   const context = vm.createContext({
     MailApp: {
       sendEmail(options) {
         sentEmail = options
+        sentEmails.push(options)
       },
     },
     Utilities: {
@@ -23,7 +25,7 @@ function loadScript() {
     },
   })
   vm.runInContext(scriptSource, context)
-  return { context, sentEmail: () => sentEmail }
+  return { context, sentEmail: () => sentEmail, sentEmails }
 }
 
 test('legacy Ha Do ticket notification is sent only to the contact address', () => {
@@ -98,7 +100,7 @@ test('legacy Thao Dien payloads use raw venue or CS reference without reaching H
 
 
 test('confirmation leads with the venue and visit instead of internal labels', () => {
-  const { context, sentEmail } = loadScript()
+  const { context, sentEmails } = loadScript()
   const payload = { event_type: 'ticket_booked', session: {
     venue_key: 'cafe-des-stagiaires', name: 'Cafe soft-opening request - Individual',
     date: '2026-09-29', start_time: '15:50:00', duration_minutes: 30,
@@ -106,7 +108,7 @@ test('confirmation leads with the venue and visit instead of internal labels', (
     game_options: ['laser-tag'], id: 'internal-id',
   }, customer: { name: 'Test Guest', email: 'test@example.com' }, owner: { name: 'Test Guest', email: 'test@example.com' } }
   context.sendNotificationEmail(payload, new Date())
-  const email = sentEmail()
+  const email = sentEmails[0]
   assert.match(email.subject, /^\[VRena Thao Dien\]/)
   assert.match(email.htmlBody, /Awaiting confirmation/)
   assert.match(email.body, /29 Sep 2026 · 15:50/)
@@ -137,4 +139,37 @@ test('Thao Dien email references use TD even for legacy payloads', () => {
   assert.match(sentEmail().body, /TD-260929-ABC123/)
   assert.doesNotMatch(sentEmail().subject + sentEmail().body + sentEmail().htmlBody, /CS-|cafe des stagiaires/i)
   assert.equal(context.bookingEmailRecipients({ session: { ticket_reference: 'TD-260929-ABC123' } }).join(','), 'vrena-thaodien@vre-vietnam.com,emile@vre-vietnam.com')
+})
+
+
+for (const venueKey of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+  test(`separate branded customer confirmation for ${venueKey} excludes staff details`, () => {
+    const { context, sentEmails } = loadScript()
+    context.sendNotificationEmail({ event_type: 'ticket_booked', session: {
+      venue_key: venueKey, ticket_reference: 'TD-TEST', ticket_status: 'pending',
+      id: 'PRIVATE-INTERNAL-ID', notes: 'PRIVATE-STAFF-NOTE', invite_code: 'PRIVATE-CODE',
+    }, customer: { name: 'Guest', email: 'guest@example.com' }, owner: { name: 'PRIVATE-STAFF' } }, new Date())
+    assert.equal(sentEmails.length, 2)
+    assert.equal(sentEmails[1].to, 'guest@example.com')
+    assert.equal(sentEmails[1].replyTo, venueKey === 'cafe-des-stagiaires' ? 'vrena-thaodien@vre-vietnam.com' : 'contact@vre-vietnam.com')
+    assert.match(sentEmails[1].subject, /Booking request received/)
+    assert.match(sentEmails[1].htmlBody, /vrena-logo-full-light.png/)
+    assert.doesNotMatch(sentEmails[1].htmlBody + sentEmails[1].body, /PRIVATE-|Internal session|Received:|Booked by/)
+    assert.match(sentEmails[1].body, /awaiting confirmation/)
+    assert.match(sentEmails[0].htmlBody, /vrena-logo-full-light.png/)
+  })
+}
+
+test('customer emails skip absent, synthetic, malformed, and update addresses', () => {
+  const { context } = loadScript()
+  for (const email of ['', 'invalid', 'a@phone-login.vrena.invalid', 'a@b.local', 'a@b.com,c@d.com', 'a@b.com\nBcc:evil@example.com']) {
+    assert.equal(context.bookingCustomerEmail({event_type:'ticket_booked', customer:{email}}), '')
+  }
+  assert.equal(context.bookingCustomerEmail({event_type:'ticket_updated', customer:{email:'guest@example.com'}}), '')
+  assert.equal(context.bookingCustomerEmail({event_type:'ticket_booked', owner:{email:'staff@example.com'}}), '')
+})
+
+test('confirmed customer booking is clearly confirmed', () => {
+  const { context } = loadScript()
+  assert.match(context.buildEmailText({event_type:'ticket_booked',session:{venue_key:'ha-do-centrosa',ticket_status:'confirmed'}},new Date(),true), /Your booking is confirmed/)
 })
