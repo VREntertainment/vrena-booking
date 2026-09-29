@@ -161,7 +161,9 @@ function buildMainRow(payload, receivedAt) {
 function sendNotificationEmail(payload, receivedAt) {
   const details = bookingEmailDetails(payload, receivedAt)
   MailApp.sendEmail({
-    to: bookingEmailRecipients(payload).join(','),
+    to: bookingEmailRecipients(payload)[0],
+    ...(bookingEmailRecipients(payload)[0] === 'vrena-thaodien@vre-vietnam.com'
+      ? { bcc: 'emile@vre-vietnam.com' } : {}),
     subject: `[${details.venue}] ${details.heading}${details.reference ? ' · ' + details.reference : ''}`,
     body: buildEmailText(payload, receivedAt),
     htmlBody: buildEmailHtml(payload, receivedAt),
@@ -180,8 +182,6 @@ function sendNotificationEmail(payload, receivedAt) {
     GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
       from: customerMessage.replyTo,
       replyTo: customerMessage.replyTo,
-      ...(customerMessage.replyTo === 'vrena-thaodien@vre-vietnam.com'
-        ? { bcc: 'emile@vre-vietnam.com' } : {}),
       name: customerMessage.name,
       htmlBody: customerMessage.htmlBody,
     })
