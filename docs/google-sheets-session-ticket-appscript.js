@@ -166,6 +166,27 @@ function sendNotificationEmail(payload, receivedAt) {
     body: buildEmailText(payload, receivedAt),
     htmlBody: buildEmailHtml(payload, receivedAt),
   })
+  const customerEmail = bookingCustomerEmail(payload)
+  if (customerEmail) {
+    const customerDetails = bookingEmailDetails(payload, receivedAt, true)
+    MailApp.sendEmail({
+      to: customerEmail,
+      replyTo: bookingEmailRecipients(payload)[0],
+      name: 'VRena',
+      subject: `[${customerDetails.venue}] ${customerDetails.heading}${customerDetails.reference ? ' · ' + customerDetails.reference : ''}`,
+      body: buildEmailText(payload, receivedAt, true),
+      htmlBody: buildEmailHtml(payload, receivedAt, true),
+    })
+  }
+}
+
+function bookingCustomerEmail(payload) {
+  // Only creation confirmations; never use the staff/owner address as a fallback.
+  if (!['ticket_booked', 'session_created'].includes(payload.event_type)) return ''
+  const email = String((payload.customer || {}).email || '').trim()
+  if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) return ''
+  if (/\.(invalid|local)$/i.test(email)) return ''
+  return email
 }
 
 function bookingEmailRecipients(payload) {
@@ -200,19 +221,24 @@ function visitDate(value) {
   return `${Number(match[3])} ${months[Number(match[2]) - 1]} ${match[1]}`
 }
 
-function bookingEmailDetails(payload, receivedAt) {
+function bookingEmailDetails(payload, receivedAt, forCustomer) {
   const session = getSession(payload)
   const owner = payload.owner || {}
   const customer = payload.customer || owner
   const venue = bookingShopName(payload)
   const event = String(payload.event_type || '')
   const isTicket = event.startsWith('ticket_') || session.booking_type === 'ticket'
-  const heading = event.includes('cancelled') ? 'Booking cancelled'
+  let heading = event.includes('cancelled') ? 'Booking cancelled'
     : event.includes('deleted') ? 'Booking deleted'
       : event.includes('updated') ? 'Booking updated'
         : isTicket ? 'New ticket booking' : 'New session booking'
   const status = session.ticket_status || session.status || ''
   const statusLabel = status === 'pending' ? 'Awaiting confirmation' : readableLabel(status)
+  const customerMessage = status === 'pending'
+    ? 'We have received your booking request. Your booking is awaiting confirmation from our team.'
+    : status === 'confirmed' ? 'Your booking is confirmed. We look forward to welcoming you.'
+      : 'We have received your booking. Please check the status and visit details below.'
+  if (forCustomer) heading = status === 'pending' ? 'Booking request received' : status === 'confirmed' ? 'Booking confirmed' : 'Booking received'
   const gameOptions = Array.isArray(session.game_options)
     ? session.game_options.filter(Boolean).map(readableLabel).join(', ')
     : readableLabel(session.game_options)
@@ -221,7 +247,7 @@ function bookingEmailDetails(payload, receivedAt) {
   const reference = String(session.ticket_reference || '').replace(/^CS-/, 'TD-')
   const name = /^Cafe soft-opening request\s*-/i.test(session.name || '')
     ? venue : session.name || ''
-  const sections = [
+  let sections = [
     ['Your visit', [
       ['Venue', venue],
       ['Booking', name && name !== venue ? name : ''],
@@ -253,20 +279,32 @@ function bookingEmailDetails(payload, receivedAt) {
     ]],
   ].map(([title, rows]) => [title, rows.filter((row) => row[1] !== '' && row[1] !== null && row[1] !== undefined)])
     .filter((section) => section[1].length)
-  return { venue, heading, statusLabel, reference, sections }
+  if (forCustomer) {
+    // Explicit allowlist prevents staff notes, ownership, IDs and audit metadata leaking to customers.
+    const allowed = {
+      'Your visit': ['Venue', 'Booking', 'Date & time', 'Duration', 'Players', 'Game options', 'Ticket'],
+      'Customer': ['Name', 'Phone', 'Email'],
+      'Price': ['Per player', 'Booking total'],
+      'Booking details': ['Reference', 'Status'],
+    }
+    sections = sections.filter(([title]) => allowed[title])
+      .map(([title, rows]) => [title, rows.filter(([label]) => allowed[title].includes(label))])
+      .filter((section) => section[1].length)
+  }
+  return { venue, heading, statusLabel, reference, sections, customerMessage }
 }
 
-function buildEmailText(payload, receivedAt) {
-  const details = bookingEmailDetails(payload, receivedAt)
-  return [details.venue, details.heading, details.statusLabel, '',
+function buildEmailText(payload, receivedAt, forCustomer) {
+  const details = bookingEmailDetails(payload, receivedAt, forCustomer)
+  return [details.venue, details.heading, details.statusLabel, forCustomer ? details.customerMessage : '', '',
     ...details.sections.flatMap(([title, rows]) => [title.toUpperCase(), ...rows.map(([label, value]) => `${label}: ${value}`), '']),
     'All visit times are Vietnam time (UTC+7).',
-    'Open booking webapp: https://booking.vre-vietnam.com',
+    forCustomer ? 'Questions? Reply to this email to contact the venue team.' : 'Open booking webapp: https://booking.vre-vietnam.com',
   ].join('\n')
 }
 
-function buildEmailHtml(payload, receivedAt) {
-  const details = bookingEmailDetails(payload, receivedAt)
+function buildEmailHtml(payload, receivedAt, forCustomer) {
+  const details = bookingEmailDetails(payload, receivedAt, forCustomer)
   const sections = details.sections.map(([title, rows]) => `
     <h2 style="font-family:'League Spartan',Arial,sans-serif;font-size:18px;margin:26px 0 8px;color:#020E0E">${escapeHtml(title)}</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;border-collapse:collapse;font-size:14px;line-height:1.6">
@@ -274,12 +312,14 @@ function buildEmailHtml(payload, receivedAt) {
     </table>`).join('')
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#F5F7F7;color:#020E0E;font-family:Inter,Arial,sans-serif">
     <div style="max-width:600px;margin:0 auto;background:#FFFFFF;border-top:5px solid #525BFD;padding:24px 20px">
+      <img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-light.png" alt="VRena" width="176" height="36" style="display:block;width:176px;height:auto;max-width:100%;border:0;margin:0 0 28px">
       <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#332CD6">${escapeHtml(details.venue)}</p>
       <h1 style="font-family:'League Spartan',Arial,sans-serif;font-size:27px;line-height:1.2;margin:0 0 12px">${escapeHtml(details.heading)}</h1>
       <p style="margin:0;font-size:15px;line-height:1.6">${escapeHtml(details.statusLabel)}${details.reference ? '<br>Reference: <strong>' + escapeHtml(details.reference) + '</strong>' : ''}</p>
+      ${forCustomer ? '<p style="font-size:15px;line-height:1.6;margin:18px 0 0">' + escapeHtml(details.customerMessage) + '</p>' : ''}
       ${sections}
-      <p style="margin:24px 0 12px"><a href="https://booking.vre-vietnam.com" style="display:inline-block;background:#332CD6;color:#FFFFFF;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;font-size:14px">Open booking webapp</a></p>
-      <p style="font-size:12px;line-height:1.5;color:#5F6D6D;margin:0">All visit times are Vietnam time (UTC+7).</p>
+      <p style="margin:24px 0 12px"><a href="https://booking.vre-vietnam.com" style="display:inline-block;background:#332CD6;color:#FFFFFF;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;font-size:14px">${forCustomer ? 'Visit VRena booking' : 'Open booking webapp'}</a></p>
+      <p style="font-size:12px;line-height:1.5;color:#5F6D6D;margin:0">All visit times are Vietnam time (UTC+7).${forCustomer ? '<br>Questions? Reply to this email to contact the venue team.' : ''}</p>
     </div></body></html>`
 }
 

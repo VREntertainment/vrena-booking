@@ -121,7 +121,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
       to,
       subject: subjectParts.join(' · '),
       text,
-      html,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:${vrenaPalette.white}"><img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-light.png" alt="VRena" width="176" height="36" style="display:block;width:176px;height:auto;border:0;margin:0 0 28px">${html}</div>`,
     }),
   })
 
