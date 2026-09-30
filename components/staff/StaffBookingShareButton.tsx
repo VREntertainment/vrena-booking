@@ -17,7 +17,11 @@ export function StaffBookingShareButton({ contentRef, snapshotKey, date, languag
     const timer = setTimeout(async () => {
       try {
         if (!contentRef.current) return
-        const canvas = await toCanvas(contentRef.current, { pixelRatio: 2, backgroundColor: vrenaPalette.white, filter: (node) => !(node instanceof HTMLElement && node.classList.contains('staff-summary-share')) })
+        // Wait for the logo and fonts so the actual shared file matches the preview.
+        await document.fonts.ready
+        await Promise.all(Array.from(contentRef.current.querySelectorAll('img')).map((image) => image.decode()))
+        if (cancelled || !contentRef.current) return
+        const canvas = await toCanvas(contentRef.current, { pixelRatio: 3, backgroundColor: vrenaPalette.white, filter: (node) => !(node instanceof HTMLElement && node.classList.contains('staff-summary-share')) })
         const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Image export failed')), 'image/jpeg', 0.95))
         const file = new File([blob], `VRena-booking-${date}.jpg`, { type: 'image/jpeg' })
         if (!cancelled) setImage({ key: snapshotKey, file })

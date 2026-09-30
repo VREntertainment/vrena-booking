@@ -1,6 +1,6 @@
 'use client'
 
-import { vatSplit } from '../../lib/staff/vat'
+import { StaffBookingSummary } from '../../components/staff/StaffBookingSummary'
 import { StaffBookingShareButton } from '../../components/staff/StaffBookingShareButton'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase/client'
@@ -11,13 +11,11 @@ import {
 } from 'lucide-react'
 import { PhoneNumberInput } from '../../components/CountryCodePicker'
 import { StaffPickerField } from '../../components/staff/StaffPickerField'
-import { bookingDurationCopy } from '../../lib/bookingDurationCopy'
 import { uiText } from '../../lib/i18n/translations'
 import { staffBookingEndTime, staffBookingHours, validStaffBookingTime, validStaffSessionCount } from '../../lib/staff/bookingHours'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
-  shortDateLabel,
   todayString
 } from '../../lib/staff/dates'
 import {
@@ -458,33 +456,13 @@ export default function NewSection({
       </div>
 
       <div className="staff-card staff-summary-card">
-        <div ref={summaryRef} className="staff-summary-export">
-          <div className="staff-card-heading">
-            <h3>{text.labels.summary}</h3>
-            <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />
-          </div>
-          <p className="field-help">{bookingText.durationHelp}</p>
-          <div className="staff-price-lines">
-            <span>{bookingText.shop}</span><strong>{bookingVenueName}</strong>
-            <span>{text.labels.game}</span><strong>{selectedGame?.name || bookingText.noGame}</strong>
-            <span>{text.labels.date} / {text.labels.time}</span><strong>{shortDateLabel(booking.date)} · {booking.time}</strong>
-            <span>{text.labels.players}</span><strong>{booking.players}</strong>
-            <span>{text.labels.customer}</span><strong>{booking.guestBooking ? text.labels.guestBooking : booking.customerName || text.walkIn}</strong>
-            <span>{text.labels.rule}</span><strong>{quote.ruleName}</strong>
-            {selectedGame && <><span>{bookingDurationCopy[resolvedLanguage].game}</span><strong>{selectedGame.duration_minutes} min</strong></>}
-            <span>{bookingText.arenaCount}</span><strong>{booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount}</strong>
-            <span>{bookingText.sessionCount}</span><strong>{booking.sessionCount}</strong>
-            {booking.bookingKind === 'standard' && <><span>{bookingText.sessionTime}</span><strong>{quote.sessionMinutes ?? '—'} min</strong></>}
-            <span>{bookingText.reservedTime}</span><strong>{quote.duration} min</strong>
-            <span>{bookingText.endTime}</span><strong>{staffBookingEndTime(booking.time, quote.duration)}</strong>
-            {booking.contactName && <><span>{bookingText.contactName}</span><strong>{booking.contactName}</strong></>}
-            <span>{text.labels.subtotal}</span><strong>{formatVnd(quote.subtotal)}</strong>
-            <span>{text.labels.discountType}</span><strong>{quote.discountLabel}</strong>
-            <span>{text.labels.discount}</span><strong>-{formatVnd(quote.discountTotal)}</strong>
-            {booking.bookingKind === 'event' && <><span>{bookingText.totalBeforeVat}</span><strong>{formatVnd(vatSplit(quote.total).net)}</strong></>}
-            <span>{bookingText.totalVatIncluded}</span><strong>{formatVnd(quote.total)}</strong>
-          </div>
+        <div className="staff-card-heading">
+          <h3>{text.labels.summary}</h3>
+          <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />
         </div>
+        <StaffBookingSummary contentRef={summaryRef} booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} />
+        <p className="field-help">{bookingText.durationHelp}</p>
+        <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>
         <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
           <label className="staff-override-toggle"><input type="checkbox" checked={booking.overrideTotalEnabled} onChange={(event) => setBooking({ ...booking, overrideTotalEnabled: event.target.checked, overrideTotal: event.target.checked ? String(quote.total) : '', overrideReason: event.target.checked ? booking.overrideReason : '' })} /><span>{bookingText.overrideTotal}</span></label>
           {booking.overrideTotalEnabled && <>
