@@ -245,7 +245,14 @@ export default function NewSection({
                   }}
                 />
                 {showCustomerNameSuggestions && (
-                  <div className="staff-customer-suggestions" id="staff-customer-name-suggestions" role="listbox">
+                  <div
+                    className="staff-customer-suggestions"
+                    id="staff-customer-name-suggestions"
+                    role="listbox"
+                    // Safari does not focus clicked buttons. Keep the input focused
+                    // so blur cannot unmount an option before its click is handled.
+                    onMouseDown={(event) => { if (event.button === 0) event.preventDefault() }}
+                  >
                     {visibleCustomerSuggestions.map((item, index) => (
                       <button
                         id={`staff-customer-option-${index}`}
