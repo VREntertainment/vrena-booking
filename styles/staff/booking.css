@@ -37,3 +37,47 @@
 .app .staff-summary-export { min-width: 0; }
 
 .app .staff-booking-pair > label:last-child .staff-time-panel { left: auto; right: 0; }
+
+/* A client-facing document: deliberately light in both staff themes and exports. */
+.app .staff-client-summary.staff-price-lines {
+  display: block;
+  padding: 24px;
+  border: 1px solid var(--vrena-neutral-300);
+  border-top: 4px solid var(--vrena-purple-500);
+  border-radius: 14px;
+  background: var(--vrena-white);
+  color: var(--vrena-neutral-950);
+  color-scheme: light;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.app .staff-client-summary p { margin: 0; }
+.app .staff-client-summary span,
+.app .staff-client-summary dt,
+.app .staff-client-summary small { color: var(--vrena-neutral-700); font-size: 12px; line-height: 1.5; }
+.app .staff-client-summary strong,
+.app .staff-client-summary strong:last-child { color: var(--vrena-neutral-950); font-size: 15px; font-weight: 700; line-height: 1.45; }
+.app .staff-client-summary-brand { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; justify-content: space-between; }
+.app .staff-client-summary-brand img { display: block; width: 176px; max-width: 100%; height: auto; }
+.app .staff-client-summary .staff-client-summary-badge { padding: 5px 9px; border-radius: 6px; color: var(--vrena-purple-700); background: var(--vrena-purple-50); font-size: 11px; font-weight: 600; }
+.app .staff-client-summary-title { padding: 26px 0 22px; }
+.app .staff-client-summary-title > p:first-child { color: var(--vrena-neutral-700); font-size: 12px; margin-bottom: 7px; }
+.app .staff-client-summary-title h4 { color: var(--vrena-neutral-950); font-size: 26px; line-height: 1.15; letter-spacing: -0.025em; margin: 0 0 10px; }
+.app .staff-client-summary-title .staff-client-summary-venue { color: var(--vrena-purple-700); font-size: 14px; font-weight: 600; line-height: 1.5; }
+.app .staff-client-summary-customer { display: grid; gap: 4px; padding-bottom: 20px; }
+.app .staff-client-summary-customer p { color: var(--vrena-neutral-700); font-size: 12px; line-height: 1.5; }
+.app .staff-client-summary-schedule { display: grid; gap: 5px; background: var(--vrena-purple-50); padding: 16px; border-radius: 9px; }
+.app .staff-client-summary-schedule strong { font-size: 17px; }
+.app .staff-client-summary-schedule p { color: var(--vrena-neutral-950); font-size: 18px; font-weight: 700; line-height: 1.6; }
+.app .staff-client-summary-schedule small { display: block; font-weight: 400; }
+.app .staff-client-summary-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; margin: 22px 0; }
+.app .staff-client-summary-details dt { margin-bottom: 4px; }
+.app .staff-client-summary-details dd { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.app .staff-client-summary-cost { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; border-top: 1px solid var(--vrena-neutral-300); padding: 18px 0; align-items: baseline; }
+.app .staff-client-summary-cost strong { text-align: right; }
+.app .staff-client-summary-total { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 0; border-top: 1px solid var(--vrena-neutral-300); }
+.app .staff-client-summary-total > span { font-weight: 600; }
+.app .staff-client-summary-total > strong:last-child { color: var(--vrena-purple-700); font-size: 26px; line-height: 1.2; }
+.app .staff-client-summary-footer { border-top: 1px solid var(--vrena-neutral-300); padding-top: 16px; }
+.app .staff-client-summary-footer p { color: var(--vrena-neutral-700); font-size: 11px; line-height: 1.55; margin-bottom: 8px; }
+.app .staff-client-summary-footer strong:last-child { color: var(--vrena-neutral-950); font-size: 12px; }
