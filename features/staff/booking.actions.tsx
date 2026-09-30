@@ -1,5 +1,6 @@
 'use client'
 
+import { confirmedBookingSummary, type ConfirmedBookingSummary } from '../../lib/staff/bookingSummary'
 import { validStaffBookingTime, validStaffSessionCount } from '../../lib/staff/bookingHours'
 import type { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
@@ -21,6 +22,7 @@ import type {
 import { supabase } from '../../lib/supabase/client'
 
 export type BookingActionContext = {
+  onBookingConfirmed?: (snapshot: ConfirmedBookingSummary) => void
   profiles: import("../../lib/staff/types").StaffProfile[]
   setBooking: React.Dispatch<React.SetStateAction<import("../../lib/staff/types").BookingForm>>
   text: StaffConsoleCopy
@@ -117,6 +119,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       markStaffDataStale,
       onBookingCreated,
       loadProfiles,
+      onBookingConfirmed,
     } = getContext()
 
     if (!canCreateOrders || bookingSubmitRef.current) return
@@ -198,7 +201,9 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
         return
       }
 
-      const order = data as { order_number?: string; total?: number } | null
+      const order = data as { order_number?: string; total?: number; subtotal?: number; discount_total?: number; duration_minutes?: number } | null
+      const confirmed = confirmedBookingSummary(booking, quote, order)
+      if (confirmed) onBookingConfirmed?.(confirmed)
       setStatus(text.messages.orderConfirmed
         .replace('{order}', order?.order_number || '')
         .replace('{total}', formatVnd(order?.total ?? quote.total)))

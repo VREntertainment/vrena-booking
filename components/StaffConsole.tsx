@@ -1,5 +1,8 @@
 'use client'
 
+import { StaffConfirmedBookingShare } from './staff/StaffConfirmedBookingShare'
+import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
+
 import dynamic from 'next/dynamic'
 import StaffOrderStatusConfirmation, { type OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 
@@ -212,6 +215,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
   const currentProfileId = profile?.id || ''
   const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
+  const [confirmedSummary, setConfirmedSummary] = useState<ConfirmedBookingSummary | null>(null)
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
   const [orderStatusConfirm, setOrderStatusConfirm] = useState<{ orderId: string; status: OrderStatusChange } | null>(null)
   const [ordersShop, setOrdersShop] = useState('all')
@@ -1190,6 +1194,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     selectedBookingArena,
     markStaffDataStale,
     onBookingCreated,
+    onBookingConfirmed: setConfirmedSummary,
     loadProfiles,
   }))
   const {
@@ -1634,6 +1639,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
       {currentTabLoading && <AppLoadingState compact label={text.loading} />}
       {currentTabError && <div className="notice" role="alert"><p>{resolvedLanguage === 'vi' ? 'Không thể tải dữ liệu. Vui lòng thử lại.' : 'Couldn’t load this data. Please try again.'}</p><button type="button" disabled={currentTabLoading} onClick={retryCurrentData}>{resolvedLanguage === 'vi' ? 'Thử lại' : 'Try again'}</button></div>}
+
+      {currentTab === 'new' && confirmedSummary && <StaffConfirmedBookingShare snapshot={confirmedSummary} language={resolvedLanguage} text={text} onClose={() => setConfirmedSummary(null)} />}
 
       {currentTabReady && currentTab === 'new' && (<NewSection
         sessionLengthError={sessionLength.error}

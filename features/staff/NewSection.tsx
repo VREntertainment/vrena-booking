@@ -460,7 +460,7 @@ export default function NewSection({
           <h3>{text.labels.summary}</h3>
           <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />
         </div>
-        <StaffBookingSummary contentRef={summaryRef} booking={booking} game={selectedGame} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} />
+        <StaffBookingSummary contentRef={summaryRef} booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} />
         <p className="field-help">{bookingText.durationHelp}</p>
         <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>
         <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
