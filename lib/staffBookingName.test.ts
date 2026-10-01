@@ -12,3 +12,10 @@ test('preserves custom booking names', () => {
 test('recognizes staff catalog game names', () => {
   assert.equal(staffBookingName('Staff booking - New game', ['New game']), 'Staff booking')
 })
+
+test('identifies generated client bookings without changing custom names', () => {
+  for (const name of ['VRena Thao Dien - Individual', 'Vrena Thao Dien - Individual', 'Ticket booking - Individual', 'Ticket booking - Birthday', 'Cafe soft-opening request - Corporate']) {
+    assert.equal(staffBookingName(name), 'Client booking')
+  }
+  assert.equal(staffBookingName('VRena Thao Dien - School visit'), 'VRena Thao Dien - School visit')
+})
