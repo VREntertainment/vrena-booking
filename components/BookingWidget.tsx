@@ -1,4 +1,5 @@
 'use client'
+import { staffBookingName } from '../lib/staffBookingName'
 import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
 import type { ChallengeTarget } from '../features/booking/ChallengeControls'
@@ -5565,7 +5566,7 @@ export default function WidgetPage({
                                   : text.public
                               const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
                               const lane = calendarSessionLanes.get(session.id) || { lane: 0, lanes: 1 }
-                              const calendarSessionLabel = `${session.name} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
+                              const calendarSessionLabel = `${staffBookingName(session.name)} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
 
                               return (
                                 <button
@@ -5578,12 +5579,12 @@ export default function WidgetPage({
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
                                   <span className="calendar-session-compact">
-                                    <strong>{session.name}</strong>
+                                    <strong>{staffBookingName(session.name)}</strong>
                                     <span>{timeRangeLabel}</span>
                                     <small>{coverGame.title}</small>
                                   </span>
                                   <span className="calendar-session-popover" aria-hidden="true">
-                                    <strong>{session.name}</strong>
+                                    <strong>{staffBookingName(session.name)}</strong>
                                     <span>{formatShortDate(session.date, language)} · {timeRangeLabel}</span>
                                     <span>{coverGame.title}</span>
                                     <span>{session.duration_minutes} min · {sessionKind}</span>
