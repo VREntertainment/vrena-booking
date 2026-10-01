@@ -6,7 +6,8 @@ import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import type { LanguageCode } from '../lib/i18n/languages'
-import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
+import ContactChannels from './ContactChannels'
+import { venueContact } from '../lib/venueContacts'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
@@ -532,7 +533,7 @@ export default function TicketBookingView({
             </div>
           </div>
 
-          <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
+          <ContactChannels venue={requiresZaloConfirmation ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-mobile-contact" label={text.contactUs} />
 
           {!isLoggedIn && guestTicketContactOpen && (
             <div className="modal-backdrop guest-ticket-modal-backdrop">
@@ -653,7 +654,7 @@ export default function TicketBookingView({
               {ticketConfirmation.requiresZaloConfirmation && (
                 <p className="ticket-confirmation-zalo">
                   <strong>{text.bookingRequestPendingZalo}</strong>
-                  <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
+                  <a href={venueContact('cafe-des-stagiaires').zalo} rel="noreferrer" target="_blank">
                     {text.bookingVenueCafeOpenZalo}
                   </a>
                 </p>

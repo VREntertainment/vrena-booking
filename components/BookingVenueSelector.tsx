@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { CalendarClock, MapPin, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
-import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
+import ContactChannels from './ContactChannels'
+import { venueContact } from '../lib/venueContacts'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -151,7 +152,7 @@ export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
       <p>{text.bookingVenueCafeComingSoonBody}</p>
       <p className="booking-venue-soft-opening-notice">
         <span>{text.bookingVenueCafeSoftOpeningNotice}</span>
-        <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
+        <a href={venueContact('cafe-des-stagiaires').zalo} rel="noreferrer" target="_blank">
           <MessageCircle aria-hidden="true" size={16} />
           {text.bookingVenueCafeConfirmZalo}
         </a>
@@ -172,7 +173,7 @@ export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap })
       <p>{text.bookingVenueCafeBookingNoticeBody}</p>
       <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
       <small><CalendarClock aria-hidden="true" size={16} /> {text.bookingVenueCafeBookingHours}</small>
-      <ContactChannels className="cafe-booking-contact-channels" label={text.contactUs} />
+      <ContactChannels venue="cafe-des-stagiaires" className="cafe-booking-contact-channels" label={text.contactUs} />
     </section>
   )
 }

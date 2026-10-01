@@ -1228,3 +1228,8 @@
 .app .sidebar-tab-icon {
   display: none;
 }
+
+.app .contact-venue { display: grid; gap: 6px; justify-items: center; width: 100%; }
+.app .contact-venue + .contact-venue { margin-top: 10px; }
+.app .contact-venue > small { font-size: 12px; text-align: center; }
+.app .contact-venue-phone { font-size: 13px; }

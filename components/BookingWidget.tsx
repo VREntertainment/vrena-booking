@@ -5969,6 +5969,7 @@ export default function WidgetPage({
 
       {tariffPaymentOpen && (
         <TariffPaymentModal
+          venue={bookingVenue}
           closeText={text.close}
           title={isHaDoBookingVenue ? text.sessionTariffHaDoTitle : text.sessionTariffCafeTitle}
           rates={isHaDoBookingVenue
