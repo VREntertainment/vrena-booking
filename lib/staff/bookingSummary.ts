@@ -1,8 +1,32 @@
-import type { BookingForm } from './types.ts'
+import type { BookingForm, StaffOperationSession, StaffOrder } from './types.ts'
 
 export type BookingSummaryDetails = Pick<BookingForm, 'date' | 'time' | 'venueKey' | 'bookingKind' | 'players' | 'arenaCount' | 'guestBooking' | 'customerName' | 'contactName'>
 export type BookingSummaryQuote = { subtotal: number; discountTotal: number; total: number; duration: number }
 export type ConfirmedBookingSummary = { orderNumber: string; booking: BookingSummaryDetails; quote: BookingSummaryQuote }
+
+/** Use persisted session timing and agreed order prices, never today's pricing rules. */
+export function savedBookingSummary(session: StaffOperationSession, order: StaffOrder | null): ConfirmedBookingSummary | null {
+  const venue = session.venue_key
+  if (!['ha-do-centrosa', 'cafe-des-stagiaires'].includes(venue || '') || !session.date || !session.start_time || !(session.duration_minutes > 0)) return null
+  const total = order?.total ?? session.ticket_total_price
+  if (total == null || !Number.isFinite(total)) return null
+  const confirmed = session.status !== 'cancelled' && (order
+    ? ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status)
+    : session.ticket_status === 'confirmed')
+  // Do not relabel cancelled, draft, or refunded bookings as confirmations or proposals.
+  if (!confirmed) return null
+  return {
+    orderNumber: order?.order_number || session.ticket_reference || '',
+    booking: {
+      date: session.date, time: session.start_time.slice(0, 5), venueKey: venue as BookingForm['venueKey'],
+      bookingKind: order?.internal_note?.includes('Event / corporate; reserved minutes:') ? 'event' : 'standard',
+      players: session.ticket_player_count || session.max_players, arenaCount: session.arena_count ?? 1,
+      guestBooking: !order?.customer_name, customerName: order?.customer_name || '',
+      contactName: order?.internal_note?.match(/(?:^|\n)Contact person: ([^\n]+)/)?.[1] || '',
+    },
+    quote: { subtotal: order?.subtotal ?? total, discountTotal: order?.discount_total ?? 0, total, duration: session.duration_minutes },
+  }
+}
 
 /** Only a successful server response can produce a confirmed customer document. */
 export function confirmedBookingSummary(booking: BookingForm, quote: BookingSummaryQuote, result: {

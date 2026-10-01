@@ -85,3 +85,6 @@
 
 .app .staff-confirmed-share { width: min(100%, 560px); margin: 0 0 24px auto; }
 .app .staff-confirmed-share > button { margin-top: 16px; }
+
+.app .staff-saved-share-dialog { width: min(560px, calc(100vw - 24px)); }
+.app .staff-saved-share-dialog > .staff-summary-share { margin-bottom: 16px; }

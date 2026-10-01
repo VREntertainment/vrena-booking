@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase/client'
 import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
@@ -135,7 +136,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       </fieldset>
       {orders.map((order) => <p key={order.id}>{order.order_number} · {order.customer_name || 'Guest'} · {text.total}: {order.total.toLocaleString('vi-VN')} đ</p>)}
       <p className="field-help">{text.savedPrice}</p>
-      <div className="calendar-dialog-actions"><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || (!game && !isSimRacing)} type="submit">{text.save}</button></div>
+      <div className="calendar-dialog-actions"><StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} /><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || (!game && !isSimRacing)} type="submit">{text.save}</button></div>
     </form>)}
   </dialog>
 }
