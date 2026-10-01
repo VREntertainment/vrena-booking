@@ -1,5 +1,6 @@
 'use client'
 
+import { staffBookingName } from '../lib/staffBookingName'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { Trash2, X } from 'lucide-react'
@@ -64,8 +65,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setGames(activeGames)
         setOrders(linked.data || [])
         setVersion(record.updated_at)
-        setPersisted({ name: record.name, venue: record.venue_key || 'ha-do-centrosa', date: record.date, time: record.start_time.slice(0, 5) })
-        setDraft({ name: record.name, date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
+        setPersisted({ name: staffBookingName(record.name, activeGames.map((item) => item.name)), venue: record.venue_key || 'ha-do-centrosa', date: record.date, time: record.start_time.slice(0, 5) })
+        setDraft({ name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
           game: record.confirmed_game_id || record.game_options?.[0] || '', players: record.ticket_player_count || record.max_players,
           duration: record.duration_minutes, arenas: record.arena_count ?? 1, arenaId: order?.arena_id || '', status: record.status,
           notes: record.notes || '', source: order?.booking_source || '',
