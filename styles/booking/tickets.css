@@ -882,3 +882,10 @@
   white-space: pre-wrap;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vrena-neutral-950) 8%, transparent);
 }
+
+.app .ticket-duration-information { min-width: 0; display: grid; align-content: start; gap: 14px; }
+.app .ticket-venue-contact .contact-venue { justify-items: start; }
+.app .ticket-venue-contact .contact-channel-buttons { width: 100%; }
+.app .ticket-venue-contact .contact-channel { padding: 10px 8px; min-width: 0; }
+.app .ticket-venue-contact .contact-channel span { display: grid; gap: 3px; }
+.app .ticket-venue-contact .contact-channel small { font-size: 11px; font-weight: 400; }
