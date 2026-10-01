@@ -44,4 +44,8 @@ test('saved share uses current persisted timing and agreed prices, excluding int
   const ticket = savedBookingSummary({ ...session, ticket_status: 'confirmed', ticket_reference: 'TICKET-1', ticket_total_price: 0 }, null)!
   assert.equal(ticket.orderNumber, 'TICKET-1')
   assert.equal(ticket.quote.total, 0)
+  const pending = savedBookingSummary({ ...session, ticket_status: 'pending', ticket_total_price: 240000 }, null)!
+  assert.equal(pending.orderNumber, '')
+  assert.equal(pending.quote.total, 240000)
+  assert.equal(savedBookingSummary({ ...session, venue_key: null }, order)!.booking.venueKey, 'ha-do-centrosa')
 })

@@ -6,17 +6,16 @@ export type ConfirmedBookingSummary = { orderNumber: string; booking: BookingSum
 
 /** Use persisted session timing and agreed order prices, never today's pricing rules. */
 export function savedBookingSummary(session: StaffOperationSession, order: StaffOrder | null): ConfirmedBookingSummary | null {
-  const venue = session.venue_key
+  const venue = session.venue_key || (order?.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : 'ha-do-centrosa')
   if (!['ha-do-centrosa', 'cafe-des-stagiaires'].includes(venue || '') || !session.date || !session.start_time || !(session.duration_minutes > 0)) return null
   const total = order?.total ?? session.ticket_total_price
   if (total == null || !Number.isFinite(total)) return null
   const confirmed = session.status !== 'cancelled' && (order
     ? ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status)
     : session.ticket_status === 'confirmed')
-  // Do not relabel cancelled, draft, or refunded bookings as confirmations or proposals.
-  if (!confirmed) return null
+  if (session.status === 'cancelled' || (order && ['cancelled', 'refunded', 'no_show'].includes(order.order_status))) return null
   return {
-    orderNumber: order?.order_number || session.ticket_reference || '',
+    orderNumber: confirmed ? order?.order_number || session.ticket_reference || '' : '',
     booking: {
       date: session.date, time: session.start_time.slice(0, 5), venueKey: venue as BookingForm['venueKey'],
       bookingKind: order?.internal_note?.includes('Event / corporate; reserved minutes:') ? 'event' : 'standard',
