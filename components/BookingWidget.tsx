@@ -1,4 +1,5 @@
 'use client'
+import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
 import type { ChallengeTarget } from '../features/booking/ChallengeControls'
 import { clubRankingCriterion, clubTheme } from '../features/booking/clubAccess.actions'
@@ -3905,20 +3906,10 @@ export default function WidgetPage({
   const venueOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const venueCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
   const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
-  // Staff must also see event reservations made outside public opening hours.
-  const [calendarOpenMinutes, calendarCloseMinutes] = (() => {
-    let first = venueOpenMinutes
-    let last = venueCloseMinutes
-    if (canManageCalendarBookings) {
-      for (const session of sessions) {
-        if (session.date < calendarWeekStart || session.date > calendarWeekEnd || (session.venue_key || 'ha-do-centrosa') !== bookingVenue || session.status === 'cancelled' || ['cancelled', 'expired'].includes(session.ticket_status || '')) continue
-        const start = timeToMinutes(session.start_time)
-        first = Math.min(first, Math.floor(start / calendarStepMinutes) * calendarStepMinutes)
-        last = Math.max(last, Math.min(1440, Math.ceil((start + session.duration_minutes) / calendarStepMinutes) * calendarStepMinutes))
-      }
-    }
-    return [first, last]
-  })()
+  // Recompute after saves/week/shop changes so every staff reservation remains visible.
+  const [calendarOpenMinutes, calendarCloseMinutes] = calendarRange(
+    venueOpenMinutes, venueCloseMinutes, calendarStepMinutes, calendarSessions, canManageCalendarBookings,
+  )
 
   const calendarTimeSlots = useMemo(() => {
     return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
@@ -5488,7 +5479,7 @@ export default function WidgetPage({
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
                     <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
-                    <span className="calendar-opening-hours">{minutesToTime(venueOpenMinutes)}–{minutesToTime(venueCloseMinutes)}</span>
+                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">
