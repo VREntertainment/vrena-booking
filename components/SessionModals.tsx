@@ -177,6 +177,7 @@ export function BirthdayPopupModal({ closeText, title, message, buttonText, onCl
 }
 
 type TariffPaymentModalProps = {
+  venue: import('../lib/venueContacts').ContactVenue
   closeText: string
   title: string
   rates: string[]
@@ -192,6 +193,7 @@ type TariffPaymentModalProps = {
 }
 
 export function TariffPaymentModal({
+  venue,
   closeText,
   title,
   rates,
@@ -229,7 +231,7 @@ export function TariffPaymentModal({
           <div className="tariff-payment-section">
             <p>{offerLimit}</p>
             <p>{paymentText}</p>
-            <ContactChannels className="tariff-contact-channels" label={contactText} />
+            <ContactChannels venue={venue} className="tariff-contact-channels" label={contactText} />
           </div>
           <div className="tariff-payment-section tariff-loyalty-section">
             <h4>{loyaltyTitle}</h4>

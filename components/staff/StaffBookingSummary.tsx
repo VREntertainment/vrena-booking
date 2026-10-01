@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 import { uiText } from '../../lib/i18n/translations'
-import { VRENA_CONTACT_PHONE_DISPLAY, VRENA_CONTACT_PHONE_INTERNATIONAL } from '../ContactChannels'
+import { venueContact } from '../../lib/venueContacts'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import { dateFromInput } from '../../lib/staff/dates'
@@ -34,6 +34,7 @@ const copy = {
 }
 
 export function StaffBookingSummary({ contentRef, booking, venueName, language, text, quote, confirmedOrderNumber }: Props) {
+  const contact = venueContact(booking.venueKey)
   const c = copy[language]
   const labels = staffBookingCopy[language]
   const date = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
@@ -51,7 +52,7 @@ export function StaffBookingSummary({ contentRef, booking, venueName, language, 
         <p>{c.title}</p>
         <h4>{venueName}</h4>
         <p className="staff-client-summary-address">{booking.venueKey === 'cafe-des-stagiaires' ? uiText[language].bookingVenueCafeAddress : uiText[language].bookingVenueHaDoAddress}</p>
-        <p className="staff-client-summary-contact">Zalo: {VRENA_CONTACT_PHONE_DISPLAY}<br />WhatsApp: +{VRENA_CONTACT_PHONE_INTERNATIONAL}</p>
+        <p className="staff-client-summary-contact">Zalo: {contact.phone}<br />WhatsApp: +{contact.international}</p>
       </div>
       {!booking.guestBooking && booking.customerName.trim() && <div className="staff-client-summary-customer">
         <span>{c.preparedFor}</span><strong>{booking.customerName}</strong>
