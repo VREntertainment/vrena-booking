@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarClock, MapPin, MessageCircle } from 'lucide-react'
+import { CalendarClock, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 import ContactChannels from './ContactChannels'
-import { venueContact } from '../lib/venueContacts'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -13,10 +12,6 @@ type BookingVenueSelectorProps = {
   onChange: (venue: BookingVenueId) => void
   text: TranslationMap
   value: BookingVenueId
-}
-
-type BookingVenueComingSoonProps = {
-  text: TranslationMap
 }
 
 const venueMaps: Record<BookingVenueId, { directionsUrl: string; latitude: number; longitude: number }> = {
@@ -137,27 +132,6 @@ export default function BookingVenueSelector({ compactOnMobile = false, onChange
           </div>
         </div>
       </div>
-    </section>
-  )
-}
-
-export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
-  return (
-    <section className="section booking-venue-coming-soon" aria-labelledby="booking-venue-coming-soon-title">
-      <div className="booking-venue-coming-soon-icon">
-        <CalendarClock aria-hidden="true" size={30} />
-      </div>
-      <VenueHoursPill label={text.bookingVenueCafeHours} />
-      <h2 id="booking-venue-coming-soon-title">{text.bookingVenueCafeComingSoonTitle}</h2>
-      <p>{text.bookingVenueCafeComingSoonBody}</p>
-      <p className="booking-venue-soft-opening-notice">
-        <span>{text.bookingVenueCafeSoftOpeningNotice}</span>
-        <a href={venueContact('cafe-des-stagiaires').zalo} rel="noreferrer" target="_blank">
-          <MessageCircle aria-hidden="true" size={16} />
-          {text.bookingVenueCafeConfirmZalo}
-        </a>
-      </p>
-      <small><MapPin aria-hidden="true" size={15} /> {text.bookingVenueCafeAddress}</small>
     </section>
   )
 }

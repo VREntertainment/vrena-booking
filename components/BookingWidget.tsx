@@ -190,7 +190,7 @@ import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
-import BookingVenueSelector, { BookingVenueComingSoon, type BookingVenueId } from './BookingVenueSelector'
+import BookingVenueSelector, { type BookingVenueId } from './BookingVenueSelector'
 import {
   BirthdayPopupModal,
   BookingProfileView,
@@ -3122,6 +3122,9 @@ export default function WidgetPage({
       ? CAFE_SOFT_OPENING_DATE
       : ticketDate
     setBookingVenue(value)
+    if (value === 'cafe-des-stagiaires' && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar'))) {
+      setActiveView('tickets')
+    }
     setTicketArenaCount(1)
     setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
     setTicketTime('')
@@ -5209,10 +5212,8 @@ export default function WidgetPage({
         <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
       )}
 
-      {activeView === 'sessions' && (
-        isHaDoBookingVenue
-          ? <BookingSessionsPanel context={sessionsPanelContext} />
-          : <BookingVenueComingSoon text={text} />
+      {activeView === 'sessions' && isHaDoBookingVenue && (
+        <BookingSessionsPanel context={sessionsPanelContext} />
       )}
 
       {activeView === 'leaderboard' && (
@@ -5384,7 +5385,7 @@ export default function WidgetPage({
         )
       )}
 
-      {activeView === 'tickets' && (
+      {(activeView === 'tickets' || (!isHaDoBookingVenue && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar')))) && (
         <div className="ticket-booking-layout">
           {isHaDoBookingVenue && <div className="sim-racing-product-picker">
             <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR · {text.bookTickets}</button>
@@ -5820,9 +5821,7 @@ export default function WidgetPage({
               </div>
             )}
           </CreateSessionView>
-        ) : (
-          <BookingVenueComingSoon text={text} />
-        )
+        ) : null
       )}
 
       {activeView === 'profile' && (
