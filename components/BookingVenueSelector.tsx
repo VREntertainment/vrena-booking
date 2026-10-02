@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarClock, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
-import ContactChannels from './ContactChannels'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -132,22 +130,6 @@ export default function BookingVenueSelector({ compactOnMobile = false, onChange
           </div>
         </div>
       </div>
-    </section>
-  )
-}
-
-export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap }) {
-  return (
-    <section className="cafe-booking-notice" aria-labelledby="cafe-booking-notice-title">
-      <div className="cafe-booking-notice-icon">
-        <MessageCircle aria-hidden="true" size={24} />
-      </div>
-      <VenueHoursPill label={text.bookingVenueCafeHours} />
-      <h2 id="cafe-booking-notice-title">{text.bookingVenueCafeBookingNoticeTitle}</h2>
-      <p>{text.bookingVenueCafeBookingNoticeBody}</p>
-      <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
-      <small><CalendarClock aria-hidden="true" size={16} /> {text.bookingVenueCafeBookingHours}</small>
-      <ContactChannels venue="cafe-des-stagiaires" className="cafe-booking-contact-channels" label={text.contactUs} />
     </section>
   )
 }
