@@ -230,6 +230,7 @@ export default function WidgetPage({
   initialSelectedPlayerSessionId = '',
   initialView = 'tickets',
   initialCalendarNavigation,
+  initialBookingVenue,
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
@@ -711,7 +712,7 @@ export default function WidgetPage({
     isUpdatingSession,
     setIsUpdatingSession,
   } = useBookingSessionEditorState({ incomingCalendar, initialView })
-  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || 'ha-do-centrosa')
+  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || initialBookingVenue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
   const [simRacingSelected, setSimRacingSelected] = useState(false)
   useEffect(() => {
@@ -2500,7 +2501,9 @@ export default function WidgetPage({
         ? { mode: 'staff-booking', date: calendarBookingDraft.date, time: calendarBookingDraft.time, venue: calendarBookingDraft.venueKey }
         : activeView === 'tickets' && calendarTicketDraft
           ? { mode: 'client-ticket', date: ticketDate, time: ticketTime, venue: bookingVenue }
-          : null
+          : activeView === 'tickets'
+            ? { venue: bookingVenue }
+            : null
     onActiveViewChange?.(activeView, navigation ? new URLSearchParams(navigation).toString() : activeView === 'create' ? '' : undefined)
   }, [activeView, bookingVenue, calendarBookingDraft, calendarTicketDraft, calendarWeekStart, createSessionMode, onActiveViewChange, ticketDate, ticketTime])
 
