@@ -577,6 +577,7 @@ export type StaffPayrollCalculation = {
 }
 
 export type StaffOrder = {
+  booking_source?: string | null
   id: string
   order_number: string
   customer_id: string | null
@@ -720,6 +721,7 @@ export type SoftDeletedRecord = {
 export type StaffDataKey = 'games' | 'prices' | 'discounts' | 'loyalty' | 'today' | 'todaySessions' | 'attendance' | 'hr' | 'orders' | 'profiles' | 'achievementAwards' | 'restore' | 'report' | 'qrReport'
 
 export type StaffReportSummary = {
+  bookingSources?: Array<{ source: string; bookings: number; sales: number }>
   totalSales: number
   totalPaid: number
   unpaidAmount: number
@@ -775,7 +777,7 @@ export type BookingForm = {
   overrideTotalEnabled: boolean
   overrideTotal: string
   overrideReason: string
-  bookingSource: 'walk_in' | 'zalo' | 'whatsapp' | 'phone' | 'website' | 'other'
+  bookingSource: 'walk_in' | 'zalo' | 'whatsapp' | 'phone' | 'website' | 'social_media' | 'other'
   venueKey: 'ha-do-centrosa' | 'cafe-des-stagiaires'
   guestBooking: boolean
   customerId: string

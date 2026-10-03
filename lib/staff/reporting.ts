@@ -183,6 +183,10 @@ export function buildStaffReport(
     noShows: totals.noShows,
     discounts: totals.discounts,
     bestSellingGame,
+    bookingSources: [...new Set(orders.map(order => order.booking_source || 'unspecified'))].sort().map(source => {
+      const rows = orders.filter(order => (order.booking_source || 'unspecified') === source)
+      return { source, bookings: rows.length, sales: rows.reduce((sum, order) => sum + order.total, 0) }
+    }),
   }
 }
 
@@ -240,6 +244,7 @@ export function reportSummaryFromRpc(value: unknown, text: StaffConsoleCopy = st
     cancelled: numericReportValue(row.cancelled),
     noShows: numericReportValue(row.noShows ?? row.no_shows),
     discounts: numericReportValue(row.discounts),
+    bookingSources: Array.isArray(row.bookingSources) ? row.bookingSources.map(item => ({ source: String(item.source || 'unspecified'), bookings: numericReportValue(item.bookings), sales: numericReportValue(item.sales) })) : [],
     bestSellingGame: String(row.bestSellingGame ?? row.best_selling_game ?? text.noneYet),
   }
 }
