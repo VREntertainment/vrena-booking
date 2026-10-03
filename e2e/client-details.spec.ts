@@ -26,7 +26,7 @@ test('client details save and reopen without changing player stats', async ({ pa
     await details.getByLabel('Phone number', { exact: true }).fill('+84900000712')
     await details.getByLabel('Contact email', { exact: true }).fill(`contact-${suffix}@example.invalid`)
     await details.getByLabel('Date of birth', { exact: true }).fill('2000-02-29')
-    await details.getByLabel('Gender', { exact: true }).selectOption('female')
+    await details.getByRole('combobox', { name: 'Gender', exact: true }).selectOption('female')
     await details.getByLabel('Profile motto', { exact: true }).fill('Play together')
     await page.setViewportSize({ width: 390, height: 844 })
     expect(await details.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
