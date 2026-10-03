@@ -8,10 +8,48 @@ const scriptSource = readFileSync(
   'utf8'
 )
 
-function loadScript() {
+function loadScript(testOptions = {}) {
+  const sheets = testOptions.sheets || new Map()
+  let locked = false
+  let sequence = 0
   let sentEmail = null
   const sentEmails = []
+  const spreadsheet = {
+    getSheetByName: (name) => sheets.get(name),
+    insertSheet(name) {
+      const rows = []
+      const sheet = {
+        rows,
+        appendRow: (row) => rows.push(row),
+        setFrozenRows() {},
+        getLastRow: () => rows.length,
+        getRange(row, column) {
+          return {
+            getValue: () => rows[row - 1][column - 1],
+            setValues: (values) => values[0].forEach((v, i) => { rows[row - 1][column - 1 + i] = v }),
+            createTextFinder(key) {
+              return {
+                matchEntireCell() { return this },
+                useRegularExpression() { return this },
+                findNext() {
+                  const index = rows.findIndex((r) => r[0] === key)
+                  return index < 0 ? null : { getRow: () => index + 1 }
+                },
+              }
+            },
+          }
+        },
+      }
+      sheets.set(name, sheet)
+      return sheet
+    },
+  }
   const context = vm.createContext({
+    LockService: { getScriptLock: () => ({
+      waitLock() { if (locked) throw new Error('Lock unavailable'); locked = true },
+      releaseLock() { locked = false },
+    }) },
+    SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, flush() {} },
     MailApp: {
       sendEmail(options) {
         sentEmail = options
@@ -22,6 +60,7 @@ function loadScript() {
       sendEmail(to, subject, body, options) {
         sentEmail = { to, subject, body, ...options }
         sentEmails.push(sentEmail)
+        if (testOptions.customerSendThrows) throw new Error('Ambiguous mail failure')
       },
     },
     Utilities: {
@@ -31,7 +70,14 @@ function loadScript() {
     },
   })
   vm.runInContext(scriptSource, context)
-  return { context, sentEmail: () => sentEmail, sentEmails }
+  // Give older formatting fixtures a booking identity; production payloads have one.
+  const send = context.sendNotificationEmail
+  context.sendNotificationEmail = (payload, date) => {
+    payload.session ||= {}
+    payload.session.id ||= 'fixture-' + (++sequence)
+    return send(payload, date)
+  }
+  return { context, sentEmail: () => sentEmail, sentEmails, sheets }
 }
 
 test('legacy Ha Do ticket notification is sent only to the contact address', () => {
@@ -183,4 +229,45 @@ test('customer emails skip absent, synthetic, malformed, and update addresses', 
 test('confirmed customer booking is clearly confirmed', () => {
   const { context } = loadScript()
   assert.match(context.buildEmailText({event_type:'ticket_booked',session:{venue_key:'ha-do-centrosa',ticket_status:'confirmed'}},new Date(),true), /Your booking is confirmed/)
+})
+
+for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+  for (const email of ['contact@vre-vietnam.com', ' CONTACT@VRE-VIETNAM.COM ', 'vrena-thaodien@vre-vietnam.com']) {
+    test(`${venue}: shared client address ${email} receives only the venue notice`, () => {
+      const { context, sentEmails } = loadScript()
+      const payload = {event_type: 'ticket_booked', session: {id: 'booking-1', venue_key: venue}, customer: {email}}
+      context.sendNotificationEmail(payload, new Date())
+      context.sendNotificationEmail(payload, new Date())
+      assert.equal(sentEmails.length, 1)
+      assert.equal(sentEmails[0].to, venue === 'cafe-des-stagiaires' ? 'vrena-thaodien@vre-vietnam.com' : 'contact@vre-vietnam.com')
+      assert.match(sentEmails[0].subject, /New ticket booking/)
+    })
+  }
+}
+
+test('repeated creation events send one venue notice and one real customer confirmation across executions', () => {
+  const first = loadScript()
+  const payload = {event_type: 'ticket_booked', session: {id: 'booking-2', venue_key: 'cafe-des-stagiaires'}, customer: {email: 'guest@example.com'}}
+  first.context.sendNotificationEmail(payload, new Date())
+  const retry = loadScript({sheets: first.sheets})
+  retry.context.sendNotificationEmail({...payload, created_at: 'later', event_type: 'session_created'}, new Date())
+  assert.equal(first.sentEmails.length, 2)
+  assert.equal(retry.sentEmails.length, 0)
+  retry.context.sendNotificationEmail({...payload, session: {...payload.session, id: 'another-booking'}}, new Date())
+  assert.equal(retry.sentEmails.length, 2)
+})
+
+test('ambiguous customer send does not resend either audience on retry', () => {
+  const first = loadScript({customerSendThrows: true})
+  const payload = {event_type: 'ticket_booked', session: {id: 'booking-3', venue_key: 'cafe-des-stagiaires'}, customer: {email: 'guest@example.com'}}
+  assert.throws(() => first.context.sendNotificationEmail(payload, new Date()), /Ambiguous mail failure/)
+  const retry = loadScript({sheets: first.sheets})
+  assert.throws(() => retry.context.sendNotificationEmail(payload, new Date()), /requires review/)
+  assert.equal(retry.sentEmails.length, 0)
+})
+
+test('missing creation identity fails before sending', () => {
+  const {context, sentEmails} = loadScript()
+  assert.throws(() => context.sendBookingEmailOnce({event_type: 'ticket_booked', session: {}}, 'venue', () => {}), /Missing booking identity/)
+  assert.equal(sentEmails.length, 0)
 })
