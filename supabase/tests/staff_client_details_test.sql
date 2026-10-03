@@ -24,6 +24,8 @@ select throws_ok($q$select public.staff_save_client_profile_v4('85000000-0000-40
 select throws_ok($q$select public.staff_save_client_profile_v4('85000000-0000-4000-8000-000000000072',0,'{}','[]',p_details=>'{"nickname":"details-admin","full_name":"Should roll back"}',p_save_stats=>false)$q$,'23505','Player nickname is already in use.','Duplicate nicknames reject the complete save');
 select is((select full_name from public.profiles where id='85000000-0000-4000-8000-000000000072'),'New Given Surname','Failed save leaves original data intact');
 select throws_ok($q$select public.staff_save_client_profile_v4('85000000-0000-4000-8000-000000000072',0,'{}','[]',p_details=>'{"birthday":"2999-01-01"}',p_save_stats=>false)$q$,'P0001','Enter a valid date of birth.','Future birthday rejected');
+select throws_ok($q$select public.staff_save_client_profile_v4('85000000-0000-4000-8000-000000000072',0,'{}','[]',p_achievement_changes=>'{}',p_details=>'{"full_name":"Must roll back with stats"}',p_save_stats=>true)$q$,'P0001','Achievement changes must be an array.','Stats validation also rolls back personal details');
+select is((select full_name from public.profiles where id='85000000-0000-4000-8000-000000000072'),'New Given Surname','Combined save is atomic');
 reset role;
 select is((select count(*)::integer from public.audit_logs where entity_id='85000000-0000-4000-8000-000000000072' and action='staff_client_details_updated'),1,'Successful change is audited once');
 select * from finish();
