@@ -91,6 +91,7 @@ export type StaffProfile = {
   avatar_initials?: string | null
   avatar_color?: string | null
   avatar_text_color?: string | null
+  gender?: string | null
   birthday?: string | null
   profile_motto?: string | null
   anonymous_mode?: boolean | null

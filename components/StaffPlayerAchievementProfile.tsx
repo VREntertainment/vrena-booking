@@ -1,5 +1,7 @@
 'use client'
 
+import StaffClientDetailsEditor from './StaffClientDetailsEditor'
+import { clientDetails, type ClientDetails } from '../lib/staff/clientDetails'
 import NextImage from 'next/image'
 import { CalendarPlus, Check, ChevronDown, LoaderCircle, Save, Search, Trash2, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
@@ -141,6 +143,8 @@ export default function StaffPlayerAchievementProfile({
   profilesLoading,
   text,
 }: StaffPlayerAchievementProfileProps) {
+  const [detailsDraft, setDetailsDraft] = useState<ClientDetails | null>(null)
+  const [detailsBaseline, setDetailsBaseline] = useState<ClientDetails | null>(null)
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -206,7 +210,8 @@ export default function StaffPlayerAchievementProfile({
   }, [baselineAwards, pendingAchievements])
   const pendingKeys = useMemo(() => new Set(pendingAchievements.keys()), [pendingAchievements])
   const pendingSessionIds = useMemo(() => new Set(pendingSessions.keys()), [pendingSessions])
-  const dirty = statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0
+  const detailsDirty = JSON.stringify(detailsDraft) !== JSON.stringify(detailsBaseline)
+  const dirty = detailsDirty || statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0
 
   useEffect(() => {
     onDirtyChange(dirty)
@@ -327,6 +332,8 @@ export default function StaffPlayerAchievementProfile({
 
   function chooseProfile(profile: StaffProfile) {
     if (dirty && profile.id !== selectedProfileId && !window.confirm('Discard unsaved changes and switch customers?')) return
+    setDetailsDraft(clientDetails(profile))
+    setDetailsBaseline(clientDetails(profile))
     setSelectedProfileId(profile.id)
     setQuery(profileName(profile))
     setOpen(false)
@@ -390,7 +397,9 @@ export default function StaffPlayerAchievementProfile({
     setSaved(false)
     setStatus('')
     try {
-      const { error } = await supabase.rpc('staff_save_player_achievement_profile_v3', {
+      const { error } = await supabase.rpc('staff_save_client_profile_v4', {
+        p_details: detailsDirty && detailsDraft ? Object.fromEntries(Object.entries(detailsDraft).filter(([key, value]) => value !== detailsBaseline?.[key as keyof ClientDetails])) : null,
+        p_save_stats: statsDirty || pendingAchievements.size > 0 || pendingSessions.size > 0,
         p_profile_id: selectedProfile.id,
         p_loyalty_points: statsDraft.loyaltyPoints,
         p_overall: statsDraft.overall,
@@ -401,6 +410,8 @@ export default function StaffPlayerAchievementProfile({
       })
       if (error) throw error
 
+      setDetailsBaseline(detailsDraft)
+      if (detailsDraft) setQuery(detailsDraft.full_name || detailsDraft.nickname)
       setPendingAchievements(new Map())
       setPendingSessions(new Map())
       setStatsDirty(false)
@@ -497,6 +508,8 @@ export default function StaffPlayerAchievementProfile({
           </button>
         </div>
       </div>
+
+      {selectedProfile && detailsDraft && <StaffClientDetailsEditor value={detailsDraft} onChange={setDetailsDraft} disabled={saving} language={language} />}
 
       {!selectedProfile ? (
         <div className="staff-achievement-profile-empty">

@@ -24,6 +24,7 @@ export type ClientProfileSectionProps = {
   achievementAwards: import("../../components/StaffAchievementAwardPanel").StaffAchievementAward[]
   setClientProfileDirty: React.Dispatch<React.SetStateAction<boolean>>
   markStaffDataStale: (...keys: import("../../lib/staff/types").StaffDataKey[]) => void
+  loadProfiles: (force?: boolean) => Promise<void>
   loadAchievementAwards: (force?: boolean) => Promise<void>
   awardableProfiles: import("../../lib/staff/types").StaffProfile[]
   loadingData: Partial<Record<import("../../lib/staff/types").StaffDataKey, boolean>>
@@ -45,6 +46,7 @@ export default function ClientProfileSection({
   achievementAwards,
   setClientProfileDirty,
   markStaffDataStale,
+  loadProfiles,
   loadAchievementAwards,
   awardableProfiles,
   loadingData,
@@ -147,7 +149,7 @@ export default function ClientProfileSection({
             onDirtyChange={setClientProfileDirty}
             onRefreshAwards={async () => {
               markStaffDataStale('achievementAwards')
-              await loadAchievementAwards(true)
+              await Promise.all([loadAchievementAwards(true), loadProfiles(true)])
             }}
             profiles={awardableProfiles}
             profilesLoading={Boolean(loadingData.profiles)}

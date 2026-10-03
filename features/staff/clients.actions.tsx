@@ -61,11 +61,12 @@ export function createStaffClientsActions(getContext: () => ClientsActionContext
         const profileIds = rows.map((item) => item.id).filter(Boolean)
         if (profileIds.length === 0) return rows
 
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select(staffProfileAvatarSelect)
           .in('id', profileIds)
 
+        if (error) throw error
         const avatarById = new Map((data ?? []).map((item) => [item.id, item as StaffProfile]))
         return rows.map((item) => ({
           ...item,
