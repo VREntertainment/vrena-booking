@@ -135,8 +135,14 @@ test('staff booking: inline client, shop games, discounts and responsive summary
     return bounds.width === 0 || (bounds.left >= 0 && bounds.right <= innerWidth)
   }))).toBe(true)
   const overlaps = await page.locator('.staff-price-lines').evaluate((grid) => {
-    const children = [...grid.children]
-    return children.some((child, index) => index % 2 === 0 && child.getBoundingClientRect().right > children[index + 1].getBoundingClientRect().left)
+    const rows = [...grid.querySelectorAll('.staff-client-summary-cost, .staff-client-summary-total')]
+    if (rows.length !== 2) throw new Error('Missing summary price rows')
+    return rows.some((row) => [...row.children].some((child, index, children) => {
+      if (index % 2 !== 0) return false
+      const label = child.getBoundingClientRect()
+      const amount = children[index + 1].getBoundingClientRect()
+      return label.right > amount.left && label.top < amount.bottom && amount.top < label.bottom
+    }))
   })
   expect(overlaps).toBe(false)
   await page.screenshot({ path: '/tmp/staff-booking-mobile.png' })
@@ -228,13 +234,20 @@ test('staff booking: client contacts and available discounts follow the selectio
   const discount = page.getByRole('combobox', { name: 'Discount / voucher', exact: true })
   await expect(discount.locator('option')).toContainText(['Automatic group discount', 'PAIR10 · Pair offer · 10%'])
   await discount.selectOption('85000000-0000-4000-8000-000000000043')
-  await expect(page.locator('.staff-price-lines')).toContainText('Pair offer')
+  await expect(discount.locator('option:checked')).toHaveText('PAIR10 · Pair offer · 10%')
+  const cost = page.locator('.staff-client-summary-cost')
+  await expect(cost.locator('span')).toHaveText(['Subtotal', 'Discount'])
+  const amounts = await cost.locator('strong').allTextContents()
+  const money = (value: string) => Number(value.replace(/[^0-9]/g, ''))
+  expect(money(amounts[1])).toBe(money(amounts[0]) * 0.1)
+  await expect(page.locator('.staff-client-summary-total strong')).toHaveText(new RegExp(String(money(amounts[0]) - money(amounts[1])).replace(/\B(?=(\d{3})+(?!\d))/g, '\\.')))
   await page.getByRole('spinbutton', { name: 'Players', exact: true }).fill('1')
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   await expect(page.locator('.staff-summary-card .notice')).toContainText('This discount no longer applies')
   expect(writes).toBe(0)
   await discount.selectOption('')
-  await expect(page.locator('.staff-price-lines')).toContainText('No discount')
+  await expect(cost.locator('span')).toHaveText(['Subtotal'])
+  await expect(page.locator('.staff-client-summary-total strong')).toHaveText(await cost.locator('strong').innerText())
 })
 
 test('staff calendar: shared calendar supports source-aware creation, edit, deletion and mobile payments', async ({ page, browser }, testInfo) => {
@@ -247,7 +260,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await loginAsAdmin(page)
   await openAdmin(page)
   await page.setViewportSize({ width: 1142, height: 894 })
-  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true }).locator('option')).toHaveText(['Walk-in','Zalo','WhatsApp','Phone','Website','Other'])
+  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true }).locator('option')).toHaveText(['Walk-in','Zalo','WhatsApp','Phone','Website','Social Media','Other'])
   await page.getByRole('button', { name: 'Add split', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Payment amount', exact: true })).toHaveCount(2)
   await page.getByRole('button', { name: 'Remove payment split 2', exact: true }).click()
@@ -283,7 +296,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await expect(page.getByRole('combobox', { name: 'Shop', exact: true })).toHaveValue('cafe-des-stagiaires')
   await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('15:30')
   await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
-  await page.getByRole('combobox', { name: 'Booking source', exact: true }).selectOption('zalo')
+  await page.getByRole('combobox', { name: 'Booking source', exact: true }).selectOption('social_media')
   const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking'))
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const created = await (await createdResponse).json() as { session_id: string; order_id: string; total: number }
@@ -297,7 +310,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await expect(block).toHaveCount(1)
     await block.click()
     const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
-    await expect(dialog.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('zalo')
+    await expect(dialog.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('social_media')
     await dialog.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('ha-do-centrosa')
     await dialog.getByRole('textbox', { name: 'Booking name', exact: true }).fill('Calendar updated fixture')
     await dialog.getByLabel('Time', { exact: true }).fill('17:00')

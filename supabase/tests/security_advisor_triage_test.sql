@@ -169,11 +169,13 @@ select is(
     'public.consume_booking_attempt_rate_limit(p_subject text)',
     'public.create_cafe_ticket_booking_request(p_ticket_type text, p_date date, p_start_time time without time zone, p_duration_minutes integer, p_player_count integer, p_arena_count integer, p_game_options text[], p_guest_phone text, p_guest_name text, p_special_note text)',
     'public.create_guest_ticket_booking(p_ticket_type text, p_date date, p_start_time time without time zone, p_duration_minutes integer, p_player_count integer, p_arena_count integer, p_game_options text[], p_unit_price integer, p_total_price integer, p_guest_phone text, p_guest_name text, p_guest_note text)',
+    'public.create_sim_racing_booking(p_date date, p_start_time time without time zone, p_guest_phone text, p_guest_name text)',
     'public.get_leaderboard_players_page(p_limit integer, p_offset integer, p_search text, p_rank_by text, p_profile_id uuid, p_club_id uuid, p_club_pin text)',
     'public.get_leaderboard_players_page_v2(p_limit integer, p_offset integer, p_search text, p_rank_by text, p_profile_id uuid, p_club_id uuid, p_club_pin text, p_game_id text)',
     'public.get_leaderboard_players_page_v3(p_limit integer, p_offset integer, p_search text, p_rank_by text, p_profile_id uuid, p_club_id uuid, p_club_pin text, p_game_id text)',
     'public.session_detail(p_session_id uuid)',
     'public.sessions_list_page(p_start_date date, p_end_date date, p_limit integer, p_offset integer, p_include_blocked_times boolean)',
+    'public.sim_racing_available_times(p_date date)',
     'public.ticket_automatic_discount_quote(p_booking_date date, p_subtotal integer, p_unit_price integer, p_game_id text, p_player_count integer, p_start_time time without time zone, p_ticket_type text)',
     'public.ticket_loyalty_earn_quote(p_game_id text, p_booking_date date, p_paid_total integer, p_player_count integer)'
   ]::text[],
