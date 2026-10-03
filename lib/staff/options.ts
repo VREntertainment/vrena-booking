@@ -123,7 +123,7 @@ export const roleSortOptions: StaffRoleSort[] = ['name_asc', 'name_desc', 'creat
 
 export const staffProfileSelect = 'id, created_at, full_name, nickname, email, phone, role, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign, birthday, is_seed_demo, seed_batch'
 
-export const staffProfileAvatarSelect = 'id, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
+export const staffProfileAvatarSelect = 'id, full_name, nickname, phone, email, birthday, gender, profile_motto, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, anonymous_mode, anonymous_callsign'
 
 export const staffGameImageBucket = 'staff-game-images'
 

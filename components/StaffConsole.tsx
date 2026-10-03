@@ -2003,6 +2003,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         achievementAwards={achievementAwards}
         setClientProfileDirty={setClientProfileDirty}
         markStaffDataStale={markStaffDataStale}
+        loadProfiles={loadProfiles}
         loadAchievementAwards={loadAchievementAwards}
         awardableProfiles={awardableProfiles}
         loadingData={loadingData}
