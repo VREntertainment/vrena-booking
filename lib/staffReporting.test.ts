@@ -97,3 +97,14 @@ test('report snapshots accept numeric database strings and missing comparison da
   assert.equal(snapshot.reportSeries[0].sales, 440000)
   assert.deepEqual(snapshot.comparisonOrders, [])
 })
+
+
+test('source reporting reconciles Social Media and unspecified legacy bookings and exports the source', () => {
+  const rows = [order({ booking_source: 'social_media' }), order({ id: 'legacy', total: 100000 })]
+  const report = buildStaffReport(rows, new Map(), new Map())
+  assert.deepEqual(report.bookingSources, [{ source: 'social_media', bookings: 1, sales: 440000 }, { source: 'unspecified', bookings: 1, sales: 100000 }])
+  const snapshot = staffReportSnapshotFromRpc({ report })
+  assert.deepEqual(snapshot.report.bookingSources, report.bookingSources)
+  assert.equal(staffOrderExportRows(rows, [], new Map())[0].booking_source, 'Social Media')
+  assert.equal(staffOrderExportRows(rows, [], new Map(), staffConsoleText.vi)[0].booking_source, 'Mạng xã hội')
+})

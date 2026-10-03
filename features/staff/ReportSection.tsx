@@ -32,6 +32,8 @@ import type {
   StaffConsoleLanguage,
   StaffReportChartMode
 } from '../../lib/staff/types'
+import { bookingSourceLabel } from '../../lib/staff/reportExports'
+import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import { vrenaPalette } from '../../lib/theme/vrenaPalette'
 import { ButtonIconText, StaffPlayerInsights, StaffQrAnalytics } from './shared'
 
@@ -521,6 +523,19 @@ export default function ReportSection({
                 </div>
               </section>
             </div>
+
+            <section className="staff-report-graph" aria-label={staffBookingCopy[resolvedLanguage].bookingSource}>
+              <div className="staff-report-graph-head"><h4>{staffBookingCopy[resolvedLanguage].bookingSource}</h4></div>
+              <div className="staff-payment-mix">
+                {[...Object.keys(staffBookingCopy[resolvedLanguage].sources), 'unspecified'].map(source => {
+                  const row = report.bookingSources?.find(item => item.source === source)
+                  return <div className="staff-payment-row" key={source}><div>
+                    <span>{bookingSourceLabel(source, text)}</span>
+                    <strong>{row?.bookings || 0} {text.labels.bookings} · {formatVnd(row?.sales || 0)}</strong>
+                  </div></div>
+                })}
+              </div>
+            </section>
 
             <section className="staff-report-graph staff-report-sales-graph" aria-label={text.aria.salesByDay}>
               <div className="staff-report-graph-head">

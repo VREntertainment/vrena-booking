@@ -1,3 +1,4 @@
+import { staffBookingCopy } from './bookingCopy.ts'
 import type { StaffConsoleCopy } from './copy.ts'
 import { staffConsoleText } from './copy.ts'
 import { normalizeTime } from './dates.ts'
@@ -36,6 +37,11 @@ export async function downloadPdf(filename: string, lines: string[], text: Staff
   downloadPdfFile(filename, lines, text.reportTitleFallback)
 }
 
+export function bookingSourceLabel(source: string | null | undefined, text: StaffConsoleCopy = staffConsoleText.en) {
+  const copy = staffBookingCopy[text === staffConsoleText.vi ? 'vi' : 'en']
+  return copy.sources[source as keyof typeof copy.sources] || (text === staffConsoleText.vi ? 'Chưa xác định' : 'Unspecified')
+}
+
 export function staffReportRows(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
     { metric: text.labels.totalSales, value: formatVnd(report.totalSales) },
@@ -52,6 +58,10 @@ export function staffReportRows(report: StaffReportSummary, text: StaffConsoleCo
     { metric: text.labels.noShows, value: report.noShows },
     { metric: text.labels.discounts, value: formatVnd(report.discounts) },
     { metric: text.labels.bestSellingGame, value: report.bestSellingGame },
+    ...(report.bookingSources || []).flatMap(row => [
+      { metric: `${bookingSourceLabel(row.source, text)} — ${text.labels.bookings}`, value: row.bookings },
+      { metric: `${bookingSourceLabel(row.source, text)} — ${text.labels.totalSales}`, value: formatVnd(row.sales) },
+    ]),
   ]
 }
 
@@ -66,6 +76,7 @@ export function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<stri
 export function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
   return orders.map((order) => ({
     order_number: order.order_number,
+    booking_source: bookingSourceLabel(order.booking_source, text),
     date: order.booking_date,
     time: normalizeTime(order.booking_time),
     customer: order.customer_name || order.customer_phone || order.customer_email || text.walkIn,
@@ -95,7 +106,7 @@ export function reportPdfLines(
     '',
     text.labels.orders,
     ...staffOrderExportRows(orders, games, paymentsByOrderId, text).slice(0, 28).map((order) => (
-      `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.game} | ${order.total} | ${order.payment_method}`
+      `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.booking_source} | ${order.game} | ${order.total} | ${order.payment_method}`
     )),
   ]
 }
