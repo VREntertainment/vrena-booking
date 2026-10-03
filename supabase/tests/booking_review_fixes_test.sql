@@ -37,7 +37,7 @@ select throws_ok($q$select public.create_cafe_ticket_booking_request('individual
   'Invalid player count.', 'Cafe rejects more than sixteen guests');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 30, 8, 2,
   array['revolta'], '+84999000998', 'Local regression')$q$, 'P0001',
-  'Cafe bookings use one arena.', 'Cafe rejects a second arena');
+  'VRena Thao Dien bookings use one arena.', 'Cafe rejects a second arena');
 
 set local timezone = 'UTC';
 select is(public.ticket_booking_start_is_past(date '2026-09-05', time '12:00', timestamptz '2026-09-05 06:00+00'), true, 'Noon Vietnam is past at 13:00 Vietnam even in UTC');
@@ -47,13 +47,13 @@ set local timezone = 'America/New_York';
 select is(public.ticket_booking_start_is_past(date '2026-09-05', time '00:15', timestamptz '2026-09-04 17:00+00'), false, 'Midnight boundary is independent of database session timezone');
 set local timezone = 'UTC';
 
-select throws_ok($q$select public.create_guest_ticket_booking('individual', current_date - 1, time '16:00', 45, 1, 1,
+select throws_ok($q$select public.create_guest_ticket_booking('individual', current_date - 1, time '16:00', 30, 1, 1,
   array['revolta'], 0, 0, '+84999000997', 'Local regression')$q$, 'P0001', 'Selected time is already past.', 'Guest Ha Do endpoint rejects a past slot');
-select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date - 1, time '16:00', 45, 1, 1,
+select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date - 1, time '16:00', 30, 1, 1,
   array['revolta'], '+84999000996', 'Local regression')$q$, 'P0001', 'Selected time is already past.', 'Cafe endpoint rejects a past slot');
 select set_config('request.jwt.claims', jsonb_build_object('role','authenticated','sub',gen_random_uuid())::text, true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select throws_ok($q$select public.create_ticket_booking('individual', current_date - 1, time '16:00', 45, 1, 1,
+select throws_ok($q$select public.create_ticket_booking('individual', current_date - 1, time '16:00', 30, 1, 1,
   array['revolta'], 0, 0)$q$, 'P0001', 'Selected time is already past.', 'Authenticated Ha Do endpoint rejects a past slot');
 
 select ok(not has_function_privilege('anon', 'public.ticket_minimum_duration_minutes(text,date,integer,integer)', 'execute')

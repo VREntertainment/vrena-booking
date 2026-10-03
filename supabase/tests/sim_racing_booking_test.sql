@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(1);
+select plan(3);
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
 select public.create_sim_racing_booking((now() at time zone 'Asia/Ho_Chi_Minh')::date+10,'09:00','0900000099','SIM rollback test');
@@ -40,6 +40,11 @@ begin
   assert exists(select 1 from public.sim_racing_available_times(d) where start_time='09:00');
 end $$;
 select pass('SIM Racing: price, duration, venue, capacity, adjacent slots, guest access, and cancellation verified');
+select ok(not has_function_privilege('anon', 'public.staff_update_sim_racing_booking(uuid,jsonb)', 'execute'), 'Guests cannot edit SIM Racing bookings');
+set local role authenticated;
+select set_config('request.jwt.claims','{"role":"authenticated","aal":"aal1"}',true);
+select throws_ok($q$select public.staff_update_sim_racing_booking(gen_random_uuid(),'{}'::jsonb)$q$, 'P0001', 'Staff access required.', 'SIM Racing edits reject callers without staff authorization');
+reset role;
 select * from finish();
 
 rollback;

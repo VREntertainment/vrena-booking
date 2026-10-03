@@ -24,7 +24,9 @@ select throws_ok($q$select public.staff_update_session_operation('85000000-0000-
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal2"}',true);
 
 -- Exercise both real staff write paths, then the report that consumes the game.
-select lives_ok(format($q$select public.staff_update_session_operation('85000000-0000-4000-8000-000000000003',p_confirmed_game_id=>%L)$q$,slug),format('Staff can record %s',name)) from public.staff_games order by slug;
+select lives_ok(format($q$select public.staff_update_session_operation('85000000-0000-4000-8000-000000000003',p_confirmed_game_id=>%L)$q$,slug),format('Staff can record %s',name)) from public.staff_games where slug <> 'sim-racing' order by slug;
+-- SIM Racing is a separate product with a fixed venue, duration and capacity.
+select throws_ok($q$select public.staff_update_session_operation('85000000-0000-4000-8000-000000000003',p_confirmed_game_id=>'sim-racing')$q$, 'P0001', 'SIM Racing bookings cannot be changed into VR arena bookings or vice versa.', 'Generic VR bookings cannot be converted to SIM Racing');
 do $$
 declare game record;
 begin
