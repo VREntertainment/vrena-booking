@@ -1,5 +1,6 @@
 type ContentSecurityPolicyOptions = {
   isDev: boolean
+  allowGoogleAnalytics?: boolean
   nonce?: string
   supabaseOrigin?: string | null
   supabaseRealtimeOrigin?: string | null
@@ -19,6 +20,7 @@ export const contentStudioFrameAncestors = [
 export function buildContentSecurityPolicy({
   isDev,
   nonce,
+  allowGoogleAnalytics = false,
   supabaseOrigin,
   supabaseRealtimeOrigin,
 }: ContentSecurityPolicyOptions) {
@@ -27,6 +29,7 @@ export function buildContentSecurityPolicy({
     nonce ? `'nonce-${nonce}'` : "'unsafe-inline'",
     nonce ? "'strict-dynamic'" : null,
     isDev ? "'unsafe-eval'" : null,
+    allowGoogleAnalytics ? 'https://www.googletagmanager.com' : null,
     'https://js.hcaptcha.com',
     'https://hcaptcha.com',
     'https://*.hcaptcha.com',
@@ -40,6 +43,7 @@ export function buildContentSecurityPolicy({
       "img-src 'self' data: blob:",
       supabaseOrigin,
       'https://lh3.googleusercontent.com',
+      ...(allowGoogleAnalytics ? ['https://www.google-analytics.com', 'https://*.google-analytics.com'] : []),
     ].filter(Boolean).join(' '),
     "font-src 'self' data:",
     [
@@ -48,6 +52,13 @@ export function buildContentSecurityPolicy({
       supabaseRealtimeOrigin,
       'https://hcaptcha.com',
       'https://*.hcaptcha.com',
+      ...(allowGoogleAnalytics ? [
+        'https://www.googletagmanager.com',
+        'https://www.google-analytics.com',
+        'https://*.google-analytics.com',
+        'https://analytics.google.com',
+        'https://*.analytics.google.com',
+      ] : []),
       'https://vitals.vercel-insights.com',
       'https://*.vercel-insights.com',
     ].filter(Boolean).join(' '),
