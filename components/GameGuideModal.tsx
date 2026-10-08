@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { isSharedVenueGame } from '../lib/gameGuideCatalog'
 import { ticketPriceBlockMinutes } from '../lib/ticketTariffs'
 import { useState } from 'react'
 import { X } from 'lucide-react'
@@ -24,6 +25,7 @@ export type GameGuideGame = {
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
+  playersByVenue?: Partial<Record<'ha-do-centrosa' | 'cafe-des-stagiaires', number>>
   audience: GameAudience[]
   venues: Array<'ha-do-centrosa' | 'cafe-des-stagiaires'>
 }
@@ -126,14 +128,14 @@ export default function GameGuideModal({
             const staffGuide = staffGameGuides[game.id]
             const fallbackGuideLanguage = isLanguageCode(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
             const customSummaryKey = gameSummaryLabelKeys[game.id]
-            const fallbackSummary = customSummaryKey
+            const fallbackSummary = isSharedVenueGame(game.id) ? '' : customSummaryKey
               ? text[customSummaryKey]
               : isMiniBlockTowers
               ? text.gameGuideBlockTowersSummary
               : isEscape
                 ? text.gameGuideEscapeSummary
                 : text.gameGuideFpsSummary
-            const isAnvioGame = Boolean(customSummaryKey)
+            const isAnvioGame = Boolean(customSummaryKey) || isSharedVenueGame(game.id)
             const fallbackRules = isEscape || isAnvioGame
               ? ''
               : isMiniBlockTowers
@@ -161,7 +163,7 @@ export default function GameGuideModal({
                     </div>
                     <div className="game-guide-facts">
                       <span>{text.gameGuideDuration}: <strong>{ticketPriceBlockMinutes} min</strong></span>
-                      <span>{text.gameGuidePlayers}: <strong>{venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena} / {text.arena}</strong></span>
+                      <span>{text.gameGuidePlayers}: <strong>{game.playersByVenue?.[venue] ?? (venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena)} / {text.arena}</strong></span>
                     </div>
                   </div>
                   <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>

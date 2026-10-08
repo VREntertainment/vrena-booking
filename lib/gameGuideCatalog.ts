@@ -18,6 +18,7 @@ export type PublicGameGuideGame = {
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
+  playersByVenue?: Partial<Record<GameVenue, number>>
   audience: GameAudience[]
   venues: GameVenue[]
 }
@@ -42,7 +43,19 @@ export type StaffGameGuide = {
 
 export const PUBLIC_GAME_GUIDE_REVALIDATE_SECONDS = 60
 
+export const sharedVenueGameTitles = {"birthday-party": "Birthday Party", "portal-zombie": "Portal Zombie", "arcade-2-0": "Arcade 2.0", "party-games": "Party Games", "portal-mafia": "Portal Mafia", "orc-kings-arena": "Orc King's Arena", "vr-arena-strike": "VR Arena Strike"} as const
+
+export function isSharedVenueGame(slug: string) {
+  return Object.prototype.hasOwnProperty.call(sharedVenueGameTitles, slug)
+}
+
 export const publicGameGuideCatalog: PublicGameGuideGame[] = [
+  ...Object.entries(sharedVenueGameTitles).map(([id, title]): PublicGameGuideGame => ({
+    id, title, category: 'Other', image: '/games/vrena-shared.svg',
+    durationMinutes: 20, maxPlayersPerArena: 6,
+    playersByVenue: { 'ha-do-centrosa': 4, 'cafe-des-stagiaires': 6 },
+    audience: [], venues: ['ha-do-centrosa', 'cafe-des-stagiaires'],
+  })),
   {
     id: 'laser-tag',
     title: 'Laser Tag',
@@ -263,6 +276,7 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
       image: safeImage(guide.image_url) ? guide.image_url! : base?.image || '/games/laser-tag.png',
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
+      playersByVenue: base?.playersByVenue,
       audience: audience.length > 0 ? audience : base?.audience || [],
       venues: base?.venues || ['ha-do-centrosa'],
     }
