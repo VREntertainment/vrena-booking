@@ -7,6 +7,7 @@ import type { TranslationMap } from '../lib/i18n/base'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import {
   gameAudienceLabelKeys,
+  isSharedVenueGame,
   guideTextItems,
   isStaffGuideLanguage,
   normalizedGuideText,
@@ -23,6 +24,7 @@ type PublicGameGuidePageProps = {
 }
 
 function fallbackSummary(game: PublicGameGuideGame, text: TranslationMap) {
+  if (isSharedVenueGame(game.id)) return ''
   if (game.id === 'revolta') return text.gameGuideRevoltaSummary
   if (game.id === 'city-z') return text.gameGuideCityZSummary
   if (game.id === 'station-zarya') return text.gameGuideStationZaryaSummary
@@ -32,6 +34,7 @@ function fallbackSummary(game: PublicGameGuideGame, text: TranslationMap) {
 }
 
 function fallbackRules(game: PublicGameGuideGame, text: TranslationMap) {
+  if (isSharedVenueGame(game.id)) return ''
   if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
   if (game.category === 'Escape') return ''
   if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersRules
@@ -39,6 +42,7 @@ function fallbackRules(game: PublicGameGuideGame, text: TranslationMap) {
 }
 
 function fallbackTips(game: PublicGameGuideGame, text: TranslationMap) {
+  if (isSharedVenueGame(game.id)) return ''
   if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
   if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersTips
   if (game.category === 'Escape') return text.gameGuideEscapeTips
@@ -103,13 +107,14 @@ export default function PublicGameGuidePage({
                     </div>
                     <div className="game-guide-facts">
                       <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
-                      <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
+                      {!game.playersByVenue && <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>}
                     </div>
                   </div>
                   <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>
                     {game.venues.map((venue) => (
                       <span key={venue}>
                         {venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName}
+                        {game.playersByVenue?.[venue] ? ` · ${text.gameGuidePlayers}: ${game.playersByVenue[venue]} / ${text.arena}` : ''}
                       </span>
                     ))}
                   </div>

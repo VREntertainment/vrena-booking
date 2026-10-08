@@ -37,3 +37,15 @@ test('new staff games are published with safe artwork', () => {
   assert.equal(game.category, 'Escape')
   assert.equal(game.image, 'https://assets.example/storage/v1/object/public/game.png')
 })
+
+test('seven shared games expose both venues with independent player limits', () => {
+  const slugs = ['birthday-party', 'portal-zombie', 'arcade-2-0', 'party-games', 'portal-mafia', 'orc-kings-arena', 'vr-arena-strike']
+  const merged = mergeStaffGameCatalog(slugs.map((slug) => ({ slug, max_players_per_arena: 6 })))
+  assert.equal(merged.length, 7)
+  for (const game of merged) {
+    assert.deepEqual(game.venues, ['ha-do-centrosa', 'cafe-des-stagiaires'])
+    assert.deepEqual(game.playersByVenue, { 'ha-do-centrosa': 4, 'cafe-des-stagiaires': 6 })
+    assert.equal(game.durationMinutes, 20)
+    assert.equal(game.image, '/games/vrena-shared.svg')
+  }
+})
