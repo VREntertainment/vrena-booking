@@ -43,7 +43,7 @@ export function buildContentSecurityPolicy({
       "img-src 'self' data: blob:",
       supabaseOrigin,
       'https://lh3.googleusercontent.com',
-      ...(allowGoogleAnalytics ? ['https://www.google-analytics.com', 'https://*.google-analytics.com'] : []),
+      ...(allowGoogleAnalytics ? ['https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://*.google-analytics.com'] : []),
     ].filter(Boolean).join(' '),
     "font-src 'self' data:",
     [
