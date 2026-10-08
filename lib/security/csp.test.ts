@@ -12,6 +12,7 @@ test('public booking policy permits the GA script and regional collection endpoi
   assert.ok(sources(policy, 'connect-src').includes('https://*.google-analytics.com'))
   assert.ok(sources(policy, 'connect-src').includes('https://www.google-analytics.com'))
   assert.ok(sources(policy, 'img-src').includes('https://*.google-analytics.com'))
+  assert.ok(sources(policy, 'img-src').includes('https://www.googletagmanager.com'))
   for (const directive of ['script-src', 'connect-src', 'img-src']) {
     assert.ok(!sources(policy, directive).includes('*'))
     assert.ok(!sources(policy, directive).includes('https:'))
