@@ -117,7 +117,11 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await name.press('Enter')
   await expect(page.getByRole('listbox')).toHaveCount(0)
   await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
-  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toHaveText(['None', 'City Z', 'Revolta', 'Station Zarya'])
+  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toHaveText([
+    'None', 'Arcade 2.0', 'Birthday Party', 'City Z', "Orc King's Arena", 'Party Games',
+    'Portal Mafia', 'Portal Zombie', 'Revolta', 'Station Zarya', 'VR Arena Strike',
+  ])
+  await page.getByRole('combobox', { name: 'Game', exact: true }).selectOption({ label: 'City Z' })
   await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('15:30')
   await expect(page.getByRole('combobox', { name: 'Arena', exact: true })).toHaveValue('cafe:arena-1')
   await page.getByRole('button', { name: 'Booking time', exact: true }).click()
@@ -164,7 +168,7 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
   await expect(page.getByRole('combobox', { name: 'Arena', exact: true }).locator('option')).toHaveCount(1)
   await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('ha-do-centrosa')
-  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toHaveCount(13)
+  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toHaveCount(20)
   await expect(page.getByRole('combobox', { name: 'Arena', exact: true })).toHaveValue('arena-1')
   await expect(page.locator('[data-nextjs-dialog]')).toHaveCount(0)
   expect(errors).toEqual([])
@@ -374,6 +378,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     await page.getByRole('combobox', { name: 'Customer name', exact: true }).fill(`Event company ${Date.now()}`)
     await page.getByRole('textbox', { name: 'Contact person', exact: true }).fill('Event coordinator')
     await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
+    await page.getByRole('combobox', { name: 'Game', exact: true }).selectOption({ label: 'City Z' })
     await page.getByRole('checkbox', { name: 'Event / corporate', exact: true }).check()
     await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
     await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
