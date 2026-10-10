@@ -160,14 +160,15 @@ function buildMainRow(payload, receivedAt) {
 
 function sendNotificationEmail(payload, receivedAt) {
   const details = bookingEmailDetails(payload, receivedAt)
-  MailApp.sendEmail({
+  const venueMessage = {
     to: bookingEmailRecipients(payload)[0],
     ...(bookingEmailRecipients(payload)[0] === 'vrena-thaodien@vre-vietnam.com'
       ? { bcc: 'emile@vre-vietnam.com' } : {}),
     subject: `[${details.venue}] ${details.heading}${details.reference ? ' · ' + details.reference : ''}`,
     body: buildEmailText(payload, receivedAt),
     htmlBody: buildEmailHtml(payload, receivedAt),
-  })
+  }
+  sendBookingEmailOnce(payload, 'venue', () => MailApp.sendEmail(venueMessage))
   const customerEmail = bookingCustomerEmail(payload)
   if (customerEmail) {
     const customerDetails = bookingEmailDetails(payload, receivedAt, true)
@@ -179,12 +180,45 @@ function sendNotificationEmail(payload, receivedAt) {
       body: buildEmailText(payload, receivedAt, true),
       htmlBody: buildEmailHtml(payload, receivedAt, true),
     }
-    GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
+    sendBookingEmailOnce(payload, 'customer', () => GmailApp.sendEmail(customerMessage.to, customerMessage.subject, customerMessage.body, {
       from: customerMessage.replyTo,
       replyTo: customerMessage.replyTo,
       name: customerMessage.name,
       htmlBody: customerMessage.htmlBody,
-    })
+    }))
+  }
+}
+
+// Keep a durable receipt per booking and audience. Reserve before sending so a
+// timeout with an unknown mail outcome cannot cause a second copy on retry.
+function sendBookingEmailOnce(payload, audience, send) {
+  if (!['ticket_booked', 'session_created'].includes(payload.event_type)) {
+    send()
+    return
+  }
+  const session = getSession(payload)
+  const identity = session.id || session.ticket_reference
+  if (!identity) throw new Error('Missing booking identity for email deduplication.')
+  const key = 'booking-created:' + identity + ':' + audience
+  const lock = LockService.getScriptLock()
+  lock.waitLock(30000)
+  try {
+    const sheet = getOrCreateSheet('Email Deliveries', ['Delivery key', 'Status', 'Updated at'])
+    const match = sheet.getRange(1, 1, sheet.getLastRow(), 1)
+      .createTextFinder(key).matchEntireCell(true).useRegularExpression(false).findNext()
+    if (match) {
+      const status = sheet.getRange(match.getRow(), 2).getValue()
+      if (status === 'sent') return
+      throw new Error('Email delivery requires review before retry: ' + key)
+    }
+    sheet.appendRow([key, 'sending', new Date()])
+    const row = sheet.getLastRow()
+    SpreadsheetApp.flush()
+    send()
+    sheet.getRange(row, 2, 1, 2).setValues([['sent', new Date()]])
+    SpreadsheetApp.flush()
+  } finally {
+    lock.releaseLock()
   }
 }
 
@@ -194,6 +228,9 @@ function bookingCustomerEmail(payload) {
   const email = String((payload.customer || {}).email || '').trim()
   if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) return ''
   if (/\.(invalid|local)$/i.test(email)) return ''
+  // Shared venue inboxes receive the venue notice, never a customer confirmation.
+  const venueInboxes = Object.values(CONFIG.EMAIL_RECIPIENTS_BY_VENUE).map((recipients) => recipients[0].toLowerCase())
+  if (venueInboxes.includes(email.toLowerCase())) return ''
   return email
 }
 
