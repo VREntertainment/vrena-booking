@@ -182,5 +182,17 @@ test('customer emails skip absent, synthetic, malformed, and update addresses', 
 
 test('confirmed customer booking is clearly confirmed', () => {
   const { context } = loadScript()
-  assert.match(context.buildEmailText({event_type:'ticket_booked',session:{venue_key:'ha-do-centrosa',ticket_status:'confirmed'}},new Date(),true), /Your booking is confirmed/)
+  assert.match(context.buildEmailText({event_type:'ticket_booked',session:{venue_key:'ha-do-centrosa',ticket_status:'confirmed'}},new Date(),true), /Status: Confirmed/)
 })
+
+for (const venue_key of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+  test(`successful online booking email says Status: Confirmed at ${venue_key}`, () => {
+    const { context } = loadScript()
+    const payload = { event_type: 'ticket_booked', session: { venue_key, booking_type: 'ticket', ticket_status: 'confirmed' } }
+    const body = context.buildEmailText(payload, new Date(), true)
+    const html = context.buildEmailHtml(payload, new Date(), true)
+    assert.match(body, /Status: Confirmed/)
+    assert.match(html, /Status: Confirmed/)
+    assert.doesNotMatch(body + html, /awaiting confirmation|confirm.*Zalo|staff approval/i)
+  })
+}

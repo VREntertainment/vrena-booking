@@ -62,7 +62,7 @@ select ok(not has_function_privilege('anon', 'public.ticket_booking_start_is_pas
   and not has_function_privilege('authenticated', 'public.ticket_booking_start_is_past(date,time without time zone,timestamptz)', 'execute'), 'Time helper is not exposed to browser roles');
 select ok(has_function_privilege('anon', 'public.create_cafe_ticket_booking_request(text,date,time without time zone,integer,integer,integer,text[],text,text,text)', 'execute'), 'Guest Cafe endpoint retains its existing grant');
 select is((select count(*)::integer from public.staff_games where slug in ('revolta','city-z','station-zarya') and active), 3, 'All advertised ANVIO games are active staff choices');
-select is((select count(*)::integer from public.sessions where venue_key='cafe-des-stagiaires' and ticket_status='pending'), 8, 'Successful Cafe fixtures remain pending confirmation');
+select is((select count(*)::integer from public.sessions where venue_key='cafe-des-stagiaires' and ticket_status='confirmed' and date between current_date+41 and current_date+56), 8, 'Successful Cafe fixtures are confirmed immediately');
 
 select * from finish();
 rollback;

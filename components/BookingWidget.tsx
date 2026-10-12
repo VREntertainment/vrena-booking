@@ -43,6 +43,9 @@ import { bindBookingTournamentActions } from '../features/booking/tournament.act
 import { CAFE_SOFT_OPENING_DATE, availableSessionTimes, cafeTicketTimes } from '../lib/booking/availability'
 import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking } from '../lib/booking/pendingAccountBooking'
 
+import { arenaTimeOptions } from '../lib/booking/arenaAvailability'
+import { useArenaOccupancy } from '../hooks/useArenaOccupancy'
+
 import { useTicketCheckout } from '../hooks/useTicketCheckout'
 import { getSupabase } from '../lib/booking/client'
 import SimRacingBooking from './SimRacingBooking'
@@ -2917,13 +2920,12 @@ export default function WidgetPage({
     availableSessionTimes({ date, duration, arenaCount, excludeSessionId, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
   ), [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
 
+  const arenaOccupancy = useArenaOccupancy(ticketDate, sessions)
   const getCafeSoftOpeningTimeOptions = cafeTicketTimes
-
-  const getTicketTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => (
-    isHaDoBookingVenue
-      ? getAvailableTimeOptions(date, duration, arenaCount)
-      : getCafeSoftOpeningTimeOptions(date, duration, arenaCount)
-  ), [getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
+  const getTicketTimeOptions = useCallback((date: string, duration: number, arenaCount: number) => {
+    if (!arenaOccupancy || date < arenaOccupancy.date || date > arenaOccupancy.through) return []
+    return arenaTimeOptions(bookingVenue, date, duration, arenaCount, arenaOccupancy.rows)
+  }, [arenaOccupancy, bookingVenue])
 
   const timeOptions = useMemo(() => {
     return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
@@ -3089,6 +3091,9 @@ export default function WidgetPage({
   }, [activeTicketService.maxPlayers, activeTicketService.minPlayers])
 
   useEffect(() => {
+    // A new date's occupancy is asynchronous. Keep the calendar draft intact
+    // until we can validate it; clearing it early also clears its route params.
+    if (!arenaOccupancy) return
     return schedulePostEffectStateUpdate(() => {
       if (ticketDurationOptions.length === 0) {
         if (ticketTime) setTicketTime('')
@@ -3101,7 +3106,7 @@ export default function WidgetPage({
         setTicketConfirmation(null)
       }
     })
-  }, [activeTicketDuration, setTicketConfirmation, setTicketDuration, setTicketTime, ticketDurationOptions, ticketTime])
+  }, [activeTicketDuration, arenaOccupancy, setTicketConfirmation, setTicketDuration, setTicketTime, ticketDurationOptions, ticketTime])
 
   const sessionDurationRecommendation = durationRecommendation(sessionMaxPlayers, sessionDuration)
   const editSessionDurationRecommendation = durationRecommendation(editSessionMaxPlayers, editSessionDuration)
@@ -3137,7 +3142,6 @@ export default function WidgetPage({
   }
 
   function ticketAccountBookingConfirmationMessage() {
-    if (!isHaDoBookingVenue) return text.bookingRequestPendingZalo
 
     const pendingBooking = readPendingTicketAccountBooking()
     if (!pendingBooking) return text.guestTicketSavedToAccount
@@ -5412,7 +5416,7 @@ export default function WidgetPage({
             isCheckingTicketDiscount={isCheckingTicketDiscount}
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
-            requiresZaloConfirmation={!isHaDoBookingVenue}
+            manualDiscountReview={!isHaDoBookingVenue}
             singleArenaOnly={!isHaDoBookingVenue}
             estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}
             estimatedLoyaltyReductionValue={estimatedTicketLoyaltyReductionValue}

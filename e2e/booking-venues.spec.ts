@@ -11,6 +11,7 @@ async function expectContainedLayout(page: Page) {
 }
 
 async function keepConsentOutOfTheBookingFlow(page: Page) {
+  await page.route('**/rest/v1/rpc/booking_arena_occupancy', route => route.fulfill({ json: [] }))
   await page.context().addCookies([{
     name: 'vrena-cookie-consent',
     value: 'essential',
@@ -34,7 +35,7 @@ test.describe('booking venue selection', () => {
 
       await expect(venueSelector).toContainText('Vrena Thao Dien')
       await expect(page.locator(route.activeSurface)).toHaveCount(0)
-      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Community sessions are not available yet')
+      await expect(page.locator('.booking-venue-coming-soon')).toContainText('Use Tickets to book your visit.')
       await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
       await expectContainedLayout(page)
     })
@@ -52,7 +53,7 @@ test.describe('booking venue selection', () => {
     await expect(page.locator('.ticket-form-panel')).toBeVisible()
     await expect(page.locator('.cafe-booking-notice')).toHaveCount(0)
     await expect(page.locator('.ticket-confirmation-requirement')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Send booking request' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reserve your slot' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Book at Hà Đô Centrosa' })).toHaveCount(0)
     await page.locator('.ticket-control-date input[type="date"]').fill(futureDate())
     await expect(page.locator('#ticket-available-time option')).toHaveCount(44)

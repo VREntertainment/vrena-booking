@@ -244,7 +244,7 @@ function bookingEmailDetails(payload, receivedAt, forCustomer) {
   const statusLabel = status === 'pending' ? 'Awaiting confirmation' : readableLabel(status)
   const customerMessage = status === 'pending'
     ? 'We have received your booking request. Your booking is awaiting confirmation from our team.'
-    : status === 'confirmed' ? 'Your booking is confirmed. We look forward to welcoming you.'
+    : status === 'confirmed' ? ''
       : 'We have received your booking. Please check the status and visit details below.'
   if (forCustomer) heading = status === 'pending' ? 'Booking request received' : status === 'confirmed' ? 'Booking confirmed' : 'Booking received'
   const gameOptions = Array.isArray(session.game_options)
@@ -304,7 +304,7 @@ function bookingEmailDetails(payload, receivedAt, forCustomer) {
 
 function buildEmailText(payload, receivedAt, forCustomer) {
   const details = bookingEmailDetails(payload, receivedAt, forCustomer)
-  return [details.venue, details.heading, details.statusLabel, forCustomer ? details.customerMessage : '', '',
+  return [details.venue, details.heading, 'Status: ' + details.statusLabel, forCustomer ? details.customerMessage : '', '',
     ...details.sections.flatMap(([title, rows]) => [title.toUpperCase(), ...rows.map(([label, value]) => `${label}: ${value}`), '']),
     'All visit times are Vietnam time (UTC+7).',
     forCustomer ? 'Questions? Reply to this email to contact the venue team.' : 'Open booking webapp: https://booking.vre-vietnam.com',
@@ -323,8 +323,8 @@ function buildEmailHtml(payload, receivedAt, forCustomer) {
       <img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-light.png" alt="VRena" width="176" height="36" style="display:block;width:176px;height:auto;max-width:100%;border:0;margin:0 0 28px">
       <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#332CD6">${escapeHtml(details.venue)}</p>
       <h1 style="font-family:'League Spartan',Arial,sans-serif;font-size:27px;line-height:1.2;margin:0 0 12px">${escapeHtml(details.heading)}</h1>
-      <p style="margin:0;font-size:15px;line-height:1.6">${escapeHtml(details.statusLabel)}${details.reference ? '<br>Reference: <strong>' + escapeHtml(details.reference) + '</strong>' : ''}</p>
-      ${forCustomer ? '<p style="font-size:15px;line-height:1.6;margin:18px 0 0">' + escapeHtml(details.customerMessage) + '</p>' : ''}
+      <p style="margin:0;font-size:15px;line-height:1.6">Status: ${escapeHtml(details.statusLabel)}${details.reference ? '<br>Reference: <strong>' + escapeHtml(details.reference) + '</strong>' : ''}</p>
+      ${forCustomer && details.customerMessage ? '<p style="font-size:15px;line-height:1.6;margin:18px 0 0">' + escapeHtml(details.customerMessage) + '</p>' : ''}
       ${sections}
       <p style="margin:24px 0 12px"><a href="https://booking.vre-vietnam.com" style="display:inline-block;background:#332CD6;color:#FFFFFF;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;font-size:14px">${forCustomer ? 'Visit VRena booking' : 'Open booking webapp'}</a></p>
       <p style="font-size:12px;line-height:1.5;color:#5F6D6D;margin:0">All visit times are Vietnam time (UTC+7).${forCustomer ? '<br>Questions? Reply to this email to contact the venue team.' : ''}</p>
