@@ -6,7 +6,7 @@ This change makes every successful online ticket booking confirmed immediately a
 
 The owner subsequently authorized cancellation of the two later Thảo Điền bookings. `TD-261012-3C8EC6` and `TD-261012-16F77E` are cancelled with their records retained. The earliest booking, `TD-261012-AB100E`, remains and is confirmed. Production now has zero overlapping arena claims.
 
-The database migration was installed as `20261012074852_atomic_arena_reservations`; the same migration was tested on an isolated PostgreSQL database. Apps Script version 13 is published on the existing webhook endpoint, preserving sender/routing configuration. The frontend release follows completion of repository checks. Phone numbers are mandatory for guest and signed-in online reservations, including SIM Racing; signed-in VR customers without a valid phone are directed to their profile.
+The database migration was installed as `20261012074852_atomic_arena_reservations`; the same migration was tested on an isolated PostgreSQL database. Apps Script version 13 is published on the existing webhook endpoint, preserving sender/routing configuration. The frontend release follows completion of repository checks. Phone numbers are mandatory for guest and signed-in online reservations, including SIM Racing and community sessions; signed-in VR customers without a valid phone are directed to their profile.
 
 ## Findings
 
@@ -32,7 +32,7 @@ Historical rows are preserved; the initial ledger backfill includes active curre
 
 ## Validation
 
-Final checks passed: 204 unit/email tests; 59 SQL assertions across four suites; 14 desktop/mobile browser tests; 90 concurrent attempts across nine race scenarios; lint, type checking, architecture/palette checks, and the production build. Browser responses were intercepted; database concurrency tests used real isolated PostgreSQL transactions. Live email delivery and staging/production installation remain unverified.
+Local checks passed: 214 unit/email tests; 526 SQL assertions across the complete database suite; 14 desktop/mobile browser tests; 90 concurrent attempts across nine race scenarios; lint, type checking, architecture/palette checks, and the production build. Browser responses were intercepted; database concurrency tests used real isolated PostgreSQL transactions. Production database migrations and Apps Script version 13 are installed and read back. Real customer email delivery is not tested by sending a synthetic reservation.
 
 - Real concurrent PostgreSQL transactions: 12 guest attempts accept exactly 1 at Thảo Điền, exactly 2 at Hà Đô, and exactly 1 for a two-arena booking.
 - 12-attempt races also cover partially overlapping starts, online versus direct writes, and one blocked Hà Đô arena.
@@ -49,7 +49,7 @@ The local schema copy was aligned with inspected production booking functions an
 
 ## Release verification
 
-The dependency audit now reports zero vulnerabilities after patching Sharp to 0.35.5 and source-map-js to 1.2.2. Six new database assertions verify required phone numbers. The final 90-attempt concurrency suite passes with these guards enabled. Staff orders without an arena label inherit the resource assigned by the database; explicit invalid assignments remain rejected. Security allowlists include the intentional, non-identifying occupancy RPC.
+The dependency audit now reports zero vulnerabilities after patching Sharp to 0.35.5 and source-map-js to 1.2.2. Seven database assertions verify required phone numbers, including direct community inserts. Migration `20261012081242_require_reservation_phone` provides the customer insert guard. The final 90-attempt concurrency suite passes with these guards enabled. Staff orders without an arena label inherit the resource assigned by the database; explicit invalid assignments remain rejected. Security allowlists include the intentional, non-identifying occupancy RPC.
 
 A synthetic production booking smoke test was rejected by automatic approval review because integration side effects might escape rollback. It was not executed. Verification uses isolated booking transactions, browser tests and read-only live checks instead. No test customer email was sent.
 
