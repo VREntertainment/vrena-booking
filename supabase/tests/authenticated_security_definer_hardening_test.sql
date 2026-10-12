@@ -161,6 +161,7 @@ select case when (
     and procedures.prosecdef
     and has_function_privilege('authenticated', procedures.oid, 'execute')
 ) = array[
+  'booking_arena_occupancy(date,date)',
   'claim_guest_ticket_booking(text,text)',
   'clubs_list_page()',
   'consume_booking_attempt_rate_limit(text)',

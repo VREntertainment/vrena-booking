@@ -155,8 +155,10 @@ function readServerFooterTarget() {
 
 function ensureGoogleAnalytics() {
   window.dataLayer = window.dataLayer ?? []
-  window.gtag = window.gtag ?? function gtag(...args: unknown[]) {
-    window.dataLayer?.push(args)
+  window.gtag = window.gtag ?? function gtag() {
+    // Google's command queue requires Arguments objects, not rest-parameter arrays.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments)
   }
 
   if (window.__vrenaGoogleAnalyticsConfigured) return

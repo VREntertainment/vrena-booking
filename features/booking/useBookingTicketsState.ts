@@ -8,16 +8,16 @@ import {
   type TicketType
 } from '../../lib/bookingStaticData'
 import {
-  TicketBookingConfirmation,
-  localDateString
+  TicketBookingConfirmation
 } from '../../lib/bookingWidgetDomain'
+import { vietnamClock } from '../../lib/booking/arenaAvailability'
 import { type GuestTicketContact } from '../../lib/guestTicketBooking'
 
 /** Feature-owned state. Mounted unconditionally so navigation preserves drafts and request locks. */
 export function useBookingTicketsState({ incomingCalendar, initialView }: { incomingCalendar: import("../../lib/bookingCalendar").CalendarNavigation | null | undefined; initialView: import("../../components/AppSidebar").AppView }) {
   const [calendarTicketDraft, setCalendarTicketDraft] = useState(incomingCalendar?.mode === 'client-ticket' && initialView === 'tickets')
   const [ticketType, setTicketType] = useState<TicketType>('individual')
-  const [ticketDate, setTicketDate] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.date : localDateString())
+  const [ticketDate, setTicketDate] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.date : vietnamClock().date)
   const [ticketTime, setTicketTime] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.time : '')
   const [ticketPlayers, setTicketPlayers] = useState(1)
   const [ticketArenaCount, setTicketArenaCount] = useState(1)

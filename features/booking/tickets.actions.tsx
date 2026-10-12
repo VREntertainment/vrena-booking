@@ -277,7 +277,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       }
       trackTicketCheckoutStarted(ticketAnalytics)
 
-      showTicketStatus(isHaDoBookingVenue ? text.bookingTickets : text.submittingBookingRequest)
+      showTicketStatus(text.bookingTickets)
       setTicketConfirmation(null)
 
       const request = buildTicketBookingRequest({
@@ -304,6 +304,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
 
       if (error) {
         showTicketStatus(error.message || text.ticketBookingError, 'error')
+        await loadSessions({ focusDate: ticketDate })
         return false
       }
 
@@ -312,8 +313,14 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         discount_code?: string | null
         loyalty_points_total?: number | null
         session_id?: string
+        ticket_status?: string
         ticket_reference?: string
         ticket_total_price?: number | null
+      }
+      if (booking.ticket_status !== 'confirmed' || !booking.session_id || !booking.ticket_reference) {
+        showTicketStatus(text.ticketBookingError, 'error')
+        await loadSessions({ focusDate: ticketDate })
+        return false
       }
       const confirmation: TicketBookingConfirmation = {
         sessionId: booking.session_id || '',
@@ -336,7 +343,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         discountAmount: activeProfile && !isSpecialTicketType ? Math.max(0, Math.floor(Number(booking.discount_amount ?? 0) || 0)) : 0,
         loyaltyPointsRedeemed: activeProfile && !isSpecialTicketType ? appliedTicketLoyaltyPoints : 0,
         loyaltyDiscountAmount: activeProfile && !isSpecialTicketType ? ticketLoyaltyDiscountAmount : 0,
-        requiresZaloConfirmation: !isHaDoBookingVenue,
+        manualDiscountReview: !isHaDoBookingVenue,
       }
 
       if (!activeProfile && confirmation.guestPhone && confirmation.reference) {
@@ -363,7 +370,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         ...ticketAnalytics,
         transactionId: confirmation.reference || confirmation.sessionId,
       })
-      const bookingCreatedMessage = isHaDoBookingVenue ? text.ticketBookingCreated : text.bookingRequestSubmitted
+      const bookingCreatedMessage = text.bookingConfirmed
       showTicketStatus(bookingCreatedMessage)
       showActionToast(bookingCreatedMessage)
       setTicketTime('')

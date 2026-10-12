@@ -5,18 +5,15 @@ import { X } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import { bookingDurationCopy } from '../lib/bookingDurationCopy'
+import { vietnamClock } from '../lib/booking/arenaAvailability'
 import type { LanguageCode } from '../lib/i18n/languages'
-import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
+import ContactChannels from './ContactChannels'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
 
 function localDateString(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
+  return vietnamClock(date).date
 }
 
 function formatTicketDateDisplay(dateValue: string, language: LanguageCode, includeWeekday = false) {
@@ -70,7 +67,7 @@ type TicketBookingConfirmation = {
   loyaltyDiscountAmount?: number
   discountCode?: string
   discountAmount?: number
-  requiresZaloConfirmation?: boolean
+  manualDiscountReview?: boolean
 }
 
 type GuestTicketAction = 'create-account' | 'guest'
@@ -81,7 +78,7 @@ export type TicketBookingViewProps = {
   text: Record<string, string>
   language: LanguageCode
   isLoggedIn: boolean
-  requiresZaloConfirmation: boolean
+  manualDiscountReview: boolean
   singleArenaOnly: boolean
   gameGuideTrigger: ReactNode
   tariffTrigger: ReactNode
@@ -146,7 +143,7 @@ export default function TicketBookingView({
   text,
   language,
   isLoggedIn,
-  requiresZaloConfirmation,
+  manualDiscountReview,
   singleArenaOnly,
   gameGuideTrigger,
   tariffTrigger,
@@ -211,7 +208,7 @@ export default function TicketBookingView({
   const isGuestAccountChoiceConfirmation = Boolean(guestAccountChoicePhone) && guestAccountChoicePhone === guestTicketContact.phone
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
-  const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !requiresZaloConfirmation
+  const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !manualDiscountReview
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
   const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
     ? text.ticketAccountValueWithPoints
@@ -387,7 +384,7 @@ export default function TicketBookingView({
                       value={ticketDiscountCode}
                       onChange={(event) => onTicketDiscountCodeChange(event.target.value)}
                     />
-                    {requiresZaloConfirmation && <small>{text.ticketCafeDiscountConfirmationNote}</small>}
+                    {manualDiscountReview && <small>{text.ticketCafeDiscountConfirmationNote}</small>}
                     {(isCheckingTicketDiscount || ticketDiscountStatus) && (
                       <small>{isCheckingTicketDiscount ? text.ticketDiscountCodeChecking : ticketDiscountStatus}</small>
                     )}
@@ -495,8 +492,8 @@ export default function TicketBookingView({
                   onClick={handleBookTicketsClick}
                 >
                   {isBookingTickets
-                    ? requiresZaloConfirmation ? text.submittingBookingRequest : text.bookingTickets
-                    : requiresZaloConfirmation ? text.submitBookingRequest : text.bookTickets}
+                    ? text.bookingTickets
+                    : text.bookTickets}
                 </button>
               </div>
               {!isLoggedIn && !isSpecialTicket && (
@@ -509,7 +506,10 @@ export default function TicketBookingView({
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
-            <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
+            <div className="ticket-duration-information">
+              <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
+              <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} showNumbers />
+            </div>
             <div className="ticket-type-list ticket-event-options">
               <label>{text.ticketEventHelpTitle}</label>
               <p className="ticket-event-options-copy">{text.ticketEventHelpBody}</p>
@@ -531,8 +531,6 @@ export default function TicketBookingView({
               </div>
             </div>
           </div>
-
-          <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
 
           {!isLoggedIn && guestTicketContactOpen && (
             <div className="modal-backdrop guest-ticket-modal-backdrop">
@@ -624,7 +622,7 @@ export default function TicketBookingView({
           {ticketConfirmation && (
             <div className="ticket-confirmation">
               <div>
-                <span>{ticketConfirmation.requiresZaloConfirmation ? text.bookingRequestSubmitted : text.bookingConfirmed}</span>
+                <span>{text.bookingConfirmed}</span>{' '}
                 <strong>{ticketConfirmation.ticketLabel}</strong>
               </div>
               <p>{text.sessionTariffPayment}</p>
@@ -639,23 +637,15 @@ export default function TicketBookingView({
                   {text.ticketLoyaltyRedeemed}: <strong>{ticketConfirmation.loyaltyPointsRedeemed} {text.loyaltyPoints}</strong> (-{formatVnd(ticketConfirmation.loyaltyDiscountAmount || 0)})
                 </p>
               )}
-              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.discountCode && (ticketConfirmation.discountAmount || ticketConfirmation.requiresZaloConfirmation)) && (
+              {ticketConfirmation.ticketType === 'individual' && Boolean(ticketConfirmation.discountCode && (ticketConfirmation.discountAmount || ticketConfirmation.manualDiscountReview)) && (
                 <p>
                   {text.ticketDiscountCodeSummary}: <strong>{ticketConfirmation.discountCode}</strong> {Boolean(ticketConfirmation.discountAmount) && <> (-{formatVnd(ticketConfirmation.discountAmount || 0)})</>}
-                  {ticketConfirmation.requiresZaloConfirmation && <><br />{text.ticketCafeDiscountConfirmationNote}</>}
+                  {ticketConfirmation.manualDiscountReview && <><br />{text.ticketCafeDiscountConfirmationNote}</>}
                 </p>
               )}
               {ticketConfirmation.reference && (
                 <p>
                   {text.bookingReference}: <strong>{ticketConfirmation.reference}</strong>
-                </p>
-              )}
-              {ticketConfirmation.requiresZaloConfirmation && (
-                <p className="ticket-confirmation-zalo">
-                  <strong>{text.bookingRequestPendingZalo}</strong>
-                  <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
-                    {text.bookingVenueCafeOpenZalo}
-                  </a>
                 </p>
               )}
               {ticketConfirmation.guestPhone && (

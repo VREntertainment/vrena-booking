@@ -1,5 +1,7 @@
 'use client'
 
+import { StaffSavedBookingShare } from '../../components/staff/StaffSavedBookingShare'
+
 import { useState } from 'react'
 import StaffOrderStatusConfirmation, { type OrderStatusChange } from '../../components/staff/StaffOrderStatusConfirmation'
 import {
@@ -291,6 +293,7 @@ export default function TodaySection({
                 <button className="secondary" type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}>
                   {isExpanded ? text.actions.cancel : (resolvedLanguage === 'vi' ? 'Chi tiết lượt chơi' : 'Visit details')}
                 </button>
+                <StaffSavedBookingShare sessionId={session.id} language={resolvedLanguage} disabled={saving || session.status === 'cancelled'} />
                 {canCreateOrders && <button className="secondary" type="button" disabled={saving} onClick={() => onEditBooking(session.id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
                 {order && canCreateOrders && (
                   <>

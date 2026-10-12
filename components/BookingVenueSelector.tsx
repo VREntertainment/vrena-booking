@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarClock, MapPin, MessageCircle } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
-import ContactChannels, { VRENA_ZALO_URL } from './ContactChannels'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
@@ -12,10 +10,6 @@ type BookingVenueSelectorProps = {
   onChange: (venue: BookingVenueId) => void
   text: TranslationMap
   value: BookingVenueId
-}
-
-type BookingVenueComingSoonProps = {
-  text: TranslationMap
 }
 
 const venueMaps: Record<BookingVenueId, { directionsUrl: string; latitude: number; longitude: number }> = {
@@ -136,43 +130,6 @@ export default function BookingVenueSelector({ compactOnMobile = false, onChange
           </div>
         </div>
       </div>
-    </section>
-  )
-}
-
-export function BookingVenueComingSoon({ text }: BookingVenueComingSoonProps) {
-  return (
-    <section className="section booking-venue-coming-soon" aria-labelledby="booking-venue-coming-soon-title">
-      <div className="booking-venue-coming-soon-icon">
-        <CalendarClock aria-hidden="true" size={30} />
-      </div>
-      <VenueHoursPill label={text.bookingVenueCafeHours} />
-      <h2 id="booking-venue-coming-soon-title">{text.bookingVenueCafeComingSoonTitle}</h2>
-      <p>{text.bookingVenueCafeComingSoonBody}</p>
-      <p className="booking-venue-soft-opening-notice">
-        <span>{text.bookingVenueCafeSoftOpeningNotice}</span>
-        <a href={VRENA_ZALO_URL} rel="noreferrer" target="_blank">
-          <MessageCircle aria-hidden="true" size={16} />
-          {text.bookingVenueCafeConfirmZalo}
-        </a>
-      </p>
-      <small><MapPin aria-hidden="true" size={15} /> {text.bookingVenueCafeAddress}</small>
-    </section>
-  )
-}
-
-export function CafeSoftOpeningBookingNotice({ text }: { text: TranslationMap }) {
-  return (
-    <section className="cafe-booking-notice" aria-labelledby="cafe-booking-notice-title">
-      <div className="cafe-booking-notice-icon">
-        <MessageCircle aria-hidden="true" size={24} />
-      </div>
-      <VenueHoursPill label={text.bookingVenueCafeHours} />
-      <h2 id="cafe-booking-notice-title">{text.bookingVenueCafeBookingNoticeTitle}</h2>
-      <p>{text.bookingVenueCafeBookingNoticeBody}</p>
-      <strong>{text.bookingVenueCafeBookingNoticeStatus}</strong>
-      <small><CalendarClock aria-hidden="true" size={16} /> {text.bookingVenueCafeBookingHours}</small>
-      <ContactChannels className="cafe-booking-contact-channels" label={text.contactUs} />
     </section>
   )
 }

@@ -48,6 +48,7 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
   return (
     <BookingWidget
       initialView={routedInitialView || initialView}
+      initialBookingVenue={search.get('venue') === 'cafe-des-stagiaires' ? 'cafe-des-stagiaires' : 'ha-do-centrosa'}
       initialCalendarNavigation={calendarNavigation(search.toString())}
       onActiveViewChange={handleActiveViewChange}
       restoreStoredView={pathname === '/'}

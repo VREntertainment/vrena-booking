@@ -68,7 +68,7 @@ export type TicketBookingConfirmation = {
   loyaltyDiscountAmount?: number
   discountCode?: string
   discountAmount?: number
-  requiresZaloConfirmation?: boolean
+  manualDiscountReview?: boolean
 }
 
 export type Profile = {
