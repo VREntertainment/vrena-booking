@@ -24,7 +24,7 @@ const supabaseImageRemotePatterns = (() => {
 })()
 
 const { supabaseOrigin, supabaseRealtimeOrigin } = configuredSupabaseOrigins()
-const csp = buildContentSecurityPolicy({ isDev, supabaseOrigin, supabaseRealtimeOrigin })
+const csp = buildContentSecurityPolicy({ isDev, supabaseOrigin, supabaseRealtimeOrigin, allowGoogleAnalytics: true })
 
 const securityHeaders = [
   {

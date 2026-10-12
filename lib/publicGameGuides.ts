@@ -47,6 +47,7 @@ async function fetchStaffGames(select: string) {
   url.searchParams.set('order', 'name.asc')
 
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(5000),
     headers: {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`,
@@ -74,7 +75,7 @@ async function fetchPublicStaffGameGuides() {
   }
 }
 
-export const getCachedPublicStaffGameGuides = unstable_cache(
+const loadCachedPublicStaffGameGuides = unstable_cache(
   fetchPublicStaffGameGuides,
   ['public-staff-game-guides-v2'],
   {
@@ -82,3 +83,14 @@ export const getCachedPublicStaffGameGuides = unstable_cache(
     tags: ['public-game-guide'],
   }
 )
+
+export async function getCachedPublicStaffGameGuides(): Promise<StaffGameGuide[]> {
+  try {
+    return await loadCachedPublicStaffGameGuides()
+  } catch {
+    // Keep failures outside the cache so ISR retains its last successful catalog.
+    // A cold cache can still render the built-in game guide during an outage.
+    console.warn('Public game guide unavailable; using the built-in catalog.')
+    return []
+  }
+}

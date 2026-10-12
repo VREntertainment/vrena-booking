@@ -158,7 +158,7 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
     } = getContext()
 
     if (!isHaDoBookingVenue) {
-      setCreateStatus(text.bookingVenueCafeComingSoonBody)
+      setCreateStatus(text.bookingVenueCafeBookingGuide)
       setIsCreating(false)
       return
     }

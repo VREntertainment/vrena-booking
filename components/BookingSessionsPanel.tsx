@@ -585,7 +585,6 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                 {isTicket && <span className="pill ticket-pill">{text.privateTicketSession}</span>}
                 {isChallenge && <span className="pill challenge-pill">{text.challengeSession}</span>}
                 {isChallenge && session.challenge_status && <span className="pill ok">{challengeStatusLabel(session.challenge_status)}</span>}
-                {session.seeded && <span className="pill soft-opening-pill">{session.seed_label || text.softOpeningHighlights}</span>}
                 {isSessionOwner && <span className="pill host-pill">{text.host}</span>}
                 {!isTicket && !isChallenge && invitedMe && <span className="pill ok">{text.invited}</span>}
               </div>

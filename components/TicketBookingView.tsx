@@ -506,7 +506,10 @@ export default function TicketBookingView({
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
-            <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
+            <div className="ticket-duration-information">
+              <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
+              <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} showNumbers />
+            </div>
             <div className="ticket-type-list ticket-event-options">
               <label>{text.ticketEventHelpTitle}</label>
               <p className="ticket-event-options-copy">{text.ticketEventHelpBody}</p>
@@ -528,8 +531,6 @@ export default function TicketBookingView({
               </div>
             </div>
           </div>
-
-          <ContactChannels className="ticket-mobile-contact" label={text.contactUs} />
 
           {!isLoggedIn && guestTicketContactOpen && (
             <div className="modal-backdrop guest-ticket-modal-backdrop">

@@ -46,6 +46,7 @@ export type BookingWidgetProps = {
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
   initialView?: AppView
+  initialBookingVenue?: CalendarNavigation['venue']
   initialCalendarNavigation?: CalendarNavigation | null
   onActiveViewChange?: (view: AppView, query?: string) => void
   onProfileChange?: (profile: Profile | null) => void

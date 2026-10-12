@@ -1,4 +1,6 @@
 'use client'
+import { staffBookingName } from '../lib/staffBookingName'
+import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
 import type { ChallengeTarget } from '../features/booking/ChallengeControls'
 import { clubRankingCriterion, clubTheme } from '../features/booking/clubAccess.actions'
@@ -191,7 +193,7 @@ import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
 import AppLoadingState from './AppLoadingState'
 import AppSidebar, { type AppView } from './AppSidebar'
-import BookingVenueSelector, { BookingVenueComingSoon, type BookingVenueId } from './BookingVenueSelector'
+import BookingVenueSelector, { type BookingVenueId } from './BookingVenueSelector'
 import {
   BirthdayPopupModal,
   BookingProfileView,
@@ -231,6 +233,7 @@ export default function WidgetPage({
   initialSelectedPlayerSessionId = '',
   initialView = 'tickets',
   initialCalendarNavigation,
+  initialBookingVenue,
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
@@ -712,7 +715,7 @@ export default function WidgetPage({
     isUpdatingSession,
     setIsUpdatingSession,
   } = useBookingSessionEditorState({ incomingCalendar, initialView })
-  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || 'ha-do-centrosa')
+  const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || initialBookingVenue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
   const [simRacingSelected, setSimRacingSelected] = useState(false)
   useEffect(() => {
@@ -2501,7 +2504,9 @@ export default function WidgetPage({
         ? { mode: 'staff-booking', date: calendarBookingDraft.date, time: calendarBookingDraft.time, venue: calendarBookingDraft.venueKey }
         : activeView === 'tickets' && calendarTicketDraft
           ? { mode: 'client-ticket', date: ticketDate, time: ticketTime, venue: bookingVenue }
-          : null
+          : activeView === 'tickets'
+            ? { venue: bookingVenue }
+            : null
     onActiveViewChange?.(activeView, navigation ? new URLSearchParams(navigation).toString() : activeView === 'create' ? '' : undefined)
   }, [activeView, bookingVenue, calendarBookingDraft, calendarTicketDraft, calendarWeekStart, createSessionMode, onActiveViewChange, ticketDate, ticketTime])
 
@@ -3125,6 +3130,9 @@ export default function WidgetPage({
       ? CAFE_SOFT_OPENING_DATE
       : ticketDate
     setBookingVenue(value)
+    if (value === 'cafe-des-stagiaires' && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar'))) {
+      setActiveView('tickets')
+    }
     setTicketArenaCount(1)
     setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
     setTicketTime('')
@@ -3918,20 +3926,10 @@ export default function WidgetPage({
   const venueOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const venueCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
   const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
-  // Staff must also see event reservations made outside public opening hours.
-  const [calendarOpenMinutes, calendarCloseMinutes] = (() => {
-    let first = venueOpenMinutes
-    let last = venueCloseMinutes
-    if (canManageCalendarBookings) {
-      for (const session of sessions) {
-        if (session.date < calendarWeekStart || session.date > calendarWeekEnd || (session.venue_key || 'ha-do-centrosa') !== bookingVenue || session.status === 'cancelled' || ['cancelled', 'expired'].includes(session.ticket_status || '')) continue
-        const start = timeToMinutes(session.start_time)
-        first = Math.min(first, Math.floor(start / calendarStepMinutes) * calendarStepMinutes)
-        last = Math.max(last, Math.min(1440, Math.ceil((start + session.duration_minutes) / calendarStepMinutes) * calendarStepMinutes))
-      }
-    }
-    return [first, last]
-  })()
+  // Recompute after saves/week/shop changes so every staff reservation remains visible.
+  const [calendarOpenMinutes, calendarCloseMinutes] = calendarRange(
+    venueOpenMinutes, venueCloseMinutes, calendarStepMinutes, calendarSessions, canManageCalendarBookings,
+  )
 
   const calendarTimeSlots = useMemo(() => {
     return Array.from({ length: Math.floor((calendarCloseMinutes - calendarOpenMinutes) / calendarStepMinutes) }, (_, index) => {
@@ -5230,10 +5228,8 @@ export default function WidgetPage({
         <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
       )}
 
-      {activeView === 'sessions' && (
-        isHaDoBookingVenue
-          ? <BookingSessionsPanel context={sessionsPanelContext} />
-          : <BookingVenueComingSoon text={text} />
+      {activeView === 'sessions' && isHaDoBookingVenue && (
+        <BookingSessionsPanel context={sessionsPanelContext} />
       )}
 
       {activeView === 'leaderboard' && (
@@ -5405,7 +5401,7 @@ export default function WidgetPage({
         )
       )}
 
-      {activeView === 'tickets' && (
+      {(activeView === 'tickets' || (!isHaDoBookingVenue && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar')))) && (
         <div className="ticket-booking-layout">
           {isHaDoBookingVenue && <div className="sim-racing-product-picker">
             <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR · {text.bookTickets}</button>
@@ -5501,7 +5497,7 @@ export default function WidgetPage({
                   <div>
                     <strong>{text.calendarAvailabilityTitle}</strong>
                     <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
-                    <span className="calendar-opening-hours">{minutesToTime(venueOpenMinutes)}–{minutesToTime(venueCloseMinutes)}</span>
+                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
                     <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
                   </div>
                   <div className="calendar-nav">
@@ -5587,7 +5583,7 @@ export default function WidgetPage({
                                   : text.public
                               const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
                               const lane = calendarSessionLanes.get(session.id) || { lane: 0, lanes: 1 }
-                              const calendarSessionLabel = `${session.name} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
+                              const calendarSessionLabel = `${staffBookingName(session.name)} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
 
                               return (
                                 <button
@@ -5600,12 +5596,12 @@ export default function WidgetPage({
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
                                   <span className="calendar-session-compact">
-                                    <strong>{session.name}</strong>
+                                    <strong>{staffBookingName(session.name)}</strong>
                                     <span>{timeRangeLabel}</span>
                                     <small>{coverGame.title}</small>
                                   </span>
                                   <span className="calendar-session-popover" aria-hidden="true">
-                                    <strong>{session.name}</strong>
+                                    <strong>{staffBookingName(session.name)}</strong>
                                     <span>{formatShortDate(session.date, language)} · {timeRangeLabel}</span>
                                     <span>{coverGame.title}</span>
                                     <span>{session.duration_minutes} min · {sessionKind}</span>
@@ -5841,9 +5837,7 @@ export default function WidgetPage({
               </div>
             )}
           </CreateSessionView>
-        ) : (
-          <BookingVenueComingSoon text={text} />
-        )
+        ) : null
       )}
 
       {activeView === 'profile' && (
@@ -5982,6 +5976,7 @@ export default function WidgetPage({
 
       {tariffPaymentOpen && (
         <TariffPaymentModal
+          venue={bookingVenue}
           closeText={text.close}
           title={isHaDoBookingVenue ? text.sessionTariffHaDoTitle : text.sessionTariffCafeTitle}
           rates={isHaDoBookingVenue

@@ -1,5 +1,6 @@
 'use client'
 
+import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { StaffConfirmedBookingShare } from './staff/StaffConfirmedBookingShare'
 import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
 
@@ -1122,7 +1123,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
           return <Fragment key={order.id}>
             <tr className="staff-order-row">
-              <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p></div></td>
+              <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p><StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving || !order.session_id || !['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status)} /></div></td>
               <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
               <td data-label={text.labels.total}>{formatVnd(order.total)}</td>
               <td data-label={text.labels.payment}>
