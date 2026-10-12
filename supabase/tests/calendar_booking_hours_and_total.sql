@@ -1,16 +1,30 @@
 -- ISOLATED DATABASE ONLY: requires synthetic staff, City Z order and session fixtures.
 -- Never run against production. All fixture changes are rolled back.
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select plan(1);
+do $$ begin
+  if exists(select 1 from private.integration_settings where key='google_sheets_webhook_url' and nullif(value,'') is not null) then raise exception 'Local test database only'; end if;
+end $$;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+insert into auth.users(id,email) values ('88000000-0000-4000-8000-000000000071','calendar-fixture@example.invalid');
+insert into public.profiles(id,full_name,role) values ('88000000-0000-4000-8000-000000000071','Calendar fixture','admin') on conflict(id) do update set role='admin';
+insert into auth.mfa_factors(id,user_id,factor_type,status,secret,created_at,updated_at) values ('88000000-0000-4000-8000-000000000072','88000000-0000-4000-8000-000000000071','totp','verified','LOCAL-TEST-ONLY',now(),now());
+insert into public.sessions(id,owner_id,name,date,start_time,duration_minutes,max_players,arena_count,venue_key,confirmed_game_id,game_options)
+values ('88000000-0000-4000-8000-000000000073','88000000-0000-4000-8000-000000000071','Calendar fixture',current_date+700,'16:00',60,2,1,'cafe-des-stagiaires','city-z',array['city-z']);
+insert into public.staff_orders(id,order_number,session_id,game_id,booking_date,booking_time,players_count,arena_id,subtotal,total,order_status,payment_status)
+values ('88000000-0000-4000-8000-000000000074','CALENDAR-FIXTURE','88000000-0000-4000-8000-000000000073',(select id from public.staff_games where slug='city-z'),current_date+700,'16:00',2,'cafe:arena-1',500000,500000,'confirmed','unpaid');
 do $$
 declare s public.sessions%rowtype; o public.staff_orders%rowtype; actor uuid; b jsonb; changed jsonb; paid bigint; before_payments jsonb;
 begin
   select p.id into actor from public.profiles p join auth.users u on u.id=p.id
-    where p.deleted_at is null and u.deleted_at is null and not coalesce(u.is_anonymous,false)
+    where p.id='88000000-0000-4000-8000-000000000071' and p.deleted_at is null and u.deleted_at is null and not coalesce(u.is_anonymous,false)
     and public.staff_role_rank(p.role,u.email)>=50 and u.email<>'contact@vre-vietnam.com'
     and exists(select 1 from auth.mfa_factors f where f.user_id=p.id and f.status='verified') limit 1;
   if actor is null then raise exception 'Test requires an existing MFA-enabled staff account.'; end if;
   perform set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated','aal','aal2')::text,true);
-  select * into o from public.staff_orders where order_status='confirmed' and payment_status='unpaid' and session_id is not null
+  select * into o from public.staff_orders where id='88000000-0000-4000-8000-000000000074' and order_status='confirmed' and payment_status='unpaid' and session_id is not null
     and exists(select 1 from public.sessions x where x.id=session_id and x.deleted_at is null and x.confirmed_game_id='city-z' and x.venue_key='cafe-des-stagiaires') limit 1;
   if o.id is null then raise exception 'Test requires an open City Z order.'; end if;
   select * into s from public.sessions where id=o.session_id;
@@ -53,5 +67,6 @@ begin
     raise exception 'FAIL: unauthenticated update accepted';
   exception when others then if sqlerrm <> 'Staff access required.' then raise; end if; end;
 end $$;
+select pass('Hours, both venues, midnight, atomic repricing, stale orders, payments and authorization remain protected');
+select * from finish();
 rollback;
-select 'PASS: hours, both venues, midnight boundary, atomic repricing, stale-order protection, payment preservation, underpayment protection, staff authorization; all changes rolled back' as result;
