@@ -47,6 +47,10 @@ Final checks passed: 204 unit/email tests; 59 SQL assertions across four suites;
 
 The local schema copy was aligned with inspected production booking functions and the simulator migration. It is not a full production-data clone. Production database access in this audit was read-only. The Supabase security advisor reports existing anonymous SECURITY DEFINER RPC warnings; guest booking deliberately requires those public endpoints. New privileged helpers use an empty search path, live in `private`, and revoke customer execution.
 
+## Deployment follow-up
+
+On the explicit live-release request, production was rechecked: the same three Thảo Điền bookings remain active and pending, so the data gate still blocks installation. Production was left unchanged. GitHub engineering checks had stopped at the dependency audit; Sharp was updated from 0.35.4 to 0.35.5 and source-map-js from 1.2.1 to 1.2.2. The dependency audit now reports zero vulnerabilities.
+
 ## Release sequence
 
 1. Staff resolves the three existing conflicting bookings. Obtain an updated capacity audit; do not arbitrarily select a winner.
