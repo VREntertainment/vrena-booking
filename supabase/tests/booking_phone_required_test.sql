@@ -1,0 +1,18 @@
+begin;
+set local search_path=public,extensions;
+select no_plan();
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+insert into auth.users(id,email) values ('89000000-0000-4000-8000-000000000099','phone-required@example.invalid');
+insert into public.profiles(id,full_name,phone) values ('89000000-0000-4000-8000-000000000099','Phone test',null) on conflict(id) do update set phone=null;
+select set_config('request.jwt.claims','{"role":"authenticated","sub":"89000000-0000-4000-8000-000000000099"}',true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+58,'16:00',60,2,1,array['revolta'])$q$,'P0001','Add a valid phone number to your profile before booking.','Signed-in Thao Dien customer requires a phone');
+select throws_ok($q$select public.create_ticket_booking('individual',current_date+58,'16:00',60,2,1,array['revolta'],public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date+58,'16:00'),public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date+58,'16:00')*4)$q$,'P0001','Add a valid phone number to your profile before booking.','Signed-in Ha Do customer requires a phone');
+select throws_ok($q$select public.create_sim_racing_booking(current_date+58,'16:00')$q$,'P0001','Add a valid phone number to your profile before booking.','Signed-in simulator customer requires a phone');
+update public.profiles set phone='123' where id='89000000-0000-4000-8000-000000000099';
+select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+58,'16:00',60,2,1,array['revolta'])$q$,'P0001','Add a valid phone number to your profile before booking.','Malformed profile phone is rejected');
+update public.profiles set phone='+84900000099' where id='89000000-0000-4000-8000-000000000099';
+select lives_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+58,'16:00',60,2,1,array['revolta'])$q$,'Valid phone permits confirmed reservation');
+select is((select ticket_status from public.sessions where owner_id='89000000-0000-4000-8000-000000000099'),'confirmed','Valid reservation is confirmed automatically');
+select * from finish();
+rollback;
