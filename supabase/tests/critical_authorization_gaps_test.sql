@@ -26,6 +26,10 @@ on conflict (id) do update
 set email = excluded.email,
     full_name = excluded.full_name;
 
+-- Authorized customer fixtures satisfy the reservation contact requirement.
+update public.profiles set phone='+999' || left(replace(id::text,'-',''),9)
+where id in ('11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','33333333-3333-4333-8333-333333333333');
+
 insert into public.sessions (
   id,
   owner_id,

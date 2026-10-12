@@ -1,5 +1,6 @@
 'use client'
 
+import { validateGuestTicketContact } from '../../lib/guestTicketBooking'
 import { ageBandFromBirthday } from '../../lib/agePolicy'
 import { getSupabase } from '../../lib/booking/client'
 import {
@@ -171,6 +172,15 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
     const activeProfile = profile
 
     if (!activeProfile) {
+      setIsCreating(false)
+      return
+    }
+
+    const contact = validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, text)
+    if (contact.error) {
+      setCreateStatus(contact.error)
+      showActionToast(contact.error)
+      setActiveView('profile')
       setIsCreating(false)
       return
     }
