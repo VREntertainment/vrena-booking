@@ -3238,6 +3238,15 @@ export default function WidgetPage({
   }
 
   function validateTicketSelection(activeProfile = profile) {
+    if (activeProfile) {
+      const contact = validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, looseText)
+      if (contact.error) {
+        setActiveView('profile')
+        setProfileStatus(contact.error)
+        showTicketStatus(contact.error, 'error')
+        return false
+      }
+    }
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
 

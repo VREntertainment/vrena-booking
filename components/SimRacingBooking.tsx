@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { getSupabase } from '../lib/booking/client'
 import type { Profile } from '../lib/bookingWidgetDomain'
 import type { LanguageCode } from '../lib/i18n/languages'
@@ -61,6 +62,8 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
   async function book(event: FormEvent) {
     event.preventDefault()
     if (inFlight.current || !time || loading || loadError) return
+    const contact = validateGuestTicketContact({ name, phone: profile ? profile.phone || '' : phone }, text)
+    if (contact.error) { setError(contact.error); return }
     inFlight.current = true
     setBusy(true)
     setError('')

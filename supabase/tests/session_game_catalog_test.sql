@@ -16,6 +16,8 @@ values ('85000000-0000-4000-8000-000000000003','85000000-0000-4000-8000-00000000
 insert into public.staff_orders(id,order_number,session_id,booking_date,booking_time,players_count,total,subtotal)
 values ('85000000-0000-4000-8000-000000000004','CATALOG-TEST','85000000-0000-4000-8000-000000000003',current_date-1,'10:00',1,100000,100000);
 
+select is((select arena_id from public.staff_orders where id='85000000-0000-4000-8000-000000000004'),'arena-1','An unassigned staff order inherits its physical arena');
+
 set local role authenticated;
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',true);
 select throws_ok($q$select public.staff_update_session_operation('85000000-0000-4000-8000-000000000003',p_confirmed_game_id=>'revolta')$q$,'P0001','Staff access required.','Catalog changes retain the staff MFA guard');

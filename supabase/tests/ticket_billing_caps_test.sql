@@ -9,7 +9,7 @@ do $$ begin
 end $$;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 insert into auth.users(id,email) values ('89000000-0000-4000-8000-000000000001','billing-cap@example.invalid');
-insert into public.profiles(id,full_name) values ('89000000-0000-4000-8000-000000000001','Billing cap test') on conflict(id) do nothing;
+insert into public.profiles(id,full_name,phone) values ('89000000-0000-4000-8000-000000000001','Billing cap test','+84900000891') on conflict(id) do nothing;
 update public.staff_discount_rules set active=false;
 insert into public.staff_discount_rules(name,discount_type,value,min_players,max_players,ticket_type,valid_from,active) values
 ('QA billed slots 5-8','percentage',5,5,8,'individual','2020-01-01',true),

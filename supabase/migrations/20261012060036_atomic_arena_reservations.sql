@@ -109,6 +109,15 @@ begin
   select * into s from public.sessions where id=new.session_id for update;
   if not found or s.arena_count=0 or s.status<>'open' or s.deleted_at is not null
     or coalesce(s.ticket_status,'') in ('cancelled','completed') then return new; end if;
+  if new.arena_id is null then
+    select min(arena_number) into v_arena from private.arena_reservations where session_id=s.id;
+    perform private.reserve_arenas(s.id,null,s.venue_key,s.date+s.start_time::time,
+      s.date+s.start_time::time+make_interval(mins=>s.duration_minutes),s.arena_count,v_arena);
+    select case when s.venue_key='cafe-des-stagiaires' then 'cafe:arena-1'
+      else 'arena-'||min(arena_number)::text end into new.arena_id
+      from private.arena_reservations where session_id=s.id;
+    return new;
+  end if;
   v_arena := case new.arena_id when 'arena-1' then 1 when 'arena-2' then 2 when 'cafe:arena-1' then 1 end;
   if v_arena is null or (s.venue_key='cafe-des-stagiaires') is distinct from (new.arena_id='cafe:arena-1') then
     raise exception 'Arena does not belong to the booking venue.';
@@ -118,7 +127,7 @@ begin
   return new;
 end $$;
 revoke all on function private.sync_order_arena() from public,anon,authenticated;
-create trigger staff_orders_reserve_arena after insert or update of arena_id,session_id on public.staff_orders
+create trigger staff_orders_reserve_arena before insert or update of arena_id,session_id on public.staff_orders
   for each row execute function private.sync_order_arena();
 
 -- Lock writers through the backfill; never publish a partially populated ledger.
@@ -266,6 +275,10 @@ begin
     if not found then
       raise exception 'Profile required to request tickets.';
     end if;
+  end if;
+
+  if length(regexp_replace(coalesce(v_customer.phone,''), '\D', '', 'g')) not between 8 and 15 then
+    raise exception 'Add a valid phone number to your profile before booking.';
   end if;
 
   v_customer_id := v_customer.id;
@@ -955,6 +968,9 @@ begin
   if not found then
     raise exception 'Profile required to book tickets.';
   end if;
+  if length(regexp_replace(coalesce(v_profile.phone,''), '\D', '', 'g')) not between 8 and 15 then
+    raise exception 'Add a valid phone number to your profile before booking.';
+  end if;
 
   if v_loyalty_points_to_redeem > 0 then
     select coalesce(max(r.redeem_value_vnd_per_point), 0)
@@ -1156,6 +1172,22 @@ begin
 end;
 $function$
 ;
+
+
+-- Apply the same phone requirement to signed-in simulator customers, preserving
+-- the installed simulator implementation and its independent capacity guard.
+do $phone$
+declare definition text; marker text := '  perform private.guard_duplicate_ticket_booking(';
+begin
+  definition := pg_get_functiondef('private.create_sim_racing_booking(date,time,text,text)'::regprocedure);
+  if position(marker in definition)=0 then raise exception 'Simulator implementation changed; review required.'; end if;
+  definition := replace(definition,marker,
+    $body$  if length(regexp_replace(coalesce(v_phone,''), '[^0-9]', '', 'g')) not between 8 and 15 then
+    raise exception 'Add a valid phone number to your profile before booking.';
+  end if;
+$body$ || marker);
+  execute definition;
+end $phone$;
 
 notify pgrst, 'reload schema';
 commit;
