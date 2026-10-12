@@ -4,9 +4,9 @@
 
 This change makes every successful online ticket booking confirmed immediately at both venues. It does not mark payment as received. Screens, event descriptions, guest prompts, seven language sets, and the customer email template remove the staff-approval step. Confirmation emails label the booking **Status: Confirmed**.
 
-**Do not deploy yet.** Production has three overlapping pending Thảo Điền reservations on 12 October: 15:30–16:30, 16:00–17:00, and 16:00–17:00. The owner instructed that these remain for staff to resolve. The migration deliberately refuses to install over incompatible current/future reservations; it rolls back without converting, cancelling, or deleting them. Recheck live data immediately before release, including pending reservations.
+The owner subsequently authorized cancellation of the two later Thảo Điền bookings. `TD-261012-3C8EC6` and `TD-261012-16F77E` are cancelled with their records retained. The earliest booking, `TD-261012-AB100E`, remains and is confirmed. Production now has zero overlapping arena claims.
 
-The frontend depends on the new occupancy RPC. Apply and verify the database migration first, then release the app. The Apps Script email source requires its own versioned deployment. Do not interpret this PR or a preview as a production release.
+The database migration was installed as `20261012074852_atomic_arena_reservations`; the same migration was tested on an isolated PostgreSQL database. Apps Script version 13 is published on the existing webhook endpoint, preserving sender/routing configuration. The frontend release follows completion of repository checks. Phone numbers are mandatory for guest and signed-in online reservations, including SIM Racing; signed-in VR customers without a valid phone are directed to their profile.
 
 ## Findings
 
@@ -45,18 +45,16 @@ Final checks passed: 204 unit/email tests; 59 SQL assertions across four suites;
 - Unit/email tests cover the exact `Status: Confirmed` label at both venues. No real email was sent.
 - Browser confirmation tests intercept writes and verify successful screens, failed-check recovery, duplicate-click prevention, and no page exceptions at desktop and Pixel 7 sizes. They are separate from the real SQL concurrency tests.
 
-The local schema copy was aligned with inspected production booking functions and the simulator migration. It is not a full production-data clone. Production database access in this audit was read-only. The Supabase security advisor reports existing anonymous SECURITY DEFINER RPC warnings; guest booking deliberately requires those public endpoints. New privileged helpers use an empty search path, live in `private`, and revoke customer execution.
+The local schema copy was aligned with inspected production booking functions and the simulator migration. It is not a full production-data clone. The initial audit was read-only. The later authorized release cancelled the two specified bookings, confirmed the retained booking, and installed the reviewed database protection. The Supabase security advisor reports existing anonymous SECURITY DEFINER RPC warnings; guest booking deliberately requires those public endpoints. New privileged helpers use an empty search path, live in `private`, and revoke customer execution.
 
-## Deployment follow-up
+## Release verification
 
-On the explicit live-release request, production was rechecked: the same three Thảo Điền bookings remain active and pending, so the data gate still blocks installation. Production was left unchanged. GitHub engineering checks had stopped at the dependency audit; Sharp was updated from 0.35.4 to 0.35.5 and source-map-js from 1.2.1 to 1.2.2. The dependency audit now reports zero vulnerabilities.
+The dependency audit now reports zero vulnerabilities after patching Sharp to 0.35.5 and source-map-js to 1.2.2. Six new database assertions verify required phone numbers. The final 90-attempt concurrency suite passes with these guards enabled. Staff orders without an arena label inherit the resource assigned by the database; explicit invalid assignments remain rejected. Security allowlists include the intentional, non-identifying occupancy RPC.
 
-## Release sequence
+A synthetic production booking smoke test was rejected by automatic approval review because integration side effects might escape rollback. It was not executed. Verification uses isolated booking transactions, browser tests and read-only live checks instead. No test customer email was sent.
 
-1. Staff resolves the three existing conflicting bookings. Obtain an updated capacity audit; do not arbitrarily select a winner.
-2. Review the migration against current function definitions and confirm no later production drift. Run it in staging with catalog fixtures, then run concurrency and customer-flow checks there.
-3. Apply the database migration during a quiet period. It uses a five-second lock timeout and an atomic backfill. If it fails, resolve the reported conflicts and retry after review.
-4. Deploy the app and the versioned Apps Script email template. Freshly verify both public venue flows and a controlled confirmation email using an authorized test recipient.
-5. Verify zero overlapping physical arena claims and cancellation release before calling the release complete.
+The security advisor's private-ledger RLS/no-policy notice is intentional default-deny behavior; browser roles have no ledger privileges. The public occupancy SECURITY DEFINER warning is intentional for the five-field anonymous availability endpoint, with no customer details exposed.
 
-Rollback must preserve capacity enforcement: reverting the UI alone can restore old wording; removing the ledger/triggers restores the overbooking vulnerability. Prefer fixing forward. No production rollback or data change was performed during this audit.
+The separate cloud staging database is older and lacks SIM Racing; it was not modified. The isolated database used for migration/concurrency tests was aligned with inspected production definitions. Remaining release checks must pass before merging the app. A fresh public-site inspection and production deployment/commit verification are required after merge.
+
+Rollback must preserve capacity enforcement; dropping the ledger/triggers restores the overbooking vulnerability. Prefer fixing forward.
