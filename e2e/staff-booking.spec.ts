@@ -421,7 +421,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     await page.getByRole('button', { name: 'Open session calendar', exact: true }).click()
     const calendar = page.locator('.calendar-panel')
     await expect(calendar).toHaveAttribute('aria-busy', 'false')
-    await expect(calendar.getByRole('button').filter({ hasText: 'Staff booking - City Z' })).toHaveCount(1)
+    await expect(calendar.getByRole('button', { name: /^Staff booking · Vrena Thao Dien: .*10:13-12:20$/ })).toHaveCount(1)
     await expect(calendar.locator('.calendar-time-label').first()).toHaveText('10:10')
     await page.screenshot({ path: '/tmp/staff-event-calendar.png' })
     expect(errors).toEqual([])
