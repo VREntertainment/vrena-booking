@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildStaffPinEmail, maskEmailAddress } from './staffPinEmail.ts'
+import { buildStaffPinEmail, maskEmailAddress, sendStaffPinEmail } from './staffPinEmail.ts'
 
 test('masks the saved HR email without hiding its destination domain', () => {
   assert.equal(maskEmailAddress('Employee.Name@Example.com'), 'em•••••••••••@example.com')
@@ -32,4 +32,31 @@ test('rejects malformed PINs before building an email', () => {
     pin: '1234',
     recipientEmail: 'employee@example.com',
   }), /exactly six digits/)
+})
+
+
+test('PIN delivery uses a transactional sender rather than an unrelated notification mailbox', async (t) => {
+  const keys = ['RESEND_API_KEY', 'STAFF_PIN_FROM_EMAIL', 'RESEND_FROM_EMAIL', 'NOTIFICATION_FROM_EMAIL'] as const
+  const original = Object.fromEntries(keys.map((key) => [key, process.env[key]]))
+  try {
+    process.env.RESEND_API_KEY = 'test-only-key'
+    process.env.NOTIFICATION_FROM_EMAIL = 'notification@example.com'
+    delete process.env.STAFF_PIN_FROM_EMAIL
+    delete process.env.RESEND_FROM_EMAIL
+    let sender = ''
+    t.mock.method(globalThis, 'fetch', async (_url: unknown, options: RequestInit) => {
+      sender = JSON.parse(String(options.body)).from
+      return new Response('{}', { status: 200 })
+    })
+    await sendStaffPinEmail({ accessRole: 'staff', employeeName: 'Test employee', pin: '012345', recipientEmail: 'test@example.com' })
+    assert.equal(sender, 'VRena <contact@vre-vietnam.com>')
+    process.env.STAFF_PIN_FROM_EMAIL = 'VRena <staff@example.com>'
+    await sendStaffPinEmail({ accessRole: 'staff', employeeName: 'Test employee', pin: '012345', recipientEmail: 'test@example.com' })
+    assert.equal(sender, 'VRena <staff@example.com>')
+  } finally {
+    for (const key of keys) {
+      if (original[key] === undefined) delete process.env[key]
+      else process.env[key] = original[key]
+    }
+  }
 })

@@ -142,7 +142,7 @@ export async function sendStaffPinEmail(payload: StaffPinEmailPayload) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) throw new Error('Employee PIN email is not configured.')
 
-  const from = process.env.NOTIFICATION_FROM_EMAIL
+  const from = process.env.STAFF_PIN_FROM_EMAIL
     || process.env.RESEND_FROM_EMAIL
     || DEFAULT_FROM_EMAIL
   const email = buildStaffPinEmail(payload)
