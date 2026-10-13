@@ -163,6 +163,16 @@ export async function sendStaffPinEmail(payload: StaffPinEmailPayload) {
   })
 
   if (!response.ok) {
+    // Log only an allowlisted diagnosis, never the credential or email payload.
+    const failure = await response.json().catch(() => null) as { name?: unknown; message?: unknown } | null
+    const message = typeof failure?.message === 'string' ? failure.message.toLowerCase() : ''
+    const reason = message.includes('domain') && message.includes('not verified')
+      ? 'sender_domain_unverified'
+      : message.includes('testing emails') ? 'provider_test_mode'
+        : message.includes('api key') ? 'provider_api_key'
+          : message.includes('quota') || message.includes('limit') ? 'provider_limit'
+            : 'provider_rejected'
+    console.error('Employee PIN email provider rejected delivery.', { status: response.status, reason })
     throw new Error(`Could not send employee PIN email (${response.status}).`)
   }
 
