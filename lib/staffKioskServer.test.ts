@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { isStaffKioskEligibleDepartment, staffKioskOperatorFromEmployee } from './staffKioskDirectory.ts'
+import { isStaffKioskEligibleDepartment, isStaffKioskEligibleEmployee, staffKioskOperatorFromEmployee } from './staffKioskDirectory.ts'
 
 test('only VRena and Manager employees are eligible for shared-device PIN access', () => {
   assert.equal(isStaffKioskEligibleDepartment('VRena'), true)
@@ -57,4 +57,24 @@ test('Gong Cha employee is never marked PIN-ready', () => {
 
   assert.equal(operator.accessRole, 'staff')
   assert.equal(operator.pinConfigured, false)
+})
+
+
+test('an explicit grant allows only the designated employee, without widening Office access', () => {
+  assert.equal(isStaffKioskEligibleEmployee({ department: 'Office', kiosk_staff_access_granted: true }), true)
+  assert.equal(isStaffKioskEligibleEmployee({ department: 'Office', kiosk_staff_access_granted: false }), false)
+  assert.equal(isStaffKioskEligibleEmployee({ department: 'Office' }), false)
+  assert.equal(isStaffKioskEligibleEmployee(undefined), false)
+})
+
+test('a Staff-only grant never makes a Manager credential usable', () => {
+  const employee = {
+    profile_id: '44444444-4444-4444-8444-444444444444',
+    department: 'Office', kiosk_staff_access_granted: true,
+    employee_code: 'TEST', legal_name: 'Test employee', job_title: null,
+    kiosk_pin_configured_at: '2026-10-13T00:00:00Z',
+  }
+  assert.equal(staffKioskOperatorFromEmployee({ ...employee, kiosk_access_role: 'staff' }).pinConfigured, true)
+  assert.equal(staffKioskOperatorFromEmployee({ ...employee, kiosk_access_role: 'manager' }).pinConfigured, false)
+  assert.equal(staffKioskOperatorFromEmployee({ ...employee, kiosk_staff_access_granted: false, kiosk_access_role: 'staff' }).pinConfigured, false)
 })

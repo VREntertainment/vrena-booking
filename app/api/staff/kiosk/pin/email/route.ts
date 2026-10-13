@@ -7,7 +7,7 @@ import {
 import { canRevealStaffKioskPin } from '@/lib/staffKioskScope'
 import { maskEmailAddress, sendStaffPinEmail } from '@/lib/staffPinEmail'
 import {
-  isStaffKioskEligibleDepartment,
+  isStaffKioskEligibleEmployee,
   STAFF_KIOSK_ELIGIBILITY_MESSAGE,
 } from '@/lib/staffKioskDirectory'
 
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
 
     const { data: employee, error: employeeError } = await auth.adminClient
       .from('staff_employee_profiles')
-      .select('profile_id, legal_name, personal_email, department, kiosk_access_role, kiosk_pin_configured_at, active, deleted_at')
+      .select('profile_id, legal_name, personal_email, department, kiosk_staff_access_granted, kiosk_access_role, kiosk_pin_configured_at, active, deleted_at')
       .eq('profile_id', profileId)
       .eq('active', true)
       .is('deleted_at', null)
       .maybeSingle()
     if (employeeError) throw new Error(employeeError.message)
     if (!employee) return staffKioskJsonError('Active employee HR file not found.', 404)
-    if (!isStaffKioskEligibleDepartment(employee.department)) {
+    if (!isStaffKioskEligibleEmployee(employee)) {
       return staffKioskJsonError(STAFF_KIOSK_ELIGIBILITY_MESSAGE, 409)
     }
 

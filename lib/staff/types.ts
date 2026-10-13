@@ -320,6 +320,7 @@ export type StaffEmployeeProfile = {
   profile_photo_path: string | null
   cv_document_path: string | null
   active: boolean
+  kiosk_staff_access_granted?: boolean
   kiosk_access_role: 'manager' | 'staff' | null
   kiosk_pin_configured_at: string | null
   created_by: string | null

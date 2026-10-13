@@ -1,7 +1,7 @@
 import { vrenaPalette } from './theme/vrenaPalette.ts'
 const STAFF_KIOSK_ELIGIBLE_DEPARTMENTS = new Set(['vrena', 'manager'])
 
-export const STAFF_KIOSK_ELIGIBILITY_MESSAGE = 'Store PIN access is limited to VRena and Manager employees.'
+export const STAFF_KIOSK_ELIGIBILITY_MESSAGE = 'Store PIN access requires an eligible department or an explicit Staff-only grant.'
 
 function normalizeStaffKioskDepartment(value: unknown) {
   return String(value || '')
@@ -13,6 +13,10 @@ function normalizeStaffKioskDepartment(value: unknown) {
 
 export function isStaffKioskEligibleDepartment(department: unknown) {
   return STAFF_KIOSK_ELIGIBLE_DEPARTMENTS.has(normalizeStaffKioskDepartment(department))
+}
+
+export function isStaffKioskEligibleEmployee(employee?: { department?: unknown; kiosk_staff_access_granted?: boolean } | null) {
+  return Boolean(employee && (isStaffKioskEligibleDepartment(employee.department) || employee.kiosk_staff_access_granted === true))
 }
 
 export type StaffKioskOperatorDirectoryItem = {
@@ -30,6 +34,7 @@ export type StaffKioskOperatorDirectoryItem = {
 
 export type StaffKioskEmployeeDirectoryRow = {
   department: string | null
+  kiosk_staff_access_granted?: boolean
   profile_id: string
   employee_code: string | null
   legal_name: string | null
@@ -60,7 +65,8 @@ export function staffKioskOperatorFromEmployee(
     jobTitle: employee.job_title,
     accessRole,
     pinConfigured: Boolean(
-      isStaffKioskEligibleDepartment(employee.department)
+      isStaffKioskEligibleEmployee(employee)
+      && (!employee.kiosk_staff_access_granted || accessRole === 'staff')
       && employee.kiosk_pin_configured_at
       && accessRole,
     ),

@@ -460,7 +460,7 @@ export default function EmployeesSection({
                     <span>{resolvedLanguage === 'vi' ? 'Cấp quyền' : 'Access level'}</span>
                     <select disabled={!canManageEmployeeKioskPins} value={employeeKioskAccessRole} onChange={(event) => setEmployeeKioskAccessRole(event.target.value as 'manager' | 'staff')}>
                       <option value="staff">{resolvedLanguage === 'vi' ? 'Nhân viên' : 'Staff'}</option>
-                      <option value="manager">{resolvedLanguage === 'vi' ? 'Quản lý' : 'Manager'}</option>
+                      {!employeeProfileById.get(selectedEmployeeStaffId)?.kiosk_staff_access_granted && <option value="manager">{resolvedLanguage === 'vi' ? 'Quản lý' : 'Manager'}</option>}
                     </select>
                     <small>{employeeKioskAccessRole === 'manager'
                       ? (resolvedLanguage === 'vi' ? 'Mở các công cụ quản lý cửa hàng và HR được cấp quyền.' : 'Unlocks the permitted store-management and HR tools.')

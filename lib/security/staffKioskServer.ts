@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
 import {
-  isStaffKioskEligibleDepartment,
+  isStaffKioskEligibleEmployee,
   staffKioskOperatorFromEmployee,
   type StaffKioskEmployeeDirectoryRow,
 } from '../staffKioskDirectory'
@@ -99,13 +99,13 @@ export async function staffKioskCurrentSessionId(auth: StaffKioskAuth) {
 export async function loadStaffKioskOperatorDirectory(adminClient: SupabaseClient) {
   const { data: employees, error: employeeError } = await adminClient
     .from('staff_employee_profiles')
-    .select('profile_id, employee_code, legal_name, job_title, department, kiosk_access_role, kiosk_pin_configured_at')
+    .select('profile_id, employee_code, legal_name, job_title, department, kiosk_staff_access_granted, kiosk_access_role, kiosk_pin_configured_at')
     .eq('active', true)
     .is('deleted_at', null)
     .order('legal_name', { ascending: true })
   if (employeeError) throw new Error(employeeError.message)
 
   return ((employees ?? []) as StaffKioskEmployeeDirectoryRow[])
-    .filter((employee) => isStaffKioskEligibleDepartment(employee.department))
+    .filter((employee) => isStaffKioskEligibleEmployee(employee))
     .map(staffKioskOperatorFromEmployee)
 }

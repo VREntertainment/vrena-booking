@@ -39,7 +39,7 @@ import type {
   StaffShiftTemplate,
   StaffShiftTemplateId
 } from '../../lib/staff/types'
-import { isStaffKioskEligibleDepartment } from '../../lib/staffKioskDirectory'
+import { isStaffKioskEligibleEmployee } from '../../lib/staffKioskDirectory'
 import { supabase } from '../../lib/supabase/client'
 
 export type SchedulingActionContext = {
@@ -219,7 +219,7 @@ export function createStaffSchedulingActions(getContext: () => SchedulingActionC
         setEmployeeKioskPinEmailRecipient('')
         setEmployeeKioskAccessRole(employee.kiosk_access_role === 'manager' ? 'manager' : 'staff')
         employeeKioskPinProfileRef.current = employee.profile_id
-        if (canRevealEmployeeKioskPin && isStaffKioskEligibleDepartment(employee.department)) {
+        if (canRevealEmployeeKioskPin && isStaffKioskEligibleEmployee(employee)) {
           void revealEmployeeKioskPin(employee.profile_id)
         }
       }

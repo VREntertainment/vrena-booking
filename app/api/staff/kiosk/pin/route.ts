@@ -6,7 +6,7 @@ import {
 } from '@/lib/security/staffKioskServer'
 import { canConfigureStaffKioskPin, canRevealStaffKioskPin } from '@/lib/staffKioskScope'
 import {
-  isStaffKioskEligibleDepartment,
+  isStaffKioskEligibleEmployee,
   STAFF_KIOSK_ELIGIBILITY_MESSAGE,
 } from '@/lib/staffKioskDirectory'
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       staffKioskCurrentRank(auth),
       auth.adminClient
         .from('staff_employee_profiles')
-        .select('department')
+        .select('department, kiosk_staff_access_granted')
         .eq('profile_id', profileId)
         .eq('active', true)
         .is('deleted_at', null)
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       return staffKioskJsonError('Owner, Admin, or Office Staff access required.', 403)
     }
     if (!employee) return staffKioskJsonError('Active employee HR file not found.', 404)
-    if (!isStaffKioskEligibleDepartment(employee.department)) {
+    if (!isStaffKioskEligibleEmployee(employee)) {
       return staffKioskJsonError(STAFF_KIOSK_ELIGIBILITY_MESSAGE, 409)
     }
 
@@ -89,15 +89,19 @@ export async function PATCH(request: NextRequest) {
 
     const { data: employee, error: employeeError } = await auth.adminClient
       .from('staff_employee_profiles')
-      .select('department')
+      .select('department, kiosk_staff_access_granted')
       .eq('profile_id', profileId)
       .eq('active', true)
       .is('deleted_at', null)
       .maybeSingle()
     if (employeeError) throw new Error(employeeError.message)
     if (!employee) return staffKioskJsonError('Active employee HR file not found.', 404)
-    if (!isStaffKioskEligibleDepartment(employee.department)) {
+    if (!isStaffKioskEligibleEmployee(employee)) {
       return staffKioskJsonError(STAFF_KIOSK_ELIGIBILITY_MESSAGE, 409)
+    }
+
+    if (employee.kiosk_staff_access_granted && accessRole !== 'staff') {
+      return staffKioskJsonError('This employee is limited to Staff store access.', 403)
     }
 
     const { data, error } = await auth.adminClient.rpc('staff_kiosk_configure_pin', {

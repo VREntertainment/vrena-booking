@@ -23,7 +23,7 @@ import { emptyStaffPayrollCalculation } from '../lib/staff/payroll'
 import { customerName } from '../lib/staff/profiles'
 
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
-import { isStaffKioskEligibleDepartment } from '@/lib/staffKioskDirectory'
+import { isStaffKioskEligibleEmployee } from '@/lib/staffKioskDirectory'
 import { accessibleStaffHrTabs } from '@/lib/staffKioskScope'
 import {
   CalendarDays,
@@ -341,7 +341,10 @@ export default function StaffHrHub({ model }: StaffHrHubProps) {
     return filtered.length > 0 ? filtered : staffContractStatuses
   }, [hrOptionsByType])
 
-  const employeeKioskEligible = isStaffKioskEligibleDepartment(employeeForm.department)
+  const employeeKioskEligible = isStaffKioskEligibleEmployee({
+    department: employeeForm.department,
+    kiosk_staff_access_granted: employeeProfileById.get(selectedEmployeeStaffId)?.kiosk_staff_access_granted,
+  })
   const visibleEmployeeSectionIds: EmployeeProfileSectionId[] = employeeKioskEligible
     ? ['identity', 'contract', 'payroll', 'bank', 'contact', 'store', 'documents']
     : ['identity', 'contract', 'payroll', 'bank', 'contact', 'documents']

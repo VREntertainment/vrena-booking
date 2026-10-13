@@ -36,7 +36,7 @@ import type {
 } from '../../lib/staff/types'
 import { employeeHomeLocation } from '../../lib/staffCostAllocation'
 import type { StaffEmployeeRecordEmploymentType } from '../../lib/staffEmployeeRecord'
-import { isStaffKioskEligibleDepartment } from '../../lib/staffKioskDirectory'
+import { isStaffKioskEligibleEmployee } from '../../lib/staffKioskDirectory'
 import { supabase } from '../../lib/supabase/client'
 
 export type EmployeesActionContext = {
@@ -188,7 +188,7 @@ export function createStaffEmployeesActions(getContext: () => EmployeesActionCon
     setEmployeeKioskAccessRole(employee?.kiosk_access_role === 'manager' ? 'manager' : 'staff')
     setHrTab('employees')
     setActiveTab('hr')
-    if (canRevealEmployeeKioskPin && isStaffKioskEligibleDepartment(employee?.department)) {
+    if (canRevealEmployeeKioskPin && isStaffKioskEligibleEmployee(employee)) {
       void revealEmployeeKioskPin(staffProfile.id)
     }
   }
