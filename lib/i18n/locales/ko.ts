@@ -58,6 +58,7 @@ export const ko = {
   gameGuide: '게임 가이드',
   gameGuideOpen: '게임 가이드',
   gameGuideForGame: '가이드',
+  playerAgeLimit: '7세 이상',
   gameGuideTitle: '게임 가이드',
   gameGuideSessionIntro: "각 게임의 진행 방식과 팁, 어떤 분들께 잘 맞는지 확인해 보세요. 대부분의 그룹은 한 세션 동안 여러 게임을 즐깁니다. 먼저 예약하고, 게임은 매장에 도착한 뒤 선택하세요.",
   gameGuideClose: '게임 가이드 닫기',

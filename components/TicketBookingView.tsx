@@ -507,6 +507,7 @@ export default function TicketBookingView({
             </div>
 
             <div className="ticket-duration-information">
+              <p className="field-help">{text.playerAgeLimit}</p>
               <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
               <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} showNumbers />
             </div>

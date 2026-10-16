@@ -58,6 +58,7 @@ export const de = {
   gameGuide: 'Spielguide',
   gameGuideOpen: 'Spielguide',
   gameGuideForGame: 'Guide',
+  playerAgeLimit: 'Ab 7 Jahren',
   gameGuideTitle: 'Spielguide',
   gameGuideSessionIntro: "Hier erfahrt ihr, wie die Spiele funktionieren, welche Tipps helfen und für wen sie geeignet sind. Die meisten Gruppen spielen mehrere Spiele pro Session. Bucht jetzt und wählt eure Spiele bei der Ankunft vor Ort.",
   gameGuideClose: 'Spielguide schließen',

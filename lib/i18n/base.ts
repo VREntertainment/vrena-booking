@@ -56,6 +56,7 @@ export const en = {
   gameGuide: 'Game guide',
   gameGuideOpen: 'Game guide',
   gameGuideForGame: 'Guide',
+  playerAgeLimit: '7+ years old',
   gameGuideTitle: 'Game guide',
   gameGuideSessionIntro: "Find gameplay details, tips, and who each game is best suited for. Most groups play more than one game during their session. Book now and choose your games when you arrive.",
   gameGuideClose: 'Close game guide',

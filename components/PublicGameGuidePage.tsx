@@ -103,6 +103,7 @@ export default function PublicGameGuidePage({
                     </div>
                     <div className="game-guide-facts">
                       <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
+                      <span>{text.playerAgeLimit}</span>
                       <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>

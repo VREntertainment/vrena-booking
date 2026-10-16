@@ -58,6 +58,7 @@ export const vi = {
   gameGuide: 'Hướng dẫn game',
   gameGuideOpen: 'Hướng dẫn game',
   gameGuideForGame: 'Hướng dẫn',
+  playerAgeLimit: 'Từ 7 tuổi',
   gameGuideTitle: 'Hướng dẫn game',
   gameGuideSessionIntro: "Tìm hiểu cách chơi, mẹo hữu ích và đối tượng phù hợp với từng game. Hầu hết các nhóm chơi nhiều game trong một buổi. Bạn có thể đặt lịch ngay và chọn game khi đến cửa hàng.",
   gameGuideClose: 'Đóng hướng dẫn game',

@@ -161,6 +161,7 @@ export default function GameGuideModal({
                     </div>
                     <div className="game-guide-facts">
                       <span>{text.gameGuideDuration}: <strong>{ticketPriceBlockMinutes} min</strong></span>
+                      <span>{text.playerAgeLimit}</span>
                       <span>{text.gameGuidePlayers}: <strong>{venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>

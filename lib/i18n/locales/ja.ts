@@ -58,6 +58,7 @@ export const ja = {
   gameGuide: 'ゲームガイド',
   gameGuideOpen: 'ゲームガイド',
   gameGuideForGame: 'ガイド',
+  playerAgeLimit: '7歳以上',
   gameGuideTitle: 'ゲームガイド',
   gameGuideSessionIntro: "各ゲームの遊び方やコツ、どんな方におすすめかをご紹介します。多くのグループは、1回のセッションで複数のゲームを楽しんでいます。まずはご予約いただき、ゲームはご来店時にお選びください。",
   gameGuideClose: 'ゲームガイドを閉じる',

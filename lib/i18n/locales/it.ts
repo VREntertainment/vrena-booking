@@ -58,6 +58,7 @@ export const it = {
   gameGuide: 'Guida giochi',
   gameGuideOpen: 'Guida giochi',
   gameGuideForGame: 'Guida',
+  playerAgeLimit: 'Dai 7 anni',
   gameGuideTitle: 'Guida giochi',
   gameGuideSessionIntro: "Scopri come si gioca, i consigli utili e a chi è più adatto ogni gioco. La maggior parte dei gruppi prova più giochi durante una sessione. Prenota ora e scegli i giochi quando arrivi.",
   gameGuideClose: 'Chiudi guida giochi',
