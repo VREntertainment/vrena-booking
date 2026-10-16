@@ -1,210 +1,39 @@
 'use client'
 
-import { gameMinimumAge } from '../lib/gameGuideCatalog'
-
-import Image from 'next/image'
-import { ticketPriceBlockMinutes } from '../lib/ticketTariffs'
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
-import GameGuideCategory from './GameGuideCategory'
-import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
+import GameGuideBrowser from './GameGuideBrowser'
+import { gameGuideCopy } from '../lib/gameGuideCopy'
+import type { GameVenue, PublicGameGuideGame, StaffGameGuide } from '../lib/gameGuideCatalog'
+import type { LanguageCode } from '../lib/i18n/languages'
 import './GameGuideModal.css'
 
-type GameAudience =
-  | 'familyFriendly'
-  | 'scary'
-  | 'fun'
-  | 'quest'
-  | 'teamwork'
-  | 'beginnerFriendly'
-  | 'competitive'
+export type GameGuideGame = PublicGameGuideGame
+export type GameGuideStaffGuide = StaffGameGuide
 
-export type GameGuideGame = {
-  id: string
-  title: string
-  category: 'FPS / PVP' | 'Escape' | 'Tournament' | 'Other'
-  image: string
-  durationMinutes: number
-  maxPlayersPerArena: number
-  audience: GameAudience[]
-  venues: Array<'ha-do-centrosa' | 'cafe-des-stagiaires'>
-}
+type Props = { initialVenue: GameVenue; closeText: string; text: Record<string, string>; language: LanguageCode; games: PublicGameGuideGame[]; staffGameGuides: Partial<Record<string, StaffGameGuide>>; onClose: () => void; loading?: boolean; loadError?: boolean; onRetry?: () => void }
 
-type StaffGameGuideText = Partial<Record<LanguageCode, string>>
-
-export type GameGuideStaffGuide = {
-  slug: string
-  guide_language?: string | null
-  guide_summary?: StaffGameGuideText | null
-  guide_rules?: StaffGameGuideText | null
-  guide_tips?: StaffGameGuideText | null
-}
-
-type GameGuideModalProps = {
-  initialVenue: GameGuideGame['venues'][number]
-  closeText: string
-  text: Record<string, string>
-  language: LanguageCode
-  games: GameGuideGame[]
-  staffGameGuides: Partial<Record<string, GameGuideStaffGuide>>
-  onClose: () => void
-}
-
-const gameAudienceLabelKeys: Record<GameAudience, string> = {
-  familyFriendly: 'audienceFamilyFriendly',
-  scary: 'audienceScary',
-  fun: 'audienceFun',
-  quest: 'audienceQuest',
-  teamwork: 'audienceTeamwork',
-  beginnerFriendly: 'audienceBeginnerFriendly',
-  competitive: 'audienceCompetitive',
-}
-
-const gameSummaryLabelKeys: Record<string, string> = {
-  revolta: 'gameGuideRevoltaSummary',
-  'city-z': 'gameGuideCityZSummary',
-  'station-zarya': 'gameGuideStationZaryaSummary',
-}
-
-function guideTextItems(value: string) {
-  return value
-    .split(/\n|\|/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function normalizedGuideText(value: StaffGameGuideText | null | undefined, language: LanguageCode, fallbackLanguage: LanguageCode, fallback: string) {
-  const directText = value?.[language]?.trim()
-  if (directText) return directText
-
-  const fallbackLanguageText = value?.[fallbackLanguage]?.trim()
-  if (fallbackLanguageText) return fallbackLanguageText
-
-  const englishText = value?.en?.trim()
-  if (englishText) return englishText
-
-  return fallback
-}
-
-export default function GameGuideModal({
-  initialVenue,
-  closeText,
-  text,
-  language,
-  games,
-  staffGameGuides,
-  onClose,
-}: GameGuideModalProps) {
-  const [venue, setVenue] = useState(initialVenue)
-  const visibleGames = games.filter((game) => game.venues.includes(venue))
-
+export default function GameGuideModal({ initialVenue, closeText, text, language, games, staffGameGuides, onClose, loading, loadError, onRetry }: Props) {
+  const panel = useRef<HTMLDivElement>(null)
+  const close = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    close.current?.focus()
+    return () => previousFocus?.focus()
+  }, [])
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={onClose}>
-      <div className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
-        <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
-          <X aria-hidden="true" size={20} />
-        </button>
-        <div className="game-guide-header">
-          <h3 id="game-guide-title">{text.gameGuideTitle}</h3>
-          <p>{text.gameGuideSessionIntro}</p>
-          <label className="game-guide-location" htmlFor="game-guide-location">
-            <span>{text.bookingVenueLabel}</span>
-            <select
-              id="game-guide-location"
-              value={venue}
-              onChange={(event) => {
-                setVenue(event.target.value as GameGuideGame['venues'][number])
-              }}
-            >
-              <option value="ha-do-centrosa">{text.bookingVenueHaDoName}</option>
-              <option value="cafe-des-stagiaires">{text.bookingVenueCafeName}</option>
-            </select>
-          </label>
-        </div>
-        <div className="game-guide-scroll" key={venue}>
-          {visibleGames.map((game) => {
-            const isEscape = game.category === 'Escape'
-            const isMiniBlockTowers = game.id === 'mini-block-towers'
-            const staffGuide = staffGameGuides[game.id]
-            const fallbackGuideLanguage = isLanguageCode(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
-            const customSummaryKey = gameSummaryLabelKeys[game.id]
-            const fallbackSummary = customSummaryKey
-              ? text[customSummaryKey]
-              : isMiniBlockTowers
-              ? text.gameGuideBlockTowersSummary
-              : isEscape
-                ? text.gameGuideEscapeSummary
-                : text.gameGuideFpsSummary
-            const isAnvioGame = Boolean(customSummaryKey)
-            const fallbackRules = isEscape || isAnvioGame
-              ? ''
-              : isMiniBlockTowers
-                ? text.gameGuideBlockTowersRules
-                : text.gameGuideFpsRules
-            const fallbackTips = isAnvioGame
-              ? ''
-              : isMiniBlockTowers
-              ? text.gameGuideBlockTowersTips
-              : isEscape
-                ? text.gameGuideEscapeTips
-                : text.gameGuideFpsTips
-            const summary = normalizedGuideText(staffGuide?.guide_summary, language, fallbackGuideLanguage, fallbackSummary)
-            const tips = guideTextItems(normalizedGuideText(staffGuide?.guide_tips, language, fallbackGuideLanguage, fallbackTips))
-            const ruleItems = guideTextItems(normalizedGuideText(staffGuide?.guide_rules, language, fallbackGuideLanguage, fallbackRules))
-
-            return (
-              <article className="game-guide-card" key={game.id}>
-                <Image src={game.image} alt="" width={240} height={240} />
-                <div className="game-guide-card-body">
-                  <div className="game-guide-card-head">
-                    <div>
-                      <h4>{game.title}</h4>
-                      <GameGuideCategory gameId={game.id} category={game.category} />
-                    </div>
-                    <div className="game-guide-facts">
-                      <span>{text.gameGuideDuration}: <strong>{ticketPriceBlockMinutes} min</strong></span>
-                      <span>{text[gameMinimumAge(game) === 16 ? 'playerAgeLimit16' : gameMinimumAge(game) === 12 ? 'playerAgeLimit12' : 'playerAgeLimit']}</span>
-                      <span>{text.gameGuidePlayers}: <strong>{venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena} / {text.arena}</strong></span>
-                    </div>
-                  </div>
-                  <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>
-                    {game.venues.map((venue) => (
-                      <span key={venue}>
-                        {venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName}
-                      </span>
-                    ))}
-                  </div>
-                  <p>{summary}</p>
-                  <div className="game-guide-audience" aria-label={text.gameGuideAudience}>
-                    {game.audience.map((audience) => (
-                      <span key={audience}>{text[gameAudienceLabelKeys[audience]]}</span>
-                    ))}
-                  </div>
-                  {ruleItems.length > 0 && (
-                    <details className="game-guide-panel">
-                      <summary>{text.gameGuideRules}</summary>
-                      <ul>
-                        {ruleItems.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                  {tips.length > 0 && (
-                    <details className="game-guide-panel">
-                      <summary>{text.gameGuideTips}</summary>
-                      <ul>
-                        {tips.map((tip) => (
-                          <li key={tip}>{tip}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              </article>
-            )
-          })}
-        </div>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" onClick={onClose} onKeyDown={(event) => {
+      if (event.key === 'Escape') { event.stopPropagation(); onClose() }
+      if (event.key !== 'Tab') return
+      const items = Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, select, summary, a[href]') ?? []).filter((item) => item.getClientRects().length > 0)
+      const first = items[0]; const last = items[items.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }}>
+      <div ref={panel} className="login-modal game-guide-modal" onClick={(event) => event.stopPropagation()}>
+        <button ref={close} className="modal-close" type="button" onClick={onClose} aria-label={closeText}><X aria-hidden="true" size={20} /></button>
+        <header className="game-guide-header"><h2 id="game-guide-title">{text.gameGuideTitle}</h2><p>{gameGuideCopy[language].intro}</p></header>
+        <GameGuideBrowser games={games} staffGuides={staffGameGuides} language={language} text={text} initialVenue={initialVenue} variant="modal" loading={loading} loadError={loadError} onRetry={onRetry} />
       </div>
     </div>
   )

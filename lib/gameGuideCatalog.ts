@@ -240,12 +240,14 @@ export function isStaffGuideLanguage(value: string | null | undefined): value is
   return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it'
 }
 
+const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'])
+
 /** Active staff records define availability; the built-in catalog supplies artwork
  * and editorial defaults only for games that are actually in the staff catalog. */
 export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin?: string) {
   const defaults = new Map(publicGameGuideCatalog.map((game) => [game.id, game]))
   const categories: Record<string, PublicGameGuideGame['category']> = {
-    shooting: 'FPS / PVP', escape: 'Escape', tournament: 'Tournament', other: 'Other',
+    shooting: 'FPS / PVP', escape: 'Escape', puzzle: 'Escape', tournament: 'Tournament', other: 'Other',
   }
   const safeImage = (url: string | null | undefined) => {
     if (!url) return false
@@ -260,11 +262,11 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
       id: guide.slug,
       title: guide.name?.trim() || base?.title || guide.slug,
       category: categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
-      image: safeImage(guide.image_url) ? guide.image_url! : base?.image || '/games/laser-tag.png',
+      image: guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || '/brand/vrena-mark-light.svg',
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
       audience: audience.length > 0 ? audience : base?.audience || [],
-      venues: base?.venues || ['ha-do-centrosa'],
+      venues: base?.venues || (sharedGuideGameSlugs.has(guide.slug) ? ['ha-do-centrosa', 'cafe-des-stagiaires'] : ['ha-do-centrosa']),
     }
   })
 }
@@ -273,4 +275,17 @@ export function gameMinimumAge(game: Pick<PublicGameGuideGame, 'id' | 'category'
   if (['city-z', 'station-zarya', 'portal-zombie'].includes(game.id)) return 16
   if (game.category === 'Escape' || ['joller-house', 'arc-of-the-covenant', 'portal-mafia'].includes(game.id)) return 12
   return 7
+}
+
+export type GuideFilters = { search: string; venue: GameVenue | 'all'; category: string; playerAge: string }
+
+export function filterGuideGames(games: PublicGameGuideGame[], filters: GuideFilters) {
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim()
+  const query = normalize(filters.search)
+  return games.filter((game) =>
+    (!query || normalize(game.title).includes(query)) &&
+    (filters.venue === 'all' || game.venues.includes(filters.venue)) &&
+    (filters.category === 'all' || game.category === filters.category) &&
+    (filters.playerAge === 'all' || gameMinimumAge(game) <= Number(filters.playerAge))
+  )
 }

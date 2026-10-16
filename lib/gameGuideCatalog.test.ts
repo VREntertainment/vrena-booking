@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mergeStaffGameCatalog, publicGameGuideCatalog } from './gameGuideCatalog.ts'
+import { filterGuideGames, mergeStaffGameCatalog, publicGameGuideCatalog } from './gameGuideCatalog.ts'
 
 test('the public guide lists only active staff games, including ANVIO', () => {
   const games = mergeStaffGameCatalog([
@@ -36,4 +36,25 @@ test('new staff games are published with safe artwork', () => {
   assert.equal(game.id, 'new-game')
   assert.equal(game.category, 'Escape')
   assert.equal(game.image, 'https://assets.example/storage/v1/object/public/game.png')
+})
+
+test('the guide retains every active game when a catalog grows beyond thirty titles', () => {
+  const source = Array.from({ length: 37 }, (_, index) => ({ slug: `game-${index}`, name: `Game ${index}`, active: index !== 3 }))
+  const catalog = mergeStaffGameCatalog(source)
+  assert.equal(catalog.length, 36)
+  assert.ok(catalog.some((game) => game.id === 'game-36'))
+  assert.ok(!catalog.some((game) => game.id === 'game-3'))
+})
+
+test('shared experiences retain both venues and do not use broken or unrelated artwork', () => {
+  const [game] = mergeStaffGameCatalog([{ slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' }])
+  assert.deepEqual(game.venues, ['ha-do-centrosa', 'cafe-des-stagiaires'])
+  assert.equal(game.image, '/brand/vrena-mark-light.svg')
+})
+
+test('age, venue and search filters combine without excluding games suitable for younger players', () => {
+  const games = mergeStaffGameCatalog([{ slug: 'portal-zombie', name: 'Portal Zombie' }, { slug: 'portal-mafia', name: 'Portal Mafia' }, { slug: 'snow-battle', name: 'Snow Battle' }])
+  assert.deepEqual(filterGuideGames(games, { search: 'PORTAL', venue: 'cafe-des-stagiaires', category: 'all', playerAge: '15' }).map((game) => game.id), ['portal-mafia'])
+  assert.deepEqual(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '11' }).map((game) => game.id), ['snow-battle'])
+  assert.equal(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '16' }).length, 3)
 })
