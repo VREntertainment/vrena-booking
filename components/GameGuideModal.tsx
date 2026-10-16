@@ -1,5 +1,7 @@
 'use client'
 
+import { gameMinimumAge } from '../lib/gameGuideCatalog'
+
 import Image from 'next/image'
 import { ticketPriceBlockMinutes } from '../lib/ticketTariffs'
 import { useState } from 'react'
@@ -161,7 +163,7 @@ export default function GameGuideModal({
                     </div>
                     <div className="game-guide-facts">
                       <span>{text.gameGuideDuration}: <strong>{ticketPriceBlockMinutes} min</strong></span>
-                      <span>{text.playerAgeLimit}</span>
+                      <span>{text[gameMinimumAge(game) === 16 ? 'playerAgeLimit16' : gameMinimumAge(game) === 12 ? 'playerAgeLimit12' : 'playerAgeLimit']}</span>
                       <span>{text.gameGuidePlayers}: <strong>{venue === 'ha-do-centrosa' ? 4 : game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>
