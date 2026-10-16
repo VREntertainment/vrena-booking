@@ -268,3 +268,9 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
     }
   })
 }
+
+export function gameMinimumAge(game: Pick<PublicGameGuideGame, 'id' | 'category'>): 7 | 12 | 16 {
+  if (['city-z', 'station-zarya', 'portal-zombie'].includes(game.id)) return 16
+  if (game.category === 'Escape' || ['joller-house', 'arc-of-the-covenant', 'portal-mafia'].includes(game.id)) return 12
+  return 7
+}

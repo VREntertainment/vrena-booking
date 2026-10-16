@@ -1,3 +1,4 @@
+import { gameMinimumAge } from '../lib/gameGuideCatalog'
 import Image from 'next/image'
 import DocumentLanguage from './DocumentLanguage'
 import GameGuideCategory from './GameGuideCategory'
@@ -103,6 +104,7 @@ export default function PublicGameGuidePage({
                     </div>
                     <div className="game-guide-facts">
                       <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
+                      <span>{text[gameMinimumAge(game) === 16 ? 'playerAgeLimit16' : gameMinimumAge(game) === 12 ? 'playerAgeLimit12' : 'playerAgeLimit']}</span>
                       <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
                     </div>
                   </div>
