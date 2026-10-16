@@ -1,153 +1,37 @@
-import { gameMinimumAge } from '../lib/gameGuideCatalog'
-import Image from 'next/image'
-import DocumentLanguage from './DocumentLanguage'
-import GameGuideCategory from './GameGuideCategory'
-import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import Link from 'next/link'
+import DocumentLanguage from './DocumentLanguage'
+import GameGuideBrowser from './GameGuideBrowser'
+import GameGuideLanguageSelect from './GameGuideLanguageSelect'
+import { gameGuideCopy } from '../lib/gameGuideCopy'
 import type { TranslationMap } from '../lib/i18n/base'
-import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
-import {
-  gameAudienceLabelKeys,
-  guideTextItems,
-  isStaffGuideLanguage,
-  normalizedGuideText,
-  mergeStaffGameCatalog,
-  type PublicGameGuideGame,
-  type StaffGameGuide,
-} from '../lib/gameGuideCatalog'
+import type { LanguageCode } from '../lib/i18n/languages'
+import { mergeStaffGameCatalog, type StaffGameGuide } from '../lib/gameGuideCatalog'
 
-type PublicGameGuidePageProps = {
-  appUrl?: string
-  language: LanguageCode
-  staffGuides: StaffGameGuide[]
-  text: TranslationMap
-}
+type Props = { appUrl?: string; language: LanguageCode; staffGuides: StaffGameGuide[]; text: TranslationMap }
 
-function fallbackSummary(game: PublicGameGuideGame, text: TranslationMap) {
-  if (game.id === 'revolta') return text.gameGuideRevoltaSummary
-  if (game.id === 'city-z') return text.gameGuideCityZSummary
-  if (game.id === 'station-zarya') return text.gameGuideStationZaryaSummary
-  if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersSummary
-  if (game.category === 'Escape') return text.gameGuideEscapeSummary
-  return text.gameGuideFpsSummary
-}
-
-function fallbackRules(game: PublicGameGuideGame, text: TranslationMap) {
-  if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
-  if (game.category === 'Escape') return ''
-  if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersRules
-  return text.gameGuideFpsRules
-}
-
-function fallbackTips(game: PublicGameGuideGame, text: TranslationMap) {
-  if (game.id === 'revolta' || game.id === 'city-z' || game.id === 'station-zarya') return ''
-  if (game.id === 'mini-block-towers') return text.gameGuideBlockTowersTips
-  if (game.category === 'Escape') return text.gameGuideEscapeTips
-  return text.gameGuideFpsTips
-}
-
-export default function PublicGameGuidePage({
-  appUrl = '/',
-  language,
-  staffGuides,
-  text,
-}: PublicGameGuidePageProps) {
-  const staffGuideBySlug = new Map(staffGuides.map((guide) => [guide.slug, guide]))
+export default function PublicGameGuidePage({ appUrl = '/tickets', language, staffGuides, text }: Props) {
   const games = mergeStaffGameCatalog(staffGuides, process.env.NEXT_PUBLIC_SUPABASE_URL)
-
+  const copy = gameGuideCopy[language]
+  const guideText = Object.fromEntries(Object.entries(text).filter(([key]) => /^(gameGuide|bookingVenue|playerAgeLimit|audience)/.test(key)))
   return (
     <main lang={language}>
       <DocumentLanguage language={language} />
       <section className="public-game-guide-page">
-        <header className="public-game-guide-hero">
-          <Link className="brand-logo" href="/" aria-label="VRena Booking App">
+        <header className="public-game-guide-topbar">
+          <Link className="brand-logo" href="/" aria-label="VRena">
             <picture>
               <source media="(prefers-color-scheme: dark)" srcSet="/brand/vrena-logo-full-dark.svg" />
               <img src="/brand/vrena-logo-full-light.svg" alt="VRena" width="4886" height="1000" />
             </picture>
           </Link>
-          <div className="public-game-guide-title">
-            <h1>{text.gameGuideTitle}</h1>
-            <p>{text.gameGuideSessionIntro}</p>
-          </div>
-          <nav className="public-game-guide-languages" aria-label={text.language}>
-            {languageOptions.map((option) => {
-              const href = option === 'en' ? '/games' : `/games/${option}`
-              return (
-                <Link aria-current={option === language ? 'page' : undefined} href={href} key={option}>
-                  {option.toUpperCase()}
-                </Link>
-              )
-            })}
-          </nav>
-          <Link className="public-game-guide-app-link" href={appUrl}>
-            {text.sessions}
-          </Link>
+          <Link className="public-game-guide-back" href={appUrl}>{copy.booking}</Link>
+          <GameGuideLanguageSelect language={language} label={text.language} />
         </header>
-
-        <div className="game-guide-scroll public-game-guide-list">
-          {games.map((game, index) => {
-            const staffGuide = staffGuideBySlug.get(game.id)
-            const fallbackLanguage = isStaffGuideLanguage(staffGuide?.guide_language) ? staffGuide.guide_language : 'en'
-            const summary = normalizedGuideText(staffGuide?.guide_summary, language, fallbackLanguage, fallbackSummary(game, text))
-            const rules = guideTextItems(normalizedGuideText(staffGuide?.guide_rules, language, fallbackLanguage, fallbackRules(game, text)))
-            const tips = guideTextItems(normalizedGuideText(staffGuide?.guide_tips, language, fallbackLanguage, fallbackTips(game, text)))
-
-            return (
-              <article className="game-guide-card public-game-guide-card" key={game.id}>
-                <Image src={game.image} alt={game.title} width={240} height={240} priority={index < 2} sizes="(max-width: 720px) 96px, 140px" />
-                <div className="game-guide-card-body">
-                  <div className="game-guide-card-head">
-                    <div>
-                      <h2>{game.title}</h2>
-                      <GameGuideCategory gameId={game.id} category={game.category} />
-                    </div>
-                    <div className="game-guide-facts">
-                      <span>{bookingDurationCopy[language].game}: <strong>{game.durationMinutes} min</strong></span>
-                      <span>{text[gameMinimumAge(game) === 16 ? 'playerAgeLimit16' : gameMinimumAge(game) === 12 ? 'playerAgeLimit12' : 'playerAgeLimit']}</span>
-                      <span>{text.gameGuidePlayers}: <strong>{game.maxPlayersPerArena} / {text.arena}</strong></span>
-                    </div>
-                  </div>
-                  <div className="game-guide-venues" aria-label={text.bookingVenueLabel}>
-                    {game.venues.map((venue) => (
-                      <span key={venue}>
-                        {venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName}
-                      </span>
-                    ))}
-                  </div>
-                  <p>{summary}</p>
-                  {game.audience.length > 0 && (
-                    <div className="game-guide-audience" aria-label={text.gameGuideAudience}>
-                      {game.audience.map((audience) => (
-                        <span key={audience}>{text[gameAudienceLabelKeys[audience]]}</span>
-                      ))}
-                    </div>
-                  )}
-                  {rules.length > 0 && (
-                    <details className="game-guide-panel">
-                      <summary>{text.gameGuideRules}</summary>
-                      <ul>
-                        {rules.map((rule) => (
-                          <li key={rule}>{rule}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                  {tips.length > 0 && (
-                    <details className="game-guide-panel">
-                      <summary>{text.gameGuideTips}</summary>
-                      <ul>
-                        {tips.map((tip) => (
-                          <li key={tip}>{tip}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              </article>
-            )
-          })}
+        <div className="public-game-guide-title">
+          <h1>{text.gameGuideTitle}</h1>
+          <p>{copy.intro}</p>
         </div>
+        <GameGuideBrowser games={games} staffGuides={Object.fromEntries(staffGuides.map((guide) => [guide.slug, guide]))} language={language} text={guideText} />
       </section>
     </main>
   )

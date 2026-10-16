@@ -167,7 +167,6 @@ import {
   upcomingBatchEndForDate,
   weekDaysFromStart
 } from '../lib/bookingWidgetDomain'
-import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { getInitialLanguage } from '../lib/i18n/detectLanguage'
@@ -726,6 +725,9 @@ export default function WidgetPage({
   }, [])
   const { pushReminderStatus, setPushReminderStatus, isPushSubscribed, setIsPushSubscribed, isEnablingPush, setIsEnablingPush } = useBookingRemindersState()
   const {
+    gameGuideCatalog,
+    gameGuideLoading,
+    gameGuideLoadError,
     gameGuideOpen,
     setGameGuideOpen,
     gameGuideGameId,
@@ -3065,11 +3067,11 @@ export default function WidgetPage({
     text,
   })
   const gameGuideGames = useMemo(() => {
-    if (!gameGuideGameId) return publicGameGuideCatalog
-    const focusedGame = publicGameGuideCatalog.find((game) => game.id === gameGuideGameId)
-    if (!focusedGame) return publicGameGuideCatalog
-    return [focusedGame, ...publicGameGuideCatalog.filter((game) => game.id !== gameGuideGameId)]
-  }, [gameGuideGameId])
+    if (!gameGuideGameId) return gameGuideCatalog
+    const focusedGame = gameGuideCatalog.find((game) => game.id === gameGuideGameId)
+    if (!focusedGame) return gameGuideCatalog
+    return [focusedGame, ...gameGuideCatalog.filter((game) => game.id !== gameGuideGameId)]
+  }, [gameGuideGameId, gameGuideCatalog])
   const effectiveEditTicketDuration = editSessionDuration
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration, editSessionArenaCount)
   const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount, ticketDate, bookingVenue)
@@ -6012,6 +6014,9 @@ export default function WidgetPage({
           initialVenue={bookingVenue}
           closeText={text.gameGuideClose}
           games={gameGuideGames}
+          loading={gameGuideLoading}
+          loadError={gameGuideLoadError}
+          onRetry={() => { void ensureStaffGameGuidesLoaded() }}
           language={language}
           onClose={() => setGameGuideOpen(false)}
           staffGameGuides={staffGameGuides}
