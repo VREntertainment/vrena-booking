@@ -285,7 +285,7 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
 
 export function gameMinimumAge(game: Pick<PublicGameGuideGame, 'id' | 'category'>): 7 | 12 | 16 {
   if (['city-z', 'station-zarya', 'portal-zombie'].includes(game.id)) return 16
-  if (game.category === 'Escape' || ['joller-house', 'arc-of-the-covenant', 'portal-mafia'].includes(game.id)) return 12
+  if (game.category === 'Escape' || ['joller-house', 'arc-of-the-covenant', 'portal-mafia', 'spatial-ops'].includes(game.id)) return 12
   return 7
 }
 
@@ -307,7 +307,7 @@ export function withPopUpGuides(games: PublicGameGuideGame[]): PublicGameGuideGa
   const ids = new Set(games.map((game) => game.id))
   const events: PublicGameGuideGame[] = [
     { id: 'laser-limbo', title: 'Laser Limbo', category: 'Pop-Up event', image: '/games/laser-limbo.avif', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['fun', 'teamwork'], venues: [], popUp: true },
-    { id: 'spatial-ops', title: 'Spatial Ops', category: 'Pop-Up event', image: '/games/spatial-ops.jpeg', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['teamwork', 'competitive'], venues: [], popUp: true },
+    { id: 'spatial-ops', title: 'Spatial Ops', category: 'Pop-Up event', image: '/games/spatial-ops.webp', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['teamwork', 'competitive'], venues: [], popUp: true },
   ]
   return [...games.map((game) => events.find((event) => event.id === game.id) ? { ...game, category: 'Pop-Up event' as const, popUp: true, venues: [] } : game), ...events.filter((game) => !ids.has(game.id))]
 }

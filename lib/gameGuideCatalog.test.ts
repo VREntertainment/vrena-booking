@@ -65,7 +65,7 @@ test('birthday and pop-up categories stay separate from venue inventory', async 
   assert.equal(source.length, 3)
   const catalog = withPopUpGuides(source)
   const filters = { search: '', venue: 'ha-do-centrosa' as const, category: 'Pop-Up event', playerAge: '11' }
-  assert.deepEqual(filterGuideGames(catalog, filters).map((game) => game.id), ['laser-limbo', 'spatial-ops'])
+  assert.deepEqual(filterGuideGames(catalog, filters).map((game) => game.id), ['laser-limbo'])
   assert.ok(filterGuideGames(catalog, filters).every((game) => game.popUp && game.venues.length === 0))
   assert.equal(filterGuideGames(catalog, { ...filters, venue: 'cafe-des-stagiaires', category: 'Kid birthday' }).length, 2)
   assert.equal(withPopUpGuides(catalog).length, catalog.length)
@@ -99,4 +99,14 @@ test('publisher artwork fills missing images and preserves existing staff artwor
   assert.equal(existing.image, '/games/custom-zombie.webp')
   assert.equal(galactic.title, 'Galactic Arena')
   assert.equal(galactic.image, '/games/galactic-arena.png')
+})
+
+
+test('Spatial Ops is 12+ in both the label policy and age filter', async () => {
+  const { withPopUpGuides, gameMinimumAge } = await import('./gameGuideCatalog.ts')
+  const game = withPopUpGuides([]).find((item) => item.id === 'spatial-ops')!
+  assert.equal(gameMinimumAge(game), 12)
+  const filters = { search: 'Spatial Ops', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames([game], filters).length, 0)
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '15' }).length, 1)
 })
