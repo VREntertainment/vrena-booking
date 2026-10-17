@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { MapPin, ArrowUpRight } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
@@ -12,16 +13,12 @@ type BookingVenueSelectorProps = {
   value: BookingVenueId
 }
 
-const venueMaps: Record<BookingVenueId, { directionsUrl: string; latitude: number; longitude: number }> = {
+const venueMaps: Record<BookingVenueId, { directionsUrl: string }> = {
   'ha-do-centrosa': {
     directionsUrl: 'https://www.google.com/maps/search/?api=1&query=10.77476%2C106.67843',
-    latitude: 10.77476,
-    longitude: 106.67843,
   },
   'cafe-des-stagiaires': {
     directionsUrl: 'https://www.google.com/maps/search/?api=1&query=10.80107%2C106.72906',
-    latitude: 10.80107,
-    longitude: 106.72906,
   },
 }
 
@@ -29,8 +26,7 @@ function VenueMapPreview({ name, venue }: {
   name: string
   venue: BookingVenueId
 }) {
-  const { directionsUrl, latitude, longitude } = venueMaps[venue]
-  const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=16&output=embed`
+  const { directionsUrl } = venueMaps[venue]
 
   return (
     <a
@@ -39,15 +35,10 @@ function VenueMapPreview({ name, venue }: {
       href={directionsUrl}
       rel="noopener noreferrer"
       target="_blank"
+      title={`${name} · Google Maps`}
     >
-      <iframe
-        aria-hidden="true"
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        src={mapUrl}
-        tabIndex={-1}
-        title={`${name} — Google Maps`}
-      />
+      <MapPin size={28} aria-hidden="true" />
+      <ArrowUpRight className="booking-venue-map-external" size={13} aria-hidden="true" />
     </a>
   )
 }
