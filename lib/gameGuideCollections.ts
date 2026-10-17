@@ -44,6 +44,7 @@ export const gameGuideCollections: Record<string, GuideCollection> = {
   },
   'vr-arena-strike': {
     summary: { en: 'Tactical arena shooting with individual, team and round-based matches.', vi: 'Bắn súng chiến thuật với các trận cá nhân, đồng đội và theo vòng.' },
+    maps: ['Hangar (Angar)', 'Battlefield', 'City', 'Metro', 'Construction', 'Office', 'Jungle'],
     modes: arcadeModes,
   },
   'laser-limbo': {

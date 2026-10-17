@@ -13,3 +13,5 @@ Checked 17 October 2026. Venue age policy remains 7+ generally, Portal Mafia and
 - Spatial Ops LBE: https://manager.spatialops.com/help/general/match-settings/
 
 Maps are labelled separately from mini-games and modes. Portal Zombie documents one Mansion map and Survival mode, rather than separate standalone games for each floor. Portal Mafia's intro calls the street map City; its map section calls it Street, so the guide shows Street (City). Its modes section says four but only describes two; only those two are listed. New pop-up entries are guide content, not new bookable inventory. Their runtime and group size depend on event setup.
+
+New VR Arena collections use Thao Dien guide availability, per the user. No coming-soon copy is shown. Birthday Party artwork is user-supplied. Laser Limbo artwork comes from the publisher's Logo A.png on its game-modes page; Spatial Ops artwork is the Custom Calamity hero image on the Resolution Games product page. Existing game artwork is preserved.
