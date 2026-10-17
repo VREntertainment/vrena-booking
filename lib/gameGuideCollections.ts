@@ -61,7 +61,7 @@ export const gameGuideCollections: Record<string, GuideCollection> = {
       entry('Saber Fight', 'Face cooperative drone waves using laser sabers.', 'Cùng chống các đợt drone bằng kiếm laser.'),
       entry('Coin Clash', 'Collect coins and bring them back to your team vault.', 'Thu thập xu và mang về kho của đội.'),
       entry('Puzzle Battle', 'Bring puzzle pieces to your base and assemble them for points.', 'Mang mảnh ghép về căn cứ và hoàn thành câu đố để ghi điểm.', 12),
-      entry("Pop’N’Stop", 'Pop bubbles for your team, then freeze when the sound plays.', 'Thử thách không dùng vũ khí với các bẫy laser cần vượt qua.'),
+      entry("Pop’N’Stop", 'Pop bubbles for your team, then freeze when the sound plays.', 'Làm vỡ bong bóng cho đội, rồi đứng yên khi nghe tín hiệu.'),
     ],
   },
   'spatial-ops': {
