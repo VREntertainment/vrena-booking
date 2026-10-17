@@ -46,9 +46,9 @@ test('the guide retains every active game when a catalog grows beyond thirty tit
   assert.ok(!catalog.some((game) => game.id === 'game-3'))
 })
 
-test('shared experiences retain both venues and do not use broken or unrelated artwork', () => {
+test('new VR Arena experiences use Thao Dien and do not use broken or unrelated artwork', () => {
   const [game] = mergeStaffGameCatalog([{ slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' }])
-  assert.deepEqual(game.venues, ['ha-do-centrosa', 'cafe-des-stagiaires'])
+  assert.deepEqual(game.venues, ['cafe-des-stagiaires'])
   assert.equal(game.image, '/brand/vrena-mark-light.svg')
 })
 
@@ -57,4 +57,34 @@ test('age, venue and search filters combine without excluding games suitable for
   assert.deepEqual(filterGuideGames(games, { search: 'PORTAL', venue: 'cafe-des-stagiaires', category: 'all', playerAge: '15' }).map((game) => game.id), ['portal-mafia'])
   assert.deepEqual(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '11' }).map((game) => game.id), ['snow-battle'])
   assert.equal(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '16' }).length, 3)
+})
+
+test('birthday and pop-up categories stay separate from venue inventory', async () => {
+  const { withPopUpGuides } = await import('./gameGuideCatalog.ts')
+  const source = mergeStaffGameCatalog([{ slug: 'birthday-party' }, { slug: 'party-games' }, { slug: 'portal-zombie' }])
+  assert.equal(source.length, 3)
+  const catalog = withPopUpGuides(source)
+  const filters = { search: '', venue: 'ha-do-centrosa' as const, category: 'Pop-Up event', playerAge: '11' }
+  assert.deepEqual(filterGuideGames(catalog, filters).map((game) => game.id), ['laser-limbo', 'spatial-ops'])
+  assert.ok(filterGuideGames(catalog, filters).every((game) => game.popUp && game.venues.length === 0))
+  assert.equal(filterGuideGames(catalog, { ...filters, venue: 'cafe-des-stagiaires', category: 'Kid birthday' }).length, 2)
+  assert.equal(withPopUpGuides(catalog).length, catalog.length)
+})
+
+test('search discovers mini-games, maps and modes inside their collections', async () => {
+  const { withPopUpGuides } = await import('./gameGuideCatalog.ts')
+  const games = withPopUpGuides(mergeStaffGameCatalog([{ slug: 'birthday-party' }, { slug: 'arcade-2-0' }, { slug: 'portal-mafia' }]))
+  const search = (value: string) => filterGuideGames(games, { search: value, venue: 'all', category: 'all', playerAge: 'all' }).map((game) => game.id)
+  assert.deepEqual(search('Candle Hunt'), ['birthday-party'])
+  assert.deepEqual(search('Casino'), ['portal-mafia'])
+  assert.deepEqual(search('CyberPunk'), ['arcade-2-0'])
+  assert.deepEqual(search('Capture the Flag'), ['spatial-ops'])
+})
+
+test('puzzle mode age policy also applies to mode search', async () => {
+  const { withPopUpGuides } = await import('./gameGuideCatalog.ts')
+  const games = withPopUpGuides([])
+  const filters = { search: 'Puzzle Battle', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames(games, filters).length, 0)
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map((game) => game.id), ['laser-limbo'])
 })
