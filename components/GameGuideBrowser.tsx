@@ -29,7 +29,8 @@ type Props = {
 function Artwork({ src, gameId }: { src: string; gameId: string }) {
   const [failed, setFailed] = useState(false)
   const image = failed ? fallbackArtwork : src
-  return <Image className={`${image === fallbackArtwork ? styles.brandArtwork : styles.artwork} ${['arcade-2-0', 'portal-zombie', 'vr-arena-strike', 'laser-limbo'].includes(gameId) ? styles.logoArtwork : ''} ${['portal-mafia', 'party-games', 'orc-kings-arena'].includes(gameId) ? styles.posterArtwork : ''}`} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
+  const artwork = <Image className={`${image === fallbackArtwork ? styles.brandArtwork : styles.artwork} ${['arcade-2-0', 'portal-zombie', 'vr-arena-strike', 'laser-limbo'].includes(gameId) ? styles.logoArtwork : ''} ${gameId === 'birthday-party' ? styles.birthdayArtwork : ''} ${['portal-mafia', 'party-games', 'orc-kings-arena'].includes(gameId) ? styles.posterArtwork : ''}`} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
+  return gameId === 'spatial-ops' && !failed ? <span className={styles.spatialCrop}>{artwork}</span> : artwork
 }
 
 function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefined, language: LanguageCode, text: Record<string, string>) {
@@ -41,7 +42,7 @@ function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefin
   const fallbackLanguage = isStaffGuideLanguage(guide?.guide_language) ? guide.guide_language : 'en'
   // Unknown and collection games must not inherit a different game's weapons or scoring rules.
   const summary = custom ? text[custom] : block ? text.gameGuideBlockTowersSummary : escape ? text.gameGuideEscapeSummary : shooting ? text.gameGuideFpsSummary : gameGuideCopy[language].neutralSummary
-  const rules = custom || escape || !shooting ? '' : block ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules
+  const rules = custom ? text[custom.replace('Summary', 'Rules')] : escape || !shooting ? '' : block ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules
   const tips = custom ? '' : block ? text.gameGuideBlockTowersTips : escape ? text.gameGuideEscapeTips : shooting ? text.gameGuideFpsTips : ''
   return {
     summary: normalizedGuideText(guide?.guide_summary, language, fallbackLanguage, summary),
@@ -111,9 +112,8 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
           const capacity = filters.venue === 'ha-do-centrosa' ? Math.min(4, game.maxPlayersPerArena) : game.maxPlayersPerArena
           return (
             <article key={game.id} className={styles.game} aria-labelledby={`${id}-${game.id}`}>
-              {game.id === 'birthday-party' && <Image className={styles.birthdayArtwork} src={game.image} alt="" width={960} height={540} sizes="(max-width: 760px) 100vw, 50vw" />}
-              <div className={`${styles.gameTop} ${game.id === 'birthday-party' ? styles.birthdayTop : ''}`}>
-                {game.id !== 'birthday-party' && <Artwork src={game.image} gameId={game.id} />}
+              <div className={styles.gameTop}>
+                <Artwork src={game.image} gameId={game.id} />
                 <div className={styles.gameHeading}>
                   <GameHeading id={`${id}-${game.id}`}>{game.title}</GameHeading>
                   <p className={styles.category}>{categoryLabels[game.category]}</p>

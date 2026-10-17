@@ -230,11 +230,6 @@ export default function TicketBookingView({
   const ticketDateDisplay = ticketDate === localDateString()
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
-  const ticketGroupDiscountSummary = currentTicketPricing.discountRate > 0
-    ? text.ticketBilledSlotsDiscountApplied
-      .replace('{discount}', String(Math.round(currentTicketPricing.discountRate * 100)))
-      .replace('{players}', String(currentTicketPricing.chargedPlayerSpots))
-    : text.ticketBilledSlotsNoDiscount
 
   function handleBookTicketsClick() {
     if (!isLoggedIn) {
@@ -465,17 +460,6 @@ export default function TicketBookingView({
                   </div>
                 )}
               </div>
-
-              {!isSpecialTicket && (
-                <div className="ticket-group-pricing-note" aria-live="polite">
-                  <strong>{ticketGroupDiscountSummary}</strong>
-                  <span>{text.ticketBilledSlotsFormula
-                    .replace('{players}', String(currentTicketPricing.chargedPlayersPerBlock))
-                    .replace('{blocks}', String(currentTicketPricing.durationBlocks))
-                    .replace('{slots}', String(currentTicketPricing.chargedPlayerSpots))}</span>
-                  <span>{text.ticketBilledSlotsDiscountRule}</span>
-                </div>
-              )}
 
               {ticketType !== 'individual' && (
                 <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>

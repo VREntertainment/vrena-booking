@@ -46,10 +46,14 @@ test('the guide retains every active game when a catalog grows beyond thirty tit
   assert.ok(!catalog.some((game) => game.id === 'game-3'))
 })
 
-test('new VR Arena experiences use Thao Dien and do not use broken or unrelated artwork', () => {
+test('VR Arena experiences appear under both venue filters and retain publisher artwork', () => {
   const [game] = mergeStaffGameCatalog([{ slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' }])
-  assert.deepEqual(game.venues, ['cafe-des-stagiaires'])
+  assert.deepEqual(game.venues, ['ha-do-centrosa', 'cafe-des-stagiaires'])
   assert.equal(game.image, '/games/portal-mafia.png')
+  const games = mergeStaffGameCatalog(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'].map((slug) => ({ slug })))
+  for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
+    assert.equal(filterGuideGames(games, { search: '', venue, category: 'all', playerAge: 'all' }).length, 7)
+  }
 })
 
 test('age, venue and search filters combine without excluding games suitable for younger players', () => {
@@ -65,7 +69,7 @@ test('birthday and pop-up categories stay separate from venue inventory', async 
   assert.equal(source.length, 3)
   const catalog = withPopUpGuides(source)
   const filters = { search: '', venue: 'ha-do-centrosa' as const, category: 'Pop-Up event', playerAge: '11' }
-  assert.deepEqual(filterGuideGames(catalog, filters).map((game) => game.id), ['laser-limbo', 'spatial-ops'])
+  assert.deepEqual(filterGuideGames(catalog, filters).map((game) => game.id), ['laser-limbo'])
   assert.ok(filterGuideGames(catalog, filters).every((game) => game.popUp && game.venues.length === 0))
   assert.equal(filterGuideGames(catalog, { ...filters, venue: 'cafe-des-stagiaires', category: 'Kid birthday' }).length, 2)
   assert.equal(withPopUpGuides(catalog).length, catalog.length)
@@ -99,4 +103,26 @@ test('publisher artwork fills missing images and preserves existing staff artwor
   assert.equal(existing.image, '/games/custom-zombie.webp')
   assert.equal(galactic.title, 'Galactic Arena')
   assert.equal(galactic.image, '/games/galactic-arena.png')
+})
+
+
+test('Spatial Ops is 12+ in both the label policy and age filter', async () => {
+  const { withPopUpGuides, gameMinimumAge } = await import('./gameGuideCatalog.ts')
+  const game = withPopUpGuides([]).find((item) => item.id === 'spatial-ops')!
+  assert.equal(gameMinimumAge(game), 12)
+  const filters = { search: 'Spatial Ops', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames([game], filters).length, 0)
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '15' }).length, 1)
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '16' }).length, 1)
+})
+
+test('Revolta is available from age twelve, including the sixteen-plus filter', async () => {
+  const { gameMinimumAge } = await import('./gameGuideCatalog.ts')
+  const [game] = mergeStaffGameCatalog([{ slug: 'revolta' }])
+  assert.equal(gameMinimumAge(game), 12)
+  const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames([game], filters).length, 0)
+  for (const playerAge of ['12', '15', '16']) {
+    assert.equal(filterGuideGames([game], { ...filters, playerAge }).length, 1)
+  }
 })
