@@ -49,7 +49,7 @@ test('the guide retains every active game when a catalog grows beyond thirty tit
 test('new VR Arena experiences use Thao Dien and do not use broken or unrelated artwork', () => {
   const [game] = mergeStaffGameCatalog([{ slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' }])
   assert.deepEqual(game.venues, ['cafe-des-stagiaires'])
-  assert.equal(game.image, '/brand/vrena-mark-light.svg')
+  assert.equal(game.image, '/games/portal-mafia.png')
 })
 
 test('age, venue and search filters combine without excluding games suitable for younger players', () => {
@@ -87,4 +87,16 @@ test('puzzle mode age policy also applies to mode search', async () => {
   const filters = { search: 'Puzzle Battle', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames(games, filters).length, 0)
   assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map((game) => game.id), ['laser-limbo'])
+})
+
+test('publisher artwork fills missing images and preserves existing staff artwork', () => {
+  const [missing, existing, galactic] = mergeStaffGameCatalog([
+    { slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' },
+    { slug: 'portal-zombie', image_url: '/games/custom-zombie.webp' },
+    { slug: 'orc-kings-arena', name: "Orc King's Arena" },
+  ])
+  assert.equal(missing.image, '/games/portal-mafia.png')
+  assert.equal(existing.image, '/games/custom-zombie.webp')
+  assert.equal(galactic.title, 'Galactic Arena')
+  assert.equal(galactic.image, '/games/galactic-arena.png')
 })

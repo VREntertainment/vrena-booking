@@ -12,6 +12,10 @@ const arcadeModes = [deathmatch, teamDeathmatch,
 
 /** Publisher-verified content; see docs/game-guide/publisher-sources.md. Names remain searchable in every language. */
 export const gameGuideCollections: Record<string, GuideCollection> = {
+  'orc-kings-arena': {
+    summary: { en: 'Space marines face galactic orcs. Break enemy armour, recover armour pickups and unlock stronger weapons as you score.', vi: 'Chiến binh không gian đối đầu với orc thiên hà. Phá giáp địch, thu thập giáp và mở khóa vũ khí mạnh hơn khi ghi điểm.' },
+    maps: ['Imperial Cruiser', 'Battle for the Asteroid', 'Toxic City', 'Ancient Mine', "Graq’Toul Warship", 'Arena of the Orc King'],
+  },
   'party-games': {
     summary: { en: 'Five playful mini-games for friends, families and birthday groups.', vi: 'Năm trò chơi nhỏ vui nhộn dành cho bạn bè, gia đình và nhóm sinh nhật.' },
     games: [

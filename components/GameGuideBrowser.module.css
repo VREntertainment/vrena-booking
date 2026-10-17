@@ -62,3 +62,6 @@
 
 .browser .birthdayArtwork { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 40%; border-radius: 8px; margin-bottom: 16px; }
 .browser .birthdayTop { grid-template-columns: minmax(0, 1fr); }
+
+.browser .logoArtwork { object-fit: contain; padding: 6px; }
+.browser .posterArtwork { object-position: 50% 0; }

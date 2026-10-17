@@ -26,10 +26,10 @@ type Props = {
   onRetry?: () => void
 }
 
-function Artwork({ src }: { src: string }) {
+function Artwork({ src, gameId }: { src: string; gameId: string }) {
   const [failed, setFailed] = useState(false)
   const image = failed ? fallbackArtwork : src
-  return <Image className={image === fallbackArtwork ? styles.brandArtwork : styles.artwork} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
+  return <Image className={`${image === fallbackArtwork ? styles.brandArtwork : styles.artwork} ${['arcade-2-0', 'portal-zombie', 'vr-arena-strike', 'laser-limbo'].includes(gameId) ? styles.logoArtwork : ''} ${['portal-mafia', 'party-games', 'orc-kings-arena'].includes(gameId) ? styles.posterArtwork : ''}`} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
 }
 
 function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefined, language: LanguageCode, text: Record<string, string>) {
@@ -113,7 +113,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
             <article key={game.id} className={styles.game} aria-labelledby={`${id}-${game.id}`}>
               {game.id === 'birthday-party' && <Image className={styles.birthdayArtwork} src={game.image} alt="" width={960} height={540} sizes="(max-width: 760px) 100vw, 50vw" />}
               <div className={`${styles.gameTop} ${game.id === 'birthday-party' ? styles.birthdayTop : ''}`}>
-                {game.id !== 'birthday-party' && <Artwork src={game.image} />}
+                {game.id !== 'birthday-party' && <Artwork src={game.image} gameId={game.id} />}
                 <div className={styles.gameHeading}>
                   <GameHeading id={`${id}-${game.id}`}>{game.title}</GameHeading>
                   <p className={styles.category}>{categoryLabels[game.category]}</p>

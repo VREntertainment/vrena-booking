@@ -242,6 +242,16 @@ export function isStaffGuideLanguage(value: string | null | undefined): value is
   return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it'
 }
 
+const missingGuideArtwork: Record<string, string> = {
+  'arcade-2-0': '/games/portal-arcade.png',
+  'birthday-party': '/games/birthday-party.png',
+  'orc-kings-arena': '/games/galactic-arena.png',
+  'party-games': '/games/party-games.png',
+  'portal-mafia': '/games/portal-mafia.png',
+  'portal-zombie': '/games/portal-zombie.png',
+  'vr-arena-strike': '/games/portal-strike.svg',
+}
+
 const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'])
 
 /** Active staff records define availability; the built-in catalog supplies artwork
@@ -262,9 +272,9 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
     const audience = normalizeStaffAudience(guide.audience, guide.difficulty)
     return {
       id: guide.slug,
-      title: guide.name?.trim() || base?.title || guide.slug,
+      title: guide.slug === 'orc-kings-arena' ? 'Galactic Arena' : guide.name?.trim() || base?.title || guide.slug,
       category: ['birthday-party', 'party-games'].includes(guide.slug) ? 'Kid birthday' : ['laser-limbo', 'spatial-ops'].includes(guide.slug) ? 'Pop-Up event' : categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
-      image: guide.slug === 'birthday-party' ? '/games/birthday-party.png' : guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || '/brand/vrena-mark-light.svg',
+      image: guide.slug === 'birthday-party' ? '/games/birthday-party.png' : guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || missingGuideArtwork[guide.slug] || '/brand/vrena-mark-light.svg',
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
       audience: audience.length > 0 ? audience : base?.audience || [],
