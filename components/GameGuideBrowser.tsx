@@ -7,6 +7,9 @@ import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
 import { filterGuideGames, gameMinimumAge, gameAudienceLabelKeys, guideTextItems, isStaffGuideLanguage, normalizedGuideText, type GuideFilters, type PublicGameGuideGame, type StaffGameGuide } from '../lib/gameGuideCatalog'
 import type { LanguageCode } from '../lib/i18n/languages'
+import { collectionLabels, experienceCount } from '../lib/gameGuideCollectionLabels'
+import { gameGuideCollections, collectionText } from '../lib/gameGuideCollections'
+import { withPopUpGuides } from '../lib/gameGuideCatalog'
 import styles from './GameGuideBrowser.module.css'
 
 const fallbackArtwork = '/brand/vrena-mark-light.svg'
@@ -23,10 +26,10 @@ type Props = {
   onRetry?: () => void
 }
 
-function Artwork({ src }: { src: string }) {
+function Artwork({ src, gameId }: { src: string; gameId: string }) {
   const [failed, setFailed] = useState(false)
   const image = failed ? fallbackArtwork : src
-  return <Image className={image === fallbackArtwork ? styles.brandArtwork : styles.artwork} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
+  return <Image className={`${image === fallbackArtwork ? styles.brandArtwork : styles.artwork} ${['arcade-2-0', 'portal-zombie', 'vr-arena-strike', 'laser-limbo'].includes(gameId) ? styles.logoArtwork : ''} ${['portal-mafia', 'party-games', 'orc-kings-arena'].includes(gameId) ? styles.posterArtwork : ''}`} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
 }
 
 function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefined, language: LanguageCode, text: Record<string, string>) {
@@ -50,10 +53,11 @@ function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefin
 export default function GameGuideBrowser({ games, staffGuides, language, text, initialVenue = 'all', variant = 'page', loading = false, loadError = false, onRetry }: Props) {
   const GameHeading = variant === 'modal' ? 'h3' : 'h2'
   const id = useId()
-  const copy = gameGuideCopy[language]
+  const copy = { ...gameGuideCopy[language], ...collectionLabels[language] }
   const [filters, setFilters] = useState<GuideFilters>({ search: '', venue: initialVenue, category: 'all', playerAge: 'all' })
-  const filtered = filterGuideGames(games, filters)
-  const categoryLabels = { 'FPS / PVP': copy.shooting, Escape: copy.escape, Other: copy.other, Tournament: copy.tournament }
+  const catalog = withPopUpGuides(games)
+  const filtered = filterGuideGames(catalog, filters)
+  const categoryLabels = { 'FPS / PVP': copy.shooting, Escape: copy.escape, Other: copy.other, Tournament: copy.tournament, 'Kid birthday': copy.kidBirthday, 'Pop-Up event': copy.popUpEvent }
   const categories = Object.keys(categoryLabels) as PublicGameGuideGame['category'][]
   const venueLabel = (venue: string) => venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
   const changed = Boolean(filters.search || filters.venue !== 'all' || filters.category !== 'all' || filters.playerAge !== 'all')
@@ -79,7 +83,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
           <span className={styles.srOnly}>{copy.category}</span>
           <select id={`${id}-category`} value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}>
             <option value="all">{copy.allCategories}</option>
-            {categories.filter((category) => games.some((game) => game.category === category)).map((category) => <option value={category} key={category}>{categoryLabels[category]}</option>)}
+            {categories.filter((category) => catalog.some((game) => game.category === category)).map((category) => <option value={category} key={category}>{categoryLabels[category]}</option>)}
           </select>
         </label>
         <label className={`${styles.select} ${styles.ageSelect}`} htmlFor={`${id}-age`}>
@@ -93,7 +97,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
         </label>
       </div>
       <div className={styles.resultBar}>
-        <p role="status" aria-live="polite">{loading ? copy.loading : copy.count.replace('{shown}', String(filtered.length)).replace('{total}', String(games.length))}</p>
+        <p role="status" aria-live="polite">{loading ? copy.loading : experienceCount[language].replace('{shown}', String(filtered.length)).replace('{total}', String(catalog.length))}</p>
         {changed && <button type="button" onClick={reset}>{copy.clear}</button>}
       </div>
       {loadError && <div className={styles.empty} role="alert"><p>{copy.unavailable}</p>{onRetry && <button type="button" onClick={onRetry}>{copy.retry}</button>}</div>}
@@ -101,33 +105,42 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
       <div className={styles.list} aria-busy={loading}>
         {filtered.map((game) => {
           const guide = guideContent(game, staffGuides[game.id], language, text)
+          const collection = gameGuideCollections[game.id]
           const age = gameMinimumAge(game)
           const ageText = text[age === 16 ? 'playerAgeLimit16' : age === 12 ? 'playerAgeLimit12' : 'playerAgeLimit']
           const capacity = filters.venue === 'ha-do-centrosa' ? Math.min(4, game.maxPlayersPerArena) : game.maxPlayersPerArena
           return (
             <article key={game.id} className={styles.game} aria-labelledby={`${id}-${game.id}`}>
-              <div className={styles.gameTop}>
-                <Artwork src={game.image} />
+              {game.id === 'birthday-party' && <Image className={styles.birthdayArtwork} src={game.image} alt="" width={960} height={540} sizes="(max-width: 760px) 100vw, 50vw" />}
+              <div className={`${styles.gameTop} ${game.id === 'birthday-party' ? styles.birthdayTop : ''}`}>
+                {game.id !== 'birthday-party' && <Artwork src={game.image} gameId={game.id} />}
                 <div className={styles.gameHeading}>
                   <GameHeading id={`${id}-${game.id}`}>{game.title}</GameHeading>
                   <p className={styles.category}>{categoryLabels[game.category]}</p>
                   <strong className={styles.age}>{ageText}</strong>
                 </div>
               </div>
-              <div className={styles.facts}>
+              {game.popUp ? <p className={styles.summary}>{copy.eventSetup}</p> : <div className={styles.facts}>
                 <span><Clock3 size={17} aria-hidden="true" /><span className={styles.srOnly}>{bookingDurationCopy[language].game}: </span>{game.durationMinutes} min</span>
                 <span><Users size={17} aria-hidden="true" />{copy.players.replace('{count}', String(capacity))}</span>
-              </div>
-              <p className={styles.summary}>{guide.summary}</p>
-              <details className={styles.details}>
+              </div>}
+              <p className={styles.summary}>{collection ? collectionText(collection.summary, language) : guide.summary}</p>
+              {collection && <details className={styles.details} key={`${game.id}-${filters.search}`} open={filters.search.trim() ? true : undefined}>
+                <summary>{copy.included}<span className={styles.srOnly}> - {game.title}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+                <div className={styles.instructions}>
+                  {(['games', 'modes'] as const).map((kind) => collection[kind] && <section key={kind}><h3>{copy[kind]}</h3><ul>{collection[kind]!.filter((item) => filters.playerAge === 'all' || (item.minimumAge || age) <= Number(filters.playerAge)).map((item) => <li key={item.title}><strong>{item.title}</strong>{item.minimumAge && <span className={styles.age}>{text.playerAgeLimit12}</span>}<p>{collectionText(item.description, language)}</p></li>)}</ul></section>)}
+                  {collection.maps && <section><h3>{copy.maps}</h3><ul>{collection.maps.map((map) => <li key={map}>{map}</li>)}</ul></section>}
+                </div>
+              </details>}
+              {!collection && <details className={styles.details}>
                 <summary>{copy.howToPlay}<span className={styles.srOnly}> — {game.title}</span><ChevronDown size={18} aria-hidden="true" /></summary>
                 <div className={styles.instructions}>
                   {guide.rules.length > 0 ? <ol>{guide.rules.map((rule) => <li key={rule}>{rule}</li>)}</ol> : <p>{copy.neutralSummary}</p>}
                   {guide.tips.length > 0 && <section><h3>{text.gameGuideTips}</h3><ul>{guide.tips.map((tip) => <li key={tip}>{tip}</li>)}</ul></section>}
-                  <section><h3>{text.bookingVenueLabel}</h3><ul>{game.venues.map((venue) => <li key={venue}>{venueLabel(venue)} · {text.gameGuidePlayers}: {venue === 'ha-do-centrosa' ? Math.min(4, game.maxPlayersPerArena) : game.maxPlayersPerArena}</li>)}</ul></section>
+                  {!game.popUp && <section><h3>{text.bookingVenueLabel}</h3><ul>{game.venues.map((venue) => <li key={venue}>{venueLabel(venue)} · {text.gameGuidePlayers}: {venue === 'ha-do-centrosa' ? Math.min(4, game.maxPlayersPerArena) : game.maxPlayersPerArena}</li>)}</ul></section>}
                   {game.audience.length > 0 && <p>{game.audience.map((audience) => text[gameAudienceLabelKeys[audience]]).join(' · ')}</p>}
                 </div>
-              </details>
+              </details>}
             </article>
           )
         })}

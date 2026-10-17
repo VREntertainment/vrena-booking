@@ -1,3 +1,4 @@
+import { guideSearchText } from './gameGuideCollections.ts'
 import type { LanguageCode, TranslationMap } from './i18n'
 
 export type GameAudience =
@@ -14,11 +15,12 @@ export type GameVenue = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 export type PublicGameGuideGame = {
   id: string
   title: string
-  category: 'FPS / PVP' | 'Escape' | 'Tournament' | 'Other'
+  category: 'FPS / PVP' | 'Escape' | 'Tournament' | 'Other' | 'Kid birthday' | 'Pop-Up event'
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
   audience: GameAudience[]
+  popUp?: boolean
   venues: GameVenue[]
 }
 
@@ -240,6 +242,16 @@ export function isStaffGuideLanguage(value: string | null | undefined): value is
   return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it'
 }
 
+const missingGuideArtwork: Record<string, string> = {
+  'arcade-2-0': '/games/portal-arcade.png',
+  'birthday-party': '/games/birthday-party.png',
+  'orc-kings-arena': '/games/galactic-arena.png',
+  'party-games': '/games/party-games.png',
+  'portal-mafia': '/games/portal-mafia.png',
+  'portal-zombie': '/games/portal-zombie.png',
+  'vr-arena-strike': '/games/portal-strike.svg',
+}
+
 const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'])
 
 /** Active staff records define availability; the built-in catalog supplies artwork
@@ -260,13 +272,13 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
     const audience = normalizeStaffAudience(guide.audience, guide.difficulty)
     return {
       id: guide.slug,
-      title: guide.name?.trim() || base?.title || guide.slug,
-      category: categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
-      image: guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || '/brand/vrena-mark-light.svg',
+      title: guide.slug === 'orc-kings-arena' ? 'Galactic Arena' : guide.name?.trim() || base?.title || guide.slug,
+      category: ['birthday-party', 'party-games'].includes(guide.slug) ? 'Kid birthday' : ['laser-limbo', 'spatial-ops'].includes(guide.slug) ? 'Pop-Up event' : categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
+      image: guide.slug === 'birthday-party' ? '/games/birthday-party.png' : guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || missingGuideArtwork[guide.slug] || '/brand/vrena-mark-light.svg',
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
       audience: audience.length > 0 ? audience : base?.audience || [],
-      venues: base?.venues || (sharedGuideGameSlugs.has(guide.slug) ? ['ha-do-centrosa', 'cafe-des-stagiaires'] : ['ha-do-centrosa']),
+      venues: base?.venues || (sharedGuideGameSlugs.has(guide.slug) ? ['cafe-des-stagiaires'] : ['ha-do-centrosa']),
     }
   })
 }
@@ -283,9 +295,19 @@ export function filterGuideGames(games: PublicGameGuideGame[], filters: GuideFil
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim()
   const query = normalize(filters.search)
   return games.filter((game) =>
-    (!query || normalize(game.title).includes(query)) &&
-    (filters.venue === 'all' || game.venues.includes(filters.venue)) &&
+    (!query || normalize(`${game.title} ${guideSearchText(game.id, filters.playerAge)}`).includes(query)) &&
+    (game.popUp || filters.venue === 'all' || game.venues.includes(filters.venue)) &&
     (filters.category === 'all' || game.category === filters.category) &&
     (filters.playerAge === 'all' || gameMinimumAge(game) <= Number(filters.playerAge))
   )
+}
+
+/** Event guide entries never enter booking inventory or claim permanent venue capacity. */
+export function withPopUpGuides(games: PublicGameGuideGame[]): PublicGameGuideGame[] {
+  const ids = new Set(games.map((game) => game.id))
+  const events: PublicGameGuideGame[] = [
+    { id: 'laser-limbo', title: 'Laser Limbo', category: 'Pop-Up event', image: '/games/laser-limbo.avif', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['fun', 'teamwork'], venues: [], popUp: true },
+    { id: 'spatial-ops', title: 'Spatial Ops', category: 'Pop-Up event', image: '/games/spatial-ops.jpeg', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['teamwork', 'competitive'], venues: [], popUp: true },
+  ]
+  return [...games.map((game) => events.find((event) => event.id === game.id) ? { ...game, category: 'Pop-Up event' as const, popUp: true, venues: [] } : game), ...events.filter((game) => !ids.has(game.id))]
 }
