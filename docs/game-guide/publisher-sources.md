@@ -19,3 +19,10 @@ New VR Arena collections use Thao Dien guide availability, per the user. No comi
 The user supplied the VR Arena marketing-kit ZIP exports, which provide the missing Portal Strike, Portal Arcade, Portal Zombie, Portal Mafia, Party Games and Galactic Arena assets. Originals are preserved; CSS controls fit and crop. The user confirmed that the existing Orc King's Arena catalog entry should be named Galactic Arena. Its legacy identifier remains stable. Publisher documentation identifies Arena of the Orc King as one of Galactic Arena's six maps: https://wiki.vr-arena.games/books/franchise-instructions/page/galactic-arena .
 
 17 October follow-up: Spatial Ops is 12+ per the user's correction. Its square guide thumbnail uses the top scene of the user-supplied arena_brazil.webp. Birthday Party uses the same square thumbnail layout as the other games.
+
+ANVIO How to play checked 17 October 2026 against the official publisher pages:
+- City Z: https://b2b.anvio.com/en/games/city-z — cooperative journey to a secret laboratory, rifle/shotgun, dark areas and elevated walkways.
+- Station Zarya: https://b2b.anvio.com/en/games/station-zarya — investigate an SOS on Regulus-5; burst rifle, close-range shotgun and rocket launcher; ground and aerial enemies.
+- Revolta: https://b2b.anvio.com/en/games/revolta — Deathmatch, Team Deathmatch, Point Capture; four primary and three special weapons; desert, factory and city-centre maps.
+
+Instructions are paraphrased in all seven booking languages. Publisher duration and player counts vary across formats, so local booking configuration remains authoritative. No undocumented controls, scoring, reload rules or respawn rules are added. Revolta is 12+ per the user's venue policy.

@@ -42,7 +42,7 @@ function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefin
   const fallbackLanguage = isStaffGuideLanguage(guide?.guide_language) ? guide.guide_language : 'en'
   // Unknown and collection games must not inherit a different game's weapons or scoring rules.
   const summary = custom ? text[custom] : block ? text.gameGuideBlockTowersSummary : escape ? text.gameGuideEscapeSummary : shooting ? text.gameGuideFpsSummary : gameGuideCopy[language].neutralSummary
-  const rules = custom || escape || !shooting ? '' : block ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules
+  const rules = custom ? text[custom.replace('Summary', 'Rules')] : escape || !shooting ? '' : block ? text.gameGuideBlockTowersRules : text.gameGuideFpsRules
   const tips = custom ? '' : block ? text.gameGuideBlockTowersTips : escape ? text.gameGuideEscapeTips : shooting ? text.gameGuideFpsTips : ''
   return {
     summary: normalizedGuideText(guide?.guide_summary, language, fallbackLanguage, summary),
