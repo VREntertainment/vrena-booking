@@ -109,4 +109,16 @@ test('Spatial Ops is 12+ in both the label policy and age filter', async () => {
   const filters = { search: 'Spatial Ops', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames([game], filters).length, 0)
   assert.equal(filterGuideGames([game], { ...filters, playerAge: '15' }).length, 1)
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '16' }).length, 1)
+})
+
+test('Revolta is available from age twelve, including the sixteen-plus filter', async () => {
+  const { gameMinimumAge } = await import('./gameGuideCatalog.ts')
+  const [game] = mergeStaffGameCatalog([{ slug: 'revolta' }])
+  assert.equal(gameMinimumAge(game), 12)
+  const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames([game], filters).length, 0)
+  for (const playerAge of ['12', '15', '16']) {
+    assert.equal(filterGuideGames([game], { ...filters, playerAge }).length, 1)
+  }
 })
