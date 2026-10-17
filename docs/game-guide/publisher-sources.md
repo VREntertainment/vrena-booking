@@ -26,3 +26,5 @@ ANVIO How to play checked 17 October 2026 against the official publisher pages:
 - Revolta: https://b2b.anvio.com/en/games/revolta — Deathmatch, Team Deathmatch, Point Capture; four primary and three special weapons; desert, factory and city-centre maps.
 
 Instructions are paraphrased in all seven booking languages. Publisher duration and player counts vary across formats, so local booking configuration remains authoritative. No undocumented controls, scoring, reload rules or respawn rules are added. Revolta is 12+ per the user's venue policy.
+
+Venue correction: the user confirmed VR Arena games are available at both Hà Đô and Thảo Điền. This supersedes the earlier Thảo Điền-only guide mapping. The booking guide opens with All locations; either venue filter includes all seven active VR Arena collections.

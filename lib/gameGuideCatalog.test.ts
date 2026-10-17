@@ -46,10 +46,14 @@ test('the guide retains every active game when a catalog grows beyond thirty tit
   assert.ok(!catalog.some((game) => game.id === 'game-3'))
 })
 
-test('new VR Arena experiences use Thao Dien and do not use broken or unrelated artwork', () => {
+test('VR Arena experiences appear under both venue filters and retain publisher artwork', () => {
   const [game] = mergeStaffGameCatalog([{ slug: 'portal-mafia', image_url: '/games/vrena-shared.svg' }])
-  assert.deepEqual(game.venues, ['cafe-des-stagiaires'])
+  assert.deepEqual(game.venues, ['ha-do-centrosa', 'cafe-des-stagiaires'])
   assert.equal(game.image, '/games/portal-mafia.png')
+  const games = mergeStaffGameCatalog(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'].map((slug) => ({ slug })))
+  for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
+    assert.equal(filterGuideGames(games, { search: '', venue, category: 'all', playerAge: 'all' }).length, 7)
+  }
 })
 
 test('age, venue and search filters combine without excluding games suitable for younger players', () => {

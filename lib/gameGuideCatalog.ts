@@ -278,7 +278,7 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
       audience: audience.length > 0 ? audience : base?.audience || [],
-      venues: base?.venues || (sharedGuideGameSlugs.has(guide.slug) ? ['cafe-des-stagiaires'] : ['ha-do-centrosa']),
+      venues: base?.venues || (sharedGuideGameSlugs.has(guide.slug) ? ['ha-do-centrosa', 'cafe-des-stagiaires'] : ['ha-do-centrosa']),
     }
   })
 }
