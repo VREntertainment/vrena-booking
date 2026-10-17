@@ -126,3 +126,16 @@ test('Revolta is available from age twelve, including the sixteen-plus filter', 
     assert.equal(filterGuideGames([game], { ...filters, playerAge }).length, 1)
   }
 })
+
+test('Canva recommendations govern Galactic Arena, Strike and Secret of the Arc eligibility', async () => {
+  const { gameMinimumAge } = await import('./gameGuideCatalog.ts')
+  const games = mergeStaffGameCatalog([
+    { slug: 'orc-kings-arena' }, { slug: 'vr-arena-strike' },
+    { slug: 'arc-of-the-covenant', game_type: 'escape' },
+  ])
+  assert.deepEqual(games.map(gameMinimumAge), [12, 12, 16])
+  const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: '11' }
+  assert.equal(filterGuideGames(games, filters).length, 0)
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map((game) => game.id), ['orc-kings-arena', 'vr-arena-strike'])
+  assert.equal(filterGuideGames(games, { ...filters, playerAge: '16' }).length, 3)
+})

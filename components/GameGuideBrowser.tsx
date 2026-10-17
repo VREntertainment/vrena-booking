@@ -11,6 +11,7 @@ import { collectionLabels, experienceCount } from '../lib/gameGuideCollectionLab
 import { gameGuideCollections, collectionText } from '../lib/gameGuideCollections'
 import { withPopUpGuides } from '../lib/gameGuideCatalog'
 import styles from './GameGuideBrowser.module.css'
+import { gameGuidePosters } from '../lib/gameGuidePosters'
 
 const fallbackArtwork = '/brand/vrena-mark-light.svg'
 
@@ -28,9 +29,9 @@ type Props = {
 
 function Artwork({ src, gameId }: { src: string; gameId: string }) {
   const [failed, setFailed] = useState(false)
-  const image = failed ? fallbackArtwork : src
-  const artwork = <Image className={`${image === fallbackArtwork ? styles.brandArtwork : styles.artwork} ${['arcade-2-0', 'portal-zombie', 'vr-arena-strike', 'laser-limbo'].includes(gameId) ? styles.logoArtwork : ''} ${gameId === 'birthday-party' ? styles.birthdayArtwork : ''} ${['portal-mafia', 'party-games', 'orc-kings-arena'].includes(gameId) ? styles.posterArtwork : ''}`} src={image} alt="" width={192} height={192} sizes="96px" onError={() => setFailed(true)} />
-  return gameId === 'spatial-ops' && !failed ? <span className={styles.spatialCrop}>{artwork}</span> : artwork
+  const poster = gameGuidePosters[gameId]
+  const image = failed ? fallbackArtwork : poster || src
+  return <Image className={failed ? styles.brandArtwork : poster ? styles.posterArtwork : styles.artwork} src={image} alt="" width={poster && !failed ? 640 : 192} height={poster && !failed ? 960 : 192} sizes="(max-width: 760px) 104px, 128px" onError={() => setFailed(true)} />
 }
 
 function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefined, language: LanguageCode, text: Record<string, string>) {

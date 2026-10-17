@@ -284,8 +284,9 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
 }
 
 export function gameMinimumAge(game: Pick<PublicGameGuideGame, 'id' | 'category'>): 7 | 12 | 16 {
-  if (['city-z', 'station-zarya', 'portal-zombie'].includes(game.id)) return 16
-  if (game.category === 'Escape' || ['joller-house', 'arc-of-the-covenant', 'portal-mafia', 'spatial-ops', 'revolta'].includes(game.id)) return 12
+  // Per-game recommendations approved in the shared Canva reception booklet.
+  if (['city-z', 'station-zarya', 'portal-zombie', 'arc-of-the-covenant'].includes(game.id)) return 16
+  if (game.category === 'Escape' || ['joller-house', 'portal-mafia', 'spatial-ops', 'revolta', 'orc-kings-arena', 'vr-arena-strike'].includes(game.id)) return 12
   return 7
 }
 
