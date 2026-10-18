@@ -2,8 +2,7 @@
 
 import { useId, useState } from 'react'
 import Image from 'next/image'
-import { Clock3, Search, Users, ChevronDown } from 'lucide-react'
-import { bookingDurationCopy } from '../lib/bookingDurationCopy'
+import { Search, Users, ChevronDown } from 'lucide-react'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
 import { filterGuideGames, gameMinimumAge, gameAudienceLabelKeys, guideTextItems, isStaffGuideLanguage, normalizedGuideText, type GuideFilters, type PublicGameGuideGame, type StaffGameGuide } from '../lib/gameGuideCatalog'
 import type { LanguageCode } from '../lib/i18n/languages'
@@ -122,7 +121,6 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
                 </div>
               </div>
               {game.popUp ? <p className={styles.summary}>{copy.eventSetup}</p> : <div className={styles.facts}>
-                <span><Clock3 size={17} aria-hidden="true" /><span className={styles.srOnly}>{bookingDurationCopy[language].game}: </span>{game.durationMinutes} min</span>
                 <span><Users size={17} aria-hidden="true" />{copy.players.replace('{count}', String(capacity))}</span>
               </div>}
               <p className={styles.summary}>{collection ? collectionText(collection.summary, language) : guide.summary}</p>
