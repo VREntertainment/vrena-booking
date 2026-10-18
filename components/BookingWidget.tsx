@@ -1,4 +1,7 @@
 'use client'
+import AnvioBadge from './AnvioBadge'
+
+
 import { staffBookingName } from '../lib/staffBookingName'
 import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
@@ -5808,7 +5811,7 @@ export default function WidgetPage({
                             type="button"
                           >
                             <NextImage src={game.image} alt="" width={240} height={240} />
-                            <span>{game.title}</span>
+                            <span>{game.title} <AnvioBadge gameId={game.id} /></span>
                             <strong>{game.category}</strong>
                           </button>
                           {renderGameGuideTrigger(game.id, 'game-card-guide')}

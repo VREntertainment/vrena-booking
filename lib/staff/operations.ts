@@ -1,3 +1,4 @@
+import { brandedGameName } from '../anvio.ts'
 import type { StaffConsoleCopy } from './copy.ts'
 import { staffConsoleText } from './copy.ts'
 import { normalizeTime } from './dates.ts'
@@ -61,7 +62,8 @@ export function sessionKindLabel(session: StaffOperationSession, text: StaffCons
 
 export function sessionGameName(session: StaffOperationSession, games: StaffGame[], text: StaffConsoleCopy = staffConsoleText.en) {
   const gameId = session.confirmed_game_id || session.game_options?.[0] || ''
-  return games.find((game) => game.slug === gameId || game.id === gameId)?.name || text.gameFallback
+  const game = games.find((game) => game.slug === gameId || game.id === gameId)
+  return game ? brandedGameName(game.slug, game.name) : text.gameFallback
 }
 
 export function sessionStaffGame(session: StaffOperationSession, games: StaffGame[]) {

@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../../lib/anvio'
+
 import {
   ShortDateInput
 } from '../../components/BookingWidgetSurfaces'
@@ -102,7 +104,7 @@ export default function ChallengeControls({
           <span>{text.playedGame}</span>
           <select value={challengeGameId} onChange={(event) => setChallengeGameId(event.target.value as GameId)}>
             {games.map((game) => (
-              <option key={game.id} value={game.id}>{game.title}</option>
+              <option key={game.id} value={game.id}>{brandedGameName(game.id, game.title)}</option>
             ))}
           </select>
         </label>

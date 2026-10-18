@@ -1,5 +1,8 @@
 'use client'
 
+import AnvioBadge from '../../components/AnvioBadge'
+
+
 import {
   Save
 } from 'lucide-react'
@@ -211,7 +214,7 @@ export default function GamesSection({
         </div>
         {games.map((game) => (
           <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
-            <strong>{game.name}</strong>
+            <strong>{game.name} <AnvioBadge gameId={game.slug} /></strong>
             <span>
               {[
                 text.gameTypes[game.game_type],

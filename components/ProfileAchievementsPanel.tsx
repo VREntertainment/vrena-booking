@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import NextImage from 'next/image'
 import {
   Award,
@@ -1011,7 +1013,7 @@ function applyManualGameAwards(achievements: GameAchievement[], manualAwards: Ma
       progressPercent: 34,
       state: 'unlocked',
       tier: 'bronze',
-      title: `${achievement.game.title} Rookie`,
+      title: `${brandedGameName(achievement.game.id, achievement.game.title)} Rookie`,
     }
   })
 }
@@ -1359,7 +1361,7 @@ export default function ProfileAchievementsPanel({
         return {
           badgeImageUrl: achievement.game.image,
           current: achievement.playedCount,
-          description: `${achievement.game.title} - ${achievement.title}`,
+          description: `${brandedGameName(achievement.game.id, achievement.game.title)} - ${achievement.title}`,
           id: achievement.game.id,
           key: achievementUnlockKey('game', achievement.game.id, achievement.tier),
           kind: 'game',
@@ -1458,7 +1460,7 @@ export default function ProfileAchievementsPanel({
     if (editor) {
       const manualAward = manualAwards.find((award) => award.achievement_kind === 'game' && award.achievement_id === achievement.game.id)
       editor.onToggleAchievement({
-        description: `Unlock the ${achievement.game.title} game achievement for this player.`,
+        description: `Unlock the ${brandedGameName(achievement.game.id, achievement.game.title)} game achievement for this player.`,
         id: achievement.game.id,
         kind: 'game',
         manuallyUnlocked: Boolean(manualAward),
@@ -1883,7 +1885,7 @@ export default function ProfileAchievementsPanel({
                       <NextImage alt="" fill sizes="52px" src={achievement.game.image} />
                     </span>
                     <div>
-                      <strong>{achievement.game.title}</strong>
+                      <strong>{brandedGameName(achievement.game.id, achievement.game.title)}</strong>
                       <small>{copy.timesPlayed.replace('{count}', String(achievement.playedCount))}</small>
                       {achievement.bestScore !== null && (
                         <span className="achievement-summary-row-meta">
@@ -2064,7 +2066,7 @@ export default function ProfileAchievementsPanel({
                 sparkedAchievementId === achievement.game.id ? 'achievement-sparked' : '',
                 editor?.pendingAchievementKeys.has(`game:${achievement.game.id}`) ? 'achievement-pending-change' : '',
               ].filter(Boolean).join(' ')}
-              aria-label={editor ? `${achievement.game.title}. ${manualAwards.some((award) => award.achievement_kind === 'game' && award.achievement_id === achievement.game.id) ? 'Remove manual unlock' : 'Add manual unlock'}` : undefined}
+              aria-label={editor ? `${brandedGameName(achievement.game.id, achievement.game.title)}. ${manualAwards.some((award) => award.achievement_kind === 'game' && award.achievement_id === achievement.game.id) ? 'Remove manual unlock' : 'Add manual unlock'}` : undefined}
               key={achievement.game.id}
               onClick={() => openAchievement(achievement)}
               type="button"
@@ -2080,7 +2082,7 @@ export default function ProfileAchievementsPanel({
                   {copy[tierLabels[achievement.tier]]}
                 </span>
                 <span className={`achievement-rarity-pill rarity-${rarity}`}>{copy[rarityLabels[rarity]]}</span>
-                <strong>{achievement.game.title}</strong>
+                <strong>{brandedGameName(achievement.game.id, achievement.game.title)}</strong>
                 <small>{achievement.state === 'locked' ? copy.playToUnlock : achievement.title}</small>
                 <span className="achievement-mini-progress" aria-hidden="true">
                   <span style={{ width: `${achievement.progressPercent}%` }} />
@@ -2169,7 +2171,7 @@ export default function ProfileAchievementsPanel({
               <span className={`achievement-rarity-pill rarity-${achievementRarityForGame(selectedAchievement)}`}>
                 {copy.rarity}: {copy[rarityLabels[achievementRarityForGame(selectedAchievement)]]}
               </span>
-              <h3>{selectedAchievement.game.title}</h3>
+              <h3>{brandedGameName(selectedAchievement.game.id, selectedAchievement.game.title)}</h3>
               <strong>{selectedAchievement.title}</strong>
               <div className="achievement-path" aria-label={copy.badgePath}>
                 {gamePathSteps.map((step) => (

@@ -1,5 +1,9 @@
 'use client'
 
+import AnvioBadge from './AnvioBadge'
+
+import { brandedGameName } from '../lib/anvio'
+
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import { Fragment, useMemo, type ReactNode } from 'react'
@@ -783,7 +787,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
               >
                 <option value="">{text.notConfirmed}</option>
                 {confirmedGameOptions.map((game) => {
-                  return <option key={game.id} value={game.id}>{game.title}</option>
+                  return <option key={game.id} value={game.id}>{brandedGameName(game.id, game.title)}</option>
                 })}
               </select>
               <button
@@ -1041,7 +1045,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                           type="button"
                         >
                           <NextImage src={game.image} alt="" width={240} height={240} />
-                          <span>{game.title}</span>
+                          <span>{game.title} <AnvioBadge gameId={game.id} /></span>
                           <strong>{game.category}</strong>
                         </button>
                         {renderGameGuideTrigger(game.id, 'game-card-guide')}
@@ -1669,7 +1673,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                       type="button"
                     >
                       <NextImage src={game.image} alt="" width={240} height={240} />
-                      <span>{game.title}</span>
+                      <span>{game.title} <AnvioBadge gameId={game.id} /></span>
                       <strong>{voteCount(session, gameId)} {voteCount(session, gameId) === 1 ? text.vote : text.votes}</strong>
                     </button>
                   </div>

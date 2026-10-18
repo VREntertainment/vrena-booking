@@ -1,5 +1,9 @@
 'use client'
 
+import { brandedGameName } from '../../lib/anvio'
+
+import StaffGamesPlayed from '../../components/staff/StaffGamesPlayed'
+
 import { StaffSavedBookingShare } from '../../components/staff/StaffSavedBookingShare'
 
 import { useState } from 'react'
@@ -348,7 +352,8 @@ export default function TodaySection({
                       <label>{text.labels.arena}<input defaultValue={session.arena_count ?? 1} disabled={!canCreateOrders || saving} min={1} type="number" onBlur={(event) => updateOperationSession(session, { arena_count: Number(event.target.value) || session.arena_count || 1 })} /></label>
                       <label>{text.labels.status}<select defaultValue={session.status} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { status: event.target.value as StaffOperationSession['status'] })}><option value="open">open</option><option value="completed">completed</option><option value="cancelled">cancelled</option></select></label>
                       <label>{text.labels.type}<select defaultValue={session.visibility} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { visibility: event.target.value as StaffOperationSession['visibility'] })}><option value="public">{text.labels.communitySession}</option><option value="private">{text.labels.privateSession}</option></select></label>
-                      <label>{text.labels.game}<select defaultValue={session.confirmed_game_id || ''} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { confirmed_game_id: event.target.value })}><option value="">{text.noneYet}</option>{games.map((game) => <option key={game.id} value={game.slug}>{game.name}</option>)}</select></label>
+                      <StaffGamesPlayed sessionId={session.id} language={resolvedLanguage} disabled={!canCreateOrders || saving} />
+                      <label>{text.labels.game}<select defaultValue={session.confirmed_game_id || ''} disabled={!canCreateOrders || saving} onChange={(event) => updateOperationSession(session, { confirmed_game_id: event.target.value })}><option value="">{text.noneYet}</option>{games.map((game) => <option key={game.id} value={game.slug}>{brandedGameName(game.slug, game.name)}</option>)}</select></label>
                     </div>
                   </div>
 

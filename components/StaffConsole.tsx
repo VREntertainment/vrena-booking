@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { StaffConfirmedBookingShare } from './staff/StaffConfirmedBookingShare'
 import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
@@ -664,7 +666,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const awardableProfiles = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) === 'player')
   ), [profiles])
-  const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, item.name])), [games])
+  const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, brandedGameName(item.slug, item.name)])), [games])
   const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])
   const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
   const allStaffProfileOptions = employeeStaffProfiles
@@ -1124,7 +1126,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           return <Fragment key={order.id}>
             <tr className="staff-order-row">
               <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p><StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving || !order.session_id || !['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status)} /></div></td>
-              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{games.find((game) => game.id === order.game_id)?.name || text.gameFallback}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
+              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
               <td data-label={text.labels.total}>{formatVnd(order.total)}</td>
               <td data-label={text.labels.payment}>
                 <div>{paymentStatusLabel(order.payment_status, text)}<br />{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}<br />{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}
@@ -1930,7 +1932,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
               <div className="form-grid compact-form-grid">
                 <label>{text.labels.ruleName}<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
-                <label>{text.labels.game}<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{game.name}</option>)}</select></label>
+                <label>{text.labels.game}<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>)}</select></label>
                 <label>{text.labels.dayType}<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type} value={type}>{text.dayTypes[type]}</option>)}</select></label>
                 <label>{text.labels.start}<StaffPickerField ariaLabel={text.aria.priceStartTime} placeholder={text.chooseTime} type="time" value={priceForm.time_start} onChange={(value) => setPriceForm({ ...priceForm, time_start: value })} /></label>
                 <label>{text.labels.end}<StaffPickerField ariaLabel={text.aria.priceEndTime} placeholder={text.chooseTime} type="time" value={priceForm.time_end} onChange={(value) => setPriceForm({ ...priceForm, time_end: value })} /></label>

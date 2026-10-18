@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import { ChevronDown, Save, ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { games } from '../lib/bookingStaticData'
@@ -522,7 +524,7 @@ export default function StaffPlayerStatsEditor({
                 value={activeGame?.id || ''}
               >
                 {games.map((game) => (
-                  <option key={game.id} value={game.id}>{game.title}</option>
+                  <option key={game.id} value={game.id}>{brandedGameName(game.id, game.title)}</option>
                 ))}
               </select>
             </div>

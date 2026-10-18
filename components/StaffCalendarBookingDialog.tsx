@@ -1,5 +1,9 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
+import StaffGamesPlayed from './staff/StaffGamesPlayed'
+
 import { staffBookingName } from '../lib/staffBookingName'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
@@ -137,7 +141,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={draft.allowOutsideHours ? '00:00' : staffBookingHours(draft.venue, draft.duration).min} max={draft.allowOutsideHours ? '23:59' : staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.allowOutsideHours} onChange={(event) => patch({ allowOutsideHours: event.target.checked })} /><span>{text.outsideHours}</span></label>
-        <label>{text.game}<select disabled={isSimRacing} required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{isSimRacing ? 'SIM Racing' : draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
+        <StaffGamesPlayed sessionId={sessionId} language={language} disabled={saving} />
+        <label>{text.game}<select disabled={isSimRacing} required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{isSimRacing ? 'SIM Racing' : draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{brandedGameName(item.slug, item.name)}</option>)}</select></label>
         <label>{text.players}<input disabled={isSimRacing} required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
         <label>{text.duration}<input disabled={isSimRacing} required min={isSimRacing ? 15 : 20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
         <label>{text.arenas}<select disabled={isSimRacing} value={draft.arenas} onChange={(event) => patch({ arenas: Number(event.target.value) })}>{isSimRacing && <option value={0}>SIM Racing</option>}<option value={1}>1</option>{draft.venue === 'ha-do-centrosa' && <option value={2}>2</option>}</select></label>

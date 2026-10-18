@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import NextImage from 'next/image'
 import { ChevronLeft, ChevronRight, ExternalLink, Images, Share, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
@@ -576,7 +578,7 @@ export default function LeaderboardPanel({
             >
               <option value="">{text.allGames}</option>
               {games.map((game) => (
-                <option key={game.id} value={game.id}>{game.title}</option>
+                <option key={game.id} value={game.id}>{brandedGameName(game.id, game.title)}</option>
               ))}
             </select>
           </label>

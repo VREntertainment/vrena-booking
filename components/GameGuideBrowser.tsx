@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import Image from 'next/image'
+import AnvioBadge from './AnvioBadge'
 import { Search, Users, ChevronDown } from 'lucide-react'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
 import { filterGuideGames, gameMinimumAge, gameAudienceLabelKeys, guideTextItems, isStaffGuideLanguage, normalizedGuideText, type GuideFilters, type PublicGameGuideGame, type StaffGameGuide } from '../lib/gameGuideCatalog'
@@ -117,6 +118,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
                 <div className={styles.gameHeading}>
                   <GameHeading id={`${id}-${game.id}`}>{game.title}</GameHeading>
                   <p className={styles.category}>{categoryLabels[game.category]}</p>
+                  <AnvioBadge gameId={game.id} />
                   <strong className={styles.age}>{ageText}</strong>
                 </div>
               </div>

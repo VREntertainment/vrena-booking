@@ -1,5 +1,8 @@
 'use client'
 
+import AnvioBadge from './AnvioBadge'
+
+
 import Image from 'next/image'
 import { CalendarPlus, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useRef, type ReactNode } from 'react'
@@ -479,7 +482,7 @@ export function PlayerProfileModal({
                       src={game.image}
                       width={76}
                     />
-                    <h4>{game.title}</h4>
+                    <h4>{game.title} <AnvioBadge gameId={game.id} /></h4>
                   </header>
                   <dl className="player-game-stat-grid">
                     {game.stats.map((stat) => (

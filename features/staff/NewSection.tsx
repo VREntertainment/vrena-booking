@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../../lib/anvio'
+
 import { StaffBookingSummary } from '../../components/staff/StaffBookingSummary'
 import { StaffBookingShareButton } from '../../components/staff/StaffBookingShareButton'
 import { useEffect, useRef, useState } from 'react'
@@ -310,7 +312,7 @@ export default function NewSection({
               <select value={selectedGame?.id || 'none'} onChange={(event) => setBooking({ ...booking, gameId: event.target.value, arenaId: '', discountId: '' })}>
                 <option value="none">{bookingText.noGame}</option>
                 {bookingGames.map((game) => (
-                  <option key={game.id} value={game.id}>{game.name}</option>
+                  <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>
                 ))}
               </select>
             </label>
