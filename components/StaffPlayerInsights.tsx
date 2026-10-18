@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import {
   Activity,
   CalendarCheck2,
@@ -678,7 +680,7 @@ export default function StaffPlayerInsights({
               <div className="staff-insight-ranking-row" key={game.gameKey}>
                 <span>{index + 1}</span>
                 <div>
-                  <strong>{game.gameName}</strong>
+                  <strong>{brandedGameName(game.gameKey, game.gameName)}</strong>
                   <small>{game.visits} {text.visits} · {game.reservations} {text.bookings}</small>
                   <div><i style={{ width: `${Math.max(4, (game.reservations / maxGame) * 100)}%` }} /></div>
                 </div>

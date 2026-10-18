@@ -1328,7 +1328,7 @@ export default function ProfileAchievementsPanel({
 
   function gameTitleForSession(session: AchievementSession) {
     const gameId = session.confirmed_game_id || session.game_options?.[0]
-    return (gameId && gameTitleById.get(gameId)) || session.name || copy.gamesTried
+    return brandedGameName(gameId || '', (gameId && gameTitleById.get(gameId)) || session.name || copy.gamesTried)
   }
 
   function playerResultForSession(session: AchievementSession) {

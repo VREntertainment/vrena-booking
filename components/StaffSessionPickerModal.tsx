@@ -1,5 +1,7 @@
 'use client'
 
+import { brandedGameName } from '../lib/anvio'
+
 import { CalendarDays, Check, ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase/client'
@@ -226,7 +228,7 @@ export default function StaffSessionPickerModal({
                     <span className="staff-session-picker-time">{formatTime(session.startTime)}</span>
                     <span>
                       <strong>{session.name}</strong>
-                      <small>{session.gameName || session.ticketType || session.bookingType || 'Session'}</small>
+                      <small>{session.gameName ? brandedGameName('', session.gameName) : session.ticketType || session.bookingType || 'Session'}</small>
                     </span>
                     <em>{stateLabel}</em>
                   </button>
