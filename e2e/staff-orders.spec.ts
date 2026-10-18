@@ -20,7 +20,7 @@ test('staff orders: split receipts, shop transfer, price reason and no-show stay
   await page.getByRole('button', { name: 'Booking time', exact: true }).click()
   await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).fill('16:00')
   await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).press('Enter')
-    await page.getByRole('combobox', { name: 'Game', exact: true }).selectOption({ label: 'City Z' })
+    await page.getByRole('combobox', { name: 'Game', exact: true }).selectOption({ label: 'City Z · Powered by Anvio' })
     await page.getByLabel('Booking date', { exact: true }).fill(date)
     const creation = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
     await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()

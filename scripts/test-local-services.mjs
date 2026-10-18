@@ -16,27 +16,31 @@ const sql = (input, role = 'postgres') => execFileSync('docker', ['exec', '-i', 
 // Deliberately fixed to a dedicated local Docker project. No linked project or production URL is accepted.
 console.log('Starting the isolated local test services…')
 cli(['start', '--exclude', 'analytics,vector,studio,postgres-meta,realtime,storage-api,imgproxy,edge-runtime'])
-if (!sql("select to_regclass('public.profiles');").trim()) {
-  sql('create extension if not exists unaccent with schema extensions; create extension if not exists btree_gist with schema extensions;')
-  sql(readFileSync('e2e/supabase/schema.sql', 'utf8'))
-  sql(readFileSync('e2e/supabase/storage-policies.sql', 'utf8'), 'supabase_admin')
+const services = JSON.parse(cli(['status', '--output', 'json']))
+if (services.API_URL !== 'http://127.0.0.1:56431' || services.DB_URL && new URL(services.DB_URL).port !== '56432') {
+  throw new Error('Refusing to reset or test a non-local backend.')
 }
-sql('create table if not exists private.e2e_migrations (version text primary key);')
-const applied = new Set(sql('select version from private.e2e_migrations;').trim().split('\n'))
+// This dedicated project's data is disposable. Reusing a database based only on
+// profiles existing can mix manually patched functions with an older ledger.
+// Start each run from the same snapshot and replay the complete migration chain.
+cli(['db', 'reset', '--local', '--no-seed'])
+sql('create extension if not exists unaccent with schema extensions; create extension if not exists btree_gist with schema extensions;')
+sql(readFileSync('e2e/supabase/schema.sql', 'utf8'))
+sql(readFileSync('e2e/supabase/storage-policies.sql', 'utf8'), 'supabase_admin')
 for (const file of readdirSync('supabase/migrations').filter((name) => /^\d+.*\.sql$/.test(name)).sort()) {
   const version = file.split('_')[0]
-  if (version <= baseline || applied.has(version)) continue
-  sql(readFileSync(path.join('supabase/migrations', file), 'utf8'))
-  sql(`insert into private.e2e_migrations values ('${version}');`)
+  if (version <= baseline) continue
+  console.log(`Applying local test migration: ${file}`)
+  try {
+    sql(readFileSync(path.join('supabase/migrations', file), 'utf8'))
+  } catch (error) {
+    throw new Error(`Local test migration failed: ${file}`, { cause: error })
+  }
 }
 sql(readFileSync('e2e/supabase/seed.sql', 'utf8'))
 sql(readFileSync('supabase/e2e/create-admin-user.sql', 'utf8'))
 sql("notify pgrst, 'reload schema';")
 
-const services = JSON.parse(cli(['status', '--output', 'json']))
-if (new URL(services.API_URL).hostname !== '127.0.0.1' || !services.API_URL.endsWith(':56431')) {
-  throw new Error('Refusing to run tests against a non-local backend.')
-}
 const email = `e2e-${randomBytes(5).toString('hex')}@vrena.local`
 const password = randomBytes(24).toString('base64url')
 const admin = createClient(services.API_URL, services.SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
