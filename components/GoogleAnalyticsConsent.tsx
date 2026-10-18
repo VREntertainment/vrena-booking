@@ -1,6 +1,7 @@
 'use client'
 
 import Script from 'next/script'
+import { syncOpenAiMeasurement } from '../lib/openAiAds'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
@@ -230,6 +231,10 @@ export default function GoogleAnalyticsConsent() {
     }
     previousAnalyticsConsent.current = analyticsAllowed
   }, [analyticsAllowed, marketingAllowed, pathname])
+
+  useEffect(() => {
+    syncOpenAiMeasurement(marketingAllowed)
+  }, [marketingAllowed, pathname])
 
   function saveConsent(choice: ConsentChoice) {
     writeConsentChoice(choice)

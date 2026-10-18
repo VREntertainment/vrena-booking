@@ -1,3 +1,5 @@
+import { measureOpenAiBooking } from './openAiAds'
+
 export const GOOGLE_ANALYTICS_ID = 'G-1K2MBG959X'
 export const CONSENT_COOKIE_NAME = 'vrena-cookie-consent'
 export const CONSENT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
@@ -51,10 +53,11 @@ export function analyticsConsentGranted() {
 function trackEvent(eventName: string, parameters: Record<string, unknown>) {
   if (!analyticsConsentGranted() || typeof window.gtag !== 'function') return
 
-  window.gtag('event', eventName, parameters)
+  try { window.gtag('event', eventName, parameters) } catch { /* Non-blocking analytics. */ }
 }
 
 type TicketAnalyticsInput = {
+  venue?: 'ha_do_centrosa' | 'thao_dien'
   ticketType: 'individual' | 'birthday' | 'corporate'
   ticketLabel: string
   date: string
@@ -89,6 +92,20 @@ export function trackTicketCheckoutStarted(input: TicketAnalyticsInput) {
 export function trackTicketBookingCompleted(
   input: TicketAnalyticsInput & { transactionId: string },
 ) {
+  if (!input.transactionId.trim()) return
+  measureOpenAiBooking(input.transactionId)
+  try {
+    const key = 'vrena:ga4:booking:' + input.transactionId
+    if (analyticsConsentGranted() && typeof window.gtag === 'function' && !sessionStorage.getItem(key)) {
+      trackEvent('booking_completed', {
+        booking_id: input.transactionId,
+        venue: input.venue,
+        booking_type: input.ticketType,
+        player_count: input.players,
+      })
+      sessionStorage.setItem(key, '1')
+    }
+  } catch { /* Storage or analytics errors cannot affect confirmation. */ }
   const sharedParameters = {
     items: ticketItem(input),
     ticket_type: input.ticketType,
