@@ -267,6 +267,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       if (!allowed) return false
 
       const ticketAnalytics = {
+        venue: isHaDoBookingVenue ? 'ha_do_centrosa' as const : 'thao_dien' as const,
         ticketType,
         ticketLabel: ticketTypeLabel(ticketType, looseText),
         date: ticketDate,
