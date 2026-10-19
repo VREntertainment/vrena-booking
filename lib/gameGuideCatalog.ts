@@ -299,7 +299,8 @@ export function filterGuideGames(games: PublicGameGuideGame[], filters: GuideFil
     (!query || normalize(`${game.title} ${guideSearchText(game.id, filters.playerAge)}`).includes(query)) &&
     (game.popUp || filters.venue === 'all' || game.venues.includes(filters.venue)) &&
     (filters.category === 'all' || game.category === filters.category) &&
-    (filters.playerAge === 'all' || gameMinimumAge(game) <= Number(filters.playerAge))
+    // Match the selected rating band, rather than every game an older player can play.
+    (filters.playerAge === 'all' || gameMinimumAge(game) === (Number(filters.playerAge) >= 16 ? 16 : Number(filters.playerAge) >= 12 ? 12 : 7))
   )
 }
 
