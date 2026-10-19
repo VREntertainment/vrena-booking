@@ -150,3 +150,12 @@ test('rating bands partition the catalog and all ages restores every game', () =
   }
   assert.equal(filterGuideGames(games, filters).length, 3)
 })
+
+test('Scary combines horror audience and zombie collections with age and venue filters', () => {
+  const games = mergeStaffGameCatalog([{ slug: 'city-z' }, { slug: 'station-zarya' }, { slug: 'joller-house' }, { slug: 'portal-zombie' }, { slug: 'revolta' }])
+  const filters = { search: '', venue: 'all' as const, category: 'scary', playerAge: 'all' }
+  assert.deepEqual(filterGuideGames(games, filters).map(game => game.id), ['city-z', 'station-zarya', 'joller-house', 'portal-zombie'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map(game => game.id), ['joller-house'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '16', venue: 'cafe-des-stagiaires' }).map(game => game.id), ['city-z', 'station-zarya', 'portal-zombie'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, search: 'Revolta' }), [])
+})

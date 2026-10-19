@@ -5,7 +5,7 @@ import Image from 'next/image'
 import AnvioBadge from './AnvioBadge'
 import { Search, Users, ChevronDown } from 'lucide-react'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
-import { filterGuideGames, gameMinimumAge, gameAudienceLabelKeys, guideTextItems, isStaffGuideLanguage, normalizedGuideText, type GuideFilters, type PublicGameGuideGame, type StaffGameGuide } from '../lib/gameGuideCatalog'
+import { filterGuideGames, isScaryGuideGame, gameMinimumAge, gameAudienceLabelKeys, guideTextItems, isStaffGuideLanguage, normalizedGuideText, type GuideFilters, type PublicGameGuideGame, type StaffGameGuide } from '../lib/gameGuideCatalog'
 import type { LanguageCode } from '../lib/i18n/languages'
 import { collectionLabels, experienceCount } from '../lib/gameGuideCollectionLabels'
 import { gameGuideCollections, collectionText } from '../lib/gameGuideCollections'
@@ -85,6 +85,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
           <span className={styles.srOnly}>{copy.category}</span>
           <select id={`${id}-category`} value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}>
             <option value="all">{copy.allCategories}</option>
+            {catalog.some(isScaryGuideGame) && <option value="scary">{text.audienceScary}</option>}
             {categories.filter((category) => catalog.some((game) => game.category === category)).map((category) => <option value={category} key={category}>{categoryLabels[category]}</option>)}
           </select>
         </label>

@@ -292,13 +292,17 @@ export function gameMinimumAge(game: Pick<PublicGameGuideGame, 'id' | 'category'
 
 export type GuideFilters = { search: string; venue: GameVenue | 'all'; category: string; playerAge: string }
 
+export function isScaryGuideGame(game: Pick<PublicGameGuideGame, 'id' | 'audience'>) {
+  return game.audience.includes('scary') || game.id === 'portal-zombie'
+}
+
 export function filterGuideGames(games: PublicGameGuideGame[], filters: GuideFilters) {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim()
   const query = normalize(filters.search)
   return games.filter((game) =>
     (!query || normalize(`${game.title} ${guideSearchText(game.id, filters.playerAge)}`).includes(query)) &&
     (game.popUp || filters.venue === 'all' || game.venues.includes(filters.venue)) &&
-    (filters.category === 'all' || game.category === filters.category) &&
+    (filters.category === 'all' || (filters.category === 'scary' ? isScaryGuideGame(game) : game.category === filters.category)) &&
     // Match the selected rating band, rather than every game an older player can play.
     (filters.playerAge === 'all' || gameMinimumAge(game) === (Number(filters.playerAge) >= 16 ? 16 : Number(filters.playerAge) >= 12 ? 12 : 7))
   )
