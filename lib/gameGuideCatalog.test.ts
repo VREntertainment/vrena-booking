@@ -56,11 +56,11 @@ test('VR Arena experiences appear under both venue filters and retain publisher 
   }
 })
 
-test('age, venue and search filters combine without excluding games suitable for younger players', () => {
+test('age rating, venue and search filters combine immediately', () => {
   const games = mergeStaffGameCatalog([{ slug: 'portal-zombie', name: 'Portal Zombie' }, { slug: 'portal-mafia', name: 'Portal Mafia' }, { slug: 'snow-battle', name: 'Snow Battle' }])
   assert.deepEqual(filterGuideGames(games, { search: 'PORTAL', venue: 'cafe-des-stagiaires', category: 'all', playerAge: '15' }).map((game) => game.id), ['portal-mafia'])
   assert.deepEqual(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '11' }).map((game) => game.id), ['snow-battle'])
-  assert.equal(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '16' }).length, 3)
+  assert.equal(filterGuideGames(games, { search: '', venue: 'all', category: 'all', playerAge: '16' }).length, 1)
 })
 
 test('birthday and pop-up categories stay separate from venue inventory', async () => {
@@ -85,12 +85,13 @@ test('search discovers mini-games, maps and modes inside their collections', asy
   assert.deepEqual(search('Capture the Flag'), ['spatial-ops'])
 })
 
-test('puzzle mode age policy also applies to mode search', async () => {
+test('mode search respects collection ratings and all ages restores the match', async () => {
   const { withPopUpGuides } = await import('./gameGuideCatalog.ts')
   const games = withPopUpGuides([])
   const filters = { search: 'Puzzle Battle', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames(games, filters).length, 0)
-  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map((game) => game.id), ['laser-limbo'])
+  assert.equal(filterGuideGames(games, { ...filters, playerAge: '15' }).length, 0)
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: 'all' }).map(game => game.id), ['laser-limbo'])
 })
 
 test('publisher artwork fills missing images and preserves existing staff artwork', () => {
@@ -113,16 +114,17 @@ test('Spatial Ops is 12+ in both the label policy and age filter', async () => {
   const filters = { search: 'Spatial Ops', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames([game], filters).length, 0)
   assert.equal(filterGuideGames([game], { ...filters, playerAge: '15' }).length, 1)
-  assert.equal(filterGuideGames([game], { ...filters, playerAge: '16' }).length, 1)
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '16' }).length, 0)
 })
 
-test('Revolta is available from age twelve, including the sixteen-plus filter', async () => {
+test('Revolta appears only in the twelve-to-fifteen rating band', async () => {
   const { gameMinimumAge } = await import('./gameGuideCatalog.ts')
   const [game] = mergeStaffGameCatalog([{ slug: 'revolta' }])
   assert.equal(gameMinimumAge(game), 12)
   const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames([game], filters).length, 0)
-  for (const playerAge of ['12', '15', '16']) {
+  assert.equal(filterGuideGames([game], { ...filters, playerAge: '16' }).length, 0)
+  for (const playerAge of ['12', '15']) {
     assert.equal(filterGuideGames([game], { ...filters, playerAge }).length, 1)
   }
 })
@@ -137,5 +139,23 @@ test('Canva recommendations govern Galactic Arena, Strike and Secret of the Arc 
   const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: '11' }
   assert.equal(filterGuideGames(games, filters).length, 0)
   assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map((game) => game.id), ['orc-kings-arena', 'vr-arena-strike'])
-  assert.equal(filterGuideGames(games, { ...filters, playerAge: '16' }).length, 3)
+  assert.equal(filterGuideGames(games, { ...filters, playerAge: '16' }).length, 1)
+})
+
+test('rating bands partition the catalog and all ages restores every game', () => {
+  const games = mergeStaffGameCatalog([{ slug: 'snow-battle' }, { slug: 'revolta' }, { slug: 'city-z' }])
+  const filters = { search: '', venue: 'all' as const, category: 'all', playerAge: 'all' }
+  for (const [playerAge, expected] of [['11', 'snow-battle'], ['15', 'revolta'], ['16', 'city-z']]) {
+    assert.deepEqual(filterGuideGames(games, { ...filters, playerAge }).map(game => game.id), [expected])
+  }
+  assert.equal(filterGuideGames(games, filters).length, 3)
+})
+
+test('Scary combines horror audience and zombie collections with age and venue filters', () => {
+  const games = mergeStaffGameCatalog([{ slug: 'city-z' }, { slug: 'station-zarya' }, { slug: 'joller-house' }, { slug: 'portal-zombie' }, { slug: 'revolta' }])
+  const filters = { search: '', venue: 'all' as const, category: 'scary', playerAge: 'all' }
+  assert.deepEqual(filterGuideGames(games, filters).map(game => game.id), ['city-z', 'station-zarya', 'joller-house', 'portal-zombie'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map(game => game.id), ['joller-house'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '16', venue: 'cafe-des-stagiaires' }).map(game => game.id), ['city-z', 'station-zarya', 'portal-zombie'])
+  assert.deepEqual(filterGuideGames(games, { ...filters, search: 'Revolta' }), [])
 })
