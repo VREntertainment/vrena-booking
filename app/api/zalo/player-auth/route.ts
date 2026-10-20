@@ -9,7 +9,7 @@ const ZALO_MINI_APP_ORIGIN = 'https://h5.zdn.vn'
 const MAX_TOKEN_LENGTH = 4096
 const PRIVACY_POLICY_URL = 'https://www.vre-vietnam.com/privacy-policy'
 const TERMS_CONDITIONS_URL = 'https://www.vre-vietnam.com/terms-and-conditions'
-const LEGAL_CONSENT_VERSION = '2026-08-10'
+const LEGAL_CONSENT_VERSION = '2026-10-20'
 
 type PlayerAction = 'status' | 'register'
 
@@ -22,12 +22,12 @@ type PlayerIdentity = {
   id: string
   profile_id: string
   zalo_app_user_id: string
-  verified_phone: string
+  verified_phone: string | null
   display_name: string | null
   revoked_at: string | null
 }
 
-type ZaloApiStage = 'access-token' | 'phone-number'
+type ZaloApiStage = 'access-token'
 
 class ZaloApiError extends Error {
   constructor(
@@ -93,18 +93,6 @@ function bearerToken(request: NextRequest) {
   return token && token.length <= MAX_TOKEN_LENGTH ? token : ''
 }
 
-function normalizeVietnamPhone(value: unknown) {
-  let digits = cleanString(value, 40).replace(/\D/g, '')
-  if (digits.startsWith('00')) digits = digits.slice(2)
-  if (digits.startsWith('84')) digits = digits.slice(2)
-  if (digits.startsWith('0')) digits = digits.slice(1)
-  return digits.length >= 8 && digits.length <= 10 ? `+84${digits}` : ''
-}
-
-function maskPhone(phone: string) {
-  return `+84 ••• ••• ${phone.slice(-3)}`
-}
-
 function zaloErrorCode(payload: Record<string, unknown> | null) {
   if (!payload) return null
   if (typeof payload.error === 'number') return payload.error
@@ -150,9 +138,7 @@ async function fetchZaloJson(
     const errorCode = zaloErrorCode(payload)
     if (!response.ok || !payload || (errorCode !== null && errorCode !== 0)) {
       throw new ZaloApiError(
-        stage === 'phone-number'
-          ? 'Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.'
-          : 'Zalo chưa thể xác minh phiên đăng ký sau khi cấp quyền. Vui lòng đóng và mở lại Mini App.',
+        'Zalo chưa thể xác minh phiên Mini App. Vui lòng đóng và mở lại ứng dụng.',
         stage,
         response.status,
         errorCode,
@@ -163,7 +149,7 @@ async function fetchZaloJson(
   } catch (error) {
     if (error instanceof ZaloApiError) throw error
     throw new ZaloApiError(
-      'Zalo chưa phản hồi yêu cầu xác minh. Vui lòng thử lại.',
+      'Zalo chưa phản hồi yêu cầu xác minh phiên Mini App. Vui lòng thử lại.',
       stage,
       503,
       null,
@@ -196,7 +182,7 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
 
   if (!id) {
     throw new ZaloApiError(
-      'Zalo chưa thể xác minh phiên đăng ký sau khi cấp quyền. Vui lòng đóng và mở lại Mini App.',
+      'Zalo chưa thể xác minh phiên Mini App. Vui lòng đóng và mở lại ứng dụng.',
       'access-token',
       401,
       null,
@@ -208,37 +194,6 @@ async function verifyZaloAccessToken(accessToken: string): Promise<ZaloProfile> 
     id,
     name: cleanString(data.name, 120) || null,
   }
-}
-
-async function decodeZaloPhone(accessToken: string, phoneToken: string) {
-  const appSecret = process.env.ZALO_APP_SECRET
-  if (!appSecret) throw new Error('Dịch vụ đăng ký VRena chưa được cấu hình đầy đủ.')
-
-  const payload = await fetchZaloJson(
-    'https://graph.zalo.me/v2.0/me/info',
-    {
-      access_token: accessToken,
-      code: phoneToken,
-      secret_key: appSecret,
-    },
-    'phone-number',
-  )
-  const data = payload.data && typeof payload.data === 'object'
-    ? payload.data as Record<string, unknown>
-    : {}
-  const phone = normalizeVietnamPhone(data.number)
-
-  if (!phone) {
-    throw new ZaloApiError(
-      'Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.',
-      'phone-number',
-      400,
-      null,
-      null,
-    )
-  }
-
-  return phone
 }
 
 async function consumeRateLimit(
@@ -271,24 +226,9 @@ function internalEmailForZaloUser(zaloAppUserId: string) {
   return `zalo-${subject}@accounts.vrena.internal`
 }
 
-async function existingProfileForPhone(adminClient: SupabaseClient, phone: string) {
-  const localPhone = `0${phone.slice(3)}`
-  const { data, error } = await adminClient
-    .from('profiles')
-    .select('id')
-    .in('phone', [phone, localPhone])
-    .is('deleted_at', null)
-    .limit(1)
-    .maybeSingle()
-
-  if (error) throw new Error('VRena chưa thể kiểm tra an toàn số điện thoại này.')
-  return data as { id: string } | null
-}
-
 async function createPlayer(
   adminClient: SupabaseClient,
   zaloProfile: ZaloProfile,
-  phone: string,
 ) {
   const email = internalEmailForZaloUser(zaloProfile.id)
   const consentAt = new Date().toISOString()
@@ -297,14 +237,14 @@ async function createPlayer(
   const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
     email,
     email_confirm: true,
-    phone,
-    phone_confirm: true,
-    user_metadata: {
+    app_metadata: {
       auth_origin: 'zalo_mini_app',
+      zalo_app_user_id: zaloProfile.id,
+    },
+    user_metadata: {
       display_name: zaloProfile.name || 'Người chơi',
       full_name: zaloProfile.name || 'Người chơi',
       name: zaloProfile.name || 'Người chơi',
-      phone,
       personal_data_consent: true,
       personal_data_consent_at: consentAt,
       privacy_policy_url: PRIVACY_POLICY_URL,
@@ -314,11 +254,7 @@ async function createPlayer(
   })
 
   if (createError || !createData.user) {
-    throw new Error(
-      createError?.message.toLowerCase().includes('already')
-        ? 'Số điện thoại này đã có hồ sơ VRena. Vui lòng liên hệ nhân viên VRena tại quầy để được hỗ trợ.'
-        : 'VRena chưa thể tạo hồ sơ người chơi.',
-    )
+    throw new Error('VRena chưa thể tạo hồ sơ người chơi.')
   }
   createdUser = createData.user
 
@@ -327,7 +263,6 @@ async function createPlayer(
       id: createdUser.id,
       full_name: zaloProfile.name || null,
       nickname: zaloProfile.name || null,
-      phone,
       email: null,
       personal_data_consent: true,
       personal_data_consent_at: consentAt,
@@ -345,7 +280,7 @@ async function createPlayer(
       .insert({
         profile_id: createdUser.id,
         zalo_app_user_id: zaloProfile.id,
-        verified_phone: phone,
+        verified_phone: null,
         display_name: zaloProfile.name,
       })
       .select('id, profile_id, zalo_app_user_id, verified_phone, display_name, revoked_at')
@@ -363,7 +298,6 @@ function safeErrorStatus(message: string) {
   if (message.includes('quá nhiều lần')) return 429
   if (message.includes('tạm thời gián đoạn') || message.includes('chưa được cấu hình')) return 503
   if (message.toLowerCase().includes('phiên zalo')) return 401
-  if (message.includes('đã có hồ sơ') || message.includes('đã được dùng')) return 409
   if (message.includes('đã bị thu hồi')) return 403
   return 400
 }
@@ -409,18 +343,10 @@ export async function POST(request: NextRequest) {
     const preAuthSubject = ip === UNKNOWN_CLIENT_IP ? `token:${tokenHash}` : `ip:${ip}`
     await consumeRateLimit(adminClient, `zalo-player-preauth:${preAuthSubject}`, 40, 60)
 
-    let verifiedPhone: string | null = null
     if (action === 'register') {
       if (body.acceptedTerms !== true) {
         throw new Error('Vui lòng đồng ý với Chính sách quyền riêng tư và Điều khoản sử dụng trước khi đăng ký.')
       }
-      const phoneToken = cleanString(body.phoneToken, MAX_TOKEN_LENGTH)
-      if (!phoneToken) throw new Error('Vui lòng cấp quyền số điện thoại Zalo để đăng ký hồ sơ mới.')
-
-      // The client captures the access token after permission authorization and
-      // immediately before requesting this one-time phone token, so this server
-      // decodes the same Zalo session pair before verifying the user profile.
-      verifiedPhone = await decodeZaloPhone(accessToken, phoneToken)
     }
 
     const zaloProfile = await verifyZaloAccessToken(accessToken)
@@ -444,31 +370,12 @@ export async function POST(request: NextRequest) {
       return jsonResponse(request, {
         registered: Boolean(identity),
         displayName: identity?.display_name || zaloProfile.name || 'Người chơi',
-        maskedPhone: identity ? maskPhone(identity.verified_phone) : null,
       })
     }
 
     if (!identity) {
-      const phone = verifiedPhone
-      if (!phone) throw new Error('Zalo chưa thể xác minh số điện thoại. Vui lòng cấp quyền và thử lại.')
-      const existingPhoneIdentity = await adminClient
-        .from('player_zalo_identities')
-        .select('id')
-        .eq('verified_phone', phone)
-        .maybeSingle()
-      if (existingPhoneIdentity.error) throw new Error('VRena chưa thể kiểm tra an toàn số điện thoại này.')
-      if (existingPhoneIdentity.data) {
-        throw new Error('Số điện thoại này đã được dùng để đăng ký một hồ sơ VRena khác.')
-      }
-      if (await existingProfileForPhone(adminClient, phone)) {
-        throw new Error('Số điện thoại này đã có hồ sơ VRena. Vui lòng liên hệ nhân viên VRena tại quầy để được hỗ trợ.')
-      }
-
-      identity = await createPlayer(adminClient, zaloProfile, phone)
+      identity = await createPlayer(adminClient, zaloProfile)
     } else {
-      if (verifiedPhone && verifiedPhone !== identity.verified_phone) {
-        throw new Error('Số điện thoại Zalo không khớp với hồ sơ thành viên đã đăng ký.')
-      }
       const { error: updateError } = await adminClient
         .from('player_zalo_identities')
         .update({
@@ -482,7 +389,6 @@ export async function POST(request: NextRequest) {
     return jsonResponse(request, {
       registered: true,
       displayName: identity.display_name || zaloProfile.name || 'Người chơi',
-      maskedPhone: maskPhone(identity.verified_phone),
     })
   } catch (error) {
     if (error instanceof ZaloApiError) {
