@@ -1185,3 +1185,10 @@
     background: color-mix(in srgb, var(--vrena-cyan-400) 8%, transparent);
   }
 }
+
+.staff-location-access { margin-block: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; }
+.staff-location-access details { margin-block: .75rem; }
+.staff-location-access summary { cursor: pointer; padding: .65rem; }
+.staff-location-options { display: grid; gap: .65rem; padding: .75rem; }
+.staff-location-options label { display: flex; align-items: center; gap: .65rem; }
+.staff-location-options input[type="checkbox"] { width: auto; }

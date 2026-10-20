@@ -1,5 +1,6 @@
 'use client'
 
+import { EmployeeLocationAccess } from '../../components/staff/EmployeeLocationAccess'
 import { employeeHomeLocation } from '@/lib/staffCostAllocation'
 import type { StaffEmployeeRecordEmploymentType } from '@/lib/staffEmployeeRecord'
 import {
@@ -398,6 +399,7 @@ export default function EmployeesSection({
             </div>
           </CollapsibleEmployeeSection>
 
+          {isOwnerOrAdmin && <EmployeeLocationAccess key={`locations-${selectedEmployeeStaffId}`} profileId={selectedEmployeeStaffId} canEdit={isOwnerOrAdmin} language={resolvedLanguage} />}
           <StaffCostAssignments key={selectedEmployeeStaffId} profileId={selectedEmployeeStaffId} homeLocation={employeeProfileById.get(selectedEmployeeStaffId)?.main_work_location || ''} assignments={costAssignments} canEdit={canEditEmployeeProfiles} language={resolvedLanguage} reload={reloadCostAssignments} />
 
           <CollapsibleEmployeeSection description={employeeCopy.sectionHelp.payroll} id="payroll" onToggle={toggleEmployeeSection} open={openEmployeeSections.payroll} title={employeeCopy.sectionTitles.payroll}>

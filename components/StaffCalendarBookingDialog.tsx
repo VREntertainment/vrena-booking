@@ -1,5 +1,7 @@
 'use client'
 
+import { useStaffLocations } from '../hooks/useStaffLocations'
+
 import { brandedGameName } from '../lib/anvio'
 
 import StaffGamesPlayed from './staff/StaffGamesPlayed'
@@ -32,6 +34,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const bookingText = staffBookingCopy[language]
   const dialog = useRef<HTMLDialogElement>(null)
   const busy = useRef(false)
+  const { locations } = useStaffLocations()
   const [draft, setDraft] = useState<Draft | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [version, setVersion] = useState('')
@@ -136,7 +139,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
           const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
           patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: !draft.allowOutsideHours && venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
-        }}><option value="ha-do-centrosa">VRena Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Vrena Thao Dien</option></select></label>
+        }}>{locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}</select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing || !orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={draft.allowOutsideHours ? '00:00' : staffBookingHours(draft.venue, draft.duration).min} max={draft.allowOutsideHours ? '23:59' : staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>

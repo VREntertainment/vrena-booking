@@ -1,4 +1,6 @@
 'use client'
+
+import { useStaffLocations } from '../hooks/useStaffLocations'
 import AnvioBadge from './AnvioBadge'
 
 
@@ -227,7 +229,16 @@ import StaffKioskGate from './StaffKioskGate'
 const ChallengeControls = dynamic(() => import('../features/booking/ChallengeControls'), { ssr: false })
 const ClubDetail = dynamic(() => import('../features/booking/ClubDetail'), { ssr: false })
 
-export default function WidgetPage({
+// A new operator gets a fresh component tree, including all calendar/customer
+// caches. Requests belonging to the unmounted employee cannot populate it.
+export default function WidgetPage(props: BookingWidgetProps = {}) {
+  const [operatorGeneration, setOperatorGeneration] = useState(0)
+  const resetOperatorWorkspace = useCallback(() => setOperatorGeneration((value) => value + 1), [])
+  return <BookingWorkspace key={operatorGeneration} {...props} onOperatorWorkspaceChange={resetOperatorWorkspace} />
+}
+
+function BookingWorkspace({
+  onOperatorWorkspaceChange,
   embedded = false,
   externalLanguage,
   initialText,
@@ -239,7 +250,7 @@ export default function WidgetPage({
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
-}: BookingWidgetProps = {}) {
+}: BookingWidgetProps & { onOperatorWorkspaceChange: () => void }) {
 
   const [incomingCalendar] = useState(initialCalendarNavigation)
   const {
@@ -3927,7 +3938,9 @@ export default function WidgetPage({
         roleRank: staffAccessRank,
       })
   ))
-  const canManageCalendarBookings = canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
+  const { locations: staffLocations } = useStaffLocations(canAccessStaffConsole, kioskOperator?.profileId || profile?.id || '')
+  const staffLocationAllowed = !canAccessStaffConsole || staffLocations.some((location) => location.venue_key === bookingVenue)
+  const canManageCalendarBookings = staffLocationAllowed && canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
   const venueOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const venueCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
   const calendarStepMinutes = isHaDoBookingVenue ? TIME_STEP_MINUTES : CAFE_TIME_STEP_MINUTES
@@ -5230,7 +5243,7 @@ export default function WidgetPage({
   const appMain = (
     <main lang={language}>
       {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-        <BookingVenueSelector compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
+        <BookingVenueSelector allowedVenueKeys={canAccessStaffConsole ? staffLocations.map((location) => location.venue_key) : undefined} compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
       )}
 
       {activeView === 'sessions' && isHaDoBookingVenue && (
@@ -6256,7 +6269,7 @@ export default function WidgetPage({
       language={language}
       onLockChange={handleKioskLockChange}
       onLogout={logoutStaffKiosk}
-      onOperatorChange={setKioskOperator}
+      onOperatorChange={onOperatorWorkspaceChange}
     >
       {() => appShell}
     </StaffKioskGate>

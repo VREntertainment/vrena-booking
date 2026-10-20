@@ -1,5 +1,6 @@
 'use client'
 
+import { useStaffLocations } from '../../hooks/useStaffLocations'
 import { brandedGameName } from '../../lib/anvio'
 
 import { StaffBookingSummary } from '../../components/staff/StaffBookingSummary'
@@ -126,6 +127,8 @@ export default function NewSection({
   status,
   createOrder,
 }: NewSectionProps) {
+  const { locations } = useStaffLocations()
+  const locationAllowed = locations.some((location) => location.venue_key === booking.venueKey)
   const summaryRef = useRef<HTMLDivElement>(null)
   const hours = staffBookingHours(booking.venueKey, quote.duration)
   const outsideHours = booking.bookingKind === 'event' && booking.allowOutsideHours
@@ -135,7 +138,7 @@ export default function NewSection({
   const [retry, setRetry] = useState(0)
   const availabilityState = availability?.key === availabilityKey ? availability.state : 'checking'
   useEffect(() => {
-    if (!canCreateOrders || !validTime || !booking.date) return
+    if (!locationAllowed || !canCreateOrders || !validTime || !booking.date) return
     let cancelled = false
     const timer = setTimeout(async () => {
       try {
@@ -148,7 +151,7 @@ export default function NewSection({
       }
     }, 250)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime])
+  }, [locationAllowed, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime])
   return (
     <div className="staff-grid">
       <div className="staff-card staff-card-wide">
@@ -182,14 +185,14 @@ export default function NewSection({
             </label>
             <label>
               {bookingText.shop}
-              <select value={booking.venueKey} onChange={(event) => setBooking((current) => ({
+              <select value={locationAllowed ? booking.venueKey : ""} onChange={(event) => setBooking((current) => ({
                 ...current,
                 venueKey: event.target.value as BookingForm['venueKey'],
                 gameId: '', arenaId: '', arenaCount: 1, discountId: '',
                 time: !current.allowOutsideHours && event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
               }))}>
-                <option value="ha-do-centrosa">VRena Hà Đô Centrosa</option>
-                <option value="cafe-des-stagiaires">Vrena Thao Dien</option>
+                <option value="" disabled>{resolvedLanguage === 'vi' ? 'Chọn địa điểm được phép' : 'Choose an allowed location'}</option>
+                {locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}
               </select>
             </label>
             <div className="full staff-booking-toggles">
@@ -485,7 +488,7 @@ export default function NewSection({
           {(availabilityState === 'error' || availabilityState === 'unavailable') && <button type="button" className="secondary" onClick={() => { setAvailability(null); setRetry((value) => value + 1) }}>{bookingText.retry}</button>}
         </p>}
         {status && <p className="notice compact-notice" role="status">{status}</p>}
-        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!canCreateOrders || saving || availabilityState !== 'available' || !validTime || !validStaffSessionCount(booking.sessionCount) || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
+        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!locationAllowed || !canCreateOrders || saving || availabilityState !== 'available' || !validTime || !validStaffSessionCount(booking.sessionCount) || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
           {text.actions.confirmBooking}
         </button>
       </div>

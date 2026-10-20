@@ -21,6 +21,7 @@ export async function stubHCaptcha(page: Page) {
             setTimeout(function () {
               if (options && typeof options.callback === 'function') {
                 options.callback(hcaptchaToken);
+                document.body.setAttribute("data-e2e-captcha-ready", "true");
               }
             }, 0);
             return 'e2e-hcaptcha-widget';
@@ -60,6 +61,7 @@ export async function loginAsAdmin(page: Page) {
   await page.locator('.login-profile-form .email-field input').fill(adminEmail)
   await page.locator('.login-profile-form .email-field input').press('Enter')
   await page.locator('.login-profile-form input[type="password"]').fill(adminPassword)
+  await expect(page.locator('body')).toHaveAttribute('data-e2e-captcha-ready', 'true')
   await page.locator('.profile-auth-section .action-row button.primary').click()
   await expect(page.locator('.mfa-code-row input')).toBeVisible()
   const secret = process.env.E2E_ADMIN_TOTP_SECRET
