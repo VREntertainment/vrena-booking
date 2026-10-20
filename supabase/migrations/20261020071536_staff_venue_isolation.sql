@@ -65,7 +65,7 @@ create table private.staff_customer_locations (
 );
 revoke all on private.staff_customer_locations from public,anon,authenticated;
 create function private.staff_location_profile_allowed(p_id uuid) returns boolean language sql stable security definer set search_path='' as $$
- select p_id=public.current_staff_actor_profile_id() or exists(
+ select p_id=auth.uid() or p_id=public.current_staff_actor_profile_id() or exists(
  select 1 from private.staff_customer_locations c where c.profile_id=p_id and private.staff_location_allowed(c.venue_key))
  or exists(select 1 from public.staff_orders o where o.customer_id=p_id and private.staff_location_order_allowed(o.session_id,o.arena_id))
  or exists(select 1 from public.session_participants p join public.sessions s on s.id=p.session_id

@@ -76,6 +76,7 @@ delete from public.staff_employee_locations where profile_id='95000000-0000-4000
 set local role authenticated;
 select is((select count(*)::int from public.staff_access_locations()),0,'Revocation takes effect without logging out');
 select is((select count(*)::int from public.staff_orders),0,'No assignment fails closed');
+select is((select count(*)::int from public.profiles where id=auth.uid()),1,'Unassigned operator can still load the shared sign-in profile');
 select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+102,'16:00',1,'arena-1',null,'confirmed')$q$,'P0001','Location access denied.','Unassigned employee cannot create bookings');
 reset role;
 select ok(not has_table_privilege('authenticated','staff_location_scope.sessions','select'),'Scoped definer views cannot be read directly');
