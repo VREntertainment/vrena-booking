@@ -5,6 +5,7 @@ export const de = {
   noProfile: 'Kein Profil',
   clickLogin: 'Zum Anmelden tippen',
   sessions: 'Runden',
+  pastSessionStaffConsoleOnly: "Vergangene Sitzungen können nur in der Mitarbeiterkonsole erstellt werden. Wählen Sie hier einen zukünftigen Termin.",
   createSession: 'Runde bauen',
   clubs: 'Clubs',
   hallOfFame: 'Hall of Fame',

@@ -5,6 +5,7 @@ export const ja = {
   noProfile: '未プロフィール',
   clickLogin: 'ログインをタップ',
   sessions: 'セッション',
+  pastSessionStaffConsoleOnly: "過去のセッションはスタッフコンソールでのみ作成できます。ここでは未来の日時を選択してください。",
   createSession: 'セッション作成',
   clubs: 'クラブ',
   hallOfFame: '殿堂',

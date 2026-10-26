@@ -20,6 +20,7 @@ export default function ShortDateInput({
   ariaLabel,
   displayValueOverride,
   disabled = false,
+  min,
 }: {
   value: string
   onChange: (value: string) => void
@@ -28,6 +29,7 @@ export default function ShortDateInput({
   ariaLabel: string
   displayValueOverride?: string
   disabled?: boolean
+  min?: string
 }) {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -59,6 +61,7 @@ export default function ShortDateInput({
         id={inputId}
         ref={inputRef}
         type="date"
+        min={min}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />

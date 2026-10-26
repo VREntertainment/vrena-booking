@@ -42,7 +42,7 @@ export const CAFE_TIME_STEP_MINUTES = 10
 export type BookingTimeOption = { value: string; label: string; remaining: number }
 
 /** Pure availability calculation. The caller supplies the clock for deterministic checks. */
-export function availableSessionTimes({ date, duration, arenaCount, excludeSessionId = '', sessions, blockedTimes, text, now = new Date() }: {
+export function availableSessionTimes({ date, duration, arenaCount, excludeSessionId = '', sessions, blockedTimes, text, now = new Date(), allowPast = false }: {
   date: string
   duration: number
   arenaCount: number
@@ -51,10 +51,12 @@ export function availableSessionTimes({ date, duration, arenaCount, excludeSessi
   blockedTimes: Array<Pick<BlockedTime, 'date' | 'start_time' | 'end_time' | 'arenas_used'>>
   text: { arenaAvailable: string; arenasAvailable: string }
   now?: Date
+  allowPast?: boolean
 }): BookingTimeOption[] {
   if (!date) return []
 
   const today = localDateString(now)
+  if (!allowPast && date < today) return []
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
   const options: Array<{ value: string; label: string; remaining: number }> = []
@@ -63,7 +65,7 @@ export function availableSessionTimes({ date, duration, arenaCount, excludeSessi
   for (let start = OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
     const end = start + duration
 
-    if (date === today && start <= nowMinutes) continue
+    if (!allowPast && date === today && start <= nowMinutes) continue
 
     const activeSessionArenas = sessions
       .filter((session) => (
