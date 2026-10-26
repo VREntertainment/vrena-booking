@@ -217,9 +217,14 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
     const effectiveVisibility = selectedSessionClub ? 'public' : sessionVisibility
     const inviteCode = effectiveVisibility === 'private' ? generateInviteCode() : null
 
-    const { data: created, error } = await (await getSupabase())
+    // The SELECT policy resolves session access through a STABLE helper. During
+    // INSERT ... RETURNING that helper cannot see the new row yet. Keep RLS
+    // intact and use a client-generated ID with a minimal insert response.
+    const created = { id: crypto.randomUUID() }
+    const { error } = await (await getSupabase())
       .from('sessions')
       .insert({
+        id: created.id,
         owner_id: userId,
         club_id: sessionClubId || null,
         session_type: sessionType,
@@ -248,10 +253,8 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
         third_prize: sessionType === 'tournament' ? tournamentThirdPrize.trim() || null : null,
         tournament_locked: false,
       })
-      .select('id')
-      .single()
 
-    if (error || !created) {
+    if (error) {
       setCreateStatus(error?.message || text.createError)
       setIsCreating(false)
       return

@@ -826,3 +826,11 @@
     display: grid;
   }
 }
+
+/* Show the complete approved portrait artwork without cropping its silhouette. */
+.app .create-session-section .game-card img.session-game-poster {
+  aspect-ratio: 2 / 3;
+  height: auto;
+  object-fit: contain;
+  background: transparent;
+}
