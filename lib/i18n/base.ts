@@ -3,6 +3,7 @@ export const en = {
   noProfile: 'No profile yet',
   clickLogin: 'Click to log in',
   sessions: 'Sessions',
+  pastSessionStaffConsoleOnly: "Past sessions can only be created in the Staff Console. Choose a future time here.",
   createSession: 'Create Session',
   clubs: 'Clubs',
   hallOfFame: 'Hall of Fame',

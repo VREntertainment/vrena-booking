@@ -5,6 +5,7 @@ export const ko = {
   noProfile: '프로필 없음',
   clickLogin: '로그인 탭',
   sessions: '세션',
+  pastSessionStaffConsoleOnly: "지난 세션은 직원 콘솔에서만 만들 수 있습니다. 여기에서는 미래 시간을 선택하세요.",
   createSession: '세션 만들기',
   clubs: '클럽',
   hallOfFame: '명예의 전당',

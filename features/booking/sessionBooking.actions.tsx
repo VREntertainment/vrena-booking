@@ -197,6 +197,12 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
       return
     }
 
+    if (new Date(`${sessionDate}T${sessionTime}:00+07:00`).getTime() <= Date.now()) {
+      setCreateStatus(text.pastSessionStaffConsoleOnly)
+      setIsCreating(false)
+      return
+    }
+
     const selectedSessionClub = sessionClubId ? clubs.find((club) => club.id === sessionClubId) : undefined
 
     if (selectedSessionClub && !canCreateClubSession(selectedSessionClub)) {

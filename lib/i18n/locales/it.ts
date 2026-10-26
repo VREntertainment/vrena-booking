@@ -5,6 +5,7 @@ export const it = {
   noProfile: 'Nessun profilo',
   clickLogin: 'Tocca login',
   sessions: 'Partite',
+  pastSessionStaffConsoleOnly: "Le sessioni passate si creano solo nella console del personale. Qui scegli un orario futuro.",
   createSession: 'Crea partita',
   clubs: 'Club',
   hallOfFame: 'Hall of Fame',

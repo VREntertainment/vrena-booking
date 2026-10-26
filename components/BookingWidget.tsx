@@ -2948,8 +2948,8 @@ function BookingWorkspace({
     game.id !== 'sim-racing' && game.venues.includes(bookingVenue)
   )
 
-  const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => (
-    availableSessionTimes({ date, duration, arenaCount, excludeSessionId, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
+  const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '', allowPast = Boolean(excludeSessionId)) => (
+    availableSessionTimes({ date, duration, arenaCount, excludeSessionId, allowPast, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
   ), [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
 
   const arenaOccupancy = useArenaOccupancy(ticketDate, sessions)
@@ -3977,10 +3977,10 @@ function BookingWorkspace({
     const availableKeys = new Set<string>()
     const today = localDateString()
     calendarWeekDays.forEach((day) => {
-      if (day.value < today) return
+      if (day.value < today && !canManageCalendarBookings) return
       const duration = isHaDoBookingVenue || canManageCalendarBookings ? TIME_STEP_MINUTES : activeTicketDuration
       const options = isHaDoBookingVenue
-        ? getAvailableTimeOptions(day.value, duration, 1)
+        ? getAvailableTimeOptions(day.value, duration, 1, '', canManageCalendarBookings)
         : getCafeSoftOpeningTimeOptions(day.value, duration, 1)
       options.forEach((option) => {
         const start = timeToMinutes(option.value)
@@ -5552,7 +5552,7 @@ function BookingWorkspace({
                   <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
                   <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
                   <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
-                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart < localDateString() ? localDateString() : calendarWeekStart, isHaDoBookingVenue ? '09:00' : '15:30')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
+                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart, isHaDoBookingVenue ? '09:00' : '15:30')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
                 </div>
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">
@@ -5773,6 +5773,7 @@ function BookingWorkspace({
                         onChange={handleSessionDateChange}
                         placeholder={text.chooseDate}
                         value={sessionDate}
+                        min={localDateString()}
                       />
                     </div>
                     <div>

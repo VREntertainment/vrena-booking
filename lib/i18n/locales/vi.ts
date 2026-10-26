@@ -5,6 +5,7 @@ export const vi = {
   noProfile: 'Chưa có hồ sơ',
   clickLogin: 'Bấm đăng nhập',
   sessions: 'Phiên',
+  pastSessionStaffConsoleOnly: "Chỉ nhân viên được tạo phiên trong quá khứ tại Bảng điều khiển nhân viên. Vui lòng chọn thời gian trong tương lai tại đây.",
   createSession: 'Tạo phiên',
   clubs: 'CLB',
   hallOfFame: 'Vinh danh',

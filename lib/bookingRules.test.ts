@@ -136,3 +136,9 @@ test('a SIM Racing reservation does not consume VR arena capacity', () => {
   assert.deepEqual(availableSessionTimes({ ...availability, sessions: [sim] }), availableSessionTimes(availability))
   assert.deepEqual(availableSessionTimes({ ...availability, sessions: [occupied, sim] }), availableSessionTimes({ ...availability, sessions: [occupied] }))
 })
+
+test('historical slots are available only when the staff caller explicitly enables them', () => {
+  const past = { ...availability, date: '2020-01-01' }
+  assert.deepEqual(availableSessionTimes(past), [])
+  assert.equal(availableSessionTimes({ ...past, allowPast: true })[0].value, '09:00')
+})
