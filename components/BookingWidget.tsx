@@ -1,5 +1,8 @@
 'use client'
 
+import { gameGuidePosters } from '../lib/gameGuidePosters'
+import { gameGuideCopy } from '../lib/gameGuideCopy'
+
 import { useStaffLocations } from '../hooks/useStaffLocations'
 import AnvioBadge from './AnvioBadge'
 
@@ -2937,6 +2940,14 @@ function BookingWorkspace({
     }
   }, [clubSearch, clubSearchShellRef, isClubSearchOpen, isSearchOpen, search, selectedSessionDate, setClubSearch, setIsClubSearchOpen, setIsSearchOpen, setSearch, setSelectedSessionDate])
 
+  useEffect(() => {
+    if (activeView === 'create') void ensureStaffGameGuidesLoaded()
+  }, [activeView, ensureStaffGameGuidesLoaded])
+
+  const createSessionGames = gameGuideCatalog.filter((game) =>
+    game.id !== 'sim-racing' && game.venues.includes(bookingVenue)
+  )
+
   const getAvailableTimeOptions = useCallback((date: string, duration: number, arenaCount: number, excludeSessionId = '') => (
     availableSessionTimes({ date, duration, arenaCount, excludeSessionId, sessions, blockedTimes, text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
   ), [blockedTimes, sessions, text.arenaAvailable, text.arenasAvailable])
@@ -5815,19 +5826,22 @@ function BookingWorkspace({
                       <label>{text.gameOptions} <span className="required">*</span></label>
                       {renderGameGuideTrigger(null, 'game-picker-guide-link')}
                     </div>
+                    {gameGuideLoading && <p role="status">{gameGuideCopy[language].loading}</p>}
+                    {gameGuideLoadError && <p role="alert">{gameGuideCopy[language].unavailable} <button type="button" onClick={() => { void ensureStaffGameGuidesLoaded() }}>{gameGuideCopy[language].retry}</button></p>}
                     <div className="game-picker" role="group" aria-label={text.gameOptions}>
-                      {games.map((game) => (
+                      {createSessionGames.map((game) => (
                         <div className="game-card-shell" key={game.id}>
                           <button
-                            className={selectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
-                            onClick={() => toggleGame(game.id)}
+                            className={selectedGames.includes(game.id as GameId) ? 'game-card selected' : 'game-card'}
+                            onClick={() => toggleGame(game.id as GameId)}
+                            aria-pressed={selectedGames.includes(game.id as GameId)}
                             type="button"
                           >
-                            <NextImage src={game.image} alt="" width={240} height={240} />
+                            <NextImage className="session-game-poster" src={gameGuidePosters[game.id] || game.image} alt="" width={640} height={960} sizes="(max-width: 600px) 40vw, 180px" />
                             <span>{game.title} <AnvioBadge gameId={game.id} /></span>
                             <strong>{game.category}</strong>
                           </button>
-                          {renderGameGuideTrigger(game.id, 'game-card-guide')}
+                          {renderGameGuideTrigger(game.id as GameId, 'game-card-guide')}
                         </div>
                       ))}
                     </div>
@@ -5849,7 +5863,7 @@ function BookingWorkspace({
                   </div>
                 </div>
 
-                <button data-testid="create-session-submit" className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating} onClick={createSession}>
+                <button data-testid="create-session-submit" className={isCreating ? 'primary loading create-button' : 'primary create-button'} disabled={isCreating || gameGuideLoading || gameGuideLoadError || !createSessionGames.length} onClick={createSession}>
                   {isCreating ? text.creating : sessionVisibility === 'private' ? text.createPrivateSession : text.createSession}
                 </button>
               </div>

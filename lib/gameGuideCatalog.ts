@@ -252,7 +252,7 @@ const missingGuideArtwork: Record<string, string> = {
   'vr-arena-strike': '/games/portal-strike.svg',
 }
 
-const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'])
+const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike', 'laser-limbo', 'spatial-ops'])
 
 /** Active staff records define availability; the built-in catalog supplies artwork
  * and editorial defaults only for games that are actually in the staff catalog. */
