@@ -198,6 +198,7 @@ select case when (
   'staff_access_locations()',
   'staff_approve_attendance_period(date,date)',
   'staff_award_profile_achievement(uuid,text,text,text,text,text)',
+  'staff_customer_profile_allowed(uuid)',
   'staff_delete_profile_account(uuid,text,boolean,text,text)',
   'staff_delete_session_operation(uuid,text)',
   'staff_employee_directory()',

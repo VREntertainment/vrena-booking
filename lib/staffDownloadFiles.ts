@@ -348,8 +348,11 @@ export function buildXlsxWorkbook(sections: WorkbookSection[], noData: string) {
   return buildZipFile(files)
 }
 
-function csvCell(value: unknown) {
-  const text = String(value ?? '').replace(/\r?\n/g, ' ')
+export function csvCell(value: unknown) {
+  let text = String(value ?? '').replace(/[\r\n]/g, ' ')
+  // Quoting CSV syntax does not stop spreadsheet formula evaluation. Keep typed
+  // numeric amounts numeric, but force untrusted formula-like strings to text.
+  if (typeof value !== 'number' && /^[\s\u0000-\u001f]*[=+\-@]/u.test(text)) text = `'${text}`
   if (/[",]/.test(text)) return `"${text.replace(/"/g, '""')}"`
   return text
 }

@@ -8,6 +8,7 @@ import {
   normalizeStaffCustomerNickname,
 } from '@/lib/staffCustomerIdentity'
 import { resolveTrustedAppRedirect } from '@/lib/security/authRedirect'
+import { staffCustomerAccessResponse, staffCustomerCreationLocations } from '@/lib/security/staffCustomerScope'
 import { trustedClientIp } from '@/lib/security/requestIp'
 import { authenticateStaffKioskRequest, staffKioskCurrentActorProfileId, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
 
@@ -116,6 +117,9 @@ export async function POST(request: NextRequest) {
 
     const existingProfileId = existingProfiles?.[0]?.id
     if (existingProfileId) {
+      const accessError = await staffCustomerAccessResponse(auth.authClient, existingProfileId)
+      if (accessError) return accessError
+
       const { data: existingAuth, error: existingAuthError } = await adminClient.auth.admin.getUserById(existingProfileId)
       if (existingAuthError || !existingAuth.user) return jsonError('Could not load the existing phone account.', 503)
       if (existingAuth.user.app_metadata?.phone_setup_required !== true) {
@@ -182,6 +186,10 @@ export async function POST(request: NextRequest) {
   if (nicknameCheckError) return jsonError('Could not check this nickname.', 503)
   if (nicknameAvailable !== true) return jsonError('This nickname is already in use.', 409)
 
+  const creationScope = await staffCustomerCreationLocations(auth.authClient)
+  if (creationScope.response) return creationScope.response
+
+  const invitationStartedAt = Date.now()
   const invited = phoneAccount
     ? await adminClient.auth.admin.createUser({
         email: await phonePasswordLoginEmail(phone, randomBytes(16).toString('hex')),
@@ -208,6 +216,22 @@ export async function POST(request: NextRequest) {
     return jsonError(message, status)
   }
 
+  // Invite providers may return an existing unconfirmed account. Never adopt or
+  // overwrite it merely because the caller supplied its email address.
+  let existingEmailProfile = false
+  if (!phoneAccount) {
+    const { data: returnedProfile, error: returnedProfileError } = await adminClient
+      .from('profiles').select('id').eq('id', invited.data.user.id).maybeSingle()
+    if (returnedProfileError) return jsonError('Could not verify the invited account.', 503)
+    existingEmailProfile = Boolean(returnedProfile)
+    if (existingEmailProfile) {
+      const accessError = await staffCustomerAccessResponse(auth.authClient, invited.data.user.id)
+      if (accessError) return accessError
+    } else if (!(Date.parse(invited.data.user.created_at) >= invitationStartedAt)) {
+      return jsonError('An account already exists for this email. Contact an administrator.', 409)
+    }
+  }
+
   const profilePayload = {
     id: invited.data.user.id,
     email,
@@ -222,9 +246,18 @@ export async function POST(request: NextRequest) {
     .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) {
-    await adminClient.auth.admin.deleteUser(invited.data.user.id).catch(() => undefined)
+    if (phoneAccount) await adminClient.auth.admin.deleteUser(invited.data.user.id).catch(() => undefined)
     const nicknameConflict = isStaffCustomerNicknameConflict(profileError)
     return jsonError(nicknameConflict ? 'This nickname is already in use.' : profileError.message, nicknameConflict ? 409 : 500)
+  }
+
+  const { error: locationError } = existingEmailProfile ? { error: null } : await adminClient.rpc('service_register_staff_customer_locations', {
+    p_profile_id: invited.data.user.id,
+    p_venue_keys: creationScope.locations,
+  })
+  if (locationError) {
+    if (phoneAccount) await adminClient.auth.admin.deleteUser(invited.data.user.id).catch(() => undefined)
+    return jsonError('Could not assign the customer location.', 503)
   }
 
   const { error: auditError } = await adminClient.from('audit_logs').insert({
