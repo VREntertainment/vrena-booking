@@ -119,3 +119,34 @@ test('booking venue selection: arena choice persists and recommendations follow 
   await page.locator('#ticket-arena-count').scrollIntoViewIfNeeded()
   await page.screenshot({ path: '/tmp/ticket-arena-choice-mobile.png', animations: 'disabled' })
 })
+
+test('venue changes preserve the mounted player workspace and browser history', async ({ page }) => {
+  await keepConsentOutOfTheBookingFlow(page)
+  await page.goto('/create-session')
+  await page.getByTestId('create-session-name').fill('Preserved venue-switch draft')
+  const sidebar = await page.locator('.app aside').elementHandle()
+  let authRequests = 0
+  let documentRequests = 0
+  page.on('request', request => {
+    if (request.url().includes('/auth/v1/')) authRequests++
+    if (request.isNavigationRequest()) documentRequests++
+  })
+
+  await chooseCafeVenue(page)
+  await expect(page).toHaveURL(/\/tickets\?venue=cafe-des-stagiaires/)
+  await expect(page.locator('.ticket-form-panel')).toBeVisible()
+  expect(await sidebar!.evaluate(element => element.isConnected)).toBe(true)
+
+  const changeVenue = page.locator('.booking-venue-selector').getByRole('button', { name: /change/i })
+  if (await changeVenue.isVisible()) await changeVenue.click()
+  await page.getByRole('radio', { name: /Hà Đô/ }).click()
+  await expect(page).toHaveURL(/venue=ha-do-centrosa/)
+  await page.goBack()
+  await expect(page.locator('.booking-venue-option').filter({ hasText: 'Vrena Thao Dien' })).toHaveAttribute('aria-checked', 'true')
+  await page.goBack()
+  await expect(page).toHaveURL(/\/create-session$/)
+  await expect(page.getByTestId('create-session-name')).toHaveValue('Preserved venue-switch draft')
+  expect(await sidebar!.evaluate(element => element.isConnected)).toBe(true)
+  expect(authRequests).toBe(0)
+  expect(documentRequests).toBe(0)
+})

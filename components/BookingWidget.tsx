@@ -76,6 +76,7 @@ import NextImage from 'next/image'
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState
@@ -3167,6 +3168,19 @@ function BookingWorkspace({
     setTicketStatus(message)
     setTicketStatusVariant(variant)
   }
+
+  const restoreVenueFromHistory = useEffectEvent(() => {
+    const venue = new URLSearchParams(window.location.search).get('venue') === 'cafe-des-stagiaires'
+      ? 'cafe-des-stagiaires'
+      : 'ha-do-centrosa'
+    if (venue !== bookingVenue) handleBookingVenueChange(venue)
+  })
+
+  useEffect(() => {
+    const restore = () => restoreVenueFromHistory()
+    window.addEventListener('popstate', restore)
+    return () => window.removeEventListener('popstate', restore)
+  }, [])
 
   function handleBookingVenueChange(value: BookingVenueId) {
     const nextTicketDate = value === 'cafe-des-stagiaires' && ticketDate < CAFE_SOFT_OPENING_DATE
