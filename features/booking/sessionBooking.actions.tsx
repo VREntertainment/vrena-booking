@@ -1,5 +1,6 @@
 'use client'
 
+import { customerBookingDurations } from '../../lib/customerBookingDurations'
 import { validateGuestTicketContact } from '../../lib/guestTicketBooking'
 import { ageBandFromBirthday } from '../../lib/agePolicy'
 import { getSupabase } from '../../lib/booking/client'
@@ -289,7 +290,7 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
     setSessionName('')
     setSessionNotes('')
     setSessionTime('')
-    setSessionDuration(20)
+    setSessionDuration(customerBookingDurations(sessionDate)[0])
     setSessionMaxPlayers(4)
     setSessionArenaCount(1)
     setSessionClubId('')

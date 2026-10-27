@@ -13,6 +13,7 @@ import {
   TicketStatus,
   localDateString
 } from '../../lib/bookingWidgetDomain'
+import { customerBookingDurations } from '../../lib/customerBookingDurations'
 import type { BookingForm } from '../../lib/staff/types'
 
 /** Feature-owned state. Mounted unconditionally so navigation preserves drafts and request locks. */
@@ -24,7 +25,7 @@ export function useBookingSessionEditorState({ incomingCalendar, initialView }: 
   const [sessionName, setSessionName] = useState('')
   const [sessionDate, setSessionDate] = useState(localDateString())
   const [sessionTime, setSessionTime] = useState('')
-  const [sessionDuration, setSessionDuration] = useState(20)
+  const [sessionDuration, setSessionDuration] = useState(() => customerBookingDurations(localDateString())[0])
   const [sessionMaxPlayers, setSessionMaxPlayers] = useState(4)
   const [sessionArenaCount, setSessionArenaCount] = useState(1)
   const [sessionNotes, setSessionNotes] = useState('')

@@ -3,6 +3,7 @@ import { vrenaAvatarColors, vrenaAvatarTextColors } from './theme/vrenaPalette'
 import { individualTicketPrices, ticketPriceBlockMinutes } from './ticketTariffs'
 
 export { individualTicketPrices, ticketPriceBlockMinutes }
+export { ticketMaxCustomerDurationMinutes } from './ticketTariffs'
 
 export const SESSION_PARTICIPANT_CHAPTER_TIME_SELECT = 'id, session_id, participant_id, profile_id, game_slug, chapter_number, duration_seconds, created_at, updated_at'
 export const SESSION_PARTICIPANT_SELECT = `id, profile_id, display_name, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, checked_in, payment_status, payment_amount, payment_splits, score, accuracy_percent, hits, movement_meters, projectiles_fired, escape_duration_seconds, placement, prize_claimed, prize_claimed_at, chapter_times:session_participant_chapter_times(${SESSION_PARTICIPANT_CHAPTER_TIME_SELECT})`
@@ -207,7 +208,6 @@ export function selectedTicketService(ticketType: TicketType) {
 
 export const ticketArenaCount = 1
 export const ticketArenaCapacityPerSlot = 4
-export const ticketMaxCustomerDurationMinutes = 180
 
 export const countries = [
   { code: '+84', name: 'Vietnam' },
