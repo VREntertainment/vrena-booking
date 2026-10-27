@@ -9,7 +9,7 @@ import { filterGuideGames, isScaryGuideGame, gameMinimumAge, gameAudienceLabelKe
 import type { LanguageCode } from '../lib/i18n/languages'
 import { collectionLabels, experienceCount } from '../lib/gameGuideCollectionLabels'
 import { gameGuideCollections, collectionText } from '../lib/gameGuideCollections'
-import { withPopUpGuides } from '../lib/gameGuideCatalog'
+import { withPopUpGuides, gameCategoryDisplay } from '../lib/gameGuideCatalog'
 import styles from './GameGuideBrowser.module.css'
 import { gameGuidePosters } from '../lib/gameGuidePosters'
 
@@ -39,7 +39,7 @@ function guideContent(game: PublicGameGuideGame, guide: StaffGameGuide | undefin
   const custom = customSummaryKeys[game.id]
   const block = game.id === 'mini-block-towers'
   const escape = game.category === 'Escape'
-  const shooting = game.category === 'FPS / PVP'
+  const shooting = game.category === 'PVP'
   const fallbackLanguage = isStaffGuideLanguage(guide?.guide_language) ? guide.guide_language : 'en'
   // Unknown and collection games must not inherit a different game's weapons or scoring rules.
   const summary = custom ? text[custom] : block ? text.gameGuideBlockTowersSummary : escape ? text.gameGuideEscapeSummary : shooting ? text.gameGuideFpsSummary : gameGuideCopy[language].neutralSummary
@@ -59,7 +59,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
   const [filters, setFilters] = useState<GuideFilters>({ search: '', venue: initialVenue, category: 'all', playerAge: 'all' })
   const catalog = withPopUpGuides(games)
   const filtered = filterGuideGames(catalog, filters)
-  const categoryLabels = { 'FPS / PVP': copy.shooting, Escape: copy.escape, Other: copy.other, Tournament: copy.tournament, 'Kid birthday': copy.kidBirthday, 'Pop-Up event': copy.popUpEvent }
+  const categoryLabels = { 'PVP': copy.shooting, 'PVP / PVE': 'PVP / PVE', PVE: 'PVE', Escape: copy.escape, Other: copy.other, Tournament: copy.tournament, 'Kid birthday': copy.kidBirthday, 'Pop-Up event': copy.popUpEvent }
   const categories = Object.keys(categoryLabels) as PublicGameGuideGame['category'][]
   const venueLabel = (venue: string) => venue === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
   const changed = Boolean(filters.search || filters.venue !== 'all' || filters.category !== 'all' || filters.playerAge !== 'all')
@@ -118,7 +118,7 @@ export default function GameGuideBrowser({ games, staffGuides, language, text, i
                 <Artwork src={game.image} gameId={game.id} />
                 <div className={styles.gameHeading}>
                   <GameHeading id={`${id}-${game.id}`}>{game.title}</GameHeading>
-                  <p className={styles.category}>{categoryLabels[game.category]}</p>
+                  <p className={styles.category}>{gameCategoryDisplay(game, categoryLabels[game.category])}</p>
                   <AnvioBadge gameId={game.id} />
                   <strong className={styles.age}>{ageText}</strong>
                 </div>

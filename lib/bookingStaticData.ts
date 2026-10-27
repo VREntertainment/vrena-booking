@@ -67,7 +67,7 @@ export type GameAudience =
 export type GameInfo = {
   id: GameId
   title: string
-  category: 'FPS / PVP' | 'Escape' | 'Racing'
+  category: 'PVP' | 'Escape' | 'Racing'
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
@@ -78,7 +78,7 @@ export const games: GameInfo[] = [
   {
     id: 'laser-tag',
     title: 'Laser Tag',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/laser-tag.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -87,7 +87,7 @@ export const games: GameInfo[] = [
   {
     id: 'mini-block-towers',
     title: 'Mini Block Towers',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/mini-block-towers.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -96,7 +96,7 @@ export const games: GameInfo[] = [
   {
     id: 'office-war',
     title: 'Office War',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/office-war.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -105,7 +105,7 @@ export const games: GameInfo[] = [
   {
     id: 'paintball',
     title: 'Paintball',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/paintball.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -114,7 +114,7 @@ export const games: GameInfo[] = [
   {
     id: 'snow-battle',
     title: 'Snow Battle',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/snow-battle.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -123,7 +123,7 @@ export const games: GameInfo[] = [
   {
     id: 'castle-unspunnen',
     title: 'Castle Unspunnen',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/castle-unspunnen.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -132,7 +132,7 @@ export const games: GameInfo[] = [
   {
     id: 'wild-west',
     title: 'Wild West',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/wild-west.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,

@@ -103,6 +103,7 @@ test('publisher artwork fills missing images and preserves existing staff artwor
   assert.equal(missing.image, '/games/portal-mafia.png')
   assert.equal(existing.image, '/games/custom-zombie.webp')
   assert.equal(galactic.title, 'Galactic Arena')
+  assert.equal(galactic.category, 'PVP / PVE')
   assert.equal(galactic.image, '/games/galactic-arena.png')
 })
 
@@ -158,4 +159,17 @@ test('Scary combines horror audience and zombie collections with age and venue f
   assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '15' }).map(game => game.id), ['joller-house'])
   assert.deepEqual(filterGuideGames(games, { ...filters, playerAge: '16', venue: 'cafe-des-stagiaires' }).map(game => game.id), ['city-z', 'station-zarya', 'portal-zombie'])
   assert.deepEqual(filterGuideGames(games, { ...filters, search: 'Revolta' }), [])
+})
+
+test('requested gameplay categories and pop-up labels stay consistent', async () => {
+  const { gameCategoryDisplay, withPopUpGuides } = await import('./gameGuideCatalog.ts')
+  const games = mergeStaffGameCatalog([
+    { slug: 'portal-mafia', game_type: 'other' },
+    { slug: 'portal-zombie', game_type: 'other' },
+    { slug: 'vr-arena-strike', game_type: 'other' },
+    { slug: 'laser-limbo' },
+    { slug: 'spatial-ops' },
+  ])
+  assert.deepEqual(games.map(game => gameCategoryDisplay(game)), ['PVP / PVE', 'PVE', 'PVP / PVE', 'Pop-Up event · PVP / PVE', 'Pop-Up event · PVP / PVE'])
+  assert.equal(withPopUpGuides(games).filter(game => game.category === 'Pop-Up event').length, 2)
 })

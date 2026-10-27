@@ -579,7 +579,7 @@ export function buildRetentionAchievements(
     const game = games.find((item) => item.id === gameId)
     if (game?.category === 'Escape') {
       escapeGamesTried += 1
-    } else if (game?.category === 'FPS / PVP') {
+    } else if (game?.category === 'PVP') {
       fpsGamesTried += 1
     }
   })
@@ -612,7 +612,7 @@ export function buildRetentionAchievements(
     retentionAchievement('arena-regular', 'Arena Regular', 'Play in four active weeks. One grace week is allowed.', 'comeback', longestWeeklyStreak(completedSessions), 4),
     retentionAchievement('back-for-more', 'Back for More', 'Return after a break of 30 days or more.', 'comeback', maxGapDaysBetweenSessions(completedSessions), 30),
     retentionAchievement('perfect-rotation', 'Perfect Rotation', 'Try every VRena game at least once.', 'explore', gamesTried, games.length),
-    retentionAchievement('genre-explorer', 'Genre Explorer', 'Play at least one FPS/PVP game and one Escape game.', 'explore', Math.min(2, (fpsGamesTried > 0 ? 1 : 0) + (escapeGamesTried > 0 ? 1 : 0)), 2),
+    retentionAchievement('genre-explorer', 'Genre Explorer', 'Play at least one PVP game and one Escape game.', 'explore', Math.min(2, (fpsGamesTried > 0 ? 1 : 0) + (escapeGamesTried > 0 ? 1 : 0)), 2),
     retentionAchievement('specialist', 'Specialist', 'Play the same game ten times.', 'explore', maxGameCount, 10),
     retentionAchievement('completionist', 'Completionist', 'Unlock Bronze on every game.', 'explore', bronzeGameCount, games.length),
     retentionAchievement('squad-starter', 'Squad Starter', 'Create a session with at least three checked-in players.', 'social', squadStarterCount, 1),
