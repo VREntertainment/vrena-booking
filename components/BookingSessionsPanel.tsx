@@ -1,6 +1,7 @@
 'use client'
 
 import AnvioBadge from './AnvioBadge'
+import { gameCategoryDisplay } from '../lib/gameGuideCatalog'
 
 import { brandedGameName } from '../lib/anvio'
 
@@ -1041,14 +1042,14 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                       <div className="game-card-shell" key={game.id}>
                         <button
                           className={editSelectedGames.includes(game.id) ? 'game-card selected' : 'game-card'}
+                          aria-pressed={editSelectedGames.includes(game.id)}
                           onClick={() => toggleEditGame(game.id)}
                           type="button"
                         >
                           <NextImage src={game.image} alt="" width={240} height={240} />
                           <span>{game.title} <AnvioBadge gameId={game.id} /></span>
-                          <strong>{game.category}</strong>
+                          <strong>{gameCategoryDisplay(game)}</strong>
                         </button>
-                        {renderGameGuideTrigger(game.id, 'game-card-guide')}
                       </div>
                     ))}
                   </div>

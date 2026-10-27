@@ -19,7 +19,7 @@ const retentionAchievementCatalog: Array<Pick<RetentionAchievement, 'category' |
   { category: 'comeback', id: 'arena-regular', title: 'Arena Regular', description: 'Play in four active weeks. One grace week is allowed.' },
   { category: 'comeback', id: 'back-for-more', title: 'Back for More', description: 'Return after a break of 30 days or more.' },
   { category: 'explore', id: 'perfect-rotation', title: 'Perfect Rotation', description: 'Try every VRena game at least once.' },
-  { category: 'explore', id: 'genre-explorer', title: 'Genre Explorer', description: 'Play at least one FPS/PVP game and one Escape game.' },
+  { category: 'explore', id: 'genre-explorer', title: 'Genre Explorer', description: 'Play at least one PVP game and one Escape game.' },
   { category: 'explore', id: 'specialist', title: 'Specialist', description: 'Play the same game ten times.' },
   { category: 'explore', id: 'completionist', title: 'Completionist', description: 'Unlock Bronze on every game.' },
   { category: 'social', id: 'squad-starter', title: 'Squad Starter', description: 'Create a session with at least three checked-in players.' },

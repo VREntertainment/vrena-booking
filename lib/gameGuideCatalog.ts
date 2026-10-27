@@ -15,7 +15,7 @@ export type GameVenue = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 export type PublicGameGuideGame = {
   id: string
   title: string
-  category: 'FPS / PVP' | 'Escape' | 'Tournament' | 'Other' | 'Kid birthday' | 'Pop-Up event'
+  category: 'PVP' | 'PVE' | 'PVP / PVE' | 'Escape' | 'Tournament' | 'Other' | 'Kid birthday' | 'Pop-Up event'
   image: string
   durationMinutes: number
   maxPlayersPerArena: number
@@ -48,7 +48,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'laser-tag',
     title: 'Laser Tag',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/laser-tag.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -58,7 +58,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'mini-block-towers',
     title: 'Mini Block Towers',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/mini-block-towers.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -68,7 +68,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'office-war',
     title: 'Office War',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/office-war.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -78,7 +78,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'paintball',
     title: 'Paintball',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/paintball.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -88,7 +88,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'snow-battle',
     title: 'Snow Battle',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/snow-battle.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -98,7 +98,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'castle-unspunnen',
     title: 'Castle Unspunnen',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/castle-unspunnen.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -108,7 +108,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'wild-west',
     title: 'Wild West',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/wild-west.png',
     durationMinutes: 20,
     maxPlayersPerArena: 4,
@@ -138,7 +138,7 @@ export const publicGameGuideCatalog: PublicGameGuideGame[] = [
   {
     id: 'revolta',
     title: 'Revolta',
-    category: 'FPS / PVP',
+    category: 'PVP',
     image: '/games/revolta.webp',
     durationMinutes: 45,
     maxPlayersPerArena: 8,
@@ -259,7 +259,7 @@ const sharedGuideGameSlugs = new Set(['arcade-2-0', 'birthday-party', 'orc-kings
 export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin?: string) {
   const defaults = new Map(publicGameGuideCatalog.map((game) => [game.id, game]))
   const categories: Record<string, PublicGameGuideGame['category']> = {
-    shooting: 'FPS / PVP', escape: 'Escape', puzzle: 'Escape', tournament: 'Tournament', other: 'Other',
+    shooting: 'PVP', escape: 'Escape', puzzle: 'Escape', tournament: 'Tournament', other: 'Other',
   }
   const safeImage = (url: string | null | undefined) => {
     if (!url) return false
@@ -273,7 +273,7 @@ export function mergeStaffGameCatalog(staffGuides: StaffGameGuide[], imageOrigin
     return {
       id: guide.slug,
       title: guide.slug === 'orc-kings-arena' ? 'Galactic Arena' : guide.name?.trim() || base?.title || guide.slug,
-      category: ['birthday-party', 'party-games'].includes(guide.slug) ? 'Kid birthday' : ['laser-limbo', 'spatial-ops'].includes(guide.slug) ? 'Pop-Up event' : categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
+      category: ['orc-kings-arena', 'portal-mafia', 'vr-arena-strike'].includes(guide.slug) ? 'PVP / PVE' : guide.slug === 'portal-zombie' ? 'PVE' : ['birthday-party', 'party-games'].includes(guide.slug) ? 'Kid birthday' : ['laser-limbo', 'spatial-ops'].includes(guide.slug) ? 'Pop-Up event' : categories[guide.game_type?.toLowerCase() || ''] || base?.category || 'Other',
       image: guide.slug === 'birthday-party' ? '/games/birthday-party.png' : guide.image_url !== '/games/vrena-shared.svg' && safeImage(guide.image_url) ? guide.image_url! : base?.image || missingGuideArtwork[guide.slug] || '/brand/vrena-mark-light.svg',
       durationMinutes: guide.duration_minutes || base?.durationMinutes || 20,
       maxPlayersPerArena: guide.max_players_per_arena || base?.maxPlayersPerArena || 4,
@@ -316,4 +316,8 @@ export function withPopUpGuides(games: PublicGameGuideGame[]): PublicGameGuideGa
     { id: 'spatial-ops', title: 'Spatial Ops', category: 'Pop-Up event', image: '/games/spatial-ops.webp', durationMinutes: 0, maxPlayersPerArena: 0, audience: ['teamwork', 'competitive'], venues: [], popUp: true },
   ]
   return [...games.map((game) => events.find((event) => event.id === game.id) ? { ...game, category: 'Pop-Up event' as const, popUp: true, venues: [] } : game), ...events.filter((game) => !ids.has(game.id))]
+}
+
+export function gameCategoryDisplay(game: { id: string; category: string }, categoryLabel = game.category) {
+  return ['laser-limbo', 'spatial-ops'].includes(game.id) ? `${categoryLabel} · PVP / PVE` : categoryLabel
 }

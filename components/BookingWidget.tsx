@@ -5,6 +5,7 @@ import { gameGuideCopy } from '../lib/gameGuideCopy'
 
 import { useStaffLocations } from '../hooks/useStaffLocations'
 import AnvioBadge from './AnvioBadge'
+import { gameCategoryDisplay } from '../lib/gameGuideCatalog'
 
 
 import { staffBookingName } from '../lib/staffBookingName'
@@ -5840,9 +5841,8 @@ function BookingWorkspace({
                           >
                             <NextImage className="session-game-poster" src={gameGuidePosters[game.id] || game.image} alt="" width={640} height={960} sizes="(max-width: 600px) 40vw, 180px" />
                             <span>{game.title} <AnvioBadge gameId={game.id} /></span>
-                            <strong>{game.category}</strong>
+                            <strong>{gameCategoryDisplay(game)}</strong>
                           </button>
-                          {renderGameGuideTrigger(game.id as GameId, 'game-card-guide')}
                         </div>
                       ))}
                     </div>
