@@ -43,3 +43,12 @@ test('ticket experience selector is compact and excludes price and removed age c
   await picker.getByRole('button', { name: 'VR', exact: true }).click()
   await expect(picker.getByRole('button', { name: 'VR', exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('mobile clubs use inline search without a floating overlay', async ({ page }, info) => {
+  test.skip(info.project.name === 'chromium', 'Mobile toolbar contract.')
+  await page.goto('/clubs')
+  await expect(page.locator('.clubs-section .search-shell .search')).toBeVisible()
+  await expect(page.locator('.clubs-section .mobile-search-toggle')).toBeHidden()
+  await expect(page.locator('.clubs-section .search-shell')).toHaveCSS('position', 'relative')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
