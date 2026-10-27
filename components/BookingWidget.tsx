@@ -5284,7 +5284,7 @@ function BookingWorkspace({
   const appMain = (
     <main lang={language}>
       {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-        <BookingVenueSelector allowedVenueKeys={canAccessStaffConsole ? staffLocations.map((location) => location.venue_key) : undefined} compactOnMobile={activeView === 'tickets'} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
+        <BookingVenueSelector allowedVenueKeys={canAccessStaffConsole ? staffLocations.map((location) => location.venue_key) : undefined} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
       )}
 
       {activeView === 'sessions' && isHaDoBookingVenue && (
@@ -5462,9 +5462,9 @@ function BookingWorkspace({
 
       {(activeView === 'tickets' || (!isHaDoBookingVenue && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar')))) && (
         <div className="ticket-booking-layout">
-          {isHaDoBookingVenue && <div className="sim-racing-product-picker">
-            <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR · {text.bookTickets}</button>
-            <button type="button" className={simRacingSelected ? 'primary' : 'secondary'} aria-pressed={simRacingSelected} onClick={() => setSimRacingSelected(true)}>SIM Racing · 150.000 VND</button>
+          {isHaDoBookingVenue && <div className="sim-racing-product-picker" role="group" aria-label={language === 'vi' ? 'Trải nghiệm' : 'Experience'}>
+            <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR</button>
+            <button type="button" className={simRacingSelected ? 'primary' : 'secondary'} aria-pressed={simRacingSelected} onClick={() => setSimRacingSelected(true)}>SIM Racing</button>
           </div>}
           {isHaDoBookingVenue && simRacingSelected ? <SimRacingBooking language={language} text={looseText} profile={profile} onBooked={() => { void loadSessions() }} /> : <TicketBookingView
             activeTicketDuration={activeTicketDuration}

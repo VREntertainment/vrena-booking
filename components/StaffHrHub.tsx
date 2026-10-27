@@ -1,5 +1,7 @@
 'use client'
 
+import '../app/staff/staff.css'
+
 import dynamic from 'next/dynamic'
 import { EmployeeDirectoryStatus, EmployeeProfileSectionId, HrSettingsSection, StaffHrHubProps, StaffScheduleViewMode, accountantWorkspaceCopy, employeeExperienceCopy, employeeMatchesDirectoryFilters, hrCompletionCopy, hrModuleIcon, payslipSelectorCopy, staffScheduleCopy } from '../features/hr/presentation'
 const EmployeesSection = dynamic(() => import('../features/hr/EmployeesSection'), { ssr: false })

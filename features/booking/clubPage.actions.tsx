@@ -258,8 +258,6 @@ export function createBookingClubPageActions(getContext: () => ClubPageActionCon
       avatarStyle,
       avatarNode,
       busyClubId,
-      removeClubMember,
-      approveClubMember,
     } = getContext()
 
     const members = clubMembers(club)
@@ -272,7 +270,7 @@ export function createBookingClubPageActions(getContext: () => ClubPageActionCon
     const canActivateClubCard = !userId || canOpenPage || canAskPrivateCode
     const canSeeMembers = canSeeClubPrivateData(club)
     const canUseMessages = canOpenPage && canUseClubMessages(club)
-    const visibleApprovedMembers = approvedMembers.slice(0, 6)
+    const visibleApprovedMembers = approvedMembers.slice(0, 4)
     const extraApprovedMemberCount = Math.max(0, approvedMembers.length - visibleApprovedMembers.length)
     const nextClubSession = nextSessionForClub(club)
     const latestClubMessage = latestMessageForClub(club)
@@ -395,15 +393,6 @@ export function createBookingClubPageActions(getContext: () => ClubPageActionCon
                   >
                     {avatarNode(member, 'P')}
                   </button>
-                  <span>{compactDisplayName(member.display_name, text.player)}</span>
-                  {canManage && member.profile_id !== club.owner_id && (
-                    <button className="remove-player" disabled={busyClubId === club.id} onClick={(event) => {
-                      event.stopPropagation()
-                      removeClubMember(club, member)
-                    }} type="button">
-                      {text.remove}
-                    </button>
-                  )}
                 </div>
               ))}
               {extraApprovedMemberCount > 0 && <span className="club-card-more-members">+{extraApprovedMemberCount}</span>}
@@ -441,29 +430,6 @@ export function createBookingClubPageActions(getContext: () => ClubPageActionCon
           </div>
         </div>
 
-        {canManage && pendingMembers.length > 0 && (
-          <div className="pending-list">
-            {pendingMembers.map((member) => (
-              <div className="pending-member" key={member.id}>
-                <span>{compactDisplayName(member.display_name, text.player)}</span>
-                <div className="mini-session-actions">
-                  <button className="secondary small-button" disabled={busyClubId === club.id} onClick={(event) => {
-                    event.stopPropagation()
-                    approveClubMember(member)
-                  }} type="button">
-                    {text.approve}
-                  </button>
-                  <button className="danger small-button" disabled={busyClubId === club.id} onClick={(event) => {
-                    event.stopPropagation()
-                    removeClubMember(club, member)
-                  }} type="button">
-                    {text.remove}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </article>
     )
   }

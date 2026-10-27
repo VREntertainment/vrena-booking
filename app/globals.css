@@ -22,6 +22,7 @@
 @import "../styles/booking/workspace.css";
 @import "../styles/booking/ticket-compact.css";
 @import "../styles/booking/calendar.css";
+@import "../styles/booking/mobile-polish.css";
 @source "./";
 @source "../components";
 @source "../hooks";

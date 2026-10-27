@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import HomeAppShell from '../../components/HomeAppShell'
-import '../staff/staff.css'
 
 export const metadata: Metadata = {
   title: 'VRena Admin',

@@ -8,7 +8,6 @@ export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
 type BookingVenueSelectorProps = {
   allowedVenueKeys?: string[]
-  compactOnMobile?: boolean
   onChange: (venue: BookingVenueId) => void
   text: TranslationMap
   value: BookingVenueId
@@ -54,7 +53,7 @@ function VenueHoursPill({ label }: { label: string }) {
   )
 }
 
-export default function BookingVenueSelector({ allowedVenueKeys, compactOnMobile = false, onChange, text, value }: BookingVenueSelectorProps) {
+export default function BookingVenueSelector({ allowedVenueKeys, onChange, text, value }: BookingVenueSelectorProps) {
   const [expanded, setExpanded] = useState(false)
   const venueName = value === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
   const selectVenue = (venue: BookingVenueId) => {
@@ -62,20 +61,16 @@ export default function BookingVenueSelector({ allowedVenueKeys, compactOnMobile
     setExpanded(false)
   }
   return (
-    <section className={`booking-venue-selector${compactOnMobile ? ' booking-venue-selector-compact' : ''}${expanded ? ' expanded' : ''}`} aria-label={text.bookingVenueTitle}>
-      {compactOnMobile && (
-        <div className="booking-venue-mobile-summary">
-          <div><span>{text.bookingVenueLabel}</span><strong>{venueName}</strong></div>
-          <button aria-controls="booking-venue-expanded-options" aria-expanded={expanded} className="secondary small-button" type="button" onClick={() => setExpanded(!expanded)}>
-            {expanded ? text.close : text.bookingVenueChange}
-          </button>
-        </div>
-      )}
+    <section className={`booking-venue-selector booking-venue-selector-compact${expanded ? ' expanded' : ''}`} aria-label={text.bookingVenueTitle}>
+      <div className="booking-venue-mobile-summary">
+        <div><strong>{venueName}</strong></div>
+        <button aria-controls="booking-venue-expanded-options" aria-expanded={expanded} className="secondary small-button" type="button" onClick={() => setExpanded(!expanded)}>
+          {expanded ? text.close : text.bookingVenueChange}
+        </button>
+      </div>
       <div className="booking-venue-expanded-content" id="booking-venue-expanded-options">
         <div className="booking-venue-heading">
-          <span>{text.bookingVenueLabel}</span>
           <h2 id="booking-venue-title">{text.bookingVenueTitle}</h2>
-          <p>{text.bookingVenueHint}</p>
         </div>
 
         <div className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
