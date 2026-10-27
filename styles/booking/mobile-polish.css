@@ -43,7 +43,13 @@
   .app.player-workspace .clubs-section .club-card-actions > :only-child { grid-column: 1 / -1; }
   .app.player-workspace .clubs-section .club-card-actions button { min-height: 44px; margin: 0; padding: 10px 14px; font-size: 14px; }
   .app.player-workspace .clubs-section .club-discovery-toolbar { position: static; gap: 12px; }
-  .app.player-workspace .clubs-section .club-discovery-actions { gap: 10px; }
-  .app.player-workspace .clubs-section .club-filter { width: 100%; }
-  .app.player-workspace .clubs-section .club-filter button { min-width: 0; padding-inline: 10px; font-size: 13px; }
+  .app.player-workspace .clubs-section .club-discovery-actions { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .app.player-workspace .clubs-section .club-create-toggle { min-width: 0; width: auto; padding: 10px; font-size: 13px; }
+  .app.player-workspace .clubs-section .search-shell,
+  .app.player-workspace .clubs-section .search-shell.open { position: relative; inset: auto; z-index: auto; display: block; width: 100%; pointer-events: auto; }
+  .app.player-workspace .clubs-section .search-shell .search { display: block; width: 100%; max-width: 100%; min-height: 44px; padding-right: 44px; box-shadow: none; }
+  .app.player-workspace .clubs-section .mobile-search-toggle { display: none; }
+  .app.player-workspace .clubs-section .search-close { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); box-shadow: none; }
+  .app.player-workspace .clubs-section .club-filter { width: 100%; min-width: 0; }
+  .app.player-workspace .clubs-section .club-filter button { min-width: 0; padding-inline: 8px; font-size: 12px; }
 }
