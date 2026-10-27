@@ -12,9 +12,18 @@
   min-width: 0;
 }
 .app .clubs-section .club-card-players .player-avatar {
+  --avatar-size: 44px;
   width: 44px;
   height: 44px;
+  min-width: 44px;
   min-height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 44px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 50%;
   box-shadow: none;
 }
 .app .clubs-section .club-card-more-members {
