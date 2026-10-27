@@ -1,5 +1,6 @@
 'use client'
 
+import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { gameGuidePosters } from '../lib/gameGuidePosters'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
 
@@ -2960,9 +2961,26 @@ function BookingWorkspace({
     return arenaTimeOptions(bookingVenue, date, duration, arenaCount, arenaOccupancy.rows)
   }, [arenaOccupancy, bookingVenue])
 
+  const sessionArenaOccupancy = useArenaOccupancy(sessionDate, sessions)
+  const sessionDurationOptions = useMemo(() => customerBookingDurations(sessionDate), [sessionDate])
   const timeOptions = useMemo(() => {
-    return getAvailableTimeOptions(sessionDate, sessionDuration, sessionArenaCount)
-  }, [getAvailableTimeOptions, sessionArenaCount, sessionDate, sessionDuration])
+    if (!sessionArenaOccupancy) return []
+    return arenaTimeOptions(bookingVenue, sessionDate, sessionDuration, sessionArenaCount, sessionArenaOccupancy.rows)
+      .map((option) => ({ ...option, label: `${option.label} (${option.remaining} ${option.remaining > 1 ? text.arenasAvailable : text.arenaAvailable})` }))
+  }, [bookingVenue, sessionArenaOccupancy, sessionArenaCount, sessionDate, sessionDuration, text.arenaAvailable, text.arenasAvailable])
+
+  useEffect(() => {
+    if (sessionDurationOptions.includes(sessionDuration)) return
+    return schedulePostEffectStateUpdate(() => {
+      setSessionDuration(sessionDurationOptions.find((duration) => duration >= sessionDuration) ?? sessionDurationOptions[sessionDurationOptions.length - 1])
+      setSessionTime('')
+    })
+  }, [sessionDuration, sessionDurationOptions, setSessionDuration, setSessionTime])
+
+  useEffect(() => {
+    if (!sessionArenaOccupancy || !sessionTime || timeOptions.some((option) => option.value === sessionTime)) return
+    return schedulePostEffectStateUpdate(() => setSessionTime(''))
+  }, [sessionArenaOccupancy, sessionTime, timeOptions, setSessionTime])
 
   const editTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(editSessionDate, editSessionDuration, editSessionArenaCount, editingSessionId)
@@ -3102,10 +3120,7 @@ function BookingWorkspace({
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration, editSessionArenaCount)
   const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount, ticketDate, bookingVenue)
   const ticketDurationOptions = useMemo(() => {
-    const durationOptions = Array.from(
-      { length: Math.floor((ticketMaxCustomerDurationMinutes - activeTicketPriceBlockMinutes) / activeTicketPriceBlockMinutes) + 1 },
-      (_, index) => activeTicketPriceBlockMinutes + index * activeTicketPriceBlockMinutes
-    )
+    const durationOptions = customerBookingDurations(ticketDate)
 
     if (!ticketDate) return durationOptions
 
@@ -5679,6 +5694,18 @@ function BookingWorkspace({
                         </div>
                       </div>
                     )}
+                    <div className="session-club-field">
+                      <label htmlFor="create-clubOnly">{text.clubOnly}</label>
+                      <select id="create-clubOnly" value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
+                        <option value="">{text.noClub}</option>
+                        {sessionClubOptions.map((club) => (
+                          <option key={club.id} value={club.id}>
+                            {club.name}
+                          </option>
+                        ))}
+                      </select>
+                      {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
+                    </div>
                   </div>
                   {sessionType === 'tournament' && (
                     <div className="full tournament-create-box tournament-settings-box">
@@ -5753,18 +5780,6 @@ function BookingWorkspace({
                       </div>
                     </div>
                   )}
-                  <div className="full">
-                    <label htmlFor="create-clubOnly">{text.clubOnly}</label>
-                    <select id="create-clubOnly" value={sessionClubId} onChange={(event) => handleSessionClubChange(event.target.value)}>
-                      <option value="">{text.noClub}</option>
-                      {sessionClubOptions.map((club) => (
-                        <option key={club.id} value={club.id}>
-                          {club.name}
-                        </option>
-                      ))}
-                    </select>
-                    {sessionClubId && <p className="field-help">{text.clubOnlySessionHint}</p>}
-                  </div>
                   <div className="full session-timing-row">
                     <div>
                       <label>{text.date} <span className="required">*</span></label>
@@ -5791,7 +5806,7 @@ function BookingWorkspace({
                     <div>
                       <label htmlFor="create-duration">{text.duration}</label>
                       <select id="create-duration" data-testid="create-session-duration" value={sessionDuration} onChange={(event) => setSessionDuration(Number(event.target.value))}>
-                        {Array.from({ length: 12 }, (_, index) => (index + 1) * 20).map((duration) => (
+                        {sessionDurationOptions.map((duration) => (
                           <option value={duration} key={duration}>
                             {duration} min
                           </option>

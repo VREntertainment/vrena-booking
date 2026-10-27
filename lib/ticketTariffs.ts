@@ -26,6 +26,7 @@ export const individualTicketPrices = {
 
 export const legacyTicketPriceBlockMinutes = 20
 export const ticketPriceBlockMinutes = 30
+export const ticketMaxCustomerDurationMinutes = 180
 
 export type TicketPricingVenue = keyof typeof individualTicketPrices
 

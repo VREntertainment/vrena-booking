@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { futureDate, loginAsAdmin, openAdmin, openCreateSession, uniqueSessionName } from './support/admin'
 
 test.describe('admin flows', () => {
@@ -33,7 +34,7 @@ test.describe('admin flows', () => {
     expect(firstAvailableTime).toBeTruthy()
 
     await timeSelect.selectOption(firstAvailableTime!)
-    await page.getByTestId('create-session-duration').selectOption('40')
+    await page.getByTestId('create-session-duration').selectOption(String(customerBookingDurations(futureDate(2))[1]))
     await page.getByTestId('create-session-max-players').selectOption('6')
     await page.getByTestId('create-session-submit').click()
 
