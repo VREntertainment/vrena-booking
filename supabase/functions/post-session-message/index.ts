@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.0'
-import { hasMessageAdminPrivileges } from './messageAdmin.ts'
+import { authorizeSessionMessage } from './messageAuthorization.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -199,6 +199,10 @@ async function handleRequest(request: Request) {
     return jsonResponse({ error: 'Invalid session token.' }, 401)
   }
 
+  if (authUser.is_anonymous === true) {
+    return jsonResponse({ error: 'A permanent account is required.' }, 403)
+  }
+
   let payload: { session_id?: string; message_type?: MessageType; body?: string }
   try {
     payload = await request.json()
@@ -208,7 +212,7 @@ async function handleRequest(request: Request) {
 
   const sessionId = payload.session_id
   const messageType = payload.message_type
-  const body = (payload.body ?? '').trim()
+  const body = typeof payload.body === 'string' ? payload.body.trim() : ''
 
   if (!sessionId || (messageType !== 'announcement' && messageType !== 'comment')) {
     return jsonResponse({ error: 'Invalid message request.' }, 400)
@@ -229,45 +233,60 @@ async function handleRequest(request: Request) {
     return rateLimitResponse(rateLimitError.message)
   }
 
-  const [{ data: profile }, { data: session }, staffRankResult] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign')
-      .eq('id', authUser.id)
-      .single(),
-    supabase
-      .from('sessions')
-      .select('id, owner_id')
-      .eq('id', sessionId)
-      .single(),
-    callerSupabase.rpc('current_staff_role_rank'),
-  ])
-
-  if (!profile || !session) {
-    return jsonResponse({ error: 'Profile or session not found.' }, 404)
+  // Service-role reads must explicitly exclude soft-deleted authorization rows.
+  async function loadAuthorization() {
+    const [profileResult, sessionResult, participantResult, staffRankResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, deleted_at, full_name, nickname, email, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, anonymous_mode, anonymous_callsign')
+        .eq('id', authUser!.id)
+        .is('deleted_at', null)
+        .maybeSingle(),
+      supabase
+        .from('sessions')
+        .select('id, owner_id, deleted_at')
+        .eq('id', sessionId)
+        .is('deleted_at', null)
+        .maybeSingle(),
+      supabase
+        .from('session_participants')
+        .select('id, deleted_at')
+        .eq('session_id', sessionId)
+        .eq('profile_id', authUser!.id)
+        .is('deleted_at', null)
+        .maybeSingle(),
+      callerSupabase.rpc('current_staff_role_rank'),
+    ])
+    return {
+      profile: profileResult.data,
+      ...authorizeSessionMessage({
+        userId: authUser!.id,
+        isAnonymous: authUser!.is_anonymous === true,
+        messageType,
+        profile: profileResult.data,
+        session: sessionResult.data,
+        participant: participantResult.data,
+        staffRoleRank: staffRankResult.data,
+        readFailed: Boolean(profileResult.error || sessionResult.error || participantResult.error || staffRankResult.error),
+      }),
+    }
   }
 
-  const admin = !staffRankResult.error && hasMessageAdminPrivileges({
-    isAnonymous: authUser.is_anonymous === true,
-    staffRoleRank: staffRankResult.data,
-  })
-  const owner = session.owner_id === authUser.id
-  const { data: participant } = await supabase
-    .from('session_participants')
-    .select('id')
-    .eq('session_id', sessionId)
-    .eq('profile_id', authUser.id)
-    .maybeSingle()
-
-  if (messageType === 'announcement' && !owner && !admin) {
-    return jsonResponse({ error: 'Only the session creator or admin can post announcements.' }, 403)
+  const authorization = await loadAuthorization()
+  if (!authorization.allowed) {
+    return jsonResponse({ error: 'You are not authorized to post to this session.' }, 403)
   }
 
-  if (messageType === 'comment' && !participant && !owner && !admin) {
-    return jsonResponse({ error: 'Only session participants can comment.' }, 403)
+  const moderation = await moderateText(body, authorization.trustedAuthor)
+  // Moderation is a remote call: do not retain membership or owner/admin privileges
+  // that were revoked while it was running. Database-side atomic checks would also
+  // be needed to eliminate the final read-to-insert race entirely.
+  const currentAuthorization = await loadAuthorization()
+  if (!currentAuthorization.allowed || (authorization.trustedAuthor && !currentAuthorization.trustedAuthor)) {
+    return jsonResponse({ error: 'Session posting access changed. Please try again.' }, 403)
   }
-
-  const moderation = await moderateText(body, owner || admin)
+  const profile = currentAuthorization.profile!
+  const trustedAuthor = authorization.trustedAuthor && currentAuthorization.trustedAuthor
   const publicProfile = publicProfileSnapshot(profile)
 
   const { data: message, error: insertError } = await supabase
@@ -288,8 +307,8 @@ async function handleRequest(request: Request) {
       moderation_reason: moderation.reason,
       moderation_categories: moderation.categories,
       moderation_score: moderation.score,
-      reviewed_by: moderation.status === 'approved' && (owner || admin) ? authUser.id : null,
-      reviewed_at: moderation.status === 'approved' && (owner || admin) ? new Date().toISOString() : null,
+      reviewed_by: moderation.status === 'approved' && trustedAuthor ? authUser.id : null,
+      reviewed_at: moderation.status === 'approved' && trustedAuthor ? new Date().toISOString() : null,
     })
     .select()
     .single()

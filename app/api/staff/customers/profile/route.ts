@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isStaffCustomerNicknameConflict } from '@/lib/staffCustomerIdentity'
+import { staffCustomerAccessResponse } from '@/lib/security/staffCustomerScope'
 import { isStaffCustomerProfile } from '@/lib/staffCustomerProfileAccess'
 import { authenticateStaffKioskRequest, staffKioskCurrentRank, staffKioskCurrentSessionId } from '@/lib/security/staffKioskServer'
 
@@ -52,6 +53,9 @@ export async function PATCH(request: NextRequest) {
 
   const profileId = cleanRequiredString(body.profileId)
   if (!profileId) return jsonError('Profile id is required.', 400)
+
+  const accessError = await staffCustomerAccessResponse(auth.authClient, profileId)
+  if (accessError) return accessError
 
   const [{ data: targetProfile, error: targetError }, { data: employeeRecord, error: employeeError }] = await Promise.all([
     adminClient

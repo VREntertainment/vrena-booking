@@ -27,22 +27,13 @@ export function resolveTrustedAppRedirect(value: unknown, fallbackPath = '/') {
   }
 
   const rawRedirect = cleanString(value)
-  if (!rawRedirect) {
-    return {
-      ok: true as const,
-      url: new URL(fallbackPath, origin).toString(),
-    }
-  }
-
-  if (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) {
-    return {
-      ok: true as const,
-      url: new URL(rawRedirect, origin).toString(),
-    }
-  }
-
   try {
-    const redirectUrl = new URL(rawRedirect)
+    // Validate the resolved URL, including relative paths: WHATWG parsing treats
+    // backslashes as slashes and can turn a seemingly local path into a host.
+    const candidate = rawRedirect || fallbackPath
+    const redirectUrl = candidate.startsWith('/')
+      ? new URL(candidate, origin)
+      : new URL(candidate)
     if (redirectUrl.origin !== origin || redirectUrl.username || redirectUrl.password) {
       return {
         ok: false as const,
@@ -53,7 +44,7 @@ export function resolveTrustedAppRedirect(value: unknown, fallbackPath = '/') {
 
     return {
       ok: true as const,
-      url: new URL(`${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`, origin).toString(),
+      url: redirectUrl.toString(),
     }
   } catch {
     return {
