@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import HomeAppShell from '../../components/HomeAppShell'
 import { publicAppRoutes } from '../../lib/appRoutes'
-import './staff.css'
 
 export const metadata: Metadata = {
   title: 'VRena Staff Console',

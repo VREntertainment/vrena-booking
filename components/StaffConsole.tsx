@@ -1,5 +1,7 @@
 'use client'
 
+import '../app/staff/staff.css'
+
 import { brandedGameName } from '../lib/anvio'
 
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'

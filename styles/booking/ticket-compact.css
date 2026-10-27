@@ -115,7 +115,31 @@
   }
 }
 
-.sim-racing-product-picker { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+.app .sim-racing-product-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  grid-column: 1 / -1;
+  width: min(100%, 420px);
+  padding: 4px;
+  border: 1px solid var(--player-border);
+  border-radius: 14px;
+  background: var(--player-surface-raised);
+}
+.app .sim-racing-product-picker button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 15px;
+}
+.app .sim-racing-product-picker button[aria-pressed="false"] {
+  background: transparent;
+  color: var(--player-text-muted);
+}
+
 .sim-racing-booking header { margin-bottom: 24px; }
 .sim-racing-booking header p { color: var(--player-text-muted); }
 .sim-racing-price { display: block; font-size: 1.25rem; margin-top: 16px; }

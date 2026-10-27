@@ -1,0 +1,49 @@
+/* Compact club previews; full membership controls live in the club detail. */
+.app .clubs-section .club-card-players {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.app .clubs-section .club-card-players .player {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 0;
+}
+.app .clubs-section .club-card-players .player-avatar {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  box-shadow: none;
+}
+.app .clubs-section .club-card-more-members {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .app.player-workspace .clubs-section .club-list { gap: 24px; margin-top: 20px; }
+  .app.player-workspace .clubs-section .club-card {
+    gap: 14px;
+    padding: 16px;
+    border-left: 1px solid var(--player-border);
+    border-top: 3px solid var(--club-theme, var(--vrena-mode-accent));
+    border-radius: 16px;
+    background: var(--player-surface-raised);
+    box-shadow: none;
+  }
+  .app.player-workspace .clubs-section .club-card-cover { min-height: 72px; }
+  .app.player-workspace .clubs-section .club-card-main h3 { font-size: 22px; line-height: 1.15; }
+  .app.player-workspace .clubs-section .club-card-footer { gap: 14px; }
+  .app.player-workspace .clubs-section .club-card-activity { gap: 8px; }
+  .app.player-workspace .clubs-section .club-card-signal { min-height: 52px; gap: 8px; padding: 10px; font-size: 13px; }
+  .app.player-workspace .clubs-section .club-card-actions { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; width: 100%; }
+  .app.player-workspace .clubs-section .club-card-actions > :only-child { grid-column: 1 / -1; }
+  .app.player-workspace .clubs-section .club-card-actions button { min-height: 44px; margin: 0; padding: 10px 14px; font-size: 14px; }
+  .app.player-workspace .clubs-section .club-discovery-toolbar { position: static; gap: 12px; }
+  .app.player-workspace .clubs-section .club-discovery-actions { gap: 10px; }
+  .app.player-workspace .clubs-section .club-filter { width: 100%; }
+  .app.player-workspace .clubs-section .club-filter button { min-width: 0; padding-inline: 10px; font-size: 13px; }
+}
