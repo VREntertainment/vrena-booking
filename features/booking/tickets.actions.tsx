@@ -301,7 +301,16 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         guestPhone: guestContactValidation.normalizedPhone,
       })
       const client = await getSupabase()
-      const { data, error } = await client.rpc(request.name, request.args)
+      const { data: auth } = await client.auth.getSession()
+      const response = await fetch('/api/bookings/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(auth.session?.access_token ? { Authorization: `Bearer ${auth.session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ ...request, sourceUrl: window.location.origin + window.location.pathname }),
+      })
+      const { data, error } = await response.json()
 
       if (error) {
         showTicketStatus(error.message || text.ticketBookingError, 'error')
@@ -370,6 +379,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       trackTicketBookingCompleted({
         ...ticketAnalytics,
         transactionId: confirmation.reference || confirmation.sessionId,
+        bookingId: confirmation.sessionId,
       })
       const bookingCreatedMessage = text.bookingConfirmed
       showTicketStatus(bookingCreatedMessage)

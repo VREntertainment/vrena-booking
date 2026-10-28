@@ -90,10 +90,10 @@ export function trackTicketCheckoutStarted(input: TicketAnalyticsInput) {
 }
 
 export function trackTicketBookingCompleted(
-  input: TicketAnalyticsInput & { transactionId: string },
+  input: TicketAnalyticsInput & { transactionId: string; bookingId: string },
 ) {
   if (!input.transactionId.trim()) return
-  measureOpenAiBooking(input.transactionId)
+  if (input.venue) measureOpenAiBooking(input.bookingId, input.venue)
   try {
     const key = 'vrena:ga4:booking:' + input.transactionId
     if (analyticsConsentGranted() && typeof window.gtag === 'function' && !sessionStorage.getItem(key)) {

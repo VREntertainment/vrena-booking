@@ -1,5 +1,6 @@
 // Browser-only, consent-gated OpenAI Ads measurement. No customer identifiers.
-export const OPENAI_ADS_PIXEL_ID = 'Y2uNue1R9VNaKHAjR1K9Ev'
+import { OPENAI_ADS_PIXEL_ID, openAiBookingEventId, type BookingVenue } from './openAiAdsEvent'
+export { OPENAI_ADS_PIXEL_ID } from './openAiAdsEvent'
 type Pixel = ((...args: unknown[]) => void) & { q?: unknown[][] }
 declare global {
   interface Window {
@@ -45,14 +46,15 @@ export function syncOpenAiMeasurement(granted: boolean) {
   } catch { /* Measurement must never interrupt booking. */ }
 }
 
-export function measureOpenAiBooking(eventId: string) {
+export function measureOpenAiBooking(bookingId: string, venue: BookingVenue) {
   if (typeof window === 'undefined') return
   try {
-    if (!allowed() || !eventId.trim()) return
+    if (!allowed() || !bookingId.trim() || !['ha_do_centrosa', 'thao_dien'].includes(venue)) return
+    const eventId = openAiBookingEventId(bookingId, venue)
     syncOpenAiMeasurement(true)
     const key = 'vrena:openai:booking:' + eventId
     if (sessionStorage.getItem(key)) return
-    window.oaiq?.('measure', 'appointment_scheduled', { type: 'customer_action' }, { event_id: 'booking:' + eventId })
+    window.oaiq?.('measure', 'appointment_scheduled', { type: 'customer_action' }, { event_id: eventId })
     sessionStorage.setItem(key, '1')
   } catch { /* Includes storage-disabled browsers and SDK failures. */ }
 }
