@@ -10,6 +10,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     let failNextCheck = true
     const appUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
     await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'all', url: appUrl }])
+    await page.route('**/*.google-analytics.com/**', route => route.abort())
+    await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }))
     await page.route('https://bzrcdn.openai.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }))
     await page.route('https://bzr.openai.com/**', route => route.abort())
     const conversions = () => page.evaluate(() => window.oaiq?.q?.filter(call => call[1] === 'appointment_scheduled') || [])
