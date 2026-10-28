@@ -26,7 +26,7 @@
     "seed:soft-launch": "node scripts/soft-launch-seed.mjs",
     "seed:soft-launch:rollback": "node scripts/soft-launch-rollback.mjs",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/*.test.ts lib/security/*.test.ts docs/*.test.js",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/*.test.ts lib/security/*.test.ts docs/*.test.js && node scripts/test-booking-measurement.mjs && node scripts/test-openai-server-measurement.mjs",
     "check": "npm run lint && npm run typecheck && npm run check:architecture && npm run verify:palette && npm run test:unit",
     "check:architecture": "node scripts/check-module-boundaries.mjs",
     "test:services": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-local-services.mjs"

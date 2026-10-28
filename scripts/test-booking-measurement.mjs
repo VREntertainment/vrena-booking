@@ -15,14 +15,13 @@ function browser(consent = 'all', path = '/tickets') {
     if (modules.has(file)) return modules.get(file)
     const exports = {}; modules.set(file, exports)
     const source = ts.transpileModule(readFileSync(file,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
-    context.exports = exports
-    context.require = name => { assert.equal(name, './openAiAds'); return load('lib/openAiAds.ts') }
-    vm.runInContext(source, context, { filename: file })
+    const require = name => load('lib/' + name.replace('./', '') + '.ts')
+    vm.runInContext('(function(exports, require) {' + source + '\n})', context, { filename: file })(exports, require)
     return exports
   }
   return { context, calls, scripts, load }
 }
-const input = { ticketType: 'individual', ticketLabel:'VR', venue:'thao_dien', date:'2026-10-20',time:'18:00',players:2,durationMinutes:30,totalPrice:480000,transactionId:'test-booking-unit' }
+const input = { ticketType: 'individual', ticketLabel:'VR', venue:'thao_dien', date:'2026-10-20',time:'18:00',players:2,durationMinutes:30,totalPrice:480000,transactionId:'test-booking-unit',bookingId:'00000000-0000-4000-8000-000000000993' }
 for (const consent of ['essential','analytics','all']) {
   const b = browser(consent); const analytics = b.load('lib/googleAnalytics.ts')
   analytics.trackTicketBookingCompleted(input)
@@ -32,8 +31,8 @@ for (const consent of ['essential','analytics','all']) {
   if (consent==='all') {
     const events=b.context.window.oaiq.q.filter(c=>c[0]==='measure'&&c[1]==='appointment_scheduled')
     assert.equal(events.length,1)
-    assert.equal(events[0][3].event_id,'booking:test-booking-unit')
-    assert.equal(JSON.stringify(events).includes('test-booking-unit'),true)
+    assert.equal(events[0][3].event_id,'booking:thao_dien:' + input.bookingId)
+    assert.equal(JSON.stringify(events).includes(input.bookingId),true)
     assert.equal(events[0][2].amount,undefined) // Booking is not a payment.
     b.load('lib/openAiAds.ts').syncOpenAiMeasurement(false)
     assert.equal(b.context.window.oaiq.q.at(-1)[0],'consent')
