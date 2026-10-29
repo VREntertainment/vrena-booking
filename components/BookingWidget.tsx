@@ -299,6 +299,12 @@ function BookingWorkspace({
     ticketAvailabilitySearchLoadingRef,
   } = useBookingTicketsState({ incomingCalendar, initialView, initialBirthdayPackageId, initialBookingVenue })
   const activeBirthdayPackage = selectedBirthdayPackage(ticketType, ticketPlayers, ticketDuration, ticketSpecialNote)
+  const applyIncomingBirthdayPackage = useEffectEvent((id: string | undefined) => {
+    if (id && id !== (activeBirthdayPackage?.id ?? 'custom')) handleBirthdayPackageChange(id)
+  })
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => applyIncomingBirthdayPackage(initialBirthdayPackageId))
+  }, [initialBirthdayPackageId])
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
