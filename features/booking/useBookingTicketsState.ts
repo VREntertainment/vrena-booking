@@ -10,19 +10,21 @@ import {
 import {
   TicketBookingConfirmation
 } from '../../lib/bookingWidgetDomain'
+import { birthdayPackageSelection } from '../../lib/birthdayPackages'
 import { vietnamClock } from '../../lib/booking/arenaAvailability'
 import { type GuestTicketContact } from '../../lib/guestTicketBooking'
 
 /** Feature-owned state. Mounted unconditionally so navigation preserves drafts and request locks. */
-export function useBookingTicketsState({ incomingCalendar, initialView }: { incomingCalendar: import("../../lib/bookingCalendar").CalendarNavigation | null | undefined; initialView: import("../../components/AppSidebar").AppView }) {
+export function useBookingTicketsState({ incomingCalendar, initialView, initialBirthdayPackageId, initialBookingVenue }: { initialBirthdayPackageId?: string; initialBookingVenue?: string; incomingCalendar: import("../../lib/bookingCalendar").CalendarNavigation | null | undefined; initialView: import("../../components/AppSidebar").AppView }) {
+  const preset = birthdayPackageSelection(initialBirthdayPackageId, initialBookingVenue ?? 'ha-do-centrosa')
   const [calendarTicketDraft, setCalendarTicketDraft] = useState(incomingCalendar?.mode === 'client-ticket' && initialView === 'tickets')
-  const [ticketType, setTicketType] = useState<TicketType>('individual')
+  const [ticketType, setTicketType] = useState<TicketType>(initialBirthdayPackageId ? 'birthday' : 'individual')
   const [ticketDate, setTicketDate] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.date : vietnamClock().date)
   const [ticketTime, setTicketTime] = useState(incomingCalendar?.mode === 'client-ticket' ? incomingCalendar.time : '')
-  const [ticketPlayers, setTicketPlayers] = useState(1)
-  const [ticketArenaCount, setTicketArenaCount] = useState(1)
-  const [ticketDuration, setTicketDuration] = useState(20)
-  const [ticketSpecialNote, setTicketSpecialNote] = useState('')
+  const [ticketPlayers, setTicketPlayers] = useState<number>(preset?.players ?? (initialBirthdayPackageId ? 4 : 1))
+  const [ticketArenaCount, setTicketArenaCount] = useState<number>(preset?.arenas ?? 1)
+  const [ticketDuration, setTicketDuration] = useState(preset?.duration ?? (initialBirthdayPackageId ? 120 : 20))
+  const [ticketSpecialNote, setTicketSpecialNote] = useState(preset?.note ?? '')
   const [guestTicketContact, setGuestTicketContact] = useState<GuestTicketContact>({ name: '', phone: '' })
   const [pendingGuestTicketClaim, setPendingGuestTicketClaim] = useState<{ phone: string; reference: string; name?: string; date?: string } | null>(null)
   const [pendingTicketAuthAction, setPendingTicketAuthAction] = useState<'book-after-login' | 'claim-after-auth' | null>(null)

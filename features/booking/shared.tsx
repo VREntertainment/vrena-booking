@@ -46,6 +46,7 @@ export type BookingWidgetProps = {
   initialSelectedPlayerId?: string
   initialSelectedPlayerSessionId?: string
   initialView?: AppView
+  initialBirthdayPackageId?: import('../../lib/birthdayPackages').BirthdayPackageId | 'custom'
   initialBookingVenue?: CalendarNavigation['venue']
   initialCalendarNavigation?: CalendarNavigation | null
   onActiveViewChange?: (view: AppView, query?: string) => void

@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useRef } from 'react'
+import { birthdayPackageById } from '../lib/birthdayPackages'
 import { calendarNavigation } from '../lib/bookingCalendar'
 import { appRouteForView, publicAppRoutes } from '../lib/appRoutes'
 import BrandLoader from './BrandLoader'
@@ -52,7 +53,7 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
     // Next can flush effects inside its popstate listener. Wait for all history
     // listeners to restore the workspace before deciding whether to write a URL.
     pendingNavigationRef.current = setTimeout(() => {
-      const nextPath = appRouteForView(view)
+      const nextPath = view === 'tickets' && new URLSearchParams(query).get('birthday') === '1' ? '/tickets/birthday' : appRouteForView(view)
       const nextUrl = query ? `${nextPath}?${query}` : nextPath
       if (restoringHistoryRef.current) {
         if (nextUrl === restoringHistoryRef.current) restoringHistoryRef.current = null
@@ -70,6 +71,7 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
     <BookingWidget
       initialView={routedInitialView || initialView}
       initialBookingVenue={search.get('venue') === 'cafe-des-stagiaires' ? 'cafe-des-stagiaires' : 'ha-do-centrosa'}
+      initialBirthdayPackageId={pathname === '/tickets/birthday' ? (birthdayPackageById(search.get('package'))?.id ?? (search.get('package') === 'custom' ? 'custom' : 'mini-mission')) : undefined}
       initialCalendarNavigation={calendarNavigation(search.toString())}
       onActiveViewChange={handleActiveViewChange}
       restoreStoredView={pathname === '/'}

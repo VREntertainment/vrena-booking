@@ -889,3 +889,9 @@
 .app .ticket-venue-contact .contact-channel { padding: 10px 8px; min-width: 0; }
 .app .ticket-venue-contact .contact-channel span { display: grid; gap: 3px; }
 .app .ticket-venue-contact .contact-channel small { font-size: 11px; font-weight: 400; }
+
+.app .birthday-package-selection { display: grid; gap: 10px; margin-bottom: 18px; padding: 18px; border: 1px solid var(--player-border); border-radius: 12px; background: var(--player-surface-soft); min-width: 0; }
+.app .birthday-package-selection label { font-weight: 700; }
+.app .birthday-package-selection select { width: 100%; min-width: 0; }
+.app .birthday-package-selection p { margin: 0; color: var(--player-text-muted); font-size: 13px; line-height: 1.5; }
+.app .birthday-package-price { font-size: 20px; color: var(--player-text); }
