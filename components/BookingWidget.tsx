@@ -3385,6 +3385,7 @@ function BookingWorkspace({
   }
 
   function handleTicketTypeChange(value: TicketType) {
+    if (value === ticketType) return
     if (value === 'birthday') {
       handleBirthdayPackageChange('mini-mission')
       return

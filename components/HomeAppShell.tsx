@@ -70,7 +70,9 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
     }, 0)
   }, [])
 
-  const routedInitialView = Object.entries(publicAppRoutes).find(([, path]) => path === pathname)?.[0] as AppView | undefined
+  const routedInitialView = pathname === '/tickets/birthday'
+    ? 'tickets'
+    : Object.entries(publicAppRoutes).find(([, path]) => path === pathname)?.[0] as AppView | undefined
 
   return (
     <BookingWidget
