@@ -1,9 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { birthdayPackages, birthdayPackageById } from '../lib/birthdayPackages'
+import { birthdayPackages, birthdayPackageById, birthdayPackageNote, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
 import { birthdayPackageCopy } from '../lib/birthdayPackageCopy'
-import { X } from 'lucide-react'
+import { ArrowRight, X } from 'lucide-react'
+import { ticketClarityCopy } from '../lib/ticketClarityCopy'
 import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
 import { bookingDurationCopy } from '../lib/bookingDurationCopy'
@@ -168,10 +169,8 @@ export default function TicketBookingView({
   ticketTimeOptions,
   ticketPlayerOptions,
   activeTicketDuration,
-  ticketPriceBlockMinutes,
   activeTicketArenaCount,
   currentTicketPricing,
-  currentTicketUnitPrice,
   currentTicketTotalPrice,
   isCheckingTicketDiscount,
   ticketDiscountAmount,
@@ -182,7 +181,6 @@ export default function TicketBookingView({
   loyaltyPointsBalance,
   loyaltyPointsToRedeem,
   estimatedLoyaltyPointsEarned,
-  estimatedLoyaltyReductionValue,
   maxLoyaltyPointsToRedeem,
   useLoyaltyPoints,
   onTicketTypeChange,
@@ -203,7 +201,6 @@ export default function TicketBookingView({
   formatShortDate,
   formatVnd,
   ticketTypeLabel,
-  ticketTypeDescription,
   guestTicketContact,
   onGuestTicketContactChange,
 }: TicketBookingViewProps) {
@@ -212,24 +209,14 @@ export default function TicketBookingView({
   const guestTicketActionInFlightRef = useRef(false)
   const [guestAccountChoicePhone, setGuestAccountChoicePhone] = useState('')
   const isGuestAccountChoiceConfirmation = Boolean(guestAccountChoicePhone) && guestAccountChoicePhone === guestTicketContact.phone
+  const clarity = ticketClarityCopy[language]
   const birthdayCopy = birthdayPackageCopy[language]
   const birthdayPackage = birthdayPackageById(birthdayPackageId)
   const isSpecialTicket = ticketType !== 'individual'
-  const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
-  const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !manualDiscountReview
+  const ticketTotalDisplay = birthdayPackage ? formatVnd(birthdayPackage.price) : isSpecialTicket ? clarity.quote : formatVnd(currentTicketTotalPrice)
+  const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !manualDiscountReview && loyaltyPointsBalance > 0
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
-  const ticketAccountValueNote = estimatedLoyaltyPointsEarned > 0
-    ? text.ticketAccountValueWithPoints
-      .replace('{points}', String(estimatedLoyaltyPointsEarned))
-      .replace('{value}', formatVnd(estimatedLoyaltyReductionValue))
-    : text.ticketAccountValueNoPoints
-  const ticketAccountValueLines = ticketAccountValueNote.split('\n')
   const showDiscountedTotal = !isSpecialTicket && currentTicketPricing.grossPrice > currentTicketTotalPrice
-  const groupDiscountPercent = Math.round(currentTicketPricing.discountRate * 100)
-  const showDiscountedUnitPrice = !isSpecialTicket && ticketDiscountSource === 'automatic' && groupDiscountPercent > 0
-  const discountedTicketUnitPrice = showDiscountedUnitPrice
-    ? Math.round(currentTicketUnitPrice * (1 - currentTicketPricing.discountRate))
-    : currentTicketUnitPrice
   const ticketTotalReductionLabel = !isSpecialTicket && ticketDiscountAmount > 0
     ? ticketDiscountSource === 'automatic' && currentTicketPricing.discountRate > 0
       ? `-${Math.round(currentTicketPricing.discountRate * 100)}%`
@@ -281,12 +268,7 @@ export default function TicketBookingView({
   }
 
   return (
-    <section className={`section tickets-section${ticketConfirmation ? ' ticket-confirmed' : ''}`}>
-      <div className="ticket-quick-actions">
-        {gameGuideTrigger}
-        {tariffTrigger}
-      </div>
-
+    <section className={`section tickets-section ticket-streamlined${ticketConfirmation ? ' ticket-confirmed' : ''}`}>
       <>
           <div className="ticket-flow-grid">
             <div className="ticket-form-panel">
@@ -294,7 +276,6 @@ export default function TicketBookingView({
                 <div className="ticket-fast-path-summary">
                   <div>
                     <strong>{ticketTypeLabel(ticketType, text)}</strong>
-                    <small>{ticketTypeDescription(ticketType, text)}</small>
                   </div>
                   <button className="secondary small-button" type="button" onClick={() => onTicketTypeChange('individual')}>
                     {text.ticketUseIndividual}
@@ -309,8 +290,7 @@ export default function TicketBookingView({
                     <option value="">{birthdayCopy.custom}</option>
                     {birthdayPackages.map(item => <option key={item.id} value={item.id}>{item.name} · {item.players} {text.players} · {formatVnd(item.price)}</option>)}
                   </select>
-                  {birthdayPackage && <strong className="birthday-package-price">{formatVnd(birthdayPackage.price)} · 120 min</strong>}
-                  <p>{birthdayCopy.note}</p>
+
                 </div>
               )}
               <div className="form-grid compact-form-grid ticket-form-grid">
@@ -337,7 +317,7 @@ export default function TicketBookingView({
                   </select>
                 </div>
                 <div className="ticket-control ticket-control-duration">
-                  <label htmlFor="ticket-duration">{bookingDurationCopy[language].ticket}</label>
+                  <label htmlFor="ticket-duration">{clarity.duration}</label>
                   <select
                     disabled={ticketDurationOptions.length === 0}
                     id="ticket-duration"
@@ -407,54 +387,22 @@ export default function TicketBookingView({
               )}
 
               {isSpecialTicket && (
+                <details className="ticket-extras">
+                  <summary>{clarity.requests}</summary>
                 <label className="ticket-special-note-field">
                   <span>{text.ticketSpecialNoteLabel}</span>
                   <textarea
                     disabled={isBookingTickets || guestTicketAction !== null}
-                    maxLength={500}
-                    onChange={(event) => onTicketSpecialNoteChange(event.target.value)}
+                    maxLength={birthdayPackage ? 500 - birthdayPackageNote(birthdayPackage).length - 1 : 500}
+                    onChange={(event) => onTicketSpecialNoteChange(birthdayPackage ? `${birthdayPackageNote(birthdayPackage)}\n${event.target.value}` : event.target.value)}
                     placeholder={text.ticketSpecialNotePlaceholder}
-                    value={ticketSpecialNote}
+                    value={birthdayPackage ? withoutBirthdayPackageNote(ticketSpecialNote) : ticketSpecialNote}
                   />
-                  <small>{text.ticketSpecialNoteCharacterCount.replace('{count}', String(ticketSpecialNote.length))}</small>
                 </label>
+                </details>
               )}
 
               <div className="ticket-price-summary">
-                <div>
-                  <span>{bookingDurationCopy[language].ticket}</span>
-                  <strong>{activeTicketDuration} min</strong>
-                </div>
-                {!isSpecialTicket && (
-                  <div>
-                    <span className="ticket-unit-heading">
-                      {text.unitPrice}
-                      {showDiscountedUnitPrice && <em className="ticket-total-reduction">-{groupDiscountPercent}%</em>}
-                    </span>
-                    {showDiscountedUnitPrice && (
-                      <small className="ticket-total-original">{formatVnd(currentTicketUnitPrice)}</small>
-                    )}
-                    <strong className={showDiscountedUnitPrice ? 'ticket-unit-discounted' : undefined}>
-                      {formatVnd(discountedTicketUnitPrice)}
-                    </strong>
-                    <small>{text.ticketHeadsetPriceBasis.replace('{minutes}', String(ticketPriceBlockMinutes))}</small>
-                  </div>
-                )}
-                <div className="ticket-reserved-line">
-                  <span>{text.numberOfPlayers}</span>
-                  <strong>{ticketPlayers} {ticketPlayers === 1 ? text.ticketFormulaPlayer : text.players}</strong>
-                  {!isSpecialTicket && <small className="ticket-average-player-price">{text.ticketAveragePlayerPrice.replace('{price}', formatVnd(Math.round(currentTicketTotalPrice / Math.max(1, ticketPlayers))))}</small>}
-                </div>
-                <div className="ticket-total-line">
-                  <span className="ticket-total-heading">
-                    {text.totalPrice}
-                    {ticketTotalReductionLabel && <em className="ticket-total-reduction">{ticketTotalReductionLabel}</em>}
-                  </span>
-                  {showDiscountedTotal && (
-                    <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>
-                  )}
-                  <strong>{ticketTotalDisplay}</strong>
-                </div>
                 {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
                     <div className="ticket-loyalty-heading">
@@ -480,14 +428,13 @@ export default function TicketBookingView({
                 )}
               </div>
 
-              {ticketType !== 'individual' && (
-                <p className="field-help ticket-helper-note">{text.ticketSpecialBookingNote}</p>
-              )}
-
-              <p className="field-help ticket-helper-note">{text.sessionTariffPayment}</p>
-
               <div className="ticket-checkout-action">
-                <div className="ticket-mobile-total"><span>{text.totalPrice}</span><strong>{ticketTotalDisplay}</strong></div>
+                <div className="ticket-mobile-total" aria-live="polite">
+                  <span>{birthdayPackage ? birthdayCopy.label : text.totalPrice}{ticketTotalReductionLabel && ` · ${ticketTotalReductionLabel}`}</span>
+                  {showDiscountedTotal && <small className="ticket-total-original">{formatVnd(currentTicketPricing.grossPrice)}</small>}
+                  <strong>{ticketTotalDisplay}</strong>
+                  <small>{isSpecialTicket ? clarity.confirm : clarity.pay}</small>
+                </div>
                 <button
                   className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
                   disabled={isBookingTickets || guestTicketAction !== null}
@@ -497,22 +444,23 @@ export default function TicketBookingView({
                   {isBookingTickets
                     ? text.bookingTickets
                     : text.bookTickets}
+                  {!isBookingTickets && <ArrowRight size={20} aria-hidden="true" />}
                 </button>
               </div>
-              {!isLoggedIn && !isSpecialTicket && (
-                <button className="ticket-account-value-note" type="button" onClick={onPromptCreateAccount}>
-                  {ticketAccountValueLines.map((line, index) => (
-                    <span key={`${line}-${index}`}>{line}</span>
-                  ))}
-                </button>
-              )}
               {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
             </div>
 
-            <div className="ticket-duration-information">
-              <p className="field-help ticket-duration-explanation">{bookingDurationCopy[language].hint}</p>
-              <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} showNumbers />
-            </div>
+            <details className="ticket-duration-information ticket-extras">
+              <summary>{clarity.help}</summary>
+              <div className="ticket-help-content">
+                <div className="ticket-quick-actions">{gameGuideTrigger}{tariffTrigger}</div>
+                <p className="field-help">{ticketType === 'birthday' ? birthdayCopy.note : bookingDurationCopy[language].hint}</p>
+                {isSpecialTicket && <p className="field-help">{text.ticketSpecialBookingNote}</p>}
+                <p className="field-help">{text.sessionTariffPayment}</p>
+                {ticketType === 'birthday' && <p className="field-help">{text.birthdayTicketDescription}</p>}
+                <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} />
+              </div>
+            </details>
             <div className="ticket-type-list ticket-event-options">
               <div className="ticket-service-grid">
                 {specialTicketServices.map((service) => (
@@ -523,10 +471,7 @@ export default function TicketBookingView({
                     onClick={() => onTicketTypeChange(service.id)}
                   >
                     <strong>{ticketTypeLabel(service.id, text)}</strong>
-                    <span>{ticketTypeDescription(service.id, text)}</span>
-                    <small>
-                      {bookingDurationCopy[language].event} · {service.minPlayers}-{service.maxPlayers} {text.players}
-                    </small>
+                    <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 ))}
               </div>
