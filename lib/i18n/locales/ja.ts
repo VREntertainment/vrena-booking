@@ -112,7 +112,7 @@ export const ja = {
   individualTicket: '個人チケット',
   individualTicketDescription: '短時間のVRプレイ向け、1名につき1枚のチケットです。',
   birthdayTicket: '誕生日 / イベント予約',
-  birthdayTicketDescription: '誕生日や少人数グループ向けのプライベート枠です。',
+  birthdayTicketDescription: 'ケーキや風船をご希望ですか？お気軽にご連絡ください。手配いたします。',
   corporateTicket: '企業向けチームビルディング',
   corporateTicketVatDescription: "企業のグループ向けプライベートセッション。VAT（付加価値税）請求書を発行します。",
   numberOfPlayers: '参加人数',

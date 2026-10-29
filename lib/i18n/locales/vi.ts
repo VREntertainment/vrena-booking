@@ -112,7 +112,7 @@ export const vi = {
   individualTicket: 'Vé cá nhân',
   individualTicketDescription: 'Mỗi người một vé cho các lượt chơi VR nhanh.',
   birthdayTicket: 'Đặt tiệc sinh nhật / sự kiện',
-  birthdayTicketDescription: 'Khung giờ riêng cho tiệc sinh nhật và nhóm nhỏ.',
+  birthdayTicketDescription: 'Muốn có bánh kem và bóng bay? Liên hệ với chúng tôi — chúng tôi có thể sắp xếp.',
   corporateTicket: 'Team building doanh nghiệp',
   corporateTicketVatDescription: "Phiên chơi riêng dành cho nhóm công ty, có xuất hóa đơn VAT.",
   numberOfPlayers: 'Số người chơi',

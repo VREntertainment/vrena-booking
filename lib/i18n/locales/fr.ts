@@ -112,7 +112,7 @@ export const fr = {
   individualTicket: 'Billet individuel',
   individualTicketDescription: 'Un billet par personne pour une courte session de VR.',
   birthdayTicket: 'Anniversaire / événement',
-  birthdayTicketDescription: 'Créneau privé pour les anniversaires et les petits groupes.',
+  birthdayTicketDescription: 'Envie d’un gâteau et de ballons ? Contactez-nous — nous pouvons tout organiser.',
   corporateTicket: 'Team building d’entreprise',
   corporateTicketVatDescription: "Session privée pour les groupes d’entreprise, avec facture de TVA.",
   numberOfPlayers: 'Nombre de joueurs',

@@ -112,7 +112,7 @@ export const ko = {
   individualTicket: '개인 티켓',
   individualTicketDescription: '짧은 VR 플레이를 위한 1인 1매 티켓입니다.',
   birthdayTicket: '생일 / 이벤트 예약',
-  birthdayTicketDescription: '생일과 소규모 그룹을 위한 단독 이용 시간입니다.',
+  birthdayTicketDescription: '케이크와 풍선을 원하시나요? 문의해 주세요. 준비해 드릴 수 있어요.',
   corporateTicket: '기업 팀 빌딩',
   corporateTicketVatDescription: "기업 단체를 위한 단독 팀 세션이며, VAT 세금계산서가 제공됩니다.",
   numberOfPlayers: '플레이어 수',
