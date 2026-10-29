@@ -112,7 +112,7 @@ export const it = {
   individualTicket: 'Biglietto individuale',
   individualTicketDescription: 'Un biglietto a persona per brevi sessioni VR.',
   birthdayTicket: 'Compleanno / evento',
-  birthdayTicketDescription: 'Fascia oraria privata per compleanni e piccoli gruppi.',
+  birthdayTicketDescription: 'Vuoi una torta e dei palloncini? Contattaci — possiamo organizzarli per te.',
   corporateTicket: 'Team building aziendale',
   corporateTicketVatDescription: "Sessione privata per gruppi aziendali, con fattura IVA.",
   numberOfPlayers: 'Numero di giocatori',

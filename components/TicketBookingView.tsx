@@ -514,8 +514,6 @@ export default function TicketBookingView({
               <ContactChannels venue={manualDiscountReview ? 'cafe-des-stagiaires' : 'ha-do-centrosa'} className="ticket-venue-contact" label={text.contactUs} showPhone={false} showNumbers />
             </div>
             <div className="ticket-type-list ticket-event-options">
-              <label>{text.ticketEventHelpTitle}</label>
-              <p className="ticket-event-options-copy">{text.ticketEventHelpBody}</p>
               <div className="ticket-service-grid">
                 {specialTicketServices.map((service) => (
                   <button

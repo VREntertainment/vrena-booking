@@ -110,7 +110,7 @@ export const en = {
   individualTicket: 'Individual Ticket',
   individualTicketDescription: '1 ticket per person for quick VR rounds.',
   birthdayTicket: 'Birthday / Events Booking',
-  birthdayTicketDescription: 'Private event block for birthdays and small groups.',
+  birthdayTicketDescription: 'Want a cake and balloons? Contact us — we can arrange it.',
   corporateTicket: 'Corporate Team Building',
   corporateTicketVatDescription: "Private team sessions for company groups, with a VAT invoice.",
   numberOfPlayers: 'Number of players',
