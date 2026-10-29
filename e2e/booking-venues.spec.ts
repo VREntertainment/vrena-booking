@@ -150,3 +150,23 @@ test('venue changes preserve the mounted player workspace and browser history', 
   expect(authRequests).toBe(0)
   expect(documentRequests).toBe(0)
 })
+
+
+test('birthday booking from profile stays on tickets and preserves the selected package on mobile', async ({ page }) => {
+  await keepConsentOutOfTheBookingFlow(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/profile')
+  await page.getByRole('link', { name: 'Tickets', exact: true }).click()
+  await page.locator('.ticket-service-card').first().click()
+  await expect(page).toHaveURL(/\/tickets\/birthday/)
+  await expect(page.locator('#birthday-package')).toBeVisible()
+  await expect(page.locator('#birthday-package option[value="mini-mission"]')).toContainText('Mini Birthday · 2hrs')
+  await page.locator('#birthday-package').selectOption('birthday-squad')
+  await page.locator('.ticket-control-date input[type="date"]').fill(futureDate(40))
+  await page.locator('#ticket-available-time').selectOption({ index: 1 })
+  const time = await page.locator('#ticket-available-time').inputValue()
+  await page.locator('.ticket-service-card').first().click()
+  await expect(page.locator('#birthday-package')).toHaveValue('birthday-squad')
+  await expect(page.locator('#ticket-available-time')).toHaveValue(time)
+  await expect(page).toHaveURL(/\/tickets\/birthday/)
+})

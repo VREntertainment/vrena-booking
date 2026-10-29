@@ -288,7 +288,7 @@ export default function TicketBookingView({
                   <label htmlFor="birthday-package">{birthdayCopy.label}</label>
                   <select id="birthday-package" value={birthdayPackageId} onChange={event => onBirthdayPackageChange(event.target.value)} disabled={isBookingTickets}>
                     <option value="">{birthdayCopy.custom}</option>
-                    {birthdayPackages.map(item => <option key={item.id} value={item.id}>{item.name} · {item.players} {text.players} · {formatVnd(item.price)}</option>)}
+                    {birthdayPackages.map(item => <option key={item.id} value={item.id}>{item.name} · {birthdayCopy.duration} · {item.players} {text.players} · {formatVnd(item.price)}</option>)}
                   </select>
 
                 </div>

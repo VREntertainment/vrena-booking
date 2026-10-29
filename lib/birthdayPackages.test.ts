@@ -45,3 +45,9 @@ test('package request survives all guest and account RPC paths without trusting 
     if ('p_total_price' in request.args) assert.equal(request.args.p_total_price, 0)
   }
 })
+
+test('renamed Mini Birthday preserves older saved package requests', () => {
+  const legacyNote = 'Birthday package: Mini Mission | 4 players | 120 min | 1,900,000 VND (staff confirmation)'
+  assert.equal(birthdayPackageById('mini-mission')?.name, 'Mini Birthday')
+  assert.equal(selectedBirthdayPackage('birthday', 4, 120, legacyNote)?.id, 'mini-mission')
+})
