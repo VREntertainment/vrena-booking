@@ -1,5 +1,6 @@
 'use client'
 
+import { birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
 import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { gameGuidePosters } from '../lib/gameGuidePosters'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
@@ -253,6 +254,7 @@ function BookingWorkspace({
   initialView = 'tickets',
   initialCalendarNavigation,
   initialBookingVenue,
+  initialBirthdayPackageId,
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
@@ -295,7 +297,14 @@ function BookingWorkspace({
     ticketAvailabilitySearchTick,
     setTicketAvailabilitySearchTick,
     ticketAvailabilitySearchLoadingRef,
-  } = useBookingTicketsState({ incomingCalendar, initialView })
+  } = useBookingTicketsState({ incomingCalendar, initialView, initialBirthdayPackageId, initialBookingVenue })
+  const activeBirthdayPackage = selectedBirthdayPackage(ticketType, ticketPlayers, ticketDuration, ticketSpecialNote)
+  const applyIncomingBirthdayPackage = useEffectEvent((id: string | undefined) => {
+    if (id && id !== (activeBirthdayPackage?.id ?? 'custom')) handleBirthdayPackageChange(id)
+  })
+  useEffect(() => {
+    return schedulePostEffectStateUpdate(() => applyIncomingBirthdayPackage(initialBirthdayPackageId))
+  }, [initialBirthdayPackageId])
   const [activeView, setActiveView] = useState<AppView>(initialView)
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
@@ -2527,10 +2536,10 @@ function BookingWorkspace({
         : activeView === 'tickets' && calendarTicketDraft
           ? { mode: 'client-ticket', date: ticketDate, time: ticketTime, venue: bookingVenue }
           : activeView === 'tickets'
-            ? { venue: bookingVenue }
+            ? { venue: bookingVenue, ...(ticketType === 'birthday' ? { birthday: '1', package: activeBirthdayPackage?.id ?? 'custom' } : {}) }
             : null
     onActiveViewChange?.(activeView, navigation ? new URLSearchParams(navigation).toString() : activeView === 'create' ? '' : undefined)
-  }, [activeView, bookingVenue, calendarBookingDraft, calendarTicketDraft, calendarWeekStart, createSessionMode, onActiveViewChange, ticketDate, ticketTime])
+  }, [activeView, activeBirthdayPackage?.id, ticketType, bookingVenue, calendarBookingDraft, calendarTicketDraft, calendarWeekStart, createSessionMode, onActiveViewChange, ticketDate, ticketTime])
 
   useEffect(() => {
     onProfileChange?.(profile)
@@ -2605,13 +2614,15 @@ function BookingWorkspace({
       setTicketPlayers(pendingBooking.players)
       setTicketDuration(pendingBooking.duration)
       setTicketSpecialNote(pendingBooking.specialNote)
+      const preset = selectedBirthdayPackage(pendingBooking.ticketType, pendingBooking.players, pendingBooking.duration, pendingBooking.specialNote)
+      if (preset) setTicketArenaCount(birthdayPackageSelection(preset.id, bookingVenue)!.arenas)
       setPendingTicketAuthAction('book-after-login')
       setAuthMode(pendingBooking.authMode)
       setAuthStep('email')
       setProfilePassword('')
       setProfileStatus('')
     })
-  }, [activeView, pendingTicketAuthAction, setAuthMode, setAuthStep, setPendingTicketAuthAction, setProfilePassword, setProfileStatus, setTicketDate, setTicketDuration, setTicketPlayers, setTicketSpecialNote, setTicketTime, setTicketType])
+  }, [activeView, bookingVenue, pendingTicketAuthAction, setTicketArenaCount, setAuthMode, setAuthStep, setPendingTicketAuthAction, setProfilePassword, setProfileStatus, setTicketDate, setTicketDuration, setTicketPlayers, setTicketSpecialNote, setTicketTime, setTicketType])
 
   useEffect(() => {
     if (sessionTimeScope === 'past') {
@@ -3121,6 +3132,7 @@ function BookingWorkspace({
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration, editSessionArenaCount)
   const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount, ticketDate, bookingVenue)
   const ticketDurationOptions = useMemo(() => {
+    if (activeBirthdayPackage) return [120]
     const durationOptions = customerBookingDurations(ticketDate)
 
     if (!ticketDate) return durationOptions
@@ -3131,7 +3143,7 @@ function BookingWorkspace({
       if (ticketTime) return options.some((option) => option.value === ticketTime)
       return options.length > 0
     })
-  }, [activeTicketArenaCount, activeTicketPriceBlockMinutes, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
+  }, [activeBirthdayPackage, activeTicketArenaCount, activeTicketPriceBlockMinutes, getTicketTimeOptions, minimumTicketDuration, ticketDate, ticketTime])
   const ticketPlayerOptions = useMemo(() => {
     return Array.from(
       { length: Math.min(16, activeTicketService.maxPlayers) - activeTicketService.minPlayers + 1 },
@@ -3190,8 +3202,9 @@ function BookingWorkspace({
     if (value === 'cafe-des-stagiaires' && (activeView === 'sessions' || (activeView === 'create' && createSessionMode !== 'calendar'))) {
       setActiveView('tickets')
     }
-    setTicketArenaCount(1)
-    setTicketDuration(ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
+    const birthdayPreset = birthdayPackageSelection(activeBirthdayPackage?.id, value)
+    setTicketArenaCount(birthdayPreset?.arenas ?? 1)
+    setTicketDuration(birthdayPreset?.duration ?? ticketDurationForPlayers(ticketType, ticketPlayers, 1, nextTicketDate, value))
     setTicketTime('')
     setTicketConfirmation(null)
     setTicketDiscountCode('')
@@ -3349,7 +3362,34 @@ function BookingWorkspace({
     return true
   }
 
+  function handleBirthdayPackageChange(id: string) {
+    const preset = birthdayPackageSelection(id, bookingVenue)
+    if (!preset) {
+      setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
+      setTicketConfirmation(null)
+      return
+    }
+    setTicketType('birthday')
+    setTicketPlayers(preset.players)
+    setTicketDuration(preset.duration)
+    setTicketArenaCount(preset.arenas)
+    setTicketSpecialNote([preset.note, withoutBirthdayPackageNote(ticketSpecialNote)].filter(Boolean).join('\n').slice(0, 500))
+    setTicketTime('')
+    setTicketConfirmation(null)
+    setTicketDiscountCode('')
+    setTicketDiscountQuote(null)
+    setTicketDiscountStatus('')
+    setTicketAutomaticDiscountQuote(null)
+    setTicketLoyaltyPointsToRedeem('')
+    clearTicketStatus()
+  }
+
   function handleTicketTypeChange(value: TicketType) {
+    if (value === 'birthday') {
+      handleBirthdayPackageChange('mini-mission')
+      return
+    }
+    setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
     const service = selectedTicketService(value)
     const nextPlayers = Math.min(service.maxPlayers, Math.max(service.minPlayers, ticketPlayers))
     const nextDuration = Math.max(ticketDurationForPlayers(value, nextPlayers, activeTicketArenaCount, ticketDate, bookingVenue), ticketDuration)
@@ -3378,6 +3418,7 @@ function BookingWorkspace({
   }
 
   function handleTicketPlayersChange(value: number) {
+    if (activeBirthdayPackage && value !== activeBirthdayPackage.players) setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
     const nextArenaCount = !isHaDoBookingVenue ? 1 : activeTicketArenaCount
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, value, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
@@ -3394,6 +3435,7 @@ function BookingWorkspace({
   }
 
   function handleTicketArenaCountChange(value: number) {
+    if (activeBirthdayPackage && value !== activeTicketArenaCount) setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
     const nextArenaCount = !isHaDoBookingVenue ? 1 : ticketArenaCountForPlayers(value)
     const nextMinimumDuration = ticketDurationForPlayers(ticketType, ticketPlayers, nextArenaCount, ticketDate, bookingVenue)
     const nextDuration = Math.max(nextMinimumDuration, ticketDuration)
@@ -3410,6 +3452,7 @@ function BookingWorkspace({
   }
 
   function handleTicketDurationChange(value: number) {
+    if (activeBirthdayPackage && value !== 120) setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
     const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, value))
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
@@ -5529,6 +5572,8 @@ function BookingWorkspace({
             ticketServices={ticketServices}
             ticketStatus={ticketStatus}
             ticketStatusVariant={ticketStatusVariant}
+            birthdayPackageId={activeBirthdayPackage?.id ?? ""}
+            onBirthdayPackageChange={handleBirthdayPackageChange}
             ticketSpecialNote={ticketSpecialNote}
             ticketTime={ticketTime}
             ticketTimeOptions={ticketTimeOptions}

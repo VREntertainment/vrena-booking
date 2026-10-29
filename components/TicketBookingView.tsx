@@ -1,6 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { birthdayPackages, birthdayPackageById } from '../lib/birthdayPackages'
+import { birthdayPackageCopy } from '../lib/birthdayPackageCopy'
 import { X } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import type { GuestTicketContact } from '../lib/guestTicketBooking'
@@ -89,6 +91,8 @@ export type TicketBookingViewProps = {
   ticketPlayers: number
   ticketStatus: string
   ticketStatusVariant: TicketStatusVariant
+  birthdayPackageId: string
+  onBirthdayPackageChange: (id: string) => void
   ticketSpecialNote: string
   isBookingTickets: boolean
   isLoadingTicketLoyalty: boolean
@@ -154,6 +158,8 @@ export default function TicketBookingView({
   ticketPlayers,
   ticketStatus,
   ticketStatusVariant,
+  birthdayPackageId,
+  onBirthdayPackageChange,
   ticketSpecialNote,
   isBookingTickets,
   isLoadingTicketLoyalty,
@@ -206,6 +212,8 @@ export default function TicketBookingView({
   const guestTicketActionInFlightRef = useRef(false)
   const [guestAccountChoicePhone, setGuestAccountChoicePhone] = useState('')
   const isGuestAccountChoiceConfirmation = Boolean(guestAccountChoicePhone) && guestAccountChoicePhone === guestTicketContact.phone
+  const birthdayCopy = birthdayPackageCopy[language]
+  const birthdayPackage = birthdayPackageById(birthdayPackageId)
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = isSpecialTicket ? text.ticketPriceToConfirm : formatVnd(currentTicketTotalPrice)
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !manualDiscountReview
@@ -294,6 +302,17 @@ export default function TicketBookingView({
                 </div>
               )}
 
+              {ticketType === 'birthday' && (
+                <div className="birthday-package-selection">
+                  <label htmlFor="birthday-package">{birthdayCopy.label}</label>
+                  <select id="birthday-package" value={birthdayPackageId} onChange={event => onBirthdayPackageChange(event.target.value)} disabled={isBookingTickets}>
+                    <option value="">{birthdayCopy.custom}</option>
+                    {birthdayPackages.map(item => <option key={item.id} value={item.id}>{item.name} · {item.players} {text.players} · {formatVnd(item.price)}</option>)}
+                  </select>
+                  {birthdayPackage && <strong className="birthday-package-price">{formatVnd(birthdayPackage.price)} · 120 min</strong>}
+                  <p>{birthdayCopy.note}</p>
+                </div>
+              )}
               <div className="form-grid compact-form-grid ticket-form-grid">
                 <div className="ticket-control ticket-control-date">
                   <label>{text.date}</label>
