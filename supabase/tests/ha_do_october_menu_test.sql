@@ -1,0 +1,13 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-11-02','09:00'),260000,'Weekday opening menu rate');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-11-02','19:59'),260000,'Weekday daytime ends at 20:00');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-11-02','20:00'),290000,'Weekday evening rate');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-10-31','19:59'),330000,'Weekend daytime rate');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-10-31','20:00'),390000,'Weekend evening new rate');
+select is(public.ticket_tariff_unit_price('ha-do-centrosa','individual','2026-10-30','09:00'),220000,'Historical weekday preserved');
+select is(public.ticket_tariff_unit_price('cafe-des-stagiaires','individual','2026-11-02','16:00'),240000,'Thao Dien preserved');
+select * from finish();
+rollback;

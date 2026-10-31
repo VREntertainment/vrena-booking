@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { MapPin, ArrowUpRight } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
 export type BookingVenueId = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
 type BookingVenueSelectorProps = {
+  gameGuideTrigger?: ReactNode
   allowedVenueKeys?: string[]
   onChange: (venue: BookingVenueId) => void
   text: TranslationMap
@@ -53,7 +54,7 @@ function VenueHoursPill({ label }: { label: string }) {
   )
 }
 
-export default function BookingVenueSelector({ allowedVenueKeys, onChange, text, value }: BookingVenueSelectorProps) {
+export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigger, onChange, text, value }: BookingVenueSelectorProps) {
   const [expanded, setExpanded] = useState(false)
   const venueName = value === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
   const selectVenue = (venue: BookingVenueId) => {
@@ -64,9 +65,11 @@ export default function BookingVenueSelector({ allowedVenueKeys, onChange, text,
     <section className={`booking-venue-selector booking-venue-selector-compact${expanded ? ' expanded' : ''}`} aria-label={text.bookingVenueTitle}>
       <div className="booking-venue-mobile-summary">
         <div><strong>{venueName}</strong></div>
+        <div className="booking-venue-actions">{gameGuideTrigger}
         <button aria-controls="booking-venue-expanded-options" aria-expanded={expanded} className="secondary small-button" type="button" onClick={() => setExpanded(!expanded)}>
           {expanded ? text.close : text.bookingVenueChange}
         </button>
+        </div>
       </div>
       <div className="booking-venue-expanded-content" id="booking-venue-expanded-options">
         <div className="booking-venue-heading">
