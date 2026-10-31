@@ -2608,6 +2608,7 @@ function BookingWorkspace({
     if (!pendingBooking) return undefined
 
     return schedulePostEffectStateUpdate(() => {
+      if (pendingBooking.venue) setBookingVenue(pendingBooking.venue)
       setTicketType(pendingBooking.ticketType)
       setTicketDate(pendingBooking.date)
       setTicketTime(pendingBooking.time)
@@ -2615,7 +2616,7 @@ function BookingWorkspace({
       setTicketDuration(pendingBooking.duration)
       setTicketSpecialNote(pendingBooking.specialNote)
       const preset = selectedBirthdayPackage(pendingBooking.ticketType, pendingBooking.players, pendingBooking.duration, pendingBooking.specialNote)
-      if (preset) setTicketArenaCount(birthdayPackageSelection(preset.id, bookingVenue)!.arenas)
+      setTicketArenaCount(pendingBooking.arenaCount ?? (preset ? birthdayPackageSelection(preset.id, pendingBooking.venue ?? bookingVenue)!.arenas : 1))
       setPendingTicketAuthAction('book-after-login')
       setAuthMode(pendingBooking.authMode)
       setAuthStep('email')
@@ -3219,17 +3220,6 @@ function BookingWorkspace({
     }
   }
 
-  function ticketAccountBookingConfirmationMessage() {
-
-    const pendingBooking = readPendingTicketAccountBooking()
-    if (!pendingBooking) return text.guestTicketSavedToAccount
-
-    return text.ticketAccountBookingConfirmed
-      .replace('{date}', formatShortDate(pendingBooking.date, language))
-      .replace('{time}', pendingBooking.time)
-      .replace('{players}', String(pendingBooking.players))
-  }
-
   async function prepareGuestTicketAction(
     action: 'create-account' | 'guest',
     options: { continueWithoutAccount?: boolean } = {}
@@ -3294,16 +3284,9 @@ function BookingWorkspace({
       }
 
       if (pendingTicketAuthAction === 'book-after-login') {
-        const booked = ticketConfirmation ? true : await bookTickets(activeProfile)
-        if (booked) {
-          const confirmationMessage = ticketAccountBookingConfirmationMessage()
-          clearPendingTicketAccountBooking()
-          setTicketConfirmation((current) => current
-            ? { ...current, guestPhone: undefined, guestName: undefined }
-            : current)
-          showTicketStatus(confirmationMessage)
-          setProfileStatus(confirmationMessage)
-        }
+        // Authentication returns to the saved checkout for explicit confirmation.
+        // Never replay a failed booking when the customer revisits their profile.
+        clearPendingTicketAccountBooking()
         setActiveView('tickets')
         return true
       }
@@ -3315,14 +3298,23 @@ function BookingWorkspace({
     }
   }
 
+  const resumeAuthenticatedTicket = useEffectEvent(() => { void completePendingTicketAuth(profile) })
+  useEffect(() => {
+    if (pendingTicketAuthAction === 'book-after-login' && profile && !isProfileAuthLoading) {
+      resumeAuthenticatedTicket()
+    }
+  }, [pendingTicketAuthAction, profile, isProfileAuthLoading])
+
   function validateTicketSelection(activeProfile = profile) {
     if (activeProfile) {
       const contact = validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, looseText)
       if (contact.error) {
-        setActiveView('profile')
-        setProfileStatus(contact.error)
-        showTicketStatus(contact.error, 'error')
-        return false
+        // Keep the booking draft visible; collect the missing phone in checkout.
+        const bookingContact = validateGuestTicketContact(guestTicketContact, looseText)
+        if (bookingContact.error) {
+          showTicketStatus(bookingContact.error, 'error')
+          return false
+        }
       }
     }
     const service = selectedTicketService(ticketType)
@@ -5524,6 +5516,8 @@ function BookingWorkspace({
             isCheckingTicketDiscount={isCheckingTicketDiscount}
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
+            isAuthLoading={isProfileAuthLoading || Boolean(userId && !profile)}
+            needsAccountPhone={Boolean(profile && validateGuestTicketContact({ name: '', phone: profile.phone || '' }, looseText).error)}
             manualDiscountReview={!isHaDoBookingVenue}
             singleArenaOnly={!isHaDoBookingVenue}
             estimatedLoyaltyPointsEarned={estimatedTicketLoyaltyPointsEarned}

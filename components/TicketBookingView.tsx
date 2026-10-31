@@ -81,6 +81,8 @@ export type TicketBookingViewProps = {
   text: Record<string, string>
   language: LanguageCode
   isLoggedIn: boolean
+  isAuthLoading: boolean
+  needsAccountPhone: boolean
   manualDiscountReview: boolean
   singleArenaOnly: boolean
   gameGuideTrigger: ReactNode
@@ -148,6 +150,8 @@ export default function TicketBookingView({
   text,
   language,
   isLoggedIn,
+  isAuthLoading,
+  needsAccountPhone,
   manualDiscountReview,
   singleArenaOnly,
   gameGuideTrigger,
@@ -392,7 +396,7 @@ export default function TicketBookingView({
                 <label className="ticket-special-note-field">
                   <span>{text.ticketSpecialNoteLabel}</span>
                   <textarea
-                    disabled={isBookingTickets || guestTicketAction !== null}
+                    disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                     maxLength={birthdayPackage ? 500 - birthdayPackageNote(birthdayPackage).length - 1 : 500}
                     onChange={(event) => onTicketSpecialNoteChange(birthdayPackage ? `${birthdayPackageNote(birthdayPackage)}\n${event.target.value}` : event.target.value)}
                     placeholder={text.ticketSpecialNotePlaceholder}
@@ -428,6 +432,15 @@ export default function TicketBookingView({
                 )}
               </div>
 
+              {needsAccountPhone && (
+                <label className="ticket-account-phone ticket-discount-code-field">
+                  <span>{text.phone}</span>
+                  <input data-testid="booking-account-phone" type="tel" autoComplete="tel"
+                    value={guestTicketContact.phone} disabled={isBookingTickets}
+                    onChange={event => onGuestTicketContactChange({ ...guestTicketContact, phone: event.target.value })} />
+                  <small>{text.phoneRequired}</small>
+                </label>
+              )}
               <div className="ticket-checkout-action">
                 <div className="ticket-mobile-total" aria-live="polite">
                   <span>{birthdayPackage ? birthdayCopy.label : text.totalPrice}{ticketTotalReductionLabel && ` · ${ticketTotalReductionLabel}`}</span>
@@ -437,7 +450,7 @@ export default function TicketBookingView({
                 </div>
                 <button
                   className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
-                  disabled={isBookingTickets || guestTicketAction !== null}
+                  disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                   type="button"
                   onClick={handleBookTicketsClick}
                 >
@@ -500,7 +513,7 @@ export default function TicketBookingView({
                     <div className="guest-ticket-actions">
                       <button
                         className="primary create-button"
-                        disabled={isBookingTickets || guestTicketAction !== null}
+                        disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => {
                           setGuestTicketContactOpen(false)
@@ -511,7 +524,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
-                        disabled={isBookingTickets || guestTicketAction !== null}
+                        disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('guest')}
                       >
@@ -519,7 +532,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className="link-button guest-ticket-back-button"
-                        disabled={isBookingTickets || guestTicketAction !== null}
+                        disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => setGuestAccountChoicePhone('')}
                       >
@@ -531,7 +544,7 @@ export default function TicketBookingView({
                   <>
                     <GuestTicketContactPanel
                       contact={guestTicketContact}
-                      disabled={isBookingTickets || guestTicketAction !== null}
+                      disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                       estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
                       onChange={onGuestTicketContactChange}
                       onPromptLogin={() => {
@@ -544,7 +557,7 @@ export default function TicketBookingView({
                     <div className="guest-ticket-actions">
                       <button
                         className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
-                        disabled={isBookingTickets || guestTicketAction !== null}
+                        disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('create-account')}
                       >
@@ -552,7 +565,7 @@ export default function TicketBookingView({
                       </button>
                       <button
                         className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
-                        disabled={isBookingTickets || guestTicketAction !== null}
+                        disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('guest')}
                       >
