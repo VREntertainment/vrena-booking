@@ -2,14 +2,17 @@
 .app .booking-focused-tabs::before { display: none !important; }
 .app .booking-focused-tabs { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .app .booking-focused-tabs .tab { min-height: 46px; border-radius: 12px; }
-.app .booking-focused-tabs .tab:first-child {
-  background: var(--vrena-cta-primary) !important;
-  color: var(--vrena-cta-primary-ink) !important;
-  font-weight: 800;
+/* Navigation selection describes the current page; booking CTAs live in the page. */
+.app .booking-focused-tabs .tab:not(.active) {
+  background: transparent !important;
+  color: var(--player-text-muted) !important;
+  box-shadow: none !important;
 }
-.app .booking-focused-tabs .tab.active:not(:first-child) {
-  background: var(--player-surface-soft) !important;
-  color: var(--player-text) !important;
+.app .booking-focused-tabs .tab.active {
+  background: var(--vrena-selection-bg) !important;
+  color: var(--vrena-selection-ink) !important;
+  box-shadow: inset 0 -3px 0 var(--vrena-selection-indicator) !important;
+  font-weight: 800;
 }
 .app .account-booking-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .app .account-booking-heading h2 { margin: 0; }
