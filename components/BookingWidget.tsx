@@ -5533,7 +5533,7 @@ function BookingWorkspace({
             onPrepareGuestTicketAction={prepareGuestTicketAction}
             onPromptCreateAccount={promptTicketCreateAccount}
             onPromptLogin={promptTicketLogin}
-            onValidateTicketSelection={validateTicketSelection}
+            onValidateTicketSelection={() => validateTicketSelection(null)}
             onTicketDiscountCodeChange={handleTicketDiscountCodeChange}
             onTicketLoyaltyPointsChange={handleTicketLoyaltyPointsChange}
             onTicketDateChange={(value) => {

@@ -11,6 +11,7 @@ import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import { vietnamClock } from '../lib/booking/arenaAvailability'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
+import BookingPhoneDialog from './BookingPhoneDialog'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
 const ShortDateInput = dynamic(() => import('./ShortDateInput'), { ssr: false })
@@ -231,7 +232,7 @@ export default function TicketBookingView({
     : formatTicketDateDisplay(ticketDate, language, true)
 
   function handleBookTicketsClick() {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || needsAccountPhone) {
       if (!onValidateTicketSelection()) return
       setGuestAccountChoicePhone('')
       setGuestTicketContactOpen(true)
@@ -432,15 +433,6 @@ export default function TicketBookingView({
                 )}
               </div>
 
-              {needsAccountPhone && (
-                <label className="ticket-account-phone ticket-discount-code-field">
-                  <span>{text.phone}</span>
-                  <input data-testid="booking-account-phone" type="tel" autoComplete="tel"
-                    value={guestTicketContact.phone} disabled={isBookingTickets}
-                    onChange={event => onGuestTicketContactChange({ ...guestTicketContact, phone: event.target.value })} />
-                  <small>{text.phoneRequired}</small>
-                </label>
-              )}
               <div className="ticket-checkout-action">
                 <div className="ticket-mobile-total" aria-live="polite">
                   <span>{birthdayPackage ? birthdayCopy.label : text.totalPrice}{ticketTotalReductionLabel && ` · ${ticketTotalReductionLabel}`}</span>
@@ -491,6 +483,11 @@ export default function TicketBookingView({
             </div>
           </div>
 
+          {isLoggedIn && guestTicketContactOpen && <BookingPhoneDialog
+            language={language} text={text} phone={guestTicketContact.phone}
+            onPhoneChange={phone => onGuestTicketContactChange({ ...guestTicketContact, phone })}
+            onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
+            busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
           {!isLoggedIn && guestTicketContactOpen && (
             <div className="modal-backdrop guest-ticket-modal-backdrop">
               <div className="login-modal guest-ticket-modal" role="dialog" aria-modal="true" aria-label={text.guestTicketTitle}>
