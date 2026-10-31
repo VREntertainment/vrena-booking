@@ -37,6 +37,7 @@ import {
   limitMotto,
   normalizeProfileGender,
 } from '../lib/bookingWidgetDomain'
+import AccountBookings, { accountBookingLabels } from './AccountBookings'
 import AppLoadingState from './AppLoadingState'
 import CountryCodePicker from './CountryCodePicker'
 import ContactChannels from './ContactChannels'
@@ -77,7 +78,7 @@ function scrollToMfaElement(element: HTMLElement | null) {
 }
 
 export default function BookingProfileView({ context }: { context: any }) {
-  const [profileSubTab, setProfileSubTab] = useState<'achievements' | 'settings'>('achievements')
+  const [profileSubTab, setProfileSubTab] = useState<'bookings' | 'achievements' | 'settings'>('bookings')
   const mfaSecurityRef = useRef<HTMLDivElement>(null)
   const mfaEnrollmentRef = useRef<HTMLDivElement>(null)
   const {
@@ -352,6 +353,9 @@ export default function BookingProfileView({ context }: { context: any }) {
 
             {profile && (
               <div className="segmented profile-sub-tabs" aria-label={text.profile}>
+                <button className={profileSubTab === 'bookings' ? 'active' : ''} onClick={() => setProfileSubTab('bookings')} type="button">
+                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={17} />}>{accountBookingLabels[language as keyof typeof accountBookingLabels]}</ButtonIconText>
+                </button>
                 <button
                   className={profileSubTab === 'achievements' ? 'active' : ''}
                   onClick={() => setProfileSubTab('achievements')}
@@ -369,7 +373,9 @@ export default function BookingProfileView({ context }: { context: any }) {
               </div>
             )}
 
-            {profile && profileSubTab === 'achievements' ? (
+            {profile && profileSubTab === 'bookings' ? (
+              <AccountBookings userId={userId} language={language} text={text} />
+            ) : profile && profileSubTab === 'achievements' ? (
               <ProfileAchievementsPanel
                 language={language}
                 mySessions={mySessions}

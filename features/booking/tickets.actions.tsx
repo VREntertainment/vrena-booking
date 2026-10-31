@@ -104,6 +104,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       ticketPlayers,
       ticketDuration,
       ticketSpecialNote,
+      isHaDoBookingVenue,
+      activeTicketArenaCount,
       setPendingTicketAuthAction,
       goToLogin,
     } = getContext()
@@ -122,6 +124,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         : null
     if (ticketAuthAction === 'book-after-login') {
       writePendingTicketAccountBooking({
+        venue: isHaDoBookingVenue ? 'ha-do-centrosa' : 'cafe-des-stagiaires',
+        arenaCount: activeTicketArenaCount,
         authMode: 'login',
         createdAt: Date.now(),
         ticketType,
@@ -149,6 +153,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       ticketPlayers,
       ticketDuration,
       ticketSpecialNote,
+      isHaDoBookingVenue,
+      activeTicketArenaCount,
       setPendingTicketAuthAction,
       setLoginPromptOpen,
       updateAuthMode,
@@ -170,6 +176,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         : null
     if (ticketAuthAction === 'book-after-login') {
       writePendingTicketAccountBooking({
+        venue: isHaDoBookingVenue ? 'ha-do-centrosa' : 'cafe-des-stagiaires',
+        arenaCount: activeTicketArenaCount,
         authMode: 'create',
         createdAt: Date.now(),
         ticketType,
@@ -193,6 +201,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
   async function bookTickets(profileOverride?: Profile | null) {
     const {
       bookingTicketsInFlightRef,
+      setProfileCountryCode,
+      setProfilePhone,
       profile,
       ticketType,
       ticketTimeOptions,
@@ -212,6 +222,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       currentTicketTotalPrice,
       isHaDoBookingVenue,
       setTicketConfirmation,
+      setPendingTicketAuthAction,
       activeTicketArenaCount,
       currentTicketUnitPrice,
       ticketSpecialNote,
@@ -237,7 +248,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
 
     if (bookingTicketsInFlightRef.current) return false
 
-    const activeProfile = profileOverride === undefined ? profile : profileOverride
+    let activeProfile = profileOverride === undefined ? profile : profileOverride
 
     const service = selectedTicketService(ticketType)
     const selectedTimeOption = ticketTimeOptions.find((option) => option.value === ticketTime)
@@ -250,9 +261,10 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
 
     if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
 
-    const guestContactValidation = activeProfile
-      ? { normalizedPhone: '', error: '' }
-      : validateGuestTicketContact(guestTicketContact, looseText)
+    const needsAccountPhone = Boolean(activeProfile && validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, looseText).error)
+    const guestContactValidation = !activeProfile || needsAccountPhone
+      ? validateGuestTicketContact(guestTicketContact, looseText)
+      : { normalizedPhone: '', error: '' }
 
     if (guestContactValidation.error) {
       showTicketStatus(guestContactValidation.error, 'error')
@@ -263,6 +275,21 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
     bookingTicketsInFlightRef.current = true
     setIsBookingTickets(true)
     try {
+      if (activeProfile && needsAccountPhone) {
+        const { data, error } = await (await getSupabase()).from('profiles')
+          .update({ phone: guestContactValidation.normalizedPhone })
+          .eq('id', activeProfile.id).select('phone').single()
+        if (error || !data) {
+          showTicketStatus(error?.message || text.ticketBookingError, 'error')
+          return false
+        }
+        activeProfile = { ...activeProfile, phone: data.phone }
+        setProfile(activeProfile)
+        const phoneParts = splitPhoneNumber(data.phone)
+        setProfileCountryCode(phoneParts.countryInput)
+        setProfilePhone(phoneParts.localPhone)
+        syncProfileEverywhere(activeProfile)
+      }
       const allowed = await consumeAppRateLimit('booking_attempt', `${ticketType}:${ticketDate}:${ticketTime}`, (message) => showTicketStatus(message, 'error'))
       if (!allowed) return false
 
@@ -375,6 +402,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
           : { loyalty_points_total: nextPointsTotal, redeem_value_vnd_per_point: ticketLoyaltyRedeemValue })
       }
 
+      clearPendingTicketAccountBooking()
+      setPendingTicketAuthAction(null)
       setTicketConfirmation(confirmation)
       trackTicketBookingCompleted({
         ...ticketAnalytics,

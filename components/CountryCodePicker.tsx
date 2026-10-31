@@ -12,6 +12,10 @@ type CountryCodePickerProps = {
 }
 
 type PhoneNumberInputProps = {
+  inputId?: string
+  required?: boolean
+  invalid?: boolean
+  describedBy?: string
   autoComplete?: string
   buttonLabel: string
   className?: string
@@ -121,6 +125,10 @@ export default function CountryCodePicker({
 }
 
 export function PhoneNumberInput({
+  inputId,
+  required,
+  invalid,
+  describedBy,
   autoComplete = 'tel',
   buttonLabel,
   className,
@@ -148,6 +156,10 @@ export function PhoneNumberInput({
         value={countryInput}
       />
       <input
+        id={inputId}
+        required={required}
+        aria-invalid={invalid}
+        aria-describedby={describedBy}
         aria-label={inputLabel}
         autoComplete={autoComplete}
         disabled={disabled}

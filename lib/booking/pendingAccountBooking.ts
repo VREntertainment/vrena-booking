@@ -4,6 +4,8 @@ const PENDING_TICKET_ACCOUNT_BOOKING_STORAGE_KEY = 'vrena.ticket.pending-account
 const PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS = 30 * 60 * 1000
 
 export type PendingTicketAccountBooking = {
+  venue?: 'ha-do-centrosa' | 'cafe-des-stagiaires'
+  arenaCount?: number
   authMode: 'login' | 'create'
   createdAt: number
   ticketType: TicketType
@@ -24,6 +26,8 @@ export function readPendingTicketAccountBooking(): PendingTicketAccountBooking |
     const candidate = JSON.parse(storedValue) as Partial<PendingTicketAccountBooking>
     const isTicketType = candidate.ticketType === 'individual' || candidate.ticketType === 'birthday' || candidate.ticketType === 'corporate'
     const isValid = (candidate.authMode === 'login' || candidate.authMode === 'create')
+      && (candidate.venue === undefined || candidate.venue === 'ha-do-centrosa' || candidate.venue === 'cafe-des-stagiaires')
+      && (candidate.arenaCount === undefined || candidate.arenaCount === 1 || candidate.arenaCount === 2)
       && isTicketType
       && typeof candidate.createdAt === 'number'
       && Date.now() - candidate.createdAt <= PENDING_TICKET_ACCOUNT_BOOKING_MAX_AGE_MS

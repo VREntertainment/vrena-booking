@@ -29,13 +29,15 @@ export default function GuestTicketContactPanel({
         <span>{text.guestTicketBody}</span>
       </div>
       <div className="guest-ticket-phone-field">
-        <span className="guest-ticket-phone-required" aria-hidden="true"><span className="required">*</span></span>
+        <label htmlFor="guest-booking-phone">{text.phoneNumber} <span className="required" aria-hidden="true">*</span></label>
         <PhoneNumberInput
+          inputId="guest-booking-phone"
+          required
           autoComplete="tel-national"
           buttonLabel={text.countryCode}
           className="guest-ticket-phone-control"
           disabled={disabled}
-          inputLabel={`${text.phone} *`}
+          inputLabel={`${text.phoneNumber} *`}
           onChange={(phone) => onChange({ ...contact, phone })}
           placeholder="0981152315"
           searchPlaceholder={text.searchCountry}

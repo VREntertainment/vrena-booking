@@ -156,7 +156,7 @@
 
 .app .profile-sub-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0 0 12px;
 }
 
@@ -1894,4 +1894,23 @@
   height: 12px;
   background: var(--vrena-mode-accent);
   animation-delay: 160ms;
+}
+
+.app .account-bookings {
+  display: grid;
+  gap: 12px;
+}
+
+.app .account-bookings .profile-completion-card {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .app .profile-sub-tabs button .button-icon-text {
+    flex-direction: column;
+    gap: 4px;
+    white-space: normal;
+    font-size: 12px;
+  }
 }
