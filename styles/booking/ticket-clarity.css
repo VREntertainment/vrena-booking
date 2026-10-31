@@ -61,11 +61,11 @@
 }
 .app .ticket-streamlined .ticket-service-card strong { font-size: 13px; }
 .app .ticket-streamlined .ticket-service-card svg { flex-shrink: 0; }
-.app main:has(.ticket-streamlined) .booking-venue-selector-compact { padding: 14px 18px; margin-bottom: 18px; gap: 12px; }
-.app main:has(.ticket-streamlined) .booking-venue-mobile-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.app main:has(.ticket-streamlined) .booking-venue-mobile-summary button { min-height: 44px; margin: 0; }
-.app main:has(.ticket-streamlined) .booking-venue-selector-compact:not(.expanded) .booking-venue-expanded-content { display: none; }
-.app main:has(.ticket-streamlined) .booking-venue-heading { display: none; }
+.app main:has(.ticket-booking-layout) .booking-venue-selector-compact { padding: 14px 18px; margin-bottom: 18px; gap: 12px; }
+.app main:has(.ticket-booking-layout) .booking-venue-mobile-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app main:has(.ticket-booking-layout) .booking-venue-mobile-summary button { min-height: 44px; margin: 0; }
+.app main:has(.ticket-booking-layout) .booking-venue-selector-compact:not(.expanded) .booking-venue-expanded-content { display: none; }
+.app main:has(.ticket-booking-layout) .booking-venue-heading { display: none; }
 @media (max-width: 720px) {
   .app .ticket-streamlined .ticket-form-panel { gap: 14px; }
   .app .ticket-streamlined .ticket-checkout-action {

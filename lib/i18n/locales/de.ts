@@ -318,7 +318,7 @@ export const de = {
   sessionTariffGroupSmall: '5-8 Spieler: 5% Rabatt',
   sessionTariffGroupLarge: '9-16 Spieler: 5% Rabatt',
   sessionTariffBirthdayOffer: 'Geburtstagsangebot: 5% Rabatt, einmal im Geburtstagsmonat gültig',
-  sessionTariffRates: 'Ab 31. August 2026: Hà Đô werktags 260k/290k und am Wochenende 330k/390k; CS ab 16:00 240k und ab 20:00 290k. Alle Preise pro Person / 30 Min.',
+  sessionTariffRates: 'Ab 2026-10-31: Hà Đô werktags 260k/290k und am Wochenende 330k/390k; CS ab 16:00 240k und ab 20:00 290k. Alle Preise pro Person / 30 Min.',
   sessionTariffGroups: 'Wähle 1 oder 2 Arenen. Jede Arena bietet bis zu 4 gleichzeitige Plätze. 5-8 Spieler: 5% Rabatt. 9-16 Spieler: 5% Rabatt.',
   sessionOfferLimit: 'Pro Buchung kann nur ein Angebot oder Gutschein verwendet werden.',
   sessionTariffPayment: "Die Zahlung ist nur vor Ort möglich: per QR-Code, Kredit- oder Debitkarte, Apple Pay, Samsung Pay, Google Pay, MoMo oder bar. Rechnungen mit Mehrwertsteuerausweis sind verfügbar.",

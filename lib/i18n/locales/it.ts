@@ -318,7 +318,7 @@ export const it = {
   sessionTariffGroupSmall: '5-8 giocatori: sconto 5%',
   sessionTariffGroupLarge: '9-16 giocatori: sconto 5%',
   sessionTariffBirthdayOffer: 'Offerta compleanno: 5% di sconto, valida una volta nel mese del compleanno',
-  sessionTariffRates: 'Dal 31 agosto 2026: Hà Đô 260k/290k nei feriali e 330k/390k nel weekend; CS 240k dalle 16:00 e 290k dalle 20:00. Prezzi per giocatore / 30 min.',
+  sessionTariffRates: 'Dal 2026-10-31: Hà Đô 260k/290k nei feriali e 330k/390k nel weekend; CS 240k dalle 16:00 e 290k dalle 20:00. Prezzi per giocatore / 30 min.',
   sessionTariffGroups: 'Scegli 1 o 2 arene. Ogni arena aggiunge fino a 4 posti simultanei. 5-8 giocatori: sconto 5%. 9-16 giocatori: sconto 5%.',
   sessionOfferLimit: 'Per ogni prenotazione si può usare una sola offerta o voucher.',
   sessionTariffPayment: "Il pagamento si effettua solo in sede: tramite codice QR, carta di credito o di debito, Apple Pay, Samsung Pay, Google Pay, MoMo o contanti. È disponibile la fattura con IVA.",

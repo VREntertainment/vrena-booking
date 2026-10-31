@@ -318,7 +318,7 @@ export const ko = {
   sessionTariffGroupSmall: '5-8명: 5% 할인',
   sessionTariffGroupLarge: '9-16명: 5% 할인',
   sessionTariffBirthdayOffer: '생일 혜택: 생일이 있는 달에 1회 사용 가능한 5% 할인',
-  sessionTariffRates: '2026년 8월 31일부터: Hà Đô 평일 260k/290k, 주말 330k/390k; CS 16:00부터 240k, 20:00부터 290k. 모든 요금은 1인 / 30분 기준입니다.',
+  sessionTariffRates: '2026-10-31부터: Hà Đô 평일 260k/290k, 주말 330k/390k; CS 16:00부터 240k, 20:00부터 290k. 모든 요금은 1인 / 30분 기준입니다.',
   sessionTariffGroups: '아레나 1개 또는 2개를 선택합니다. 각 아레나는 동시 최대 4자리입니다. 5-8명: 5% 할인. 9-16명: 5% 할인.',
   sessionOfferLimit: '예약당 오퍼 또는 바우처는 하나만 사용할 수 있습니다.',
   sessionTariffPayment: "결제는 매장에서만 가능합니다. QR 코드, 신용카드 또는 체크카드, Apple Pay, Samsung Pay, Google Pay, MoMo, 현금으로 결제할 수 있습니다. VAT 세금계산서 발급이 가능합니다.",

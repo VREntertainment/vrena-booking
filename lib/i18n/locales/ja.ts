@@ -318,7 +318,7 @@ export const ja = {
   sessionTariffGroupSmall: '5-8名: 5%割引',
   sessionTariffGroupLarge: '9-16名: 5%割引',
   sessionTariffBirthdayOffer: '誕生日特典: 誕生日月に1回使える5%オフ',
-  sessionTariffRates: '2026年8月31日から：Hà Đôは平日260k/290k、週末330k/390k。CSは16:00から240k、20:00から290k。すべて1名 / 30分の料金です。',
+  sessionTariffRates: '2026-10-31から：Hà Đôは平日260k/290k、週末330k/390k。CSは16:00から240k、20:00から290k。すべて1名 / 30分の料金です。',
   sessionTariffGroups: '1または2アリーナを選択。各アリーナは同時に最大4枠。5-8名: 5%割引。9-16名: 5%割引。',
   sessionOfferLimit: '1予約につきオファーまたはバウチャーは1つだけ利用できます。',
   sessionTariffPayment: "お支払いは店頭のみです。QRコード、クレジットカード・デビットカード、Apple Pay、Samsung Pay、Google Pay、MoMo、現金をご利用いただけます。VAT請求書の発行も可能です。",
