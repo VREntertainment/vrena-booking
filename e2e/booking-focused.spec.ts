@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { futureDate } from './support/admin'
 import { accountFixture } from './support/accountFixture'
 
 for (const route of ['/sessions', '/hall-of-fame', '/clubs']) {
@@ -52,4 +53,24 @@ test('an old saved community view cannot reopen social features', async ({ page 
   await expect(page.getByRole('button', { name: 'Reserve your slot', exact: true })).toBeVisible()
   await expect(page.locator('.booking-focused-tabs')).toHaveText(/Book now.*My account/)
   await page.screenshot({ path: `/tmp/booking-focused-checkout-${test.info().project.name}.png`, fullPage: true, animations: 'disabled' })
+})
+
+test('authorized staff retain session creation and return to the Staff Console after saving', async ({ page }) => {
+  await accountFixture(page, '+84900000991', true, true)
+  await page.route('**/rest/v1/staff_games?**', route => route.fulfill({ json: [{ slug: 'laser-tag', active: true, name: 'Laser Tag', game_type: 'pvp', duration_minutes: 30, max_players_per_arena: 8 }] }))
+  const writes: unknown[] = []
+  await page.route('**/rest/v1/sessions', async route => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    writes.push(route.request().postDataJSON())
+    await route.fulfill({ status: 201, json: null })
+  })
+  await page.goto('/create-session')
+  await expect(page.getByTestId('create-session-name')).toBeVisible()
+  await page.getByTestId('create-session-name').fill('Isolated staff fixture')
+  await page.locator('#create-session-form input[type="date"]').fill(futureDate(40))
+  await page.screenshot({ path: '/tmp/booking-focused-staff-create.png', fullPage: true })
+  await page.getByTestId('create-session-time').selectOption({ index: 1 })
+  await page.getByTestId('create-session-submit').click()
+  await expect(page.getByTestId('staff-console')).toBeVisible()
+  expect(writes).toHaveLength(1)
 })

@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import { expect, test } from '@playwright/test'
 import { futureDate, loginAsAdmin } from './support/admin'
 
@@ -20,6 +21,7 @@ test('every public booking view uses the same compact mobile venue selector', as
   test.skip(info.project.name === 'chromium', 'Mobile selector contract.')
   for (const path of ['/tickets', '/sessions', '/create-session']) {
     await page.goto(path)
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) await expect(page).toHaveURL(/\/tickets/)
     const selector = page.locator('.booking-venue-selector')
     await expect(selector.locator('.booking-venue-mobile-summary')).toBeVisible()
     await expect(selector.locator('.booking-venue-expanded-content')).toBeHidden()
@@ -49,7 +51,7 @@ test('ticket experience selector is compact and excludes price and removed age c
 })
 
 test('mobile clubs use inline search without a floating overlay', async ({ page }, info) => {
-  test.skip(info.project.name === 'chromium', 'Mobile toolbar contract.')
+  test.skip(!CUSTOMER_SOCIAL_FEATURES_ENABLED || info.project.name === 'chromium', 'Customer social features are paused; mobile redirect coverage lives in booking-focused.spec.ts.')
   await page.goto('/clubs')
   await expect(page.locator('.clubs-section .search-shell .search')).toBeVisible()
   await expect(page.locator('.clubs-section .mobile-search-toggle')).toBeHidden()

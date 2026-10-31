@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { futureDate, loginAsAdmin, openAdmin, openCreateSession, uniqueSessionName } from './support/admin'
 
@@ -38,7 +39,8 @@ test.describe('admin flows', () => {
     await page.getByTestId('create-session-max-players').selectOption('6')
     await page.getByTestId('create-session-submit').click()
 
-    await expect(page.getByRole('heading', { name: sessionName })).toBeVisible()
+    if (CUSTOMER_SOCIAL_FEATURES_ENABLED) await expect(page.getByRole('heading', { name: sessionName })).toBeVisible()
+    else await expect(page.getByTestId('staff-console')).toBeVisible()
 
     // Session management is intentionally available only in the staff workspace.
     await openAdmin(page)

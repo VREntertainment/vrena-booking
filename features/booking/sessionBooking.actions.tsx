@@ -1,5 +1,6 @@
 'use client'
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
 import { customerBookingDurations } from '../../lib/customerBookingDurations'
 import { validateGuestTicketContact } from '../../lib/guestTicketBooking'
 import { ageBandFromBirthday } from '../../lib/agePolicy'
@@ -308,7 +309,7 @@ export function createBookingSessionBookingActions(getContext: () => SessionBook
     setSelectedGames(['laser-tag'])
     setSessionVisibility('public')
     await loadSessions({ focusDate: sessionDate })
-    setActiveView('sessions')
+    setActiveView(CUSTOMER_SOCIAL_FEATURES_ENABLED ? 'sessions' : 'staff')
     setIsCreating(false)
   }
 
