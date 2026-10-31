@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { MapPin, ArrowUpRight } from 'lucide-react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
@@ -55,28 +55,16 @@ function VenueHoursPill({ label }: { label: string }) {
 }
 
 export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigger, onChange, text, value }: BookingVenueSelectorProps) {
-  const [expanded, setExpanded] = useState(false)
-  const venueName = value === 'ha-do-centrosa' ? text.bookingVenueHaDoName : text.bookingVenueCafeName
-  const selectVenue = (venue: BookingVenueId) => {
-    onChange(venue)
-    setExpanded(false)
-  }
+  const carouselRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const carousel = carouselRef.current
+    const selected = carousel?.querySelector<HTMLElement>('[aria-checked="true"]')?.parentElement
+    if (carousel && selected) carousel.scrollTo({ left: selected.offsetLeft - carousel.offsetLeft, behavior: 'instant' })
+  }, [value])
+  const selectVenue = (venue: BookingVenueId) => onChange(venue)
   return (
-    <section className={`booking-venue-selector booking-venue-selector-compact${expanded ? ' expanded' : ''}`} aria-label={text.bookingVenueTitle}>
-      <div className="booking-venue-mobile-summary">
-        <div><strong>{venueName}</strong></div>
-        <div className="booking-venue-actions">{gameGuideTrigger}
-        <button aria-controls="booking-venue-expanded-options" aria-expanded={expanded} className="secondary small-button" type="button" onClick={() => setExpanded(!expanded)}>
-          {expanded ? text.close : text.bookingVenueChange}
-        </button>
-        </div>
-      </div>
-      <div className="booking-venue-expanded-content" id="booking-venue-expanded-options">
-        <div className="booking-venue-heading">
-          <h2 id="booking-venue-title">{text.bookingVenueTitle}</h2>
-        </div>
-
-        <div className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
+    <section className="booking-venue-selector booking-venue-selector-compact booking-venue-carousel" aria-label={text.bookingVenueTitle}>
+        <div ref={carouselRef} className="booking-venue-options" role="radiogroup" aria-label={text.bookingVenueTitle}>
           <div className="booking-venue-option-shell">
             <button
               disabled={allowedVenueKeys !== undefined && !allowedVenueKeys.includes('ha-do-centrosa')}
@@ -121,7 +109,7 @@ export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigge
             />
           </div>
         </div>
-      </div>
+      <div className="booking-venue-guide">{gameGuideTrigger}</div>
     </section>
   )
 }
