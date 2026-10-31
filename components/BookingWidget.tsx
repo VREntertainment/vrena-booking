@@ -1,5 +1,6 @@
 'use client'
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED, customerView } from '../lib/customerExperience'
 import { birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
 import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { gameGuidePosters } from '../lib/gameGuidePosters'
@@ -305,7 +306,10 @@ function BookingWorkspace({
   useEffect(() => {
     return schedulePostEffectStateUpdate(() => applyIncomingBirthdayPackage(initialBirthdayPackageId))
   }, [initialBirthdayPackageId])
-  const [activeView, setActiveView] = useState<AppView>(initialView)
+  const [activeView, setActiveViewState] = useState<AppView>(() => customerView(initialView))
+  const setActiveView = useCallback((next: AppView | ((current: AppView) => AppView)) => {
+    setActiveViewState(current => customerView(typeof next === 'function' ? next(current) : next))
+  }, [])
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
   useEffect(() => {
@@ -1625,6 +1629,7 @@ function BookingWorkspace({
   }
 
   function ensureClubsLoaded() {
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) return
     const clubsLoadedForCurrentUser = clubsLoadedRef.current && clubsLoadedForUserIdRef.current === (userId || '')
     if (clubsLoadedForCurrentUser || clubsLoadingRef.current) return
     void loadClubs()
@@ -1636,6 +1641,7 @@ function BookingWorkspace({
   }
 
   function ensureNetworkDataLoaded() {
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) return
     if (networkDataLoadedRef.current || networkDataLoadingRef.current) return
     void loadNetworkData()
   }
@@ -1646,6 +1652,7 @@ function BookingWorkspace({
   }
 
   function ensureLeaderboardLoaded() {
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) return
     if (leaderboardLoadedRef.current || leaderboardLoadingRef.current) return
     void loadLeaderboardPlayers()
   }
@@ -2484,7 +2491,7 @@ function BookingWorkspace({
     return schedulePostEffectStateUpdate(() => {
       setActiveView((currentView) => currentView === initialView ? currentView : initialView)
     })
-  }, [initialView])
+  }, [initialView, setActiveView])
 
   useEffect(() => {
     if (!restoreStoredView) return undefined
@@ -2503,7 +2510,7 @@ function BookingWorkspace({
     return schedulePostEffectStateUpdate(() => {
       setActiveView((currentView) => currentView === storedView ? currentView : storedView)
     })
-  }, [restoreStoredView])
+  }, [restoreStoredView, setActiveView])
 
   useEffect(() => {
     if (!externalLanguage) return
@@ -2546,7 +2553,7 @@ function BookingWorkspace({
   }, [profile, onProfileChange])
 
   useEffect(() => {
-    if (!profile || !userId) return
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED || !profile || !userId) return
     if (currentUserShareStats?.profileId === userId) return
 
     return scheduleDeferredWork(() => {
@@ -2565,12 +2572,12 @@ function BookingWorkspace({
       if (!active) return
       if (recoverySessionReady === false) {
         setIsProfileAuthLoading(false)
-        loadLeaderboardPlayersRef.current()
+        if (CUSTOMER_SOCIAL_FEATURES_ENABLED) loadLeaderboardPlayersRef.current()
         return
       }
       await loadProfileRef.current()
       if (!active) return
-      loadLeaderboardPlayersRef.current()
+      if (CUSTOMER_SOCIAL_FEATURES_ENABLED) loadLeaderboardPlayersRef.current()
     })()
 
     return () => {
@@ -2782,7 +2789,7 @@ function BookingWorkspace({
       active = false
       unsubscribe?.()
     }
-  }, [setAuthEmail, setAuthMode, setAuthStep, setIsProfileAuthLoading, setIsRecoveryMode, setKioskOperator, setMfaChallenge, setMfaChallengeCode, setMfaEnrollment, setMfaFactors, setMfaRequired, setMfaStatus, setMfaVerifyCode, setPhoneSetupEmail, setPhoneSetupRequired, setPhoneSetupSentTo, setProfile, setProfileEmail, setProfileStatus, setUserId])
+  }, [setActiveView, setAuthEmail, setAuthMode, setAuthStep, setIsProfileAuthLoading, setIsRecoveryMode, setKioskOperator, setMfaChallenge, setMfaChallengeCode, setMfaEnrollment, setMfaFactors, setMfaRequired, setMfaStatus, setMfaVerifyCode, setPhoneSetupEmail, setPhoneSetupRequired, setPhoneSetupSentTo, setProfile, setProfileEmail, setProfileStatus, setUserId])
 
   useEffect(() => {
     if (!profile) return
@@ -4069,7 +4076,7 @@ function BookingWorkspace({
   useEffect(() => {
     if (!staffMfaEnrollmentRequired || activeView === 'profile') return
     return schedulePostEffectStateUpdate(() => setActiveView('profile'))
-  }, [activeView, staffMfaEnrollmentRequired])
+  }, [activeView, staffMfaEnrollmentRequired, setActiveView])
 
   useEffect(() => {
     if (!selectedClubHallId || selectedClubTab !== 'hall') return
@@ -5164,6 +5171,12 @@ function BookingWorkspace({
   function voteCount(session: Session, gameId: GameId) {
     return Object.values(session.game_votes || {}).filter((vote) => vote === gameId).length
   }
+  useEffect(() => {
+    if (!CUSTOMER_SOCIAL_FEATURES_ENABLED && activeView === 'create' && createSessionMode !== 'calendar' && !isProfileAuthLoading && !canAccessStaffConsole) {
+      return schedulePostEffectStateUpdate(() => setActiveView('tickets'))
+    }
+  }, [activeView, createSessionMode, isProfileAuthLoading, canAccessStaffConsole, setActiveView])
+
   const isConsoleWorkspace = activeView === 'staff' || activeView === 'hr'
   const appAside = (
     <AppSidebar
@@ -5582,10 +5595,11 @@ function BookingWorkspace({
         </div>
       )}
 
-      {activeView === 'create' && (
+      {activeView === 'create' && (CUSTOMER_SOCIAL_FEATURES_ENABLED || createSessionMode === 'calendar' || canAccessStaffConsole) && (
         isHaDoBookingVenue || createSessionMode === 'calendar' ? (
           <CreateSessionView
             createStatus={createStatus}
+            allowSessionForm={CUSTOMER_SOCIAL_FEATURES_ENABLED || canAccessStaffConsole}
             mode={createSessionMode}
             onModeChange={(mode) => { if (mode === 'form' && !isHaDoBookingVenue) { setActiveView('tickets'); return }; handleCreateSessionModeChange(mode) }}
             text={text}
@@ -6019,7 +6033,7 @@ function BookingWorkspace({
         </div>
       )}
 
-      {anonymousConfirmOpen && (
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && anonymousConfirmOpen && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="anonymous-mode-title" onClick={() => setAnonymousConfirmOpen(false)}>
           <div className="login-modal anonymous-modal" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" onClick={() => setAnonymousConfirmOpen(false)} aria-label={text.close}>
@@ -6040,7 +6054,7 @@ function BookingWorkspace({
         </div>
       )}
 
-      {invitePopupInvite && invitePopupSession && (
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && invitePopupInvite && invitePopupSession && (
         <InvitePopupModal
           closeText={text.close}
           title={invitationPopupTitleText}
@@ -6062,7 +6076,7 @@ function BookingWorkspace({
         />
       )}
 
-      {birthdayPopupOpen && (
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && birthdayPopupOpen && (
         <BirthdayPopupModal
           closeText={text.close}
           title={text.birthdayPopupTitle}
@@ -6123,7 +6137,7 @@ function BookingWorkspace({
         />
       )}
 
-      {selectedClub && canOpenClubPage(selectedClub) && <ClubDetail
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && selectedClub && canOpenClubPage(selectedClub) && <ClubDetail
         canManageClub={canManageClub}
         selectedClub={selectedClub}
         canModerateClubMembers={canModerateClubMembers}
@@ -6225,7 +6239,7 @@ function BookingWorkspace({
         regenerateClubInviteCode={regenerateClubInviteCode}
       />}
 
-      {selectedPlayerProfile && (
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && selectedPlayerProfile && (
         <PlayerProfileModal
           closeText={text.close}
           playerTitle={compactDisplayName(selectedPlayerProfile.displayName, text.player)}
@@ -6336,7 +6350,7 @@ function BookingWorkspace({
   const appShell = (
     <div className={`app${isAndroid ? ' platform-android' : ''} ${isConsoleWorkspace ? 'console-workspace' : 'player-workspace'}${navigationCollapsed ? ' navigation-collapsed' : ''}`} data-tour="app-shell">
       <DocumentLanguage language={language} />
-      {profile && userId && (
+      {CUSTOMER_SOCIAL_FEATURES_ENABLED && profile && userId && (
         <FirstLoginTour enabled onViewChange={setActiveView} replayNonce={tourReplayNonce} text={text} userId={userId} />
       )}
       {appAside}

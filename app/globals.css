@@ -24,6 +24,7 @@
 @import "../styles/booking/calendar.css";
 @import "../styles/booking/mobile-polish.css";
 @import "../styles/booking/ticket-clarity.css";
+@import "../styles/booking/booking-focused.css";
 @source "./";
 @source "../components";
 @source "../hooks";

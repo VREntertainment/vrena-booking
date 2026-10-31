@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
 import type { Metadata } from 'next'
 import HomeAppShell from '../../components/HomeAppShell'
 import PublicRouteSeoContent from '../../components/PublicRouteSeoContent'
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
     canonical: publicAppRoutes.clubs,
   },
   robots: {
-    index: true,
+    index: CUSTOMER_SOCIAL_FEATURES_ENABLED,
     follow: true,
   },
   openGraph: {
@@ -31,7 +33,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function ClubsPage() {
+export default async function ClubsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) {
+    const params = await searchParams
+    const venue = params.venue === 'cafe-des-stagiaires' ? 'cafe-des-stagiaires' : 'ha-do-centrosa'
+    redirect(`/tickets?venue=${venue}`)
+  }
   return (
     <>
       <PublicRouteSeoContent currentPath={publicAppRoutes.clubs} title="VRena Clubs" />

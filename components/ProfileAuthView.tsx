@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import type { ReactNode } from 'react'
 import type { TranslationMap } from '../lib/i18n/loadTranslation'
 
@@ -52,7 +53,7 @@ export default function ProfileAuthView({
             <div>
               <span>{text.authBenefitPoints}</span>
               <span>{text.authBenefitBookings}</span>
-              <span>{text.authBenefitLoyalty}</span>
+              {CUSTOMER_SOCIAL_FEATURES_ENABLED && <span>{text.authBenefitLoyalty}</span>}
               <span>{text.authBenefitBirthday}</span>
             </div>
           </div>

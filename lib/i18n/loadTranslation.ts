@@ -1,8 +1,9 @@
+import { applyBookingExperienceCopy } from '../bookingExperienceCopy'
 import type { LanguageCode } from './languages'
 import { en, type TranslationMap } from './base'
 
 export function getFallbackTranslation(): TranslationMap {
-  return en
+  return applyBookingExperienceCopy('en', en)
 }
 
 async function loadBaseTranslation(language: LanguageCode): Promise<TranslationMap> {
@@ -61,7 +62,7 @@ async function applyPublishedCopy(
 
 export async function loadTranslation(language: LanguageCode): Promise<TranslationMap> {
   const translation = await loadBaseTranslation(language)
-  return applyPublishedCopy(language, translation)
+  return applyBookingExperienceCopy(language, await applyPublishedCopy(language, translation))
 }
 
 export type { TranslationMap }

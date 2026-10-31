@@ -52,7 +52,7 @@ export default function AccountBookings({ userId, language, text }: {
     <h2>{accountBookingLabels[language]}</h2>
     {!current && <p role="status">{text.profileLoading}</p>}
     {current?.error && <p role="alert">{current.error}</p>}
-    {current && !current.error && current.rows.length === 0 && <p>{text.noMatchingSessions}</p>}
+    {current && !current.error && current.rows.length === 0 && <p>{({ en: 'Your bookings will appear here after confirmation.', vi: 'Đặt chỗ sẽ xuất hiện ở đây sau khi được xác nhận.', ko: '확정된 예약이 여기에 표시됩니다.', ja: '確定した予約がここに表示されます。', fr: 'Vos réservations apparaîtront ici après confirmation.', de: 'Deine Buchungen erscheinen hier nach der Bestätigung.', it: 'Le prenotazioni appariranno qui dopo la conferma.' })[language]}</p>}
     {current?.rows.map(session => <article className="profile-completion-card" key={session.id}>
       <strong>{session.ticket_reference || session.name}</strong>
       <p>{session.venue_key === 'cafe-des-stagiaires' ? 'VRena Thảo Điền' : 'VRena Hà Đô Centrosa'}</p>

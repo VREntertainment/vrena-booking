@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
 import { expect, type Page } from '@playwright/test'
 import { e2eConfig } from './env'
 import { totpCode } from './totp'
@@ -69,8 +70,12 @@ export async function loginAsAdmin(page: Page) {
   await page.locator('.mfa-code-row input').fill(totpCode(secret))
   await expect(page.locator('.mfa-code-row input')).toHaveCount(0)
   const welcome = page.getByRole('dialog', { name: /Welcome to VRena/ })
-  await expect(welcome).toBeVisible()
-  await welcome.getByRole('button', { name: 'Close', exact: true }).click()
+  if (CUSTOMER_SOCIAL_FEATURES_ENABLED) {
+    await expect(welcome).toBeVisible()
+    await welcome.getByRole('button', { name: 'Close', exact: true }).click()
+  } else {
+    await expect(welcome).toHaveCount(0)
+  }
   await page.goto('/profile')
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('button', { name: /log out/i })).toBeVisible()

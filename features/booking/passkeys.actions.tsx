@@ -1,5 +1,8 @@
 'use client'
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
+
+
 import { getSupabase } from '../../lib/booking/client'
 import { passkeysAvailable } from '../../lib/hcaptcha'
 import { type TranslationMap } from '../../lib/i18n/loadTranslation'
@@ -85,7 +88,7 @@ export function createBookingPasskeysActions(getContext: () => PasskeysActionCon
       if (!completedTicketAuth) {
         setProfileStatus('')
         const loginEmail = data.user?.email || data.session?.user.email || ''
-        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
+        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : CUSTOMER_SOCIAL_FEATURES_ENABLED ? 'leaderboard' : 'profile')
       }
       setIsPasskeyLoading(false)
     } catch (error) {

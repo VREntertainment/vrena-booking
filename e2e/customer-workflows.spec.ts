@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import { expect, test } from '@playwright/test'
 import type { Club } from '../lib/bookingWidgetDomain'
 import { loginAsAdmin } from './support/admin'
@@ -24,6 +25,7 @@ const clubs: Club[] = ['public', 'private'].map((visibility, index) => ({
 }))
 
 test('club sections and player challenges load; an incorrect private code remains blocked', async ({ page }) => {
+  test.skip(!CUSTOMER_SOCIAL_FEATURES_ENABLED, 'Customer social features are paused; redirect coverage lives in booking-focused.spec.ts.')
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await loginAsAdmin(page)

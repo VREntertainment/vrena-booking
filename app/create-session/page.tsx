@@ -4,7 +4,7 @@ import { publicAppRoutes } from '../../lib/appRoutes'
 
 export const metadata: Metadata = {
   title: 'Create a VRena Session',
-  description: 'Create a public or private VRena game session and invite others to play.',
+  description: 'Check VRena availability and plan your next booking.',
   alternates: {
     canonical: publicAppRoutes.create,
   },

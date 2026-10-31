@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import { publicAppRoutes } from '../lib/appRoutes'
 
 type PublicRouteSeoContentProps = {
@@ -20,7 +21,7 @@ export default function PublicRouteSeoContent({ currentPath, title }: PublicRout
         <nav aria-label="VRena public pages">
           <ul>
             {publicRouteLinks
-              .filter(({ href }) => href !== currentPath)
+              .filter(({ href }) => href !== currentPath && (CUSTOMER_SOCIAL_FEATURES_ENABLED || href === publicAppRoutes.tickets))
               .map(({ href, label }) => (
                 <li key={href}>
                   <a href={href}>{label}</a>

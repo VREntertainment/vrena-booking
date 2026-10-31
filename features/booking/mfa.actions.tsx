@@ -1,5 +1,8 @@
 'use client'
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
+
+
 import { getSupabase } from '../../lib/booking/client'
 import { type TranslationMap } from '../../lib/i18n/loadTranslation'
 import { isPhonePasswordLoginEmail } from '../../lib/phonePasswordAccount'
@@ -162,7 +165,7 @@ export function createBookingMfaActions(getContext: () => MfaActionContext) {
       setProfileStatus('')
       await refreshMfaFactors()
       await loadProfile({ skipMfaChallenge: true })
-      setActiveView('leaderboard')
+      setActiveView(CUSTOMER_SOCIAL_FEATURES_ENABLED ? 'leaderboard' : 'profile')
     } finally {
       mfaVerificationInFlightRef.current = false
       setIsMfaLoading(false)
