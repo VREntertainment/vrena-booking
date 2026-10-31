@@ -182,7 +182,7 @@ import {
 } from '../lib/bookingWidgetDomain'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, removeHCaptchaWidget } from '../lib/hcaptcha'
-import { getInitialLanguage } from '../lib/i18n/detectLanguage'
+import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
 import { isLanguageCode, type LanguageCode } from '../lib/i18n/languages'
 import { getFallbackTranslation, loadTranslation, type TranslationMap } from '../lib/i18n/loadTranslation'
 import {
@@ -2524,6 +2524,7 @@ function BookingWorkspace({
   }, [externalLanguage])
 
   useEffect(() => {
+    storeLanguage(language)
     let active = true
 
     void loadTranslation(language).then((nextText) => {

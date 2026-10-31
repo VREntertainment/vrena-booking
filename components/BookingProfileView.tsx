@@ -51,6 +51,7 @@ import PhoneFirstLoginPanel from './PhoneFirstLoginPanel'
 import ShortDateInput from './ShortDateInput'
 
 const profileTabCopy = {
+  zh: {"achievements": "成就", "settings": "设置"},
   en: { achievements: 'Achievements', settings: 'Settings' },
   vi: { achievements: 'Thành tựu', settings: 'Cài đặt' },
   ko: { achievements: '업적', settings: '설정' },

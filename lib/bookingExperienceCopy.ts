@@ -3,6 +3,7 @@ import type { TranslationMap } from './i18n/base'
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from './customerExperience'
 
 const copy = {
+  zh: ["预约下一次 VR 体验。", "立即预约", "我的账户", "预约、积分与偏好", "积分", "管理预约、累积积分，享受生日优惠。", "预约记录", "账户偏好", "创建免费账户，保存预约并在付款后赚取积分。", "预约已确认。请保存预约编号，或创建账户保存预约并在付款后赚取积分。"],
   "en": [
     "Book your next VR experience.",
     "Book now",

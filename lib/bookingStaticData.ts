@@ -466,6 +466,7 @@ export const avatarEmojis = ['😎', '🔥', '⚡', '🎮', '🚀', '🌀', '�
 export const clubThemeColors: string[] = [...vrenaAvatarColors]
 
 export const dateLocales: Record<LanguageCode, string> = {
+  zh: "zh-CN",
   en: 'en-US',
   vi: 'vi-VN',
   ko: 'ko-KR',

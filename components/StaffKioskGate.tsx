@@ -92,7 +92,7 @@ const copy = {
     loading: 'Caricamento accessi dipendenti…', secured: 'Dispositivo del negozio protetto', inactivity: 'Blocco automatico dopo 5 minuti di inattività.',
     chooseEmployee: 'Scegli dipendente', incorrect: 'Impossibile sbloccare la postazione.', back: 'Cancella ultima cifra', clear: 'Cancella PIN', logout: 'Esci',
   },
-} satisfies Record<LanguageCode, Record<string, string>>
+} satisfies Record<Exclude<LanguageCode, 'zh'>, Record<string, string>>
 
 async function staffKioskHeaders(includeOperator = false) {
   const { data, error } = await supabase.auth.getSession()
@@ -128,7 +128,7 @@ async function revokeOperatorToken(activeToken: string, reason: string) {
 
 export default function StaffKioskGate({ authEmail, language, onLogout, onLockChange, onOperatorChange, children }: StaffKioskGateProps) {
   const requiresPin = requiresStaffKioskPin(authEmail)
-  const resolvedLanguage: LanguageCode = isLanguageCode(language) ? language : 'en'
+  const resolvedLanguage: Exclude<LanguageCode, 'zh'> = isLanguageCode(language) && language !== 'zh' ? language : 'en'
   const text = copy[resolvedLanguage]
   const [pinAvailable, setPinAvailable] = useState(false)
   const [pin, setPin] = useState('')
@@ -372,5 +372,5 @@ export default function StaffKioskGate({ authEmail, language, onLogout, onLockCh
 }
 
 export function staffKioskCopy(language?: string) {
-  return copy[isLanguageCode(language) ? language : 'en']
+  return copy[isLanguageCode(language) && language !== 'zh' ? language : 'en']
 }

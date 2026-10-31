@@ -1,6 +1,7 @@
 import type { LanguageCode } from './i18n/languages'
 
 const copy: Record<LanguageCode, readonly [string, string, string]> = {
+  zh: ["名", "姓", "更换头像"],
   en: ['Name', 'Surname', 'Change photo'],
   vi: ['Tên', 'Họ', 'Đổi ảnh'],
   ko: ['이름', '성', '사진 변경'],

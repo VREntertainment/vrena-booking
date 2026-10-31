@@ -10,6 +10,7 @@ type AccountBooking = Pick<Session, 'id' | 'name' | 'venue_key' | 'date' | 'star
 const ACCOUNT_BOOKING_SELECT = 'id,name,venue_key,date,start_time,duration_minutes,status,ticket_status,ticket_reference,max_players'
 
 export const accountBookingLabels: Record<LanguageCode, string> = {
+  zh: "我的预约",
   en: 'My Bookings', vi: 'Đặt chỗ của tôi', ko: '내 예약', ja: '予約一覧',
   fr: 'Mes réservations', de: 'Meine Buchungen', it: 'Le mie prenotazioni',
 }
@@ -52,14 +53,14 @@ export default function AccountBookings({ userId, language, text }: {
     <h2>{accountBookingLabels[language]}</h2>
     {!current && <p role="status">{text.profileLoading}</p>}
     {current?.error && <p role="alert">{current.error}</p>}
-    {current && !current.error && current.rows.length === 0 && <p>{({ en: 'Your bookings will appear here after confirmation.', vi: 'Đặt chỗ sẽ xuất hiện ở đây sau khi được xác nhận.', ko: '확정된 예약이 여기에 표시됩니다.', ja: '確定した予約がここに表示されます。', fr: 'Vos réservations apparaîtront ici après confirmation.', de: 'Deine Buchungen erscheinen hier nach der Bestätigung.', it: 'Le prenotazioni appariranno qui dopo la conferma.' })[language]}</p>}
+    {current && !current.error && current.rows.length === 0 && <p>{({ zh: '预约确认后将在此显示。', en: 'Your bookings will appear here after confirmation.', vi: 'Đặt chỗ sẽ xuất hiện ở đây sau khi được xác nhận.', ko: '확정된 예약이 여기에 표시됩니다.', ja: '確定した予約がここに表示されます。', fr: 'Vos réservations apparaîtront ici après confirmation.', de: 'Deine Buchungen erscheinen hier nach der Bestätigung.', it: 'Le prenotazioni appariranno qui dopo la conferma.' })[language]}</p>}
     {current?.rows.map(session => <article className="profile-completion-card" key={session.id}>
       <strong>{session.ticket_reference || session.name}</strong>
       <p>{session.venue_key === 'cafe-des-stagiaires' ? 'VRena Thảo Điền' : 'VRena Hà Đô Centrosa'}</p>
-      <p>{formatShortDate(session.date, language)} · {session.start_time.slice(0, 5)} · {session.duration_minutes} min</p>
+      <p>{formatShortDate(session.date, language)} · {session.start_time.slice(0, 5)} · {session.duration_minutes} {language === 'zh' ? '分钟' : 'min'}</p>
       <p>{session.max_players} {text.players}</p>
       <p>{session.status === 'cancelled' ? text.sessionCancelled : session.ticket_status === 'confirmed' ? text.bookingConfirmed : session.name}</p>
     </article>)}
-    <button type="button" className="secondary" onClick={() => setRevision(value => value + 1)}>{({ en: 'Refresh', vi: 'Làm mới', ko: '새로고침', ja: '更新', fr: 'Actualiser', de: 'Aktualisieren', it: 'Aggiorna' })[language]}</button>
+    <button type="button" className="secondary" onClick={() => setRevision(value => value + 1)}>{({ zh: '刷新', en: 'Refresh', vi: 'Làm mới', ko: '새로고침', ja: '更新', fr: 'Actualiser', de: 'Aktualisieren', it: 'Aggiorna' })[language]}</button>
   </section>
 }

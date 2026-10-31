@@ -1,6 +1,7 @@
 import type { LanguageCode } from './i18n/languages'
 
 export const bookingDurationCopy = {
+  zh: {"ticket": "门票预约时长", "game": "游戏时长", "hint": "普通门票以 30 分钟为单位预约。单个游戏可能较短，所选门票时长即为您预约的时段。", "event": "活动预约时长"},
   en: { ticket: 'Reserved ticket time', game: 'Game runtime', hint: 'Standard tickets reserve time in 30-minute blocks. Individual game runtimes may be shorter; your selected ticket time is the reserved booking slot.', event: 'Reserved event time' },
   vi: { ticket: 'Thời gian đặt vé', game: 'Thời lượng trò chơi', hint: 'Vé thường đặt theo khung 30 phút. Mỗi trò chơi có thể ngắn hơn; thời gian vé đã chọn là khung giờ đặt chỗ.', event: 'Thời gian sự kiện đã đặt' },
   fr: { ticket: 'Temps réservé du billet', game: 'Durée du jeu', hint: 'Les billets standard réservent des créneaux de 30 minutes. Un jeu peut être plus court ; la durée du billet correspond au créneau réservé.', event: 'Durée réservée pour l’événement' },
