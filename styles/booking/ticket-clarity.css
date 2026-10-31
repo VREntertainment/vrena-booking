@@ -125,3 +125,13 @@
   .app main > .booking-venue-carousel,
   .app main > .ticket-booking-layout { margin-inline: auto; }
 }
+/* The collapsed account link is the avatar itself, without a decorative frame. */
+.app.player-workspace .console-sidebar-collapsed .profile-chip,
+.app.player-workspace .console-sidebar-collapsed .profile-chip:is(:hover, .active) {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.app.player-workspace .console-sidebar-collapsed .profile-chip .avatar {
+  border: 0; box-shadow: none;
+}
