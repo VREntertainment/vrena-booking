@@ -8,6 +8,8 @@ export function getFallbackTranslation(): TranslationMap {
 
 async function loadBaseTranslation(language: LanguageCode): Promise<TranslationMap> {
   switch (language) {
+    case 'zh':
+      return import('./locales/zh').then((module) => module.zh)
     case 'vi':
       return import('./locales/vi').then((module) => module.vi)
     case 'ko':

@@ -225,6 +225,7 @@ const milestoneRewardText: Partial<Record<LanguageCode, AchievementTextMap>> = {
 }
 
 const gameAchievementTierText: Record<LanguageCode, Record<GameAchievement['tier'], string>> = {
+  zh: { none: '未开始', bronze: '铜牌', silver: '银牌', gold: '金牌', mastered: '精通' },
   en: { none: 'Initiate', bronze: 'Rookie', silver: 'Silver', gold: 'Gold', mastered: 'Master' },
   vi: { none: 'Khởi đầu', bronze: 'Tân binh', silver: 'Bạc', gold: 'Vàng', mastered: 'Bậc thầy' },
   ko: { none: '입문자', bronze: '루키', silver: '실버', gold: '골드', mastered: '마스터' },

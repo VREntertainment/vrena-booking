@@ -7,6 +7,7 @@ import { birthdayPackageById } from '../lib/birthdayPackages'
 import { calendarNavigation } from '../lib/bookingCalendar'
 import { appRouteForView, publicAppRoutes } from '../lib/appRoutes'
 import BrandLoader from './BrandLoader'
+import { getRequestedLanguage } from '../lib/i18n/detectLanguage'
 import type { AppView } from './AppSidebar'
 
 const BookingWidget = dynamic(() => import('./BookingWidget'), {
@@ -54,7 +55,10 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
     // listeners to restore the workspace before deciding whether to write a URL.
     pendingNavigationRef.current = setTimeout(() => {
       const nextPath = view === 'tickets' && new URLSearchParams(query).get('birthday') === '1' ? '/tickets/birthday' : appRouteForView(view)
-      const nextUrl = query ? `${nextPath}?${query}` : nextPath
+      const nextSearch = new URLSearchParams(query)
+      const requestedLanguage = getRequestedLanguage(window.location.search)
+      if (requestedLanguage) nextSearch.set('lang', requestedLanguage)
+      const nextUrl = nextSearch.size ? `${nextPath}?${nextSearch}` : nextPath
       if (restoringHistoryRef.current) {
         const restored = new URL(restoringHistoryRef.current, window.location.origin)
         const next = new URL(nextUrl, window.location.origin)
@@ -64,7 +68,7 @@ function RoutedAppShell({ initialView = 'tickets' }: HomeAppShellProps) {
         if (nextUrl === restoringHistoryRef.current || sameBirthday) restoringHistoryRef.current = null
         return
       }
-      if (nextPath !== window.location.pathname || (query !== undefined && window.location.search !== (query ? `?${query}` : ''))) {
+      if (nextPath !== window.location.pathname || (query !== undefined && window.location.search !== (nextSearch.size ? `?${nextSearch}` : ''))) {
         window.history.pushState(null, '', nextUrl)
       }
     }, 0)

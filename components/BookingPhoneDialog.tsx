@@ -7,6 +7,7 @@ import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import type { LanguageCode } from '../lib/i18n/languages'
 
 const copy = {
+  zh: {"title": "添加电话号码", "body": "确认预约需要电话号码，我们会将其保存至您的账户，方便下次预约。", "confirm": "保存并确认预约"},
   en: { title: 'Add your phone number', body: 'A phone number is required to confirm your booking. We’ll save it to your account for next time.', confirm: 'Save & confirm booking' },
   vi: { title: 'Thêm số điện thoại', body: 'Cần số điện thoại để xác nhận đặt chỗ. Số này sẽ được lưu vào tài khoản cho lần sau.', confirm: 'Lưu và xác nhận đặt chỗ' },
   ko: { title: '전화번호 추가', body: '예약 확정을 위해 전화번호가 필요합니다. 다음 예약을 위해 계정에 저장됩니다.', confirm: '저장하고 예약 확정' },

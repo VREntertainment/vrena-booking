@@ -6,6 +6,7 @@ export const LANGUAGE_CHANGE_EVENT = 'vrena-language-change'
 export function detectLanguageFromLocale(locale: string | null | undefined): LanguageCode {
   const value = (locale || '').toLowerCase()
 
+  if (value.startsWith('zh') || value === 'cn') return 'zh'
   if (value.startsWith('vi')) return 'vi'
   if (value.startsWith('ko')) return 'ko'
   if (value.startsWith('ja')) return 'ja'
@@ -32,16 +33,31 @@ export function detectBrowserLanguage(): LanguageCode {
 export function getStoredLanguage(): LanguageCode | null {
   if (typeof window === 'undefined') return null
 
-  const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
-  return isLanguageCode(storedLanguage) ? storedLanguage : null
+  try {
+    const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+    return isLanguageCode(storedLanguage) ? storedLanguage : null
+  } catch {
+    return null
+  }
 }
 
 export function storeLanguage(language: LanguageCode) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+  try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language) } catch { /* Storage is optional. */ }
+  const url = new URL(window.location.href)
+  if (url.searchParams.has('lang') && url.searchParams.get('lang') !== language) {
+    url.searchParams.set('lang', language)
+    window.history.replaceState(window.history.state, '', url)
+  }
   window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT))
 }
 
+export function getRequestedLanguage(search: string): LanguageCode | null {
+  const requested = new URLSearchParams(search).get('lang')?.trim().toLowerCase().split('-')[0]
+  return isLanguageCode(requested) ? requested : null
+}
+
 export function getInitialLanguage(): LanguageCode {
-  return getStoredLanguage() || detectBrowserLanguage()
+  const requested = typeof window === 'undefined' ? null : getRequestedLanguage(window.location.search)
+  return requested || getStoredLanguage() || detectBrowserLanguage()
 }

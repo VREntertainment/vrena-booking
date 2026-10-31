@@ -1,5 +1,6 @@
 import type { LanguageCode } from './i18n/languages'
 export const birthdayPackageCopy = {
+  zh: {"duration": "2 小时", "label": "生日套餐", "custom": "定制生日活动", "note": "套餐包含 2 小时及休息时间。如需加时或调整，请在下方说明，工作人员将确认最终安排。"},
   en: { duration: '2hrs', label: 'Birthday package', custom: 'Custom birthday', note: 'Package price for 2 hours, including breaks. Extra time or changes? Add your request below. The team confirms your final arrangement.' },
   vi: { duration: '2 giờ', label: 'Gói sinh nhật', custom: 'Sinh nhật tùy chỉnh', note: 'Giá gói cho 2 giờ, bao gồm thời gian nghỉ. Muốn thêm giờ hoặc thay đổi? Ghi yêu cầu bên dưới. Đội ngũ sẽ xác nhận phương án cuối cùng.' },
   fr: { duration: '2 h', label: 'Forfait anniversaire', custom: 'Anniversaire sur mesure', note: 'Prix du forfait pour 2 heures, pauses comprises. Plus de temps ou des modifications ? Ajoute ta demande ci-dessous. Notre équipe confirmera les détails.' },

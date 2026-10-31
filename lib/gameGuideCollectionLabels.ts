@@ -1,6 +1,7 @@
 import type { LanguageCode } from './i18n/languages'
 
 export const collectionLabels: Record<LanguageCode, { games: string; modes: string; maps: string; included: string; eventSetup: string }> = {
+  zh: { games: '游戏', modes: '模式', maps: '地图', included: '包含', eventSetup: '活动安排' },
   en: { games: 'Mini-games', modes: 'Game modes', maps: 'Maps', included: 'Explore games & modes', eventSetup: 'Event setup · duration and group size on request' },
   vi: { games: 'Trò chơi nhỏ', modes: 'Chế độ chơi', maps: 'Bản đồ', included: 'Khám phá trò chơi & chế độ', eventSetup: 'Sự kiện · thời lượng và số người theo yêu cầu' },
   fr: { games: 'Mini-jeux', modes: 'Modes de jeu', maps: 'Cartes', included: 'Explorer les jeux et modes', eventSetup: 'Événement · durée et groupe sur demande' },
@@ -11,6 +12,7 @@ export const collectionLabels: Record<LanguageCode, { games: string; modes: stri
 }
 
 export const experienceCount: Record<LanguageCode, string> = {
+  zh: '{shown} / {total} 种体验',
   en: '{shown} of {total} experiences',
   vi: '{shown} / {total} trải nghiệm',
   fr: '{shown} expériences sur {total}',

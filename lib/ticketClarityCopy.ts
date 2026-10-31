@@ -1,6 +1,7 @@
 import type { LanguageCode } from './i18n/languages'
 
 export const ticketClarityCopy = {
+  zh: {"duration": "时长", "requests": "添加要求（选填）", "help": "预约详情与帮助", "quote": "定制报价", "confirm": "最终价格由工作人员确认", "pay": "到店付款"},
   en: { duration: 'Duration', requests: 'Add a request (optional)', help: 'Booking details & help', quote: 'Custom quote', confirm: 'Final price confirmed by our team', pay: 'Pay at the venue' },
   vi: { duration: 'Thời lượng', requests: 'Thêm yêu cầu (không bắt buộc)', help: 'Chi tiết đặt chỗ & hỗ trợ', quote: 'Báo giá riêng', confirm: 'Đội ngũ xác nhận giá cuối cùng', pay: 'Thanh toán tại địa điểm' },
   fr: { duration: 'Durée', requests: 'Ajouter une demande (facultatif)', help: 'Détails et aide', quote: 'Sur devis', confirm: 'Prix final confirmé par notre équipe', pay: 'Paiement sur place' },

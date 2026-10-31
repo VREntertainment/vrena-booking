@@ -264,7 +264,7 @@ type AchievementCelebration = {
   title: string
 }
 
-const achievementCopy: Record<LanguageCode, AchievementCopy> = {
+const achievementCopy: Record<Exclude<LanguageCode, 'zh'>, AchievementCopy> = {
   en: {
     accuracy: 'Accuracy',
     bestScore: 'Best score',
@@ -1100,7 +1100,7 @@ export default function ProfileAchievementsPanel({
   userId,
   venueResultsOverride,
 }: ProfileAchievementsPanelProps) {
-  const copy = achievementCopy[language] ?? achievementCopy.en
+  const copy = achievementCopy[language === 'zh' ? 'en' : language] ?? achievementCopy.en
   const [selectedAchievement, setSelectedAchievement] = useState<GameAchievement | null>(null)
   const [selectedRetentionAchievement, setSelectedRetentionAchievement] = useState<RetentionAchievement | null>(null)
   const [selectedSummaryDetail, setSelectedSummaryDetail] = useState<AchievementSummaryDetail | null>(null)

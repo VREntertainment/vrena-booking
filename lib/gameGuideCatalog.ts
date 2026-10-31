@@ -239,7 +239,7 @@ export function normalizeStaffAudience(value: StaffGameGuide['audience'], legacy
 }
 
 export function isStaffGuideLanguage(value: string | null | undefined): value is LanguageCode {
-  return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it'
+  return value === 'en' || value === 'vi' || value === 'ko' || value === 'ja' || value === 'fr' || value === 'de' || value === 'it' || value === 'zh'
 }
 
 const missingGuideArtwork: Record<string, string> = {

@@ -33,6 +33,7 @@ type ConsentCopy = {
 }
 
 const consentCopy: Record<LanguageCode, ConsentCopy> = {
+  zh: {"title": "隐私设置", "body": "我们使用必要的 Cookie 确保预约正常运行。您可以选择允许分析和营销 Cookie，也可随时更改设置。", "essential": "仅必要 Cookie", "analytics": "仅分析 Cookie", "all": "全部允许", "settings": "隐私设置", "privacy": "隐私政策", "privacyHref": "https://www.vre-vietnam.com/zh-cn/privacy-policy"},
   en: {
     title: 'Help us improve VRena',
     body: 'Allow analytics and advertising cookies to improve booking and keep offers relevant. You can change this anytime.',

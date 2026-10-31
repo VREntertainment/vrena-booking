@@ -53,7 +53,7 @@ type ReturnMissionCopy = {
   weeks: string
 }
 
-const returnMissionCopy: Record<LanguageCode, ReturnMissionCopy> = {
+const returnMissionCopy: Record<Exclude<LanguageCode, 'zh'>, ReturnMissionCopy> = {
   en: {
     activeRun: 'Your Arena Regular run is active.',
     arenaRegular: 'Keep your run going to unlock Arena Regular.',
@@ -146,7 +146,7 @@ export default function PlayerReturnMissionCard({
   userId,
   visual,
 }: PlayerReturnMissionCardProps) {
-  const copy = returnMissionCopy[language] ?? returnMissionCopy.en
+  const copy = returnMissionCopy[language === 'zh' ? 'en' : language] ?? returnMissionCopy.en
   const [isScheduling, setIsScheduling] = useState(false)
   const [scheduledFor, setScheduledFor] = useState('')
   const [status, setStatus] = useState('')
