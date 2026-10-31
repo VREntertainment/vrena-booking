@@ -4,7 +4,7 @@ import { publicAppRoutes } from '../../lib/appRoutes'
 
 export const metadata: Metadata = {
   title: 'VRena Profile',
-  description: 'Manage your VRena player profile, login, settings, and achievements.',
+  description: 'Manage your VRena bookings, loyalty points, contact details, and account preferences.',
   alternates: {
     canonical: publicAppRoutes.profile,
   },

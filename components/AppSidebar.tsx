@@ -1,6 +1,8 @@
-import { BriefcaseBusiness, CalendarDays, Images, PanelLeftClose, PanelLeftOpen, ShieldCheck, Share, Ticket, Trophy, UsersRound } from 'lucide-react'
+import { BriefcaseBusiness, CalendarDays, Images, PanelLeftClose, PanelLeftOpen, ShieldCheck, Share, UserRound, Ticket, Trophy, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
+import { bookingExperienceCopy } from '../lib/bookingExperienceCopy'
 import { publicAppRoutes } from '../lib/appRoutes'
 import { languageOptions, type LanguageCode } from '../lib/i18n/languages'
 import { storeLanguage } from '../lib/i18n/detectLanguage'
@@ -51,6 +53,7 @@ export default function AppSidebar({
   sharedApp,
   text,
 }: AppSidebarProps) {
+  const bookingCopy = bookingExperienceCopy(language)
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const collapseLabel = language === 'vi' ? 'Thu gọn menu' : 'Collapse navigation'
   const expandLabel = language === 'vi' ? 'Mở rộng menu' : 'Expand navigation'
@@ -110,7 +113,7 @@ export default function AppSidebar({
               </div>
             )}
           </div>
-          <button
+          {CUSTOMER_SOCIAL_FEATURES_ENABLED && <button
             aria-label={sharedApp ? text.shared : text.shareApp}
             className={sharedApp ? 'share-button app-share copied' : 'share-button app-share'}
             title={sharedApp ? text.shared : text.shareApp}
@@ -118,44 +121,47 @@ export default function AppSidebar({
             onClick={onShareApp}
           >
             <ShareSymbol />
-          </button>
+          </button>}
         </div>
-        <h1 className="sr-only">VRena Sessions</h1>
+        <h1 className="sr-only">VRena Booking</h1>
         <p className="muted">{text.tagline}</p>
       </div>
 
       <Link className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" href={publicAppRoutes.profile} title={profileTitle} onClick={() => onViewChange('profile')}>
         <div className="avatar" style={profileAvatarStyle}>
           {profileAvatar}
-          {isChampion && <span className="champion-badge">🏆</span>}
+          {CUSTOMER_SOCIAL_FEATURES_ENABLED && isChampion && <span className="champion-badge">🏆</span>}
         </div>
         <div>
           <strong>{profileTitle}</strong>
-          <span>{profileSubtitle}</span>
+          <span>{CUSTOMER_SOCIAL_FEATURES_ENABLED ? profileSubtitle : bookingCopy.accountHint}</span>
         </div>
       </Link>
 
-      <div className="tabs">
-        <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} title={text.sessions} onClick={() => onViewChange('sessions')}>
+      <div className={CUSTOMER_SOCIAL_FEATURES_ENABLED ? "tabs" : "tabs booking-focused-tabs"}>
+        {CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link className={activeView === 'sessions' || activeView === 'create' ? 'tab active' : 'tab'} href={publicAppRoutes.sessions} title={text.sessions} onClick={() => onViewChange('sessions')}>
           <CalendarDays aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.sessions}</span>
-        </Link>
+        </Link>}
         <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} data-tour="tickets-tab" href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
           <Ticket aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.tickets}</span>
         </Link>
-        <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} title={text.hallOfFame} onClick={() => onViewChange('leaderboard')}>
+        {CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link className={activeView === 'leaderboard' ? 'tab active' : 'tab'} data-tour="hall-of-fame-tab" href={publicAppRoutes.leaderboard} title={text.hallOfFame} onClick={() => onViewChange('leaderboard')}>
           <Trophy aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.hallOfFame}</span>
-        </Link>
-        <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} data-tour="clubs-tab" href={publicAppRoutes.clubs} title={text.clubs} onClick={() => onViewChange('clubs')}>
+        </Link>}
+        {CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link className={activeView === 'clubs' ? 'tab active' : 'tab'} data-tour="clubs-tab" href={publicAppRoutes.clubs} title={text.clubs} onClick={() => onViewChange('clubs')}>
           <UsersRound aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.clubs}</span>
-        </Link>
-        <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer" title={text.galleryLink}>
+        </Link>}
+        {CUSTOMER_SOCIAL_FEATURES_ENABLED && <a className="tab sidebar-gallery-tab" href={vrenaGalleryUrl} target="_blank" rel="noreferrer" title={text.galleryLink}>
           <Images aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.galleryLink}</span>
-        </a>
+        </a>}
+        {!CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link className={activeView === 'profile' ? 'tab active' : 'tab'} href={publicAppRoutes.profile} onClick={() => onViewChange('profile')}>
+          <UserRound aria-hidden="true" className="sidebar-tab-icon" size={18} /><span className="sidebar-tab-label">{bookingCopy.account}</span>
+        </Link>}
         {canAccessStaffConsole && (
           <Link className={activeView === 'staff' ? 'tab sidebar-staff-tab active' : 'tab sidebar-staff-tab'} href={publicAppRoutes.staff} title={language === 'vi' ? 'Nhân viên' : 'Staff'} onClick={() => onViewChange('staff')}>
             <ShieldCheck aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />

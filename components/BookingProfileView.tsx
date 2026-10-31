@@ -2,6 +2,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
+import { bookingExperienceCopy } from '../lib/bookingExperienceCopy'
 import NextImage from 'next/image'
 import {
   Bell,
@@ -351,19 +353,25 @@ export default function BookingProfileView({ context }: { context: any }) {
               </div>
             )}
 
+            {profile && !CUSTOMER_SOCIAL_FEATURES_ENABLED && <div className="account-booking-heading">
+              <h2>{bookingExperienceCopy(language).account}</h2>
+              <button className="primary" type="button" onClick={() => setActiveView('tickets')}>{bookingExperienceCopy(language).book}</button>
+            </div>}
             {profile && (
               <div className="segmented profile-sub-tabs" aria-label={text.profile}>
-                <button className={profileSubTab === 'bookings' ? 'active' : ''} onClick={() => setProfileSubTab('bookings')} type="button">
+                <button aria-pressed={profileSubTab === 'bookings'} className={profileSubTab === 'bookings' ? 'active' : ''} onClick={() => setProfileSubTab('bookings')} type="button">
                   <ButtonIconText icon={<CalendarDays aria-hidden="true" size={17} />}>{accountBookingLabels[language as keyof typeof accountBookingLabels]}</ButtonIconText>
                 </button>
                 <button
+                  aria-pressed={profileSubTab === 'achievements'}
                   className={profileSubTab === 'achievements' ? 'active' : ''}
                   onClick={() => setProfileSubTab('achievements')}
                   type="button"
                 >
-                  <ButtonIconText icon={<Trophy aria-hidden="true" size={17} />}>{profileTabs.achievements}</ButtonIconText>
+                  <ButtonIconText icon={<Trophy aria-hidden="true" size={17} />}>{CUSTOMER_SOCIAL_FEATURES_ENABLED ? profileTabs.achievements : bookingExperienceCopy(language).loyalty}</ButtonIconText>
                 </button>
                 <button
+                  aria-pressed={profileSubTab === 'settings'}
                   className={profileSubTab === 'settings' ? 'active' : ''}
                   onClick={() => setProfileSubTab('settings')}
                   type="button"
@@ -376,7 +384,13 @@ export default function BookingProfileView({ context }: { context: any }) {
             {profile && profileSubTab === 'bookings' ? (
               <AccountBookings userId={userId} language={language} text={text} />
             ) : profile && profileSubTab === 'achievements' ? (
-              <ProfileAchievementsPanel
+              !CUSTOMER_SOCIAL_FEATURES_ENABLED ? <section className="account-loyalty" aria-label={text.ticketLoyaltyBalance}>
+                <span className="account-loyalty-icon"><Trophy aria-hidden="true" size={28} /></span>
+                <h2>{text.ticketLoyaltyBalance}</h2>
+                <strong className="account-loyalty-balance">{Number(profile.loyalty_points_total || 0).toLocaleString(language)}</strong>
+                <p className="muted">{text.sessionTariffLoyaltyText}</p>
+                <button className="primary" onClick={() => setActiveView('tickets')} type="button">{bookingExperienceCopy(language).book}</button>
+              </section> : <ProfileAchievementsPanel
                 language={language}
                 mySessions={mySessions}
                 onJoinSession={() => setActiveView('sessions')}
@@ -390,7 +404,7 @@ export default function BookingProfileView({ context }: { context: any }) {
               <>
             {profile && (
               <>
-                <section className="profile-completion-card" aria-label={text.profileCompletionTitle}>
+                {CUSTOMER_SOCIAL_FEATURES_ENABLED && <section className="profile-completion-card" aria-label={text.profileCompletionTitle}>
                   <div className="profile-completion-head">
                     <div>
                       <strong>{text.profileCompletionTitle}</strong>
@@ -413,7 +427,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                       </span>
                     )}
                   </div>
-                </section>
+                </section>}
                 <div className="action-row profile-save-actions profile-settings-actions">
                   <button
                     className={[
@@ -462,7 +476,7 @@ export default function BookingProfileView({ context }: { context: any }) {
               !profile && (authMode === 'login' || authMode === 'create' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
             ].join(' ').trim()} hidden={mfaRequired}>
-              {showProfileFields && (
+              {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
                 <div className={profile ? 'profile-photo-panel profile-account-hero' : 'profile-photo-panel'}>
                   <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
                     {profile?.anonymous_mode ? (
@@ -678,7 +692,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   />
                 </div>
               )}
-              {showProfileFields && (
+              {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
                 <div className="nickname-field">
                   <label>{text.nickname}</label>
                   <input
@@ -689,7 +703,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   />
                 </div>
               )}
-              {showProfileFields && (
+              {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
                 <div className="motto-field">
                   <label>{text.profileMotto}</label>
                   <input
@@ -724,7 +738,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                   )}
                 </div>
               )}
-              {showProfileFields && (
+              {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
                 <div className="gender-field">
                   <label>{text.gender}</label>
                   <select
@@ -991,9 +1005,9 @@ export default function BookingProfileView({ context }: { context: any }) {
                       <ButtonIconText icon={<LockKeyhole aria-hidden="true" size={16} />}>{isResettingPassword ? text.saving : text.resetPassword}</ButtonIconText>
                     </button>
                   )}
-                  <button className="link-button" onClick={replayOnboardingTour} type="button">
+                  {CUSTOMER_SOCIAL_FEATURES_ENABLED && <button className="link-button" onClick={replayOnboardingTour} type="button">
                     <ButtonIconText icon={<UserRound aria-hidden="true" size={16} />}>{text.takeTourAgain}</ButtonIconText>
-                  </button>
+                  </button>}
                   <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
                   </button>

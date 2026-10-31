@@ -1,3 +1,4 @@
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from './customerExperience'
 import type { AppView } from '../components/AppSidebar'
 
 export const publicAppRoutes = {
@@ -11,7 +12,7 @@ export const publicAppRoutes = {
   staff: '/staff',
 } satisfies Record<AppView, string>
 
-export const indexableAppViews: AppView[] = ['sessions', 'tickets', 'leaderboard', 'clubs']
+export const indexableAppViews: AppView[] = CUSTOMER_SOCIAL_FEATURES_ENABLED ? ['sessions', 'tickets', 'leaderboard', 'clubs'] : ['tickets']
 
 export function appRouteForView(view: AppView) {
   return publicAppRoutes[view]

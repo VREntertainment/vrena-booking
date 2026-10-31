@@ -21,12 +21,13 @@ async function keepConsentOutOfTheBookingFlow(page: Page) {
 
 test.describe('booking venue selection', () => {
   for (const route of [
-    { path: '/sessions', activeSurface: '.sessions-section' },
-    { path: '/create-session', activeSurface: '.create-session-section' },
+    { path: '/sessions', activeSurface: '.tickets-section' },
+    { path: '/create-session', activeSurface: '.tickets-section' },
   ] as const) {
     test(`${route.path} opens Cafe ticket booking without the obsolete opening notice`, async ({ page }) => {
       await keepConsentOutOfTheBookingFlow(page)
       await page.goto(route.path)
+      await expect(page).toHaveURL(/\/tickets/)
 
       const venueSelector = page.locator('.booking-venue-selector')
 
@@ -34,7 +35,7 @@ test.describe('booking venue selection', () => {
       await chooseCafeVenue(page)
 
       await expect(venueSelector).toContainText('Vrena Thao Dien')
-      await expect(page.locator(route.activeSurface)).toHaveCount(0)
+      await expect(page.locator(route.activeSurface)).toBeVisible()
       await expect(page.locator('.booking-venue-coming-soon')).toHaveCount(0)
       await expect(page.locator('.ticket-form-panel')).toBeVisible()
       await expect(page.getByRole('button', { name: 'Reserve your slot', exact: true })).toBeVisible()
@@ -122,8 +123,9 @@ test('booking venue selection: arena choice persists and recommendations follow 
 
 test('venue changes preserve the mounted player workspace and browser history', async ({ page }) => {
   await keepConsentOutOfTheBookingFlow(page)
-  await page.goto('/create-session')
-  await page.getByTestId('create-session-name').fill('Preserved venue-switch draft')
+  await page.goto('/tickets?venue=ha-do-centrosa')
+  await page.locator('.ticket-control-date input').fill(futureDate(40))
+  await page.locator('#ticket-player-count').selectOption('3')
   const sidebar = await page.locator('.app aside').elementHandle()
   let authRequests = 0
   let documentRequests = 0
@@ -144,8 +146,9 @@ test('venue changes preserve the mounted player workspace and browser history', 
   await page.goBack()
   await expect(page.locator('.booking-venue-option').filter({ hasText: 'Vrena Thao Dien' })).toHaveAttribute('aria-checked', 'true')
   await page.goBack()
-  await expect(page).toHaveURL(/\/create-session$/)
-  await expect(page.getByTestId('create-session-name')).toHaveValue('Preserved venue-switch draft')
+  await expect(page).toHaveURL(/\/tickets\?venue=ha-do-centrosa/)
+  await expect(page.locator('.ticket-control-date input')).toHaveValue(futureDate(40))
+  await expect(page.locator('#ticket-player-count')).toHaveValue('3')
   expect(await sidebar!.evaluate(element => element.isConnected)).toBe(true)
   expect(authRequests).toBe(0)
   expect(documentRequests).toBe(0)
@@ -156,7 +159,7 @@ test('birthday booking from profile stays on tickets and preserves the selected 
   await keepConsentOutOfTheBookingFlow(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/profile')
-  await page.getByRole('link', { name: 'Tickets', exact: true }).click()
+  await page.getByRole('link', { name: 'Book now', exact: true }).click()
   await page.locator('.ticket-service-card').first().click()
   await expect(page).toHaveURL(/\/tickets\/birthday/)
   await expect(page.locator('#birthday-package')).toBeVisible()

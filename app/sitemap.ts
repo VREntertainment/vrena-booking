@@ -1,14 +1,11 @@
 import type { MetadataRoute } from 'next'
-import { publicAppRoutes } from '../lib/appRoutes'
+import { indexableAppViews, publicAppRoutes } from '../lib/appRoutes'
 import { languageOptions } from '../lib/i18n/languages'
 import { absoluteSiteUrl } from '../lib/siteMetadata'
 
 const indexedPaths = [
   '/',
-  publicAppRoutes.sessions,
-  publicAppRoutes.tickets,
-  publicAppRoutes.leaderboard,
-  publicAppRoutes.clubs,
+  ...indexableAppViews.map(view => publicAppRoutes[view]),
   '/games',
   ...languageOptions.map((language) => `/games/${language}`),
 ]

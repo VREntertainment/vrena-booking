@@ -1,5 +1,8 @@
 'use client'
 
+import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../../lib/customerExperience'
+
+
 import { ageBandFromBirthday } from '../../lib/agePolicy'
 import { getSupabase } from '../../lib/booking/client'
 import {
@@ -413,7 +416,7 @@ export function createBookingAuthCredentialsActions(getContext: () => AuthCreden
       const completedTicketAuth = await completePendingTicketAuth(loadedProfile)
       if (!completedTicketAuth) {
         setProfileStatus('')
-        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : 'leaderboard')
+        setActiveView(requiresStaffKioskPin(loginEmail) ? 'staff' : CUSTOMER_SOCIAL_FEATURES_ENABLED ? 'leaderboard' : 'profile')
       }
       setIsSavingProfile(false)
     } catch (error) {

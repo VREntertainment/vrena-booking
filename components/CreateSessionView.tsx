@@ -4,6 +4,7 @@ import type { TranslationMap } from '../lib/i18n/loadTranslation'
 export type CreateSessionMode = 'calendar' | 'form'
 
 export type CreateSessionViewProps = {
+  allowSessionForm?: boolean
   children: ReactNode
   createStatus: string
   mode: CreateSessionMode
@@ -12,6 +13,7 @@ export type CreateSessionViewProps = {
 }
 
 export default function CreateSessionView({
+  allowSessionForm = true,
   children,
   createStatus,
   mode,
@@ -20,14 +22,14 @@ export default function CreateSessionView({
 }: CreateSessionViewProps) {
   return (
     <section className="section create-session-section">
-      <div className="segmented create-session-mode-toggle" aria-label={text.createSessionTitle}>
+      {allowSessionForm && <div className="segmented create-session-mode-toggle" aria-label={text.createSessionTitle}>
         <button className={mode === 'calendar' ? 'active' : ''} onClick={() => onModeChange('calendar')} type="button">
           {text.calendar}
         </button>
         <button className={mode === 'form' ? 'active' : ''} onClick={() => onModeChange('form')} type="button">
           {text.createSession}
         </button>
-      </div>
+      </div>}
 
       {children}
       {createStatus && <p className="notice">{createStatus}</p>}

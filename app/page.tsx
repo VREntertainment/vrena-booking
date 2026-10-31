@@ -3,7 +3,7 @@ import HomeAppShell from '../components/HomeAppShell'
 
 export const metadata: Metadata = {
   title: 'VRena Booking | VR Games in Vietnam',
-  description: 'Book VRena tickets, join community sessions, discover clubs, and view player rankings.',
+  description: 'Book your VR experience at Hà Đô Centrosa or Thảo Điền. Manage bookings, loyalty points, and account preferences.',
   alternates: {
     canonical: '/',
   },
