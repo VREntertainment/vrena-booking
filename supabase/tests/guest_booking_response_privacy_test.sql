@@ -1,0 +1,16 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select public.ensure_guest_ticket_profile('+84900000771','PRIVATE SAVED NAME');
+select set_config('test.unit_price',(public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date+61,'16:00'))::text,true);
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+select set_config('request.jwt.claim.role','anon',true);
+set local role anon;
+select is(public.create_guest_ticket_booking('individual',current_date+61,'16:00',60,2,1,array['revolta'],current_setting('test.unit_price')::integer,current_setting('test.unit_price')::integer*4,'+84900000771',null)->>'guest_name',null::text,'Ha Do omitted name never discloses saved name');
+select is(public.create_cafe_ticket_booking_request('individual',current_date+61,'16:00',60,2,1,array['revolta'],'+84900000771','  ')->>'guest_name',null::text,'Thao Dien whitespace never discloses saved name');
+select is(public.create_cafe_ticket_booking_request('individual',current_date+62,'16:00',60,2,1,array['revolta'],'+84900000771','Supplied Name')->>'guest_name','Supplied Name','Supplied guest name still returned');
+reset role;
+select * from finish();
+rollback;
