@@ -99,3 +99,39 @@
   .app .booking-venue-mobile-summary > div:first-child { flex: 1 1 100%; }
   .app .booking-venue-actions { width: 100%; justify-content: flex-end; }
 }
+
+.app main .booking-venue-selector.booking-venue-carousel {
+  padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  gap: 10px; margin-bottom: 18px; min-width: 0;
+}
+.app .booking-venue-carousel .booking-venue-options { position: relative; }
+.app .booking-venue-guide { display: flex; justify-content: flex-start; }
+.app .booking-venue-guide button { min-height: 44px; margin: 0; }
+@media (max-width: 720px) {
+  .app .booking-venue-carousel .booking-venue-options {
+    display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain; padding: 3px 3px 8px; scrollbar-width: thin;
+  }
+  .app .booking-venue-carousel .booking-venue-option-shell {
+    flex: 0 0 78%; scroll-snap-align: start; scroll-snap-stop: always;
+  }
+  .app .booking-venue-carousel .booking-venue-option {
+    grid-template-columns: 44px minmax(0, 1fr); gap: 10px; padding: 12px; min-height: 146px;
+  }
+  .app .booking-venue-carousel .booking-venue-map { width: 44px; height: 48px; left: 12px; }
+  .app .booking-venue-carousel .booking-venue-copy strong { overflow-wrap: anywhere; }
+}
+@media (min-width: 721px) {
+  .app main > .booking-venue-carousel,
+  .app main > .ticket-booking-layout { margin-inline: auto; }
+}
+/* The collapsed account link is the avatar itself, without a decorative frame. */
+.app.player-workspace .console-sidebar-collapsed .profile-chip,
+.app.player-workspace .console-sidebar-collapsed .profile-chip:is(:hover, .active) {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.app.player-workspace .console-sidebar-collapsed .profile-chip .avatar {
+  border: 0; box-shadow: none;
+}

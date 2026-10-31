@@ -23,11 +23,14 @@ test('every public booking view uses the same compact mobile venue selector', as
     await page.goto(path)
     if (!CUSTOMER_SOCIAL_FEATURES_ENABLED) await expect(page).toHaveURL(/\/tickets/)
     const selector = page.locator('.booking-venue-selector')
-    await expect(selector.locator('.booking-venue-mobile-summary')).toBeVisible()
-    await expect(selector.locator('.booking-venue-expanded-content')).toBeHidden()
-    await expect(selector.locator('.booking-venue-heading > span, .booking-venue-heading > p')).toHaveCount(0)
-    await selector.getByRole('button', { name: /change/i }).click()
+    const cards = selector.locator('.booking-venue-options')
     await expect(selector.getByRole('radio').first()).toBeVisible()
+    await expect(selector.locator('.booking-venue-guide')).toBeVisible()
+    const sizes = await cards.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth, card: el.firstElementChild!.getBoundingClientRect().width }))
+    expect(sizes.scroll).toBeGreaterThan(sizes.width)
+    expect(sizes.card / sizes.width).toBeGreaterThan(0.7)
+    expect(sizes.card / sizes.width).toBeLessThan(0.85)
+
   }
 })
 
