@@ -143,7 +143,7 @@ export default function AppSidebar({
           <CalendarDays aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.sessions}</span>
         </Link>}
-        <Link className={activeView === 'tickets' ? 'tab active' : 'tab'} data-tour="tickets-tab" href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
+        <Link aria-current={activeView === 'tickets' ? 'page' : undefined} className={activeView === 'tickets' ? 'tab active' : 'tab'} data-tour="tickets-tab" href={publicAppRoutes.tickets} title={text.tickets} onClick={() => onViewChange('tickets')}>
           <Ticket aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.tickets}</span>
         </Link>
@@ -159,7 +159,7 @@ export default function AppSidebar({
           <Images aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
           <span className="sidebar-tab-label">{text.galleryLink}</span>
         </a>}
-        {!CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link className={activeView === 'profile' ? 'tab active' : 'tab'} href={publicAppRoutes.profile} onClick={() => onViewChange('profile')}>
+        {!CUSTOMER_SOCIAL_FEATURES_ENABLED && <Link aria-current={activeView === 'profile' ? 'page' : undefined} className={activeView === 'profile' ? 'tab active' : 'tab'} href={publicAppRoutes.profile} onClick={() => onViewChange('profile')}>
           <UserRound aria-hidden="true" className="sidebar-tab-icon" size={18} /><span className="sidebar-tab-label">{bookingCopy.account}</span>
         </Link>}
         {canAccessStaffConsole && (
