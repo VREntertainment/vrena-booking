@@ -21,6 +21,7 @@ export type TicketsActionContext = {
   setProfileCountryCode: React.Dispatch<React.SetStateAction<string>>
   setProfilePhone: React.Dispatch<React.SetStateAction<string>>
   setProfileName: React.Dispatch<React.SetStateAction<string>>
+  setProfileSurname: React.Dispatch<React.SetStateAction<string>>
   setPendingGuestTicketClaim: React.Dispatch<React.SetStateAction<{ phone: string; reference: string; name?: string | undefined; date?: string | undefined } | null>>
   pendingGuestTicketClaim: { phone: string; reference: string; name?: string | undefined; date?: string | undefined } | null
   ticketConfirmation: import("../../lib/bookingWidgetDomain").TicketBookingConfirmation | null
@@ -76,14 +77,17 @@ export type TicketsActionContext = {
 /** Reads the calling render at action entry; requests and authorization retain their original snapshot. */
 export function createBookingTicketsActions(getContext: () => TicketsActionContext) {
   function prefillProfileFromGuestTicketClaim(claimSource: { phone: string; reference?: string; name?: string; date?: string } | null) {
-    const { setProfileCountryCode, setProfilePhone, setProfileName, setPendingGuestTicketClaim } = getContext()
+    const { setProfileCountryCode, setProfilePhone, setProfileName, setProfileSurname, setPendingGuestTicketClaim } = getContext()
 
     if (!claimSource?.phone) return
 
     const phoneParts = splitPhoneNumber(claimSource.phone)
     setProfileCountryCode(phoneParts.countryInput || '+84')
     setProfilePhone(phoneParts.localPhone)
-    if (claimSource.name) setProfileName(claimSource.name)
+    if (claimSource.name) {
+      setProfileName(claimSource.name)
+      setProfileSurname('')
+    }
     if (claimSource.reference) {
       setPendingGuestTicketClaim({
         phone: claimSource.phone,

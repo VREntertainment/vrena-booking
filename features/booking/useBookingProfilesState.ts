@@ -17,6 +17,7 @@ export function useBookingProfilesState() {
   const [profileCountryCode, setProfileCountryCode] = useState('+84')
   const [profilePhone, setProfilePhone] = useState('')
   const [profileName, setProfileName] = useState('')
+  const [profileSurname, setProfileSurname] = useState('')
   const [profileMotto, setProfileMotto] = useState('')
   const [profileNickname, setProfileNickname] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
@@ -51,6 +52,8 @@ export function useBookingProfilesState() {
     setProfilePhone,
     profileName,
     setProfileName,
+    profileSurname,
+    setProfileSurname,
     profileMotto,
     setProfileMotto,
     profileNickname,
