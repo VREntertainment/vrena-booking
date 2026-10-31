@@ -43,7 +43,7 @@ import type {
   StaffShiftTemplate
 } from '../lib/staff/types'
 import { type StaffCostReportRow } from './StaffCostAssignments'
-import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
+const StaffZaloMiniAppSettings = dynamic(() => import('./StaffZaloMiniAppSettings'), { ssr: false })
 
 export default function StaffHrHub({ model }: StaffHrHubProps) {
   const { hrTab, resolvedLanguage, saving, setHrTab, setStatus, sharedText, text } = model.shared

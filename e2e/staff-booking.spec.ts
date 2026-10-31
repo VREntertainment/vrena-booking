@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { execFileSync } from 'node:child_process'
-import { chooseCafeVenue, futureDate, loginAsAdmin, openAdmin } from './support/admin'
+import { futureDate, loginAsAdmin, openAdmin } from './support/admin'
 
 test('staff booking: electronic payments, automatic offers, required override reason and country menu', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Use the isolated service once.')
@@ -368,14 +368,14 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     const anonymous = await browser.newContext({ baseURL: new URL(page.url()).origin, viewport: { width: 375, height: 667 } })
     await anonymous.addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: new URL(page.url()).origin }])
     const clientPage = await anonymous.newPage()
-    await clientPage.goto('/create-session')
-    await clientPage.getByRole('button', { name: 'Calendar', exact: true }).click()
-    await expect(clientPage.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
-    await chooseCafeVenue(clientPage)
-    await expect(clientPage.locator('.calendar-shop-badge')).toHaveText('Vrena Thao Dien')
+    await clientPage.goto('/create-session?venue=cafe-des-stagiaires&lang=en')
+    // Community calendars are paused for customers; this legacy route now opens booking.
+    await expect(clientPage).toHaveURL(/tickets\?venue=cafe-des-stagiaires/)
+    await expect(clientPage.getByRole('button', { name: 'Reserve your slot', exact: true })).toBeVisible()
+    await expect(clientPage.locator('.booking-venue-option.active')).toContainText('Thảo Điền')
+    await expect(clientPage.getByRole('button', { name: 'Calendar', exact: true })).toHaveCount(0)
     await expect(clientPage.getByRole('button', { name: 'New booking', exact: true })).toHaveCount(0)
     await expect(clientPage.getByRole('button', { name: 'Delete booking', exact: true })).toHaveCount(0)
-    await expect(clientPage.locator('.calendar-day-column')).toHaveCount(7)
     expect(await clientPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     await anonymous.close()
   } finally {
