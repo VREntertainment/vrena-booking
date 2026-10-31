@@ -36,6 +36,7 @@ export type AuthSessionActionContext = {
   setProfileCountryCode: React.Dispatch<React.SetStateAction<string>>
   setProfilePhone: React.Dispatch<React.SetStateAction<string>>
   setProfileName: React.Dispatch<React.SetStateAction<string>>
+  setProfileSurname: React.Dispatch<React.SetStateAction<string>>
   setProfileMotto: React.Dispatch<React.SetStateAction<string>>
   setProfileNickname: React.Dispatch<React.SetStateAction<string>>
   setProfileEmail: React.Dispatch<React.SetStateAction<string>>
@@ -84,6 +85,7 @@ export function createBookingAuthSessionActions(getContext: () => AuthSessionAct
       setProfileCountryCode,
       setProfilePhone,
       setProfileName,
+      setProfileSurname,
       setProfileMotto,
       setProfileNickname,
       setProfileEmail,
@@ -190,7 +192,10 @@ export function createBookingAuthSessionActions(getContext: () => AuthSessionAct
         setProfile(profileRow)
         setProfileCountryCode(phoneParts.countryInput)
         setProfilePhone(phoneParts.localPhone)
-        setProfileName(profileRow.full_name || '')
+        // Old clients may update full_name without the separate fields. Preserve their edit.
+        const partsMatch = profileRow.first_name != null && [profileRow.first_name, profileRow.last_name].filter(Boolean).join(' ') === profileRow.full_name
+        setProfileName(partsMatch ? profileRow.first_name || '' : profileRow.full_name || '')
+        setProfileSurname(partsMatch ? profileRow.last_name || '' : '')
         setProfileMotto(limitMotto(profileRow.profile_motto || ''))
         setProfileNickname(limitDisplayName(profileRow.nickname || ''))
         setProfileEmail(profileRow.email || '')
@@ -259,6 +264,7 @@ export function createBookingAuthSessionActions(getContext: () => AuthSessionAct
       setProfileCountryCode('+84')
       setProfilePhone(phone.replace(/^\+?84/, ''))
       setProfileName(fullName)
+      setProfileSurname('')
       setProfileMotto(profileMottoValue)
       setProfileNickname(nickname)
       setProfileEmail(email)

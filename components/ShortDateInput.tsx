@@ -3,12 +3,13 @@
 import { useId, useRef } from 'react'
 import type { LanguageCode } from '../lib/i18n/languages'
 
-function formatShortDate(dateValue: string, language: LanguageCode) {
+function formatShortDate(dateValue: string, language: LanguageCode, includeYear: boolean) {
   if (!dateValue) return ''
 
   return new Date(`${dateValue}T00:00:00`).toLocaleDateString(language, {
     day: '2-digit',
     month: 'short',
+    ...(includeYear ? { year: 'numeric' as const } : {}),
   })
 }
 
@@ -20,6 +21,7 @@ export default function ShortDateInput({
   ariaLabel,
   displayValueOverride,
   disabled = false,
+  includeYear = false,
   min,
 }: {
   value: string
@@ -29,11 +31,12 @@ export default function ShortDateInput({
   ariaLabel: string
   displayValueOverride?: string
   disabled?: boolean
+  includeYear?: boolean
   min?: string
 }) {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const displayValue = displayValueOverride || (value ? formatShortDate(value, language) : placeholder)
+  const displayValue = displayValueOverride || (value ? formatShortDate(value, language, includeYear) : placeholder)
   const openPicker = () => {
     if (disabled) return
 

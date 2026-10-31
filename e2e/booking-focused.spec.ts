@@ -36,7 +36,7 @@ test('account keeps history, loyalty and consent controls without social distrac
   await expect(consent).toBeChecked()
   await consent.uncheck()
   await expect(consent).not.toBeChecked()
-  await expect(page.locator('.profile-photo-panel, .nickname-field, .motto-field, .gender-field, .profile-completion-card, .driver-popover')).toHaveCount(0)
+  await expect(page.locator('.motto-field, .gender-field, .profile-completion-card, .driver-popover')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Delete my account', exact: true })).toBeVisible()
   await page.screenshot({ path: `/tmp/booking-focused-settings-${test.info().project.name}.png`, fullPage: true, animations: 'disabled' })
   await page.locator('.account-booking-heading').getByRole('button', { name: 'Book now' }).click()

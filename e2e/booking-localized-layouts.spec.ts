@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { accountFixture } from './support/accountFixture'
 import { futureDate } from './support/admin'
+import { accountDetailsCopy } from '../lib/accountDetailsCopy'
 import { bookingExperienceCopy } from '../lib/bookingExperienceCopy'
 import { languageOptions } from '../lib/i18n/languages'
 import { loadTranslation } from '../lib/i18n/loadTranslation'
@@ -57,7 +58,18 @@ for (const language of languageOptions) {
         await page.locator('.profile-sub-tabs button').nth(2).click()
         await expect(page.locator('.profile-consent-panel')).toContainText(text.marketingConsent)
         await expect(page.locator('.profile-legal-panel a')).toHaveCount(3)
-        await expect(page.locator('.profile-photo-panel, .driver-popover')).toHaveCount(0)
+        await expect(page.locator('.driver-popover')).toHaveCount(0)
+        const details = accountDetailsCopy(language)
+        await expect(page.locator('#profile-name-input')).toBeVisible()
+        await expect(page.getByLabel(details.surname, { exact: true })).toHaveValue('')
+        await expect(page.getByLabel(text.nickname, { exact: true })).toHaveValue('Tester')
+        await expect(page.getByLabel(details.changePhoto, { exact: true })).toBeAttached()
+        await expect(page.locator('.birthday-field .date-input-display')).toContainText('1990')
+        await expect(page.locator('.profile-security-panel .account-links button').last()).toHaveText(text.deleteAccount)
+        expect(await page.locator('.danger-link').evaluate(node => {
+          const probe = document.createElement('span'); probe.style.color = 'var(--vrena-status-danger-ink)'; node.append(probe)
+          const expected = getComputedStyle(probe).color; probe.remove(); return getComputedStyle(node).color === expected
+        })).toBe(true)
         await contained(page)
         await page.screenshot({ path: `${stem}-settings.png`, fullPage: true, animations: 'disabled' })
         expect(errors).toEqual([])

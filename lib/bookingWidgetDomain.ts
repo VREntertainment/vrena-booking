@@ -75,6 +75,8 @@ export type Profile = {
   id: string
   phone: string
   full_name: string | null
+  first_name?: string | null
+  last_name?: string | null
   nickname: string | null
   email: string | null
   birthday?: string | null
@@ -155,7 +157,7 @@ export const ANONYMOUS_MASK_TEXT_COLOR = vrenaPalette.white
 export const ANONYMOUS_CALLSIGN_PREFIXES = ['ECHO', 'NOVA', 'ORION', 'CIPHER', 'PHANTOM', 'VORTEX', 'NEON', 'PULSE']
 export const PROFILE_GENDER_VALUES = ['male', 'female', 'non_binary', 'prefer_not_to_say', 'self_describe'] as const
 export type ProfileGender = typeof PROFILE_GENDER_VALUES[number]
-export const PROFILE_SELECT = 'id, phone, full_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at, personal_data_consent, personal_data_consent_at, privacy_policy_url, terms_conditions_url, consent_waiver_url, legal_consent_version'
+export const PROFILE_SELECT = 'id, phone, full_name, first_name, last_name, nickname, email, birthday, gender, avatar_url, avatar_emoji, avatar_initials, avatar_color, avatar_text_color, profile_motto, role, score_adjustment, loyalty_points_total, average_accuracy_override, best_escape_duration_seconds_override, total_projectiles_override, anonymous_mode, anonymous_callsign, marketing_consent, marketing_consent_at, marketing_opted_out_at, personal_data_consent, personal_data_consent_at, privacy_policy_url, terms_conditions_url, consent_waiver_url, legal_consent_version'
 
 export function defaultStaffPlayerEditDraft(): StaffPlayerEditDraft {
   return {

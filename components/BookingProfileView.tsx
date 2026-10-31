@@ -4,6 +4,7 @@
 
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED } from '../lib/customerExperience'
 import { bookingExperienceCopy } from '../lib/bookingExperienceCopy'
+import { accountDetailsCopy } from '../lib/accountDetailsCopy'
 import NextImage from 'next/image'
 import {
   Bell,
@@ -148,6 +149,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     profileGender,
     profileMotto,
     profileName,
+    profileSurname,
     profileNickname,
     profilePassword,
     profilePastSessions,
@@ -187,6 +189,7 @@ export default function BookingProfileView({ context }: { context: any }) {
     setProfileGender,
     setProfileMotto,
     setProfileName,
+    setProfileSurname,
     setProfileNickname,
     setProfilePassword,
     setProfilePhone,
@@ -476,6 +479,24 @@ export default function BookingProfileView({ context }: { context: any }) {
               !profile && (authMode === 'login' || authMode === 'create' || authMode === 'reset' || isRecoveryMode) ? 'login-profile-form' : '',
               !profile && authMode === 'create' ? 'create-profile-form' : '',
             ].join(' ').trim()} hidden={mfaRequired}>
+              {!CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
+                <div className="account-photo-editor">
+                  <div className="account-photo-preview" style={{ background: avatarColor, color: avatarTextColor }}>
+                    {avatarMode === 'photo' && (avatarPreview || (profile?.avatar_url && !failedAvatarUrls.has(profile.avatar_url.trim()))) ? (
+                      <NextImage src={avatarPreview || profile?.avatar_url || ''} alt="" width={72} height={72}
+                        unoptimized={shouldSkipImageOptimization(avatarPreview || profile?.avatar_url)}
+                        onError={() => rememberFailedAvatarUrl(avatarPreview || profile?.avatar_url)} />
+                    ) : <span>{avatarMode === 'emoji' ? avatarEmoji : compactInitials(avatarInitials || displayName(profile))}</span>}
+                  </div>
+                  <div className="account-photo-controls">
+                    <strong>{text.profilePhoto}</strong>
+                    <label className="secondary account-photo-upload">
+                      <span>{accountDetailsCopy(language).changePhoto}</span>
+                      <input aria-label={accountDetailsCopy(language).changePhoto} type="file" accept="image/jpeg,image/png,image/webp" disabled={isSavingProfile} onChange={handleAvatarChange} />
+                    </label>
+                  </div>
+                </div>
+              )}
               {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
                 <div className={profile ? 'profile-photo-panel profile-account-hero' : 'profile-photo-panel'}>
                   <label className="profile-photo-preview" style={{ background: profile?.anonymous_mode ? ANONYMOUS_MASK_COLOR : avatarColor, color: profile?.anonymous_mode ? ANONYMOUS_MASK_TEXT_COLOR : avatarTextColor }}>
@@ -681,21 +702,29 @@ export default function BookingProfileView({ context }: { context: any }) {
               )}
               {showProfileFields && (
                 <div className="name-field">
-                  <label>{text.name} <span className="required">*</span></label>
+                  <label htmlFor="profile-name-input">{profile ? accountDetailsCopy(language).firstName : text.name} <span className="required">*</span></label>
                   <input
                     aria-invalid={profileStatus === text.nameRequired}
                     aria-required="true"
                     id="profile-name-input"
                     onChange={(event) => setProfileName(event.target.value)}
-                    placeholder="Nguyen Van A"
+                    autoComplete={profile ? "given-name" : "name"}
                     value={profileName}
                   />
                 </div>
               )}
-              {CUSTOMER_SOCIAL_FEATURES_ENABLED && showProfileFields && (
+              {profile && showProfileFields && (
+                <div className="name-field surname-field">
+                  <label htmlFor="profile-surname-input">{accountDetailsCopy(language).surname}</label>
+                  <input id="profile-surname-input" autoComplete="family-name" value={profileSurname} onChange={(event) => setProfileSurname(event.target.value)} />
+                </div>
+              )}
+              {showProfileFields && (
                 <div className="nickname-field">
-                  <label>{text.nickname}</label>
+                  <label htmlFor="profile-nickname-input">{text.nickname}</label>
                   <input
+                    id="profile-nickname-input"
+                    autoComplete="nickname"
                     maxLength={MAX_DISPLAY_NAME_LENGTH}
                     value={profileNickname}
                     onChange={(event) => setProfileNickname(limitDisplayName(event.target.value))}
@@ -719,6 +748,7 @@ export default function BookingProfileView({ context }: { context: any }) {
                 <div className="birthday-field">
                   <label>{text.birthday} {!profile && <span className="required">*</span>}</label>
                   <ShortDateInput
+                    includeYear
                     ariaLabel={text.birthday}
                     disabled={isMinorBirthdayLocked}
                     language={language}
@@ -1008,9 +1038,6 @@ export default function BookingProfileView({ context }: { context: any }) {
                   {CUSTOMER_SOCIAL_FEATURES_ENABLED && <button className="link-button" onClick={replayOnboardingTour} type="button">
                     <ButtonIconText icon={<UserRound aria-hidden="true" size={16} />}>{text.takeTourAgain}</ButtonIconText>
                   </button>}
-                  <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
-                    <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
-                  </button>
                   {activeTotpFactor ? (
                     <button
                       aria-label={text.mfaDisable}
@@ -1034,6 +1061,9 @@ export default function BookingProfileView({ context }: { context: any }) {
                       <ButtonIconText icon={<ScanLine aria-hidden="true" size={16} />}>{isMfaLoading ? text.saving : text.mfaAuthenticatorTitle}</ButtonIconText>
                     </button>
                   )}
+                  <button className="link-button danger-link" disabled={isDeletingAccount} onClick={deleteMyAccount} type="button">
+                    <ButtonIconText icon={<Trash2 aria-hidden="true" size={16} />}>{isDeletingAccount ? text.saving : text.deleteAccount}</ButtonIconText>
+                  </button>
                 </div>
                 {!profile.email && <p className="field-help">{text.phoneOnlyRecoveryWarning}</p>}
                 {mfaEnrollment && (

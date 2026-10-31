@@ -61,6 +61,7 @@ export type ProfilesActionContext = {
   profileCountryCode: string
   profilePhone: string
   profileName: string
+  profileSurname: string
   profileMotto: string
   profileNickname: string
   setIsSavingProfile: React.Dispatch<React.SetStateAction<boolean>>
@@ -419,6 +420,7 @@ export function createBookingProfilesActions(getContext: () => ProfilesActionCon
       profileCountryCode,
       profilePhone,
       profileName,
+      profileSurname,
       profileMotto,
       profileNickname,
       setIsSavingProfile,
@@ -453,7 +455,9 @@ export function createBookingProfilesActions(getContext: () => ProfilesActionCon
 
     const countryCode = resolveCountryCode(profileCountryCode)
     const localPhone = profilePhone.replace(/[^\d\s-]/g, '').trim()
-    const fullName = profileName.trim()
+    const firstName = profileName.trim()
+    const lastName = profileSurname.trim()
+    const fullName = [firstName, lastName].filter(Boolean).join(' ')
     const cleanMotto = limitMotto(profileMotto.trim())
     const nickname = limitDisplayName(profileNickname.trim())
 
@@ -464,7 +468,7 @@ export function createBookingProfilesActions(getContext: () => ProfilesActionCon
       return
     }
 
-    if (!fullName) {
+    if (!firstName) {
       setProfileStatus(text.nameRequired)
       document.getElementById('profile-name-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       document.getElementById('profile-name-input')?.focus({ preventScroll: true })
@@ -490,6 +494,8 @@ export function createBookingProfilesActions(getContext: () => ProfilesActionCon
 
       const row = {
         full_name: fullName,
+        first_name: firstName,
+        last_name: lastName || null,
         phone: `${countryCode}${localPhone.replace(/\D/g, '')}`,
         profile_motto: cleanMotto || null,
         nickname: nickname || null,
@@ -518,6 +524,8 @@ export function createBookingProfilesActions(getContext: () => ProfilesActionCon
         data: {
           display_name: display,
           full_name: fullName,
+          first_name: firstName,
+          last_name: lastName || null,
           name: display,
           nickname: nickname || null,
           birthday: data.birthday,
