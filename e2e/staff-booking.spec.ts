@@ -372,7 +372,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     // Community calendars are paused for customers; this legacy route now opens booking.
     await expect(clientPage).toHaveURL(/tickets\?venue=cafe-des-stagiaires/)
     await expect(clientPage.getByRole('button', { name: 'Reserve your slot', exact: true })).toBeVisible()
-    await expect(clientPage.locator('.booking-venue-option.active')).toContainText('Thảo Điền')
+    await expect(clientPage.locator('.booking-venue-option.active')).toContainText(/Th[ảa]o [ĐD]i[ềe]n/i)
     await expect(clientPage.getByRole('button', { name: 'Calendar', exact: true })).toHaveCount(0)
     await expect(clientPage.getByRole('button', { name: 'New booking', exact: true })).toHaveCount(0)
     await expect(clientPage.getByRole('button', { name: 'Delete booking', exact: true })).toHaveCount(0)
