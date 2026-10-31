@@ -92,3 +92,13 @@ test('caps billed players and bases discounts on total paid player-slots', () =>
   assert.equal(calculateTicketPricing(220000,8,60,30,4,1).totalPrice,1672000)
   assert.equal(calculateTicketPricing(220000,8,90,30,4,1).totalPrice,2508000)
 })
+
+test('October 31 menu applies at weekday/weekend 20:00 boundaries without changing history or Thao Dien', () => {
+  assert.equal(individualTicketUnitPrice('2026-11-02','09:00'),260000)
+  assert.equal(individualTicketUnitPrice('2026-11-02','19:59'),260000)
+  assert.equal(individualTicketUnitPrice('2026-11-02','20:00'),290000)
+  assert.equal(individualTicketUnitPrice('2026-10-31','19:59'),330000)
+  assert.equal(individualTicketUnitPrice('2026-10-31','20:00'),390000)
+  assert.equal(individualTicketUnitPrice('2026-10-30','09:00'),220000)
+  assert.equal(individualTicketUnitPrice('2026-11-02','16:00','cafe-des-stagiaires'),240000)
+})

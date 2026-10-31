@@ -155,7 +155,6 @@ export default function TicketBookingView({
   needsAccountPhone,
   manualDiscountReview,
   singleArenaOnly,
-  gameGuideTrigger,
   tariffTrigger,
   ticketServices,
   ticketType,
@@ -458,7 +457,7 @@ export default function TicketBookingView({
             <details className="ticket-duration-information ticket-extras">
               <summary>{clarity.help}</summary>
               <div className="ticket-help-content">
-                <div className="ticket-quick-actions">{gameGuideTrigger}{tariffTrigger}</div>
+                <div className="ticket-quick-actions">{tariffTrigger}</div>
                 <p className="field-help">{ticketType === 'birthday' ? birthdayCopy.note : bookingDurationCopy[language].hint}</p>
                 {isSpecialTicket && <p className="field-help">{text.ticketSpecialBookingNote}</p>}
                 <p className="field-help">{text.sessionTariffPayment}</p>

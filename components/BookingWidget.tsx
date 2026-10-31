@@ -5339,7 +5339,7 @@ function BookingWorkspace({
   const appMain = (
     <main lang={language}>
       {(activeView === 'sessions' || activeView === 'tickets' || activeView === 'create') && (
-        <BookingVenueSelector allowedVenueKeys={canAccessStaffConsole ? staffLocations.map((location) => location.venue_key) : undefined} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
+        <BookingVenueSelector gameGuideTrigger={renderGameGuideTrigger(null, 'ticket-game-guide-link')} allowedVenueKeys={canAccessStaffConsole ? staffLocations.map((location) => location.venue_key) : undefined} onChange={handleBookingVenueChange} text={text} value={bookingVenue} />
       )}
 
       {activeView === 'sessions' && isHaDoBookingVenue && (
@@ -6104,7 +6104,6 @@ function BookingWorkspace({
           rates={isHaDoBookingVenue
             ? [
               text.sessionTariffRateDay,
-              text.sessionTariffRateEvening,
               text.sessionTariffRateWeekend,
               text.sessionTariffRateWeekendDay,
               text.sessionTariffRateWeekendEvening,

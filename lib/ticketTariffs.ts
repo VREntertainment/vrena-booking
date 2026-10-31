@@ -9,11 +9,11 @@ export const legacyIndividualTicketPrices = {
 
 export const individualTicketPrices = {
   'ha-do-centrosa': {
-    weekdayDay: 220000,
+    weekdayDay: 260000,
     happyHour: 260000,
     evening: 290000,
     weekendDay: 330000,
-    weekendEvening: 290000,
+    weekendEvening: 390000,
   },
   'cafe-des-stagiaires': {
     weekdayDay: 190000,
@@ -58,7 +58,9 @@ export function individualTicketUnitPrice(
       : legacyIndividualTicketPrices.weekdayDay
   }
 
-  const prices = individualTicketPrices[venue]
+  const prices = venue === 'ha-do-centrosa' && dateValue < '2026-10-31'
+    ? { ...individualTicketPrices[venue], weekdayDay: 220000, weekendEvening: 290000 }
+    : individualTicketPrices[venue]
   const day = new Date(`${dateValue}T12:00:00`).getDay()
   const minutes = timeValue ? timeToMinutes(timeValue) : 12 * 60
   if (day === 0 || day === 6) {

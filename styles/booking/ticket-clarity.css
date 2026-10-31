@@ -83,3 +83,19 @@
   .app .ticket-streamlined .ticket-fast-path-summary { grid-template-columns: 1fr auto; }
   .app .ticket-streamlined .ticket-fast-path-summary strong { font-size: 16px; }
 }
+
+/* Keep all booking products aligned on one calm, readable column. */
+.app main:has(.ticket-booking-layout) > .booking-venue-selector-compact,
+.app .ticket-booking-layout { width: 100%; max-width: 840px; }
+.app.player-workspace .tickets-section::after { display: none; }
+.app.player-workspace .sim-racing-booking { min-height: 0; }
+.app.player-workspace .ticket-streamlined .ticket-fast-path-summary {
+  background: transparent !important;
+}
+.app .booking-venue-mobile-summary > .booking-venue-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.app .booking-venue-actions .ticket-game-guide-link { margin: 0; min-height: 44px; }
+@media (max-width: 600px) {
+  .app .booking-venue-mobile-summary { flex-wrap: wrap; }
+  .app .booking-venue-mobile-summary > div:first-child { flex: 1 1 100%; }
+  .app .booking-venue-actions { width: 100%; justify-content: flex-end; }
+}
