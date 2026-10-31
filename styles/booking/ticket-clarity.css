@@ -121,3 +121,7 @@
   .app .booking-venue-carousel .booking-venue-map { width: 44px; height: 48px; left: 12px; }
   .app .booking-venue-carousel .booking-venue-copy strong { overflow-wrap: anywhere; }
 }
+@media (min-width: 721px) {
+  .app main > .booking-venue-carousel,
+  .app main > .ticket-booking-layout { margin-inline: auto; }
+}
