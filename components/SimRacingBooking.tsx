@@ -1,6 +1,8 @@
 'use client'
 
-import BookingCalendarDialog from './BookingCalendarDialog'
+import dynamic from 'next/dynamic'
+
+const BookingCalendarDialog = dynamic(() => import('./BookingCalendarDialog'), { ssr: false })
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { getSupabase } from '../lib/booking/client'

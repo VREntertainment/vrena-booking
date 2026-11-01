@@ -12,7 +12,7 @@ import { vietnamClock } from '../lib/booking/arenaAvailability'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
 import type { TicketBookingConfirmation } from '../lib/bookingWidgetDomain'
-import BookingCalendarDialog from './BookingCalendarDialog'
+const BookingCalendarDialog = dynamic(() => import('./BookingCalendarDialog'), { ssr: false })
 import BookingPhoneDialog from './BookingPhoneDialog'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 

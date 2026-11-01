@@ -67,6 +67,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await expect(calendar).toBeVisible()
     await expect(calendar).toContainText('Reminder: 1 hour before')
     await expect(calendar).toContainText(venue === 'ha-do-centrosa' ? '0981152315' : '0981157039')
+    await calendar.screenshot({ path: `/tmp/vrena-e2e-results/calendar-${venue}-${test.info().project.name}.png` })
     const downloaded = page.waitForEvent('download')
     await calendar.getByRole('button', { name: 'Add to calendar', exact: true }).click()
     expect((await downloaded).suggestedFilename()).toBe('vrena-booking.ics')
