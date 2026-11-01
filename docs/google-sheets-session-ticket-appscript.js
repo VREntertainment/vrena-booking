@@ -160,13 +160,22 @@ function buildMainRow(payload, receivedAt) {
 
 function sendNotificationEmail(payload, receivedAt) {
   const details = bookingEmailDetails(payload, receivedAt)
-  MailApp.sendEmail({
+  const venueMessage = {
     to: bookingEmailRecipients(payload)[0],
     ...(bookingEmailRecipients(payload)[0] === 'vrena-thaodien@vre-vietnam.com'
       ? { bcc: 'emile@vre-vietnam.com' } : {}),
+    replyTo: bookingEmailRecipients(payload)[0],
+    name: details.venue,
     subject: `[${details.venue}] ${details.heading}${details.reference ? ' · ' + details.reference : ''}`,
     body: buildEmailText(payload, receivedAt),
     htmlBody: buildEmailHtml(payload, receivedAt),
+  }
+  GmailApp.sendEmail(venueMessage.to, venueMessage.subject, venueMessage.body, {
+    from: venueMessage.replyTo,
+    replyTo: venueMessage.replyTo,
+    name: venueMessage.name,
+    ...(venueMessage.bcc ? { bcc: venueMessage.bcc } : {}),
+    htmlBody: venueMessage.htmlBody,
   })
   const customerEmail = bookingCustomerEmail(payload)
   if (customerEmail) {

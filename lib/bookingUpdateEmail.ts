@@ -1,8 +1,7 @@
 import type { BookingUpdateEmailChange, BookingUpdateEmailPayload } from './bookingUpdateEmailTypes'
 import { vrenaPalette } from './theme/vrenaPalette'
-import { bookingEmailRecipients } from './bookingEmailRecipients'
+import { bookingEmailRecipients, bookingEmailSender } from './bookingEmailRecipients'
 
-const DEFAULT_FROM_EMAIL = 'VRena Booking <bookings@vre-vietnam.com>'
 
 function cleanText(value: unknown) {
   if (value === null || value === undefined) return ''
@@ -78,10 +77,8 @@ function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | 
 export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload & { actorEmail?: string | null }) {
   const apiKey = process.env.RESEND_API_KEY
   const to = bookingEmailRecipients(payload.venueKey, payload.reference)
-  const from = process.env.BOOKING_UPDATE_EMAIL_FROM
-    || process.env.BOOKING_EMAIL_FROM
-    || process.env.RESEND_FROM_EMAIL
-    || DEFAULT_FROM_EMAIL
+  const sender = bookingEmailSender(payload.venueKey, payload.reference)
+  const from = sender.from
 
   if (!apiKey) {
     console.warn('Booking update email skipped: RESEND_API_KEY is not configured.')
@@ -118,6 +115,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
     },
     body: JSON.stringify({
       from,
+      reply_to: sender.email,
       to,
       subject: subjectParts.join(' · '),
       text,
