@@ -12,12 +12,7 @@ function loadScript() {
   let sentEmail = null
   const sentEmails = []
   const context = vm.createContext({
-    MailApp: {
-      sendEmail(options) {
-        sentEmail = options
-        sentEmails.push(options)
-      },
-    },
+    MailApp: { sendEmail() { throw new Error('Owner-address fallback must never be used') } },
     GmailApp: {
       sendEmail(to, subject, body, options) {
         sentEmail = { to, subject, body, ...options }
@@ -160,6 +155,9 @@ for (const venueKey of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     assert.equal(sentEmails[1].bcc, undefined)
     assert.equal(sentEmails[0].bcc, venueKey === 'cafe-des-stagiaires' ? 'emile@vre-vietnam.com' : undefined)
     assert.equal(sentEmails[1].cc, undefined)
+    assert.equal(sentEmails[0].from, venueKey === 'ha-do-centrosa' ? 'contact@vre-vietnam.com' : 'vrena-thaodien@vre-vietnam.com')
+    assert.equal(sentEmails[0].replyTo, sentEmails[0].from)
+    assert.equal(sentEmails[0].name, sentEmails[1].name)
     assert.equal(sentEmails[1].from, venueKey === 'ha-do-centrosa' ? 'contact@vre-vietnam.com' : 'vrena-thaodien@vre-vietnam.com')
     assert.equal(sentEmails[1].name, venueKey === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'VRena Thao Dien')
     assert.equal(sentEmails[1].replyTo, venueKey === 'cafe-des-stagiaires' ? 'vrena-thaodien@vre-vietnam.com' : 'contact@vre-vietnam.com')
