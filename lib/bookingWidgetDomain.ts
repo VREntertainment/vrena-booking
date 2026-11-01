@@ -54,6 +54,8 @@ export type StaffGameGuide = {
 }
 
 export type TicketBookingConfirmation = {
+  venue: 'ha-do-centrosa' | 'cafe-des-stagiaires'
+  durationMinutes: number
   sessionId: string
   reference: string
   ticketType: TicketType

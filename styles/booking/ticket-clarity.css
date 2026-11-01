@@ -135,3 +135,18 @@
 .app.player-workspace .console-sidebar-collapsed .profile-chip .avatar {
   border: 0; box-shadow: none;
 }
+.booking-calendar-dialog {
+  width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto;
+  margin: auto; padding: 28px; border: 1px solid var(--player-border); border-radius: 24px;
+  background: var(--player-surface-raised, var(--vrena-surface)); color: var(--player-text);
+  box-shadow: var(--player-shadow-soft);
+}
+.booking-calendar-dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+.booking-calendar-content { display: grid; gap: 16px; text-align: center; }
+.booking-calendar-content h2, .booking-calendar-content p { margin: 0; }
+.booking-calendar-content p, .booking-calendar-summary span { color: var(--player-text-muted); }
+.booking-calendar-icon { color: var(--vrena-mode-accent); display: flex; justify-content: center; }
+.booking-calendar-summary { display: grid; gap: 6px; padding: 16px 0; border-block: 1px solid var(--player-border); }
+.booking-calendar-content .booking-calendar-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 0; text-decoration: none; border-radius: 12px; }
+.booking-calendar-summary { min-width: 0; font-size: 14px; }
+.booking-calendar-summary a { overflow-wrap: anywhere; }

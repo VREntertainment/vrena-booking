@@ -364,6 +364,8 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         return false
       }
       const confirmation: TicketBookingConfirmation = {
+        venue: isHaDoBookingVenue ? 'ha-do-centrosa' : 'cafe-des-stagiaires',
+        durationMinutes: activeTicketDuration,
         sessionId: booking.session_id || '',
         reference: booking.ticket_reference || '',
         ticketType,

@@ -1,5 +1,8 @@
 'use client'
 
+import dynamic from 'next/dynamic'
+
+const BookingCalendarDialog = dynamic(() => import('./BookingCalendarDialog'), { ssr: false })
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { getSupabase } from '../lib/booking/client'
@@ -84,6 +87,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
   return <section className="section tickets-section sim-racing-booking" aria-labelledby="sim-racing-title">
     <header><p>{t.capacity}</p><h2 id="sim-racing-title">SIM Racing</h2><p>{t.package}</p><strong className="sim-racing-price">{t.pay}</strong></header>
     {confirmation ? <div className="ticket-confirmation" role="status">
+      <BookingCalendarDialog key={confirmation.reference} language={language} booking={{ id: confirmation.reference, reference: confirmation.reference, date: confirmation.date, time: confirmation.time, durationMinutes: 15, venue: 'ha-do-centrosa', hasAccount: Boolean(profile), title: 'VRena · SIM Racing' }} />
       <h3>{t.confirmed}</h3>
       <p>VRena Hà Đô Centrosa</p><p>{new Date(`${confirmation.date}T12:00:00`).toLocaleDateString(language)} · {confirmation.time} (GMT+7)</p>
       <p>{text.bookingReference}: <strong>{confirmation.reference}</strong></p><p>{t.package}</p><p>{t.pay}</p>
