@@ -144,9 +144,8 @@
 .booking-calendar-dialog::backdrop { background: rgb(0 0 0 / 0.5); }
 .booking-calendar-content { display: grid; gap: 16px; text-align: center; }
 .booking-calendar-content h2, .booking-calendar-content p { margin: 0; }
-.booking-calendar-content p, .booking-calendar-summary span { color: var(--player-text-muted); }
-.booking-calendar-icon { color: var(--vrena-mode-accent); display: flex; justify-content: center; }
-.booking-calendar-summary { display: grid; gap: 6px; padding: 16px 0; border-block: 1px solid var(--player-border); }
+.booking-calendar-content p { color: var(--player-text-muted); }
 .booking-calendar-content .booking-calendar-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 0; text-decoration: none; border-radius: 12px; }
-.booking-calendar-summary { min-width: 0; font-size: 14px; }
-.booking-calendar-summary a { overflow-wrap: anywhere; }
+
+.booking-calendar-logo { display: block; width: 176px; margin: 4px auto 12px; }
+.booking-calendar-logo img { display: block; width: 100%; height: auto; }
