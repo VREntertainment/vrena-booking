@@ -27,6 +27,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
       expect(requests).toHaveLength(1)
       expect(requests[0].name).toBe(venue === 'ha-do-centrosa' ? 'create_ticket_booking' : 'create_cafe_ticket_booking_request')
+      await page.getByRole('dialog', { name: 'Your booking is confirmed' }).getByRole('button', { name: 'Not now' }).click()
       await page.locator('.profile-chip').click()
       await expect(page.getByRole('button', { name: 'My Bookings', exact: true })).toBeVisible()
       await expect(page.locator('.account-bookings')).toContainText('QA-ACCOUNT-991')

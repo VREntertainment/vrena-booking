@@ -11,6 +11,8 @@ import { bookingDurationCopy } from '../lib/bookingDurationCopy'
 import { vietnamClock } from '../lib/booking/arenaAvailability'
 import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
+import type { TicketBookingConfirmation } from '../lib/bookingWidgetDomain'
+import BookingCalendarDialog from './BookingCalendarDialog'
 import BookingPhoneDialog from './BookingPhoneDialog'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
@@ -56,23 +58,6 @@ type TicketPricingSummary = {
   grossPrice: number
 }
 
-type TicketBookingConfirmation = {
-  sessionId: string
-  reference: string
-  ticketType: TicketType
-  ticketLabel: string
-  date: string
-  time: string
-  players: number
-  totalPrice: number
-  guestPhone?: string
-  guestName?: string
-  loyaltyPointsRedeemed?: number
-  loyaltyDiscountAmount?: number
-  discountCode?: string
-  discountAmount?: number
-  manualDiscountReview?: boolean
-}
 
 type GuestTicketAction = 'create-account' | 'guest'
 type TicketStatusVariant = 'info' | 'error'
@@ -576,6 +561,7 @@ export default function TicketBookingView({
 
           {ticketConfirmation && (
             <div className="ticket-confirmation">
+              <BookingCalendarDialog key={ticketConfirmation.sessionId} language={language} booking={{ id: ticketConfirmation.sessionId, reference: ticketConfirmation.reference, date: ticketConfirmation.date, time: ticketConfirmation.time, durationMinutes: ticketConfirmation.durationMinutes, venue: ticketConfirmation.venue, hasAccount: isLoggedIn, title: `VRena · ${ticketConfirmation.ticketLabel}` }} />
               <div>
                 <span>{text.bookingConfirmed}</span>{' '}
                 <strong>{ticketConfirmation.ticketLabel}</strong>
