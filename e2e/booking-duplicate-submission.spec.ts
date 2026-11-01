@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { chooseCafeVenue } from './support/admin'
 
@@ -67,12 +68,18 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await expect(calendar).toBeVisible()
     const bounds = await calendar.boundingBox()
     expect(Math.abs(bounds!.x + bounds!.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2)
-    await expect(calendar).toContainText('Reminder: 1 hour before')
-    await expect(calendar).toContainText(venue === 'ha-do-centrosa' ? '0981152315' : '0981157039')
+    await expect(calendar.getByAltText('VRena')).toBeVisible()
+    await expect(calendar).toContainText('Congratulations!')
+    await expect(calendar.locator('a')).toHaveCount(0)
     await calendar.screenshot({ path: `/tmp/vrena-e2e-results/calendar-${venue}-${test.info().project.name}.png` })
     const downloaded = page.waitForEvent('download')
     await calendar.getByRole('button', { name: 'Add to calendar', exact: true }).click()
-    expect((await downloaded).suggestedFilename()).toBe('vrena-booking.ics')
+    const file = await downloaded
+    expect(file.suggestedFilename()).toBe('vrena-booking.ics')
+    const event = (await readFile((await file.path())!, 'utf8')).replace(/\r\n /g, '')
+    expect(event).toContain('TRIGGER:-PT1H')
+    expect(event).toContain(venue === 'ha-do-centrosa' ? '0981152315' : '0981157039')
+    expect(event).toContain('URL:https://booking.vre-vietnam.com/')
     await calendar.getByRole('button', { name: 'Not now' }).click()
     await expect(calendar).not.toBeVisible()
     await expect(page.getByText('QA-SINGLE-BOOKING', { exact: true })).toBeVisible()
