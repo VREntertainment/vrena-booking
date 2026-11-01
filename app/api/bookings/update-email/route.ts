@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
   if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
+      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, ticket_player_count, notes, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', payload.sessionId)
       .maybeSingle()
 
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
   if (payload.orderId) {
     const { data, error } = await adminClient
       .from('staff_orders')
-      .select('id, order_number, session_id, customer_id, customer_name, customer_phone, customer_email, booking_date, booking_time, total, payment_status, order_status')
+      .select('id, order_number, session_id, customer_id, customer_name, customer_phone, customer_email, booking_date, booking_time, total, players_count, booking_source, payment_status, order_status')
       .eq('id', payload.orderId)
       .maybeSingle()
 
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
   } else if (payload.sessionId) {
     const { data, error } = await adminClient
       .from('staff_orders')
-      .select('id, order_number, session_id, customer_id, customer_name, customer_phone, customer_email, booking_date, booking_time, total, payment_status, order_status')
+      .select('id, order_number, session_id, customer_id, customer_name, customer_phone, customer_email, booking_date, booking_time, total, players_count, booking_source, payment_status, order_status')
       .eq('session_id', payload.sessionId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
   if (!session && order?.session_id) {
     const { data, error } = await adminClient
       .from('sessions')
-      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
+      .select('id, venue_key, owner_id, name, date, start_time, duration_minutes, max_players, ticket_player_count, notes, booking_type, ticket_reference, ticket_type, ticket_status, ticket_total_price, status, ticket_customer_id, deleted_at, created_at')
       .eq('id', order.session_id)
       .maybeSingle()
 
@@ -234,6 +234,14 @@ export async function POST(request: NextRequest) {
 
   const isOwner = Boolean(session?.owner_id && session.owner_id === userData.user.id)
   if (actorRank < 50 && !isOwner) return jsonError('Booking update email is not authorized.', 403)
+
+  // Committed database snapshots own delivery, including order-only/contact edits.
+  // Keep authorization above this probe; never trust a client-supplied venue/source.
+  if (session?.id) {
+    const { data: managed, error: managedError } = await adminClient.rpc('booking_email_managed', { p_session_id: session.id })
+    if (managedError && managedError.code !== 'PGRST202') return jsonError('Booking notification status is unavailable.', 503)
+    if (managed) return NextResponse.json({ ok: true, delivery: 'database-webhook' })
+  }
 
   const canonicalSessionId = cleanString(session?.id)
   const canonicalOrderId = cleanString(order?.id)
@@ -315,7 +323,10 @@ export async function POST(request: NextRequest) {
     summary: isStaffActor ? payload.summary : playerSummary(action),
     changes: isStaffActor ? payload.changes : [],
     minorWarning: trustedMinorWarning || (isStaffActor ? payload.minorWarning : null),
-    source: isStaffActor ? payload.source : 'Player booking flow',
+    source: cleanString(order?.booking_source) || 'Unspecified',
+    players: Number(order?.players_count ?? session?.ticket_player_count ?? session?.max_players) || null,
+    notes: cleanString(session?.notes),
+    status: cleanString(session?.ticket_status) || cleanString(session?.status),
     actorEmail: actorProfile?.email || userData.user.email || null,
   })
 

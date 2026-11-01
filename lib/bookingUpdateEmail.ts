@@ -1,26 +1,11 @@
-import type { BookingUpdateEmailChange, BookingUpdateEmailPayload } from './bookingUpdateEmailTypes'
-import { vrenaPalette } from './theme/vrenaPalette'
+import type { BookingUpdateEmailPayload } from './bookingUpdateEmailTypes'
+import { bookingMoney, bookingSourceLabel, bookingStatus, renderBookingEmail, type BookingEmailSnapshot } from './bookingEmailTemplate.ts'
 import { bookingEmailRecipients, bookingEmailSender } from './bookingEmailRecipients'
 
 
 function cleanText(value: unknown) {
   if (value === null || value === undefined) return ''
   return String(value).trim()
-}
-
-function valueText(value: unknown) {
-  const text = cleanText(value)
-  return text || '-'
-}
-
-function formatVnd(value: number | null | undefined) {
-  const amount = Number(value)
-  if (!Number.isFinite(amount) || amount <= 0) return ''
-  return `${amount.toLocaleString('vi-VN')} đ`
-}
-
-function changeLine(change: BookingUpdateEmailChange) {
-  return `- ${change.label}: ${valueText(change.before)} -> ${valueText(change.after)}`
 }
 
 function subjectAction(action: BookingUpdateEmailPayload['action']) {
@@ -34,44 +19,20 @@ function bookingKindLabel(kind: BookingUpdateEmailPayload['bookingKind']) {
   return kind === 'ticket' ? 'ticket booking' : 'session booking'
 }
 
-function buildBody(payload: BookingUpdateEmailPayload & { actorEmail?: string | null }) {
-  const lines = [
-    payload.action === 'created' ? 'New booking notice' : 'Existing booking update',
-    '',
-    payload.action === 'created'
-      ? 'This VRena booking was created by a player account that needs staff attention.'
-      : 'This is an update to an existing VRena booking. It is not a new booking confirmation.',
-    '',
-    `Shop: ${payload.venueKey === 'cafe-des-stagiaires' ? 'VRena Thao Dien' : payload.venueKey === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'Shop not available'}`,
-    `Action: ${subjectAction(payload.action)}`,
-    `Booking type: ${bookingKindLabel(payload.bookingKind)}`,
-    `Title: ${valueText(payload.title)}`,
-    `Reference: ${valueText(payload.reference).replace(/^CS-/, 'TD-')}`,
-    `Date/time: ${[payload.date, payload.time].map(cleanText).filter(Boolean).join(' ') || '-'}`,
-    `Customer: ${[payload.customerName, payload.customerPhone, payload.customerEmail].map(cleanText).filter(Boolean).join(' | ') || '-'}`,
-    `Total: ${formatVnd(payload.total) || '-'}`,
-    `Source: ${valueText(payload.source)}`,
-    `Updated by: ${valueText(payload.actorEmail)}`,
-  ]
-
-  if (payload.minorWarning) {
-    lines.splice(3, 0, cleanText(payload.minorWarning), '')
+export function buildBookingUpdateEmail(payload: BookingUpdateEmailPayload) {
+  const current: BookingEmailSnapshot = {
+    venue: payload.venueKey === 'cafe-des-stagiaires' ? 'VRena Thảo Điền' : 'VRena Hà Đô Centrosa',
+    reference: cleanText(payload.reference).replace(/^CS-/, 'TD-'), status: bookingStatus(payload.status || (payload.action === 'cancelled' ? 'cancelled' : payload.action === 'deleted' ? 'deleted' : '')),
+    date: cleanText(payload.date), time: cleanText(payload.time), players: String(payload.players ?? '—'), total: bookingMoney(payload.total),
+    source: bookingSourceLabel(payload.source), customerName: cleanText(payload.customerName), customerPhone: cleanText(payload.customerPhone), customerEmail: cleanText(payload.customerEmail), notes: cleanText(payload.notes),
   }
-
-  if (payload.summary) {
-    lines.push('', 'Summary:', cleanText(payload.summary))
+  const previous: Partial<BookingEmailSnapshot> = {}
+  const fields: Record<string, keyof BookingEmailSnapshot> = { Date: 'date', Time: 'time', Players: 'players', 'Total price': 'total', Total: 'total', 'Booking source': 'source', 'Customer name': 'customerName', Phone: 'customerPhone', Email: 'customerEmail', Notes: 'notes', Status: 'status' }
+  for (const change of payload.changes || []) {
+    const field = fields[change.label]
+    if (field) previous[field] = field === 'total' ? bookingMoney(change.before) : field === 'source' ? bookingSourceLabel(change.before) : cleanText(change.before)
   }
-
-  const changes = (payload.changes || []).filter((change) => cleanText(change.label))
-  if (changes.length > 0) {
-    lines.push('', 'Changes:', ...changes.map(changeLine))
-  }
-
-  lines.push('', 'Identifiers:')
-  if (payload.sessionId) lines.push(`- Session ID: ${payload.sessionId}`)
-  if (payload.orderId) lines.push(`- Order ID: ${payload.orderId}`)
-
-  return lines.join('\n')
+  return renderBookingEmail(current, previous, payload.action, payload.minorWarning || '')
 }
 
 export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload & { actorEmail?: string | null }) {
@@ -95,17 +56,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
     reference || title || kind,
     dateTime,
   ].filter(Boolean)
-  const text = buildBody(payload)
-  const escapedMinorWarning = payload.minorWarning
-    ? cleanText(payload.minorWarning).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    : ''
-  const htmlBody = text
-    .split('\n')
-    .map((line) => line ? line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<br>')
-    .join('<br>')
-  const html = escapedMinorWarning
-    ? htmlBody.replace(escapedMinorWarning, `<span style="color:${vrenaPalette.red[700]};font-weight:800">${escapedMinorWarning}</span>`)
-    : htmlBody
+  const { text, html } = buildBookingUpdateEmail(payload)
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -119,7 +70,7 @@ export async function sendBookingUpdateEmail(payload: BookingUpdateEmailPayload 
       to,
       subject: subjectParts.join(' · '),
       text,
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:${vrenaPalette.white}"><img src="https://booking.vre-vietnam.com/brand/vrena-logo-full-light.png" alt="VRena" width="176" height="36" style="display:block;width:176px;height:auto;border:0;margin:0 0 28px">${html}</div>`,
+      html,
     }),
   })
 
