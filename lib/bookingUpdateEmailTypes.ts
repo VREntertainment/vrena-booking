@@ -24,5 +24,8 @@ export type BookingUpdateEmailPayload = {
   summary?: string | null
   minorWarning?: string | null
   changes?: BookingUpdateEmailChange[]
+  players?: number | null
+  notes?: string | null
+  status?: string | null
   source?: string | null
 }
