@@ -14,7 +14,7 @@ test('calendar uses Vietnam time, correct duration across midnight and one hour 
 test('venue contacts and account links are scoped to the confirmed booking', () => {
   assert.equal(reservationDetails(booking).url,'https://booking.vre-vietnam.com/')
   assert.equal(reservationDetails({...booking,hasAccount:true}).url,'https://booking.vre-vietnam.com/profile')
-  const file=reservationCalendarFile({...booking,venue:'cafe-des-stagiaires',durationMinutes:15,title:'Text, with; newline\nEND:VEVENT'})
+  const file=reservationCalendarFile({...booking,venue:'cafe-des-stagiaires',durationMinutes:15,title:'Text, with; newline\rEND:VEVENT'})
   assert.match(file,/0981157039/)
   assert.match(file,/DTEND:20261101T164500Z/)
   assert.match(file,/SUMMARY:Text\\, with\\; newline\\nEND:VEVENT/)

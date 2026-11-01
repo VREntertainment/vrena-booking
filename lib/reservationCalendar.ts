@@ -8,7 +8,7 @@ const venues = {
   'cafe-des-stagiaires': 'VRena Thảo Điền, 8–10 Street 54, An Khánh, Ho Chi Minh City',
 }
 const stamp = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
-const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,')
+const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r\n|\r|\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,')
 function times(booking: CalendarReservation) {
   const start = new Date(`${booking.date}T${booking.time.slice(0, 5)}:00+07:00`)
   return [stamp(start), stamp(new Date(start.getTime() + booking.durationMinutes * 60000))]
