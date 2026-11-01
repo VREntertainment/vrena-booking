@@ -65,6 +65,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await confirm.dblclick()
     const calendar = page.getByRole('dialog', { name: 'Your booking is confirmed' })
     await expect(calendar).toBeVisible()
+    const bounds = await calendar.boundingBox()
+    expect(Math.abs(bounds!.x + bounds!.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2)
     await expect(calendar).toContainText('Reminder: 1 hour before')
     await expect(calendar).toContainText(venue === 'ha-do-centrosa' ? '0981152315' : '0981157039')
     await calendar.screenshot({ path: `/tmp/vrena-e2e-results/calendar-${venue}-${test.info().project.name}.png` })
