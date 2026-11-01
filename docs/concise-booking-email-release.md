@@ -14,8 +14,17 @@ The Apps Script renderer is generated from `lib/bookingEmailTemplate.ts` with `n
 
 - 267 unit/email tests plus booking measurement checks passed.
 - 36 focused renderer/routing tests passed.
-- 25 isolated transactional database assertions passed: both venues, final creation source, order-only contact edits, note removal, price zero, session/order deduplication, unchanged source, session-only creation, cancellation, no-op updates and private snapshot access.
+- All 669 database assertions across 42 isolated test files passed, including 25 focused email assertions: both venues, final creation source, order-only contact edits, note removal, price zero, session/order deduplication, unchanged source, session-only creation, cancellation, no-op updates and private snapshot access.
 - Lint, TypeScript, module boundaries, palette check and production build passed; two unrelated existing lint warnings remain.
-- Four clearly marked owner-inbox copies were sent before the user requested no test email. No additional mail tests will run. No synthetic production reservations were created.
+- Four clearly marked owner-inbox copies verified both sender identities and creation/modification rendering. No synthetic production reservations were created. Further verification is read-only.
 
-Deployment status is recorded separately after read-back verification. Local tests do not establish recipient inbox delivery for real future bookings.
+## Verified production release — 1 November 2026
+
+- Booking application: https://booking.vre-vietnam.com — Vercel READY at application commit `a320a8da41a6e6e891acd3bee964535cbc767c59` (PR #780); public homepage HTTP 200 and unauthenticated email endpoint HTTP 401.
+- Google Apps Script: version 15 published at 19:31 Vietnam time on the existing endpoint; UI confirmed successful deployment. Venue routing, configuration and creation duplicate protection preserved.
+- Supabase production migration: `20261101123229_concise_booking_emails`, read back after installation. The repository filename matches the version assigned by the migration service.
+- Both deferred triggers are installed; both former immediate Google Sheets triggers are absent. All 147 existing snapshots are current (103 Hà Đô, 44 Thảo Điền). Snapshot probing is denied to anonymous and ordinary authenticated roles.
+- Security advisor's private-table/no-policy informational item is intentional: snapshots are not client-readable and are accessed only through restricted server functions.
+- GitHub's broader CI was still running when this record was written; local checks and the production deployment were verified independently.
+
+Future real-booking inbox delivery has not been exercised by creating a synthetic production reservation.
