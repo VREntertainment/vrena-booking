@@ -1,4 +1,5 @@
 'use client'
+import { Check, Crown, Medal } from 'lucide-react'
 
 import AnvioBadge from './AnvioBadge'
 import { gameCategoryDisplay } from '../lib/gameGuideCatalog'
@@ -11,7 +12,7 @@ import { Fragment, useMemo, type ReactNode } from 'react'
 import { Bold, CalendarDays, ChevronDown, ChevronUp, Gift, Italic, Map as MapIcon, Sparkles, Strikethrough, Ticket, Trophy, Underline, Users, X } from 'lucide-react'
 import { formatNotesHtml } from '../lib/formatNotesHtml'
 import { games, ticketServices, type TicketType } from '../lib/bookingStaticData'
-import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, rankEmoji, seatsLeft, sessionCoverGame, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
+import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, seatsLeft, sessionCoverGame, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
 import { ShareSymbol } from './BookingWidgetUi'
@@ -1201,9 +1202,9 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                   type="button"
                 >
                   {canSeeSessionPlayers ? avatarNode(participant, 'P') : '?'}
-                  {crownedTopPlayer?.profileId === participant.profile_id && <span className="champion-badge">👑</span>}
-                  {participant.checked_in && <span className="check-badge">✓</span>}
-                  {participant.placement && participant.placement <= 3 && <span className="cup-badge">{rankEmoji(participant.placement)}</span>}
+                  {crownedTopPlayer?.profileId === participant.profile_id && <span className="champion-badge"><Crown aria-hidden="true" size={16} /></span>}
+                  {participant.checked_in && <span className="check-badge"><Check aria-hidden="true" size={12} /></span>}
+                  {participant.placement && participant.placement <= 3 && <span className="cup-badge"><Medal aria-hidden="true" size={20} /></span>}
                 </button>
                 <span className="player-name-line">
                   {canSeeSessionPlayers ? compactDisplayName(participant.display_name, text.player) : text.member}
@@ -1222,7 +1223,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                     type="button"
                     onClick={() => setCheckInTarget({ sessionId: session.id, participantId: participant.id })}
                   >
-                    {participant.checked_in ? '✓' : text.checkIn}
+                    {participant.checked_in ? <Check aria-hidden="true" size={14} /> : text.checkIn}
                   </button>
                 )}
                 {canManage && participant.profile_id !== session.owner_id && (
@@ -1448,7 +1449,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                     <div className="podium-row">
                       {podium.map((participant) => (
                         <div className={`podium-player place-${participant.placement}`} key={`leader-${participant.id}`}>
-                          <span className="podium-medal">{rankEmoji(participant.placement)}</span>
+                          <span className="podium-medal"><Medal aria-hidden="true" size={20} /></span>
                           <button aria-label={playerCardLabel(participant.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => openPlayerProfile(participant.profile_id, session.id)} style={avatarStyle(participant)} type="button">
                             {avatarNode(participant, 'P')}
                           </button>
@@ -1549,7 +1550,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               <div className="player tournament-entry" key={entry.id}>
                                 <button aria-label={playerCardLabel(entryParticipant?.display_name, text.player)} className="player-avatar player-avatar-button" onClick={() => entryParticipant && openPlayerProfile(entryParticipant.profile_id, session.id)} style={avatarStyle(entryParticipant)} type="button">
                                   {avatarNode(entryParticipant, 'P')}
-                                  {crownedTopPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge">👑</span>}
+                                  {crownedTopPlayer?.profileId === entryParticipant?.profile_id && <span className="champion-badge"><Crown aria-hidden="true" size={16} /></span>}
                                 </button>
                                 <span>{participantName(session, entry.participant_id)}</span>
                                 {entry.team_label && <small>{entry.team_label}</small>}
@@ -1588,7 +1589,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               <button className={match.winner_participant_id === match.participant_a_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_a_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_a_id })}>
                                 <span className="player-avatar" style={avatarStyle(playerA)}>
                                   {avatarNode(playerA, 'P')}
-                                  {crownedTopPlayer?.profileId === playerA?.profile_id && <span className="champion-badge">👑</span>}
+                                  {crownedTopPlayer?.profileId === playerA?.profile_id && <span className="champion-badge"><Crown aria-hidden="true" size={16} /></span>}
                                 </span>
                                 <span>{participantName(session, match.participant_a_id)}</span>
                               </button>
@@ -1596,7 +1597,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                               <button className={match.winner_participant_id === match.participant_b_id ? 'match-player winner' : 'match-player'} disabled={!canEditTournament || !match.participant_b_id} type="button" onClick={() => updateTournamentMatch(match, { winner_participant_id: match.participant_b_id })}>
                                 <span className="player-avatar" style={avatarStyle(playerB)}>
                                   {avatarNode(playerB, 'P')}
-                                  {crownedTopPlayer?.profileId === playerB?.profile_id && <span className="champion-badge">👑</span>}
+                                  {crownedTopPlayer?.profileId === playerB?.profile_id && <span className="champion-badge"><Crown aria-hidden="true" size={16} /></span>}
                                 </span>
                                 <span>{participantName(session, match.participant_b_id)}</span>
                               </button>

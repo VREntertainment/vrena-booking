@@ -1,4 +1,5 @@
 'use client'
+import { ArrowRight } from 'lucide-react'
 
 import { brandedGameName } from '../lib/anvio'
 
@@ -828,7 +829,7 @@ export default function StaffPlayerInsights({
                   <div className="staff-insight-ranking-row" key={`${transition.fromPath}-${transition.toPath}`}>
                     <span>{index + 1}</span>
                     <div>
-                      <strong>{transition.fromPath} <b aria-hidden="true">→</b> {transition.toPath}</strong>
+                      <strong>{transition.fromPath} <ArrowRight aria-hidden="true" size={16} /> {transition.toPath}</strong>
                       <small>{transition.transitions} {digitalText.transitionUnit}</small>
                       <div><i style={{ width: `${Math.max(4, (transition.transitions / maxTransition) * 100)}%` }} /></div>
                     </div>
