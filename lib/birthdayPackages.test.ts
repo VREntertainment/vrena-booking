@@ -15,17 +15,17 @@ test('each package carries the correct players and duration, respecting venue ar
     const thaoDien = birthdayPackageSelection(item.id, 'cafe-des-stagiaires')!
     assert.equal(haDo.arenas, item.arenas)
     assert.equal(thaoDien.arenas, 1)
-    assert.equal(haDo.duration, 120)
+    assert.equal(haDo.duration, 60)
     assert.equal(haDo.players, item.players)
-    assert.equal(selectedBirthdayPackage('birthday', item.players, 120, haDo.note)?.id, item.id)
+    assert.equal(selectedBirthdayPackage('birthday', item.players, 60, haDo.note)?.id, item.id)
   }
 })
 
 test('customized counts, durations and other ticket types do not retain a fixed package price', () => {
   const preset = birthdayPackageSelection('mini-mission', 'ha-do-centrosa')!
-  assert.equal(selectedBirthdayPackage('birthday', 8, 120, preset.note), null)
+  assert.equal(selectedBirthdayPackage('birthday', 8, 60, preset.note), null)
   assert.equal(selectedBirthdayPackage('birthday', 4, 150, preset.note), null)
-  assert.equal(selectedBirthdayPackage('individual', 4, 120, preset.note), null)
+  assert.equal(selectedBirthdayPackage('individual', 4, 60, preset.note), null)
   assert.equal(withoutBirthdayPackageNote(`${preset.note}\nExtra time please`), 'Extra time please')
 })
 
@@ -39,7 +39,7 @@ test('package request survives all guest and account RPC paths without trusting 
       note: preset.note, loyaltyPoints: 100, discountCode: 'TEST', guestName: 'Guest', guestPhone: '+84900000999',
     })
     assert.equal(request.args.p_player_count, item.players)
-    assert.equal(request.args.p_duration_minutes, 120)
+    assert.equal(request.args.p_duration_minutes, 60)
     const note = 'p_guest_note' in request.args ? request.args.p_guest_note : 'p_special_note' in request.args ? request.args.p_special_note : null
     assert.equal(note, preset.note)
     if ('p_total_price' in request.args) assert.equal(request.args.p_total_price, 0)
@@ -47,7 +47,13 @@ test('package request survives all guest and account RPC paths without trusting 
 })
 
 test('renamed Mini Birthday preserves older saved package requests', () => {
-  const legacyNote = 'Birthday package: Mini Mission | 4 players | 120 min | 1,900,000 VND (staff confirmation)'
+  const legacyNote = 'Birthday package: Mini Mission | 4 players | 60 min | 1,900,000 VND (staff confirmation)'
   assert.equal(birthdayPackageById('mini-mission')?.name, 'Mini Birthday')
-  assert.equal(selectedBirthdayPackage('birthday', 4, 120, legacyNote)?.id, 'mini-mission')
+  assert.equal(selectedBirthdayPackage('birthday', 4, 60, legacyNote)?.id, 'mini-mission')
+})
+
+test('older two-hour package notes are not reinterpreted as a new one-hour package', () => {
+  const note = 'Birthday package: Mini Birthday | 4 players | 120 min | 1,900,000 VND (staff confirmation)'
+  assert.equal(selectedBirthdayPackage('birthday', 4, 120, note), null)
+  assert.equal(selectedBirthdayPackage('birthday', 4, 60, note), null)
 })
