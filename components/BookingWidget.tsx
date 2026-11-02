@@ -1,7 +1,7 @@
 'use client'
 
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED, customerView } from '../lib/customerExperience'
-import { birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
+import { birthdayPackageDurationMinutes, birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
 import { customerBookingDurations } from '../lib/customerBookingDurations'
 import { gameGuidePosters } from '../lib/gameGuidePosters'
 import { gameGuideCopy } from '../lib/gameGuideCopy'
@@ -3145,7 +3145,7 @@ function BookingWorkspace({
   const editTicketPricing = ticketPricingSummary(editTicketType, editSessionDate, editSessionTime, editSessionMaxPlayers, effectiveEditTicketDuration, editSessionArenaCount)
   const minimumTicketDuration = ticketDurationForPlayers(ticketType, ticketPlayers, activeTicketArenaCount, ticketDate, bookingVenue)
   const ticketDurationOptions = useMemo(() => {
-    if (activeBirthdayPackage) return [120]
+    if (activeBirthdayPackage) return [birthdayPackageDurationMinutes]
     const durationOptions = customerBookingDurations(ticketDate)
 
     if (!ticketDate) return durationOptions
@@ -3457,7 +3457,7 @@ function BookingWorkspace({
   }
 
   function handleTicketDurationChange(value: number) {
-    if (activeBirthdayPackage && value !== 120) setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
+    if (activeBirthdayPackage && value !== birthdayPackageDurationMinutes) setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
     const nextDuration = Math.min(ticketMaxCustomerDurationMinutes, Math.max(activeTicketPriceBlockMinutes, value))
     const nextTimeOptions = getTicketTimeOptions(ticketDate, nextDuration, activeTicketArenaCount)
     const keepsSelectedTime = ticketTime && nextTimeOptions.some((option) => option.value === ticketTime)
