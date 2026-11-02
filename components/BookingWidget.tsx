@@ -1,4 +1,5 @@
 'use client'
+import { Crown } from 'lucide-react'
 
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED, customerView } from '../lib/customerExperience'
 import { birthdayPackageDurationMinutes, birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
@@ -6261,7 +6262,7 @@ function BookingWorkspace({
                 avatar_text_color: selectedPlayerProfile.avatarTextColor,
                 display_name: selectedPlayerProfile.displayName,
               }, 'P')}
-              {crownedTopPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge">👑</span>}
+              {crownedTopPlayer?.profileId === selectedPlayerProfile.profileId && <span className="champion-badge"><Crown aria-hidden="true" size={16} /></span>}
             </div>
           }
           motto={selectedPlayerProfile.profileMotto}

@@ -1,4 +1,5 @@
 'use client'
+import { Crown, Cake } from 'lucide-react'
 
 import AnvioBadge from './AnvioBadge'
 
@@ -141,7 +142,7 @@ export function ChampionLoginModal({ closeText, title, message, onClose }: Champ
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
           <X aria-hidden="true" size={20} />
         </button>
-        <div className="champion-spark">👑</div>
+        <div className="champion-spark"><Crown aria-hidden="true" size={16} /></div>
         <h3 id="champion-title">{title}</h3>
         <p>{message}</p>
         <button className="primary" type="button" onClick={onClose}>
@@ -168,7 +169,7 @@ export function BirthdayPopupModal({ closeText, title, message, buttonText, onCl
         <button className="modal-close" type="button" onClick={onClose} aria-label={closeText}>
           <X aria-hidden="true" size={20} />
         </button>
-        <div className="birthday-cake" aria-hidden="true">🎂</div>
+        <div className="birthday-cake" aria-hidden="true"><Cake aria-hidden="true" size={48} /></div>
         <h3 id="birthday-popup-title">{title}</h3>
         <p>{message}</p>
         <button className="primary" type="button" onClick={onAction || onClose}>

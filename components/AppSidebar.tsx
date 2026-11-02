@@ -130,7 +130,7 @@ export default function AppSidebar({
       <Link className={activeView === 'profile' ? 'profile-chip active' : 'profile-chip'} data-tour="profile-card" href={publicAppRoutes.profile} title={profileTitle} onClick={() => onViewChange('profile')}>
         <div className="avatar" style={profileAvatarStyle}>
           {profileAvatar}
-          {CUSTOMER_SOCIAL_FEATURES_ENABLED && isChampion && <span className="champion-badge">🏆</span>}
+          {CUSTOMER_SOCIAL_FEATURES_ENABLED && isChampion && <span className="champion-badge"><Trophy aria-hidden="true" size={16} /></span>}
         </div>
         <div>
           <strong>{profileTitle}</strong>
