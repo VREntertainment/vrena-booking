@@ -1,4 +1,6 @@
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 select plan(4);
 select ok(not exists (select 1 from public.sim_racing_available_times(current_date+30) where start_time > '21:30'), 'SIM Racing never offers starts after 21:30');
 select ok(position('21:30' in pg_get_functiondef('private.create_sim_racing_booking(date,time,text,text)'::regprocedure)) > 0, 'SIM Racing creation enforces cutoff');

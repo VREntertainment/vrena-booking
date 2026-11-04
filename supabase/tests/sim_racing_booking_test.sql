@@ -14,6 +14,14 @@ begin
   assert exists(select 1 from public.staff_orders where session_id=s.id and total=150000 and arena_id='sim-racing-1' and payment_status='unpaid' and booking_source='website');
   assert not exists(select 1 from public.sim_racing_available_times(d) where start_time='09:00');
   assert exists(select 1 from public.sim_racing_available_times(d) where start_time='09:15');
+  assert exists(select 1 from public.sim_racing_available_times(d) where start_time='21:30');
+  assert not exists(select 1 from public.sim_racing_available_times(d) where start_time > '21:30');
+  begin
+    perform public.create_sim_racing_booking(d,'21:45','0900000098','After cutoff');
+    raise exception 'TEST FAILED: late slot permitted';
+  exception when raise_exception then
+    if SQLERRM <> 'Choose a 15-minute SIM Racing slot between 09:00 and 21:30.' then raise; end if;
+  end;
   begin
     perform public.create_sim_racing_booking(d,'09:00','0900000098','Second driver');
     raise exception 'TEST FAILED: duplicate permitted';
@@ -24,7 +32,7 @@ begin
     perform public.create_sim_racing_booking(d,'09:05','0900000098','Wrong slot');
     raise exception 'TEST FAILED: non-grid slot permitted';
   exception when raise_exception then
-    if SQLERRM <> 'Choose a 15-minute SIM Racing slot between 09:00 and 21:45.' then raise; end if;
+    if SQLERRM <> 'Choose a 15-minute SIM Racing slot between 09:00 and 21:30.' then raise; end if;
   end;
   perform public.create_sim_racing_booking(d,'09:15','0900000098','Next driver');
   perform set_config('request.jwt.claims','{"role":"service_role"}',true);
