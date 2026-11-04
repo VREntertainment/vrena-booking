@@ -142,3 +142,8 @@ test('historical slots are available only when the staff caller explicitly enabl
   assert.deepEqual(availableSessionTimes(past), [])
   assert.equal(availableSessionTimes({ ...past, allowPast: true })[0].value, '09:00')
 })
+
+test('Ha Do final short session starts at 21:30 and still respects blocked arenas', () => {
+  assert.equal(availableSessionTimes({ ...availability, duration: 30 }).at(-1)?.value, '21:30')
+  assert.ok(!availableSessionTimes({ ...availability, duration: 20, blockedTimes: [{ date, start_time: '21:30', end_time: '22:00', arenas_used: 2 }] }).some(x => x.value === '21:30'))
+})

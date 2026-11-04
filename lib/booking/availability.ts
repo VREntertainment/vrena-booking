@@ -5,6 +5,16 @@ export const ARENA_COUNT = 2
 export const OPEN_MINUTES = 9 * 60
 
 export const CLOSE_MINUTES = 22 * 60
+export const LAST_BOOKING_MINUTES = 21 * 60 + 30
+
+/** Preserve regular start times and include the final 21:30 slot when it fits. */
+export function haDoStartMinutes(duration: number) {
+  const latest = Math.min(LAST_BOOKING_MINUTES, CLOSE_MINUTES - duration)
+  const starts: number[] = []
+  for (let start = OPEN_MINUTES; start <= latest; start += TIME_STEP_MINUTES) starts.push(start)
+  if (latest === LAST_BOOKING_MINUTES && !starts.includes(latest)) starts.push(latest)
+  return starts
+}
 
 export const TIME_STEP_MINUTES = 20
 
@@ -60,9 +70,7 @@ export function availableSessionTimes({ date, duration, arenaCount, excludeSessi
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
   const options: Array<{ value: string; label: string; remaining: number }> = []
-  const latestStart = CLOSE_MINUTES - duration
-
-  for (let start = OPEN_MINUTES; start <= latestStart; start += TIME_STEP_MINUTES) {
+  for (const start of haDoStartMinutes(duration)) {
     const end = start + duration
 
     if (!allowPast && date === today && start <= nowMinutes) continue

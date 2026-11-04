@@ -45,11 +45,11 @@ function VenueMapPreview({ name, venue }: {
 }
 
 function VenueHoursPill({ label }: { label: string }) {
-  const [opening, hours] = label.split(' · ')
+  const [opening, ...details] = label.split(' · ')
   return (
     <span className="booking-venue-status open">
       <span>{opening}</span>
-      {hours && <span className="booking-venue-hours-time">· {hours}</span>}
+      {details.map((detail) => <span className="booking-venue-hours-time" key={detail}>· {detail}</span>)}
     </span>
   )
 }

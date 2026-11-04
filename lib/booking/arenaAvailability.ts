@@ -1,4 +1,4 @@
-import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES, CAFE_TIME_STEP_MINUTES, OPEN_MINUTES, CLOSE_MINUTES, TIME_STEP_MINUTES, minutesToTime, rangesOverlap, timeToMinutes, type BookingTimeOption } from './availability.ts'
+import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES, CAFE_TIME_STEP_MINUTES, haDoStartMinutes, minutesToTime, rangesOverlap, timeToMinutes, type BookingTimeOption } from './availability.ts'
 
 export type ArenaOccupancy = { venue_key: string; date: string; start_time: string; duration_minutes: number; arena_number: number }
 
@@ -16,7 +16,8 @@ export function arenaTimeOptions(venue: string, date: string, duration: number, 
   const clock = vietnamClock(now)
   if (!date || date < clock.date || !Number.isInteger(duration) || duration <= 0 || arenaCount < 1 || arenaCount > capacity) return []
   const options: BookingTimeOption[] = []
-  for (let start = cafe ? CAFE_OPEN_MINUTES : OPEN_MINUTES; start + duration <= (cafe ? CAFE_CLOSE_MINUTES : CLOSE_MINUTES); start += cafe ? CAFE_TIME_STEP_MINUTES : TIME_STEP_MINUTES) {
+  const starts = cafe ? Array.from({ length: Math.max(0, Math.floor((CAFE_CLOSE_MINUTES - duration - CAFE_OPEN_MINUTES) / CAFE_TIME_STEP_MINUTES) + 1) }, (_, i) => CAFE_OPEN_MINUTES + i * CAFE_TIME_STEP_MINUTES) : haDoStartMinutes(duration)
+  for (const start of starts) {
     if (date === clock.date && start <= clock.minutes) continue
     const occupied = new Set(occupancy.filter(row => row.venue_key === venue && row.date === date && rangesOverlap(start, start + duration, timeToMinutes(row.start_time), timeToMinutes(row.start_time) + row.duration_minutes)).map(row => row.arena_number))
     const remaining = capacity - occupied.size

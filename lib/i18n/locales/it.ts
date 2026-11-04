@@ -98,7 +98,7 @@ export const it = {
   bookingVenueHint: 'Scegli una sede VRena prima di vedere le sessioni o prenotare.',
   bookingVenueHaDoName: 'VRena Hà Đô Centrosa',
   bookingVenueHaDoAddress: 'Iris 4, Hà Đô Centrosa, Distretto 10, Ho Chi Minh City',
-  bookingVenueHaDoHours: 'Aperto ogni giorno · 09:00–22:00',
+  bookingVenueHaDoHours: 'Aperto ogni giorno · 09:00–22:00 · Ultima prenotazione 21:30',
   bookingVenueCafeName: 'Vrena Thao Dien',
   bookingVenueCafeAddress: '8–10 Street 54, An Khánh, Ho Chi Minh City',
   bookingVenueCafeHours: 'Aperto ogni giorno · 15:30–23:00',

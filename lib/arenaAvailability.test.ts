@@ -24,3 +24,11 @@ test('Vietnam time drives cutoff regardless of browser time zone', () => {
   assert.deepEqual(arenaTimeOptions(row.venue_key, '2026-10-11', 30, 1, [], now), [])
   assert.deepEqual(vietnamClock(new Date('2026-10-12T17:00:00Z')), { date:'2026-10-13', minutes:0 })
 })
+
+test('Ha Do last start is 21:30 and every session finishes by 22:00', () => {
+  for (const duration of [15,20,30,45,60,120]) {
+    const times = arenaTimeOptions('ha-do-centrosa', row.date, duration, 1, [], now)
+    assert.ok(times.every(x => x.value <= '21:30' && Number(x.value.slice(0,2))*60+Number(x.value.slice(3))+duration <= 1320))
+    if (duration <= 30) assert.equal(times.at(-1)?.value, '21:30')
+  }
+})
