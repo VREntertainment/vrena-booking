@@ -98,7 +98,7 @@ export const vi = {
   bookingVenueHint: 'Chọn một địa điểm VRena trước khi xem phiên chơi hoặc đặt chỗ.',
   bookingVenueHaDoName: 'VRena Hà Đô Centrosa',
   bookingVenueHaDoAddress: 'Iris 4, Hà Đô Centrosa, Quận 10, TP.HCM',
-  bookingVenueHaDoHours: 'Mở hằng ngày · 09:00–22:00',
+  bookingVenueHaDoHours: 'Mở hằng ngày · 09:00–22:00 · Đặt lịch cuối 21:30',
   bookingVenueCafeName: 'Vrena Thao Dien',
   bookingVenueCafeAddress: '8–10 Đường số 54, An Khánh, TP.HCM',
   bookingVenueCafeHours: 'Mở hằng ngày · 15:30–23:00',

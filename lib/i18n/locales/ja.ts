@@ -98,7 +98,7 @@ export const ja = {
   bookingVenueHint: 'セッションの確認や予約の前にVRenaのロケーションを選んでください。',
   bookingVenueHaDoName: 'VRena Hà Đô Centrosa',
   bookingVenueHaDoAddress: 'ホーチミン市10区、Hà Đô Centrosa、Iris 4',
-  bookingVenueHaDoHours: '毎日営業 · 9:00–22:00',
+  bookingVenueHaDoHours: '毎日営業 · 9:00–22:00 · 最終予約 21:30',
   bookingVenueCafeName: 'Vrena Thao Dien',
   bookingVenueCafeAddress: 'ホーチミン市An Khánh、54番通り8–10',
   bookingVenueCafeHours: '毎日営業 · 15:30–23:00',

@@ -98,7 +98,7 @@ export const ko = {
   bookingVenueHint: '세션을 확인하거나 예약하기 전에 VRena 지점을 선택하세요.',
   bookingVenueHaDoName: 'VRena Hà Đô Centrosa',
   bookingVenueHaDoAddress: '호찌민시 10군, Hà Đô Centrosa, Iris 4',
-  bookingVenueHaDoHours: '매일 영업 · 09:00–22:00',
+  bookingVenueHaDoHours: '매일 영업 · 09:00–22:00 · 마지막 예약 21:30',
   bookingVenueCafeName: 'Vrena Thao Dien',
   bookingVenueCafeAddress: '호찌민시 An Khánh, 54번 도로 8–10',
   bookingVenueCafeHours: '매일 영업 · 15:30–23:00',

@@ -16,7 +16,7 @@ export const zh: TranslationMap = {
   playerAgeLimitHint: '7 岁及以上 · 解谜与密室：12 岁及以上 · 僵尸游戏：16 岁及以上',
   audienceFamilyFriendly: '适合家庭', audienceScary: '恐怖', audienceFun: '欢乐', audienceQuest: '任务', audienceTeamwork: '团队合作', audienceBeginnerFriendly: '适合新手', audienceCompetitive: '竞技',
   bookingVenueChange: '更换', bookingVenueLabel: '门店', bookingVenueTitle: '您想在哪家门店体验？', bookingVenueHint: '请先选择 VRena 门店。',
-  bookingVenueHaDoName: 'VRena Hà Đô Centrosa', bookingVenueHaDoAddress: '胡志明市第十郡 Hà Đô Centrosa，Iris 4', bookingVenueHaDoHours: '每日营业 · 09:00–22:00',
+  bookingVenueHaDoName: 'VRena Hà Đô Centrosa', bookingVenueHaDoAddress: '胡志明市第十郡 Hà Đô Centrosa，Iris 4', bookingVenueHaDoHours: '每日营业 · 09:00–22:00 · 最晚预约 21:30',
   bookingVenueCafeName: 'VRena Thảo Điền', bookingVenueCafeAddress: '胡志明市 An Khánh，54 号街 8–10 号', bookingVenueCafeHours: '每日营业 · 15:30–23:00',
   bookingVenueCafeBookingGuide: 'VRena Thảo Điền 每日 15:30–23:00 营业，可在此预约。', bookingVenueCafeOpenZalo: '通过 Zalo 联系我们', bookingVenueChooseHaDo: '预约 Hà Đô Centrosa',
   ticketType: '预约类型', ticketEventHelpTitle: '计划举办活动？', ticketEventHelpBody: '生日、团体活动或企业团建，请告诉我们您的需求，我们会确认合适的安排。',
