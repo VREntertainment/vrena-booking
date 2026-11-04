@@ -32,7 +32,8 @@ for (const file of readdirSync('supabase/migrations').filter((name) => /^\d+.*\.
   if (version <= baseline) continue
   console.log(`Applying local test migration: ${file}`)
   try {
-    sql(readFileSync(path.join('supabase/migrations', file), 'utf8'))
+    // Supabase applies migrations transactionally; required by LOCK TABLE.
+    sql(`begin;\n${readFileSync(path.join('supabase/migrations', file), 'utf8')}\ncommit;`)
   } catch (error) {
     throw new Error(`Local test migration failed: ${file}`, { cause: error })
   }
