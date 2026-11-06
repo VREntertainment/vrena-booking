@@ -40,6 +40,7 @@ import {
   limitMotto,
   normalizeProfileGender,
 } from '../lib/bookingWidgetDomain'
+import CustomerPaymentVouchers from './CustomerPaymentVouchers'
 import AccountBookings, { accountBookingLabels } from './AccountBookings'
 import AppLoadingState from './AppLoadingState'
 import CountryCodePicker from './CountryCodePicker'
@@ -386,7 +387,7 @@ export default function BookingProfileView({ context }: { context: any }) {
             )}
 
             {profile && profileSubTab === 'bookings' ? (
-              <AccountBookings userId={userId} language={language} text={text} />
+              <><AccountBookings userId={userId} language={language} text={text} /><CustomerPaymentVouchers key={userId} customerId={userId} language={language} /></>
             ) : profile && profileSubTab === 'achievements' ? (
               !CUSTOMER_SOCIAL_FEATURES_ENABLED ? <section className="account-loyalty" aria-label={text.ticketLoyaltyBalance}>
                 <span className="account-loyalty-icon"><Trophy aria-hidden="true" size={28} /></span>

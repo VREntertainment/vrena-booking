@@ -3093,6 +3093,8 @@ function BookingWorkspace({
   const challengeTimeOptions = useMemo(() => {
     return getAvailableTimeOptions(challengeDate, challengeDuration, 1)
   }, [challengeDate, challengeDuration, getAvailableTimeOptions])
+  const [paymentVoucherCode, setPaymentVoucherCode] = useState('')
+  const ticketVoucherRequestRef = useRef<{ signature: string; id: string } | null>(null)
   const {
     ticketUseLoyaltyPoints,
     ticketLoyaltyPointsToRedeem,
@@ -5246,6 +5248,8 @@ function BookingWorkspace({
     bookingTicketsInFlightRef,
     profile,
     ticketTimeOptions,
+    paymentVoucherCode,
+    ticketVoucherRequestRef,
     ticketDiscountCode,
     showTicketStatus,
     text,
@@ -5523,6 +5527,9 @@ function BookingWorkspace({
             <button type="button" className={simRacingSelected ? 'primary' : 'secondary'} aria-pressed={simRacingSelected} onClick={() => setSimRacingSelected(true)}>SIM Racing</button>
           </div>}
           {isHaDoBookingVenue && simRacingSelected ? <SimRacingBooking language={language} text={looseText} profile={profile} onBooked={() => { void loadSessions() }} /> : <TicketBookingView
+            paymentVoucherCode={paymentVoucherCode}
+            onPaymentVoucherCodeChange={setPaymentVoucherCode}
+            paymentVoucherVenue={bookingVenue}
             activeTicketDuration={activeTicketDuration}
             activeTicketArenaCount={activeTicketArenaCount}
             currentTicketPricing={currentTicketPricing}

@@ -68,6 +68,9 @@ export type TicketBookingConfirmation = {
   guestName?: string
   loyaltyPointsRedeemed?: number
   loyaltyDiscountAmount?: number
+  voucherCode?: string
+  voucherCredit?: number
+  amountDue?: number
   discountCode?: string
   discountAmount?: number
   manualDiscountReview?: boolean

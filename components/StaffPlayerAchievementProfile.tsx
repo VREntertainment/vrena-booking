@@ -1,5 +1,7 @@
 'use client'
 
+import CustomerPaymentVouchers from './CustomerPaymentVouchers'
+
 import StaffClientDetailsEditor from './StaffClientDetailsEditor'
 import { clientDetails, type ClientDetails } from '../lib/staff/clientDetails'
 import NextImage from 'next/image'
@@ -509,6 +511,7 @@ export default function StaffPlayerAchievementProfile({
         </div>
       </div>
 
+      {selectedProfile && <CustomerPaymentVouchers key={selectedProfile.id} customerId={selectedProfile.id} language={language} />}
       {selectedProfile && detailsDraft && <StaffClientDetailsEditor value={detailsDraft} onChange={setDetailsDraft} disabled={saving} language={language} />}
 
       {!selectedProfile ? (

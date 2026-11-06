@@ -1,0 +1,97 @@
+import { expect, test } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { futureDate, loginAsAdmin, openAdmin } from './support/admin'
+
+test('phone: completed receipt becomes a ready short-code JPEG voucher and redeems in customer checkout', async ({ page }, info) => {
+  test.skip(info.project.name !== 'chromium', 'Phone and desktop viewports covered in one isolated money fixture.')
+  test.setTimeout(120000)
+  if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Local services required')
+  const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  const id = randomUUID(), receiptId = randomUUID()
+  const date = futureDate(10)
+  const orderNumber = `VOUCHER-E2E-${Date.now()}`
+  const inserted = await admin.from('staff_orders').insert({ id, order_number: orderNumber, booking_date: date, booking_time: '10:00', arena_id: 'arena-1', players_count: 1, subtotal: 300000, total: 300000, payment_method: 'cash', payment_status: 'paid', order_status: 'completed' })
+  expect(inserted.error).toBeNull()
+  expect((await admin.from('staff_order_payments').insert({ id: receiptId, order_id: id, amount: 300000, payment_method: 'cash' })).error).toBeNull()
+  const errors: string[] = []
+  page.on('pageerror', e => errors.push(e.message))
+  await loginAsAdmin(page)
+  await openAdmin(page)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole('tab', { name: 'Orders', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Start date', exact: true }).fill(date)
+  await page.getByRole('textbox', { name: 'End date', exact: true }).fill(date)
+  await page.getByRole('button', { name: 'Show orders', exact: true }).click()
+  const row = page.getByRole('row').filter({ has: page.getByText(orderNumber, { exact: true }) }).first()
+  await row.getByRole('button', { name: 'Convert / redeem voucher' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Payment vouchers', exact: true })
+  await expect(dialog).toContainText('Available to convert: 300.000')
+  await dialog.getByRole('textbox', { name: 'Conversion amount (VND)' }).fill('200000')
+  await dialog.getByRole('textbox', { name: 'Conversion reason' }).fill('Customer changes plans')
+  let loseResponse = true
+  await page.route('**/rpc/staff_convert_payment_to_voucher', async route => {
+    const response = await route.fetch()
+    if (loseResponse) { loseResponse = false; await route.abort('failed') } else await route.fulfill({ response })
+  })
+  await dialog.getByRole('button', { name: 'Confirm conversion to voucher' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Confirm conversion to voucher' }).click()
+  await expect(dialog.locator('.payment-voucher-card')).toHaveCount(1)
+  const code = await dialog.locator('.payment-voucher-card code').innerText()
+  expect(code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
+  expect((await admin.from('staff_orders').select('total').eq('id', id).single()).data?.total).toBe(100000)
+  expect((await admin.from('staff_order_payments').select('amount').eq('id', receiptId).single()).data?.amount).toBe(300000)
+  await dialog.getByRole('button', { name: 'Prepare JPEG' }).click()
+  const downloaded = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'Download JPEG' }).click()
+  const file = await downloaded
+  expect(file.suggestedFilename()).toBe(`${code}.jpg`)
+  const bytes = await readFile((await file.path())!)
+  expect(bytes.subarray(0, 3).toString('hex')).toBe('ffd8ff')
+  await file.saveAs('/tmp/vrena-voucher-example.jpg')
+  expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+  for (const width of [320, 375, 430]) {
+    await page.setViewportSize({ width, height: 812 })
+    expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+  }
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.screenshot({ path: '/tmp/vrena-voucher-phone.png' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.screenshot({ path: '/tmp/vrena-voucher-desktop.png' })
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  // Guest checkout uses the exact short code from the JPEG. Its database RPC
+  // commits reservation and debit together; no staff registration step occurs.
+  await page.context().clearCookies()
+  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: 'http://127.0.0.1:3000' }])
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/tickets')
+  await page.getByRole('button', { name: 'SIM Racing', exact: true }).click()
+  const simulator = page.locator('.sim-racing-booking')
+  await simulator.locator('input[type=date]').fill(futureDate(24))
+  await expect(simulator.locator('select')).toBeEnabled()
+  await simulator.locator('input[type=tel]').fill('0987654098')
+  await simulator.getByText('Payment voucher (8 characters)', { exact: true }).click()
+  await simulator.getByRole('textbox', { name: '8-character voucher code' }).fill(code)
+  await expect(simulator).toContainText('Voucher will pay: 150.000')
+  await expect(simulator).toContainText('Remaining to pay at venue: 0')
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.screenshot({ path: '/tmp/vrena-voucher-checkout-phone.png' })
+  await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
+  await expect(simulator).toContainText('SIM Racing booking confirmed')
+  await expect(simulator).toContainText('Voucher applied: 150.000')
+  const balance = await admin.from('payment_vouchers').select('balance').eq('code', code).single()
+  expect(balance.data?.balance).toBe(50000)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(errors).toEqual([])
+  const guest = createClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
+  const contenders = await Promise.all([25, 26].map(day => guest.rpc('book_ticket_with_payment_voucher', {
+    p_name: 'create_sim_racing_booking', p_code: code, p_request_id: randomUUID(),
+    p_args: { p_date: futureDate(day), p_start_time: '09:00', p_guest_phone: '0987654098', p_guest_name: 'Concurrent voucher check' },
+  })))
+  expect(contenders.filter(result => !result.error)).toHaveLength(1)
+  expect(contenders.filter(result => result.error)).toHaveLength(1)
+  expect((await admin.from('payment_vouchers').select('balance').eq('code', code).single()).data?.balance).toBe(0)
+
+})

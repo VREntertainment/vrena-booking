@@ -1,6 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import PaymentVoucherCheckout from './PaymentVoucherCheckout'
+import { formatVnd } from '../lib/staff/formatting'
 
 const BookingCalendarDialog = dynamic(() => import('./BookingCalendarDialog'), { ssr: false })
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -40,8 +42,10 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [revision, setRevision] = useState(0)
-  const [confirmation, setConfirmation] = useState<{ reference: string; date: string; time: string } | null>(null)
+  const [confirmation, setConfirmation] = useState<{ reference: string; date: string; time: string; credit?: number; due?: number } | null>(null)
   const inFlight = useRef(false)
+  const [paymentVoucherCode, setPaymentVoucherCode] = useState('')
+  const voucherRequest = useRef<{ signature: string; id: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -72,11 +76,15 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
     setBusy(true)
     setError('')
     try {
-      const result = await (await getSupabase()).rpc('create_sim_racing_booking', {
-        p_date: date, p_start_time: time, p_guest_phone: profile ? null : phone, p_guest_name: profile ? null : name.trim() || null,
-      })
+      const args = { p_date: date, p_start_time: time, p_guest_phone: profile ? null : phone, p_guest_name: profile ? null : name.trim() || null }
+      const signature = JSON.stringify({ args, paymentVoucherCode })
+      if (voucherRequest.current?.signature !== signature) voucherRequest.current = { signature, id: crypto.randomUUID() }
+      const client = await getSupabase()
+      const result = paymentVoucherCode
+        ? await client.rpc('book_ticket_with_payment_voucher', { p_name: 'create_sim_racing_booking', p_args: args, p_code: paymentVoucherCode, p_request_id: voucherRequest.current.id })
+        : await client.rpc('create_sim_racing_booking', args)
       if (result.error) throw new Error(result.error.message)
-      setConfirmation({ reference: result.data.ticket_reference, date, time })
+      setConfirmation({ reference: result.data.ticket_reference, date, time, credit: result.data.voucher_credit, due: result.data.amount_due })
       onBooked()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : text.ticketBookingError)
@@ -90,7 +98,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
       <BookingCalendarDialog key={confirmation.reference} language={language} booking={{ id: confirmation.reference, reference: confirmation.reference, date: confirmation.date, time: confirmation.time, durationMinutes: 15, venue: 'ha-do-centrosa', hasAccount: Boolean(profile), title: 'VRena · SIM Racing' }} />
       <h3>{t.confirmed}</h3>
       <p>VRena Hà Đô Centrosa</p><p>{new Date(`${confirmation.date}T12:00:00`).toLocaleDateString(language)} · {confirmation.time} (GMT+7)</p>
-      <p>{text.bookingReference}: <strong>{confirmation.reference}</strong></p><p>{t.package}</p><p>{t.pay}</p>
+      <p>{text.bookingReference}: <strong>{confirmation.reference}</strong></p><p>{t.package}</p><p>{confirmation.credit ? `${language === 'vi' ? 'Voucher đã sử dụng' : 'Voucher applied'}: ${formatVnd(confirmation.credit)} · ${language === 'vi' ? 'Còn phải trả' : 'Remaining to pay'}: ${formatVnd(confirmation.due || 0)}` : t.pay}</p>
       <button type="button" className="secondary" onClick={() => { setConfirmation(null); setRevision((value) => value + 1) }}>{t.again}</button>
     </div> : <form onSubmit={book}>
       <fieldset disabled={busy} className="form-grid sim-racing-fields">
@@ -101,6 +109,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
         {!profile && <><label>{text.name} ({text.optional})<input autoComplete="name" maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label>
           <label>{text.phoneNumber} *<input required type="tel" autoComplete="tel" maxLength={25} value={phone} onChange={(event) => setPhone(event.target.value)} /></label></>}
       </fieldset>
+      <PaymentVoucherCheckout code={paymentVoucherCode} onChange={setPaymentVoucherCode} venue="ha-do-centrosa" total={150000} language={language} />
       {loading && <p role="status">{t.loading}</p>}
       {loadError && <p role="alert">{t.failed} <button type="button" className="secondary" onClick={() => { setError(''); setRevision((value) => value + 1) }}>{t.retry}</button></p>}
       {!loading && !loadError && !times.length && <p role="status">{t.empty}</p>}

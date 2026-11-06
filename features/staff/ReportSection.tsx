@@ -420,6 +420,7 @@ export default function ReportSection({
       </div>
       {reportView === 'business' ? (
         <>
+          <p>{resolvedLanguage === 'vi' ? 'Tiền mặt/ngân hàng giữ nguyên biên nhận gốc. Chuyển voucher giảm giá trị đơn và số đã thanh toán; sử dụng voucher không tạo tiền thu mới.' : 'Cash and bank totals retain original receipts. Voucher conversions reduce order value and net settlement; voucher redemption is not new cash received.'}</p>
           <div className="staff-summary-grid">
             <div><span>{text.labels.totalSales}</span><strong>{formatVnd(report.totalSales)}</strong></div>
             <div><span>{text.labels.totalPaid}</span><strong>{formatVnd(report.totalPaid)}</strong></div>

@@ -11,7 +11,7 @@ const bookingRpcs = new Set(['create_ticket_booking', 'create_guest_ticket_booki
 export async function POST(request: NextRequest) {
   const reply = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
   if (!isSameOriginRequest(request.headers, request.nextUrl.origin)) return reply({ error: { message: 'Same-origin booking required.' } }, 403)
-  let body: { name?: unknown; args?: unknown; sourceUrl?: unknown }
+  let body: { name?: unknown; args?: unknown; sourceUrl?: unknown; paymentVoucherCode?: unknown; paymentVoucherRequestId?: unknown }
   try {
     const raw = await request.text()
     if (raw.length > 16384) return reply({ error: { message: 'Booking request too large.' } }, 413)
@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: authorization ? { Authorization: authorization } : {} },
   })
-  const { data, error } = await client.rpc(body.name, body.args)
+  const hasVoucher = typeof body.paymentVoucherCode === 'string' && body.paymentVoucherCode.length > 0
+  if (hasVoucher && (!/^[A-Z2-9]{8}$/.test(body.paymentVoucherCode as string) || typeof body.paymentVoucherRequestId !== 'string')) return reply({ error: { message: 'Enter the 8-character voucher code.' } }, 400)
+  const { data, error } = hasVoucher
+    ? await client.rpc('book_ticket_with_payment_voucher', { p_name: body.name, p_args: body.args, p_code: body.paymentVoucherCode, p_request_id: body.paymentVoucherRequestId })
+    : await client.rpc(body.name, body.args)
   if (error) return reply({ data: null, error: { message: error.message } }, 400)
   if (confirmedTicketBooking(data)) {
     try {

@@ -43,6 +43,8 @@ export function staffOrderEditDraft(order: StaffOrder): StaffOrderEditDraft {
 }
 
 export function paymentMethodLabel(value: string, text: StaffConsoleCopy = staffConsoleText.en) {
+  if (value === 'voucher') return text === staffConsoleText.vi ? 'Thanh toán voucher' : 'Voucher redemption'
+  if (value === 'voucher_conversion') return text === staffConsoleText.vi ? 'Chuyển thành voucher' : 'Converted to voucher'
   if (value === 'split') return text.split
   if (value === 'unpaid') return text.unpaid
   if (value === 'cash' || value === 'bank_transfer' || value === 'card_manual' || value === 'momo_manual' || value === 'vnpay') return text.paymentMethods[value]
