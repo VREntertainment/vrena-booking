@@ -37,8 +37,10 @@ packages, and Hà Đô SIM Racing. Unknown-price requests require staff pricing.
 
 ## Deployment
 
-Apply `20261106120851_payment_value_vouchers.sql` before deploying the app.
+Apply `20261106124625_payment_value_vouchers.sql` before deploying the app.
 The migration is additive except for the receipt-method/sign constraints, which
 continue to accept all historical payment methods. It does not rewrite existing
 orders or receipts. Reverting the UI alone is safe; do not drop a live credit
 ledger or restore the positive-only receipt constraint after vouchers are issued.
+
+Live migration applied on 6 November 2026 as `20261106124625`. Verified RLS, denied direct balance writes, denied anonymous issuance, and zero created financial records after deployment.
