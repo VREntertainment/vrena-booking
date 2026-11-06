@@ -27,7 +27,7 @@ packages, and Hà Đô SIM Racing. Unknown-price requests require staff pricing.
   Online reservation and redemption share one transaction; a failure rolls back
   both. Simultaneous redemption cannot overdraw the voucher.
 - Staff role/MFA/PIN and venue checks remain enforced. Clients can only read their
-  own vouchers; staff reads remain venue-scoped. Direct ledger/balance edits are
+  own vouchers; staff reads remain venue-scoped and require payment-management rank. Read-only staff cannot retrieve bearer codes. Direct ledger/balance edits are
   forbidden, and backing receipts cannot be changed or deleted.
 - Cancellation alone does not refund money. Staff may convert a recorded voucher
   payment on a cancelled order back to new credit. Generic `refunded` status is
@@ -37,7 +37,7 @@ packages, and Hà Đô SIM Racing. Unknown-price requests require staff pricing.
 
 ## Deployment
 
-Apply `20261106124625_payment_value_vouchers.sql` before deploying the app.
+Apply `20261106124625_payment_value_vouchers.sql` and the subsequent `restrict_voucher_code_access` migration before deploying the app.
 The migration is additive except for the receipt-method/sign constraints, which
 continue to accept all historical payment methods. It does not rewrite existing
 orders or receipts. Reverting the UI alone is safe; do not drop a live credit

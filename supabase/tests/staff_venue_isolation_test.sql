@@ -70,6 +70,8 @@ select is((select count(*)::int from public.staff_orders where id=(select (value
 select set_config('request.headers','{}',true);
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"95000000-0000-4000-8000-000000000002","aal":"aal2"}',true);
 select is(public.current_staff_role_rank(),20,'Named MFA viewer resolves rank20');
+select is((select count(*)::int from public.payment_vouchers),0,'Read-only staff cannot retrieve spendable voucher codes');
+select ok(not exists(select 1 from public.staff_orders o cross join venue_fixture f where f.label='hd-voucher' and o.internal_note like '%'||(f.value->>'code')||'%'),'Readable order notes do not leak bearer codes');
 select is((select count(*)::int from public.staff_orders where id=(select (value->>'order_id')::uuid from venue_fixture where label='td')),0,'Rank20 viewer cannot bypass location scope');
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"95000000-0000-4000-8000-000000000001","aal":"aal2"}',true);
 select lives_ok($q$select public.staff_set_employee_locations('95000000-0000-4000-8000-000000000003',array['ha-do-centrosa','cafe-des-stagiaires'])$q$,'Admin can assign multiple venues');
