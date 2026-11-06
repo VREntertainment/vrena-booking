@@ -36,9 +36,15 @@ select set_config('request.jwt.claims','{"role":"authenticated","sub":"95000000-
 insert into venue_fixture values('hd',public.staff_create_booking(jsonb_build_object('p_customer_id','95000000-0000-4000-8000-000000000005','p_game_id',(select id from public.staff_games where slug='city-z'),'p_booking_date',current_date+100,'p_booking_time','16:00','p_players_count',1,'p_arena_id','arena-1','p_order_status','confirmed','p_payment_splits',jsonb_build_array(jsonb_build_object('payment_method','cash','amount',100000))),'walk_in'));
 insert into venue_fixture values('td',public.staff_create_booking(jsonb_build_object('p_customer_id','95000000-0000-4000-8000-000000000006','p_game_id',(select id from public.staff_games where slug='city-z'),'p_booking_date',current_date+100,'p_booking_time','16:00','p_players_count',1,'p_arena_id','cafe:arena-1','p_order_status','confirmed','p_payment_splits',jsonb_build_array(jsonb_build_object('payment_method','cash','amount',100000))),'walk_in'));
 select is((select count(*)::int from public.staff_access_locations()),2,'Admin has both venues');
+insert into venue_fixture values('hd-voucher', public.staff_convert_payment_to_voucher((select (value->>'order_id')::uuid from venue_fixture where label='hd'),(select id from public.staff_order_payments where order_id=(select (value->>'order_id')::uuid from venue_fixture where label='hd') limit 1),gen_random_uuid(),10000,'Venue test voucher'));
+insert into venue_fixture values('td-voucher', public.staff_convert_payment_to_voucher((select (value->>'order_id')::uuid from venue_fixture where label='td'),(select id from public.staff_order_payments where order_id=(select (value->>'order_id')::uuid from venue_fixture where label='td') limit 1),gen_random_uuid(),10000,'Venue test voucher'));
 select set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',(select value->>'id' from venue_fixture where label='shared'),'aal','aal1')::text,true);
 select set_config('request.headers','{"x-vrena-operator-session":"local-hd-token"}',true);
 select is(public.current_staff_role_rank(),50,'Real kiosk authentication resolves HaDo staff');
+select is((select count(*)::int from public.payment_vouchers where id in(select (value->>'id')::uuid from venue_fixture where label in ('hd-voucher','td-voucher'))),1,'PIN staff only see own venue voucher codes');
+select throws_ok($q$select public.staff_convert_payment_to_voucher((select (value->>'order_id')::uuid from venue_fixture where label='td'),null,gen_random_uuid(),1,'Forbidden conversion')$q$,'P0001','Order not found or location access denied.','PIN staff cannot convert other venue money');
+select throws_ok($q$select public.staff_redeem_payment_voucher((select (value->>'order_id')::uuid from venue_fixture where label='hd'),(select value->>'code' from venue_fixture where label='td-voucher'),gen_random_uuid(),1)$q$,'P0001','Voucher not found or location access denied.','PIN staff cannot redeem another venue code');
+
 select is((select array_agg(venue_key) from public.staff_access_locations()),array['ha-do-centrosa'],'HaDo staff sees only assigned location');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='hd')),1,'HaDo session allowed');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='td')),0,'HaDo cannot read TD sessions');
@@ -64,6 +70,8 @@ select is((select count(*)::int from public.staff_orders where id=(select (value
 select set_config('request.headers','{}',true);
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"95000000-0000-4000-8000-000000000002","aal":"aal2"}',true);
 select is(public.current_staff_role_rank(),20,'Named MFA viewer resolves rank20');
+select is((select count(*)::int from public.payment_vouchers),0,'Read-only staff cannot retrieve spendable voucher codes');
+select ok(not exists(select 1 from public.staff_orders o cross join venue_fixture f where f.label='hd-voucher' and o.internal_note like '%'||(f.value->>'code')||'%'),'Readable order notes do not leak bearer codes');
 select is((select count(*)::int from public.staff_orders where id=(select (value->>'order_id')::uuid from venue_fixture where label='td')),0,'Rank20 viewer cannot bypass location scope');
 select set_config('request.jwt.claims','{"role":"authenticated","sub":"95000000-0000-4000-8000-000000000001","aal":"aal2"}',true);
 select lives_ok($q$select public.staff_set_employee_locations('95000000-0000-4000-8000-000000000003',array['ha-do-centrosa','cafe-des-stagiaires'])$q$,'Admin can assign multiple venues');

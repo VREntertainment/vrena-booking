@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import PaymentVoucherCheckout from './PaymentVoucherCheckout'
 import { birthdayPackages, birthdayPackageById, birthdayPackageNote, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
 import { birthdayPackageCopy } from '../lib/birthdayPackageCopy'
 import { ArrowRight, X } from 'lucide-react'
@@ -97,6 +98,9 @@ export type TicketBookingViewProps = {
   currentTicketTotalPrice: number
   isCheckingTicketDiscount: boolean
   ticketDiscountAmount: number
+  paymentVoucherCode: string
+  onPaymentVoucherCodeChange: (code: string) => void
+  paymentVoucherVenue: string
   ticketDiscountCode: string
   ticketDiscountStatus: string
   ticketDiscountSource: 'automatic' | 'voucher'
@@ -163,6 +167,7 @@ export default function TicketBookingView({
   currentTicketTotalPrice,
   isCheckingTicketDiscount,
   ticketDiscountAmount,
+  paymentVoucherCode, onPaymentVoucherCodeChange, paymentVoucherVenue,
   ticketDiscountCode,
   ticketDiscountStatus,
   ticketDiscountSource,
@@ -391,6 +396,8 @@ export default function TicketBookingView({
                 </details>
               )}
 
+              {(!isSpecialTicket || birthdayPackage) && <PaymentVoucherCheckout code={paymentVoucherCode} onChange={onPaymentVoucherCodeChange} venue={paymentVoucherVenue} total={birthdayPackage?.price ?? currentTicketTotalPrice} language={language} />}
+
               <div className="ticket-price-summary">
                 {showLoyaltyTools && (
                   <div className="ticket-loyalty-redemption">
@@ -568,6 +575,7 @@ export default function TicketBookingView({
               </div>
               <p>{text.sessionTariffPayment}</p>
               <div className="ticket-confirmation-grid">
+                {ticketConfirmation.voucherCode && <p>{language === 'vi' ? 'Voucher đã sử dụng' : 'Voucher applied'}: <strong>{ticketConfirmation.voucherCode} · {formatVnd(ticketConfirmation.voucherCredit || 0)}</strong><br />{language === 'vi' ? 'Còn phải trả' : 'Remaining to pay'}: <strong>{formatVnd(ticketConfirmation.amountDue || 0)}</strong></p>}
                 <span>{formatShortDate(ticketConfirmation.date, language)}</span>
                 <span>{ticketConfirmation.time}</span>
                 <span>{ticketConfirmation.players} {text.players}</span>

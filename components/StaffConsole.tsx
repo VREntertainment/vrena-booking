@@ -179,6 +179,7 @@ import { allocateStaffCompanyCost } from '../lib/staffCostAllocation'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { summarizeOperationMoney } from '../lib/staffOperationMoney'
 import { staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
+import StaffPaymentVouchers from './StaffPaymentVouchers'
 import { supabase } from '../lib/supabase/client'
 import AppLoadingState from './AppLoadingState'
 import { staffKioskCopy } from './StaffKioskGate'
@@ -1141,6 +1142,16 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
               </td>
               <td data-label={text.labels.status}>{text.orderStatuses[order.order_status]}</td>
               {canCreateOrders && <td data-label={text.labels.actions}><div className="staff-row-actions staff-order-actions">
+                <StaffPaymentVouchers order={order} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
+                  const [updated, receipts] = await Promise.all([supabase.from('staff_orders').select('*').eq('id', order.id).single(), fetchOrderPayments([order])])
+                  if (updated.error) throw new Error(updated.error.message)
+                  const fresh = updated.data as StaffOrder
+                  setOrders(items => items.map(item => item.id === order.id ? fresh : item))
+                  setBrowsedOrders(current => current ? { ...current, rows: current.rows.map(item => item.id === order.id ? fresh : item) } : null)
+                  setOrderPayments(items => [...items.filter(item => item.order_id !== order.id), ...receipts])
+                  setReportSnapshot(current => current ? { ...current, orders: current.orders.map(item => item.id === order.id ? fresh : item), payments: [...current.payments.filter(item => item.order_id !== order.id), ...receipts] } : null)
+                  markStaffDataStale('report')
+                }} />
                 <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{text.labels.payment}</button>
                 {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>

@@ -11,7 +11,7 @@ process.chdir(root)
 const container = 'supabase_db_vrena-health-ci'
 const baseline = '20260905011752'
 const cli = (args) => execFileSync('supabase', [...args, '--workdir', 'e2e'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-const sql = (input, role = 'postgres') => execFileSync('docker', ['exec', '-i', container, 'psql', '-U', role, '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
+const sql = (input, role = 'postgres') => execFileSync('docker', ['exec', '-i', '-e', 'PGPASSWORD=postgres', container, 'psql', '-U', role, '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
 
 // Deliberately fixed to a dedicated local Docker project. No linked project or production URL is accepted.
 console.log('Starting the isolated local test services…')
@@ -25,6 +25,9 @@ if (services.API_URL !== 'http://127.0.0.1:56431' || services.DB_URL && new URL(
 // Start each run from the same snapshot and replay the complete migration chain.
 cli(['db', 'reset', '--local', '--no-seed'])
 sql('create extension if not exists unaccent with schema extensions; create extension if not exists btree_gist with schema extensions;')
+// Restore the snapshot's exact ACLs, independent of the local image defaults.
+// Otherwise CREATE followed by GRANT retains extra pre-existing default grants.
+sql('alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated; alter default privileges for role postgres in schema public revoke all on functions from anon, authenticated; alter default privileges for role postgres in schema public revoke all on sequences from anon, authenticated;')
 sql(readFileSync('e2e/supabase/schema.sql', 'utf8'))
 sql(readFileSync('e2e/supabase/storage-policies.sql', 'utf8'), 'supabase_admin')
 for (const file of readdirSync('supabase/migrations').filter((name) => /^\d+.*\.sql$/.test(name)).sort()) {

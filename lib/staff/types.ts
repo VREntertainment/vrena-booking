@@ -627,7 +627,7 @@ export type StaffOrderEditDraft = {
 export type StaffOrderPayment = {
   id: string
   order_id: string
-  payment_method: StaffPaymentMethod
+  payment_method: StaffPaymentMethod | 'voucher' | 'voucher_conversion'
   amount: number
   created_by: string | null
   created_at: string

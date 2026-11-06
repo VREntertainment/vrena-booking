@@ -40,6 +40,8 @@ export type TicketsActionContext = {
   bookingTicketsInFlightRef: React.RefObject<boolean>
   profile: import("../../lib/bookingWidgetDomain").Profile | null
   ticketTimeOptions: import("../../lib/booking/availability").BookingTimeOption[]
+  paymentVoucherCode: string
+  ticketVoucherRequestRef: React.RefObject<{ signature: string; id: string } | null>
   ticketDiscountCode: string
   showTicketStatus: (message: string, variant?: "error" | "info") => void
   text: TranslationMap
@@ -211,6 +213,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       ticketType,
       ticketTimeOptions,
       ticketTime,
+      paymentVoucherCode, ticketVoucherRequestRef,
       ticketDiscountCode,
       showTicketStatus,
       text,
@@ -331,6 +334,9 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         guestName: guestTicketContact.name,
         guestPhone: guestContactValidation.normalizedPhone,
       })
+      if (paymentVoucherCode && !/^[A-Z2-9]{8}$/.test(paymentVoucherCode)) { showTicketStatus('Enter the 8-character voucher code.', 'error'); return false }
+      const signature = JSON.stringify({ request, paymentVoucherCode })
+      if (ticketVoucherRequestRef.current?.signature !== signature) ticketVoucherRequestRef.current = { signature, id: crypto.randomUUID() }
       const client = await getSupabase()
       const { data: auth } = await client.auth.getSession()
       const response = await fetch('/api/bookings/tickets', {
@@ -339,7 +345,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
           'Content-Type': 'application/json',
           ...(auth.session?.access_token ? { Authorization: `Bearer ${auth.session.access_token}` } : {}),
         },
-        body: JSON.stringify({ ...request, sourceUrl: window.location.origin + window.location.pathname }),
+        body: JSON.stringify({ ...request, paymentVoucherCode: paymentVoucherCode || undefined, paymentVoucherRequestId: ticketVoucherRequestRef.current.id, sourceUrl: window.location.origin + window.location.pathname }),
       })
       const { data, error } = await response.json()
 
@@ -350,6 +356,9 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
       }
 
       const booking = (data || {}) as {
+        voucher_code?: string
+        voucher_credit?: number
+        amount_due?: number
         discount_amount?: number | null
         discount_code?: string | null
         loyalty_points_total?: number | null
@@ -364,6 +373,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         return false
       }
       const confirmation: TicketBookingConfirmation = {
+        voucherCode: booking.voucher_code, voucherCredit: booking.voucher_credit, amountDue: booking.amount_due,
         venue: isHaDoBookingVenue ? 'ha-do-centrosa' : 'cafe-des-stagiaires',
         durationMinutes: activeTicketDuration,
         sessionId: booking.session_id || '',

@@ -1,0 +1,28 @@
+.app .staff-voucher-action { min-width: 0; }
+.app .staff-voucher-editor { display: grid; gap: 16px; min-width: 0; margin-top: 12px; }
+.app .staff-voucher-editor form, .app .staff-voucher-editor fieldset { min-width: 0; margin: 0; }
+.app .staff-voucher-editor fieldset { display: grid; gap: 12px; border: 1px solid var(--vrena-neutral-300); border-radius: 12px; padding: 12px; }
+.app .staff-voucher-editor label { display: grid; gap: 6px; min-width: 0; }
+.app .staff-voucher-editor input, .app .staff-voucher-editor textarea, .app .staff-voucher-editor select { width: 100%; min-width: 0; }
+.app .staff-voucher-editor p, .app .payment-voucher-card p { line-height: 1.5; }
+.app .payment-voucher-card button { min-height: 44px; }
+/* Phone-only staff: comfortable hit targets and no iOS input zoom. Keep wide
+   reporting tables inside their existing scroll containers. */
+@media (max-width: 760px) {
+ .app .staff-console { padding-inline: 8px; min-width: 0; }
+ .app .staff-console :is(button, select, input:not([type="checkbox"]):not([type="radio"]), summary) { min-height: 44px; }
+ .app .staff-console :is(input, select, textarea) { font-size: 16px; max-width: 100%; }
+ .app .staff-console summary { display: flex; align-items: center; gap: 8px; }
+ .app .staff-console :is(.staff-card, .staff-panel, .staff-grid, fieldset) { min-width: 0; }
+ .app .staff-console button.staff-order-tertiary:not(.primary) { min-height: 44px; }
+ .app .staff-tab-group-buttons button, .app .staff-tab-group-buttons button.active { min-height: 44px; }
+ .app .staff-orders-table td[data-label] { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+ .app .staff-order-actions { width: 100%; }
+ .app .staff-order-actions > button, .app .staff-voucher-action > button { width: 100%; }
+ .app .staff-voucher-editor .staff-row-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+ .app .staff-order-detail-row { scroll-margin-top: 80px; }
+ .app .staff-console :is(.staff-modal, .staff-dialog) { max-height: 90dvh; overflow-y: auto; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+
+.app .staff-voucher-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--vrena-neutral-300); border-radius: 16px; color: var(--vrena-text); background: var(--vrena-surface); }
+.app .staff-voucher-dialog::backdrop { background: color-mix(in srgb, var(--vrena-neutral-950) 65%, transparent); }
