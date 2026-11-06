@@ -87,5 +87,15 @@ select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-
 set local role authenticated;
 select lives_ok($q$select public.book_ticket_with_payment_voucher('create_ticket_booking',jsonb_build_object('p_ticket_type','individual','p_date',current_date+48,'p_start_time','10:00','p_duration_minutes',30,'p_player_count',1,'p_arena_count',1,'p_game_options',jsonb_build_array('city-z'),'p_unit_price',current_setting('test.account_price')::integer,'p_total_price',current_setting('test.account_price')::integer),current_setting('test.account_code'),'85000000-0000-4000-8000-000000000082')$q$,'Signed-in customer VR checkout accepts voucher and creates a paid ledger');
 reset role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+insert into public.staff_orders(id,order_number,booking_date,booking_time,players_count,total,subtotal,arena_id,payment_status,order_status,payment_method) values('85000000-0000-4000-8000-000000000091','VOUCHER-PARTIAL',current_date,'10:00',1,100000,100000,'arena-1','partially_paid','partially_paid','cash');
+insert into public.staff_order_payments(id,order_id,payment_method,amount) values('85000000-0000-4000-8000-000000000092','85000000-0000-4000-8000-000000000091','cash',40000);
+select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","aal":"aal2"}',true);
+set local role authenticated;
+select lives_ok($q$select public.staff_convert_payment_to_voucher('85000000-0000-4000-8000-000000000091','85000000-0000-4000-8000-000000000092','85000000-0000-4000-8000-000000000093',40000,'Convert entire partial receipt')$q$,'Full conversion of partial payment succeeds');
+select is((select payment_status||'/'||order_status from public.staff_orders where id='85000000-0000-4000-8000-000000000091'),'unpaid/confirmed','Zero remaining paid amount restores collectible unpaid status');
+select lives_ok($q$select public.staff_record_order_payment('85000000-0000-4000-8000-000000000091','85000000-0000-4000-8000-000000000094','cash',10000)$q$,'Remaining bill can still collect a payment');
+select is((select total-(select sum(amount)::integer from public.staff_order_payments where order_id=o.id) from public.staff_orders o where id='85000000-0000-4000-8000-000000000091'),50000,'Unpaid balance reconciles after conversion and new receipt');
+reset role;
 select * from finish();
 rollback;

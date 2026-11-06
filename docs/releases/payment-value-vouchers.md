@@ -37,7 +37,7 @@ packages, and Hà Đô SIM Racing. Unknown-price requests require staff pricing.
 
 ## Deployment
 
-Apply `20261106124625_payment_value_vouchers.sql` and the subsequent `restrict_voucher_code_access` migration before deploying the app.
+Apply `20261106124625_payment_value_vouchers.sql` and the subsequent `restrict_voucher_code_access` and `reconcile_voucher_order_status` migrations before deploying the app.
 The migration is additive except for the receipt-method/sign constraints, which
 continue to accept all historical payment methods. It does not rewrite existing
 orders or receipts. Reverting the UI alone is safe; do not drop a live credit
