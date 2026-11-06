@@ -3211,6 +3211,7 @@ function BookingWorkspace({
   }, [])
 
   function handleBookingVenueChange(value: BookingVenueId) {
+    setPaymentVoucherCode('')
     const nextTicketDate = value === 'cafe-des-stagiaires' && ticketDate < CAFE_SOFT_OPENING_DATE
       ? CAFE_SOFT_OPENING_DATE
       : ticketDate
@@ -3372,6 +3373,7 @@ function BookingWorkspace({
   function handleBirthdayPackageChange(id: string) {
     const preset = birthdayPackageSelection(id, bookingVenue)
     if (!preset) {
+      setPaymentVoucherCode('')
       setTicketSpecialNote(withoutBirthdayPackageNote(ticketSpecialNote))
       setTicketConfirmation(null)
       return
@@ -3409,6 +3411,7 @@ function BookingWorkspace({
     setTicketConfirmation(null)
     clearTicketStatus()
     if (nextIsSpecialTicket) {
+      setPaymentVoucherCode('')
       setTicketDiscountCode('')
       setTicketDiscountQuote(null)
       setTicketDiscountStatus('')
