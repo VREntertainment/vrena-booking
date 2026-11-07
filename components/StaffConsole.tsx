@@ -5,14 +5,16 @@ import '../app/staff/staff.css'
 import { brandedGameName } from '../lib/anvio'
 
 
-import { StaffConfirmedBookingShare } from './staff/StaffConfirmedBookingShare'
+
 import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
 
 import dynamic from 'next/dynamic'
 
+const StaffOrderStatusConfirmation = dynamic(() => import('./staff/StaffOrderStatusConfirmation'), { ssr: false })
+const StaffConfirmedBookingShare = dynamic(() => import('./staff/StaffConfirmedBookingShare').then(module => module.StaffConfirmedBookingShare), { ssr: false })
 const StaffSavedBookingShare = dynamic(() => import('./staff/StaffSavedBookingShare').then(module => module.StaffSavedBookingShare), { ssr: false })
 const StaffPaymentVouchers = dynamic(() => import('./StaffPaymentVouchers'), { ssr: false })
-import StaffOrderStatusConfirmation, { type OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
+import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 
 const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 const NewSection = dynamic(() => import('../features/staff/NewSection'), { ssr: false })
