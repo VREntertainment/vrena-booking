@@ -52,7 +52,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   expect(bytes.subarray(0, 3).toString('hex')).toBe('ffd8ff')
   await file.saveAs('/tmp/vrena-voucher-example.jpg')
   expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
-  for (const width of [320, 375, 430]) {
+  for (const width of [320, 360, 375, 390, 430, 768]) {
     await page.setViewportSize({ width, height: 812 })
     expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
   }
