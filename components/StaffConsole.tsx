@@ -4,12 +4,17 @@ import '../app/staff/staff.css'
 
 import { brandedGameName } from '../lib/anvio'
 
-import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
-import { StaffConfirmedBookingShare } from './staff/StaffConfirmedBookingShare'
+
+
 import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
 
 import dynamic from 'next/dynamic'
-import StaffOrderStatusConfirmation, { type OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
+
+const StaffOrderStatusConfirmation = dynamic(() => import('./staff/StaffOrderStatusConfirmation'), { ssr: false })
+const StaffConfirmedBookingShare = dynamic(() => import('./staff/StaffConfirmedBookingShare').then(module => module.StaffConfirmedBookingShare), { ssr: false })
+const StaffSavedBookingShare = dynamic(() => import('./staff/StaffSavedBookingShare').then(module => module.StaffSavedBookingShare), { ssr: false })
+const StaffPaymentVouchers = dynamic(() => import('./StaffPaymentVouchers'), { ssr: false })
+import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 
 const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 const NewSection = dynamic(() => import('../features/staff/NewSection'), { ssr: false })
@@ -179,7 +184,7 @@ import { allocateStaffCompanyCost } from '../lib/staffCostAllocation'
 import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { summarizeOperationMoney } from '../lib/staffOperationMoney'
 import { staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
-import StaffPaymentVouchers from './StaffPaymentVouchers'
+
 import { supabase } from '../lib/supabase/client'
 import AppLoadingState from './AppLoadingState'
 import { staffKioskCopy } from './StaffKioskGate'

@@ -6,9 +6,9 @@
 .app .staff-voucher-editor input, .app .staff-voucher-editor textarea, .app .staff-voucher-editor select { width: 100%; min-width: 0; }
 .app .staff-voucher-editor p, .app .payment-voucher-card p { line-height: 1.5; }
 .app .payment-voucher-card button { min-height: 44px; }
-/* Phone-only staff: comfortable hit targets and no iOS input zoom. Keep wide
+/* Phone and small-tablet staff: comfortable hit targets and no iOS input zoom. Keep wide
    reporting tables inside their existing scroll containers. */
-@media (max-width: 760px) {
+@media (max-width: 768px) {
  .app .staff-console { padding-inline: 8px; min-width: 0; }
  .app .staff-console :is(button, select, input:not([type="checkbox"]):not([type="radio"]), summary) { min-height: 44px; }
  .app .staff-console :is(input, select, textarea) { font-size: 16px; max-width: 100%; }
@@ -24,5 +24,31 @@
  .app .staff-console :is(.staff-modal, .staff-dialog) { max-height: 90dvh; overflow-y: auto; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 }
 
-.app .staff-voucher-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--vrena-neutral-300); border-radius: 16px; color: var(--vrena-text); background: var(--vrena-surface); }
+.app .staff-voucher-dialog { width: min(720px, calc(100vw - 24px)); max-width: calc(100vw - 24px); margin: auto; max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--vrena-neutral-300); border-radius: 16px; color: var(--vrena-text); background: var(--vrena-surface); }
 .app .staff-voucher-dialog::backdrop { background: color-mix(in srgb, var(--vrena-neutral-950) 65%, transparent); }
+
+/* Match the more specific compact desktop rules so touch sizing wins. */
+@media (max-width: 768px) {
+ .app .staff-console, .app .staff-console .staff-card, .app .staff-console .staff-operations-card { --staff-control-height: 44px; }
+ .app .staff-console .staff-tabs-scroll-button { width: 44px; min-width: 44px; height: 44px; }
+ .app .staff-console .staff-phone-control .country-button { height: 44px; min-height: 44px; }
+ .app .staff-console .staff-payment-splits .staff-list-head button.staff-payment-add.secondary:not(.primary):not(.danger) { min-height: 44px; }
+ .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+ .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 44px; }
+ .app .staff-payment-split-row:has(.staff-payment-remove) > :is(select, label:first-child) { grid-column: 1 / -1; }
+ .app .staff-payment-split-row:has(.staff-payment-remove) > :is(input, label:nth-child(2)) { grid-column: 1; }
+ .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { grid-column: 2; align-self: end; }
+ .app .staff-console label:has(> input:is([type="checkbox"], [type="radio"])) { min-height: 44px; cursor: pointer; }
+ .app .staff-console .staff-card input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+ .app .staff-console .staff-card :is(select, textarea),
+ .app .staff-console .staff-time-manual { font-size: 16px; }
+ .app .staff-console .staff-time-option { min-height: 44px; }
+ .app .staff-console :is(input, select, textarea, button) { scroll-margin-block: 24px; }
+ .app .staff-voucher-dialog { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+
+/* WebKit's native select can contribute its longest option to scroll overflow. */
+.app .staff-voucher-editor select { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 768px) {
+ .app .staff-voucher-editor select { height: 44px; }
+}

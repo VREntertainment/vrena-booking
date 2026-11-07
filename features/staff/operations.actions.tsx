@@ -1,6 +1,9 @@
 'use client'
 
-import StaffOrderPaymentForm, { type OrderPaymentEntry } from '../../components/StaffOrderPaymentForm'
+import dynamic from 'next/dynamic'
+import type { OrderPaymentEntry } from '../../components/StaffOrderPaymentForm'
+
+const StaffOrderPaymentForm = dynamic(() => import('../../components/StaffOrderPaymentForm'), { ssr: false })
 import { notifyBookingUpdateEmail } from '../../lib/bookingUpdateNotificationClient'
 import {
   parseStaffDuration

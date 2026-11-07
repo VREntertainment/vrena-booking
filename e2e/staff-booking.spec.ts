@@ -276,7 +276,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   })
   expect(hierarchy.inline).toBe(true)
   // Browser transforms can leave subpixel rounding after a viewport change.
-  expect(hierarchy.width).toBeCloseTo(36, 0)
+  expect(hierarchy.width).toBeCloseTo(44, 0)
   await expect(page.locator('.staff-payment-remove svg')).toBeVisible()
   expect(await page.locator('.staff-payment-add').evaluate((button) => getComputedStyle(button).borderTopWidth)).toBe('0px')
   await page.getByRole('heading', { name: 'Payment splits', exact: true }).scrollIntoViewIfNeeded()
