@@ -163,7 +163,7 @@ test('birthday booking from profile stays on tickets and preserves the selected 
   await page.locator('.ticket-service-card').first().click()
   await expect(page).toHaveURL(/\/tickets\/birthday/)
   await expect(page.locator('#birthday-package')).toBeVisible()
-  await expect(page.locator('#birthday-package option[value="mini-mission"]')).toContainText('Mini Birthday · 2hrs')
+  await expect(page.locator('#birthday-package option[value="mini-mission"]')).toContainText('Mini Birthday · 1hr')
   await page.locator('#birthday-package').selectOption('birthday-squad')
   await page.locator('.ticket-control-date input[type="date"]').fill(futureDate(40))
   await page.locator('#ticket-available-time').selectOption({ index: 1 })

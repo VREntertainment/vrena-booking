@@ -38,7 +38,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await page.goto('/tickets')
     if (venue === 'cafe-des-stagiaires') {
       await chooseCafeVenue(page)
-      await page.locator('.ticket-voucher-details summary').click()
+      await page.locator('.ticket-voucher-details summary').filter({ hasText: /^Voucher \/ discount code$/ }).click()
       await page.getByPlaceholder('Enter code', { exact: true }).fill('summer25')
       await expect(page.getByPlaceholder('Enter code', { exact: true })).toHaveValue('SUMMER25')
       await expect(page.locator('.ticket-group-pricing-note')).toHaveCount(0)
