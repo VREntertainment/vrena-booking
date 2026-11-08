@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import type { PaymentVoucher } from '../lib/paymentVouchers'
+import { voucherExpiryLabel, type PaymentVoucher } from '../lib/paymentVouchers'
 import { formatVnd } from '../lib/staff/formatting'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
 
@@ -25,7 +25,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en' }: { vouch
       ctx.fillStyle = vrenaPalette.white; ctx.font = '24px sans-serif'
       ctx.fillText(vi ? 'Nhập mã khi đặt chỗ tại booking.vre-vietnam.com hoặc đưa cho nhân viên.' : 'Enter code at booking.vre-vietnam.com or show it to staff.', 60, 490)
       ctx.fillText(vi ? 'Số dư được kiểm tra khi sử dụng. Không đổi thành tiền mặt.' : 'Current balance is checked on redemption. No cash exchange.', 60, 535)
-      ctx.fillText(vi ? 'Không hết hạn. Giữ mã an toàn: người có mã có thể sử dụng.' : 'No expiry. Keep the code safe: anyone with it can redeem.', 60, 580)
+      ctx.fillText(voucherExpiryLabel(voucher.expires_at, vi), 60, 580)
       ctx.font = '20px sans-serif'; ctx.fillText(`Issued ${new Date(voucher.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}`, 60, 640)
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('JPEG export failed')), 'image/jpeg', 0.95))
       setFile(new File([blob], `${voucher.code}.jpg`, { type: 'image/jpeg' }))
@@ -41,7 +41,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en' }: { vouch
     <strong>{vi ? 'Voucher giá trị' : 'Value voucher'} · {formatVnd(voucher.amount)}</strong>
     <p><code>{voucher.code}</code></p>
     <p>{vi ? 'Số dư hiện tại' : 'Current balance'}: <strong>{formatVnd(voucher.balance)}</strong> · {venue}</p>
-    <p>{vi ? 'Không hết hạn. Người có mã có thể sử dụng; số dư được kiểm tra khi dùng.' : 'No expiry. Anyone with the code can redeem; the balance is checked when used.'}</p>
+    <p>{voucherExpiryLabel(voucher.expires_at, vi)} {vi ? 'Giữ mã an toàn; số dư được kiểm tra khi dùng.' : 'Keep the code safe; the balance is checked when used.'}</p>
     <div className="staff-row-actions">
       {!file ? <button type="button" className="secondary" onClick={() => void prepare()}>{vi ? 'Tạo ảnh JPEG' : 'Prepare JPEG'}</button> : <>
         <button type="button" className="secondary" onClick={download}>{vi ? 'Tải JPEG' : 'Download JPEG'}</button>

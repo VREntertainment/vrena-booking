@@ -11,7 +11,7 @@ export default function CustomerPaymentVouchers({ customerId, language }: { cust
   const [version, setVersion] = useState(0)
   useEffect(() => {
     let active = true
-    void supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at').eq('customer_id', customerId).order('created_at', { ascending: false }).then(({ data, error }) => {
+    void supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at,expires_at').eq('customer_id', customerId).order('created_at', { ascending: false }).then(({ data, error }) => {
       if (!active) return
       setError(error?.message || ''); setVouchers(data || []); setLoading(false)
     })

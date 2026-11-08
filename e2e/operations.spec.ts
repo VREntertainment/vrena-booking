@@ -32,7 +32,7 @@ test('operations includes unlinked ticket value and saves every ANVIO game', asy
     await page.getByRole('tab', { name: 'Today', exact: true }).click()
     await page.getByLabel('Operations date', { exact: true }).fill(day)
     const money = page.locator('.staff-operations-money')
-    await expect(money.locator('summary')).toContainText('660.000')
+    await expect(money.locator('summary')).toContainText('660,000')
     await expect(money.locator('summary')).toContainText('Order reconciliation needed: 1')
     await money.locator('summary').click()
     for (const [label, amount] of [['Confirmed booking value', '660000'], ['Pending requests / drafts', '480000'], ['Bookings needing an order', '660000'], ['Order payments', '0'], ['Order balance due', '0']]) {

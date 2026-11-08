@@ -29,11 +29,11 @@ test('English and Vietnamese report exports preserve recorded split payments and
     const [row] = staffOrderExportRows([order({ customer_phone: '0900000000' })], [], payments, text)
     assert.equal(row.customer, '0900000000')
     assert.equal(row.game, '')
-    assert.match(row.paid_amount, /300\.000/)
-    assert.match(row.total, /440\.000/)
+    assert.match(row.paid_amount, /300,000/)
+    assert.match(row.total, /440,000/)
     assert.ok(row.payment_method.includes(text.paymentMethods.cash))
     assert.ok(row.payment_method.includes(text.paymentMethods.bank_transfer))
-    assert.match(row.payment_method, /100\.000.*\+.*200\.000/)
+    assert.match(row.payment_method, /100,000.*\+.*200,000/)
   }
 })
 

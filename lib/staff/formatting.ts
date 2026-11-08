@@ -10,7 +10,7 @@ export function decimalInput(value: string | number | null | undefined) {
 }
 
 export function formatVnd(value: number) {
-  return `${Math.max(0, Number(value) || 0).toLocaleString('vi-VN')} đ`
+  return `${Math.max(0, Number(value) || 0).toLocaleString('en-US')} đ`
 }
 
 export function formatVndCompact(value: number) {
