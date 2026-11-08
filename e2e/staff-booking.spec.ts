@@ -243,7 +243,7 @@ test('staff booking: client contacts and available discounts follow the selectio
   const amounts = await cost.locator('strong').allTextContents()
   const money = (value: string) => Number(value.replace(/[^0-9]/g, ''))
   expect(money(amounts[1])).toBe(money(amounts[0]) * 0.1)
-  await expect(page.locator('.staff-client-summary-total strong')).toHaveText(new RegExp(String(money(amounts[0]) - money(amounts[1])).replace(/\B(?=(\d{3})+(?!\d))/g, '\\.')))
+  await expect(page.locator('.staff-client-summary-total strong')).toHaveText(`${(money(amounts[0]) - money(amounts[1])).toLocaleString('en-US')} đ`)
   await page.getByRole('spinbutton', { name: 'Players', exact: true }).fill('1')
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   await expect(page.locator('.staff-summary-card .notice')).toContainText('This discount no longer applies')
