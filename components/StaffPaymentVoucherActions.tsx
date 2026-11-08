@@ -43,8 +43,8 @@ export default function StaffPaymentVoucherActions({ voucher, language, onChange
   }
   return <>
     <button type="button" className="secondary" onClick={() => open('modify')}>{vi ? 'Chỉnh sửa' : 'Modify'}</button>
-    <button type="button" className="secondary" disabled={voucher.balance !== voucher.amount} title={voucher.balance !== voucher.amount ? (vi ? 'Chỉ có thể xóa voucher chưa sử dụng.' : 'Only unused vouchers can be deleted.') : undefined} onClick={() => open('delete')}>{vi ? 'Xóa' : 'Delete'}</button>
-    <dialog ref={dialog} className="staff-voucher-dialog" aria-label={mode === 'modify' ? (vi ? 'Chỉnh sửa voucher' : 'Modify voucher') : (vi ? 'Xóa voucher' : 'Delete voucher')}>
+    <button type="button" className="secondary staff-voucher-delete" disabled={voucher.balance !== voucher.amount} title={voucher.balance !== voucher.amount ? (vi ? 'Chỉ có thể xóa voucher chưa sử dụng.' : 'Only unused vouchers can be deleted.') : undefined} onClick={() => open('delete')}>{vi ? 'Xóa' : 'Delete'}</button>
+    <dialog ref={dialog} onClose={event => { if (event.target !== event.currentTarget) return; const menu = dialog.current?.closest('details'); if (menu) menu.open = false }} className="staff-voucher-dialog" aria-label={mode === 'modify' ? (vi ? 'Chỉnh sửa voucher' : 'Modify voucher') : (vi ? 'Xóa voucher' : 'Delete voucher')}>
       <button type="button" className="secondary" disabled={busy} onClick={() => dialog.current?.close()}>{vi ? 'Đóng' : 'Close'}</button>
       <form onSubmit={event => { event.preventDefault(); void save() }}>
         <fieldset disabled={busy}>

@@ -2,6 +2,7 @@
 
 import '../app/staff/staff.css'
 
+import { useStaffVoucherSummaries } from '../hooks/useStaffVoucherSummaries'
 import { brandedGameName } from '../lib/anvio'
 
 
@@ -230,6 +231,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
   const [orderStatusConfirm, setOrderStatusConfirm] = useState<{ orderId: string; status: OrderStatusChange } | null>(null)
   const [ordersShop, setOrdersShop] = useState('all')
+  const [expandedCancelledOrders, setExpandedCancelledOrders] = useState<Set<string>>(new Set())
+  const [expandedOrderActions, setExpandedOrderActions] = useState<Set<string>>(new Set())
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
   const {
     attendanceTab,
@@ -613,6 +616,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
 
+  const voucherOrderIds = useMemo(() => [...new Set((currentTab === 'orders' ? browsedOrders?.rows ?? [] : currentTab === 'report' ? reportSnapshot?.orders ?? [] : currentTab === 'today' ? orders : []).map(order => order.id))].sort(), [currentTab, orders, browsedOrders, reportSnapshot])
+  const voucherSummaries = useStaffVoucherSummaries(voucherOrderIds, canCreateOrders)
   const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
   const operationOrders = useMemo(() => (
     orders
@@ -1130,24 +1135,20 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           const balance = Math.max(0, order.total - paid)
           const terminal = ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)
           const canPay = balance > 0 && !['cancelled', 'refunded', 'no_show'].includes(order.order_status) && order.payment_status !== 'refunded' && !(payments.length === 0 && order.payment_status === 'partially_paid')
+          const paymentSummary = <span className="staff-order-payment-values"><span>{paymentStatusLabel(order.payment_status, text)}</span><span>{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}</span><span>{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}</span></span>
           const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
           return <Fragment key={order.id}>
-            <tr className="staff-order-row">
-              <td data-label={text.labels.order}><div><strong>{order.order_number}</strong><p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p><StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving || !order.session_id || !['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status)} /></div></td>
-              <td data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}><div><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></td>
-              <td data-label={text.labels.total}>{formatVnd(order.total)}</td>
-              <td data-label={text.labels.payment}>
-                <div>{paymentStatusLabel(order.payment_status, text)}<br />{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}<br />{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}
-                  <details className="staff-order-receipts"><summary>{resolvedLanguage === 'vi' ? 'Chi tiết thanh toán' : 'Payment details'}</summary>
-                    {payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}<small>{new Date(payment.created_at).toLocaleString(resolvedLanguage === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small></li>)}</ul> : <p>{order.payment_status === 'unpaid' ? (resolvedLanguage === 'vi' ? 'Chưa ghi nhận thanh toán.' : 'No payments recorded.') : (resolvedLanguage === 'vi' ? 'Thiếu biên nhận cũ. Kiểm tra trước khi thay đổi thanh toán.' : 'Historical receipts are missing. Review the existing payment record before making changes.')}</p>}
-                    {order.price_override_reason && <p>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Price adjustment reason'}: {order.price_override_reason}</p>}
-                    {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
-                  </details>
+            <tr className={`staff-order-row ${order.order_status === 'cancelled' ? 'staff-order-cancelled' : ''}`} data-collapsed={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id)}>
+              <td className="staff-order-identity" colSpan={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) ? (canCreateOrders ? 6 : 5) : undefined} data-label={text.labels.order}>
+                <div className="staff-order-heading">
+                  {order.order_status === 'cancelled' ? <button className="staff-order-number staff-order-cancelled-number" type="button" aria-expanded={expandedCancelledOrders.has(order.id)} onClick={() => { setExpandedCancelledOrders(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next }); setPaymentOrderId(null); setOrderEditDraft(null); setOrderStatusConfirm(null) }}><strong>{order.order_number}</strong><span aria-hidden="true">{expandedCancelledOrders.has(order.id) ? '⌃' : '⌄'}</span></button> : <strong>{order.order_number}</strong>}
+                  {order.order_status === 'cancelled' && <span className="staff-order-status-pill">{text.orderStatuses.cancelled}</span>}
                 </div>
-              </td>
-              <td data-label={text.labels.status}>{text.orderStatuses[order.order_status]}</td>
-              {canCreateOrders && <td data-label={text.labels.actions}><div className="staff-row-actions staff-order-actions">
-                <StaffPaymentVouchers order={order} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
+                <p className="staff-order-customer">{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p>
+                {order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) && <small>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</small>}
+                <div className="staff-order-header-tools">
+                  {order.session_id && ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status) && <StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving} />}
+                  {canCreateOrders && (order.order_status !== 'cancelled' || expandedCancelledOrders.has(order.id) || (voucherSummaries[order.id]?.count ?? 0) > 0) && <StaffPaymentVouchers order={order} summary={voucherSummaries[order.id]} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
                   const [updated, receipts] = await Promise.all([supabase.from('staff_orders').select('*').eq('id', order.id).single(), fetchOrderPayments([order])])
                   if (updated.error) throw new Error(updated.error.message)
                   const fresh = updated.data as StaffOrder
@@ -1156,13 +1157,28 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
                   setOrderPayments(items => [...items.filter(item => item.order_id !== order.id), ...receipts])
                   setReportSnapshot(current => current ? { ...current, orders: current.orders.map(item => item.id === order.id ? fresh : item), payments: [...current.payments.filter(item => item.order_id !== order.id), ...receipts] } : null)
                   markStaffDataStale('report')
-                }} />
+                }} />}
+                </div>
+              </td>
+              <td className="staff-order-booking-cell" data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}>{canCreateOrders && order.session_id ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'} disabled={saving} onClick={() => setEditingBookingId(order.session_id)}><div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></button> : <div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div>}</td>
+              <td className="staff-order-total-cell" data-label={text.labels.total}>{canCreateOrders && !terminal ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Điều chỉnh tổng đơn' : 'Adjust order total'} disabled={saving} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}><strong>{formatVnd(order.total)}</strong><span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để sửa' : 'Tap to edit'}</span></button> : <strong>{formatVnd(order.total)}</strong>}</td>
+              <td className="staff-order-payment-cell" data-label={text.labels.payment}>
+                <div>{canCreateOrders && canPay ? <button className="staff-order-data-button staff-order-payment-link" type="button" aria-label={resolvedLanguage === 'vi' ? 'Ghi nhận thanh toán' : 'Record payment'} disabled={saving} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{paymentSummary}<span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để thanh toán' : 'Tap to pay'}</span></button> : paymentSummary}
+                  <details className="staff-order-receipts"><summary>{resolvedLanguage === 'vi' ? 'Chi tiết thanh toán' : 'Payment details'}</summary>
+                    {payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}<small>{new Date(payment.created_at).toLocaleString(resolvedLanguage === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small></li>)}</ul> : <p>{order.payment_status === 'unpaid' ? (resolvedLanguage === 'vi' ? 'Chưa ghi nhận thanh toán.' : 'No payments recorded.') : (resolvedLanguage === 'vi' ? 'Thiếu biên nhận cũ. Kiểm tra trước khi thay đổi thanh toán.' : 'Historical receipts are missing. Review the existing payment record before making changes.')}</p>}
+                    {order.price_override_reason && <p>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Price adjustment reason'}: {order.price_override_reason}</p>}
+                    {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
+                  </details>
+                </div>
+              </td>
+              <td className="staff-order-status-cell" data-label={text.labels.status}><span className="staff-order-status-pill">{text.orderStatuses[order.order_status]}</span></td>
+              {canCreateOrders && <td className="staff-order-actions-cell" data-has-actions={canPay || !!order.session_id || !terminal} data-label={text.labels.actions}><div className="staff-order-action-menu" data-expanded={expandedOrderActions.has(order.id)}><button type="button" className="secondary staff-order-more-toggle" aria-expanded={expandedOrderActions.has(order.id)} onClick={() => setExpandedOrderActions(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next })}>{resolvedLanguage === 'vi' ? 'Thao tác khác' : 'More actions'}</button><div className="staff-row-actions staff-order-actions">
                 <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{text.labels.payment}</button>
                 {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
                 <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
-              </div></td>}
+              </div></div></td>}
             </tr>
             {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order, paymentsByOrderId)}</td></tr>}
             {draft && <tr className="staff-order-detail-row"><td colSpan={6}><form className="staff-visit-editor" onSubmit={(event) => { event.preventDefault(); void saveOrderEdit(order) }}>
@@ -2094,8 +2110,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
       {currentTab === 'orders' && (
         <div className="staff-card">
-          <h3>{text.labels.orders}</h3>
-          <p>{resolvedLanguage === 'vi' ? 'Dùng Sửa đặt chỗ / Chuyển cửa hàng để đổi cửa hàng, trò chơi hoặc giờ. Lịch và Hôm nay cũng có chức năng này.' : 'Use Edit booking / Move shop to change the shop, game or time. The same editor is available in Calendar and Today.'}</p>
           <form className="staff-orders-filters staff-operation-field-grid" onSubmit={(event) => {
             event.preventDefault()
             if (!ordersRange.start || !ordersRange.end) return
@@ -2107,7 +2121,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
             <label>{bookingText.shop}<select value={ordersShop} onChange={(event) => setOrdersShop(event.target.value)}><option value="all">{resolvedLanguage === 'vi' ? 'Tất cả cửa hàng' : 'All shops'}</option><option value="ha-do-centrosa">Hà Đô Centrosa</option><option value="cafe-des-stagiaires">Vrena Thao Dien</option></select></label>
             <button className="secondary" type="submit" disabled={currentTabLoading || saving}>{resolvedLanguage === 'vi' ? 'Xem đơn hàng' : 'Show orders'}</button>
           </form>
-          <p>{resolvedLanguage === 'vi' ? 'Ngày đặt chỗ' : 'Booking dates'}: {ordersQuery.start} — {ordersQuery.end}. {resolvedLanguage === 'vi' ? '50 đơn mỗi trang. Có thể xem bất kỳ khoảng ngày nào.' : '50 orders per page. Choose any date range to browse the full history.'}</p>
           {currentTabReady && browsedOrders && <>
             <p role="status">{resolvedLanguage === 'vi' ? 'Đang hiển thị' : 'Showing'} {browsedOrders.rows.length ? ordersQuery.page * ordersPageSize + 1 : 0}–{ordersQuery.page * ordersPageSize + browsedOrders.rows.length} / {browsedOrders.total}</p>
             {orderRows(browsedOrders.rows)}
