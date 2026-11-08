@@ -6,8 +6,6 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 insert into auth.users(id,email) values
  ('95000000-0000-4000-8000-000000000001','venue-admin@example.invalid'),
  ('95000000-0000-4000-8000-000000000002','venue-named@example.invalid'),
- ('95000000-0000-4000-8000-000000000003','venue-hado@example.invalid'),
- ('95000000-0000-4000-8000-000000000004','venue-td@example.invalid'),
  ('95000000-0000-4000-8000-000000000005','venue-customer-hd@example.invalid'),
  ('95000000-0000-4000-8000-000000000006','venue-customer-td@example.invalid');
 insert into auth.users(id,email) select '95000000-0000-4000-8000-000000000007','contact@vre-vietnam.com' where not exists(select 1 from auth.users where email='contact@vre-vietnam.com');
@@ -41,10 +39,18 @@ insert into venue_fixture values('td-voucher', public.staff_convert_payment_to_v
 select set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',(select value->>'id' from venue_fixture where label='shared'),'aal','aal1')::text,true);
 select set_config('request.headers','{"x-vrena-operator-session":"local-hd-token"}',true);
 select is(public.current_staff_role_rank(),50,'Real kiosk authentication resolves HaDo staff');
+insert into venue_fixture values('pin-voucher',public.staff_convert_payment_to_voucher((select (value->>'order_id')::uuid from venue_fixture where label='hd'),(select id from public.staff_order_payments where order_id=(select (value->>'order_id')::uuid from venue_fixture where label='hd') and amount>0 limit 1),gen_random_uuid(),10000,'PIN operator without customer profile',30));
+select is((select value->>'created_by' from venue_fixture where label='pin-voucher'),(select value->>'id' from venue_fixture where label='shared'),'PIN conversion records login profile, not employee-only identity');
+select ok((select (value->>'expires_at')::timestamptz>now() from venue_fixture where label='pin-voucher'),'PIN conversion stores expiry');
 select is((select count(*)::int from public.payment_vouchers where id in(select (value->>'id')::uuid from venue_fixture where label in ('hd-voucher','td-voucher'))),1,'PIN staff only see own venue voucher codes');
 select throws_ok($q$select public.staff_convert_payment_to_voucher((select (value->>'order_id')::uuid from venue_fixture where label='td'),null,gen_random_uuid(),1,'Forbidden conversion')$q$,'P0001','Order not found or location access denied.','PIN staff cannot convert other venue money');
 select throws_ok($q$select public.staff_redeem_payment_voucher((select (value->>'order_id')::uuid from venue_fixture where label='hd'),(select value->>'code' from venue_fixture where label='td-voucher'),gen_random_uuid(),1)$q$,'P0001','Voucher not found or location access denied.','PIN staff cannot redeem another venue code');
 
+insert into venue_fixture values('pin-target',public.staff_create_booking(jsonb_build_object('p_customer_id','95000000-0000-4000-8000-000000000005','p_game_id',(select id from public.staff_games where slug='city-z'),'p_booking_date',current_date+102,'p_booking_time','16:00','p_players_count',1,'p_arena_id','arena-1','p_order_status','confirmed'),'walk_in'));
+select lives_ok($q$select public.staff_redeem_payment_voucher((select (value->>'order_id')::uuid from venue_fixture where label='pin-target'),(select value->>'code' from venue_fixture where label='pin-voucher'),gen_random_uuid(),1000)$q$,'Employee-only PIN identity can redeem voucher');
+reset role;
+select is((select k.operator_profile_id::text from public.audit_logs a join private.staff_kiosk_operator_sessions k on k.id=a.operator_session_id where a.action='payment_converted_to_voucher' and a.entity_id=(select (value->>'id')::uuid from venue_fixture where label='pin-voucher')),'95000000-0000-4000-8000-000000000003','Audit retains named PIN employee');
+set local role authenticated;
 select is((select array_agg(venue_key) from public.staff_access_locations()),array['ha-do-centrosa'],'HaDo staff sees only assigned location');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='hd')),1,'HaDo session allowed');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='td')),0,'HaDo cannot read TD sessions');

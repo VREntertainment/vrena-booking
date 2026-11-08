@@ -97,5 +97,18 @@ select is((select payment_status||'/'||order_status from public.staff_orders whe
 select lives_ok($q$select public.staff_record_order_payment('85000000-0000-4000-8000-000000000091','85000000-0000-4000-8000-000000000094','cash',10000)$q$,'Remaining bill can still collect a payment');
 select is((select total-(select sum(amount)::integer from public.staff_order_payments where order_id=o.id) from public.staff_orders o where id='85000000-0000-4000-8000-000000000091'),50000,'Unpaid balance reconciles after conversion and new receipt');
 reset role;
+insert into public.staff_orders(id,order_number,booking_date,booking_time,players_count,total,subtotal,arena_id,payment_status,order_status,payment_method) values('85000000-0000-4000-8000-000000000098','VOUCHER-EXPIRY',current_date,'10:00',1,10000,10000,'arena-1','paid','completed','cash');
+set local role authenticated;
+-- Expiry applies to issuance, retry identity, staff, quotes and online checkout.
+select lives_ok($q$select public.staff_convert_payment_to_voucher('85000000-0000-4000-8000-000000000098',null,'85000000-0000-4000-8000-000000000099',1000,'Expiring credit',30)$q$,'Issue credit with validity');
+select is((select expires_at from public.payment_vouchers where id='85000000-0000-4000-8000-000000000099'),(((now() at time zone 'Asia/Ho_Chi_Minh')::date+31)::timestamp at time zone 'Asia/Ho_Chi_Minh'),'Expiry is midnight after last valid Vietnam date');
+select throws_ok($q$select public.staff_convert_payment_to_voucher('85000000-0000-4000-8000-000000000098',null,'85000000-0000-4000-8000-000000000099',1000,'Expiring credit',60)$q$,'P0001','Request reference already used.','Retry cannot change validity');
+reset role;
+update public.payment_vouchers set expires_at=now() where id='85000000-0000-4000-8000-000000000099';
+select ok(public.payment_voucher_quote((select code from public.payment_vouchers where id='85000000-0000-4000-8000-000000000099'),'ha-do-centrosa') ? 'error','Expired voucher cannot be quoted');
+select set_config('request.jwt.claims','{"role":"authenticated","sub":"85000000-0000-4000-8000-000000000001","aal":"aal2"}',true);
+select throws_ok($q$select public.staff_redeem_payment_voucher('85000000-0000-4000-8000-000000000012',(select code from public.payment_vouchers where id='85000000-0000-4000-8000-000000000099'),gen_random_uuid(),1)$q$,'P0001','Voucher has expired.','Staff cannot redeem expired credit');
+select throws_ok($q$select public.book_ticket_with_payment_voucher('create_sim_racing_booking','{}'::jsonb,(select code from public.payment_vouchers where id='85000000-0000-4000-8000-000000000099'),gen_random_uuid())$q$,'P0001','Voucher is unavailable at this venue or has no remaining balance.','Expired code rejected before online booking');
+reset role;
 select * from finish();
 rollback;
