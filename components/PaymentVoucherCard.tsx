@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { voucherExpiryLabel, voucherVenueNames, type PaymentVoucher } from '../lib/paymentVouchers'
 import { formatVnd } from '../lib/staff/formatting'
 import { vrenaPalette } from '../lib/theme/vrenaPalette'
@@ -13,15 +13,17 @@ function loadInter() {
   return interReady
 }
 
-export default function PaymentVoucherCard({ voucher, language = 'en' }: { voucher: PaymentVoucher; language?: string }) {
+export default function PaymentVoucherCard({ voucher, language = 'en', management }: { voucher: PaymentVoucher; language?: string; management?: ReactNode }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [exportLanguage, setExportLanguage] = useState<'en' | 'vi' | null>(null)
-  const [image, setImage] = useState<{ file: File; url: string } | null>(null)
+  const [preparedImage, setImage] = useState<{ file: File; url: string; signature: string } | null>(null)
   const previewUrl = useRef<string | null>(null)
   const shareDialog = useRef<HTMLDialogElement>(null)
   const vi = language === 'vi'
   const venue = voucherVenueNames(voucher).join(' · ')
+  const imageSignature = JSON.stringify([voucher.id, voucher.code, voucher.amount, voucher.expires_at, venue])
+  const image = preparedImage?.signature === imageSignature ? preparedImage : null
   useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current) }, [])
   async function prepare(selectedLanguage: 'en' | 'vi') {
     if (busy) return
@@ -66,7 +68,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en' }: { vouch
       const file = new File([blob], `${voucher.code}-${selectedLanguage}.jpg`, { type: 'image/jpeg' })
       if (previewUrl.current) URL.revokeObjectURL(previewUrl.current)
       previewUrl.current = URL.createObjectURL(file)
-      setImage({ file, url: previewUrl.current })
+      setImage({ file, url: previewUrl.current, signature: imageSignature })
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'JPEG export failed') }
     finally { setBusy(false) }
   }
@@ -80,6 +82,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en' }: { vouch
     <p>{vi ? 'Số dư hiện tại' : 'Current balance'}: <strong>{formatVnd(voucher.balance)}</strong> · {venue}</p>
     <p>{voucherExpiryLabel(voucher.expires_at, vi)} {vi ? 'Giữ mã an toàn; số dư được kiểm tra khi dùng.' : 'Keep the code safe; the balance is checked when used.'}</p>
     <button type="button" className="secondary" onClick={() => { setError(''); shareDialog.current?.showModal() }}>{vi ? 'Chia sẻ ảnh' : 'Share image'}</button>
+    {management && <div className="staff-row-actions">{management}</div>}
     <dialog ref={shareDialog} className="staff-voucher-dialog payment-voucher-share-dialog" aria-label={vi ? 'Chọn ngôn ngữ ảnh' : 'Choose image language'}>
       <button type="button" className="secondary" onClick={() => shareDialog.current?.close()}>{vi ? 'Đóng' : 'Close'}</button>
       <h3>{vi ? 'Ngôn ngữ ảnh voucher' : 'Voucher image language'}</h3>

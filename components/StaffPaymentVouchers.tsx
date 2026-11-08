@@ -7,6 +7,7 @@ import { formatVnd } from '../lib/staff/formatting'
 import { paymentMethodLabel } from '../lib/staff/payments'
 import { staffConsoleText } from '../lib/staff/copy'
 import PaymentVoucherCard from './PaymentVoucherCard'
+import StaffPaymentVoucherActions from './StaffPaymentVoucherActions'
 
 type Props = { order: StaffOrder; payments: StaffOrderPayment[]; language: 'en' | 'vi'; onChanged: () => Promise<void>; onClosed?: () => void }
 export default function StaffPaymentVouchers({ order, payments, language, onChanged, onClosed }: Props) {
@@ -14,7 +15,7 @@ export default function StaffPaymentVouchers({ order, payments, language, onChan
   const dialog = useRef<HTMLDialogElement>(null)
   return <div className="staff-voucher-action">
     <button type="button" className="secondary" aria-expanded={open} onClick={() => { setOpen(true); dialog.current?.showModal() }}>{language === 'vi' ? 'Chuyển / dùng voucher' : 'Convert / redeem voucher'}</button>
-    <dialog ref={dialog} className="staff-voucher-dialog" aria-label={language === 'vi' ? 'Voucher thanh toán' : 'Payment vouchers'} onClose={() => { setOpen(false); onClosed?.() }}>
+    <dialog ref={dialog} className="staff-voucher-dialog" aria-label={language === 'vi' ? 'Voucher thanh toán' : 'Payment vouchers'} onClose={event => { if (event.target !== event.currentTarget) return; setOpen(false); onClosed?.() }}>
       <button type="button" className="secondary" onClick={() => dialog.current?.close()}>{language === 'vi' ? 'Đóng' : 'Close'}</button>
       {open && <VoucherEditor order={order} payments={payments} language={language} onChanged={onChanged} />}
     </dialog>
@@ -23,6 +24,7 @@ export default function StaffPaymentVouchers({ order, payments, language, onChan
 function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const vi = language === 'vi'
   const [vouchers, setVouchers] = useState<PaymentVoucher[]>([])
+  const [deletedCredits, setDeletedCredits] = useState<Record<string, number>>({})
   const [receipt, setReceipt] = useState(payments.find(p => p.amount > 0)?.id || '')
   const [amount, setAmount] = useState('')
   const [validDays, setValidDays] = useState('')
@@ -40,15 +42,19 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const [uncertain, setUncertain] = useState<'convert' | 'redeem' | null>(null)
   useEffect(() => {
     let active = true
-    void supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at,expires_at,valid_venue_keys').eq('source_order_id', order.id).order('created_at').then(({ data, error }) => {
+    void Promise.all([
+      supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at,expires_at,valid_venue_keys').eq('source_order_id', order.id).order('created_at'),
+      supabase.rpc('staff_payment_voucher_deleted_credits', { p_order_id: order.id }),
+    ]).then(([voucherResult, deletedResult]) => {
       if (!active) return
-      setError(error?.message || ''); setVouchers(data || []); setLoaded(!error)
+      const error = voucherResult.error ?? deletedResult.error
+      setError(error?.message || ''); setVouchers(voucherResult.data || []); setDeletedCredits(deletedResult.data ?? {}); setLoaded(!error)
     })
     return () => { active = false }
   }, [order.id, version])
   const selected = payments.find(p => p.id === receipt)
   const historical = payments.length === 0 && order.payment_status === 'paid' && ['cash','bank_transfer','card_manual','momo_manual','vnpay'].includes(order.payment_method)
-  const available = selected ? Math.min(order.total, availablePaymentCredit(selected.id, selected.amount, vouchers)) : historical ? order.total : 0
+  const available = selected ? Math.min(order.total, Math.max(0, availablePaymentCredit(selected.id, selected.amount, vouchers) - Number(deletedCredits[selected.id] ?? 0))) : historical ? order.total : 0
   const paid = payments.length ? payments.reduce((sum, p) => sum + p.amount, 0) : order.payment_status === 'paid' ? order.total : 0
   const due = Math.max(0, order.total - paid)
   const convertValue = voucherAmount(amount)
@@ -111,6 +117,6 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
       </fieldset>
     </form>}
     {message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}
-    {vouchers.map(v => <PaymentVoucherCard key={v.id} voucher={v} language={language} />)}
+    {vouchers.map(v => <PaymentVoucherCard key={v.id} voucher={v} language={language} management={<StaffPaymentVoucherActions voucher={v} language={language} onChanged={async () => { setVersion(version => version + 1); await onChanged() }} />} />)}
   </div>
 }
