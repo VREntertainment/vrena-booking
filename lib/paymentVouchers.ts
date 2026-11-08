@@ -26,3 +26,12 @@ export const paymentVoucherVenues = [
 export function voucherVenueNames(voucher: Pick<PaymentVoucher, 'venue_key' | 'valid_venue_keys'>): string[] {
   return (voucher.valid_venue_keys ?? [voucher.venue_key]).map(key => paymentVoucherVenues.find(venue => venue.key === key)?.name ?? key)
 }
+
+export function voucherExpiryDateInput(expiresAt: string | null | undefined): string {
+  if (!expiresAt) return ''
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(new Date(expiresAt).getTime() - 1))
+  return ['year', 'month', 'day'].map(type => parts.find(part => part.type === type)?.value).join('-')
+}
+export function voucherExpiryFromDate(date: string): string | null {
+  return date ? new Date(new Date(`${date}T00:00:00+07:00`).getTime() + 86400000).toISOString() : null
+}
