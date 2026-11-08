@@ -9,14 +9,14 @@ import { staffConsoleText } from '../lib/staff/copy'
 import PaymentVoucherCard from './PaymentVoucherCard'
 import StaffPaymentVoucherActions from './StaffPaymentVoucherActions'
 
-type Props = { order: StaffOrder; payments: StaffOrderPayment[]; language: 'en' | 'vi'; onChanged: () => Promise<void>; onClosed?: () => void }
-export default function StaffPaymentVouchers({ order, payments, language, onChanged, onClosed }: Props) {
+type Props = { order: StaffOrder; payments: StaffOrderPayment[]; language: 'en' | 'vi'; onChanged: () => Promise<void>; onClosed?: () => void; summary?: { count: number; balance: number } }
+export default function StaffPaymentVouchers({ order, payments, language, onChanged, onClosed, summary }: Props) {
   const [open, setOpen] = useState(false)
   const dialog = useRef<HTMLDialogElement>(null)
   return <div className="staff-voucher-action">
-    <button type="button" className="secondary" aria-expanded={open} onClick={() => { setOpen(true); dialog.current?.showModal() }}>{language === 'vi' ? 'Chuyển / dùng voucher' : 'Convert / redeem voucher'}</button>
+    <button type="button" className="secondary" aria-expanded={open} onClick={() => { setOpen(true); dialog.current?.showModal() }}>{language === 'vi' ? 'Voucher' : 'Vouchers'}{summary && summary.count > 0 && <span className="staff-voucher-summary">{summary.count} · {formatVnd(summary.balance)}</span>}</button>
     <dialog ref={dialog} className="staff-voucher-dialog" aria-label={language === 'vi' ? 'Voucher thanh toán' : 'Payment vouchers'} onClose={event => { if (event.target !== event.currentTarget) return; setOpen(false); onClosed?.() }}>
-      <button type="button" className="secondary" onClick={() => dialog.current?.close()}>{language === 'vi' ? 'Đóng' : 'Close'}</button>
+      <div className="staff-voucher-dialog-header"><h2>{language === 'vi' ? 'Voucher thanh toán' : 'Payment vouchers'}</h2><button type="button" className="secondary" onClick={() => dialog.current?.close()}>{language === 'vi' ? 'Đóng' : 'Close'}</button></div>
       {open && <VoucherEditor order={order} payments={payments} language={language} onChanged={onChanged} />}
     </dialog>
   </div>
@@ -30,6 +30,7 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const [validDays, setValidDays] = useState('')
   const [validVenues, setValidVenues] = useState<string[]>([order.arena_id === 'cafe:arena-1' ? 'cafe-des-stagiaires' : 'ha-do-centrosa'])
   const [reason, setReason] = useState('')
+  const [showConvert, setShowConvert] = useState(false)
   const [code, setCode] = useState('')
   const [redeemAmount, setRedeemAmount] = useState('')
   const [error, setError] = useState('')
@@ -70,8 +71,9 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
       const { data, error } = await supabase.rpc(kind === 'convert' ? 'staff_convert_payment_to_voucher' : 'staff_redeem_payment_voucher', { ...payload, p_request_id: request.current.id })
       if (error) throw new Error(error.message)
       committed = true
-      if (kind === 'convert') setVouchers(current => [...current.filter(v => v.id !== data.id), data])
+      if (kind === 'convert') { setVouchers(current => [...current.filter(v => v.id !== data.id), data]); setShowConvert(false) }
       setUncertain(null); request.current = null
+      window.dispatchEvent(new Event('staff-payment-vouchers-updated'))
       setMessage(vi ? 'Đã lưu. Số dư đã được cập nhật.' : 'Saved. Balances updated.')
       setAmount(''); setRedeemAmount(''); setReason('')
       await onChanged(); setVersion(v => v + 1)
@@ -81,6 +83,10 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
     } finally { lock.current = false; setBusy(false) }
   }
   return <div className="staff-voucher-editor">
+    {vouchers.map(v => <PaymentVoucherCard key={v.id} voucher={v} language={language} management={<StaffPaymentVoucherActions voucher={v} language={language} onChanged={async () => { setVersion(version => version + 1); window.dispatchEvent(new Event('staff-payment-vouchers-updated')); await onChanged() }} />} />)}
+    {!loaded && !error && <p role="status">{vi ? 'Đang tải voucher…' : 'Loading vouchers…'}</p>}
+    {((available > 0 && loaded) || uncertain === 'convert') && <details className="staff-voucher-form-panel" open={vouchers.length === 0 || showConvert || uncertain === 'convert'} onToggle={event => setShowConvert(event.currentTarget.open)}>
+      <summary>{vi ? 'Chuyển thanh toán thành voucher' : 'Convert another payment'}</summary>
     <form onSubmit={event => { event.preventDefault(); void submit('convert') }}>
       <fieldset disabled={busy || !loaded || uncertain === 'redeem'}>
         <legend>{vi ? 'Chuyển thanh toán thành voucher' : 'Convert payment to voucher'}</legend>
@@ -107,7 +113,8 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
         {order.invoice_status === 'issued' && <p>{vi ? 'Đơn có hóa đơn: cần đối soát điều chỉnh hóa đơn.' : 'This order has an issued invoice: reconcile the credit against that invoice.'}</p>}
         <button className="primary" type="submit" disabled={validVenues.length === 0 || !convertValue || convertValue>available || reason.trim().length<3 || order.payment_status==='refunded' || order.order_status==='refunded'}>{vi ? 'Xác nhận chuyển thành voucher' : 'Confirm conversion to voucher'}</button>
       </fieldset>
-    </form>
+    </form></details>}
+    {loaded && vouchers.length === 0 && available <= 0 && <p>{vi ? 'Chưa có voucher cho đơn này.' : 'No vouchers for this order yet.'}</p>}
     {due > 0 && !['cancelled','refunded','no_show'].includes(order.order_status) && <form onSubmit={event => { event.preventDefault(); void submit('redeem') }}>
       <fieldset disabled={busy || uncertain === 'convert'}><legend>{vi ? 'Thanh toán bằng voucher' : 'Pay with a voucher'}</legend>
         <label>{vi ? 'Mã voucher' : 'Voucher code'}<input required autoCapitalize="characters" autoComplete="off" disabled={!!uncertain} value={code} onChange={e => setCode(e.target.value)} /></label>
@@ -117,6 +124,6 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
       </fieldset>
     </form>}
     {message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}
-    {vouchers.map(v => <PaymentVoucherCard key={v.id} voucher={v} language={language} management={<StaffPaymentVoucherActions voucher={v} language={language} onChanged={async () => { setVersion(version => version + 1); await onChanged() }} />} />)}
+
   </div>
 }

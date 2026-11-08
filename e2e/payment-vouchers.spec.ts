@@ -1,8 +1,13 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { futureDate, loginAsAdmin, openAdmin } from './support/admin'
+
+async function openVoucherActions(card: Locator) {
+  const menu = card.locator('.payment-voucher-more')
+  if (!await menu.evaluate(element => (element as HTMLDetailsElement).open)) await menu.getByText('More', { exact: true }).click()
+}
 
 test('phone: completed receipt becomes a ready short-code JPEG voucher and redeems in customer checkout', async ({ page }, info) => {
   test.skip(info.project.name !== 'chromium', 'Phone and desktop viewports covered in one isolated money fixture.')
@@ -13,6 +18,8 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   const guestPhone = `09${Date.now().toString().slice(-8)}`
   const date = futureDate(10)
   const orderNumber = `VOUCHER-E2E-${Date.now()}`
+  const cancelledNumber = `CANCELLED-${Date.now()}`
+  expect((await admin.from('staff_orders').insert({ id: randomUUID(), order_number: cancelledNumber, customer_name: 'Sample cancelled booking', booking_date: date, booking_time: '11:00', arena_id: 'arena-1', players_count: 1, subtotal: 300000, total: 300000, payment_method: 'unpaid', payment_status: 'unpaid', order_status: 'cancelled' })).error).toBeNull()
   const inserted = await admin.from('staff_orders').insert({ id, order_number: orderNumber, booking_date: date, booking_time: '10:00', arena_id: 'arena-1', players_count: 1, subtotal: 300000, total: 300000, payment_method: 'cash', payment_status: 'paid', order_status: 'completed' })
   expect(inserted.error).toBeNull()
   expect((await admin.from('staff_order_payments').insert({ id: receiptId, order_id: id, amount: 300000, payment_method: 'cash' })).error).toBeNull()
@@ -20,13 +27,29 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   page.on('pageerror', e => errors.push(e.message))
   await loginAsAdmin(page)
   await openAdmin(page)
-  await page.setViewportSize({ width: 375, height: 812 })
+  await page.setViewportSize({ width: 393, height: 852 })
   await page.getByRole('tab', { name: 'Orders', exact: true }).click()
   await page.getByRole('textbox', { name: 'Start date', exact: true }).fill(date)
   await page.getByRole('textbox', { name: 'End date', exact: true }).fill(date)
   await page.getByRole('button', { name: 'Show orders', exact: true }).click()
   const row = page.getByRole('row').filter({ has: page.getByText(orderNumber, { exact: true }) }).first()
-  await row.getByRole('button', { name: 'Convert / redeem voucher' }).click()
+  const cancelledRow = page.getByRole('row').filter({ has: page.getByText(cancelledNumber, { exact: true }) }).first()
+  const cancelledToggle = cancelledRow.getByRole('button', { name: cancelledNumber, exact: true })
+  await expect(cancelledToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(cancelledRow.locator('.staff-order-booking-cell')).not.toBeVisible()
+  expect((await cancelledRow.boundingBox())!.height).toBeLessThan(240)
+  await cancelledToggle.click()
+  await expect(cancelledToggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(cancelledRow.locator('.staff-order-booking-cell')).toBeVisible()
+  await cancelledToggle.click()
+  await cancelledRow.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/staff-cancelled-compact-mobile.png' })
+  const startBox = await page.getByRole('textbox', { name: 'Start date', exact: true }).boundingBox()
+  const endBox = await page.getByRole('textbox', { name: 'End date', exact: true }).boundingBox()
+  expect(Math.abs(startBox!.y - endBox!.y)).toBeLessThan(2)
+  await expect(page.getByText('Use Edit booking / Move shop to change', { exact: false })).toHaveCount(0)
+
+  await row.getByRole('button', { name: /^Vouchers/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Payment vouchers', exact: true })
   await expect(dialog).toContainText('Available to convert: 300,000')
   await dialog.getByRole('textbox', { name: 'Conversion amount (VND)' }).fill('200000')
@@ -44,8 +67,10 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await expect(dialog.getByRole('alert')).toBeVisible()
   await dialog.getByRole('button', { name: 'Confirm conversion to voucher' }).click()
   await expect(dialog.locator('.payment-voucher-card')).toHaveCount(1)
+  await expect(dialog.getByRole('textbox', { name: 'Conversion amount (VND)', exact: true })).not.toBeVisible()
   await expect(dialog.locator('.payment-voucher-card')).toContainText('VRena Hà Đô Centrosa')
   await expect(dialog.locator('.payment-voucher-card')).toContainText('VRena Thảo Điền')
+  await expect(row.getByRole('button', { name: /^Vouchers/ })).toContainText('1 · 200,000')
   const code = await dialog.locator('.payment-voucher-card code').innerText()
   expect(code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
   expect((await admin.from('staff_orders').select('total').eq('id', id).single()).data?.total).toBe(100000)
@@ -71,6 +96,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await vietnameseFile.saveAs('/tmp/vrena-voucher-example-vi.jpg')
   await shareDialog.getByRole('button', { name: 'Close', exact: true }).click()
   const voucherCard = dialog.locator('.payment-voucher-card').filter({ has: page.locator('code', { hasText: code }) })
+  await openVoucherActions(voucherCard)
   await voucherCard.getByRole('button', { name: 'Modify', exact: true }).click()
   const modifyDialog = page.getByRole('dialog', { name: 'Modify voucher', exact: true })
   await modifyDialog.getByRole('checkbox', { name: 'VRena Thảo Điền', exact: true }).uncheck()
@@ -78,15 +104,17 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await modifyDialog.getByRole('textbox', { name: 'Reason for change', exact: true }).fill('Correct venue and expiry')
   await modifyDialog.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(modifyDialog).not.toBeVisible()
-  await expect(voucherCard.locator('p').filter({ hasText: 'Current balance' })).not.toContainText('VRena Thảo Điền')
+  await expect(voucherCard.locator('.payment-voucher-venues')).not.toContainText('VRena Thảo Điền')
   await voucherCard.getByRole('button', { name: 'Share image', exact: true }).click()
   await expect(shareDialog.getByRole('img')).toHaveCount(0)
   await shareDialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await openVoucherActions(voucherCard)
   await voucherCard.getByRole('button', { name: 'Modify', exact: true }).click()
   await modifyDialog.getByRole('checkbox', { name: 'VRena Thảo Điền', exact: true }).check()
   await modifyDialog.getByRole('textbox', { name: 'Reason for change', exact: true }).fill('Restore both valid venues')
   await modifyDialog.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(modifyDialog).not.toBeVisible()
+  await dialog.getByText('Convert another payment', { exact: true }).click()
   await dialog.getByRole('textbox', { name: 'Conversion amount (VND)', exact: true }).fill('50000')
   await dialog.getByRole('textbox', { name: 'Conversion reason', exact: true }).fill('Extra voucher created by mistake')
   await dialog.getByRole('button', { name: 'Confirm conversion to voucher', exact: true }).click()
@@ -94,6 +122,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   const extraCard = dialog.locator('.payment-voucher-card').filter({ has: page.getByText('Value voucher · 50,000 đ', { exact: true }) })
   const extraCode = await extraCard.locator('code').innerText()
   expect((await admin.from('staff_orders').select('total').eq('id', id).single()).data?.total).toBe(50000)
+  await openVoucherActions(extraCard)
   await extraCard.getByRole('button', { name: 'Delete', exact: true }).click()
   const deleteDialog = page.getByRole('dialog', { name: 'Delete voucher', exact: true })
   await expect(deleteDialog).toContainText('No refund or money restored')
@@ -118,11 +147,14 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
     await page.setViewportSize({ width, height: 812 })
     expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
   }
-  await page.setViewportSize({ width: 375, height: 812 })
+  await page.setViewportSize({ width: 393, height: 852 })
   await page.screenshot({ path: '/tmp/vrena-voucher-phone.png' })
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.screenshot({ path: '/tmp/vrena-voucher-desktop.png' })
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.setViewportSize({ width: 393, height: 852 })
+  await row.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/staff-order-with-voucher-mobile.png' })
   // Guest checkout uses the exact short code from the JPEG. Its database RPC
   // commits reservation and debit together; no staff registration step occurs.
   await page.context().clearCookies()
@@ -138,7 +170,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await simulator.getByRole('textbox', { name: '8-character voucher code' }).fill(code)
   await expect(simulator).toContainText('Voucher will pay: 150,000')
   await expect(simulator).toContainText('Remaining to pay at venue: 0')
-  await page.setViewportSize({ width: 375, height: 812 })
+  await page.setViewportSize({ width: 393, height: 852 })
   await page.screenshot({ path: '/tmp/vrena-voucher-checkout-phone.png' })
   await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
   await expect(simulator).toContainText('SIM Racing booking confirmed')
