@@ -10,6 +10,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Local services required')
   const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
   const id = randomUUID(), receiptId = randomUUID()
+  const guestPhone = `09${Date.now().toString().slice(-8)}`
   const date = futureDate(10)
   const orderNumber = `VOUCHER-E2E-${Date.now()}`
   const inserted = await admin.from('staff_orders').insert({ id, order_number: orderNumber, booking_date: date, booking_time: '10:00', arena_id: 'arena-1', players_count: 1, subtotal: 300000, total: 300000, payment_method: 'cash', payment_status: 'paid', order_status: 'completed' })
@@ -31,6 +32,8 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await dialog.getByRole('textbox', { name: 'Conversion amount (VND)' }).fill('200000')
   await expect(dialog.getByRole('textbox', { name: 'Conversion amount (VND)' })).toHaveValue('200,000')
   await dialog.getByLabel('Voucher validity').selectOption('90')
+  await expect(dialog.getByRole('checkbox', { name: 'VRena Hà Đô Centrosa', exact: true })).toBeChecked()
+  await dialog.getByRole('checkbox', { name: 'VRena Thảo Điền', exact: true }).check()
   await dialog.getByRole('textbox', { name: 'Conversion reason' }).fill('Customer changes plans')
   let loseResponse = true
   await page.route('**/rpc/staff_convert_payment_to_voucher', async route => {
@@ -41,18 +44,32 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await expect(dialog.getByRole('alert')).toBeVisible()
   await dialog.getByRole('button', { name: 'Confirm conversion to voucher' }).click()
   await expect(dialog.locator('.payment-voucher-card')).toHaveCount(1)
+  await expect(dialog.locator('.payment-voucher-card')).toContainText('VRena Hà Đô Centrosa')
+  await expect(dialog.locator('.payment-voucher-card')).toContainText('VRena Thảo Điền')
   const code = await dialog.locator('.payment-voucher-card code').innerText()
   expect(code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
   expect((await admin.from('staff_orders').select('total').eq('id', id).single()).data?.total).toBe(100000)
   expect((await admin.from('staff_order_payments').select('amount').eq('id', receiptId).single()).data?.amount).toBe(300000)
-  await dialog.getByRole('button', { name: 'Prepare JPEG' }).click()
+  await dialog.getByRole('button', { name: 'Share image', exact: true }).click()
+  const shareDialog = page.getByRole('dialog', { name: 'Choose image language', exact: true })
+  await shareDialog.getByRole('button', { name: 'English (EN)', exact: true }).click()
+  await expect(shareDialog.getByRole('img')).toHaveJSProperty('naturalWidth', 900)
+  await expect(shareDialog.getByRole('img')).toHaveJSProperty('naturalHeight', 1200)
   const downloaded = page.waitForEvent('download')
-  await dialog.getByRole('button', { name: 'Download JPEG' }).click()
+  await shareDialog.getByRole('button', { name: 'Download JPEG' }).click()
   const file = await downloaded
-  expect(file.suggestedFilename()).toBe(`${code}.jpg`)
+  expect(file.suggestedFilename()).toBe(`${code}-en.jpg`)
   const bytes = await readFile((await file.path())!)
   expect(bytes.subarray(0, 3).toString('hex')).toBe('ffd8ff')
   await file.saveAs('/tmp/vrena-voucher-example.jpg')
+  expect(await page.evaluate(() => document.fonts.check('700 76px Inter'))).toBe(true)
+  await shareDialog.getByRole('button', { name: 'Tiếng Việt (VI)', exact: true }).click()
+  const vietnameseDownload = page.waitForEvent('download')
+  await shareDialog.getByRole('button', { name: 'Download JPEG' }).click()
+  const vietnameseFile = await vietnameseDownload
+  expect(vietnameseFile.suggestedFilename()).toBe(`${code}-vi.jpg`)
+  await vietnameseFile.saveAs('/tmp/vrena-voucher-example-vi.jpg')
+  await shareDialog.getByRole('button', { name: 'Close', exact: true }).click()
   expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
   for (const width of [320, 360, 375, 390, 430, 768]) {
     await page.setViewportSize({ width, height: 812 })
@@ -73,7 +90,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   const simulator = page.locator('.sim-racing-booking')
   await simulator.locator('input[type=date]').fill(futureDate(24))
   await expect(simulator.locator('select')).toBeEnabled()
-  await simulator.locator('input[type=tel]').fill('0987654098')
+  await simulator.locator('input[type=tel]').fill(guestPhone)
   await simulator.getByText('Payment voucher (8 characters)', { exact: true }).click()
   await simulator.getByRole('textbox', { name: '8-character voucher code' }).fill(code)
   await expect(simulator).toContainText('Voucher will pay: 150,000')
@@ -88,11 +105,17 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
   expect(errors).toEqual([])
   const guest = createClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
-  const contenders = await Promise.all([25, 26].map(day => guest.rpc('book_ticket_with_payment_voucher', {
+  const raceDays = [25, 26]
+  const raceTimes = await Promise.all(raceDays.map(async day => {
+    const available = await guest.rpc('sim_racing_available_times', { p_date: futureDate(day) })
+    expect(available.error).toBeNull()
+    return available.data[0].start_time
+  }))
+  const contenders = await Promise.all(raceDays.map((day, index) => guest.rpc('book_ticket_with_payment_voucher', {
     p_name: 'create_sim_racing_booking', p_code: code, p_request_id: randomUUID(),
-    p_args: { p_date: futureDate(day), p_start_time: '09:00', p_guest_phone: '0987654098', p_guest_name: 'Concurrent voucher check' },
+    p_args: { p_date: futureDate(day), p_start_time: raceTimes[index], p_guest_phone: guestPhone, p_guest_name: 'Concurrent voucher check' },
   })))
-  expect(contenders.filter(result => !result.error)).toHaveLength(1)
+  expect(contenders.filter(result => !result.error), JSON.stringify(contenders.map(result => result.error))).toHaveLength(1)
   expect(contenders.filter(result => result.error)).toHaveLength(1)
   expect((await admin.from('payment_vouchers').select('balance').eq('code', code).single()).data?.balance).toBe(0)
 

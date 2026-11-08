@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase/client'
-import { availablePaymentCredit, voucherAmount, voucherMoneyInput, type PaymentVoucher } from '../lib/paymentVouchers'
+import { availablePaymentCredit, voucherAmount, voucherMoneyInput, paymentVoucherVenues, type PaymentVoucher } from '../lib/paymentVouchers'
 import type { StaffOrder, StaffOrderPayment } from '../lib/staff/types'
 import { formatVnd } from '../lib/staff/formatting'
 import { paymentMethodLabel } from '../lib/staff/payments'
@@ -26,6 +26,7 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const [receipt, setReceipt] = useState(payments.find(p => p.amount > 0)?.id || '')
   const [amount, setAmount] = useState('')
   const [validDays, setValidDays] = useState('')
+  const [validVenues, setValidVenues] = useState<string[]>([order.arena_id === 'cafe:arena-1' ? 'cafe-des-stagiaires' : 'ha-do-centrosa'])
   const [reason, setReason] = useState('')
   const [code, setCode] = useState('')
   const [redeemAmount, setRedeemAmount] = useState('')
@@ -39,7 +40,7 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const [uncertain, setUncertain] = useState<'convert' | 'redeem' | null>(null)
   useEffect(() => {
     let active = true
-    void supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at,expires_at').eq('source_order_id', order.id).order('created_at').then(({ data, error }) => {
+    void supabase.from('payment_vouchers').select('id,code,source_order_id,source_payment_id,customer_id,venue_key,amount,balance,created_at,expires_at,valid_venue_keys').eq('source_order_id', order.id).order('created_at').then(({ data, error }) => {
       if (!active) return
       setError(error?.message || ''); setVouchers(data || []); setLoaded(!error)
     })
@@ -54,7 +55,7 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
   const redeemValue = voucherAmount(redeemAmount)
   async function submit(kind: 'convert' | 'redeem') {
     if (lock.current) return
-    const payload = kind === 'convert' ? { p_order_id: order.id, p_payment_id: receipt || null, p_amount: convertValue, p_reason: reason.trim(), p_valid_days: validDays ? Number(validDays) : null } : { p_order_id: order.id, p_code: code.trim(), p_amount: redeemValue }
+    const payload = kind === 'convert' ? { p_order_id: order.id, p_payment_id: receipt || null, p_amount: convertValue, p_reason: reason.trim(), p_valid_days: validDays ? Number(validDays) : null, p_valid_venue_keys: validVenues } : { p_order_id: order.id, p_code: code.trim(), p_amount: redeemValue }
     const signature = JSON.stringify({ kind, payload })
     if (request.current?.signature !== signature) request.current = { signature, id: crypto.randomUUID() }
     lock.current = true; setBusy(true); setError(''); setMessage('')
@@ -86,13 +87,19 @@ function VoucherEditor({ order, payments, language, onChanged }: Props) {
         <p>{vi ? 'Có thể chuyển' : 'Available to convert'}: {formatVnd(available)}</p>
         <label>{vi ? 'Số tiền chuyển (VND)' : 'Conversion amount (VND)'}<input required inputMode="numeric" pattern="[0-9,]+" disabled={!!uncertain} value={voucherMoneyInput(amount)} onChange={e => setAmount(e.target.value.replaceAll(',', ''))} /></label>
         <button type="button" className="secondary" disabled={!!uncertain || available <= 0} onClick={() => setAmount(String(available))}>{vi ? 'Toàn bộ số còn lại' : 'Use full remaining amount'}</button>
+        <fieldset disabled={!!uncertain}>
+          <legend>{vi ? 'Địa điểm sử dụng' : 'Valid at venues'}</legend>
+          <p>{vi ? 'Chọn một hoặc cả hai địa điểm.' : 'Select one or both venues.'}</p>
+          {paymentVoucherVenues.map(venue => <label className="staff-voucher-venue-option" key={venue.key}><input type="checkbox" checked={validVenues.includes(venue.key)} onChange={event => setValidVenues(current => event.target.checked ? [...current, venue.key] : current.filter(key => key !== venue.key))} />{venue.name}</label>)}
+          {validVenues.length === 0 && <p role="status">{vi ? 'Vui lòng chọn ít nhất một địa điểm.' : 'Select at least one venue.'}</p>}
+        </fieldset>
         <label>{vi ? 'Thời hạn sử dụng' : 'Voucher validity'}<select disabled={!!uncertain} value={validDays} onChange={e => setValidDays(e.target.value)}>
           <option value="">{vi ? 'Không hết hạn' : 'No expiry'}</option>
           {[30, 60, 90, 180, 365].map(days => <option key={days} value={days}>{days} {vi ? 'ngày' : 'days'}</option>)}
         </select></label>
         <label>{vi ? 'Lý do chuyển' : 'Conversion reason'}<textarea required minLength={3} maxLength={1000} disabled={!!uncertain} value={reason} onChange={e => setReason(e.target.value)} /></label>
         {order.invoice_status === 'issued' && <p>{vi ? 'Đơn có hóa đơn: cần đối soát điều chỉnh hóa đơn.' : 'This order has an issued invoice: reconcile the credit against that invoice.'}</p>}
-        <button className="primary" type="submit" disabled={!convertValue || convertValue>available || reason.trim().length<3 || order.payment_status==='refunded' || order.order_status==='refunded'}>{vi ? 'Xác nhận chuyển thành voucher' : 'Confirm conversion to voucher'}</button>
+        <button className="primary" type="submit" disabled={validVenues.length === 0 || !convertValue || convertValue>available || reason.trim().length<3 || order.payment_status==='refunded' || order.order_status==='refunded'}>{vi ? 'Xác nhận chuyển thành voucher' : 'Confirm conversion to voucher'}</button>
       </fieldset>
     </form>
     {due > 0 && !['cancelled','refunded','no_show'].includes(order.order_status) && <form onSubmit={event => { event.preventDefault(); void submit('redeem') }}>
