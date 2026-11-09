@@ -4,7 +4,7 @@ import { individualTicketUnitPrice, ticketPriceBlockMinutesForDate } from './tic
 import { calculateTicketPricing, minimumTicketDurationMinutes, ticketArenaCapacityForVenue } from './ticketPricing.ts'
 
 export const zaloMiniAppVenues = ['ha-do-centrosa', 'cafe-des-stagiaires'] as const
-export const zaloMiniAppTicketTypes = ['individual', 'birthday', 'corporate'] as const
+export const zaloMiniAppTicketTypes = ['individual', 'birthday'] as const
 
 export type ZaloMiniAppVenue = typeof zaloMiniAppVenues[number]
 export type ZaloMiniAppTicketType = typeof zaloMiniAppTicketTypes[number]
@@ -79,8 +79,8 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown): { data: Za
     arenaCount = venue === 'cafe-des-stagiaires' ? 1 : packageItem.arenas
   }
 
-  const maxPlayers = ticketType === 'corporate' ? 32 : 16
-  const minPlayers = ticketType === 'birthday' ? 4 : ticketType === 'corporate' ? 6 : 1
+  const maxPlayers = 16
+  const minPlayers = ticketType === 'birthday' ? 4 : 1
   if (!Number.isInteger(players) || players < minPlayers || players > maxPlayers) return { data: null, error: 'Choose a valid number of players.' }
   if (!Number.isInteger(arenaCount) || arenaCount < 1 || arenaCount > (venue === 'ha-do-centrosa' ? 2 : 1)) return { data: null, error: 'Choose a valid arena count.' }
   if (arenaCount === 2 && players <= 4) return { data: null, error: 'Two arenas require at least five players.' }
@@ -113,6 +113,18 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown): { data: Za
   }
 }
 
+export function normalizeZaloMiniAppQuoteSelection(input: unknown) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { data: null, error: 'Invalid booking request.' }
+  }
+  return normalizeZaloMiniAppBookingSelection({
+    ...(input as Record<string, unknown>),
+    guestName: '',
+    guestPhone: '00000000',
+    acceptedTerms: true,
+  })
+}
+
 export function quoteZaloMiniAppBooking(selection: ZaloMiniAppBookingSelection): ZaloMiniAppBookingQuote {
   const packageItem = selection.ticketType === 'birthday' ? birthdayPackageById(selection.birthdayPackageId) : null
   if (packageItem) {
@@ -127,19 +139,6 @@ export function quoteZaloMiniAppBooking(selection: ZaloMiniAppBookingSelection):
       specialNote: birthdayPackageNote(packageItem),
     }
   }
-  if (selection.ticketType === 'corporate') {
-    return {
-      unitPrice: 0,
-      bookingTotal: 0,
-      displayTotal: 0,
-      requiresStaffConfirmation: true,
-      durationMinutes: selection.durationMinutes,
-      players: selection.players,
-      arenaCount: selection.arenaCount,
-      specialNote: 'Corporate booking requested from the Zalo Mini App (staff confirmation)',
-    }
-  }
-
   const unitPrice = individualTicketUnitPrice(selection.date, selection.time, selection.venue)
   const pricing = calculateTicketPricing(
     unitPrice,
@@ -165,9 +164,7 @@ export function buildZaloMiniAppBookingRequest(selection: ZaloMiniAppBookingSele
   const quote = quoteZaloMiniAppBooking(selection)
   const defaultGame = selection.ticketType === 'birthday'
     ? 'joller-house'
-    : selection.ticketType === 'corporate'
-      ? 'office-war'
-      : 'laser-tag'
+    : 'laser-tag'
   return {
     quote,
     request: buildTicketBookingRequest({

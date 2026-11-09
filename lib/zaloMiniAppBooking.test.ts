@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildZaloMiniAppBookingRequest, normalizeZaloMiniAppBookingSelection, quoteZaloMiniAppBooking } from './zaloMiniAppBooking.ts'
+import {
+  buildZaloMiniAppBookingRequest,
+  normalizeZaloMiniAppBookingSelection,
+  normalizeZaloMiniAppQuoteSelection,
+  quoteZaloMiniAppBooking,
+} from './zaloMiniAppBooking.ts'
 
 const base = {
   venue: 'ha-do-centrosa',
@@ -52,4 +57,18 @@ test('keeps birthday packages and sends them through staff-confirmed special boo
 test('requires in-app consent and a valid phone before any booking call', () => {
   assert.match(normalizeZaloMiniAppBookingSelection({ ...base, acceptedTerms: false }).error, /Accept/)
   assert.match(normalizeZaloMiniAppBookingSelection({ ...base, guestPhone: '123' }).error, /phone/)
+})
+
+test('quotes without collecting contact details or consent', () => {
+  const result = normalizeZaloMiniAppQuoteSelection({
+    ...base,
+    guestPhone: undefined,
+    acceptedTerms: false,
+  })
+  assert.equal(result.error, '')
+  assert.equal(quoteZaloMiniAppBooking(result.data!).displayTotal, 520_000)
+})
+
+test('rejects custom-price corporate requests from the fixed-price Checkout flow', () => {
+  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, ticketType: 'corporate' }).error, /ticket type/)
 })
