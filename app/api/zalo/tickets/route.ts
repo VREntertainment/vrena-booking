@@ -7,6 +7,7 @@ import {
   createOrderMac,
   createOrderStatusMac,
   isReservableCodOrderStatus,
+  unwrapZaloCheckoutOrderStatus,
   ZALO_BOOKING_MINI_APP_ID,
   ZALO_CHECKOUT_METHOD,
   ZALO_CHECKOUT_STATUS_URL,
@@ -117,8 +118,7 @@ async function fetchZaloOrderStatus(privateKey: string, orderId: string) {
   try {
     const response = await fetch(url, { cache: 'no-store', signal: controller.signal })
     if (!response.ok) return null
-    const payload = await response.json() as ZaloCheckoutOrderStatus
-    return Number.isInteger(Number(payload.returnCode)) ? payload : null
+    return unwrapZaloCheckoutOrderStatus(await response.json())
   } catch {
     return null
   } finally {
