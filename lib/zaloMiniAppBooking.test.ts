@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   buildZaloMiniAppBookingRequest,
+  isFutureVietnamBookingTime,
   normalizeZaloMiniAppBookingSelection,
   normalizeZaloMiniAppQuoteSelection,
   quoteZaloMiniAppBooking,
@@ -20,16 +21,17 @@ const base = {
   birthdayPackageId: null,
   acceptedTerms: true,
 }
+const now = new Date('2026-11-09T04:00:00.000Z')
 
 test('normalizes a current Hà Đô Mini App guest booking', () => {
-  const result = normalizeZaloMiniAppBookingSelection(base)
+  const result = normalizeZaloMiniAppBookingSelection(base, now)
   assert.equal(result.error, '')
   assert.equal(result.data?.guestPhone, '0707472499')
   assert.equal(result.data?.durationMinutes, 30)
 })
 
 test('uses the current November tariff and guest RPC for Mini App tickets', () => {
-  const selection = normalizeZaloMiniAppBookingSelection(base).data!
+  const selection = normalizeZaloMiniAppBookingSelection(base, now).data!
   const { quote, request } = buildZaloMiniAppBookingRequest(selection)
   assert.equal(quote.unitPrice, 260_000)
   assert.equal(quote.bookingTotal, 520_000)
@@ -44,7 +46,7 @@ test('keeps birthday packages and sends them through staff-confirmed special boo
     birthdayPackageId: 'epic-birthday',
     players: 1,
     durationMinutes: 30,
-  })
+  }, now)
   assert.equal(result.error, '')
   assert.equal(result.data?.players, 12)
   assert.equal(result.data?.arenaCount, 2)
@@ -55,8 +57,8 @@ test('keeps birthday packages and sends them through staff-confirmed special boo
 })
 
 test('requires in-app consent and a valid phone before any booking call', () => {
-  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, acceptedTerms: false }).error, /Accept/)
-  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, guestPhone: '123' }).error, /phone/)
+  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, acceptedTerms: false }, now).error, /Accept/)
+  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, guestPhone: '123' }, now).error, /phone/)
 })
 
 test('quotes without collecting contact details or consent', () => {
@@ -64,11 +66,19 @@ test('quotes without collecting contact details or consent', () => {
     ...base,
     guestPhone: undefined,
     acceptedTerms: false,
-  })
+  }, now)
   assert.equal(result.error, '')
   assert.equal(quoteZaloMiniAppBooking(result.data!).displayTotal, 520_000)
 })
 
 test('rejects custom-price corporate requests from the fixed-price Checkout flow', () => {
-  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, ticketType: 'corporate' }).error, /ticket type/)
+  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, ticketType: 'corporate' }, now).error, /ticket type/)
+})
+
+test('rejects past days and elapsed times in Vietnam while accepting a future slot', () => {
+  assert.equal(isFutureVietnamBookingTime('2026-11-08', '22:00', now), false)
+  assert.equal(isFutureVietnamBookingTime('2026-11-09', '10:59', now), false)
+  assert.equal(isFutureVietnamBookingTime('2026-11-09', '11:01', now), true)
+  assert.equal(isFutureVietnamBookingTime('2026-11-10', '09:00', now), true)
+  assert.match(normalizeZaloMiniAppBookingSelection({ ...base, date: '2026-11-09', time: '10:59' }, now).error, /future/)
 })

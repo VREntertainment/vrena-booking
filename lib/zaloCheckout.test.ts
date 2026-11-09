@@ -6,6 +6,7 @@ import {
   createOrderStatusMac,
   hmacSha256,
   isAllowedZaloCallbackSource,
+  isReservableCodOrderStatus,
   sortedMacData,
   verifyZaloCheckoutCallback,
   verifyZaloCheckoutNotify,
@@ -66,4 +67,16 @@ test('accepts only the documented Checkout callback IPs in production', () => {
   assert.equal(isAllowedZaloCallbackSource(new Headers({ 'x-forwarded-for': '49.213.78.2, 10.0.0.1' }), true), true)
   assert.equal(isAllowedZaloCallbackSource(new Headers({ 'x-forwarded-for': '203.0.113.10' }), true), false)
   assert.equal(isAllowedZaloCallbackSource(new Headers(), false), true)
+})
+
+test('accepts a verified pending COD order as reservation evidence', () => {
+  const token = '11111111-1111-4111-8111-111111111111'
+  const base = {
+    method: 'COD', returnCode: 0, isProcessing: true, amount: 520000,
+    extradata: encodeURIComponent(JSON.stringify({ checkoutToken: token })),
+  }
+  assert.equal(isReservableCodOrderStatus(base, 520000, token), true)
+  assert.equal(isReservableCodOrderStatus({ ...base, isProcessing: false }, 520000, token), false)
+  assert.equal(isReservableCodOrderStatus({ ...base, amount: 1 }, 520000, token), false)
+  assert.equal(isReservableCodOrderStatus({ ...base, returnCode: 1, transId: 'zmp-transaction' }, 520000, token), true)
 })

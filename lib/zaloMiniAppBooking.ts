@@ -1,4 +1,5 @@
 import { birthdayPackageById, birthdayPackageNote } from './birthdayPackages.ts'
+import { vietnamClock } from './booking/arenaAvailability.ts'
 import { buildTicketBookingRequest } from './ticketBookingRequest.ts'
 import { individualTicketUnitPrice, ticketPriceBlockMinutesForDate } from './ticketTariffs.ts'
 import { calculateTicketPricing, minimumTicketDurationMinutes, ticketArenaCapacityForVenue } from './ticketPricing.ts'
@@ -53,7 +54,15 @@ function isTime(value: string) {
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
 }
 
-export function normalizeZaloMiniAppBookingSelection(input: unknown): { data: ZaloMiniAppBookingSelection | null; error: string } {
+export function isFutureVietnamBookingTime(date: string, time: string, now = new Date()) {
+  if (!isDate(date) || !isTime(time)) return false
+  const clock = vietnamClock(now)
+  if (date !== clock.date) return date > clock.date
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes > clock.minutes
+}
+
+export function normalizeZaloMiniAppBookingSelection(input: unknown, now = new Date()): { data: ZaloMiniAppBookingSelection | null; error: string } {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { data: null, error: 'Invalid booking request.' }
   const value = input as Record<string, unknown>
   const venue = cleanText(value.venue, 40)
@@ -70,6 +79,7 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown): { data: Za
   if (!zaloMiniAppVenues.includes(venue as ZaloMiniAppVenue)) return { data: null, error: 'Choose a valid VRena venue.' }
   if (!zaloMiniAppTicketTypes.includes(ticketType as ZaloMiniAppTicketType)) return { data: null, error: 'Choose a valid ticket type.' }
   if (!isDate(date) || !isTime(time)) return { data: null, error: 'Choose a valid date and time.' }
+  if (!isFutureVietnamBookingTime(date, time, now)) return { data: null, error: 'Choose a future date and time.' }
 
   const packageItem = ticketType === 'birthday' ? birthdayPackageById(birthdayPackageId) : null
   if (ticketType === 'birthday' && !packageItem) return { data: null, error: 'Choose a birthday package.' }
@@ -113,7 +123,7 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown): { data: Za
   }
 }
 
-export function normalizeZaloMiniAppQuoteSelection(input: unknown) {
+export function normalizeZaloMiniAppQuoteSelection(input: unknown, now = new Date()) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { data: null, error: 'Invalid booking request.' }
   }
@@ -122,7 +132,7 @@ export function normalizeZaloMiniAppQuoteSelection(input: unknown) {
     guestName: '',
     guestPhone: '00000000',
     acceptedTerms: true,
-  })
+  }, now)
 }
 
 export function quoteZaloMiniAppBooking(selection: ZaloMiniAppBookingSelection): ZaloMiniAppBookingQuote {

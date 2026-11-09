@@ -26,16 +26,24 @@ export async function finalizeZaloCheckoutSelection(
     .maybeSingle()
 
   if (lookupError || !checkout) return { result: null, error: 'Checkout reference was not found.', status: 404 }
+  if (checkout.zmp_order_id && checkout.zmp_order_id !== input.orderId) {
+    return { result: null, error: 'Checkout order reference does not match.', status: 409 }
+  }
   if (checkout.status === 'confirmed' && checkout.booking_response) {
+    const pendingCodTransId = `cod-pending:${input.orderId}`
+    if (checkout.zmp_trans_id === pendingCodTransId && input.transId !== pendingCodTransId) {
+      await admin.from('zalo_checkout_bookings').update({
+        zmp_trans_id: input.transId,
+        updated_at: new Date().toISOString(),
+      }).eq('checkout_token', input.checkoutToken).eq('status', 'confirmed').eq('zmp_trans_id', pendingCodTransId)
+    }
     return { result: { ...(checkout.booking_response as Record<string, unknown>), duplicate: true }, error: null, status: 200 }
   }
   if (checkout.status === 'failed' || new Date(checkout.expires_at).getTime() <= Date.now()) {
     return { result: null, error: 'Checkout request is no longer active.', status: 409 }
   }
-  if (checkout.zmp_order_id && checkout.zmp_order_id !== input.orderId) {
-    return { result: null, error: 'Checkout order reference does not match.', status: 409 }
-  }
-  if (checkout.zmp_trans_id && checkout.zmp_trans_id !== input.transId) {
+  const pendingCodTransId = `cod-pending:${input.orderId}`
+  if (checkout.zmp_trans_id && checkout.zmp_trans_id !== input.transId && checkout.zmp_trans_id !== pendingCodTransId) {
     return { result: null, error: 'Checkout transaction reference does not match.', status: 409 }
   }
 

@@ -126,3 +126,16 @@ export function checkoutTokenFromExtradata(extradata: string) {
     return null
   }
 }
+
+export function isReservableCodOrderStatus(
+  status: ZaloCheckoutOrderStatus,
+  expectedAmount: number,
+  checkoutToken: string,
+) {
+  if (status.method !== ZALO_CHECKOUT_METHOD || Number(status.amount) !== expectedAmount) return false
+  if (!status.extradata || checkoutTokenFromExtradata(status.extradata) !== checkoutToken) return false
+  if (Number(status.returnCode) === 0) return status.isProcessing === true
+  if (Number(status.returnCode) !== 1) return false
+  const transId = typeof status.transId === 'string' ? status.transId.trim() : ''
+  return transId.length >= 1 && transId.length <= 200 && !/[\u0000-\u001f\u007f]/.test(transId)
+}
