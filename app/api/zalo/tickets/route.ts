@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { arenaTimeOptions, type ArenaOccupancy } from '@/lib/booking/arenaAvailability'
 import { trustedClientIp } from '@/lib/security/requestIp'
 import {
-  checkoutTokenFromExtradata,
   createOrderMac,
   createOrderStatusMac,
+  isReservableCodOrderStatus,
   ZALO_BOOKING_MINI_APP_ID,
   ZALO_CHECKOUT_METHOD,
   ZALO_CHECKOUT_STATUS_URL,
@@ -241,31 +241,24 @@ export async function POST(request: NextRequest) {
     }
 
     const privateKey = process.env.ZALO_CHECKOUT_PRIVATE_KEY
-    const ageMs = Date.now() - new Date(data.created_at).getTime()
-    if (privateKey && data.zmp_order_id && ageMs >= 20 * 60_000) {
+    if (privateKey && data.zmp_order_id) {
       const checkoutStatus = await fetchZaloOrderStatus(privateKey, data.zmp_order_id)
-      if (checkoutStatus?.returnCode === 1
-        && checkoutStatus.method === ZALO_CHECKOUT_METHOD
-        && Number(checkoutStatus.amount) === data.expected_amount
-        && cleanOrderId(checkoutStatus.transId)) {
-        const responseToken = checkoutStatus.extradata
-          ? checkoutTokenFromExtradata(checkoutStatus.extradata)
-          : checkoutToken
-        if (responseToken === checkoutToken) {
-          const finalized = await finalizeZaloCheckoutSelection(admin, {
-            checkoutToken,
-            orderId: data.zmp_order_id,
-            transId: String(checkoutStatus.transId),
-            amount: Number(checkoutStatus.amount),
+      if (checkoutStatus && isReservableCodOrderStatus(checkoutStatus, data.expected_amount, checkoutToken)) {
+        const finalized = await finalizeZaloCheckoutSelection(admin, {
+          checkoutToken,
+          orderId: data.zmp_order_id,
+          transId: Number(checkoutStatus.returnCode) === 1
+            ? String(checkoutStatus.transId)
+            : `cod-pending:${data.zmp_order_id}`,
+          amount: Number(checkoutStatus.amount),
+        })
+        if (finalized.result) {
+          return reply(request, {
+            data: { status: 'confirmed', confirmation: confirmationPayload(finalized.result) },
+            error: null,
           })
-          if (finalized.result) {
-            return reply(request, {
-              data: { status: 'confirmed', confirmation: confirmationPayload(finalized.result) },
-              error: null,
-            })
-          }
-          return reply(request, { data: { status: 'failed' }, error: { message: finalized.error } }, finalized.status)
         }
+        return reply(request, { data: { status: 'failed' }, error: { message: finalized.error } }, finalized.status)
       }
       if (checkoutStatus?.returnCode === -1) {
         await admin.from('zalo_checkout_bookings').update({
