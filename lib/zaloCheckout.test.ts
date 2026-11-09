@@ -76,7 +76,8 @@ test('accepts a verified pending COD order as reservation evidence', () => {
     extradata: encodeURIComponent(JSON.stringify({ checkoutToken: token })),
   }
   assert.equal(isReservableCodOrderStatus(base, 520000, token), true)
-  assert.equal(isReservableCodOrderStatus({ ...base, isProcessing: false }, 520000, token), false)
+  assert.equal(isReservableCodOrderStatus({ ...base, isProcessing: false }, 520000, token), true)
+  assert.equal(isReservableCodOrderStatus({ ...base, isProcessing: undefined }, 520000, token), true)
   assert.equal(isReservableCodOrderStatus({ ...base, amount: 1 }, 520000, token), false)
   assert.equal(isReservableCodOrderStatus({ ...base, returnCode: 1, transId: 'zmp-transaction' }, 520000, token), true)
 })

@@ -134,7 +134,11 @@ export function isReservableCodOrderStatus(
 ) {
   if (status.method !== ZALO_CHECKOUT_METHOD || Number(status.amount) !== expectedAmount) return false
   if (!status.extradata || checkoutTokenFromExtradata(status.extradata) !== checkoutToken) return false
-  if (Number(status.returnCode) === 0) return status.isProcessing === true
+  // COD is intentionally unpaid when the customer creates the order. Zalo can
+  // therefore report returnCode 0 with isProcessing false until the venue marks
+  // the order paid. The signed status still proves that this exact COD order,
+  // amount, and checkout token were created for our Mini App.
+  if (Number(status.returnCode) === 0) return true
   if (Number(status.returnCode) !== 1) return false
   const transId = typeof status.transId === 'string' ? status.transId.trim() : ''
   return transId.length >= 1 && transId.length <= 200 && !/[\u0000-\u001f\u007f]/.test(transId)
