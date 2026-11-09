@@ -7,6 +7,7 @@ import {
   hmacSha256,
   isAllowedZaloCallbackSource,
   isReservableCodOrderStatus,
+  unwrapZaloCheckoutOrderStatus,
   sortedMacData,
   verifyZaloCheckoutCallback,
   verifyZaloCheckoutNotify,
@@ -80,4 +81,12 @@ test('accepts a verified pending COD order as reservation evidence', () => {
   assert.equal(isReservableCodOrderStatus({ ...base, isProcessing: undefined }, 520000, token), true)
   assert.equal(isReservableCodOrderStatus({ ...base, amount: 1 }, 520000, token), false)
   assert.equal(isReservableCodOrderStatus({ ...base, returnCode: 1, transId: 'zmp-transaction' }, 520000, token), true)
+})
+
+test('unwraps both direct and HTTP-wrapped Zalo order status responses', () => {
+  const status = { returnCode: 0, method: 'COD', amount: 520000 }
+  assert.deepEqual(unwrapZaloCheckoutOrderStatus(status), status)
+  assert.deepEqual(unwrapZaloCheckoutOrderStatus({ data: status }), status)
+  assert.equal(unwrapZaloCheckoutOrderStatus({ data: { message: 'missing status' } }), null)
+  assert.equal(unwrapZaloCheckoutOrderStatus(null), null)
 })

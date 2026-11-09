@@ -51,6 +51,17 @@ export type ZaloCheckoutOrderStatus = {
   extradata?: string
 }
 
+export function unwrapZaloCheckoutOrderStatus(body: unknown): ZaloCheckoutOrderStatus | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null
+  const record = body as Record<string, unknown>
+  const candidate = record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+    ? record.data as Record<string, unknown>
+    : record
+  return Number.isInteger(Number(candidate.returnCode))
+    ? candidate as ZaloCheckoutOrderStatus
+    : null
+}
+
 function macValue(value: unknown) {
   return typeof value === 'object' ? JSON.stringify(value) : String(value)
 }
