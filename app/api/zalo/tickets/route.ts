@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
     .update(`${trustedClientIp(request.headers)}:${normalized.data.guestPhone}`)
     .digest('hex')
   const { data: rateLimit, error: rateLimitError } = await admin.rpc('consume_rate_limit', {
-    p_action: 'zalo_checkout_prepare', p_limit: 10, p_window_seconds: 60, p_subject: subject,
+    p_action: 'booking_attempt', p_limit: 10, p_window_seconds: 60, p_subject: subject,
   })
   if (rateLimitError || !rateLimit?.allowed) {
     return reply(request, { data: null, error: { message: 'Please wait before starting another Checkout.' } }, 429)
