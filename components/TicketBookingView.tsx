@@ -69,6 +69,7 @@ export type TicketBookingViewProps = {
   language: LanguageCode
   isLoggedIn: boolean
   isAuthLoading: boolean
+  needsAccountEmail: boolean
   needsAccountPhone: boolean
   manualDiscountReview: boolean
   singleArenaOnly: boolean
@@ -141,6 +142,7 @@ export default function TicketBookingView({
   language,
   isLoggedIn,
   isAuthLoading,
+  needsAccountEmail,
   needsAccountPhone,
   manualDiscountReview,
   singleArenaOnly,
@@ -221,7 +223,7 @@ export default function TicketBookingView({
     : formatTicketDateDisplay(ticketDate, language, true)
 
   function handleBookTicketsClick() {
-    if (!isLoggedIn || needsAccountPhone) {
+    if (!isLoggedIn || needsAccountPhone || needsAccountEmail) {
       if (!onValidateTicketSelection()) return
       setGuestAccountChoicePhone('')
       setGuestTicketContactOpen(true)
@@ -476,6 +478,8 @@ export default function TicketBookingView({
 
           {isLoggedIn && guestTicketContactOpen && <BookingPhoneDialog
             language={language} text={text} phone={guestTicketContact.phone}
+            needsPhone={needsAccountPhone} needsEmail={needsAccountEmail} email={guestTicketContact.email || ''}
+            onEmailChange={email => onGuestTicketContactChange({ ...guestTicketContact, email })}
             onPhoneChange={phone => onGuestTicketContactChange({ ...guestTicketContact, phone })}
             onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
             busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}

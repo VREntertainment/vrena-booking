@@ -17,6 +17,7 @@ import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
 import type { ChallengeTarget } from '../features/booking/ChallengeControls'
 import { clubRankingCriterion, clubTheme } from '../features/booking/clubAccess.actions'
+import { needsBookingEmail } from '../lib/bookingAccountContact'
 import { avatarFields } from '../features/booking/profiles.actions'
 import { downloadSessionCalendar } from '../features/booking/reminders.actions'
 import { useBookingLifecycleActions } from '../features/booking/useBookingLifecycleActions'
@@ -106,6 +107,7 @@ import {
 } from '../lib/bookingStaticData'
 import { CAFE_OPEN_MINUTES, CAFE_CLOSE_MINUTES, CAFE_TIME_STEP_MINUTES } from '../lib/booking/availability'
 import {
+  splitPhoneNumber,
   ANONYMOUS_MASK_EMOJI,
   BlockedTime,
   CLOSE_MINUTES,
@@ -5229,6 +5231,7 @@ function BookingWorkspace({
   const publicCanEditTournamentSession = () => false
   const publicCanReviewSessionMessages = () => false
   const { promptTicketLogin, promptTicketCreateAccount, bookTickets } = createBookingTicketsActions(() => ({
+    setProfileEmail,
     setProfileCountryCode,
     setProfilePhone,
     setProfileName,
@@ -5529,7 +5532,7 @@ function BookingWorkspace({
             <button type="button" className={simRacingSelected ? 'secondary' : 'primary'} aria-pressed={!simRacingSelected} onClick={() => setSimRacingSelected(false)}>VR</button>
             <button type="button" className={simRacingSelected ? 'primary' : 'secondary'} aria-pressed={simRacingSelected} onClick={() => setSimRacingSelected(true)}>SIM Racing</button>
           </div>}
-          {isHaDoBookingVenue && simRacingSelected ? <SimRacingBooking language={language} text={looseText} profile={profile} onBooked={() => { void loadSessions() }} /> : <TicketBookingView
+          {isHaDoBookingVenue && simRacingSelected ? <SimRacingBooking onProfileChange={updated => { setProfile(updated); setProfileEmail(updated.email || ''); const phone = splitPhoneNumber(updated.phone || ''); setProfileCountryCode(phone.countryInput); setProfilePhone(phone.localPhone); syncProfileEverywhere(updated) }} language={language} text={looseText} profile={profile} onBooked={() => { void loadSessions() }} /> : <TicketBookingView
             paymentVoucherCode={paymentVoucherCode}
             onPaymentVoucherCodeChange={setPaymentVoucherCode}
             paymentVoucherVenue={bookingVenue}
@@ -5547,6 +5550,7 @@ function BookingWorkspace({
             isLoadingTicketLoyalty={isLoadingTicketLoyalty}
             isLoggedIn={Boolean(profile)}
             isAuthLoading={isProfileAuthLoading || Boolean(userId && !profile)}
+            needsAccountEmail={Boolean(profile && needsBookingEmail(profile.email))}
             needsAccountPhone={Boolean(profile && validateGuestTicketContact({ name: '', phone: profile.phone || '' }, looseText).error)}
             manualDiscountReview={!isHaDoBookingVenue}
             singleArenaOnly={!isHaDoBookingVenue}

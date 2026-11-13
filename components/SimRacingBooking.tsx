@@ -1,6 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import BookingPhoneDialog from './BookingPhoneDialog'
+import { needsBookingEmail } from '../lib/bookingAccountContact'
 import PaymentVoucherCheckout from './PaymentVoucherCheckout'
 import { formatVnd } from '../lib/staff/formatting'
 
@@ -28,8 +30,8 @@ function venueDate(offset = 0) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
-export default function SimRacingBooking({ language, text, profile, onBooked }: {
-  language: LanguageCode; text: Record<string, string>; profile: Profile | null; onBooked: () => void
+export default function SimRacingBooking({ language, text, profile, onBooked, onProfileChange }: {
+  language: LanguageCode; text: Record<string, string>; profile: Profile | null; onBooked: () => void; onProfileChange: (profile: Profile) => void
 }) {
   const t = copy[language]
   const [date, setDate] = useState(() => venueDate())
@@ -37,6 +39,10 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
   const [times, setTimes] = useState<string[]>([])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [contactOpen, setContactOpen] = useState(false)
+  const needsPhone = Boolean(profile && validateGuestTicketContact({ name: '', phone: profile.phone || '' }, text).error)
+  const needsEmail = Boolean(profile && needsBookingEmail(profile.email))
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [error, setError] = useState('')
@@ -67,28 +73,42 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
     return () => { cancelled = true }
   }, [date, revision])
 
-  async function book(event: FormEvent) {
-    event.preventDefault()
-    if (inFlight.current || !time || loading || loadError) return
-    const contact = validateGuestTicketContact({ name, phone: profile ? profile.phone || '' : phone }, text)
-    if (contact.error) { setError(contact.error); return }
+  async function book(event?: FormEvent) {
+    event?.preventDefault()
+    if (inFlight.current || !time || loading || loadError) return false
+    if (profile && (needsPhone || needsEmail) && !contactOpen) { setError(''); setContactOpen(true); return false }
+    const contact = validateGuestTicketContact({ name, phone: profile && !needsPhone ? profile.phone || '' : phone }, text)
+    if (contact.error) { setError(contact.error); return false }
+    if (needsEmail && needsBookingEmail(email)) { setError(text.emailRequired); return false }
     inFlight.current = true
     setBusy(true)
     setError('')
     try {
+      const client = await getSupabase()
+      if (profile && (needsPhone || needsEmail)) {
+        const { data: auth } = await client.auth.getSession()
+        const response = await fetch('/api/profile/booking-contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.session?.access_token || ''}` },
+          body: JSON.stringify({ ...(needsPhone ? { phone: contact.normalizedPhone } : {}), ...(needsEmail ? { email: email.trim() } : {}) }),
+        })
+        const saved = await response.json()
+        if (!response.ok || !saved.data) throw new Error(saved.error?.message || text.ticketBookingError)
+        onProfileChange({ ...profile, ...saved.data })
+      }
       const args = { p_date: date, p_start_time: time, p_guest_phone: profile ? null : phone, p_guest_name: profile ? null : name.trim() || null }
       const signature = JSON.stringify({ args, paymentVoucherCode })
       if (voucherRequest.current?.signature !== signature) voucherRequest.current = { signature, id: crypto.randomUUID() }
-      const client = await getSupabase()
       const result = paymentVoucherCode
         ? await client.rpc('book_ticket_with_payment_voucher', { p_name: 'create_sim_racing_booking', p_args: args, p_code: paymentVoucherCode, p_request_id: voucherRequest.current.id })
         : await client.rpc('create_sim_racing_booking', args)
       if (result.error) throw new Error(result.error.message)
       setConfirmation({ reference: result.data.ticket_reference, date, time, credit: result.data.voucher_credit, due: result.data.amount_due })
       onBooked()
+      return true
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : text.ticketBookingError)
-      setRevision((current) => current + 1)
+      return false
     } finally { setBusy(false); inFlight.current = false }
   }
 
@@ -116,5 +136,9 @@ export default function SimRacingBooking({ language, text, profile, onBooked }: 
       {error && <p role="alert" className="notice">{error}</p>}
       <button className="primary" type="submit" disabled={busy || loading || !time || loadError}>{busy ? t.busy : t.book}</button>
     </form>}
+    {contactOpen && profile && <BookingPhoneDialog language={language} text={text} phone={phone} email={email}
+      needsPhone={needsPhone} needsEmail={needsEmail} onPhoneChange={setPhone} onEmailChange={setEmail}
+      onConfirm={() => book()} onClose={() => setContactOpen(false)} busy={busy} error={error} />}
+
   </section>
 }

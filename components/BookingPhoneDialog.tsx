@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Phone, X } from 'lucide-react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
+import { needsBookingEmail } from '../lib/bookingAccountContact'
 import type { LanguageCode } from '../lib/i18n/languages'
 
 const copy = {
@@ -17,9 +18,24 @@ const copy = {
   it: { title: 'Aggiungi il tuo numero', body: 'Il numero di telefono è necessario per confermare la prenotazione. Lo salveremo nel tuo account.', confirm: 'Salva e conferma prenotazione' },
 }
 
-export default function BookingPhoneDialog({ language, text, phone, onPhoneChange, onConfirm, onClose, busy, error }: {
+const contactCopy = {
+  en: ['Complete your contact details', 'Add the missing details to confirm your booking. We’ll save them to your account. Your booking selections stay here.'],
+  vi: ['Hoàn tất thông tin liên hệ', 'Bổ sung thông tin còn thiếu để xác nhận đặt chỗ. Thông tin sẽ được lưu vào tài khoản. Các lựa chọn đặt chỗ được giữ nguyên.'],
+  fr: ['Complétez vos coordonnées', 'Ajoutez les informations manquantes pour confirmer. Elles seront enregistrées dans votre compte. Vos choix de réservation sont conservés.'],
+  de: ['Kontaktdaten vervollständigen', 'Ergänzen Sie die fehlenden Angaben zur Bestätigung. Wir speichern sie in Ihrem Konto. Ihre Buchungsauswahl bleibt erhalten.'],
+  it: ['Completa i tuoi recapiti', 'Aggiungi i dati mancanti per confermare. Li salveremo nel tuo account. Le tue scelte di prenotazione restano qui.'],
+  ko: ['연락처를 완성해 주세요', '예약 확정을 위해 누락된 정보를 입력해 주세요. 계정에 저장되며 예약 선택 사항은 유지됩니다.'],
+  ja: ['連絡先情報を入力', '予約確定に必要な情報を入力してください。アカウントに保存され、予約内容は保持されます。'],
+  zh: ['完善联系信息', '请补充缺失的信息以确认预约。信息将保存至您的账户，已选择的预约内容将保留。'],
+}
+
+export default function BookingPhoneDialog({ language, text, phone, onPhoneChange, email, onEmailChange, needsPhone: phoneRequired, needsEmail: emailRequired, onConfirm, onClose, busy, error }: {
   language: LanguageCode
   text: Record<string, string>
+  needsPhone: boolean
+  needsEmail: boolean
+  email: string
+  onEmailChange: (email: string) => void
   phone: string
   onPhoneChange: (phone: string) => void
   onConfirm: () => Promise<boolean>
@@ -27,6 +43,8 @@ export default function BookingPhoneDialog({ language, text, phone, onPhoneChang
   busy: boolean
   error: string
 }) {
+  const [needsPhone] = useState(phoneRequired)
+  const [needsEmail] = useState(emailRequired)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const inFlight = useRef(false)
   const [validationError, setValidationError] = useState('')
@@ -34,7 +52,7 @@ export default function BookingPhoneDialog({ language, text, phone, onPhoneChang
   useEffect(() => {
     const dialog = dialogRef.current!
     dialog.showModal()
-    dialog.querySelector<HTMLInputElement>('input[type="tel"]')?.focus()
+    dialog.querySelector<HTMLInputElement>('input[type="tel"], input[type="email"]')?.focus()
     return () => dialog.close()
   }, [])
   const message = validationError || error
@@ -44,19 +62,26 @@ export default function BookingPhoneDialog({ language, text, phone, onPhoneChang
     <form noValidate onSubmit={async event => {
       event.preventDefault()
       if (busy || inFlight.current) return
-      const validation = validateGuestTicketContact({ name: '', phone }, text)
+      const validation = needsPhone ? validateGuestTicketContact({ name: '', phone }, text) : { error: '' }
+      if (!validation.error && needsEmail && needsBookingEmail(email)) validation.error = text.emailRequired
       setValidationError(validation.error)
-      if (validation.error) { dialogRef.current?.querySelector<HTMLInputElement>('input[type="tel"]')?.focus(); return }
+      if (validation.error) { dialogRef.current?.querySelector<HTMLInputElement>(validation.error === text.emailRequired ? 'input[type="email"]' : 'input[type="tel"]')?.focus(); return }
       inFlight.current = true
       try { if (await onConfirm()) onClose() } finally { inFlight.current = false }
     }}>
       <span className="booking-phone-icon"><Phone size={24} aria-hidden="true" /></span>
-      <h2 id="booking-phone-title">{labels.title}</h2>
-      <p id="booking-phone-body">{labels.body}</p>
-      <label className="booking-phone-label" htmlFor="booking-account-phone">{text.phoneNumber} <span aria-hidden="true">*</span></label>
+      <h2 id="booking-phone-title">{needsEmail ? contactCopy[language][0] : labels.title}</h2>
+      <p id="booking-phone-body">{needsEmail ? contactCopy[language][1] : labels.body}</p>
+      {needsPhone && <><label className="booking-phone-label" htmlFor="booking-account-phone">{text.phoneNumber} <span aria-hidden="true">*</span></label>
       <PhoneNumberInput inputId="booking-account-phone" required invalid={Boolean(message)} describedBy={message ? 'booking-phone-error' : undefined}
         autoComplete="tel-national" buttonLabel={text.countryCode} inputLabel={text.phoneNumber} searchPlaceholder={text.searchCountry}
-        value={phone} disabled={busy} onChange={value => { setValidationError(''); onPhoneChange(value) }} />
+        value={phone} disabled={busy} onChange={value => { setValidationError(''); onPhoneChange(value) }} /></>}
+      {needsEmail && <>
+        <label className="booking-phone-label" htmlFor="booking-account-email">{text.email} <span aria-hidden="true">*</span></label>
+        <input id="booking-account-email" type="email" autoComplete="email" inputMode="email" required maxLength={254}
+          value={email} disabled={busy} aria-invalid={Boolean(message)} aria-describedby={message ? 'booking-phone-error' : undefined}
+          onChange={event => { setValidationError(''); onEmailChange(event.target.value) }} />
+      </>}
       {message && <p id="booking-phone-error" className="notice ticket-status-error" role="alert">{message}</p>}
       <button className="primary create-button" type="submit" disabled={busy}>{busy ? text.bookingTickets : labels.confirm}</button>
     </form>
