@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 import { assertNonProductionUrl } from './e2e/support/env'
 
 const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
+const bookingDeviceMatrix = process.env.E2E_BOOKING_DEVICE_MATRIX === '1'
 const enableWebKit = process.env.E2E_ENABLE_WEBKIT === '1'
 assertNonProductionUrl(baseURL)
 
@@ -36,7 +37,13 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
-  projects: [
+  projects: bookingDeviceMatrix ? [
+    { name: 'windows-chrome', use: { ...devices['Desktop Chrome'] } },
+    { name: 'macos-safari', use: { ...devices['Desktop Safari'] } },
+    { name: 'ipados-safari', use: { ...devices['iPad Pro 11'] } },
+    { name: 'ios-safari', use: { ...devices['iPhone 13'] } },
+    { name: 'android-chrome', use: { ...devices['Pixel 7'] } },
+  ] : [
     {
       name: 'chromium',
       use: {

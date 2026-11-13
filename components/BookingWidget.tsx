@@ -3238,10 +3238,7 @@ function BookingWorkspace({
     }
   }
 
-  async function prepareGuestTicketAction(
-    action: 'create-account' | 'guest',
-    options: { continueWithoutAccount?: boolean } = {}
-  ): Promise<'ready' | 'confirmation-required' | 'blocked'> {
+  async function prepareGuestTicketAction(): Promise<'ready' | 'blocked'> {
     const validation = validateGuestTicketContact(guestTicketContact, looseText)
     if (validation.error) {
       showTicketStatus(validation.error, 'error')
@@ -3249,7 +3246,6 @@ function BookingWorkspace({
     }
 
     clearTicketStatus()
-    if (action === 'guest' && !options.continueWithoutAccount) return 'confirmation-required'
 
     return 'ready'
   }
