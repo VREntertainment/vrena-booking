@@ -19,9 +19,9 @@ test('contact API fills only the caller’s missing fields without changing cred
     expect(seeded.error).toBeNull()
     const signed = await client.auth.signInWithPassword({ email: loginEmail, password })
     expect(signed.error).toBeNull()
-    const headers = { Origin: baseURL!, Authorization: `Bearer ${signed.data.session!.access_token}` }
+    const headers = { Origin: baseURL!.replace('127.0.0.1', 'localhost'), Authorization: `Bearer ${signed.data.session!.access_token}` }
     const post = (data: unknown, customHeaders = headers) => request.post('/api/profile/booking-contact', { headers: customHeaders, data })
-    expect((await post({}, { Origin: baseURL!, Authorization: '' })).status()).toBe(401)
+    expect((await post({}, { Origin: headers.Origin, Authorization: '' })).status()).toBe(401)
     expect((await post({}, { ...headers, Origin: 'https://other.example' })).status()).toBe(403)
     expect((await post({ phone: '123', email: 'customer@example.com' })).status()).toBe(400)
     expect((await post({ phone, email: 'bad' })).status()).toBe(400)

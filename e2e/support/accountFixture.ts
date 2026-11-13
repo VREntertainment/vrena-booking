@@ -9,7 +9,7 @@ export async function accountFixture(page: Page, phone: string, signedIn = true,
   let profile = { id: userId, phone, full_name: 'Booking Tester', email, birthday: '1990-01-01', role: staff ? 'admin' : 'player', nickname: 'Tester', marketing_consent: false, loyalty_points_total: 1250, onboarding_tour_completed_at: '2026-01-01T00:00:00Z' }
   const requests: Array<{ name: string; args: Record<string, unknown> }> = []
   let bookings: Record<string, unknown>[] = []
-  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: 'http://127.0.0.1:3000' }])
+  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000' }])
   if (signedIn) await page.addInitScript(({ user, token }) => {
     localStorage.setItem('sb-127-auth-token', JSON.stringify({ access_token: token, refresh_token: 'fixture', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user }))
   }, { user, token })

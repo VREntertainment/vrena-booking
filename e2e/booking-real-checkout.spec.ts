@@ -7,7 +7,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   for (const signedIn of [false, true]) {
     test(`${venue}: real ${signedIn ? 'incomplete account' : 'guest without registration'} checkout and cleanup`, async ({ page, baseURL }) => {
       const url = process.env.SUPABASE_URL || ''
-      test.skip(!process.env.SUPABASE_SERVICE_ROLE_KEY, 'Requires isolated local services')
+      test.skip(process.env.E2E_LOCAL_HOST !== 'localhost' || !process.env.SUPABASE_SERVICE_ROLE_KEY, 'Requires isolated local services')
       expect(new URL(url).hostname).toBe('127.0.0.1')
       const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
       const client = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
@@ -27,7 +27,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
           expect(created.error).toBeNull()
           const id = created.data.user!.id
           ids.add(id)
-          expect((await admin.from('profiles').upsert({ id, full_name: 'Matrix Tester', nickname: 'Matrix', role: 'player', birthday: '1990-01-01', phone: null, email: null, onboarding_tour_completed_at: new Date().toISOString() })).error).toBeNull()
+          expect((await admin.from('profiles').upsert({ id, full_name: 'Matrix Tester', nickname: `Matrix-${suffix.slice(0, 8)}`, role: 'player', birthday: '1990-01-01', phone: null, email: null, onboarding_tour_completed_at: new Date().toISOString() })).error).toBeNull()
           const login = await client.auth.signInWithPassword({ email, password })
           expect(login.error).toBeNull()
           await page.addInitScript(({ session, key }) => localStorage.setItem(key, JSON.stringify(session)), {
@@ -80,7 +80,11 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
         const guestProfiles = await admin.from('profiles').select('id').eq('phone', phone)
         for (const profile of guestProfiles.data || []) ids.add(profile.id)
         if (reservationId) expect((await admin.from('sessions').delete().eq('id', reservationId)).error).toBeNull()
-        for (const id of ids) expect((await admin.auth.admin.deleteUser(id)).error).toBeNull()
+        for (const id of ids) {
+          // Guest shells may own more than one internally linked record.
+          await admin.from('sessions').delete().or(`owner_id.eq.${id},ticket_customer_id.eq.${id}`)
+          expect((await admin.auth.admin.deleteUser(id)).error).toBeNull()
+        }
         for (const id of ids) expect((await admin.auth.admin.getUserById(id)).data.user).toBeNull()
       }
     })

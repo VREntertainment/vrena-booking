@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 import { assertNonProductionUrl } from './e2e/support/env'
 
-const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
+const localBaseURL = process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000'
+const baseURL = process.env.E2E_BASE_URL || localBaseURL
 const bookingDeviceMatrix = process.env.E2E_BOOKING_DEVICE_MATRIX === '1'
 const enableWebKit = process.env.E2E_ENABLE_WEBKIT === '1'
 assertNonProductionUrl(baseURL)

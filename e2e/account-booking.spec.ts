@@ -77,7 +77,7 @@ for (const passwordLogin of [false, true]) {
 test('invalid or rejected account phone stays in checkout with the selected venue and time', async ({ page }) => {
   const requests = await accountFixture(page, '')
   await page.route('**/api/profile/booking-contact', async route => {
-    return route.fulfill({ status: 409, json: { message: 'This phone cannot be saved.' } })
+    return route.fulfill({ status: 409, json: { error: { message: 'This phone cannot be saved.' } } })
   })
   await page.goto('/tickets?venue=cafe-des-stagiaires')
   await expect(page.locator('.profile-chip')).toContainText('Tester')
@@ -211,19 +211,19 @@ test('SIM Racing completes missing account contacts in place and keeps the selec
   await page.route('**/rest/v1/rpc/sim_racing_available_times', route => route.fulfill({ json: [{ start_time: '12:00:00' }, { start_time: '12:15:00' }] }))
   await page.route('**/rest/v1/rpc/create_sim_racing_booking', async route => {
     bookings++
-    expect(route.request().postDataJSON().p_start_time).toBe('12:15')
+    expect(route.request().postDataJSON().p_start_time).toBe('12:15:00')
     await route.fulfill({ json: { ticket_reference: 'QA-SIM-CONTACT' } })
   })
   await page.goto('/tickets')
   await expect(page.locator('.profile-chip')).toContainText('Tester')
   await page.getByRole('button', { name: 'SIM Racing', exact: true }).click()
   const simulator = page.locator('.sim-racing-booking')
-  await simulator.locator('select').selectOption('12:15')
+  await simulator.locator('select').selectOption('12:15:00')
   await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Complete your contact details' })
   await expect(dialog).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(simulator.locator('select')).toHaveValue('12:15')
+  await expect(simulator.locator('select')).toHaveValue('12:15:00')
   expect(bookings).toBe(0)
   await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
   await dialog.locator('#booking-account-phone').fill('900000991')

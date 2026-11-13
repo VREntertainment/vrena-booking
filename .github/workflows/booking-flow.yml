@@ -22,11 +22,16 @@ concurrency:
 
 jobs:
   booking-devices:
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       NEXT_TELEMETRY_DISABLED: '1'
-      E2E_PRODUCTION_BUILD: '1'
+      E2E_PRODUCTION_BUILD: '0'
+      E2E_LOCAL_HOST: localhost
       E2E_BOOKING_DEVICE_MATRIX: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -40,12 +45,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - name: Guest and account bookings across desktop, tablet and phone layouts
-        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts
+        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts --project=${{ matrix.device }} --max-failures=3
       - name: Save booking evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: booking-device-evidence
+          name: booking-device-evidence-${{ matrix.device }}
           path: |
             /tmp/vrena-e2e-results
             /tmp/vrena-e2e-report

@@ -9,7 +9,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     let rateChecks = 0
     let bookingRequests = 0
     let failNextCheck = true
-    const appUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
+    const appUrl = process.env.E2E_BASE_URL || (process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000')
     await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'all', url: appUrl }])
     await page.route('**/*.google-analytics.com/**', route => route.abort())
     await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }))
