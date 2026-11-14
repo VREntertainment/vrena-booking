@@ -80,12 +80,16 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
         const guestProfiles = await admin.from('profiles').select('id').eq('phone', phone)
         for (const profile of guestProfiles.data || []) ids.add(profile.id)
         if (reservationId) expect((await admin.from('sessions').delete().eq('id', reservationId)).error).toBeNull()
+        if (signedIn) await client.auth.signOut()
         for (const id of ids) {
-          // Guest shells may own more than one internally linked record.
           await admin.from('sessions').delete().or(`owner_id.eq.${id},ticket_customer_id.eq.${id}`)
-          expect((await admin.auth.admin.deleteUser(id)).error).toBeNull()
+          // Guest contact profiles do not necessarily have an Auth account.
+          const account = await admin.auth.admin.getUserById(id)
+          if (account.data.user) expect((await admin.auth.admin.deleteUser(id)).error).toBeNull()
+          expect((await admin.from('profiles').delete().eq('id', id)).error).toBeNull()
+          expect((await admin.auth.admin.getUserById(id)).data.user).toBeNull()
+          expect((await admin.from('profiles').select('id').eq('id', id)).data).toEqual([])
         }
-        for (const id of ids) expect((await admin.auth.admin.getUserById(id)).data.user).toBeNull()
       }
     })
   }

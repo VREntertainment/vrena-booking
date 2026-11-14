@@ -39,6 +39,7 @@ test('contact API fills only the caller’s missing fields without changing cred
     const auth = await admin.auth.admin.getUserById(id)
     expect(auth.data.user!.email).toBe(loginEmail)
   } finally {
+    await client.auth.signOut()
     await admin.auth.admin.deleteUser(id)
   }
 })
