@@ -896,7 +896,8 @@
 .app .birthday-package-selection p { margin: 0; color: var(--player-text-muted); font-size: 13px; line-height: 1.5; }
 .app .birthday-package-price { font-size: 20px; color: var(--player-text); }
 
-.app dialog.booking-phone-dialog {
+.app dialog.booking-phone-dialog,
+.app dialog.guest-ticket-modal {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -910,7 +911,8 @@
   border-radius: 24px;
 }
 
-.app dialog.booking-phone-dialog::backdrop {
+.app dialog.booking-phone-dialog::backdrop,
+.app dialog.guest-ticket-modal::backdrop {
   background: color-mix(in srgb, var(--vrena-neutral-950) 48%, transparent);
   backdrop-filter: blur(4px);
 }
@@ -921,3 +923,10 @@
 .app .booking-phone-dialog .create-button { width: 100%; margin-top: 4px; }
 .app .booking-phone-icon { color: var(--vrena-accent-text); }
 .app .booking-phone-label { font-weight: 700; }
+
+.app dialog.guest-ticket-modal {
+  width: min(460px, calc(100% - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
+  padding-top: 48px;
+}
+.app dialog.guest-ticket-modal:not([open]) { display: none; }

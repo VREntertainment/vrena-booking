@@ -14,6 +14,7 @@ import type { LanguageCode } from '../lib/i18n/languages'
 import ContactChannels from './ContactChannels'
 import type { TicketBookingConfirmation } from '../lib/bookingWidgetDomain'
 const BookingCalendarDialog = dynamic(() => import('./BookingCalendarDialog'), { ssr: false })
+import BookingGuestDialog from './BookingGuestDialog'
 import BookingPhoneDialog from './BookingPhoneDialog'
 import GuestTicketContactPanel from './GuestTicketContactPanel'
 
@@ -472,9 +473,8 @@ export default function TicketBookingView({
             onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
             busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
           {!isLoggedIn && guestTicketContactOpen && (
-            <div className="modal-backdrop guest-ticket-modal-backdrop">
-              <div className="login-modal guest-ticket-modal" role="dialog" aria-modal="true" aria-label={text.guestTicketTitle}>
-                <button aria-label={text.close} className="modal-close" type="button" onClick={handleCloseGuestTicketContact}>
+            <BookingGuestDialog title={text.guestTicketTitle} busy={isBookingTickets || guestTicketAction !== null} onClose={handleCloseGuestTicketContact}>
+                <button aria-label={text.close} className="modal-close" type="button" disabled={isBookingTickets || guestTicketAction !== null} onClick={handleCloseGuestTicketContact}>
                   <X aria-hidden="true" size={18} />
                 </button>
                     <GuestTicketContactPanel
@@ -507,8 +507,7 @@ export default function TicketBookingView({
                         {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketBookWithoutAccountCta}
                       </button>
                     </div>
-              </div>
-            </div>
+            </BookingGuestDialog>
           )}
 
           {ticketConfirmation && (

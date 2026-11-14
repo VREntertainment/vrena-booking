@@ -246,3 +246,38 @@ test('the selected venue remains visible after switching from desktop to mobile'
     return Boolean(bounds && bounds.x >= 0 && bounds.x + bounds.width <= 393)
   }).toBe(true)
 })
+
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`guest dialog in ${colorScheme} mode`, () => {
+    test.use({ colorScheme })
+    for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+      test(`${venue}: close and Escape work above venue maps without losing selection`, async ({ page }) => {
+        const requests = await accountFixture(page, '', false)
+        await page.goto(`/tickets?venue=${venue}`)
+        await page.locator('.ticket-control-date input').fill(futureDate(40))
+        const time = venue === 'ha-do-centrosa' ? '12:00' : '17:10'
+        await page.locator('#ticket-available-time').selectOption(time)
+        await page.locator('#ticket-player-count').selectOption('2')
+        const reserve = page.getByRole('button', { name: 'Reserve your slot', exact: true })
+        await reserve.click()
+        const dialog = page.locator('.guest-ticket-modal')
+        await expect(dialog).toBeVisible()
+        const close = dialog.getByRole('button', { name: 'Close', exact: true })
+        expect(await close.evaluate(button => {
+          const bounds = button.getBoundingClientRect()
+          return button.contains(document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2))
+        })).toBe(true)
+        await page.screenshot({ path: `/tmp/vrena-e2e-results/guest-dialog-${venue}-${colorScheme}-${test.info().project.name}.png` })
+        await close.click()
+        await expect(dialog).toHaveCount(0)
+        await expect(page.locator('#ticket-available-time')).toHaveValue(time)
+        await expect(page.locator('#ticket-player-count')).toHaveValue('2')
+        await reserve.click()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toHaveCount(0)
+        expect(requests).toHaveLength(0)
+      })
+    }
+  })
+}
