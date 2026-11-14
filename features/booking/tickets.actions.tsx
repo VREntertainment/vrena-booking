@@ -1,5 +1,6 @@
 'use client'
 
+import { needsBookingEmail } from '../../lib/bookingAccountContact'
 import { ageBandFromBirthday } from '../../lib/agePolicy'
 import { getSupabase } from '../../lib/booking/client'
 import { clearPendingTicketAccountBooking, writePendingTicketAccountBooking } from '../../lib/booking/pendingAccountBooking'
@@ -18,6 +19,7 @@ import { type TranslationMap } from '../../lib/i18n/loadTranslation'
 import { buildTicketBookingRequest } from '../../lib/ticketBookingRequest'
 
 export type TicketsActionContext = {
+  setProfileEmail: React.Dispatch<React.SetStateAction<string>>
   setProfileCountryCode: React.Dispatch<React.SetStateAction<string>>
   setProfilePhone: React.Dispatch<React.SetStateAction<string>>
   setProfileName: React.Dispatch<React.SetStateAction<string>>
@@ -206,6 +208,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
 
   async function bookTickets(profileOverride?: Profile | null) {
     const {
+      setProfileEmail,
       bookingTicketsInFlightRef,
       setProfileCountryCode,
       setProfilePhone,
@@ -269,6 +272,11 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
     if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
 
     const needsAccountPhone = Boolean(activeProfile && validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, looseText).error)
+    const needsAccountEmail = Boolean(activeProfile && needsBookingEmail(activeProfile.email))
+    if (needsAccountEmail && needsBookingEmail(guestTicketContact.email)) {
+      showTicketStatus(text.emailRequired, 'error')
+      return false
+    }
     const guestContactValidation = !activeProfile || needsAccountPhone
       ? validateGuestTicketContact(guestTicketContact, looseText)
       : { normalizedPhone: '', error: '' }
@@ -282,17 +290,26 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
     bookingTicketsInFlightRef.current = true
     setIsBookingTickets(true)
     try {
-      if (activeProfile && needsAccountPhone) {
-        const { data, error } = await (await getSupabase()).from('profiles')
-          .update({ phone: guestContactValidation.normalizedPhone })
-          .eq('id', activeProfile.id).select('phone').single()
-        if (error || !data) {
+      if (activeProfile && (needsAccountPhone || needsAccountEmail)) {
+        const client = await getSupabase()
+        const { data: auth } = await client.auth.getSession()
+        const response = await fetch('/api/profile/booking-contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.session?.access_token || ''}` },
+          body: JSON.stringify({
+            ...(needsAccountPhone ? { phone: guestContactValidation.normalizedPhone } : {}),
+            ...(needsAccountEmail ? { email: guestTicketContact.email?.trim() } : {}),
+          }),
+        })
+        const { data, error } = await response.json()
+        if (!response.ok || error || !data) {
           showTicketStatus(error?.message || text.ticketBookingError, 'error')
           return false
         }
-        activeProfile = { ...activeProfile, phone: data.phone }
+        activeProfile = { ...activeProfile, phone: data.phone, email: data.email }
         setProfile(activeProfile)
-        const phoneParts = splitPhoneNumber(data.phone)
+        setProfileEmail(data.email || '')
+        const phoneParts = splitPhoneNumber(data.phone || '')
         setProfileCountryCode(phoneParts.countryInput)
         setProfilePhone(phoneParts.localPhone)
         syncProfileEverywhere(activeProfile)

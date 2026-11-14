@@ -59,7 +59,13 @@ export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigge
   useEffect(() => {
     const carousel = carouselRef.current
     const selected = carousel?.querySelector<HTMLElement>('[aria-checked="true"]')?.parentElement
-    if (carousel && selected) carousel.scrollTo({ left: selected.offsetLeft - carousel.offsetLeft, behavior: 'instant' })
+    if (!carousel || !selected) return
+    const revealSelection = () => carousel.scrollTo({ left: selected.offsetLeft - carousel.offsetLeft, behavior: 'instant' })
+    revealSelection()
+    // Keep the chosen venue visible after rotation or a responsive layout change.
+    const observer = new ResizeObserver(revealSelection)
+    observer.observe(carousel)
+    return () => observer.disconnect()
   }, [value])
   const selectVenue = (venue: BookingVenueId) => onChange(venue)
   return (

@@ -9,7 +9,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     let rateChecks = 0
     let bookingRequests = 0
     let failNextCheck = true
-    const appUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
+    const appUrl = process.env.E2E_BASE_URL || (process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000')
     await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'all', url: appUrl }])
     await page.route('**/*.google-analytics.com/**', route => route.abort())
     await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }))
@@ -55,8 +55,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires'] as const) {
     await expect(page.getByRole('dialog').getByText('Enter a valid phone number.', { exact: true })).toBeVisible()
     expect(bookingRequests).toBe(0)
     await page.getByPlaceholder('0981152315').fill('0900000993')
-    await page.getByRole('button', { name: 'Book without an account', exact: true }).click()
-    const confirm = page.getByRole('button', { name: 'Continue as guest', exact: true })
+    const confirm = page.getByRole('button', { name: 'Book without an account', exact: true })
     await confirm.dblclick()
     await expect(page.getByRole('dialog').getByText('QA temporary booking check failure', { exact: true })).toBeVisible()
     expect(rateChecks).toBe(1)

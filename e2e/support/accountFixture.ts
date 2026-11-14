@@ -3,13 +3,13 @@ import { expect, type Page } from '@playwright/test'
 const userId = '00000000-0000-4000-8000-000000000991'
 const bookingId = '00000000-0000-4000-8000-000000000992'
 
-export async function accountFixture(page: Page, phone: string, signedIn = true, staff = false) {
+export async function accountFixture(page: Page, phone: string, signedIn = true, staff = false, email = 'booking-regression@vrena.local') {
   const user = { id: userId, aud: 'authenticated', role: 'authenticated', email: 'booking-regression@vrena.local', app_metadata: {}, user_metadata: {}, factors: staff ? [{ id: '00000000-0000-4000-8000-000000000997', factor_type: 'totp', status: 'verified', friendly_name: 'Fixture authenticator' }] : [] }
   const token = [Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url'), Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(Date.now()/1000)+3600, aal: staff ? 'aal2' : 'aal1', amr: staff ? [{ method: 'totp', timestamp: Math.floor(Date.now()/1000) }] : [] })).toString('base64url'), 'fixture'].join('.')
-  let profile = { id: userId, phone, full_name: 'Booking Tester', email: user.email, birthday: '1990-01-01', role: staff ? 'admin' : 'player', nickname: 'Tester', marketing_consent: false, loyalty_points_total: 1250, onboarding_tour_completed_at: '2026-01-01T00:00:00Z' }
+  let profile = { id: userId, phone, full_name: 'Booking Tester', email, birthday: '1990-01-01', role: staff ? 'admin' : 'player', nickname: 'Tester', marketing_consent: false, loyalty_points_total: 1250, onboarding_tour_completed_at: '2026-01-01T00:00:00Z' }
   const requests: Array<{ name: string; args: Record<string, unknown> }> = []
   let bookings: Record<string, unknown>[] = []
-  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: 'http://127.0.0.1:3000' }])
+  await page.context().addCookies([{ name: 'vrena-cookie-consent', value: 'essential', url: process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000' }])
   if (signedIn) await page.addInitScript(({ user, token }) => {
     localStorage.setItem('sb-127-auth-token', JSON.stringify({ access_token: token, refresh_token: 'fixture', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user }))
   }, { user, token })
@@ -30,6 +30,12 @@ export async function accountFixture(page: Page, phone: string, signedIn = true,
     if (url.pathname.includes('staff_access_locations')) return route.fulfill({ json: [{ venue_key: 'ha-do-centrosa', location_code: 'HaDo' }, { venue_key: 'cafe-des-stagiaires', location_code: 'ThaoDien' }] })
     if (url.pathname.includes('rate_limit')) return route.fulfill({ json: { allowed: true } })
     return route.fulfill({ json: [] })
+  })
+  await page.route('**/api/profile/booking-contact', async route => {
+    const details = route.request().postDataJSON()
+    expect(Object.keys(details).every(key => ['phone', 'email'].includes(key))).toBe(true)
+    profile = { ...profile, ...details }
+    return route.fulfill({ json: { data: { phone: profile.phone, email: profile.email } } })
   })
   await page.route('**/api/bookings/tickets', async route => {
     const request = route.request().postDataJSON()

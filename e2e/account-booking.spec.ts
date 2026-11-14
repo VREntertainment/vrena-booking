@@ -76,9 +76,8 @@ for (const passwordLogin of [false, true]) {
 
 test('invalid or rejected account phone stays in checkout with the selected venue and time', async ({ page }) => {
   const requests = await accountFixture(page, '')
-  await page.route('**/rest/v1/profiles?**', async route => {
-    if (route.request().method() !== 'PATCH') return route.fallback()
-    return route.fulfill({ status: 409, json: { message: 'This phone cannot be saved.' } })
+  await page.route('**/api/profile/booking-contact', async route => {
+    return route.fulfill({ status: 409, json: { error: { message: 'This phone cannot be saved.' } } })
   })
   await page.goto('/tickets?venue=cafe-des-stagiaires')
   await expect(page.locator('.profile-chip')).toContainText('Tester')
@@ -149,4 +148,101 @@ test('My Bookings includes this account’s history from both venues together', 
   await expect(page.locator('.account-bookings')).toContainText('QA-THAO-DIEN')
   await expect(page.locator('.account-bookings')).toContainText('Hà Đô Centrosa')
   await expect(page.locator('.account-bookings')).toContainText('Thảo Điền')
+})
+
+for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+  for (const missingPhone of [false, true]) {
+    test(`${venue}: missing email${missingPhone ? ' and phone' : ''} is saved without losing checkout`, async ({ page }) => {
+      const errors: string[] = []
+      page.on('pageerror', error => errors.push(error.message))
+      const requests = await accountFixture(page, missingPhone ? '' : '+84900000991', true, false, '')
+      const updates: Record<string, string>[] = []
+      page.on('request', request => {
+        if (request.url().includes('/api/profile/booking-contact')) updates.push(request.postDataJSON())
+      })
+      await page.goto(`/tickets?venue=${venue}`)
+      await expect(page.locator('.profile-chip')).toContainText('Tester')
+      const date = futureDate(40)
+      const time = venue === 'ha-do-centrosa' ? '12:00' : '17:10'
+      await page.locator('.ticket-control-date input').fill(date)
+      await page.locator('#ticket-available-time').selectOption(time)
+      await page.locator('#ticket-player-count').selectOption('3')
+      await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+      const dialog = page.getByRole('dialog', { name: 'Complete your contact details' })
+      await expect(dialog).toBeVisible()
+      await expect(dialog.locator('#booking-account-phone')).toHaveCount(missingPhone ? 1 : 0)
+      await dialog.locator('#booking-account-email').fill('bad-email')
+      if (missingPhone) await dialog.locator('#booking-account-phone').fill('900000991')
+      await dialog.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
+      await expect(dialog).toContainText('Valid email is required.')
+      expect(updates).toHaveLength(0)
+      await dialog.locator('#booking-account-email').fill('customer@example.com')
+      await page.keyboard.press('Escape')
+      await expect(dialog).toHaveCount(0)
+      await expect(page.locator('#ticket-available-time')).toHaveValue(time)
+      await expect(page.locator('#ticket-player-count')).toHaveValue('3')
+      await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+      await expect(dialog.locator('#booking-account-email')).toHaveValue('customer@example.com')
+      expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
+      await page.screenshot({ path: `/tmp/booking-contact-${venue}-${missingPhone}-${test.info().project.name}.png` })
+      await dialog.getByRole('button', { name: 'Save & confirm booking', exact: true }).dblclick()
+      await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
+      expect(updates).toEqual([{ ...(missingPhone ? { phone: '+84900000991' } : {}), email: 'customer@example.com' }])
+      expect(requests).toHaveLength(1)
+      expect(requests[0].args.p_date).toBe(date)
+      expect(requests[0].args.p_start_time).toBe(`${time}:00`)
+      expect(requests[0].args.p_player_count).toBe(3)
+      await page.getByRole('dialog', { name: 'Your booking is confirmed' }).getByRole('button', { name: 'Not now' }).click()
+      await page.reload()
+      await expect(page.locator('.profile-chip')).toContainText('Tester')
+      await page.locator('.ticket-control-date input').fill(date)
+      await page.locator('#ticket-available-time').selectOption(time)
+      await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+      await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
+      expect(updates).toHaveLength(1)
+      expect(errors).toEqual([])
+    })
+  }
+}
+
+test('SIM Racing completes missing account contacts in place and keeps the selected time', async ({ page }) => {
+  await accountFixture(page, '', true, false, '')
+  let bookings = 0
+  await page.route('**/rest/v1/rpc/sim_racing_available_times', route => route.fulfill({ json: [{ start_time: '12:00:00' }, { start_time: '12:15:00' }] }))
+  await page.route('**/rest/v1/rpc/create_sim_racing_booking', async route => {
+    bookings++
+    expect(route.request().postDataJSON().p_start_time).toBe('12:15:00')
+    await route.fulfill({ json: { ticket_reference: 'QA-SIM-CONTACT' } })
+  })
+  await page.goto('/tickets')
+  await expect(page.locator('.profile-chip')).toContainText('Tester')
+  await page.getByRole('button', { name: 'SIM Racing', exact: true }).click()
+  const simulator = page.locator('.sim-racing-booking')
+  await simulator.locator('select').selectOption('12:15:00')
+  await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Complete your contact details' })
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(simulator.locator('select')).toHaveValue('12:15:00')
+  expect(bookings).toBe(0)
+  await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
+  await dialog.locator('#booking-account-phone').fill('900000991')
+  await dialog.locator('#booking-account-email').fill('customer@example.com')
+  await dialog.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
+  await expect(simulator.locator('.ticket-confirmation')).toContainText('QA-SIM-CONTACT')
+  expect(bookings).toBe(1)
+})
+
+
+test('the selected venue remains visible after switching from desktop to mobile', async ({ page }) => {
+  await accountFixture(page, '+84900000991')
+  await page.setViewportSize({ width: 1200, height: 900 })
+  await page.goto('/tickets?venue=cafe-des-stagiaires')
+  const selected = page.locator('.booking-venue-options [aria-checked="true"]')
+  await expect(selected).toContainText('Thao Dien')
+  await page.setViewportSize({ width: 393, height: 852 })
+  await expect.poll(async () => {
+    const bounds = await selected.boundingBox()
+    return Boolean(bounds && bounds.x >= 0 && bounds.x + bounds.width <= 393)
+  }).toBe(true)
 })

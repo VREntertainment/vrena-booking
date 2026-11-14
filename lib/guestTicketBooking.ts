@@ -1,4 +1,5 @@
 export type GuestTicketContact = {
+  email?: string
   name: string
   phone: string
 }
