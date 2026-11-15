@@ -52,7 +52,7 @@ import { createStaffOrdersActions } from '../features/staff/orders.actions'
 import { createStaffPayrollActions } from '../features/staff/lazyPayrollActions'
 import { createStaffReportsActions } from '../features/staff/reports.actions'
 import { createStaffSchedulingActions } from '../features/staff/scheduling.actions'
-import { createStaffSettingsActions } from '../features/staff/settings.actions'
+import { createStaffSettingsActions } from '../features/staff/lazySettingsActions'
 import { ButtonIconText, StaffReportDateRangeModal } from '../features/staff/shared'
 
 
@@ -131,7 +131,7 @@ import {
 import {
   orderPaymentLabel,
   paymentPieItems
-} from '../lib/staff/reportExports'
+} from '../lib/staff/reportDisplay'
 import { shiftConflictWarnings } from '../lib/staff/scheduling'
 import { StaffPickerField } from './staff/StaffPickerField'
 

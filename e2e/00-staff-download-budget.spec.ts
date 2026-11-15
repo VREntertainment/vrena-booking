@@ -27,12 +27,12 @@ test('staff and HR initial downloads stay within production budgets', async ({ p
       return out
     }, { js: 0, css: 0, gzipJs: 0, gzipCss: 0 })
     await testInfo.attach(`downloads-${route.slice(1)}`, { body: JSON.stringify({ route, ...totals, assets: Object.fromEntries(assets) }, null, 2), contentType: 'application/json' })
+    console.log('WORKFLOW_DOWNLOADS', JSON.stringify({ route, ...totals }))
     expect(totals.js).toBeGreaterThan(100_000)
     expect(totals.css).toBeGreaterThan(0)
     if (process.env.E2E_PRODUCTION_BUILD === '1') {
       // Gzip-equivalent JS budgets stay below the pre-refactor 588/622 KB measurements.
       expect(totals.gzipJs).toBeLessThan(route === '/staff' ? 570_000 : 595_000)
     }
-    console.log('WORKFLOW_DOWNLOADS', JSON.stringify({ route, ...totals }))
   }
 })

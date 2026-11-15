@@ -46,7 +46,7 @@ import {
 } from '../../lib/staff/profiles'
 import {
   orderPaymentLabel
-} from '../../lib/staff/reportExports'
+} from '../../lib/staff/reportDisplay'
 import {
   orderPaidAmount
 } from '../../lib/staff/reporting'
