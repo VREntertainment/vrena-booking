@@ -32,7 +32,7 @@ import type {
   StaffConsoleLanguage,
   StaffReportChartMode
 } from '../../lib/staff/types'
-import { bookingSourceLabel } from '../../lib/staff/reportExports'
+import { bookingSourceLabel } from '../../lib/staff/reportDisplay'
 import { staffBookingCopy } from '../../lib/staff/bookingCopy'
 import { vrenaPalette } from '../../lib/theme/vrenaPalette'
 import { ButtonIconText, StaffPlayerInsights, StaffQrAnalytics } from './shared'

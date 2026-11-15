@@ -1,4 +1,4 @@
-import { measureOpenAiBooking } from './openAiAds'
+import { measureOpenAiBooking, measureOpenAiCheckout } from './openAiAds'
 
 export const GOOGLE_ANALYTICS_ID = 'G-1K2MBG959X'
 export const CONSENT_COOKIE_NAME = 'vrena-cookie-consent'
@@ -78,6 +78,7 @@ function ticketItem(input: TicketAnalyticsInput) {
 }
 
 export function trackTicketCheckoutStarted(input: TicketAnalyticsInput) {
+  if (input.venue) measureOpenAiCheckout(input.venue, input.ticketType)
   trackEvent('begin_checkout', {
     ...(input.ticketType === 'individual' ? { currency: 'VND', value: input.totalPrice } : {}),
     items: ticketItem(input),

@@ -99,7 +99,6 @@ for (const language of languageOptions) {
     await page.getByRole('button', { name: text.bookTickets, exact: true }).click()
     await page.getByPlaceholder('0981152315').fill('0900000994')
     await page.locator('.guest-ticket-modal').getByRole('button', { name: text.guestTicketBookWithoutAccountCta, exact: true }).click()
-    await page.locator('.guest-ticket-account-confirmation .secondary').first().click()
     await expect(page.locator('.ticket-confirmation')).toContainText('QA-GUEST-LANGUAGE')
     expect(writes).toBe(1)
     await contained(page)

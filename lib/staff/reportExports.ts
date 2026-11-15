@@ -1,10 +1,11 @@
-import { staffBookingCopy } from './bookingCopy.ts'
+import { bookingSourceLabel, orderPaymentLabel } from './reportDisplay.ts'
+export { bookingSourceLabel, orderPaymentLabel, paymentPieItems } from './reportDisplay.ts'
 import type { StaffConsoleCopy } from './copy.ts'
 import { staffConsoleText } from './copy.ts'
 import { normalizeTime } from './dates.ts'
 import { formatVnd } from './formatting.ts'
-import { paymentMethodLabel, paymentStatusLabel } from './payments.ts'
-import { orderPaidAmount, staffOrderPaymentRows } from './reporting.ts'
+import { paymentStatusLabel } from './payments.ts'
+import { orderPaidAmount } from './reporting.ts'
 import type { StaffGame, StaffOrder, StaffOrderPayment, StaffReportSummary } from './types.ts'
 
 export async function downloadExcel(filename: string, sections: Array<{ title: string; rows: Array<Record<string, unknown>>; description?: string }>, text: StaffConsoleCopy = staffConsoleText.en) {
@@ -37,11 +38,6 @@ export async function downloadPdf(filename: string, lines: string[], text: Staff
   downloadPdfFile(filename, lines, text.reportTitleFallback)
 }
 
-export function bookingSourceLabel(source: string | null | undefined, text: StaffConsoleCopy = staffConsoleText.en) {
-  const copy = staffBookingCopy[text === staffConsoleText.vi ? 'vi' : 'en']
-  return copy.sources[source as keyof typeof copy.sources] || (text === staffConsoleText.vi ? 'Chưa xác định' : 'Unspecified')
-}
-
 export function staffReportRows(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
   return [
     { metric: text.labels.totalSales, value: formatVnd(report.totalSales) },
@@ -63,14 +59,6 @@ export function staffReportRows(report: StaffReportSummary, text: StaffConsoleCo
       { metric: `${bookingSourceLabel(row.source, text)} — ${text.labels.totalSales}`, value: formatVnd(row.sales) },
     ]),
   ]
-}
-
-export function orderPaymentLabel(order: StaffOrder, paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
-  const payments = staffOrderPaymentRows(order, paymentsByOrderId)
-  if (payments.length === 0) return paymentMethodLabel(order.payment_method, text)
-  return payments
-    .map((payment) => `${paymentMethodLabel(payment.payment_method, text)} ${formatVnd(payment.amount)}`)
-    .join(' + ')
 }
 
 export function staffOrderExportRows(orders: StaffOrder[], games: StaffGame[], paymentsByOrderId: Map<string, StaffOrderPayment[]>, text: StaffConsoleCopy = staffConsoleText.en) {
@@ -108,16 +96,5 @@ export function reportPdfLines(
     ...staffOrderExportRows(orders, games, paymentsByOrderId, text).slice(0, 28).map((order) => (
       `${order.order_number} | ${order.date} ${order.time} | ${order.customer} | ${order.booking_source} | ${order.game} | ${order.total} | ${order.payment_method}`
     )),
-  ]
-}
-
-export function paymentPieItems(report: StaffReportSummary, text: StaffConsoleCopy = staffConsoleText.en) {
-  return [
-    { label: text.labels.cash, value: report.cashTotal },
-    { label: text.labels.bankTransfer, value: report.bankTransferTotal },
-    { label: text.paymentMethods.card_manual, value: report.cardTotal },
-    { label: text.paymentMethods.momo_manual, value: report.momoTotal },
-    { label: text.paymentMethods.vnpay, value: report.vnpayTotal },
-    { label: text.unpaid, value: report.unpaidAmount },
   ]
 }
