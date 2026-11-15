@@ -49,7 +49,7 @@ import { createStaffPayrollExportActions } from '../features/staff/lazyPayrollEx
 import { createStaffLoadingActions } from '../features/staff/loading.actions'
 import { createStaffOperationsActions } from '../features/staff/operations.actions'
 import { createStaffOrdersActions } from '../features/staff/orders.actions'
-import { createStaffPayrollActions } from '../features/staff/payroll.actions'
+import { createStaffPayrollActions } from '../features/staff/lazyPayrollActions'
 import { createStaffReportsActions } from '../features/staff/reports.actions'
 import { createStaffSchedulingActions } from '../features/staff/scheduling.actions'
 import { createStaffSettingsActions } from '../features/staff/settings.actions'
