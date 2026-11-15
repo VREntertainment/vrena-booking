@@ -51,3 +51,17 @@ for (const path of ['/staff','/hr','/admin','/auth/zalo']) {
   assert.doesNotThrow(()=>a.trackTicketBookingCompleted(input))
 }
 console.log('PASS: booking success event, venue, consent, deduplication, private-route exclusion, revocation, and failure isolation')
+
+for (const consent of ['essential','analytics','all']) {
+ const b=browser(consent); const a=b.load('lib/googleAnalytics.ts');
+ a.trackTicketCheckoutStarted(input);
+ const events=(b.context.window.oaiq?.q??[]).filter(c=>c[0]==='measure'&&c[1]==='checkout_started');
+ assert.equal(events.length,consent==='all'?1:0);
+ if(consent==='all') {
+  assert.equal(events[0][2].type,'contents');
+  assert.equal(events[0][2].contents[0].id,'ticket_thao_dien_individual');
+  assert.equal(events[0][2].amount,undefined);
+ }
+ assert.equal((b.context.window.oaiq?.q??[]).filter(c=>c[1]==='appointment_scheduled').length,0);
+}
+console.log('PASS: checkout consent, venue content, no payment claims or premature booking conversion');

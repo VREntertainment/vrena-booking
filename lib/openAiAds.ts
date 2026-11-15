@@ -46,6 +46,17 @@ export function syncOpenAiMeasurement(granted: boolean) {
   } catch { /* Measurement must never interrupt booking. */ }
 }
 
+export function measureOpenAiCheckout(venue: BookingVenue, ticketType: string) {
+  if (typeof window === 'undefined') return
+  try {
+    if (!allowed() || !['ha_do_centrosa', 'thao_dien'].includes(venue)) return
+    syncOpenAiMeasurement(true)
+    window.oaiq?.('measure', 'checkout_started', {
+      type: 'contents', contents: [{ id: `ticket_${venue}_${ticketType}`, content_type: 'booking' }],
+    })
+  } catch { /* Checkout remains available when measurement fails. */ }
+}
+
 export function measureOpenAiBooking(bookingId: string, venue: BookingVenue) {
   if (typeof window === 'undefined') return
   try {

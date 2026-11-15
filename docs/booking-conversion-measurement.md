@@ -8,7 +8,7 @@ Only the server-confirmed ticket-booking success path emits the booking goal. RP
 
 GA4 follows analytics consent; the OpenAI SDK follows marketing (`all`) consent. Public staff/HR/admin/auth routes remain excluded. Tracking failures are isolated from booking completion. Full-consent attribution is forwarded from the marketing website to booking links using only oppref and UTM parameters, with a 30-minute per-tab attribution lifetime. No keys or tokens are logged. CSP permits only the documented OpenAI SDK/config and event hosts on public pages.
 
-Skipped events: payment/order_created (payment not the requested success boundary), items_added (no cart), registration/subscription/trial/app events (outside this flow), lead_created (confirmed booking tracked directly), contents_viewed and checkout_started (deferred to avoid expanding the initial goal). Existing GA4 begin_checkout is retained. No raw or hashed customer contact fields are added: preserve the existing no-contact-data measurement policy. Existing Pixel matching behavior is unchanged. CAPI adds only consented browser references, user agent and the configured trusted client IP.
+Skipped events: payment/order_created (payment not the requested success boundary), items_added (no cart), registration/subscription/trial/app events (outside this flow), lead_created (confirmed booking tracked directly), contents_viewed (deferred to avoid expanding the initial goal). Existing GA4 begin_checkout is retained. No raw or hashed customer contact fields are added: preserve the existing no-contact-data measurement policy. Existing Pixel matching behavior is unchanged. CAPI adds only consented browser references, user agent and the configured trusted client IP.
 
 Validation: type checking, changed-file lint, and scripts/test-booking-measurement.mjs and scripts/test-openai-server-measurement.mjs (both included in `npm run check`). Live validation must distinguish SDK loading and accepted test events from attributed ad conversions, which require an eligible real ad click. No test should create a paid customer booking without a controlled test-data plan. Browser blockers and visitors declining consent reduce measurable coverage.
 
@@ -32,3 +32,7 @@ CAPI requires the request's marketing-consent cookie to equal `all`. It forwards
 - Actual Ads attribution/deduplication receipt remains dependent on the next genuine consented booking; API validation and mocked success are not attributed-conversion proof.
 
 References: [Pixel](https://developers.openai.com/ads/measurement-pixel), [CAPI](https://developers.openai.com/ads/conversions-api), [supported event schemas](https://developers.openai.com/ads/supported-events).
+
+## Checkout funnel extension — November 2026
+
+The existing validated checkout-attempt boundary also emits OpenAI `checkout_started` when marketing consent is `all`. It uses the contents data shape with a venue/service ticket identifier, and sends no customer contact data, amount, or booking-success claim. GA4 begin_checkout retains its analytics-consent gate. Successful bookings remain the sole appointment_scheduled boundary; failures do not emit that goal.
