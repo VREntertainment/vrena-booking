@@ -3,27 +3,13 @@
 import type { StaffPlayerInsightsSnapshot } from '../../components/StaffPlayerInsights'
 import type { StaffQrAnalyticsSnapshot } from '../../components/StaffQrAnalytics'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
-import { staffConsoleText } from '../../lib/staff/copy'
 import {
   addDays,
   orderedRange,
   previousPeriodRange,
-  rangeLabel,
   todayString
 } from '../../lib/staff/dates'
 import { rpcFunctionMissing } from '../../lib/staff/errors'
-import {
-  accountantExportReports,
-  accountantExportStores
-} from '../../lib/staff/options'
-import {
-  downloadCsv,
-  downloadExcel,
-  downloadPdf,
-  reportPdfLines,
-  staffOrderExportRows,
-  staffReportRows
-} from '../../lib/staff/reportExports'
 import {
   buildDailySeries,
   buildStaffReport,
@@ -32,7 +18,6 @@ import {
   staffReportSnapshotFromRpc
 } from '../../lib/staff/reporting'
 import type {
-  StaffAuditLog,
   StaffGame,
   StaffOrder,
   StaffReportSnapshot,
@@ -273,22 +258,15 @@ export function createStaffReportsActions(getContext: () => ReportsActionContext
   }
 
   async function exportExcelReport() {
-    const { reportStart, reportEnd, text, report, reportOrders, games, reportPaymentsByOrderId } = getContext()
-
-    await downloadExcel(`vrena-daily-report-${reportStart}-${reportEnd}.xlsx`, [
-      { title: `${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report, text) },
-      { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, reportPaymentsByOrderId, text) },
-    ], text)
+    const context = getContext()
+    const { exportExcelReport: download } = await import('./reportDownload.actions')
+    await download(context)
   }
 
   async function exportPdfReport() {
-    const { reportStart, reportEnd, text, report, reportOrders, games, reportPaymentsByOrderId } = getContext()
-
-    await downloadPdf(
-      `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
-      reportPdfLines(`${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, reportPaymentsByOrderId, text),
-      text
-    )
+    const context = getContext()
+    const { exportPdfReport: download } = await import('./reportDownload.actions')
+    await download(context)
   }
 
   async function runReportExport(kind: 'excel' | 'pdf' | 'accountant', task: () => Promise<void>) {
@@ -309,71 +287,9 @@ export function createStaffReportsActions(getContext: () => ReportsActionContext
   }
 
   async function downloadAccountantExport() {
-    const {
-      accountantReportId,
-      accountantExportStore,
-      accountantExportLanguage,
-      fetchAuditLogs,
-      report,
-      reportOrders,
-      games,
-      reportPaymentsByOrderId,
-      discounts,
-      loyaltyRules,
-      reportStart,
-      reportEnd,
-      accountantIncludeAttachments,
-      accountantExportFormat,
-    } = getContext()
-
-    const reportDefinition = accountantExportReports.find((item) => item.id === accountantReportId) || accountantExportReports[0]
-    const storeDefinition = accountantExportStores.find((item) => item.id === accountantExportStore) || accountantExportStores[0]
-    const exportText = staffConsoleText[accountantExportLanguage]
-    let exportAuditLogs: StaffAuditLog[] = []
-    if (reportDefinition.id === 'audit_trail') {
-      try {
-        exportAuditLogs = await fetchAuditLogs(250)
-      } catch (error) {
-        throw error
-      }
-    }
-    const exportContext = {
-      report,
-      orders: reportOrders,
-      games,
-      paymentsByOrderId: reportPaymentsByOrderId,
-      discounts,
-      loyaltyRules,
-      auditLogs: exportAuditLogs,
-      text: exportText,
-      reportStart,
-      reportEnd,
-      storeLabel: storeDefinition.label[accountantExportLanguage],
-      language: accountantExportLanguage,
-      includeAttachments: accountantIncludeAttachments,
-    }
-    const reportTitle = reportDefinition.label[accountantExportLanguage]
-    const { accountantAttachmentRows, accountantExportInfoRows, buildAccountantExportRows } = await import('../../lib/staffAccountantExportRows')
-    const rows = buildAccountantExportRows(reportDefinition.id, exportContext)
-    const suffix = `${reportStart}_${reportEnd}`
-    if (accountantExportFormat === 'csv') {
-      await downloadCsv(`${reportDefinition.fileBase}_${suffix}.csv`, rows, exportText)
-      return
-    }
-    const workbookSections = [
-      { title: reportTitle, rows },
-      {
-        title: accountantExportLanguage === 'vi' ? 'Thông tin xuất file' : 'Export info',
-        rows: accountantExportInfoRows(reportTitle, exportContext),
-      },
-    ]
-    if (accountantIncludeAttachments) {
-      workbookSections.push({
-        title: exportText.labels.attachmentList,
-        rows: accountantAttachmentRows(exportContext),
-      })
-    }
-    await downloadExcel(`${reportDefinition.fileBase}_${suffix}.xlsx`, workbookSections, exportText)
+    const context = getContext()
+    const { downloadAccountantExport: download } = await import('./reportDownload.actions')
+    await download(context)
   }
 
   return {
