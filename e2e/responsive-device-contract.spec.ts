@@ -37,7 +37,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }
     const inserted = await admin.from('sessions').insert(fixture)
     if (inserted.error) throw inserted.error
-    const creatorText = venue === 'ha-do-centrosa' ? `Reserved by: ${owner.data.full_name} (staff PIN)` : 'Reserved by: Not recorded'
+    const creatorText = venue === 'ha-do-centrosa' ? `Reserved by: ${owner.data.full_name}` : 'Reserved by: Not recorded'
     const cleanupIds = [id]
     if (venue === 'ha-do-centrosa') {
       const parallelId = crypto.randomUUID()
