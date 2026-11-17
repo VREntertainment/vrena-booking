@@ -1,4 +1,5 @@
 begin;
+create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select plan(10);
 select ok(private.reservation_contact_is_official(' Staff@VRE-VIETNAM.COM ',null),'Company domain is case insensitive');
