@@ -1,0 +1,110 @@
+import { expect, test, type Page } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
+import { futureDate, loginAsAdmin } from './support/admin'
+
+async function fitsPage(page: Page) {
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+}
+test('public booking inputs remain readable and within the viewport', async ({ page }, info) => {
+  await page.goto('/tickets?venue=ha-do-centrosa&lang=en')
+  await expect(page.locator('.ticket-control select').first()).toBeVisible()
+  await fitsPage(page)
+  if (page.viewportSize()!.width <= 760) {
+    const sizes = await page.locator('.ticket-control input, .ticket-control select, .ticket-special-note-field textarea').evaluateAll(els => els.filter(el => el.getBoundingClientRect().width > 0).map(el => parseFloat(getComputedStyle(el).fontSize)))
+    for (const size of sizes) expect(size).toBeGreaterThanOrEqual(16)
+  }
+  await page.screenshot({ path: `/tmp/vrena-e2e-results/public-booking-${info.project.name}.png` })
+})
+for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
+  test(`responsive calendar, details and staff form: ${venue}`, async ({ page }, info) => {
+    if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Responsive fixtures require isolated services.')
+    const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+    const owner = await admin.from('profiles').select('id').eq('email', process.env.E2E_ADMIN_EMAIL!).single()
+    if (owner.error) throw owner.error
+    const id = crypto.randomUUID()
+    const date = futureDate(247)
+    const name = `Responsive calendar ${venue}`
+    const inserted = await admin.from('sessions').insert({
+      id, owner_id: owner.data.id, name, date, start_time: '16:30', duration_minutes: 60,
+      max_players: 4, arena_count: 1, game_options: [], game_votes: {}, visibility: 'private',
+      status: 'open', booking_type: 'ticket', ticket_type: 'individual', ticket_player_count: 4,
+      ticket_status: 'confirmed', venue_key: venue,
+    })
+    if (inserted.error) throw inserted.error
+    try {
+      await loginAsAdmin(page)
+      await page.goto(`/create-session?mode=calendar&date=${date}&venue=${venue}&lang=en`)
+      await expect(page.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
+      await fitsPage(page)
+      const controls = page.locator('.calendar-booking-controls')
+      const arrows = controls.locator('.calendar-nav button')
+      const bounds = await controls.locator('button').evaluateAll(els => els.map(el => {
+        const r = el.getBoundingClientRect()
+        return { x: r.x, right: r.right, y: r.y + r.height / 2, width: r.width, height: r.height }
+      }))
+      expect(Math.max(...bounds.map(r => r.y)) - Math.min(...bounds.map(r => r.y))).toBeLessThan(2)
+      if (page.viewportSize()!.width <= 600) {
+        for (const r of bounds) { expect(r.height).toBeGreaterThanOrEqual(44); expect(r.right).toBeLessThanOrEqual(page.viewportSize()!.width) }
+        for (const r of bounds.slice(-2)) expect(r.width).toBeGreaterThanOrEqual(44)
+      }
+      // Exercise both week arrows, then reopen the fixture week.
+      await arrows.last().click()
+      await expect(page.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
+      await arrows.first().click()
+      await expect(page.locator('.calendar-session-block').filter({ hasText: name })).toBeVisible()
+      const grid = page.locator('.calendar-scroll')
+      await grid.evaluate(el => { el.scrollLeft = el.scrollWidth; el.scrollTop = 120 })
+      await fitsPage(page)
+      const fixedTime = await page.locator('.calendar-time-column').boundingBox()
+      const gridBounds = await grid.boundingBox()
+      expect(Math.abs(fixedTime!.x - gridBounds!.x)).toBeLessThan(3)
+      await grid.evaluate(el => { el.scrollLeft = 0; el.scrollTop = 0 })
+      await page.locator('.calendar-session-block').filter({ hasText: name }).click()
+      const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
+      await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).toBeVisible()
+      const box = await dialog.boundingBox()
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1)
+      expect(box!.height).toBeLessThanOrEqual(page.viewportSize()!.height)
+      await dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true }).check()
+      await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
+      // Unsaved dialog edits must not silently persist.
+      await page.locator('.calendar-session-block').filter({ hasText: name }).click()
+      await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).not.toBeChecked()
+      await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
+      await page.locator('.language-picker > button').click()
+      await page.getByRole('button', { name: 'VI', exact: true }).click()
+      await fitsPage(page)
+      await controls.locator('button').first().click()
+      await expect(page.getByTestId('staff-console')).toBeVisible()
+      await fitsPage(page)
+      const shop = page.getByRole('combobox', { name: /^(Shop|Cửa hàng)$/ })
+      await expect(shop).toHaveValue(venue)
+      await shop.selectOption('cafe-des-stagiaires')
+      await expect(page.getByRole('combobox', { name: /^(Game|Trò chơi)$/ }).getByRole('option', { name: 'Laser Tag', exact: true })).toHaveCount(0)
+      const country = page.locator('.staff-phone-control .country-button')
+      if (page.viewportSize()!.width <= 760) {
+        expect((await country.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+        expect(await shop.evaluate(el => getComputedStyle(el).fontSize)).toBe('16px')
+      }
+      await country.click()
+      await expect(page.locator('.country-menu')).toBeVisible()
+      const menu = await page.locator('.country-menu').boundingBox()
+      expect(menu!.x).toBeGreaterThanOrEqual(0)
+      expect(menu!.x + menu!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1)
+      await page.locator('.country-menu input').fill('Vietnam')
+      await page.locator('.country-list button').first().click()
+      await fitsPage(page)
+      await page.locator('.staff-summary-export').scrollIntoViewIfNeeded()
+      if (page.viewportSize()!.width <= 960) {
+        const nav = await page.locator('.staff-console-nav').boundingBox()
+        const header = await page.locator('aside').boundingBox()
+        expect(nav!.y).toBeGreaterThanOrEqual(header!.y + header!.height - 1)
+      }
+      await page.screenshot({ path: `/tmp/vrena-e2e-results/responsive-${venue}-${info.project.name}.png` })
+    } finally {
+      const removed = await admin.from('sessions').delete().eq('id', id)
+      if (removed.error) throw removed.error
+    }
+  })
+}

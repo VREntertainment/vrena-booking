@@ -3,6 +3,12 @@ name: Booking device matrix
 on:
   pull_request:
     paths:
+      - 'AGENTS.md'
+      - 'styles/**'
+      - 'app/globals.css'
+      - 'app/staff/**'
+      - 'components/Staff*'
+      - 'components/staff/**'
       - 'components/Booking*'
       - 'components/TicketBookingView.tsx'
       - 'components/SimRacingBooking.tsx'
@@ -25,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome]
+        device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome, samsung-a26, samsung-a26-compact, galaxy-fold-cover, galaxy-fold-open]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -45,7 +51,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - name: Guest and account bookings across desktop, tablet and phone layouts
-        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts --project=${{ matrix.device }} --max-failures=3
+        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts e2e/responsive-device-contract.spec.ts --project=${{ matrix.device }} --max-failures=3
       - name: Save booking evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
